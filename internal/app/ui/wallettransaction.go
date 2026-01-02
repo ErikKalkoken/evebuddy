@@ -65,7 +65,7 @@ type walletTransactions struct {
 	bottom         *widget.Label
 	character      atomic.Pointer[app.Character]
 	columnSorter   *iwidget.ColumnSorter
-	corporation      atomic.Pointer[app.Corporation]
+	corporation    atomic.Pointer[app.Corporation]
 	division       app.Division
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
@@ -101,6 +101,7 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			a.update()
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {

@@ -109,7 +109,7 @@ type industryJobs struct {
 	body            fyne.CanvasObject
 	bottom          *widget.Label
 	columnSorter    *iwidget.ColumnSorter
-	corporation      atomic.Pointer[app.Corporation]
+	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
@@ -273,6 +273,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	if forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			a.update()
 		})
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {

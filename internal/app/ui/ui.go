@@ -99,7 +99,6 @@ type baseUI struct {
 	onAppFirstStarted               func()
 	onAppStopped                    func()
 	onAppTerminated                 func()
-	onRefreshCross                  func()
 	onSetCharacter                  func(*app.Character)
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
@@ -141,15 +140,15 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
-	marketOrdersSell        *marketOrders
 	marketOrdersBuy         *marketOrders
+	marketOrdersSell        *marketOrders
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
 	snackbar                *iwidget.Snackbar
+	statusText              *statusText
 	training                *training
 	wealth                  *wealth
-	statusText              *statusText
 
 	// Signals
 
@@ -349,12 +348,14 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
 		updateStatus()
 	})
+
 	u.corporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
 		updateStatus()
 	})
 	u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
 		updateStatus()
+		u.updateCorporationWalletTotal()
 	})
 	u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		slog.Debug("Signal: corporationSectionChanged", "arg", arg)
@@ -365,6 +366,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationWalletTotal()
 		}
 	})
+
 	u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		slog.Debug("Signal: generalSectionChanged", "arg", arg)
 		switch arg.section {
@@ -458,11 +460,12 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
 		if !u.isOffline && !u.isUpdateDisabled {
-			time.Sleep(3 * time.Second)                     // allow app to fully load before updating
-			slog.Info("EnteredForeground: Starting update") // FIXME
-			go u.updateCharactersIfNeeded(context.Background(), false)
-			go u.updateCorporationsIfNeeded(context.Background(), false)
-			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			go func() {
+				time.Sleep(3 * time.Second) // allow app to fully load before updating
+				go u.updateCharactersIfNeeded(context.Background(), false)
+				go u.updateCorporationsIfNeeded(context.Background(), false)
+				go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			}()
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {
@@ -805,14 +808,12 @@ func (u *baseUI) resetCorporation() {
 	u.corporation.Store(nil)
 	u.settings.ResetLastCorporationID()
 	u.currentCorporationExchanged.Emit(context.Background(), nil)
-	u.updateCorporation()
 }
 
 func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.corporation.Store(c)
 	u.settings.SetLastCorporationID(c.ID)
 	u.currentCorporationExchanged.Emit(context.Background(), c)
-	u.updateCorporation()
 	if u.onSetCorporation != nil {
 		u.onSetCorporation(c)
 	}
@@ -829,31 +830,6 @@ func (u *baseUI) setAnyCorporation() error {
 	}
 	u.setCorporation(c)
 	return nil
-}
-
-// updateCorporation updates all pages for the current corporation.
-func (u *baseUI) updateCorporation() {
-	c := u.currentCorporation()
-	if c != nil {
-		slog.Debug("Updating corporation", "ID", c.EveCorporation.ID, "name", c.EveCorporation.Name)
-	} else {
-		slog.Debug("Updating without corporation")
-	}
-	ff := make(map[string]func())
-	ff["corporationContracts"] = u.corporationContracts.update
-	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
-	ff["corporationMember"] = u.corporationMember.update
-	ff["corporationSheet"] = u.corporationSheet.update
-	ff["corporationStructures"] = u.corporationStructures.update
-	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
-	for id, w := range u.corporationWallets {
-		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	}
-	u.showInfoWhileExecuting("Loading corporation", ff, func() {
-		// if c != nil && !u.isUpdateDisabled {
-		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
-		// }
-	})
 }
 
 func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
@@ -875,7 +851,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
-	u.showInfoWhileExecuting("Updating home", map[string]func(){
+	ff := map[string]func(){
 		"overview":           u.characterOverview.update,
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
@@ -891,38 +867,51 @@ func (u *baseUI) initHome() {
 		"locations":          u.characterLocations.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
-	}, u.onRefreshCross)
+	}
+	myLog := slog.With("title", "startup")
+	myLog.Debug("started")
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
+	for name, f := range ff {
+		g.Go(func() error {
+			start2 := time.Now()
+			f()
+			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+			return nil
+		})
+	}
+	g.Wait()
 }
 
 // showInfoWhileExecuting shows a modal to the user while the functions ff are being executed.
 // Optionally runs onCompleted after all functions have been run.
-func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
-	go func() {
-		myLog := slog.With("title", title)
-		myLog.Debug("started")
-		key := fmt.Sprintf("%s-%d", title, time.Now().UnixMicro())
-		fyne.Do(func() {
-			u.statusText.show(key, title)
-		})
-		g := new(errgroup.Group)
-		g.SetLimit(u.concurrencyLimit)
-		for name, f := range ff {
-			g.Go(func() error {
-				start2 := time.Now()
-				f()
-				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-				return nil
-			})
-		}
-		g.Wait()
-		if onCompleted != nil {
-			onCompleted()
-		}
-		fyne.Do(func() {
-			u.statusText.hide(key)
-		})
-	}()
-}
+// func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
+// 	go func() {
+// 		myLog := slog.With("title", title)
+// 		myLog.Debug("started")
+// 		key := fmt.Sprintf("%s-%d", title, time.Now().UnixMicro())
+// 		fyne.Do(func() {
+// 			u.statusText.Set(key, title)
+// 		})
+// 		g := new(errgroup.Group)
+// 		g.SetLimit(u.concurrencyLimit)
+// 		for name, f := range ff {
+// 			g.Go(func() error {
+// 				start2 := time.Now()
+// 				f()
+// 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+// 				return nil
+// 			})
+// 		}
+// 		g.Wait()
+// 		if onCompleted != nil {
+// 			onCompleted()
+// 		}
+// 		fyne.Do(func() {
+// 			u.statusText.Unset(key)
+// 		})
+// 	}()
+// }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
@@ -1300,7 +1289,7 @@ func (w *statusText) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *statusText) show(key, text string) {
+func (w *statusText) Set(key, text string) {
 	w.messages[key] = text
 	if w.label.Hidden {
 		w.label.SetText(text)
@@ -1310,7 +1299,7 @@ func (w *statusText) show(key, text string) {
 	}
 }
 
-func (w *statusText) hide(key string) {
+func (w *statusText) Unset(key string) {
 	delete(w.messages, key)
 	if len(w.messages) == 0 {
 		w.label.Hide()

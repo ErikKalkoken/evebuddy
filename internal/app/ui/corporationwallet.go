@@ -24,7 +24,7 @@ type corporationWallet struct {
 	onNameUpdate    func(name string)
 
 	balance      *widget.Label
-	corporation      atomic.Pointer[app.Corporation]
+	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
 	journal      *walletJournal
 	name         *widget.Label
@@ -46,6 +46,7 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			a.update()
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {

@@ -81,6 +81,7 @@ type characterOverview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
+	info              *widget.Label
 	top               *widget.Label
 	u                 *baseUI
 }
@@ -131,6 +132,10 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			Label: "Wallet",
 		},
 	})
+
+	info := widget.NewLabel("Loading...")
+	info.Importance = widget.LowImportance
+
 	a := &characterOverview{
 		columnSorter: headers.NewColumnSorter(overviewColCharacter, iwidget.SortAsc),
 		rows:         make([]characterOverviewRow, 0),
@@ -138,8 +143,10 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		search:       widget.NewEntry(),
 		top:          makeTopLabel(),
 		u:            u,
+		info:         info,
 	}
 	a.ExtendBaseWidget(a)
+
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 		a.filterRows(-1)
@@ -153,6 +160,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	} else {
 		a.body = a.makeList()
 	}
+
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
 		a.filterRows(-1)
 	})
@@ -223,7 +231,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		a.body,
+		container.NewStack(a.info, a.body),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -426,6 +434,7 @@ func (a *characterOverview) update() {
 	})
 	fyne.Do(func() {
 		a.rows = rows
+		a.info.Hide()
 		a.filterRows(-1)
 	})
 }

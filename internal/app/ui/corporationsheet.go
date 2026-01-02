@@ -65,6 +65,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	if isCorpMode {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			a.update()
 		})
 		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())

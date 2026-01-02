@@ -88,6 +88,7 @@ func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			a.update()
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
@@ -363,8 +364,8 @@ func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walle
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletJournalRow, len(entries))
-	for i, o := range entries {
+	rows := make([]walletJournalRow, 0)
+	for _, o := range entries {
 		r := walletJournalRow{
 			amount:           o.Amount,
 			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
@@ -395,7 +396,7 @@ func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walle
 				ColorName: color,
 			},
 		)
-		rows[i] = r
+		rows = append(rows, r)
 	}
 	return rows, nil
 }
@@ -406,8 +407,8 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletJournalRow, len(entries))
-	for i, o := range entries {
+	rows := make([]walletJournalRow, 0)
+	for _, o := range entries {
 		r := walletJournalRow{
 			amount:           o.Amount,
 			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
@@ -439,7 +440,7 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 				ColorName: color,
 			},
 		)
-		rows[i] = r
+		rows = append(rows, r)
 	}
 	return rows, nil
 }

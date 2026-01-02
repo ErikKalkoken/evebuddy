@@ -61,7 +61,7 @@ type corporationStructures struct {
 
 	bottom            *widget.Label
 	columnSorter      *iwidget.ColumnSorter
-	corporation      atomic.Pointer[app.Corporation]
+	corporation       atomic.Pointer[app.Corporation]
 	main              fyne.CanvasObject
 	rows              []corporationStructureRow
 	rowsFiltered      []corporationStructureRow
@@ -185,6 +185,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 
 	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
+		a.update()
 	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
