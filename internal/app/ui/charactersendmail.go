@@ -134,7 +134,7 @@ func (a *characterSendMail) SendAction() bool {
 		showErrorDialog(err.Error())
 		return false
 	}
-	a.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+	go a.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
 		characterID: c.ID,
 		section:     app.SectionCharacterMailHeaders,
 	})

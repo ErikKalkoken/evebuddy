@@ -117,11 +117,11 @@ type characterMails struct {
 	onUpdate         func(unread, missing int)
 	toolbar          *widget.Toolbar
 	u                *baseUI
+	missingPercent   atomic.Int32
+	unreadCount      atomic.Int32
 
-	currentFolder  optional.Optional[mailFolderNode]
-	missingPercent int
-	mu             sync.RWMutex
-	unreadCount    int
+	mu            sync.RWMutex
+	currentFolder optional.Optional[mailFolderNode]
 }
 
 func newCharacterMails(u *baseUI) *characterMails {
@@ -268,30 +268,27 @@ func (a *characterMails) update() {
 			a.folderStatus.Importance = i
 			a.folderStatus.Refresh()
 			a.folderStatus.Show()
+			a.compose.Disable()
 		})
 	}
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		clearAll()
 		setStatus("No character", widget.LowImportance)
-		a.compose.Disable()
 		return
 	}
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		clearAll()
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
-		a.compose.Disable()
 		return
 	}
 	td, folderAll, err := a.fetchFolders(a.u.services(), characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 		setStatus("Error: "+a.u.humanizeError(err), widget.DangerImportance)
-		a.compose.Disable()
 		return
 	}
-	a.compose.Enable()
 	unread, err := a.updateCountsInTree(a.u.services(), characterID, td)
 	if err != nil {
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
@@ -299,6 +296,7 @@ func (a *characterMails) update() {
 		folderAll.UnreadCount = unread
 	}
 	fyne.Do(func() {
+		a.compose.Enable()
 		a.folderStatus.Hide()
 		a.folders.Set(td)
 		a.folders.UnselectAll()
@@ -306,9 +304,7 @@ func (a *characterMails) update() {
 		a.folders.Select(folderAll.UID())
 		a.setCurrentFolder(folderAll)
 	})
-	a.mu.Lock()
-	a.unreadCount = folderAll.UnreadCount
-	a.mu.Unlock()
+	a.unreadCount.Store(int32(folderAll.UnreadCount))
 	a.updateDownloaded()
 	a.callOnUpdate()
 }
@@ -317,20 +313,14 @@ func (a *characterMails) callOnUpdate() {
 	if a.onUpdate == nil {
 		return
 	}
-	a.mu.RLock()
-	unread := a.unreadCount
-	missing := a.missingPercent
-	a.mu.RUnlock()
-	a.onUpdate(unread, missing)
+	a.onUpdate(int(a.unreadCount.Load()), int(a.missingPercent.Load()))
 }
 
 func (a *characterMails) updateDownloaded() {
 	var total2, downloaded, hint string
 	var missingPercent int
 	func() {
-		a.mu.RLock()
 		characterID := characterIDOrZero(a.character.Load())
-		a.mu.RUnlock()
 		if characterID == 0 {
 			return
 		}
@@ -350,9 +340,7 @@ func (a *characterMails) updateDownloaded() {
 		downloaded = fmt.Sprintf("%d%% downloaded", 100-missingPercent)
 		hint = p.Sprintf("%d missing", missing)
 	}()
-	a.mu.Lock()
-	a.missingPercent = missingPercent
-	a.mu.Unlock()
+	a.missingPercent.Store(int32(missingPercent))
 	fyne.Do(func() {
 		a.folderTotal.SetText(total2)
 		if downloaded == "" {
@@ -468,13 +456,10 @@ func (a *characterMails) updateUnreadCounts() {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
 	}
+	a.unreadCount.Store(int32(unread))
 	fyne.Do(func() {
 		a.folders.Set(td)
-		a.unreadCount = unread
 	})
-	a.mu.Lock()
-	a.unreadCount = unread
-	a.mu.Unlock()
 	a.callOnUpdate()
 }
 

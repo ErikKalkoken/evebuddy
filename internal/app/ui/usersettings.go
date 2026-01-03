@@ -145,7 +145,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.HideLimitedCorporations,
 		onChanged: func(enabled bool) {
 			a.u.settings.SetHideLimitedCorporations(enabled)
-			a.u.corporationsChanged.Emit(context.Background(), struct{}{})
+			go a.u.corporationsChanged.Emit(context.Background(), struct{}{})
 		},
 	})
 

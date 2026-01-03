@@ -75,7 +75,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			return
 		}
 	}
-	u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
+	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
 		section:      section,
 		forcedUpdate: forceUpdate,
 		changed:      changed,
@@ -298,7 +298,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 	needsRefresh := hasChanged || forceUpdate
 	if needsRefresh {
-		u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+		go u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
 			characterID:  characterID,
 			forcedUpdate: forceUpdate,
 			section:      section,
@@ -384,7 +384,7 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		return err
 	}
 	if changed {
-		u.corporationsChanged.Emit(ctx, struct{}{})
+		go u.corporationsChanged.Emit(ctx, struct{}{})
 	}
 	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
@@ -447,7 +447,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	if !hasChanged && !forceUpdate {
 		return
 	}
-	u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
+	go u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
 		corporationID: corporationID,
 		forcedUpdate:  forceUpdate,
 		section:       section,

@@ -81,7 +81,7 @@ func showManageCharactersWindow(u *baseUI) {
 			onClosed()
 		}
 		if mcw.tagsChanged {
-			u.tagsChanged.Emit(context.Background(), struct{}{})
+			go u.tagsChanged.Emit(context.Background(), struct{}{})
 		}
 		mcw.sb.Stop()
 	})
@@ -280,7 +280,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 					a.mcw.u.loadCorporation(c.ID)
 				}
 			}
-			a.mcw.u.characterAdded.Emit(context.Background(), character)
+			go a.mcw.u.characterAdded.Emit(context.Background(), character)
 			if !a.mcw.u.isUpdateDisabled {
 				go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 			}
@@ -335,7 +335,7 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 								go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 							}
 						}
-						a.mcw.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
+						go a.mcw.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
 							ID:   r.characterID,
 							Name: r.characterName,
 						})

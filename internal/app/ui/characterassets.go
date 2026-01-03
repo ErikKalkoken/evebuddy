@@ -70,7 +70,7 @@ type locationNode struct {
 
 func (n locationNode) UID() widget.TreeNodeID {
 	if n.characterID == 0 || n.variant == 0 {
-		panic("locationNode: some IDs are not set")
+		panic(fmt.Sprintf("locationNode: some IDs are not set: %+v", n))
 	}
 	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.variant)
 }

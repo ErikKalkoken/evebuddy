@@ -43,12 +43,10 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
-	a.u.currentCorporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
-			a.corporation.Store(c)
-			a.update()
-		},
-	)
+	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.corporation.Store(c)
+		a.update()
+	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
