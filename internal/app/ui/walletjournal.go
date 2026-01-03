@@ -162,7 +162,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
 			if a.isCorporation() {
 				showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
@@ -184,7 +184,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 
 func (a *walletJournal) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

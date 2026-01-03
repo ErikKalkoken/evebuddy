@@ -183,7 +183,7 @@ func newAssets(u *baseUI) *assets {
 	a.search.PlaceHolder = "Search items"
 	a.found.Hide()
 
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
@@ -277,7 +277,7 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTotal,
 		a.selectTag,
 	)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filters.Add(container.NewHBox(a.sortButton))
 	}
 	topBox := container.NewVBox(

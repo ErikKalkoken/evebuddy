@@ -113,6 +113,7 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 		nil,
 		a.list,
 	))
+	a.ab.HideBackground = !a.mcw.u.isMobile
 	return a
 }
 
@@ -413,6 +414,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		"Tags",
 		container.NewBorder(nil, container.NewVBox(addTag, newStandardSpacer()), nil, nil, a.tagList),
 	)
+	manageTags.HideBackground = !a.mcw.u.isMobile
 	c := container.NewVSplit(
 		container.NewStack(manageTags, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -431,6 +433,7 @@ func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
 			a.characterList,
 		),
 	)
+	ab.HideBackground = !a.mcw.u.isMobile
 	ab.Hide()
 	return ab
 }

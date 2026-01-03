@@ -103,7 +103,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}
 
 	makeAppBarTitle := func(s string) string {
-		if !iw.u.isDesktop {
+		if iw.u.isMobile {
 			return s
 		}
 		return s + ": Information"
@@ -151,6 +151,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		return
 	}
 	ab = iwidget.NewAppBar(makeAppBarTitle(title), page)
+	ab.HideBackground = !iw.u.isMobile
 	if iw.nav == nil {
 		w := iw.u.App().NewWindow(iw.u.makeWindowTitle("Information"))
 		iw.w = w
@@ -289,7 +290,7 @@ func (iw *infoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 
 func (iw *infoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if !iw.u.isDesktop {
+	if iw.u.isMobile {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize

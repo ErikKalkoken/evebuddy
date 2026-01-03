@@ -138,7 +138,7 @@ func newColonies(u *baseUI) *colonies {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
 			a.showColonyWindow(r)
 		})
@@ -205,7 +205,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.selectOwner,
 		a.selectTag,
 	)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

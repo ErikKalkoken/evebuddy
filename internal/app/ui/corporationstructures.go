@@ -143,7 +143,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -206,7 +206,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 
 func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.main)

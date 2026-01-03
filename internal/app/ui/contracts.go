@@ -130,7 +130,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
@@ -235,7 +235,7 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	if !a.forCorporation {
 		filter.Add(a.selectTag)
 	}
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

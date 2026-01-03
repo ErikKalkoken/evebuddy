@@ -155,7 +155,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		a.filterRows(-1)
 	}
 	a.search.PlaceHolder = "Search character names"
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = a.makeGrid()
 	} else {
 		a.body = a.makeList()

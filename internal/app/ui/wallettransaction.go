@@ -192,7 +192,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -257,7 +257,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 
 func (a *walletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

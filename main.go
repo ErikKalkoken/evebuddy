@@ -389,7 +389,7 @@ func main() {
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
-		IsDesktop:          isDesktop,
+		IsMobile:           *mobileFlag || fyne.CurrentDevice().IsMobile(),
 		IsFakeMobile:       *mobileFlag,
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,

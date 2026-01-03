@@ -91,7 +91,7 @@ func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 		container.NewTabItem("Wallets", a.walletDetail),
 	)
 	var c fyne.CanvasObject
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		c = container.NewBorder(
 			a.top,
 			nil,

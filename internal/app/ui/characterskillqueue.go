@@ -74,10 +74,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			level := newSkillLevel()
-			if !a.u.isDesktop {
+			if a.u.isMobile {
 				level.Hide()
 			}
-			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem())
+			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(a.u.isMobile))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			qi := a.sq.Item(id)
@@ -271,13 +271,13 @@ type skillQueueItem struct {
 	progress *widget.ProgressBar
 }
 
-func newSkillQueueItem() *skillQueueItem {
+func newSkillQueueItem(isMobile bool) *skillQueueItem {
 	pb := widget.NewProgressBar()
 	w := &skillQueueItem{
 		Placeholder: "N/A",
 		duration:    widget.NewLabel(""),
 		progress:    pb,
-		isMobile:    fyne.CurrentDevice().IsMobile(),
+		isMobile:    isMobile,
 	}
 	w.ExtendBaseWidget(w)
 	w.name = widget.NewLabel(w.Placeholder)

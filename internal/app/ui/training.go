@@ -199,7 +199,7 @@ func newTraining(u *baseUI) *training {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -254,7 +254,7 @@ func newTraining(u *baseUI) *training {
 
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
@@ -293,7 +293,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
 				tags,
-				newSkillQueueItem(),
+				newSkillQueueItem(a.u.isMobile),
 				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
 				spacer,

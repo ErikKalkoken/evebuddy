@@ -28,7 +28,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
 	}
-	if !forceUpdate && !u.isDesktop && !u.isForeground.Load() {
+	if !forceUpdate && u.isMobile && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
@@ -183,7 +183,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	var sections set.Set[app.CharacterSection] // sections registered for update
-	if !u.isDesktop && !u.isForeground.Load() {
+	if u.isMobile && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
 			sections.Add(app.SectionCharacterNotifications)
@@ -411,7 +411,7 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	if u.isOffline {
 		return
 	}
-	if !u.isDesktop && !u.isForeground.Load() && !forceUpdate {
+	if u.isMobile && !u.isForeground.Load() && !forceUpdate {
 		// nothing to update
 		return
 	}

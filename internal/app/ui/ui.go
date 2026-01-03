@@ -190,7 +190,7 @@ type baseUI struct {
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme       fyne.Theme
-	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
+	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isOffline          bool        // Run the app in offline mode
@@ -216,7 +216,7 @@ type BaseUIParams struct {
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
 	DataPaths        map[string]string
-	IsDesktop        bool
+	IsMobile         bool
 	IsFakeMobile     bool
 	IsOffline        bool
 	IsUpdateDisabled bool
@@ -242,7 +242,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                         arg.ESIStatusService,
 		eus:                         arg.EveUniverseService,
 		generalSectionChanged:       signals.New[generalSectionUpdated](),
-		isDesktop:                   arg.IsDesktop,
+		isMobile:                    arg.IsMobile,
 		isFakeMobile:                arg.IsFakeMobile,
 		isOffline:                   arg.IsOffline,
 		isUpdateDisabled:            arg.IsUpdateDisabled,
@@ -275,7 +275,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		u.dataPaths = make(xmaps.OrderedMap[string, string])
 	}
 
-	if u.isDesktop {
+	if !u.isMobile {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
@@ -458,7 +458,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		if !u.isDesktop {
+		if u.isMobile {
 			// When the app is restarted on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
@@ -1235,7 +1235,7 @@ func (u *baseUI) makeWindowTitle(parts ...string) string {
 	if len(parts) == 0 {
 		parts = append(parts, "PLACEHOLDER")
 	}
-	if !u.isDesktop {
+	if u.isMobile {
 		return parts[0]
 	}
 	parts = append(parts, u.appName())

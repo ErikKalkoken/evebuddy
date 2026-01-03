@@ -117,7 +117,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
-	if !u.isDesktop {
+	if u.isMobile {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := kxwidget.NewIconButtonWithMenu(
@@ -125,9 +125,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
-			a.nav.Push(
-				iwidget.NewAppBar("Sections", sections, menu),
-			)
+			a.nav.Push(iwidget.NewAppBar("Sections", sections, menu))
 		}
 		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
@@ -136,9 +134,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 				fyne.NewMenu(
 					"", fyne.NewMenuItem(a.updateSection.Text, a.makeUpdateSectionAction(s.EntityID, s.SectionID))),
 			)
-			a.nav.Push(
-				iwidget.NewAppBar("Section Detail", details, menu),
-			)
+			a.nav.Push(iwidget.NewAppBar("Section Detail", details, menu))
 		}
 	}
 	return a
@@ -158,7 +154,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	)
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		ab := iwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,

@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCharacterMails_updateUnreadCounts(t *testing.T) {

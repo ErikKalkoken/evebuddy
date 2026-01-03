@@ -152,7 +152,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -203,7 +203,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 
 func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectFreeSlots, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)

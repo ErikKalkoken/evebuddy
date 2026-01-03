@@ -210,7 +210,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
 			a.showIndustryJobWindow(j)
 		})
@@ -320,7 +320,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
 	}
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		selections.Add(a.sortButton)
 	}
 	c := container.NewBorder(

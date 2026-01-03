@@ -211,7 +211,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -273,7 +273,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 
 func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	p := theme.Padding()

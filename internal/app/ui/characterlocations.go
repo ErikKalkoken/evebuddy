@@ -84,7 +84,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -151,7 +151,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 
 func (a *characterLocations) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectSolarSystem, a.selectRegion, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
