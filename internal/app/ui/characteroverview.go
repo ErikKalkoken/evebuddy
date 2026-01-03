@@ -669,8 +669,8 @@ func (w *characterCardLarge) set(r characterOverviewRow) {
 			w.showInfoWindow(app.EveEntityAlliance, r.alliance.ID)
 		}
 		w.allianceLogo.SetToolTip(r.allianceName())
+		w.allianceLogo.Show()
 		iwidget.RefreshTappableImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
-			defer w.allianceLogo.Show()
 			return w.eis.AllianceLogo(r.alliance.ID, 64)
 		})
 	} else {
@@ -850,8 +850,8 @@ func (w *characterCardSmall) set(r characterOverviewRow) {
 		return w.eis.CorporationLogo(r.corporation.ID, 64)
 	})
 	if r.alliance != nil {
+		w.allianceLogo.Show()
 		iwidget.RefreshImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
-			defer w.allianceLogo.Show()
 			return w.eis.AllianceLogo(r.alliance.ID, 64)
 		})
 	} else {

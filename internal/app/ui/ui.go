@@ -459,13 +459,19 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		if !u.isOffline && !u.isUpdateDisabled {
-			go func() {
-				time.Sleep(3 * time.Second) // allow app to fully load before updating
-				go u.updateCharactersIfNeeded(context.Background(), false)
-				go u.updateCorporationsIfNeeded(context.Background(), false)
-				go u.updateGeneralSectionsIfNeeded(context.Background(), false)
-			}()
+		if !u.isDesktop {
+			// When the app is restarted on mobile the UI must be
+			// refreshed immediately to avoid showing stale data (e.g. timers) to users
+			// and updates must be run at once
+			go u.refreshTickerExpired.Emit(context.Background(), struct{}{})
+			if !u.isOffline && !u.isUpdateDisabled {
+				go func() {
+					time.Sleep(1 * time.Second) // allow app to fully load before updating
+					go u.updateCharactersIfNeeded(context.Background(), false)
+					go u.updateCorporationsIfNeeded(context.Background(), false)
+					go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+				}()
+			}
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {
@@ -486,9 +492,6 @@ func (u *baseUI) Start() bool {
 	wasStarted := !u.wasStarted.CompareAndSwap(false, true)
 	if wasStarted {
 		slog.Info("App continued")
-		// When the app is restarted (e.g. on Android) the UI must be
-		// refreshed immediately to avoid showing stale data (e.g. timers) to users
-		go u.refreshTickerExpired.Emit(context.Background(), struct{}{})
 		return false
 	}
 	// First app start
@@ -499,7 +502,6 @@ func (u *baseUI) Start() bool {
 	} else {
 		slog.Info("App started")
 	}
-	u.isForeground.Store(true)
 	u.snackbar.Start()
 	go func() {
 		u.characterSkillQueue.start()
@@ -537,6 +539,7 @@ func (u *baseUI) Start() bool {
 			u.onAppFirstStarted()
 		}
 		if !u.isOffline && !u.isUpdateDisabled {
+			time.Sleep(3 * time.Second) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
 			u.startUpdateTickerGeneralSections()
 			u.startUpdateTickerCharacters()

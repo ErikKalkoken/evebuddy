@@ -22,8 +22,8 @@ func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.G
 	return o, err
 }
 
-// UpdateSection updates a section from ESI and returns the IDs of changed objects if there are any.
-func (s *EveUniverseService) UpdateSection(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
+// UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
+func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
 	status, err := s.getSectionStatus(ctx, arg.Section)
 	if err != nil {
 		return set.Set[int32]{}, err

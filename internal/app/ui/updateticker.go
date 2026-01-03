@@ -16,8 +16,9 @@ import (
 
 func (u *baseUI) startUpdateTickerGeneralSections() {
 	go func() {
-		for range time.Tick(generalSectionsUpdateTicker) {
+		for {
 			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			<-time.Tick(generalSectionsUpdateTicker)
 		}
 	}()
 }
@@ -51,7 +52,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSection(ctx, app.GeneralSectionUpdateParams{
+	changed, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -86,7 +87,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 
 func (u *baseUI) startUpdateTickerCharacters() {
 	go func() {
-		for range time.Tick(characterSectionsUpdateTicker) {
+		for {
 			ctx := context.Background()
 			go func() {
 				if err := u.notifyCharactersIfNeeded(ctx); err != nil {
@@ -99,6 +100,7 @@ func (u *baseUI) startUpdateTickerCharacters() {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			}()
+			<-time.Tick(characterSectionsUpdateTicker)
 		}
 	}()
 }
@@ -364,12 +366,13 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 func (u *baseUI) startUpdateTickerCorporations() {
 	go func() {
-		for range time.Tick(characterSectionsUpdateTicker) {
+		for {
 			go func() {
 				if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
 					slog.Error("Failed to update corporations", "error", err)
 				}
 			}()
+			<-time.Tick(characterSectionsUpdateTicker)
 		}
 	}()
 }
