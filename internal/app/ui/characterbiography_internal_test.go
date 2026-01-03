@@ -11,8 +11,8 @@ import (
 )
 
 func TestCharacterBiography_CanRenderWithData(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if !*TestUIFlag {
+		t.Skip(TestUIFlagReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

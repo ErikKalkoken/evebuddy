@@ -14,8 +14,8 @@ import (
 )
 
 func TestWalletTransactions_CanRenderWithData(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if !*TestUIFlag {
+		t.Skip(TestUIFlagReason)
 	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)

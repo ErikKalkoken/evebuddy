@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"flag"
 	"net/url"
 	"testing"
 
@@ -24,26 +25,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-// type FakeCache map[string][]byte
+const TestUIFlagReason = "UI tests are currently flaky and therefore only run locally"
 
-// func NewFakeCache() FakeCache {
-// 	return make(FakeCache)
-// }
-
-// func (c FakeCache) Get(k string) ([]byte, bool) {
-// 	v, ok := c[k]
-// 	return v, ok
-// }
-
-// func (c FakeCache) Set(k string, v []byte, d time.Duration) {
-// 	c[k] = v
-// }
-
-// func (c FakeCache) Clear() {
-// 	for k := range c {
-// 		delete(c, k)
-// 	}
-// }
+var TestUIFlag = flag.Bool("ui", false, "whether to include UI tests")
 
 // FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
 type FakeApp struct {

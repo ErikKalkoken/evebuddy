@@ -4,6 +4,9 @@ package ui
 // See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847
 
 // func TestCharacterAttributes_CanRenderWithData(t *testing.T) {
+// if !*uiTestFlag {
+// 	t.Skip(TestUIFlagReason)
+// }
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()
 // 	character := factory.CreateCharacterFull()

@@ -18,6 +18,9 @@ import (
 )
 
 func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
+	if !*TestUIFlag {
+		t.Skip(TestUIFlagReason)
+	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -62,6 +65,9 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 }
 
 func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
+	if !*TestUIFlag {
+		t.Skip(TestUIFlagReason)
+	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -98,6 +104,9 @@ func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
 }
 
 func TestTraining_CanRenderWithoutData(t *testing.T) {
+	if !*TestUIFlag {
+		t.Skip(TestUIFlagReason)
+	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
