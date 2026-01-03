@@ -19,10 +19,10 @@ import (
 type characterWallet struct {
 	widget.BaseWidget
 
-	onUpdate func(balance string)
+	onUpdate func(top string)
 
 	balance      *widget.Label
-	character      atomic.Pointer[app.Character]
+	character    atomic.Pointer[app.Character]
 	journal      *walletJournal
 	transactions *walletTransactions
 	u            *baseUI
@@ -93,18 +93,12 @@ func (a *characterWallet) updateBalance() {
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		b1 := humanize.FormatFloat(app.FloatFormat, balance)
-		b2 := ihumanize.Number(balance, 1)
-		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
+		b2 := ihumanize.NumberF(balance, 1)
+		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
 		return s, widget.MediumImportance
 	})
-	var s string
-	if !hasData || err != nil {
-		s = ""
-	} else {
-		s = ihumanize.Number(balance, 1)
-	}
 	if a.onUpdate != nil {
-		a.onUpdate(s)
+		a.onUpdate(t)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t

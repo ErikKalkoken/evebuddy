@@ -183,7 +183,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.characterAssets.OnUpdate = func(s string) {
 		fyne.Do(func() {
-			navItemAssets.Supporting = "Value: " + s
+			navItemAssets.Supporting = s
 			characterList.Refresh()
 		})
 	}
@@ -224,7 +224,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.characterWallet.onUpdate = func(b string) {
 		fyne.Do(func() {
-			navItemWallet.Supporting = "Balance: " + b
+			navItemWallet.Supporting = b
 			characterList.Refresh()
 		})
 	}
@@ -749,7 +749,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 	)
 	u.wealth.onUpdate = func(wallet, assets float64) {
 		fyne.Do(func() {
-			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(wallet, 1), ihumanize.Number(assets, 1))
+			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
 			navItemWealth.Supporting = s
 			homeList.Refresh()
 		})
@@ -764,14 +764,15 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 
+	navItemCharacters := iwidget.NewListItemWithIcon(
+		"Character Overview",
+		theme.NewThemedResource(icons.PortraitSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
+		},
+	)
 	homeList = iwidget.NewNavList(
-		iwidget.NewListItemWithIcon(
-			"Character Overview",
-			theme.NewThemedResource(icons.PortraitSvg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
-			},
-		),
+		navItemCharacters,
 		navItemAssets,
 		iwidget.NewListItemWithIcon(
 			"Clones",
@@ -814,12 +815,21 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		),
 		navItemWealth,
 	)
-	u.assets.onUpdate = func(total string) {
+
+	u.characterOverview.onUpdate = func(characters int) {
 		fyne.Do(func() {
-			navItemAssets.Supporting = fmt.Sprintf("Value: %s", total)
+			navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
 			homeList.Refresh()
 		})
 	}
+
+	u.assets.onUpdate = func(_ int, s string) {
+		fyne.Do(func() {
+			navItemAssets.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
 	u.contracts.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {

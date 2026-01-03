@@ -329,7 +329,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 			state.Refresh()
 
 			b1 := c[1].(*fyne.Container).Objects
-			b1[0].(*widget.Label).SetText(ihumanize.Number(r.price, 2) + " ISK")
+			b1[0].(*widget.Label).SetText(ihumanize.NumberF(r.price, 2) + " ISK")
 			b1[1].(*widget.Label).SetText(r.volumeDisplay())
 
 			c[2].(*iwidget.RichText).Set(r.location.DisplayRichText())
@@ -428,7 +428,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 		total.Set(total.ValueOrZero() + r.price*float64(r.volumeRemain))
 	}
 	a.footer.SetText(fmt.Sprintf("Orders total: %s ISK", total.StringFunc("?", func(v float64) string {
-		return ihumanize.Number(v, 1)
+		return ihumanize.NumberF(v, 1)
 	})))
 }
 

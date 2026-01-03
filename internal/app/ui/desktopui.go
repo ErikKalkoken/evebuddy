@@ -108,12 +108,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.GoldSvg),
 		newContentPage("Wealth", u.wealth),
 	)
-	u.wealth.onUpdate = func(wallet, assets float64) {
-		fyne.Do(func() {
-			x := ihumanize.Number(wallet+assets, 1)
-			homeNav.SetItemBadge(wealth, x)
-		})
-	}
+	// u.wealth.onUpdate = func(wallet, assets float64) {
+	// 	fyne.Do(func() {
+	// 		x := ihumanize.Number(wallet+assets, 1)
+	// 		homeNav.SetItemBadge(wealth, x)
+	// 	})
+	// }
 
 	const assetsTitle = "Character Assets"
 	allAssets := iwidget.NewNavPage(
@@ -121,11 +121,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage(assetsTitle, u.assets),
 	)
-	u.assets.onUpdate = func(total string) {
-		fyne.Do(func() {
-			homeNav.SetItemBadge(allAssets, total)
-		})
-	}
+	// u.assets.onUpdate = func(quantity int, _ string) {
+	// 	fyne.Do(func() {
+	// 		homeNav.SetItemBadge(allAssets, ihumanize.Number(float64(quantity), 1))
+	// 	})
+	// }
 
 	contracts := iwidget.NewNavPage(
 		"Contracts",
@@ -307,11 +307,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			characterNav.SetItemBadge(characterWalletNav, balance)
 		})
 	}
-	u.characterAssets.OnUpdate = func(s string) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterAssetsNav, s)
-		})
-	}
+	// u.characterAssets.OnUpdate = func(s string) {
+	// 	fyne.Do(func() {
+	// 		characterNav.SetItemBadge(characterAssetsNav, s)
+	// 	})
+	// }
 
 	// Corporation
 	var corporationNav *iwidget.NavDrawer

@@ -1082,7 +1082,7 @@ func (u *baseUI) updateCorporationWalletTotal() {
 			return ""
 		}
 		return b.StringFunc("", func(v float64) string {
-			return humanize.Number(b.ValueOrZero(), 1)
+			return humanize.NumberF(b.ValueOrZero(), 1)
 		})
 	}()
 	u.onUpdateCorporationWalletTotals(s)

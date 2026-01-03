@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func TestNumber1(t *testing.T) {
+func TestNumberF(t *testing.T) {
 	var cases = []struct {
 		value    float64
 		decimals int
@@ -33,6 +33,39 @@ func TestNumber1(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Can format numbers: %f", tc.value), func(t *testing.T) {
+			got := humanize.NumberF(tc.value, tc.decimals)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should panic when called with undefined decimals", func(t *testing.T) {
+		assert.Panics(t, func() {
+			humanize.NumberF(99.0, 7)
+		})
+	})
+}
+
+func TestNumber(t *testing.T) {
+	var cases = []struct {
+		value    int
+		decimals int
+		want     string
+	}{
+		{99, 2, "99"},
+		{1000, 2, "1.00 K"},
+		{1234, 2, "1.23 K"},
+		{1234, 0, "1 K"},
+		{1234000, 2, "1.23 M"},
+		{1234000000, 2, "1.23 B"},
+		{1234000000000, 2, "1.23 T"},
+		{-1234000, 2, "-1.23 M"},
+		{0, 2, "0"},
+		{1234, 3, "1.234 K"},
+		{1234, 1, "1.2 K"},
+		{1234, 0, "1 K"},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("Can format numbers: %d", tc.value), func(t *testing.T) {
 			got := humanize.Number(tc.value, tc.decimals)
 			assert.Equal(t, tc.want, got)
 		})
@@ -40,7 +73,7 @@ func TestNumber1(t *testing.T) {
 
 	t.Run("should panic when called with undefined decimals", func(t *testing.T) {
 		assert.Panics(t, func() {
-			humanize.Number(99, 7)
+			humanize.NumberF(99.0, 7)
 		})
 	})
 }

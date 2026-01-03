@@ -95,7 +95,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		r.price = ca.Price
 	}
 	r.priceDisplay = r.price.StringFunc("?", func(v float64) string {
-		return ihumanize.Number(v, 1)
+		return ihumanize.NumberF(v, 1)
 	})
 	if !r.price.IsEmpty() {
 		r.total.Set(ca.Price.ValueOrZero() * float64(ca.Quantity))
@@ -109,7 +109,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 type assets struct {
 	widget.BaseWidget
 
-	onUpdate func(total string)
+	onUpdate func(int, string)
 
 	body           fyne.CanvasObject
 	columnSorter   *iwidget.ColumnSorter
@@ -447,7 +447,7 @@ func (a *assets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
-	assets, quantity, total, err := a.fetchRows(a.u.services())
+	assets, quantity, _, err := a.fetchRows(a.u.services())
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR: " + a.u.humanizeError(err)
@@ -456,14 +456,10 @@ func (a *assets) update() {
 		t = "No characters"
 		i = widget.LowImportance
 	} else {
-		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(quantity))
+		t = fmt.Sprintf("%s items", ihumanize.Number(quantity, 1))
 	}
 	if a.onUpdate != nil {
-		var s string
-		if err == nil {
-			s = ihumanize.Number(total, 1)
-		}
-		a.onUpdate(s)
+		a.onUpdate(quantity, t)
 	}
 	fyne.Do(func() {
 		a.updateFoundInfo()

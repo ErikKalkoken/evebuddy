@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -72,6 +71,8 @@ type characterOverview struct {
 
 	body              fyne.CanvasObject
 	columnSorter      *iwidget.ColumnSorter
+	info              *widget.Label
+	onUpdate          func(characters int)
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
 	search            *widget.Entry
@@ -81,7 +82,6 @@ type characterOverview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
-	info              *widget.Label
 	top               *widget.Label
 	u                 *baseUI
 }
@@ -138,12 +138,12 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 
 	a := &characterOverview{
 		columnSorter: headers.NewColumnSorter(overviewColCharacter, iwidget.SortAsc),
+		info:         info,
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
 		top:          makeTopLabel(),
 		u:            u,
-		info:         info,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -402,24 +402,21 @@ func (a *characterOverview) filterRows(sortCol int) {
 func (a *characterOverview) update() {
 	var rows []characterOverviewRow
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, totals, err := a.fetchRows(a.u.services())
+		cc, _, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
+		}
+		if a.onUpdate != nil {
+			a.onUpdate(len(cc))
 		}
 		if len(cc) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		rows = cc
-		walletText := ihumanize.OptionalWithDecimals(totals.wallet, 1, "?")
-		unreadText := ihumanize.Optional(totals.unread, "?")
-		skillpointsText := ihumanize.Optional(totals.skillpoints, "?")
-		s := fmt.Sprintf(
-			"%d characters • %s skillpoints • %s ISK wallet • %s unread",
-			len(cc),
-			skillpointsText,
-			walletText,
-			unreadText,
-		)
+		// walletText := ihumanize.OptionalWithDecimals(totals.wallet, 1, "?")
+		// unreadText := ihumanize.Optional(totals.unread, "?")
+		// skillpointsText := ihumanize.Optional(totals.skillpoints, "?")
+		s := fmt.Sprintf("%d characters", len(cc))
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
