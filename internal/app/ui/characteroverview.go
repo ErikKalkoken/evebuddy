@@ -533,7 +533,7 @@ func newCharacterCardLarge(eis characterCardEIS, showInfoWindow func(c app.EveEn
 		return l
 	}
 	portrait := iwidget.NewImageFromResource(
-		icons.Characterplaceholder64Jpeg,
+		icons.Characterplaceholder512Jpeg,
 		fyne.NewSquareSize(200),
 	)
 	w := &characterCardLarge{
@@ -747,7 +747,7 @@ func newCharacterCardSmall(eis characterCardEIS) *characterCardSmall {
 			fyne.NewSquareSize(app.IconUnitSize),
 		),
 		portrait: iwidget.NewImageFromResource(
-			icons.Characterplaceholder64Jpeg,
+			icons.Characterplaceholder256Jpeg,
 			fyne.NewSquareSize(88),
 		),
 	}
@@ -841,7 +841,7 @@ func (w *characterCardSmall) Refresh() {
 
 func (w *characterCardSmall) set(r characterOverviewRow) {
 	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
-		return w.eis.CharacterPortrait(r.characterID, 512)
+		return w.eis.CharacterPortrait(r.characterID, 256)
 	})
 	iwidget.RefreshImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
 		return w.eis.CorporationLogo(r.corporation.ID, 64)
