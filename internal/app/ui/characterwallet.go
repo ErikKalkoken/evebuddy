@@ -19,7 +19,8 @@ import (
 type characterWallet struct {
 	widget.BaseWidget
 
-	onUpdate func(top string)
+	onTopUpdate     func(top string)
+	onBalanceUpdate func(balance float64)
 
 	balance      *widget.Label
 	character    atomic.Pointer[app.Character]
@@ -97,8 +98,11 @@ func (a *characterWallet) updateBalance() {
 		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
 		return s, widget.MediumImportance
 	})
-	if a.onUpdate != nil {
-		a.onUpdate(t)
+	if a.onBalanceUpdate != nil {
+		a.onBalanceUpdate(balance)
+	}
+	if a.onTopUpdate != nil {
+		a.onTopUpdate(t)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t

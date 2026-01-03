@@ -36,7 +36,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
@@ -103,7 +102,7 @@ type baseUI struct {
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
-	onUpdateCorporationWalletTotals func(balance string)
+	onUpdateCorporationWalletTotals func(balance float64, ok bool)
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
 	onSectionUpdateStarted          func()
@@ -1063,29 +1062,30 @@ func (u *baseUI) updateCorporationWalletTotal() {
 	if u.onUpdateCorporationWalletTotals == nil {
 		return
 	}
-	s := func() string {
+	v, ok := func() (float64, bool) {
 		corporationID := u.currentCorporationID()
 		if corporationID == 0 {
-			return ""
+			return 0, false
 		}
 		hasRole, err := u.rs.PermittedSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
-			return ""
+			return 0, false
 		}
 		if !hasRole {
-			return ""
+			return 0, false
 		}
 		b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
 		if err != nil {
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-			return ""
+			return 0, false
 		}
-		return b.StringFunc("", func(v float64) string {
-			return humanize.NumberF(b.ValueOrZero(), 1)
-		})
+		if b.IsEmpty() {
+			return 0, false
+		}
+		return b.ValueOrZero(), true
 	}()
-	u.onUpdateCorporationWalletTotals(s)
+	u.onUpdateCorporationWalletTotals(v, ok)
 }
 
 func (u *baseUI) availableUpdate() (github.VersionInfo, error) {

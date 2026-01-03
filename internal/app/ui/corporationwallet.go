@@ -20,8 +20,9 @@ import (
 type corporationWallet struct {
 	widget.BaseWidget
 
-	onBalanceUpdate func(balance string)
+	onBalanceUpdate func(balance float64)
 	onNameUpdate    func(name string)
+	onTopUpdate     func(top string)
 
 	balance      *widget.Label
 	corporation  atomic.Pointer[app.Corporation]
@@ -113,20 +114,17 @@ func (a *corporationWallet) updateBalance() {
 		}
 	}
 	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
-		b1 := humanize.FormatFloat(app.FloatFormat, balance)
-		b2 := ihumanize.NumberF(balance, 1)
-		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
-
+		s := fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+		if balance > 1000 {
+			s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
+		}
 		return s, widget.MediumImportance
 	})
-	var s string
-	if !hasData || err != nil {
-		s = ""
-	} else {
-		s = ihumanize.NumberF(balance, 1)
-	}
 	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(s)
+		a.onBalanceUpdate(balance)
+	}
+	if a.onTopUpdate != nil {
+		a.onTopUpdate(t)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t

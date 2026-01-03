@@ -302,9 +302,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterWalletNav,
 	)
 	characterNav.MinWidth = navDrawerMinWidth
-	u.characterWallet.onUpdate = func(balance string) {
+	u.characterWallet.onBalanceUpdate = func(balance float64) {
+		s := ihumanize.NumberF(balance, 1)
 		fyne.Do(func() {
-			characterNav.SetItemBadge(characterWalletNav, balance)
+			characterNav.SetItemBadge(characterWalletNav, s)
 		})
 	}
 	// u.characterAssets.OnUpdate = func(s string) {
@@ -390,9 +391,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = navDrawerMinWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
+		u.corporationWallets[d].onBalanceUpdate = func(balance float64) {
+			s := ihumanize.NumberF(balance, 1)
 			fyne.Do(func() {
-				corporationNav.SetItemBadge(corporationWalletNavs[d], balance)
+				corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 			})
 		}
 		u.corporationWallets[d].onNameUpdate = func(name string) {
@@ -402,10 +404,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}
 	}
-	u.onUpdateCorporationWalletTotals = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
+		var s string
+		if !ok {
+			s = ""
+		} else {
+			s = ihumanize.NumberF(balance, 1)
+		}
 		fyne.Do(func() {
+			corporationNav.SetItemBadge(walletsNav, s)
 			corporationNav.Refresh()
-			corporationNav.SetItemBadge(walletsNav, balance)
 		})
 	}
 

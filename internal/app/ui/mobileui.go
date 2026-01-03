@@ -222,7 +222,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterWallet.onUpdate = func(b string) {
+	u.characterWallet.onTopUpdate = func(b string) {
 		fyne.Do(func() {
 			navItemWallet.Supporting = b
 			characterList.Refresh()
@@ -269,9 +269,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
+		u.corporationWallets[d].onTopUpdate = func(top string) {
 			fyne.Do(func() {
-				corporationWalletNavs[d].Supporting = balance
+				corporationWalletNavs[d].Supporting = top
 				corpWalletList.Refresh()
 			})
 		}
@@ -359,9 +359,18 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpList.Refresh()
 		})
 	}
-	u.onUpdateCorporationWalletTotals = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
+		var s string
+		if !ok {
+			s = ""
+		} else {
+			s = fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+			if balance > 1000 {
+				s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
+			}
+		}
 		fyne.Do(func() {
-			corpWalletNav.Supporting = balance
+			corpWalletNav.Supporting = s
 			corpList.Refresh()
 		})
 	}
