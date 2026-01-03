@@ -46,7 +46,9 @@ interfaces:
 
 test_races:
 	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo .
-# 	GORACE="log_path=.temp/datarace.txt halt_on_error=1" go run -race --tags migrated_fynedo . -log-level DEBUG
+
+test_races_mobile:
+	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo . --mobile --dev
 
 build:
 	fyne build --tags migrated_fynedo
