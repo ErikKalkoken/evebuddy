@@ -24,16 +24,20 @@ func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.G
 
 // UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
 func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
-	status, err := s.getSectionStatus(ctx, arg.Section)
-	if err != nil {
-		return set.Set[int32]{}, err
-	}
-	if !arg.ForceUpdate && status != nil {
-		if !status.HasError() && !status.IsExpired() {
-			return set.Set[int32]{}, nil
-		}
-		if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
-			return set.Set[int32]{}, nil
+	var zero set.Set[int32]
+	if !arg.ForceUpdate {
+		status, err := s.getSectionStatus(ctx, arg.Section)
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				return zero, err
+			}
+		} else {
+			if !status.HasError() && !status.IsExpired() {
+				return zero, nil
+			}
+			if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
+				return zero, nil
+			}
 		}
 	}
 	var f func(context.Context) (set.Set[int32], error)
@@ -79,10 +83,10 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			StartedAt: &startedAt,
 		})
 		if err != nil {
-			return set.Set[int32]{}, err
+			return zero, err
 		}
 		s.scs.SetGeneralSection(o)
-		return set.Set[int32]{}, err
+		return zero, err
 	}
 	changed := x.(set.Set[int32])
 	completedAt := storage.NewNullTimeFromTime(time.Now())
@@ -95,7 +99,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		StartedAt:   &startedAt2,
 	})
 	if err != nil {
-		return set.Set[int32]{}, err
+		return zero, err
 	}
 	s.scs.SetGeneralSection(o)
 	return changed, nil
