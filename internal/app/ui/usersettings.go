@@ -359,9 +359,21 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 	}
 	if a.u.IsDeveloperMode() {
 		actions = append(actions, settingAction{
-			Label: "Show snackbar test",
+			Label: "Show snackbar (debug)",
 			Action: func() {
 				a.sb.Show("This is a test")
+			},
+		})
+		actions = append(actions, settingAction{
+			Label: "Reset shown character (debug)",
+			Action: func() {
+				a.u.resetCharacter()
+			},
+		})
+		actions = append(actions, settingAction{
+			Label: "Reset shown corporation (debug)",
+			Action: func() {
+				a.u.resetCorporation()
 			},
 		})
 	}

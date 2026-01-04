@@ -204,11 +204,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		industry,
 		marketOrders,
 		iwidget.NewNavPage(
-			"Character Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			newContentPage("Character Locations", u.characterLocations),
-		),
-		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			newContentPage("Training", u.training),
@@ -641,7 +636,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			fyne.Do(func() {
 				tabs.EnableItem(corporationTab)
 			})
-
 		}()
 	}
 	u.onSectionUpdateStarted = func() {

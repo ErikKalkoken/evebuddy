@@ -14,19 +14,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	o, err := s.st.GetGeneralSectionStatus(ctx, section)
-	if errors.Is(err, app.ErrNotFound) {
-		return nil, nil
-	}
-	return o, err
-}
-
 // UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
 func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
 	var zero set.Set[int32]
 	if !arg.ForceUpdate {
-		status, err := s.getSectionStatus(ctx, arg.Section)
+		status, err := s.st.GetGeneralSectionStatus(ctx, arg.Section)
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				return zero, err

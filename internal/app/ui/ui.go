@@ -120,7 +120,6 @@ type baseUI struct {
 	characterCommunications *characterCommunications
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
-	characterLocations      *characterLocations
 	characterMails          *characterMails
 	characterOverview       *characterOverview
 	characterSheet          *characterSheet
@@ -417,7 +416,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterCommunications = newCharacterCommunications(u)
 	u.characterCorporation = newCorporationSheet(u, false)
 	u.characterJumpClones = newCharacterJumpClones(u)
-	u.characterLocations = newCharacterLocations(u)
 	u.characterMails = newCharacterMails(u)
 	u.characterOverview = newCharacterOverview(u)
 	u.characterSheet = newCharacterSheet(u)
@@ -872,7 +870,6 @@ func (u *baseUI) initHome() {
 		"slotsManufacturing": u.slotsManufacturing.update,
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
-		"locations":          u.characterLocations.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
 	}

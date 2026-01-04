@@ -809,13 +809,6 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			},
 		),
 		iwidget.NewListItemWithIcon(
-			"Character Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Locations", u.characterLocations))
-			},
-		),
-		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
