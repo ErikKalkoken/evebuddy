@@ -680,13 +680,16 @@ func (u *baseUI) reloadCurrentCharacter() {
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
 	u.settings.ResetLastCharacterID()
-	go u.currentCharacterExchanged.Emit(context.Background(), nil)
+	u.currentCharacterExchanged.Emit(context.Background(), nil)
+	// if u.onSetCharacter != nil {
+	// 	u.onSetCharacter(nil)
+	// }
 }
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
 	u.settings.SetLastCharacterID(c.ID)
-	go u.currentCharacterExchanged.Emit(context.Background(), c)
+	u.currentCharacterExchanged.Emit(context.Background(), c)
 	if u.onSetCharacter != nil {
 		u.onSetCharacter(c)
 	}
@@ -809,13 +812,16 @@ func (u *baseUI) loadCorporation(id int32) error {
 func (u *baseUI) resetCorporation() {
 	u.corporation.Store(nil)
 	u.settings.ResetLastCorporationID()
-	go u.currentCorporationExchanged.Emit(context.Background(), nil)
+	u.currentCorporationExchanged.Emit(context.Background(), nil)
+	// if u.onSetCorporation != nil {
+	// 	u.onSetCorporation(nil)
+	// }
 }
 
 func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.corporation.Store(c)
 	u.settings.SetLastCorporationID(c.ID)
-	go u.currentCorporationExchanged.Emit(context.Background(), c)
+	u.currentCorporationExchanged.Emit(context.Background(), c)
 	if u.onSetCorporation != nil {
 		u.onSetCorporation(c)
 	}

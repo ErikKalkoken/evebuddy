@@ -12,8 +12,8 @@ import (
 )
 
 func TestLocations_CanRenderWithData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -48,8 +48,8 @@ func TestLocations_CanRenderWithData(t *testing.T) {
 }
 
 func TestLocations_CanRenderWithoutData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

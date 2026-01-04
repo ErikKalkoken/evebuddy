@@ -14,8 +14,8 @@ import (
 )
 
 func TestCharacters_CanRenderWithData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -83,8 +83,8 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 }
 
 func TestCharacters_CanRenderWitoutData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)

@@ -210,12 +210,12 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 
-	if !a.u.isMobile {
+	if a.u.isMobile {
+		a.body = a.makeDataList()
+	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
 			a.showIndustryJobWindow(j)
 		})
-	} else {
-		a.body = a.makeDataList()
 	}
 
 	a.search = widget.NewEntry()

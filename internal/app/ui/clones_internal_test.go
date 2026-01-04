@@ -12,8 +12,8 @@ import (
 )
 
 func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -45,8 +45,8 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 }
 
 func TestClones_CanRenderEmpty(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -75,8 +75,8 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 }
 
 func TestClones_CanRenderFull(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

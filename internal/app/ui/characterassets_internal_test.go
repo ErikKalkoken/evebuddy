@@ -83,8 +83,8 @@ func TestSplitLines(t *testing.T) {
 }
 
 func TestCharacterAsset_CanRenderWithData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -135,8 +135,8 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 }
 
 func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

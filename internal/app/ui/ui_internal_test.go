@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"flag"
 	"net/url"
 	"testing"
 
@@ -25,9 +24,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-const TestUIFlagReason = "UI tests are currently flaky and therefore only run locally"
-
-var TestUIFlag = flag.Bool("ui", false, "whether to include UI tests")
+const (
+	SkipUIReason = "This test is skipped for CI as it is flaky"
+)
 
 // FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
 type FakeApp struct {

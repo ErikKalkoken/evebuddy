@@ -13,8 +13,8 @@ import (
 )
 
 func TestCorporationMember_CanRenderWithData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	ctx := context.Background()
 	db, st, factory := testutil.NewDBOnDisk(t)

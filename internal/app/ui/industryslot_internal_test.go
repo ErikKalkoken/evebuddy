@@ -12,8 +12,8 @@ import (
 )
 
 func TestIndustrySlot_CanRenderWithData(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -97,8 +97,8 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 }
 
 func TestIndustrySlot_CanRenderEmpty(t *testing.T) {
-	if !*TestUIFlag {
-		t.Skip(TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()

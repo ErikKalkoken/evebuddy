@@ -17,8 +17,8 @@ import (
 )
 
 func TestDesktopUI_StartEmpty(t *testing.T) {
-	if !*ui.TestUIFlag {
-		t.Skip(ui.TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
 	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -41,8 +41,8 @@ func TestDesktopUI_StartEmpty(t *testing.T) {
 }
 
 func TestDesktopUI_StartWithCharacter(t *testing.T) {
-	if !*ui.TestUIFlag {
-		t.Skip(ui.TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
 	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -81,8 +81,8 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 }
 
 func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
-	if !*ui.TestUIFlag {
-		t.Skip(ui.TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -102,8 +102,8 @@ func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 // TODO: Extend test to cover all tabs with data
 
 func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
-	if !*ui.TestUIFlag {
-		t.Skip(ui.TestUIFlagReason)
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
