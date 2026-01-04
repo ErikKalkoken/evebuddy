@@ -15,8 +15,8 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 ## Contents
 
 - [Description](#description)
-- [Features](#features)
 - [Screenshots](#screenshots)
+- [Features](#features)
 - [Installing](#installing)
   - [Windows](#windows)
   - [macOS](#mac-os)
@@ -57,6 +57,18 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 
 > [!TIP]
 > Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
+
+## Screenshots
+
+Below are example screenshots for both the desktop and mobile version (EVE Buddy v0.53).
+
+### Desktop version
+
+![Desktop](https://cdn.imgpile.com/f/jOLWbDX_xl.png)
+
+### Mobile version
+
+<img width="288" height="640" alt="mobile_screenshot" src="https://cdn.imgpile.com/f/p8FTcmd_xl.png" />
 
 ## Features
 
@@ -118,70 +130,6 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Customizable UI**: The UI can be customized:
   - Color theme: Dark or Light theme
   - UI scaling: Custom scaling of the whole UI (desktop only)
-
-## Screenshots
-
-### Asset search across all characters
-
-You can search for assets across all characters.
-
-<img width="1920" height="1046" alt="desktop_asset_search" src="https://github.com/user-attachments/assets/c82a47eb-f3ae-4c14-b1b2-20f85b47507c" />
-
-### Notifications
-
-EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/WFsQGDV_xl.png)
-
-### Industry jobs
-
-See active industry jobs and the history of industry jobs for all characters in one combined view.
-
-![Screenshot from 2025-04-10 23-45-24](https://github.com/user-attachments/assets/b5071430-1301-447f-b7a6-054c64f86d90)
-
-### Jump clones
-
-See available jump clones and when the next clone jump is available for a character:
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/7kCXcj5_xl.png)
-
-### New Eden search
-
-You search the live game server for entities, similar to the in-game search bar:
-
-![Screenshot from 2025-03-17 22-10-43](https://github.com/user-attachments/assets/b182033d-9f03-447b-a812-e1ad363f0893)
-
-### Info windows
-
-Access additional information about many entities (e.g. characters, corporations, solar systems):
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/japrVbC_xl.png)
-
-### Full mail client
-
-You can receive, send and delete eve mails. Similar to the in-game mail client.
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/cjp9mUs_xl.png)
-
-### Asset browser for each character
-
-You can browse the assets of a character by location. The view by location is similar to the in-game view when docked.
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/5vYS17c_xl.png)
-
-### Colonies of all characters
-
-You can see all colonies used for planetary industry from all your characters at a glance.
-
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/xFnr2yP_xl.png)
-
-### Mobile version
-
-EVE Buddy also works on Android and has a mobile friendly navigation:
-
-Home navigation | Training overview | Communications
--- | -- | ---
-<img width="864" height="1920" alt="mobile_home" src="https://github.com/user-attachments/assets/43799cea-f164-4315-9a3b-6c99c86091d8" />|<img width="864" height="1920" alt="mobile_training" src="https://github.com/user-attachments/assets/7bf832f3-c0a0-43f0-905b-87e5ebdd88db" />|<img width="864" height="1920" alt="mobile_communications" src="https://github.com/user-attachments/assets/c7681b0d-8147-4031-867b-c9a01229ff2b" />
 
 ## Installing
 
@@ -255,8 +203,8 @@ Here is how to install EVE Buddy on your Android phone:
 1. In case you get a security warning from Google Play Protect:
    1. Select "More details"
    1. Select "Install anyway"
-1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. Please see [here](#how-to-enable-unrestricted-background-usage) for a step-by-step guide.
-1. Optional: Enable notifications for EVE BUddy. Please see [here](#how-to-enable-notifications) for a step-by-step guide.
+1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. Please see [How to enable unrestricted background usage](#how-to-enable-unrestricted-background-usage) for a step-by-step guide.
+1. Optional: Enable notifications for EVE BUddy. Please see [How to enable notifications](#how-to-enable-notifications) for a step-by-step guide.
 
 #### How to enable notifications
 
@@ -275,13 +223,13 @@ Here is how to enable unrestricted background usage for EVE Buddy on your Androi
 1. Open the Settings app.
 
 2. Go to Apps and choose EVE Buddy. You should now see a screen like this:
-<img width="432" height="960" alt="evebuddy_setttings_1" src="https://github.com/user-attachments/assets/5b72a8ec-d1f1-4ee3-86cf-616bdb3df6de" />
+<img width="288" height="640" alt="evebuddy_settings_1" src="https://github.com/user-attachments/assets/5b72a8ec-d1f1-4ee3-86cf-616bdb3df6de" />
 
 3. Choose "App battery usage". You should now see a screen like this:
-<img width="432" height="960" alt="evebuddy_setttings_2" src="https://github.com/user-attachments/assets/499f8c26-215a-406d-9999-53d9cd2b9f29" />
+<img width="288" height="640" alt="evebuddy_settings_2" src="https://github.com/user-attachments/assets/499f8c26-215a-406d-9999-53d9cd2b9f29" />
 
 4. Click on "Allow background usage". You should now see a screen like this:
-<img width="432" height="960" alt="evebuddy_setttings_3" src="https://github.com/user-attachments/assets/d87bf311-4349-4b1f-b88f-4a43f4abd69f" />
+<img width="288" height="640" alt="evebuddy_settings_3" src="https://github.com/user-attachments/assets/d87bf311-4349-4b1f-b88f-4a43f4abd69f" />
 
 5. Make sure the "Unrestricted" option is selected. That's it.
 
