@@ -13,7 +13,7 @@ import (
 // StripedList is List with stripped rows.
 //
 // Note that the stripped effect will disable the hoover effect.
-// This widget is intented to be used on mobile.
+// This widget is indented to be used on mobile.
 type StripedList struct {
 	widget.List
 	bgColor color.Color
@@ -52,6 +52,7 @@ func NewStripedList(length func() int, createItem func() fyne.CanvasObject, upda
 func (w *StripedList) Refresh() {
 	w.applyTheme()
 	w.List.Refresh()
+	w.BaseWidget.Refresh()
 }
 
 func (w *StripedList) applyTheme() {

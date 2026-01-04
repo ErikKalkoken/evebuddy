@@ -188,10 +188,10 @@ func (w *eveEntityEntry) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.field.FillColor = th.Color(theme.ColorNameInputBackground, v)
 	w.field.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
-	w.BaseWidget.Refresh()
 	w.main.Refresh()
 	w.field.Refresh()
 	w.placeholder.Refresh()
+	w.BaseWidget.Refresh()
 }
 
 func (w *eveEntityEntry) MinSize() fyne.Size {

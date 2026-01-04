@@ -10,7 +10,7 @@ tool (
 require (
 	fyne.io/fyne/v2 v2.7.1
 	github.com/ErikKalkoken/eveauth v0.1.1
-	github.com/ErikKalkoken/fyne-kx v0.7.1
+	github.com/ErikKalkoken/fyne-kx v0.7.2
 	github.com/ErikKalkoken/go-set v0.3.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0

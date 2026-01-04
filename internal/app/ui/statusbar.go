@@ -378,6 +378,7 @@ func (w *statusBarItem) Refresh() {
 	w.bg.Refresh()
 	w.leading.Refresh()
 	w.label.Refresh()
+	w.BaseWidget.Refresh()
 }
 
 // SetLeading updates the leading icon.
