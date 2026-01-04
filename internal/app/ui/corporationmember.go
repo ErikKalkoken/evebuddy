@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -31,7 +32,7 @@ type corporationMemberRow struct {
 type corporationMember struct {
 	widget.BaseWidget
 
-	corporation  *app.Corporation
+	corporation  atomic.Pointer[app.Corporation]
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
 	list         *widget.List
@@ -63,11 +64,12 @@ func newCorporationMember(u *baseUI) *corporationMember {
 	}
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
+			a.update()
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section != app.SectionCorporationMembers {
@@ -146,19 +148,9 @@ func (a *corporationMember) filterRows() {
 	rows := slices.Clone(a.rows)
 	// search filter
 	if search := strings.ToLower(a.searchBox.Text); search != "" {
-		rows2 := make([]corporationMemberRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
 		return strings.Compare(a.name, b.name)
@@ -169,9 +161,9 @@ func (a *corporationMember) filterRows() {
 
 func (a *corporationMember) update() {
 	var corporationID, ceoID int32
-	if a.corporation != nil {
-		corporationID = a.corporation.ID
-		ceoID = a.corporation.EveCorporation.Ceo.ID
+	if c := a.corporation.Load(); c != nil {
+		corporationID = c.ID
+		ceoID = c.EveCorporation.Ceo.ID
 	}
 	var rows []corporationMemberRow
 	var err error

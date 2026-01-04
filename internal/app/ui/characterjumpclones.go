@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"log/slog"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -51,7 +52,7 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 type characterJumpClones struct {
 	widget.BaseWidget
 
-	character *app.Character
+	character atomic.Pointer[app.Character]
 	top       *iwidget.RichText
 	tree      *iwidget.Tree[jumpCloneNode]
 	u         *baseUI
@@ -68,10 +69,11 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	a.tree = a.makeTree()
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
+		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterJumpClones {
@@ -161,7 +163,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				prefix.Hide()
 				spacer.Hide()
 				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, characterIDOrZero(a.character))
+					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, characterIDOrZero(a.character.Load()))
 				}
 				iconInfo.SetToolTip("Show implant")
 				iconInfo.Show()
@@ -197,7 +199,7 @@ func (a *characterJumpClones) update() {
 
 func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode], error) {
 	var tree iwidget.TreeData[jumpCloneNode]
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		return tree, nil
 	}
@@ -238,7 +240,7 @@ func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode],
 }
 
 func (a *characterJumpClones) refreshTop(cloneCount int) {
-	segs := a.makeTopText(cloneCount, a.character, a.u.services())
+	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.services())
 	fyne.Do(func() {
 		a.top.Set(segs)
 	})

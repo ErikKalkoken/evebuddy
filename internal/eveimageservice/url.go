@@ -87,7 +87,22 @@ func imageURL(c category, v imageVariant, id int32, size int) (string, error) {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size
 	default:
-		return "", fmt.Errorf("%d: %w", size, ErrInvalidSize)
+		return "", fmt.Errorf("eveimageservice: size %d: %w", size, ErrInvalid)
+	}
+	if c == inventoryType {
+		switch id {
+		case 2: // corporation
+			c = corporation
+			v = imageVariantLogo
+			id = 1
+		case 16159: // alliance:
+			c = alliance
+			v = imageVariantLogo
+			id = 1
+		}
+	}
+	if c == inventoryType && id < 6 {
+		return "", fmt.Errorf("eveimageservice: id %d: %w", id, ErrInvalid)
 	}
 	url := fmt.Sprintf("%s/%s/%d/%s?size=%d", baseURL, c, id, v, size)
 	return url, nil

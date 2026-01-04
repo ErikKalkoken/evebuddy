@@ -115,7 +115,6 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		return nil
 	}
 	slog.Info("Applying new migrations", "count", len(unapplied))
-	fmt.Print("Updating database. This may take a moment...")
 	slices.SortFunc(unapplied, func(a migration, b migration) int {
 		return cmp.Compare(a.name, b.name)
 	})
@@ -128,7 +127,6 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		}
 		_, err = db.Exec(string(data))
 		if err != nil {
-			fmt.Printf("ERROR: %s\n", err)
 			return err
 		}
 		count++
@@ -137,7 +135,6 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		}
 		slog.Info("Successfully applied new migration", "name", m.name)
 	}
-	fmt.Println("DONE")
 	return nil
 }
 

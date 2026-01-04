@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -69,7 +70,7 @@ type locationNode struct {
 
 func (n locationNode) UID() widget.TreeNodeID {
 	if n.characterID == 0 || n.variant == 0 {
-		panic("locationNode: some IDs are not set")
+		panic(fmt.Sprintf("locationNode: some IDs are not set: %+v", n))
 	}
 	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.variant)
 }
@@ -96,7 +97,7 @@ type characterAssets struct {
 	assetGrid          *widget.GridWrap
 	assets             []*app.CharacterAsset
 	assetsBottom       *widget.Label
-	character          *app.Character
+	character          atomic.Pointer[app.Character]
 	locationPath       *fyne.Container
 	locationInfoIcon   *iwidget.TappableIcon
 	locations          *iwidget.Tree[locationNode]
@@ -140,12 +141,12 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 	)
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterAssets {
@@ -288,55 +289,69 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 }
 
 func (a *characterAssets) update() {
-	fyne.Do(func() {
-		a.locations.CloseAllBranches()
-		a.locations.ScrollToTop()
-	})
-	t, i, err := func() (string, widget.Importance, error) {
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.locationsTop.Text = s
+			a.locationsTop.Importance = i
+			a.locationsTop.Refresh()
+		})
+	}
+	clearAll := func() {
 		fyne.Do(func() {
 			a.assets = make([]*app.CharacterAsset, 0)
-			a.assetGrid.Refresh()
 			a.locationPath.RemoveAll()
+		})
+	}
+	reset := func() {
+		fyne.Do(func() {
+			a.locations.CloseAllBranches()
+			a.locations.ScrollToTop()
+			a.assetGrid.Refresh()
 			a.selectedLocation.Clear()
 		})
-		ac, locations, err := a.fetchData(characterIDOrZero(a.character), a.u.services())
-		if err != nil {
-			return "", 0, err
-		}
-		fyne.Do(func() {
-			a.assetCollection = ac
-			a.locations.Set(locations)
-			for ln := range locations.All() {
-				switch ln.variant {
-				case nodeContainer, nodeShip, nodeLocation:
-					a.containerLocations[ln.containerID] = ln.UID()
-				}
-			}
-		})
-		t, i := a.makeTopText()
-		return t, i, nil
-	}()
+	}
+
+	characterID := characterIDOrZero(a.character.Load())
+	if characterID == 0 {
+		setTop("No character", widget.LowImportance)
+		reset()
+		clearAll()
+	}
+
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAssets)
+	if !hasData {
+		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
+		reset()
+		clearAll()
+		return
+	}
+
+	ac, locations, err := a.fetchData(characterID, a.u.services())
 	if err != nil {
-		slog.Error("Failed to redraw asset locations UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
+		slog.Error("Failed to load character assets", "characterID", characterID, "err", err)
+		setTop("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
+		reset()
+		clearAll()
+		return
 	}
 	fyne.Do(func() {
-		a.locationsTop.Text = t
-		a.locationsTop.Importance = i
-		a.locationsTop.Refresh()
-		a.locations.Refresh()
-	})
-	if a.OnUpdate != nil {
-		if a.character != nil {
-			v, err := a.u.cs.AssetTotalValue(context.Background(), a.character.ID)
-			if err != nil {
-				slog.Error("Failed to fetch asset value", "error", err)
-				return
+		a.assetCollection = ac
+		a.locations.Set(locations)
+		for ln := range locations.All() {
+			switch ln.variant {
+			case nodeContainer, nodeShip, nodeLocation:
+				a.containerLocations[ln.containerID] = ln.UID()
 			}
-			s := ihumanize.OptionalWithDecimals(v, 1, "?")
-			a.OnUpdate(s)
 		}
+	})
+	reset()
+	// locations := ihumanize.Comma(len(a.assetCollection.Locations()))
+	// value := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
+	items := ihumanize.Number(ac.ItemCountFiltered(), 1)
+	top := fmt.Sprintf("%s items", items)
+	setTop(top, widget.MediumImportance)
+	if a.OnUpdate != nil {
+		a.OnUpdate(top)
 	}
 }
 
@@ -581,22 +596,6 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 	return tree
 }
 
-func (a *characterAssets) makeTopText() (string, widget.Importance) {
-	c := a.character
-	if c == nil {
-		return "No character", widget.LowImportance
-	}
-	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	locations := ihumanize.Comma(len(a.assetCollection.Locations()))
-	items := ihumanize.Comma(a.assetCollection.ItemCountFiltered())
-	value := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
-	text := fmt.Sprintf("%s locations • %s items • %s total value", locations, items, value)
-	return text, widget.MediumImportance
-}
-
 func (a *characterAssets) selectLocation(location locationNode) error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
@@ -719,7 +718,7 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 		total += ca.Price.ValueOrZero() * float64(ca.Quantity)
 	}
 	a.updateLocationTitle(location)
-	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
+	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.NumberF(total, 1)))
 	return nil
 }
 
@@ -930,37 +929,8 @@ func (o *assetItem) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,
-		container.New(NewBottomRightLayout(), o.icon, o.badge),
+		container.New(&bottomRightLayout{}, o.icon, o.badge),
 		o.label,
 	))
 	return widget.NewSimpleRenderer(c)
-}
-
-type bottomRightLayout struct{}
-
-func NewBottomRightLayout() fyne.Layout {
-	return &bottomRightLayout{}
-}
-
-func (d *bottomRightLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	w, h := float32(0), float32(0)
-	for _, o := range objects {
-		childSize := o.MinSize()
-		if childSize.Width > w {
-			w = childSize.Width
-		}
-		if childSize.Height > h {
-			h = childSize.Height
-		}
-	}
-	return fyne.NewSize(w, h)
-}
-
-func (d *bottomRightLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
-	pos := fyne.NewPos(containerSize.Width, containerSize.Height)
-	for _, o := range objects {
-		size := o.MinSize()
-		o.Resize(size)
-		o.Move(pos.SubtractXY(size.Width, size.Height))
-	}
 }

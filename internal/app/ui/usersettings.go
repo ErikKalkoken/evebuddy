@@ -73,7 +73,9 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 
 func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
-		return iwidget.NewAppBar(title, content, actions)
+		ab := iwidget.NewAppBar(title, content, actions)
+		ab.HideBackground = !a.u.isMobile
+		return ab
 	}
 	generalContent, generalActions := a.makeGeneralPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
@@ -105,7 +107,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	developerMode := NewSettingItemSwitch(SettingItemSwitch{
@@ -128,7 +131,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.SysTrayEnabled,
 		onChanged:    a.u.settings.SetSysTrayEnabled,
 	})
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		items = append(items, sysTray)
 	}
 
@@ -145,7 +148,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.HideLimitedCorporations,
 		onChanged: func(enabled bool) {
 			a.u.settings.SetHideLimitedCorporations(enabled)
-			a.u.updateStatus()
+			go a.u.corporationsChanged.Emit(context.Background(), struct{}{})
 		},
 	})
 
@@ -168,7 +171,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			s.SetColorTheme(settings.ColorTheme(v))
 			a.u.setColorTheme(settings.ColorTheme(v))
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
@@ -187,7 +191,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		formatter: func(v any) string {
 			return fmt.Sprintf("%v %%", v)
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitch{
@@ -197,7 +202,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		onChanged: a.u.settings.SetDisableDPIDetection,
 	})
 
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		items = slices.Concat(items, []SettingItem{
 			colorTheme,
 			fyneScale,
@@ -219,7 +224,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		setter: func(v float64) {
 			a.u.settings.SetMaxMails(int(v))
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
@@ -236,7 +242,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		setter: func(v float64) {
 			a.u.settings.SetMaxWalletTransactions(int(v))
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	vMin, vMax, vDef = a.u.settings.MarketOrderRetentionDaysPresets()
@@ -253,7 +260,8 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		setter: func(v float64) {
 			a.u.settings.SetMarketOrdersRetentionDay(int(v))
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	items = slices.Concat(items, []SettingItem{
@@ -340,7 +348,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		},
 	}
 	actions := []settingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		actions = append(actions, settingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
@@ -351,58 +359,21 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 	}
 	if a.u.IsDeveloperMode() {
 		actions = append(actions, settingAction{
-			Label: "Show snackbar test",
+			Label: "Show snackbar (debug)",
 			Action: func() {
 				a.sb.Show("This is a test")
 			},
 		})
 		actions = append(actions, settingAction{
-			Label: "Randomize names",
+			Label: "Reset shown character (debug)",
 			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Randomize names", "Please wait...", func() error {
-					ctx := context.Background()
-					if err := a.u.eus.RandomizeAllCharacterNames(ctx); err != nil {
-						return err
-					}
-					if err := a.u.eus.RandomizeAllCorporationNames(ctx); err != nil {
-						return err
-					}
-					if err := a.u.eus.RandomizeAllAllianceNames(ctx); err != nil {
-						return err
-					}
-					return nil
-				}, a.w)
-				pg.OnError = func(err error) {
-					a.reportError("Failed to randomize names", err)
-				}
-				pg.OnSuccess = func() {
-					a.u.updateHome()
-					a.u.updateCharacter()
-				}
-				pg.Start()
+				a.u.resetCharacter()
 			},
 		})
 		actions = append(actions, settingAction{
-			Label: "Restore names",
+			Label: "Reset shown corporation (debug)",
 			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
-					ctx := context.Background()
-					if _, err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
-						return err
-					}
-					if _, err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
-						return err
-					}
-					if _, err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
-						return err
-					}
-					return nil
-				}, a.w)
-				pg.OnSuccess = func() {
-					a.u.updateHome()
-					a.u.updateCharacter()
-				}
-				pg.Start()
+				a.u.resetCorporation()
 			},
 		})
 	}
@@ -576,7 +547,8 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		setter: func(v float64) {
 			a.u.settings.SetNotifyTimeoutHours(int(v))
 		},
-		window: a.w,
+		isMobile: a.u.isMobile,
+		window:   a.w,
 	})
 
 	items := []SettingItem{
@@ -736,10 +708,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
 }
 
-func (a *userSettings) reportError(text string, err error) {
-	slog.Error(text, "error", err)
-	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
-}
+// func (a *userSettings) reportError(text string, err error) {
+// 	slog.Error(text, "error", err)
+// 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+// }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
 	items := make([]*fyne.MenuItem, 0)
@@ -852,6 +824,7 @@ type SettingItemSliderParams struct {
 	formatter    func(v any) string
 	getter       func() float64
 	hint         string
+	isMobile     bool
 	label        string
 	maxValue     float64
 	minValue     float64
@@ -885,9 +858,10 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 			sl.SetStep(arg.step)
 			sl.OnChangeEnded = arg.setter
 			d := makeSettingDialog(makeSettingDialogParams{
-				setting: sl,
-				label:   it.Label,
-				hint:    it.Hint,
+				setting:  sl,
+				label:    it.Label,
+				hint:     it.Hint,
+				isMobile: arg.isMobile,
 				reset: func() {
 					sl.SetValue(arg.defaultValue)
 				},
@@ -904,6 +878,7 @@ type SettingItemOptions struct {
 	defaultValue string
 	getter       func() string
 	hint         string
+	isMobile     bool
 	label        string
 	options      []string
 	setter       func(v string)
@@ -932,8 +907,9 @@ func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
 				reset: func() {
 					sel.SetSelected(arg.defaultValue)
 				},
-				refresh: refresh,
-				window:  arg.window,
+				isMobile: arg.isMobile,
+				refresh:  refresh,
+				window:   arg.window,
 			})
 			d.Show()
 		},
@@ -943,12 +919,13 @@ func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
 }
 
 type makeSettingDialogParams struct {
-	hint    string
-	label   string
-	refresh func()
-	reset   func()
-	setting fyne.CanvasObject
-	window  fyne.Window
+	hint     string
+	isMobile bool
+	label    string
+	refresh  func()
+	reset    func()
+	setting  fyne.CanvasObject
+	window   fyne.Window
 }
 
 func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
@@ -975,7 +952,7 @@ func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 	d = dialog.NewCustomWithoutButtons(arg.label, c, arg.window)
 	_, s := arg.window.Canvas().InteractiveArea()
 	var width float32
-	if fyne.CurrentDevice().IsMobile() {
+	if arg.isMobile {
 		width = s.Width
 	} else {
 		width = s.Width * dialogWidthScale

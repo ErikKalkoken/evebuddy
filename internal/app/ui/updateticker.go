@@ -16,18 +16,19 @@ import (
 
 func (u *baseUI) startUpdateTickerGeneralSections() {
 	go func() {
-		for range time.Tick(generalSectionsUpdateTicker) {
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of general sections during daily downtime")
-				continue
-			}
-			u.updateGeneralSectionsIfNeeded(context.Background(), false)
+		for {
+			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			<-time.Tick(generalSectionsUpdateTicker)
 		}
 	}()
 }
 
 func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
-	if !forceUpdate && !u.isDesktop && !u.isForeground.Load() {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of general sections during daily downtime")
+		return
+	}
+	if !forceUpdate && u.isMobile && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
@@ -51,7 +52,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSection(ctx, app.GeneralSectionUpdateParams{
+	changed, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -75,7 +76,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			return
 		}
 	}
-	u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
+	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
 		section:      section,
 		forcedUpdate: forceUpdate,
 		changed:      changed,
@@ -86,27 +87,29 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 
 func (u *baseUI) startUpdateTickerCharacters() {
 	go func() {
-		for range time.Tick(characterSectionsUpdateTicker) {
+		for {
 			ctx := context.Background()
 			go func() {
 				if err := u.notifyCharactersIfNeeded(ctx); err != nil {
 					slog.Error("Failed to notify characters", "error", err)
 				}
 			}()
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of characters during daily downtime")
-				continue
-			}
+
 			go func() {
 				if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			}()
+			<-time.Tick(characterSectionsUpdateTicker)
 		}
 	}()
 }
 
 func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of characters during daily downtime")
+		return nil
+	}
 	characters, err := u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return err
@@ -180,7 +183,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	var sections set.Set[app.CharacterSection] // sections registered for update
-	if !u.isDesktop && !u.isForeground.Load() {
+	if u.isMobile && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
 			sections.Add(app.SectionCharacterNotifications)
@@ -297,7 +300,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 	needsRefresh := hasChanged || forceUpdate
 	if needsRefresh {
-		u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+		go u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
 			characterID:  characterID,
 			forcedUpdate: forceUpdate,
 			section:      section,
@@ -363,27 +366,28 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 func (u *baseUI) startUpdateTickerCorporations() {
 	go func() {
-		for range time.Tick(characterSectionsUpdateTicker) {
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of corporations during daily downtime")
-				continue
-			}
+		for {
 			go func() {
 				if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
 					slog.Error("Failed to update corporations", "error", err)
 				}
 			}()
+			<-time.Tick(characterSectionsUpdateTicker)
 		}
 	}()
 }
 
 func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of corporations during daily downtime")
+		return nil
+	}
 	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
 	}
 	if changed {
-		u.updateStatus()
+		go u.corporationsChanged.Emit(ctx, struct{}{})
 	}
 	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
@@ -407,7 +411,7 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	if u.isOffline {
 		return
 	}
-	if !u.isDesktop && !u.isForeground.Load() && !forceUpdate {
+	if u.isMobile && !u.isForeground.Load() && !forceUpdate {
 		// nothing to update
 		return
 	}
@@ -446,7 +450,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	if !hasChanged && !forceUpdate {
 		return
 	}
-	u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
+	go u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
 		corporationID: corporationID,
 		forcedUpdate:  forceUpdate,
 		section:       section,

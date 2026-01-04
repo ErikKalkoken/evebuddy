@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -60,7 +61,7 @@ type contracts struct {
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	columnSorter   *iwidget.ColumnSorter
-	corporation    *app.Corporation
+	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // run in corporation mode when true, else in overview mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
@@ -129,7 +130,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
@@ -192,11 +193,12 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	if a.forCorporation {
 		a.u.currentCorporationExchanged.AddListener(
 			func(_ context.Context, c *app.Corporation) {
-				a.corporation = c
+				a.corporation.Store(c)
+				a.update()
 			},
 		)
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation) != arg.corporationID {
+			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section != app.SectionCorporationContracts {
@@ -209,6 +211,15 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			if arg.section == app.SectionCharacterContracts {
 				a.update()
 			}
+		})
+		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+			a.update()
+		})
+		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+			a.update()
+		})
+		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+			a.update()
 		})
 	}
 	return a
@@ -224,7 +235,7 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	if !a.forCorporation {
 		filter.Add(a.selectTag)
 	}
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
@@ -411,7 +422,7 @@ func (a *contracts) update() {
 }
 
 func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []contractRow{}, 0, nil
 	}

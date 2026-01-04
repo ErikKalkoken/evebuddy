@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"fyne.io/fyne/v2"
+
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
@@ -56,21 +57,22 @@ type EveGroup struct {
 }
 
 const (
+	EveTypeAdvancedLaboratoryOperation = 24624
+	EveTypeAdvancedMassProduction      = 24625
+	EveTypeAdvancedMassReactions       = 45749
+	EveTypeAlliance                    = 16159
 	EveTypeAssetSafetyWrap             = 60
+	EveTypeCorporation                 = 2
 	EveTypeIHUB                        = 32458
+	EveTypeIndustry                    = 3380
 	EveTypeInfomorphSynchronizing      = 33399
 	EveTypeInterplanetaryConsolidation = 2495
+	EveTypeLaboratoryOperation         = 3406
+	EveTypeMassProduction              = 3387
+	EveTypeMassReactions               = 45748
 	EveTypePlanetTemperate             = 11
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
-
-	EveTypeIndustry                    = 3380
-	EveTypeMassProduction              = 3387
-	EveTypeAdvancedMassProduction      = 24625
-	EveTypeLaboratoryOperation         = 3406
-	EveTypeAdvancedLaboratoryOperation = 24624
-	EveTypeMassReactions               = 45748
-	EveTypeAdvancedMassReactions       = 45749
 )
 
 // EveType is a type in Eve Online.

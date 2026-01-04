@@ -16,8 +16,8 @@ type TappableIcon struct {
 	// The function that is called when the icon is tapped.
 	OnTapped func()
 
-	hovered  bool
 	disabled bool
+	hovered  bool
 	menu     *fyne.Menu
 	resource fyne.Resource
 }

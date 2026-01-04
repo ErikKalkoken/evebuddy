@@ -12,8 +12,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-// Number returns a humanized number, e.g. 1234 becomes 1.23K
-func Number(value float64, decimals int) string {
+// NumberF returns a humanized float number, e.g. 1234 becomes 1.23K
+func NumberF[T constraints.Float](value T, decimals int) string {
+	return number(float64(value), decimals)
+}
+
+// Number returns a humanized int number, e.g. 1234 becomes 1.23K
+func Number[T constraints.Integer](value T, decimals int) string {
+	if v := int(value); v > -1000 && v < 1000 {
+		return fmt.Sprint(value)
+	}
+	return number(float64(value), decimals)
+}
+
+func number(value float64, decimals int) string {
 	var s int
 	var a string
 	v2 := math.Abs(value)
@@ -36,14 +48,14 @@ func Number(value float64, decimals int) string {
 	}
 	x := value / math.Pow10(s)
 	var f string
-	switch {
-	case decimals == 3:
+	switch decimals {
+	case 3:
 		f = "%.3f%s"
-	case decimals == 2:
+	case 2:
 		f = "%.2f%s"
-	case decimals == 1:
+	case 1:
 		f = "%.1f%s"
-	case decimals == 0:
+	case 0:
 		f = "%.0f%s"
 	default:
 		panic(fmt.Sprintf("Undefined decimals: %d", decimals))
@@ -108,11 +120,11 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 	case string:
 		return x
 	case int:
-		return Number(float64(x), 0)
+		return NumberF(float64(x), 0)
 	case int32:
-		return Number(float64(x), 0)
+		return NumberF(float64(x), 0)
 	case int64:
-		return Number(float64(x), 0)
+		return NumberF(float64(x), 0)
 	case bool:
 		if x {
 			return "yes"
@@ -133,7 +145,7 @@ func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals 
 	if o.IsEmpty() {
 		return fallback
 	}
-	return Number(float64(o.ValueOrZero()), decimals)
+	return NumberF(float64(o.ValueOrZero()), decimals)
 }
 
 // RomanLetter returns a number as roman letters.

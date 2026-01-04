@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -39,7 +40,7 @@ type characterCommunications struct {
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
-	character        *app.Character
+	character        atomic.Pointer[app.Character]
 	current          *app.CharacterNotification
 	folderList       *widget.List
 	folders          []notificationFolder
@@ -67,11 +68,12 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
+			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterNotifications {
@@ -178,7 +180,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*mailHeaderItem)
-			item.Set(n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
@@ -196,10 +198,14 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 }
 
 func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
-	if a.character == nil {
+	if a.character.Load() == nil {
 		return
 	}
-	a.Detail.set(n, a.u.cs.NotificationRecipient(n))
+	err := a.Detail.set(n, a.u.cs.NotificationRecipient(n))
+	if err != nil {
+		slog.Warn("Failed to set notification detail", "err", err)
+		return // TODO: Show to user
+	}
 	a.current = n
 	a.Toolbar.Show()
 	a.Detail.Show()
@@ -246,7 +252,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			if a.character == nil {
+			if a.character.Load() == nil {
 				return
 			}
 			title, content := a.u.cs.RenderNotificationSummary(a.current)
@@ -258,7 +264,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 
 func (a *characterCommunications) update() {
 	var err error
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
@@ -327,7 +333,7 @@ func (a *characterCommunications) resetCurrentFolder() {
 
 func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
 	var err error
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	notifications := make([]*app.CharacterNotification, 0)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
@@ -357,6 +363,24 @@ func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) 
 		a.notificationsTop.Text, a.notificationsTop.Importance = t, i
 		a.notificationsTop.Refresh()
 	})
+	// Replace generic corporations && alliances in notifications
+	if c := a.character.Load(); c != nil {
+		for _, n := range notifications {
+			if n.Sender == nil {
+				continue
+			}
+			switch n.Sender.ID {
+			case app.EveTypeAlliance:
+				if c.EveCharacter.Alliance != nil {
+					n.Sender = c.EveCharacter.Alliance
+				} else {
+					n.Sender = &app.EveEntity{ID: 1, Name: "Unknown", Category: app.EveEntityCorporation}
+				}
+			case app.EveTypeCorporation:
+				n.Sender = c.EveCharacter.Corporation
+			}
+		}
+	}
 	fyne.Do(func() {
 		a.notifications = notifications
 		a.notificationList.Refresh()
@@ -401,10 +425,10 @@ func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
 
 func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
 	w.subject.SetText(n.TitleDisplay())
-	w.header.Set(n.Sender, n.Timestamp, recipient)
+	w.header.Set(n.CharacterID, n.Sender, n.Timestamp, recipient)
 	s, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {
-		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
+		return fmt.Errorf("failed to convert markdown for notification %+v: %w", n, err)
 	}
 	if n.Body.IsEmpty() {
 		w.body.ParseMarkdown("*This notification type is not fully supported yet*")

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -19,11 +20,12 @@ import (
 type corporationWallet struct {
 	widget.BaseWidget
 
-	onBalanceUpdate func(balance string)
+	onBalanceUpdate func(balance float64)
 	onNameUpdate    func(name string)
+	onTopUpdate     func(top string)
 
 	balance      *widget.Label
-	corporation  *app.Corporation
+	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
 	journal      *walletJournal
 	name         *widget.Label
@@ -42,13 +44,12 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
-	a.u.currentCorporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
-		},
-	)
+	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.corporation.Store(c)
+		a.update()
+	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		switch arg.section {
@@ -99,7 +100,7 @@ func (a *corporationWallet) update() {
 func (a *corporationWallet) updateBalance() {
 	var err error
 	var balance float64
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if hasData {
 		b, err2 := a.u.rs.GetWalletBalance(context.Background(), corporationID, a.division)
@@ -113,20 +114,17 @@ func (a *corporationWallet) updateBalance() {
 		}
 	}
 	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
-		b1 := humanize.FormatFloat(app.FloatFormat, balance)
-		b2 := ihumanize.Number(balance, 1)
-		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
-
+		s := fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+		if balance > 1000 {
+			s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
+		}
 		return s, widget.MediumImportance
 	})
-	var s string
-	if !hasData || err != nil {
-		s = ""
-	} else {
-		s = ihumanize.Number(balance, 1)
-	}
 	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(s)
+		a.onBalanceUpdate(balance)
+	}
+	if a.onTopUpdate != nil {
+		a.onTopUpdate(t)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t
@@ -138,7 +136,7 @@ func (a *corporationWallet) updateBalance() {
 func (a *corporationWallet) updateName() {
 	var err error
 	var name string
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.rs.GetWalletName(context.Background(), corporationID, a.division)

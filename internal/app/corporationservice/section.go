@@ -179,6 +179,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		return f(ctx, arg)
 	})
 	if err != nil {
+		slog.Error("Corporation section update failed", "corporationID", arg.CorporationID, "section", arg.Section, "error", err)
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
 		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{

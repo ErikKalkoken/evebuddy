@@ -19,8 +19,8 @@ import (
 )
 
 func TestIndustryJob_CanRenderWithData(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -91,8 +91,8 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 }
 
 func TestIndustryJob_CanRenderEmpty(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -172,7 +172,7 @@ func TestIndustryJob_Filter(t *testing.T) {
 }
 
 func TestIndustryJob_FetchJobs(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter()
 	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
@@ -199,9 +199,9 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		InstallerID:   c2.ID,
 	})
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-	ui.setCorporation(corporation)
 
 	t.Run("can return all character and relevant corporation jobs", func(t *testing.T) {
+		ui.industryJobs.corporation.Store(corporation)
 		xx, err := ui.industryJobs.fetchCombinedJobs()
 		if !assert.NoError(t, err) {
 			t.Fatal()
@@ -214,6 +214,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 	})
 
 	t.Run("can return all jobs for current corporation", func(t *testing.T) {
+		ui.corporationIndyJobs.corporation.Store(corporation)
 		xx, err := ui.corporationIndyJobs.fetchCorporationJobs()
 		if !assert.NoError(t, err) {
 			t.Fatal()

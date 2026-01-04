@@ -14,8 +14,8 @@ import (
 )
 
 func TestWalletTransactions_CanRenderWithData(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -61,13 +61,13 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 			IsBuy:       true,
 		})
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		x := newCharacterWalletTransaction(ui)
-		w := test.NewWindow(x)
+		a := newCharacterWalletTransaction(ui)
+		w := test.NewWindow(a)
 		defer w.Close()
 		w.Resize(fyne.NewSize(1700, 300))
 
-		ui.setCharacter(character)
-		x.update()
+		a.character.Store(character)
+		a.update()
 
 		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
 	})

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -18,10 +19,11 @@ import (
 type characterWallet struct {
 	widget.BaseWidget
 
-	onUpdate func(balance string)
+	onTopUpdate     func(top string)
+	onBalanceUpdate func(balance float64)
 
 	balance      *widget.Label
-	character    *app.Character
+	character    atomic.Pointer[app.Character]
 	journal      *walletJournal
 	transactions *walletTransactions
 	u            *baseUI
@@ -35,13 +37,12 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character = c
-		},
-	)
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character.Store(c)
+		a.update()
+	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletBalance {
@@ -74,7 +75,7 @@ func (a *characterWallet) update() {
 func (a *characterWallet) updateBalance() {
 	var err error
 	var balance float64
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if hasData {
 		c, err2 := a.u.cs.GetCharacter(context.Background(), characterID)
@@ -93,18 +94,15 @@ func (a *characterWallet) updateBalance() {
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		b1 := humanize.FormatFloat(app.FloatFormat, balance)
-		b2 := ihumanize.Number(balance, 1)
-		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
+		b2 := ihumanize.NumberF(balance, 1)
+		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
 		return s, widget.MediumImportance
 	})
-	var s string
-	if !hasData || err != nil {
-		s = ""
-	} else {
-		s = ihumanize.Number(balance, 1)
+	if a.onBalanceUpdate != nil {
+		a.onBalanceUpdate(balance)
 	}
-	if a.onUpdate != nil {
-		a.onUpdate(s)
+	if a.onTopUpdate != nil {
+		a.onTopUpdate(t)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t

@@ -6,7 +6,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -39,7 +38,7 @@ func setDetailWindow(arg detailWindowParams) {
 
 	var image2 fyne.CanvasObject
 	if arg.imageLoader != nil {
-		image := kxwidget.NewTappableImage(icons.BlankSvg, arg.imageAction)
+		image := iwidget.NewTappableImage(icons.BlankSvg, arg.imageAction)
 		image.SetFillMode(canvas.ImageFillContain)
 		image.SetMinSize(fyne.NewSquareSize(arg.imageSize))
 		iwidget.RefreshTappableImageAsync(image, arg.imageLoader)

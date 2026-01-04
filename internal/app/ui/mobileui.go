@@ -183,7 +183,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.characterAssets.OnUpdate = func(s string) {
 		fyne.Do(func() {
-			navItemAssets.Supporting = "Value: " + s
+			navItemAssets.Supporting = s
 			characterList.Refresh()
 		})
 	}
@@ -222,9 +222,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterWallet.onUpdate = func(b string) {
+	u.characterWallet.onTopUpdate = func(b string) {
 		fyne.Do(func() {
-			navItemWallet.Supporting = "Balance: " + b
+			navItemWallet.Supporting = b
 			characterList.Refresh()
 		})
 	}
@@ -269,9 +269,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
+		u.corporationWallets[d].onTopUpdate = func(top string) {
 			fyne.Do(func() {
-				corporationWalletNavs[d].Supporting = balance
+				corporationWalletNavs[d].Supporting = top
 				corpWalletList.Refresh()
 			})
 		}
@@ -359,9 +359,18 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpList.Refresh()
 		})
 	}
-	u.onUpdateCorporationWalletTotals = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
+		var s string
+		if !ok {
+			s = ""
+		} else {
+			s = fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+			if balance > 1000 {
+				s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
+			}
+		}
 		fyne.Do(func() {
-			corpWalletNav.Supporting = balance
+			corpWalletNav.Supporting = s
 			corpList.Refresh()
 		})
 	}
@@ -533,7 +542,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.onUpdateCharacter = func(c *app.Character) {
+	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.makeFolderMenu()
 			mailMenu.Refresh()
@@ -554,7 +563,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				}
 			}
 		})
-	}
+	})
 	u.onSetCharacter = func(c *app.Character) {
 		go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
@@ -567,6 +576,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterPage.SetTitle(c.EveCharacter.Name)
 			characterNav.PopAll()
 		})
+	}
+	u.onShowCharacter = func() {
+		navBar.Select(1)
 	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
@@ -746,7 +758,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 	)
 	u.wealth.onUpdate = func(wallet, assets float64) {
 		fyne.Do(func() {
-			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(wallet, 1), ihumanize.Number(assets, 1))
+			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
 			navItemWealth.Supporting = s
 			homeList.Refresh()
 		})
@@ -761,14 +773,15 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 
+	navItemCharacters := iwidget.NewListItemWithIcon(
+		"Character Overview",
+		theme.NewThemedResource(icons.PortraitSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
+		},
+	)
 	homeList = iwidget.NewNavList(
-		iwidget.NewListItemWithIcon(
-			"Character Overview",
-			theme.NewThemedResource(icons.PortraitSvg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
-			},
-		),
+		navItemCharacters,
 		navItemAssets,
 		iwidget.NewListItemWithIcon(
 			"Clones",
@@ -796,13 +809,6 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			},
 		),
 		iwidget.NewListItemWithIcon(
-			"Character Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Locations", u.characterLocations))
-			},
-		),
-		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
@@ -811,12 +817,21 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		),
 		navItemWealth,
 	)
-	u.assets.onUpdate = func(total string) {
+
+	u.characterOverview.onUpdate = func(characters int) {
 		fyne.Do(func() {
-			navItemAssets.Supporting = fmt.Sprintf("Value: %s", total)
+			navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
 			homeList.Refresh()
 		})
 	}
+
+	u.assets.onUpdate = func(_ int, s string) {
+		fyne.Do(func() {
+			navItemAssets.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
 	u.contracts.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {

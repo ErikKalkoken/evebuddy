@@ -211,7 +211,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -254,6 +254,15 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 			a.update()
 		}
 	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
@@ -264,7 +273,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 
 func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	p := theme.Padding()
@@ -320,7 +329,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 			state.Refresh()
 
 			b1 := c[1].(*fyne.Container).Objects
-			b1[0].(*widget.Label).SetText(ihumanize.Number(r.price, 2) + " ISK")
+			b1[0].(*widget.Label).SetText(ihumanize.NumberF(r.price, 2) + " ISK")
 			b1[1].(*widget.Label).SetText(r.volumeDisplay())
 
 			c[2].(*iwidget.RichText).Set(r.location.DisplayRichText())
@@ -419,7 +428,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 		total.Set(total.ValueOrZero() + r.price*float64(r.volumeRemain))
 	}
 	a.footer.SetText(fmt.Sprintf("Orders total: %s ISK", total.StringFunc("?", func(v float64) string {
-		return ihumanize.Number(v, 1)
+		return ihumanize.NumberF(v, 1)
 	})))
 }
 

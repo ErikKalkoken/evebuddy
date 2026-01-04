@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
@@ -35,7 +36,7 @@ func TestCharacterPortraitURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -49,7 +50,7 @@ func TestCorporationLogoURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/corporations/%d/logo?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -63,7 +64,7 @@ func TestAllianceLogoURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/alliances/%d/logo?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -77,7 +78,7 @@ func TestFactionLogoURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/corporations/%d/logo?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -91,7 +92,7 @@ func TestInventoryTypeRenderURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/types/%d/render?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -105,8 +106,56 @@ func TestInventoryTypeIconURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/types/%d/icon?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
+		})
+	}
+}
+
+func TestInventoryTypeXURL_ReplaceInvalids(t *testing.T) {
+	cases := []struct {
+		name string
+		id   int32
+		want string
+	}{
+		{"corporation", 2, "https://images.evetech.net/corporations/1/logo?size=64"},
+		{"alliance", 16159, "https://images.evetech.net/alliances/1/logo?size=64"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := eveimageservice.InventoryTypeIconURL(tc.id, 64)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+
+			got, err = eveimageservice.InventoryTypeRenderURL(tc.id, 64)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+
+			got, err = eveimageservice.InventoryTypeBPCURL(tc.id, 64)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+
+			got, err = eveimageservice.InventoryTypeBPOURL(tc.id, 64)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestInventoryTypeXURL_InvalidIDs(t *testing.T) {
+	for _, id := range []int32{0, 1, 3, 4, 5} {
+		t.Run(fmt.Sprintf("invalid inventory id %d", id), func(t *testing.T) {
+			_, err := eveimageservice.InventoryTypeIconURL(id, 64)
+			assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
+
+			_, err = eveimageservice.InventoryTypeRenderURL(id, 64)
+			assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
+
+			_, err = eveimageservice.InventoryTypeBPCURL(id, 64)
+			assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
+
+			_, err = eveimageservice.InventoryTypeBPOURL(id, 64)
+			assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 		})
 	}
 }
@@ -119,7 +168,7 @@ func TestInventoryTypeBPOURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/types/%d/bp?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}
@@ -133,7 +182,7 @@ func TestInventoryTypeBPCURL(t *testing.T) {
 				want := fmt.Sprintf("https://images.evetech.net/types/%d/bpc?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
-				assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+				assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 			}
 		})
 	}

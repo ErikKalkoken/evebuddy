@@ -81,7 +81,7 @@ func showManageCharactersWindow(u *baseUI) {
 			onClosed()
 		}
 		if mcw.tagsChanged {
-			u.updateHome()
+			go u.tagsChanged.Emit(context.Background(), struct{}{})
 		}
 		mcw.sb.Stop()
 	})
@@ -113,6 +113,7 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 		nil,
 		a.list,
 	))
+	a.ab.HideBackground = !a.mcw.u.isMobile
 	return a
 }
 
@@ -280,9 +281,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 					a.mcw.u.loadCorporation(c.ID)
 				}
 			}
-			a.mcw.u.updateStatus()
-			a.mcw.u.updateHome()
-			a.mcw.u.characterAdded.Emit(context.Background(), character)
+			go a.mcw.u.characterAdded.Emit(context.Background(), character)
 			if !a.mcw.u.isUpdateDisabled {
 				go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 			}
@@ -337,9 +336,7 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 								go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 							}
 						}
-						a.mcw.u.updateHome()
-						a.mcw.u.updateStatus()
-						a.mcw.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
+						go a.mcw.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
 							ID:   r.characterID,
 							Name: r.characterName,
 						})
@@ -417,6 +414,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		"Tags",
 		container.NewBorder(nil, container.NewVBox(addTag, newStandardSpacer()), nil, nil, a.tagList),
 	)
+	manageTags.HideBackground = !a.mcw.u.isMobile
 	c := container.NewVSplit(
 		container.NewStack(manageTags, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -435,6 +433,7 @@ func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
 			a.characterList,
 		),
 	)
+	ab.HideBackground = !a.mcw.u.isMobile
 	ab.Hide()
 	return ab
 }

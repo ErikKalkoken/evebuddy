@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -21,7 +22,7 @@ type characterSkillQueue struct {
 
 	OnUpdate func(statusShort, statusLong string)
 
-	character          *app.Character
+	character          atomic.Pointer[app.Character]
 	emptyInfo          *widget.Label
 	isCharacterUpdated bool
 	list               *widget.List
@@ -42,7 +43,6 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
 	a := &characterSkillQueue{
-		character:          c,
 		emptyInfo:          emptyInfo,
 		isCharacterUpdated: c == nil,
 		signalKey:          generateUniqueID(),
@@ -51,6 +51,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 		u:                  u,
 	}
 	a.ExtendBaseWidget(a)
+	a.character.Store(c)
 	a.list = a.makeSkillQueue()
 	return a
 }
@@ -73,10 +74,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			level := newSkillLevel()
-			if !a.u.isDesktop {
+			if a.u.isMobile {
 				level.Hide()
 			}
-			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem())
+			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(a.u.isMobile))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			qi := a.sq.Item(id)
@@ -117,15 +118,15 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 
 func (a *characterSkillQueue) start() {
 	if a.isCharacterUpdated {
-		a.u.currentCharacterExchanged.AddListener(
-			func(_ context.Context, c *app.Character) {
-				a.character = c
-			},
+		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+			a.character.Store(c)
+			a.update()
+		},
 			a.signalKey,
 		)
 	}
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterSkillqueue {
@@ -150,7 +151,7 @@ func (a *characterSkillQueue) stop() {
 func (a *characterSkillQueue) update() {
 	var t string
 	var i widget.Importance
-	err := a.sq.Update(context.Background(), a.u.cs, characterIDOrZero(a.character))
+	err := a.sq.Update(context.Background(), a.u.cs, characterIDOrZero(a.character.Load()))
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
@@ -190,7 +191,7 @@ func (a *characterSkillQueue) update() {
 }
 
 func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.scs.HasCharacterSection(characterIDOrZero(a.character), app.SectionCharacterSkillqueue)
+	hasData := a.u.scs.HasCharacterSection(characterIDOrZero(a.character.Load()), app.SectionCharacterSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -270,13 +271,13 @@ type skillQueueItem struct {
 	progress *widget.ProgressBar
 }
 
-func newSkillQueueItem() *skillQueueItem {
+func newSkillQueueItem(isMobile bool) *skillQueueItem {
 	pb := widget.NewProgressBar()
 	w := &skillQueueItem{
 		Placeholder: "N/A",
 		duration:    widget.NewLabel(""),
 		progress:    pb,
-		isMobile:    fyne.CurrentDevice().IsMobile(),
+		isMobile:    isMobile,
 	}
 	w.ExtendBaseWidget(w)
 	w.name = widget.NewLabel(w.Placeholder)

@@ -106,11 +106,32 @@ var CashSvg = &fyne.StaticResource{
 	StaticContent: CashSvgData,
 }
 
+//go:embed resources/character_placeholder_128.jpeg
+var Characterplaceholder128JpegData []byte
+var Characterplaceholder128Jpeg = &fyne.StaticResource{
+	StaticName:    "resources/character_placeholder_128.jpeg",
+	StaticContent: Characterplaceholder128JpegData,
+}
+
+//go:embed resources/character_placeholder_256.jpeg
+var Characterplaceholder256JpegData []byte
+var Characterplaceholder256Jpeg = &fyne.StaticResource{
+	StaticName:    "resources/character_placeholder_256.jpeg",
+	StaticContent: Characterplaceholder256JpegData,
+}
+
 //go:embed resources/character_placeholder_32.jpeg
 var Characterplaceholder32JpegData []byte
 var Characterplaceholder32Jpeg = &fyne.StaticResource{
 	StaticName:    "resources/character_placeholder_32.jpeg",
 	StaticContent: Characterplaceholder32JpegData,
+}
+
+//go:embed resources/character_placeholder_512.jpeg
+var Characterplaceholder512JpegData []byte
+var Characterplaceholder512Jpeg = &fyne.StaticResource{
+	StaticName:    "resources/character_placeholder_512.jpeg",
+	StaticContent: Characterplaceholder512JpegData,
 }
 
 //go:embed resources/character_placeholder_64.jpeg
@@ -461,6 +482,13 @@ var ScriptTextSvgData []byte
 var ScriptTextSvg = &fyne.StaticResource{
 	StaticName:    "resources/script-text.svg",
 	StaticContent: ScriptTextSvgData,
+}
+
+//go:embed resources/ship-wheel.svg
+var ShipWheelSvgData []byte
+var ShipWheelSvg = &fyne.StaticResource{
+	StaticName:    "resources/ship-wheel.svg",
+	StaticContent: ShipWheelSvgData,
 }
 
 //go:embed resources/sort-ascending.svg

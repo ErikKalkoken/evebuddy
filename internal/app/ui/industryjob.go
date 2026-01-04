@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -108,7 +109,7 @@ type industryJobs struct {
 	body            fyne.CanvasObject
 	bottom          *widget.Label
 	columnSorter    *iwidget.ColumnSorter
-	corporation     *app.Corporation
+	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
@@ -209,12 +210,12 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 
-	if a.u.isDesktop {
+	if a.u.isMobile {
+		a.body = a.makeDataList()
+	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
 			a.showIndustryJobWindow(j)
 		})
-	} else {
-		a.body = a.makeDataList()
 	}
 
 	a.search = widget.NewEntry()
@@ -271,10 +272,11 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 
 	if forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
+			a.update()
 		})
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation) != arg.corporationID {
+			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section == app.SectionCorporationIndustryJobs {
@@ -293,6 +295,15 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 				a.update()
 			}
 		})
+		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+			a.update()
+		})
+		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+			a.update()
+		})
+		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+			a.update()
+		})
 	}
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
@@ -309,7 +320,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
 	}
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		selections.Add(a.sortButton)
 	}
 	c := container.NewBorder(
@@ -675,7 +686,7 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 }
 
 func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}

@@ -199,7 +199,7 @@ func newTraining(u *baseUI) *training {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -240,12 +240,21 @@ func newTraining(u *baseUI) *training {
 			a.main.Refresh()
 		})
 	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
 	return a
 }
 
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
@@ -284,7 +293,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
 				tags,
-				newSkillQueueItem(),
+				newSkillQueueItem(a.u.isMobile),
 				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
 				spacer,
@@ -369,19 +378,9 @@ func (a *training) filterRows(sortCol int) {
 	}
 	// search filter
 	if search := strings.ToLower(a.search.Text); search != "" {
-		rows2 := make([]trainingRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	// sort
 	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {

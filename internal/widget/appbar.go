@@ -19,11 +19,11 @@ import (
 type AppBar struct {
 	widget.BaseWidget
 
-	Navigator *Navigator
+	Navigator      *Navigator
+	HideBackground bool
 
 	bg       *canvas.Rectangle
 	body     fyne.CanvasObject
-	isMobile bool
 	trailing *fyne.Container
 	title    *widget.Label
 }
@@ -41,13 +41,12 @@ func NewAppBar(title string, body fyne.CanvasObject, trailing ...fyne.CanvasObje
 	}
 	w := &AppBar{
 		body:     body,
-		isMobile: fyne.CurrentDevice().IsMobile(),
 		trailing: t2,
 	}
 	w.ExtendBaseWidget(w)
 	w.bg = canvas.NewRectangle(theme.Color(colorBarBackground))
 	w.bg.SetMinSize(fyne.NewSize(10, 45))
-	if !w.isMobile {
+	if w.HideBackground {
 		w.bg.Hide()
 	}
 	w.title = widget.NewLabel(title)
@@ -65,7 +64,7 @@ func (w *AppBar) Title() string {
 }
 
 func (w *AppBar) Refresh() {
-	if w.isMobile {
+	if !w.HideBackground {
 		th := w.Theme()
 		v := fyne.CurrentApp().Settings().ThemeVariant()
 		w.bg.FillColor = th.Color(colorBarBackground, v)
@@ -90,7 +89,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	}
 	row := container.NewBorder(nil, nil, left, right, w.title)
 	var top, main fyne.CanvasObject
-	if w.isMobile {
+	if !w.HideBackground {
 		top = container.New(
 			layout.NewCustomPaddedLayout(-p, -2*p, -p, -p),
 			container.NewStack(w.bg, container.NewPadded(row)),

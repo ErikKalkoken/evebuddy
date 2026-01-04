@@ -10,7 +10,7 @@ import (
 )
 
 // EqualDuration asserts that got is almost equal to want.
-func EqualDuration(t *testing.T, got, want, delta time.Duration) {
+func EqualDuration(t *testing.T, want, got, delta time.Duration) {
 	t.Helper()
 	diff := got - want
 	if diff < 0 {
@@ -20,7 +20,7 @@ func EqualDuration(t *testing.T, got, want, delta time.Duration) {
 }
 
 // EqualSet asserts that two sets are equal.
-func EqualSet[T comparable](t *testing.T, got, want set.Set[T]) {
+func EqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
 	t.Helper()
 	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
 }

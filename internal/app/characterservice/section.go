@@ -198,6 +198,7 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg app.C
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg app.CharacterSectionUpdateParams, err error) {
+	slog.Error("Character section update failed", "characterID", arg.CharacterID, "section", arg.Section, "error", err)
 	errorMessage := err.Error()
 	startedAt := optional.Optional[time.Time]{}
 	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{

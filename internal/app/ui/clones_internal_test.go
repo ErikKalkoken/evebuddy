@@ -5,12 +5,16 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 
@@ -41,6 +45,9 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 }
 
 func TestClones_CanRenderEmpty(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cases := []struct {
@@ -68,6 +75,9 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 }
 
 func TestClones_CanRenderFull(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 

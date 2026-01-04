@@ -8,6 +8,7 @@ import (
 	"image/draw"
 	"log/slog"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -33,7 +34,7 @@ const (
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	character       *app.Character
+	character      atomic.Pointer[app.Character]
 	flyableSelect   *kxwidget.FilterChipSelect
 	flyableSelected string
 	grid            *widget.GridWrap
@@ -93,11 +94,12 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
+			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterSkills {
@@ -106,7 +108,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	},
 	)
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		characterID := characterIDOrZero(a.character)
+		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
 		}
@@ -163,7 +165,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.ShowTypeInfoWindowWithCharacter(o.Type.ID, characterIDOrZero(a.character))
+		a.u.ShowTypeInfoWindowWithCharacter(o.Type.ID, characterIDOrZero(a.character.Load()))
 	}
 	return g
 }
@@ -201,7 +203,7 @@ func (a *characterFlyableShips) update() {
 }
 
 func (a *characterFlyableShips) updateEntries() error {
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		fyne.Do(func() {
 			a.ships = make([]*app.CharacterShipAbility, 0)
@@ -259,10 +261,10 @@ func (a *characterFlyableShips) updateEntries() error {
 }
 
 func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
-	if a.character == nil {
+	if a.character.Load() == nil {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
@@ -299,6 +301,7 @@ func newShipItem(eis app.EveImageService, cache *memcache.Cache, fallbackIcon fy
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
 	image.ScaleMode = defaultImageScaleMode
+	image.CornerRadius = theme.InputRadiusSize()
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &shipItem{
 		image:        image,

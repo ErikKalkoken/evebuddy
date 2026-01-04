@@ -95,7 +95,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		r.price = ca.Price
 	}
 	r.priceDisplay = r.price.StringFunc("?", func(v float64) string {
-		return ihumanize.Number(v, 1)
+		return ihumanize.NumberF(v, 1)
 	})
 	if !r.price.IsEmpty() {
 		r.total.Set(ca.Price.ValueOrZero() * float64(ca.Quantity))
@@ -109,7 +109,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 type assets struct {
 	widget.BaseWidget
 
-	onUpdate func(total string)
+	onUpdate func(int, string)
 
 	body           fyne.CanvasObject
 	columnSorter   *iwidget.ColumnSorter
@@ -166,9 +166,9 @@ func newAssets(u *baseUI) *assets {
 	}})
 	a := &assets{
 		columnSorter: headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
-		search:       widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
+		search:       widget.NewEntry(),
 		total:        makeTopLabel(),
 		u:            u,
 	}
@@ -183,7 +183,7 @@ func newAssets(u *baseUI) *assets {
 	a.search.PlaceHolder = "Search items"
 	a.found.Hide()
 
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
@@ -255,6 +255,15 @@ func newAssets(u *baseUI) *assets {
 			a.update()
 		}
 	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
 	return a
 }
 
@@ -268,7 +277,7 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTotal,
 		a.selectTag,
 	)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filters.Add(container.NewHBox(a.sortButton))
 	}
 	topBox := container.NewVBox(
@@ -377,19 +386,9 @@ func (a *assets) filterRows(sortCol int) {
 	}
 	// search filter
 	if search := strings.ToLower(a.search.Text); search != "" {
-		rows2 := make([]assetRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	// sort
 	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
@@ -448,7 +447,7 @@ func (a *assets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
-	assets, quantity, total, err := a.fetchRows(a.u.services())
+	assets, quantity, _, err := a.fetchRows(a.u.services())
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR: " + a.u.humanizeError(err)
@@ -457,14 +456,10 @@ func (a *assets) update() {
 		t = "No characters"
 		i = widget.LowImportance
 	} else {
-		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(quantity))
+		t = fmt.Sprintf("%s items", ihumanize.Number(quantity, 1))
 	}
 	if a.onUpdate != nil {
-		var s string
-		if err == nil {
-			s = ihumanize.Number(total, 1)
-		}
-		a.onUpdate(s)
+		a.onUpdate(quantity, t)
 	}
 	fyne.Do(func() {
 		a.updateFoundInfo()

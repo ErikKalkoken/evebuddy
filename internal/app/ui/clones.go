@@ -144,7 +144,7 @@ func newClones(u *baseUI) *clones {
 		}
 		return s
 	}
-	if a.u.isDesktop {
+	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
@@ -199,6 +199,15 @@ func newClones(u *baseUI) *clones {
 			a.update()
 		}
 	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
 	return a
 }
 
@@ -216,7 +225,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 		a.selectOwner,
 		a.selectTag,
 	)
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		filters.Add(a.sortButton)
 	}
 	c := container.NewBorder(
@@ -503,7 +512,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	)
 	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
 	_, s := w.Canvas().InteractiveArea()
-	if !a.u.isDesktop {
+	if a.u.isMobile {
 		d.Resize(fyne.NewSize(s.Width, s.Height))
 	} else {
 		d.Resize(fyne.NewSize(600, max(400, s.Height*0.8)))

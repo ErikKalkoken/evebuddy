@@ -289,9 +289,13 @@ func (w *NavBar) HideBar() {
 }
 
 // Select switches to a new destination.
+// Will do nothing id target tab is disabled.
 func (w *NavBar) Select(id int) {
 	if id < 0 || id >= len(w.destinations.Objects) {
 		return // out of bounds
+	}
+	if w.destinations.Objects[id].(*destination).Disabled() {
+		return
 	}
 	if id == w.selectedIdx {
 		if d := w.destination(id); d.onSelectedAgain != nil {

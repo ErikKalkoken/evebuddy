@@ -14,12 +14,6 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// type Category string
-
-// const (
-// 	Alliance Category = "alliance"
-// )
-
 // cache timeouts per image category
 const (
 	timeoutAlliance    = time.Hour * 24 * 7
@@ -29,9 +23,9 @@ const (
 )
 
 var (
-	ErrHTTPError   = errors.New("http error")
-	ErrNoImage     = errors.New("no image from API")
-	ErrInvalidSize = errors.New("invalid size")
+	ErrHTTPError = errors.New("http error")
+	ErrNoImage   = errors.New("no image from API")
+	ErrInvalid   = errors.New("invalid")
 )
 
 // CacheService defines a cache service
@@ -81,8 +75,8 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 func (s *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := AllianceLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -93,8 +87,8 @@ func (s *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error
 func (s *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
 	url, err := CharacterPortraitURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -105,8 +99,8 @@ func (s *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, 
 func (s *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := CorporationLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -117,8 +111,8 @@ func (s *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, er
 func (s *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := FactionLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -129,8 +123,8 @@ func (s *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 func (s *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -141,8 +135,8 @@ func (s *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 func (s *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeIconURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -153,8 +147,8 @@ func (s *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 func (s *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPOURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -165,8 +159,8 @@ func (s *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 func (s *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPCURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalidSize) {
-			err = ErrInvalidSize
+		if errors.Is(err, ErrInvalid) {
+			err = ErrInvalid
 		}
 		return nil, err
 	}
@@ -176,7 +170,7 @@ func (s *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 // InventoryTypeSKIN returns the icon for a SKIN type.
 func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
 	if size != 64 {
-		return nil, ErrInvalidSize
+		return nil, ErrInvalid
 	}
 	return resourceSkinicon64pxPng, nil
 }

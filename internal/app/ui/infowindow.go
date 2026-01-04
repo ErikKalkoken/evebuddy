@@ -103,7 +103,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}
 
 	makeAppBarTitle := func(s string) string {
-		if !iw.u.isDesktop {
+		if iw.u.isMobile {
 			return s
 		}
 		return s + ": Information"
@@ -151,6 +151,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		return
 	}
 	ab = iwidget.NewAppBar(makeAppBarTitle(title), page)
+	ab.HideBackground = !iw.u.isMobile
 	if iw.nav == nil {
 		w := iw.u.App().NewWindow(iw.u.makeWindowTitle("Information"))
 		iw.w = w
@@ -289,7 +290,7 @@ func (iw *infoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 
 func (iw *infoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if !iw.u.isDesktop {
+	if iw.u.isMobile {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize
@@ -519,7 +520,7 @@ type characterInfo struct {
 	isOwned         bool
 	membership      *widget.Label
 	ownedIcon       *ttwidget.Icon
-	portrait        *kxwidget.TappableImage
+	portrait        *iwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
 	title           *widget.Label
@@ -530,7 +531,7 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
-	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
+	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(iw.renderIconSize())
 	title := widget.NewLabel("")
@@ -1175,7 +1176,7 @@ type locationInfo struct {
 	ownerLogo   *canvas.Image
 	services    *entityList
 	tabs        *container.AppTabs
-	typeImage   *kxwidget.TappableImage
+	typeImage   *iwidget.TappableImage
 	typeInfo    *widget.Hyperlink
 }
 
@@ -1186,7 +1187,7 @@ func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
 	owner.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
-	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeImage := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
@@ -1710,14 +1711,14 @@ type inventoryTypeInfo struct {
 	janice           *fyne.Container
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
-	typeIcon         *kxwidget.TappableImage
+	typeIcon         *iwidget.TappableImage
 	typeID           int32
 }
 
 func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryTypeInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
-	typeIcon := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
 	a := &inventoryTypeInfo{

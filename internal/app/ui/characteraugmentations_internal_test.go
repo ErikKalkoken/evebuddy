@@ -5,14 +5,15 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
 func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
-	if IsCI() {
-		t.Skip("UI tests are currently flaky and therefore only run locally")
+	if testing.Short() {
+		t.Skip(SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

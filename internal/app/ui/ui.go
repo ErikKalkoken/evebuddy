@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -35,7 +36,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
@@ -98,13 +98,11 @@ type baseUI struct {
 	onAppFirstStarted               func()
 	onAppStopped                    func()
 	onAppTerminated                 func()
-	onRefreshCross                  func()
 	onSetCharacter                  func(*app.Character)
+	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
-	onUpdateCharacter               func(*app.Character)
-	onUpdateCorporation             func(*app.Corporation)
-	onUpdateCorporationWalletTotals func(balance string)
+	onUpdateCorporationWalletTotals func(balance float64, ok bool)
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
 	onSectionUpdateStarted          func()
@@ -122,7 +120,6 @@ type baseUI struct {
 	characterCommunications *characterCommunications
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
-	characterLocations      *characterLocations
 	characterMails          *characterMails
 	characterOverview       *characterOverview
 	characterSheet          *characterSheet
@@ -141,13 +138,13 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
-	marketOrdersSell        *marketOrders
 	marketOrdersBuy         *marketOrders
-	progressModal           *iwidget.ProgressModal
+	marketOrdersSell        *marketOrders
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
 	snackbar                *iwidget.Snackbar
+	statusText              *statusText
 	training                *training
 	wealth                  *wealth
 
@@ -163,12 +160,16 @@ type baseUI struct {
 	currentCharacterExchanged signals.Signal[*app.Character]
 	// The current corporation was exchanged with another corporation or reset.
 	currentCorporationExchanged signals.Signal[*app.Corporation]
+	// A corporation has been added or removed.
+	corporationsChanged signals.Signal[struct{}]
 	// A character section has changed after an update from ESI.
 	corporationSectionChanged signals.Signal[corporationSectionUpdated]
 	// A general section has changed after an update from ESI.
 	generalSectionChanged signals.Signal[generalSectionUpdated]
 	// Ticker for dynamic UI refresh has expired.
 	refreshTickerExpired signals.Signal[struct{}]
+	// A tag as been added, removed or renamed.
+	tagsChanged signals.Signal[struct{}]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -188,7 +189,7 @@ type baseUI struct {
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme       fyne.Theme
-	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
+	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isOffline          bool        // Run the app in offline mode
@@ -214,7 +215,7 @@ type BaseUIParams struct {
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
 	DataPaths        map[string]string
-	IsDesktop        bool
+	IsMobile         bool
 	IsFakeMobile     bool
 	IsOffline        bool
 	IsUpdateDisabled bool
@@ -230,6 +231,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		characterRemoved:            signals.New[*app.EntityShort[int32]](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
+		corporationsChanged:         signals.New[struct{}](),
 		corporationSectionChanged:   signals.New[corporationSectionUpdated](),
 		corporationWallets:          make(map[app.Division]*corporationWallet),
 		cs:                          arg.CharacterService,
@@ -239,7 +241,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                         arg.ESIStatusService,
 		eus:                         arg.EveUniverseService,
 		generalSectionChanged:       signals.New[generalSectionUpdated](),
-		isDesktop:                   arg.IsDesktop,
+		isMobile:                    arg.IsMobile,
 		isFakeMobile:                arg.IsFakeMobile,
 		isOffline:                   arg.IsOffline,
 		isUpdateDisabled:            arg.IsUpdateDisabled,
@@ -252,6 +254,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		scs:                         arg.StatusCacheService,
 		settings:                    settings.New(arg.App.Preferences()),
 		sig:                         singleinstance.NewGroup(),
+		statusText:                  NewStatusText(),
+		tagsChanged:                 signals.New[struct{}](),
 		windows:                     make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
@@ -270,14 +274,23 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		u.dataPaths = make(xmaps.OrderedMap[string, string])
 	}
 
-	if u.isDesktop {
+	if !u.isMobile {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		defaultImageScaleMode = canvas.ImageScaleFastest
+	}
+
+	// updateStatus refreshes all status pages and dynamic menus.
+	updateStatus := func() {
+		if u.onUpdateStatus == nil {
+			return
+		}
+		u.onUpdateStatus()
 	}
 
 	// Signal logging and base listeners
 	u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		slog.Debug("Signal: characterExchanged", "characterID", characterIDOrZero(c))
+		updateStatus()
 	})
 	u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		slog.Debug("Signal: characterSectionChanged", "arg", arg)
@@ -303,7 +316,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		case app.SectionCharacterMailHeaders:
 			u.updateMailIndicator()
 		case app.SectionCharacterRoles:
-			u.updateStatus()
+			updateStatus()
 			if isShown {
 				go u.characterSheet.update()
 			}
@@ -327,8 +340,20 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
+	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		updateStatus()
+	})
+	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		updateStatus()
+	})
+
+	u.corporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+		updateStatus()
+	})
 	u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
+		updateStatus()
+		u.updateCorporationWalletTotal()
 	})
 	u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		slog.Debug("Signal: corporationSectionChanged", "arg", arg)
@@ -339,6 +364,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationWalletTotal()
 		}
 	})
+
 	u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		slog.Debug("Signal: generalSectionChanged", "arg", arg)
 		switch arg.section {
@@ -348,7 +374,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			}
 			characters := u.scs.ListCharacterIDs()
 			if characters.ContainsAny(arg.changed.All()) {
-				u.updateStatus()
+				updateStatus()
 			}
 		case app.SectionEveCorporations:
 			if arg.changed.Contains(u.currentCorporationID()) {
@@ -367,7 +393,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				return
 			}
 			if arg.changed.ContainsAny(corporationIDs.All()) {
-				u.updateStatus()
+				updateStatus()
 			}
 		case app.SectionEveMarketPrices:
 			for _, c := range u.scs.ListCharacters() {
@@ -390,7 +416,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterCommunications = newCharacterCommunications(u)
 	u.characterCorporation = newCorporationSheet(u, false)
 	u.characterJumpClones = newCharacterJumpClones(u)
-	u.characterLocations = newCharacterLocations(u)
 	u.characterMails = newCharacterMails(u)
 	u.characterOverview = newCharacterOverview(u)
 	u.characterSheet = newCharacterSheet(u)
@@ -413,7 +438,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.industryJobs = newIndustryJobsForOverview(u)
 	u.marketOrdersSell = newMarketOrders(u, false)
 	u.marketOrdersBuy = newMarketOrders(u, true)
-	u.progressModal = iwidget.NewProgressModal(u.window)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
@@ -432,10 +456,19 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		if !u.isOffline && !u.isUpdateDisabled {
-			go u.updateCharactersIfNeeded(context.Background(), false)
-			go u.updateCorporationsIfNeeded(context.Background(), false)
-			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+		if u.isMobile {
+			// When the app is restarted on mobile the UI must be
+			// refreshed immediately to avoid showing stale data (e.g. timers) to users
+			// and updates must be run at once
+			go u.refreshTickerExpired.Emit(context.Background(), struct{}{})
+			if !u.isOffline && !u.isUpdateDisabled {
+				go func() {
+					time.Sleep(1 * time.Second) // allow app to fully load before updating
+					go u.updateCharactersIfNeeded(context.Background(), false)
+					go u.updateCorporationsIfNeeded(context.Background(), false)
+					go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+				}()
+			}
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {
@@ -456,9 +489,6 @@ func (u *baseUI) Start() bool {
 	wasStarted := !u.wasStarted.CompareAndSwap(false, true)
 	if wasStarted {
 		slog.Info("App continued")
-		// When the app is restarted (e.g. on Android) the UI must be
-		// refreshed immediately to avoid showing stale data (e.g. timers) to users
-		u.refreshTickerExpired.Emit(context.Background(), struct{}{})
 		return false
 	}
 	// First app start
@@ -469,15 +499,14 @@ func (u *baseUI) Start() bool {
 	} else {
 		slog.Info("App started")
 	}
-	u.isForeground.Store(true)
 	u.snackbar.Start()
-	u.progressModal.Start()
 	go func() {
 		u.characterSkillQueue.start()
-		u.initCharacter()
-		u.initCorporation()
-		u.updateHome()
-		u.updateStatus()
+		var wg sync.WaitGroup
+		wg.Go(u.initHome)
+		wg.Go(u.initCharacter)
+		wg.Go(u.initCorporation)
+		wg.Wait()
 
 		updateCharactersMissingScope := func() {
 			cc, err := u.cs.CharactersWithMissingScopes(context.Background())
@@ -498,12 +527,17 @@ func (u *baseUI) Start() bool {
 		updateCharactersMissingScope()
 
 		u.isStartupCompleted.Store(true)
-		u.startRefreshTicker()
+		go func() {
+			for range time.Tick(refreshUITicker) {
+				u.refreshTickerExpired.Emit(context.Background(), struct{}{})
+			}
+		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
 		if !u.isOffline && !u.isUpdateDisabled {
-			time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
+			time.Sleep(3 * time.Second) // allow app to fully load before updating
+			slog.Info("Starting update ticker")
 			u.startUpdateTickerGeneralSections()
 			u.startUpdateTickerCharacters()
 			u.startUpdateTickerCorporations()
@@ -512,14 +546,6 @@ func (u *baseUI) Start() bool {
 		}
 	}()
 	return true
-}
-
-func (u *baseUI) startRefreshTicker() {
-	go func() {
-		for range time.Tick(refreshUITicker) {
-			u.refreshTickerExpired.Emit(context.Background(), struct{}{})
-		}
-	}()
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
@@ -651,18 +677,17 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
-	u.currentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
-	u.updateCharacter()
-	u.updateStatus()
+	u.currentCharacterExchanged.Emit(context.Background(), nil)
+	// if u.onSetCharacter != nil {
+	// 	u.onSetCharacter(nil)
+	// }
 }
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
-	u.currentCharacterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
-	u.updateCharacter()
-	u.updateStatus()
+	u.currentCharacterExchanged.Emit(context.Background(), c)
 	if u.onSetCharacter != nil {
 		u.onSetCharacter(c)
 	}
@@ -680,37 +705,37 @@ func (u *baseUI) setAnyCharacter() error {
 	return nil
 }
 
-// updateCharacter updates all pages for the current character.
-func (u *baseUI) updateCharacter() {
-	c := u.currentCharacter()
-	if c != nil {
-		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	} else {
-		slog.Debug("Updating without character")
-	}
-	u.showModalWhileExecuting("Loading character", map[string]func(){
-		"assets":               u.characterAssets.update,
-		"attributes":           u.characterAttributes.update,
-		"biography":            u.characterBiography.update,
-		"implants":             u.characterAugmentations.update,
-		"jumpClones":           u.characterJumpClones.update,
-		"mail":                 u.characterMails.update,
-		"notifications":        u.characterCommunications.update,
-		"characterSheet":       u.characterSheet.update,
-		"characterCorporation": u.characterCorporation.update,
-		"ships":                u.characterShips.update,
-		"skillCatalogue":       u.characterSkillCatalogue.update,
-		"skillqueue":           u.characterSkillQueue.update,
-		"wallet":               u.characterWallet.update,
-	}, func() {
-		if u.onUpdateCharacter != nil {
-			u.onUpdateCharacter(c)
-		}
-		// if c != nil && !u.isUpdateDisabled {
-		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-		// }
-	})
-}
+// // updateCharacter updates all pages for the current character.
+// func (u *baseUI) updateCharacter() {
+// 	c := u.currentCharacter()
+// 	if c != nil {
+// 		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+// 	} else {
+// 		slog.Debug("Updating without character")
+// 	}
+// 	u.showInfoWhileExecuting("Loading character", map[string]func(){
+// 		"characterSheet":       u.characterSheet.update,
+// 		"assets":               u.characterAssets.update,
+// 		"attributes":           u.characterAttributes.update,
+// 		"biography":            u.characterBiography.update,
+// 		"implants":             u.characterAugmentations.update,
+// 		"jumpClones":           u.characterJumpClones.update,
+// 		"mail":                 u.characterMails.update,
+// 		"notifications":        u.characterCommunications.update,
+// 		"characterCorporation": u.characterCorporation.update,
+// 		"ships":                u.characterShips.update,
+// 		"skillCatalogue":       u.characterSkillCatalogue.update,
+// 		"skillqueue":           u.characterSkillQueue.update,
+// 		"wallet":               u.characterWallet.update,
+// 	}, func() {
+// 		if u.onUpdateCharacter != nil {
+// 			u.onUpdateCharacter(c)
+// 		}
+// 		// if c != nil && !u.isUpdateDisabled {
+// 		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+// 		// }
+// 	})
+// }
 
 func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
 	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
@@ -786,16 +811,15 @@ func (u *baseUI) resetCorporation() {
 	u.corporation.Store(nil)
 	u.settings.ResetLastCorporationID()
 	u.currentCorporationExchanged.Emit(context.Background(), nil)
-	u.updateCorporation()
-	u.updateStatus()
+	// if u.onSetCorporation != nil {
+	// 	u.onSetCorporation(nil)
+	// }
 }
 
 func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.corporation.Store(c)
 	u.settings.SetLastCorporationID(c.ID)
 	u.currentCorporationExchanged.Emit(context.Background(), c)
-	u.updateCorporation()
-	u.updateStatus()
 	if u.onSetCorporation != nil {
 		u.onSetCorporation(c)
 	}
@@ -812,34 +836,6 @@ func (u *baseUI) setAnyCorporation() error {
 	}
 	u.setCorporation(c)
 	return nil
-}
-
-// updateCorporation updates all pages for the current corporation.
-func (u *baseUI) updateCorporation() {
-	c := u.currentCorporation()
-	if c != nil {
-		slog.Debug("Updating corporation", "ID", c.EveCorporation.ID, "name", c.EveCorporation.Name)
-	} else {
-		slog.Debug("Updating without corporation")
-	}
-	ff := make(map[string]func())
-	ff["corporationContracts"] = u.corporationContracts.update
-	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
-	ff["corporationMember"] = u.corporationMember.update
-	ff["corporationSheet"] = u.corporationSheet.update
-	ff["corporationStructures"] = u.corporationStructures.update
-	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
-	for id, w := range u.corporationWallets {
-		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	}
-	u.showModalWhileExecuting("Loading corporation", ff, func() {
-		// if c != nil && !u.isUpdateDisabled {
-		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
-		// }
-		if u.onUpdateCorporation != nil {
-			u.onUpdateCorporation(c)
-		}
-	})
 }
 
 func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
@@ -859,9 +855,10 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 //////////////////
 // Home
 
-// updateHome refreshed all pages that contain information about multiple characters.
-func (u *baseUI) updateHome() {
-	u.showModalWhileExecuting("Updating home", map[string]func(){
+// initHome performs an initial load of all pages under the home tab.
+func (u *baseUI) initHome() {
+	ff := map[string]func(){
+		"overview":           u.characterOverview.update,
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
@@ -873,45 +870,53 @@ func (u *baseUI) updateHome() {
 		"slotsManufacturing": u.slotsManufacturing.update,
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
-		"locations":          u.characterLocations.update,
-		"overview":           u.characterOverview.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
-	}, u.onRefreshCross)
-}
-
-// showModalWhileExecuting shows a modal to the user while the functions ff are being executed.
-// Optionally runs onCompleted after all functions have been run.
-func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
-	u.progressModal.Execute(title, func() {
-		start := time.Now()
-		myLog := slog.With("title", title)
-		myLog.Debug("started")
-		g := new(errgroup.Group)
-		g.SetLimit(u.concurrencyLimit)
-		for name, f := range ff {
-			g.Go(func() error {
-				start2 := time.Now()
-				f()
-				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-				return nil
-			})
-		}
-		g.Wait()
-		myLog.Debug("Completed", "duration", time.Since(start).Milliseconds())
-		if onCompleted != nil {
-			onCompleted()
-		}
-	})
-}
-
-// updateStatus refreshes all status pages and dynamic menus.
-func (u *baseUI) updateStatus() {
-	if u.onUpdateStatus == nil {
-		return
 	}
-	u.onUpdateStatus()
+	myLog := slog.With("title", "startup")
+	myLog.Debug("started")
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
+	for name, f := range ff {
+		g.Go(func() error {
+			start2 := time.Now()
+			f()
+			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+			return nil
+		})
+	}
+	g.Wait()
 }
+
+// showInfoWhileExecuting shows a modal to the user while the functions ff are being executed.
+// Optionally runs onCompleted after all functions have been run.
+// func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
+// 	go func() {
+// 		myLog := slog.With("title", title)
+// 		myLog.Debug("started")
+// 		key := fmt.Sprintf("%s-%d", title, time.Now().UnixMicro())
+// 		fyne.Do(func() {
+// 			u.statusText.Set(key, title)
+// 		})
+// 		g := new(errgroup.Group)
+// 		g.SetLimit(u.concurrencyLimit)
+// 		for name, f := range ff {
+// 			g.Go(func() error {
+// 				start2 := time.Now()
+// 				f()
+// 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+// 				return nil
+// 			})
+// 		}
+// 		g.Wait()
+// 		if onCompleted != nil {
+// 			onCompleted()
+// 		}
+// 		fyne.Do(func() {
+// 			u.statusText.Unset(key)
+// 		})
+// 	}()
+// }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
@@ -1060,29 +1065,30 @@ func (u *baseUI) updateCorporationWalletTotal() {
 	if u.onUpdateCorporationWalletTotals == nil {
 		return
 	}
-	s := func() string {
+	v, ok := func() (float64, bool) {
 		corporationID := u.currentCorporationID()
 		if corporationID == 0 {
-			return ""
+			return 0, false
 		}
 		hasRole, err := u.rs.PermittedSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
-			return ""
+			return 0, false
 		}
 		if !hasRole {
-			return ""
+			return 0, false
 		}
 		b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
 		if err != nil {
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-			return ""
+			return 0, false
 		}
-		return b.StringFunc("", func(v float64) string {
-			return humanize.Number(b.ValueOrZero(), 1)
-		})
+		if b.IsEmpty() {
+			return 0, false
+		}
+		return b.ValueOrZero(), true
 	}()
-	u.onUpdateCorporationWalletTotals(s)
+	u.onUpdateCorporationWalletTotals(v, ok)
 }
 
 func (u *baseUI) availableUpdate() (github.VersionInfo, error) {
@@ -1232,7 +1238,7 @@ func (u *baseUI) makeWindowTitle(parts ...string) string {
 	if len(parts) == 0 {
 		parts = append(parts, "PLACEHOLDER")
 	}
-	if !u.isDesktop {
+	if u.isMobile {
 		return parts[0]
 	}
 	parts = append(parts, u.appName())
@@ -1260,4 +1266,56 @@ func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make fu
 		return "", widget.MediumImportance
 	}
 	return make()
+}
+
+// statusText is a widget that can show/hide multiple status texts with a spinner.
+type statusText struct {
+	widget.BaseWidget
+
+	label    *widget.Label
+	messages map[string]string
+	spinner  *widget.Activity
+}
+
+func NewStatusText() *statusText {
+	w := &statusText{
+		messages: make(map[string]string),
+		label:    widget.NewLabel(""),
+		spinner:  widget.NewActivity(),
+	}
+	w.label.Hide()
+	w.spinner.Hide()
+	w.spinner.Stop()
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *statusText) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewHBox(w.label, w.spinner)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *statusText) Set(key, text string) {
+	w.messages[key] = text
+	if w.label.Hidden {
+		w.label.SetText(text)
+		w.spinner.Start()
+		w.label.Show()
+		w.spinner.Show()
+	}
+}
+
+func (w *statusText) Unset(key string) {
+	delete(w.messages, key)
+	if len(w.messages) == 0 {
+		w.label.Hide()
+		w.spinner.Hide()
+		w.spinner.Stop()
+	}
+	var text string
+	for _, s := range w.messages {
+		text = s
+		break
+	}
+	w.label.SetText(text)
 }

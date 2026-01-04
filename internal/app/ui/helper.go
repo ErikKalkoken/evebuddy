@@ -13,8 +13,9 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -53,7 +54,7 @@ func makeTopLabel() *widget.Label {
 func formatISKAmount(v float64) string {
 	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
 	if math.Abs(v) > 999 {
-		t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 2))
+		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
 	}
 	return t
 }

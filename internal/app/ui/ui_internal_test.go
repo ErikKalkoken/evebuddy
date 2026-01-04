@@ -24,26 +24,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-// type FakeCache map[string][]byte
-
-// func NewFakeCache() FakeCache {
-// 	return make(FakeCache)
-// }
-
-// func (c FakeCache) Get(k string) ([]byte, bool) {
-// 	v, ok := c[k]
-// 	return v, ok
-// }
-
-// func (c FakeCache) Set(k string, v []byte, d time.Duration) {
-// 	c[k] = v
-// }
-
-// func (c FakeCache) Clear() {
-// 	for k := range c {
-// 		delete(c, k)
-// 	}
-// }
+const (
+	SkipUIReason = "This test is skipped for CI as it is flaky"
+)
 
 // FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
 type FakeApp struct {
@@ -237,7 +220,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		MemCache:           cache,
 		StatusCacheService: scs,
 		IsOffline:          true,
-		IsDesktop:          isDesktop,
+		IsMobile:           !isDesktop,
 	})
 	return bu
 }
@@ -247,14 +230,14 @@ func TestMakeOrFindWindow(t *testing.T) {
 		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
 		w, ok := ui.getOrCreateWindow("abc", "title")
 		assert.True(t, ok)
-		assert.Equal(t, "title", w.Title())
+		assert.Contains(t, w.Title(), "title")
 	})
 	t.Run("should return existing window", func(t *testing.T) {
 		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
 		ui.getOrCreateWindow("abc", "title-old")
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
-		assert.Equal(t, "title-old", w.Title())
+		assert.Contains(t, w.Title(), "title-old")
 	})
 	t.Run("should create new window when previous one was closed", func(t *testing.T) {
 		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
@@ -262,18 +245,18 @@ func TestMakeOrFindWindow(t *testing.T) {
 		w.Close()
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
-		assert.Equal(t, "title-new", w.Title())
+		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should create new window when previous one was reshown and then closed", func(t *testing.T) {
 		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
 		ui.getOrCreateWindow("abc", "title-old")
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
-		assert.Equal(t, "title-old", w.Title())
+		assert.Contains(t, w.Title(), "title-old")
 		w.Close()
 		w, ok = ui.getOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
-		assert.Equal(t, "title-new", w.Title())
+		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should allow setting onClose calback by caller", func(t *testing.T) {
 		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
@@ -287,6 +270,6 @@ func TestMakeOrFindWindow(t *testing.T) {
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
 		assert.True(t, called)
-		assert.Equal(t, "title-new", w.Title())
+		assert.Contains(t, w.Title(), "title-new")
 	})
 }

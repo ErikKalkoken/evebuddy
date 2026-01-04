@@ -71,7 +71,8 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		"?",
 		func() {
 			showManageCharactersWindow(u.baseUI)
-		})
+		},
+	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
 	a.u.onUpdateMissingScope = func(characterCount int) {
 		fyne.Do(func() {
@@ -111,6 +112,7 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
+			a.u.statusText,
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
@@ -376,6 +378,7 @@ func (w *statusBarItem) Refresh() {
 	w.bg.Refresh()
 	w.leading.Refresh()
 	w.label.Refresh()
+	w.BaseWidget.Refresh()
 }
 
 // SetLeading updates the leading icon.

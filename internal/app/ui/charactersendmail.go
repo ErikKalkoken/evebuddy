@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -24,7 +25,7 @@ type characterSendMail struct {
 	widget.BaseWidget
 
 	body      *widget.Entry
-	character *app.Character
+	character atomic.Pointer[app.Character]
 	from      *eveEntityEntry
 	subject   *widget.Entry
 	to        *eveEntityEntry
@@ -34,10 +35,10 @@ type characterSendMail struct {
 
 func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
 	a := &characterSendMail{
-		character: c,
-		u:         u,
-		w:         u.MainWindow(),
+		u: u,
+		w: u.MainWindow(),
 	}
+	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
 	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
@@ -121,9 +122,10 @@ func (a *characterSendMail) SendAction() bool {
 		return false
 	}
 	ctx := context.Background()
+	c := a.character.Load()
 	_, err := a.u.cs.SendMail(
 		ctx,
-		a.character.ID,
+		c.ID,
 		a.subject.Text,
 		a.to.Items(),
 		a.body.Text,
@@ -132,8 +134,8 @@ func (a *characterSendMail) SendAction() bool {
 		showErrorDialog(err.Error())
 		return false
 	}
-	a.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
-		characterID: a.character.ID,
+	go a.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+		characterID: c.ID,
 		section:     app.SectionCharacterMailHeaders,
 	})
 	a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))

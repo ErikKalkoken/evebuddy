@@ -97,15 +97,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// Home
 
 	var homeNav *iwidget.NavDrawer
-	// overview := iwidget.NewNavPage(
-	// 	"Character Overview",
-	// 	theme.NewThemedResource(icons.PortraitSvg),
-	// 	newContentPage("Character Overview", u.characterOverview),
-	// )
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		u.characterOverview,
+		newContentPage("Character Overview", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -113,12 +108,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.GoldSvg),
 		newContentPage("Wealth", u.wealth),
 	)
-	u.wealth.onUpdate = func(wallet, assets float64) {
-		fyne.Do(func() {
-			x := ihumanize.Number(wallet+assets, 1)
-			homeNav.SetItemBadge(wealth, x)
-		})
-	}
+	// u.wealth.onUpdate = func(wallet, assets float64) {
+	// 	fyne.Do(func() {
+	// 		x := ihumanize.Number(wallet+assets, 1)
+	// 		homeNav.SetItemBadge(wealth, x)
+	// 	})
+	// }
 
 	const assetsTitle = "Character Assets"
 	allAssets := iwidget.NewNavPage(
@@ -126,11 +121,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage(assetsTitle, u.assets),
 	)
-	u.assets.onUpdate = func(total string) {
-		fyne.Do(func() {
-			homeNav.SetItemBadge(allAssets, total)
-		})
-	}
+	// u.assets.onUpdate = func(quantity int, _ string) {
+	// 	fyne.Do(func() {
+	// 		homeNav.SetItemBadge(allAssets, ihumanize.Number(float64(quantity), 1))
+	// 	})
+	// }
 
 	contracts := iwidget.NewNavPage(
 		"Contracts",
@@ -208,11 +203,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		overviewColonies,
 		industry,
 		marketOrders,
-		iwidget.NewNavPage(
-			"Character Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			newContentPage("Character Locations", u.characterLocations),
-		),
 		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
@@ -307,16 +297,17 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterWalletNav,
 	)
 	characterNav.MinWidth = navDrawerMinWidth
-	u.characterWallet.onUpdate = func(balance string) {
+	u.characterWallet.onBalanceUpdate = func(balance float64) {
+		s := ihumanize.NumberF(balance, 1)
 		fyne.Do(func() {
-			characterNav.SetItemBadge(characterWalletNav, balance)
+			characterNav.SetItemBadge(characterWalletNav, s)
 		})
 	}
-	u.characterAssets.OnUpdate = func(s string) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterAssetsNav, s)
-		})
-	}
+	// u.characterAssets.OnUpdate = func(s string) {
+	// 	fyne.Do(func() {
+	// 		characterNav.SetItemBadge(characterAssetsNav, s)
+	// 	})
+	// }
 
 	// Corporation
 	var corporationNav *iwidget.NavDrawer
@@ -395,9 +386,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = navDrawerMinWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
+		u.corporationWallets[d].onBalanceUpdate = func(balance float64) {
+			s := ihumanize.NumberF(balance, 1)
 			fyne.Do(func() {
-				corporationNav.SetItemBadge(corporationWalletNavs[d], balance)
+				corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 			})
 		}
 		u.corporationWallets[d].onNameUpdate = func(name string) {
@@ -407,10 +399,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}
 	}
-	u.onUpdateCorporationWalletTotals = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
+		var s string
+		if !ok {
+			s = ""
+		} else {
+			s = ihumanize.NumberF(balance, 1)
+		}
 		fyne.Do(func() {
+			corporationNav.SetItemBadge(walletsNav, s)
 			corporationNav.Refresh()
-			corporationNav.SetItemBadge(walletsNav, balance)
 		})
 	}
 
@@ -520,6 +518,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}()
 	}
+	u.onShowCharacter = func() {
+		tabs.Select(characterTab)
+	}
 
 	togglePermittedSections := func() {
 		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
@@ -578,27 +579,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go togglePermittedSections()
 	}
 
-	u.onUpdateCharacter = func(character *app.Character) {
-		go func() {
-			if character == nil {
-				fyne.Do(func() {
-					tabs.DisableItem(characterTab)
-					homeNav.Disable()
-					toolbar.ToogleSearchBar(false)
-					characterNav.SelectIndex(0)
-				})
-				return
-			}
+	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		if c == nil {
 			fyne.Do(func() {
-				tabs.EnableItem(characterTab)
-				homeNav.Enable()
-				toolbar.ToogleSearchBar(true)
+				tabs.DisableItem(characterTab)
+				homeNav.Disable()
+				toolbar.ToogleSearchBar(false)
+				characterNav.SelectIndex(0)
 			})
-		}()
-	}
-
-	// u.onUpdateCorporation = func(c *app.Corporation) {
-	// }
+			return
+		}
+		fyne.Do(func() {
+			tabs.EnableItem(characterTab)
+			homeNav.Enable()
+			toolbar.ToogleSearchBar(true)
+		})
+	})
 
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())
@@ -640,7 +636,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			fyne.Do(func() {
 				tabs.EnableItem(corporationTab)
 			})
-
 		}()
 	}
 	u.onSectionUpdateStarted = func() {
