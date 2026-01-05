@@ -43,6 +43,11 @@ func (s SectionStatus) IsExpired() bool {
 	return time.Now().After(deadline)
 }
 
+// IsValid reports whether the last update was completed successfully.
+func (s SectionStatus) IsValid() bool {
+	return !s.CompletedAt.IsZero() && !s.HasError()
+}
+
 // CharacterSectionStatus represents the status for a character's section.
 type CharacterSectionStatus struct {
 	SectionStatus

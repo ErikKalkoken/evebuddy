@@ -18,6 +18,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -41,6 +42,7 @@ type characterOverviewRow struct {
 	skillpoints     optional.Optional[int]
 	solarSystemName string
 	tags            set.Set[string]
+	trainingActive  optional.Optional[bool]
 	unreadCount     optional.Optional[int]
 	walletBalance   optional.Optional[float64]
 }
@@ -206,6 +208,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			app.SectionCharacterLocation,
 			app.SectionCharacterMailHeaders,
 			app.SectionCharacterSkills,
+			app.SectionCharacterSkillqueue,
 			app.SectionCharacterWalletBalance:
 			a.update()
 		}
@@ -402,7 +405,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 func (a *characterOverview) update() {
 	var rows []characterOverviewRow
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, _, err := a.fetchRows(a.u.services())
+		cc, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
@@ -436,18 +439,11 @@ func (a *characterOverview) update() {
 	})
 }
 
-type overviewTotals struct {
-	skillpoints optional.Optional[int]
-	unread      optional.Optional[int]
-	wallet      optional.Optional[float64]
-}
-
-func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overviewTotals, error) {
-	var totals overviewTotals
+func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, error) {
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return nil, totals, err
+		return nil, err
 	}
 	cc := xslices.Map(characters, func(c *app.Character) characterOverviewRow {
 		r := characterOverviewRow{
@@ -471,31 +467,27 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 	for i, c := range cc {
 		total, unread, err := s.cs.GetMailCounts(ctx, c.characterID)
 		if err != nil {
-			return nil, totals, err
+			return nil, err
 		}
 		if total > 0 {
 			cc[i].unreadCount = optional.New(unread)
 		}
-	}
-	for _, c := range cc {
-		if !c.unreadCount.IsEmpty() {
-			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.ValueOrZero())
+		d, err := s.cs.TotalTrainingTime(ctx, c.characterID)
+		if err != nil {
+			return nil, err
 		}
-		if !c.walletBalance.IsEmpty() {
-			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.ValueOrZero())
-		}
-		if !c.skillpoints.IsEmpty() {
-			totals.skillpoints.Set(totals.skillpoints.ValueOrZero() + c.skillpoints.ValueOrZero())
+		if !d.IsEmpty() {
+			cc[i].trainingActive.Set(d.ValueOrZero() > 0)
 		}
 	}
 	for i, c := range cc {
 		tags, err := s.cs.ListTagsForCharacter(ctx, c.characterID)
 		if err != nil {
-			return nil, totals, err
+			return nil, err
 		}
 		cc[i].tags = tags
 	}
-	return cc, totals, nil
+	return cc, nil
 }
 
 type characterCardEIS interface {
@@ -509,19 +501,21 @@ type characterCardEIS interface {
 type characterCardLarge struct {
 	widget.BaseWidget
 
-	allianceLogo    *iwidget.TappableImage
-	border          *canvas.Rectangle
-	characterName   *widget.Label
-	corporationLogo *iwidget.TappableImage
-	eis             characterCardEIS
-	location        *widget.Label
-	mails           *widget.Label
-	portrait        *canvas.Image
-	ship            *widget.Label
-	showInfoWindow  func(c app.EveEntityCategory, id int32)
-	skillpoints     *widget.Label
-	solarSystem     *iwidget.RichText
-	wallet          *widget.Label
+	allianceLogo             *iwidget.TappableImage
+	border                   *canvas.Rectangle
+	characterName            *widget.Label
+	corporationLogo          *iwidget.TappableImage
+	eis                      characterCardEIS
+	mails                    *widget.Label
+	portrait                 *canvas.Image
+	resourceTrainingActive   fyne.Resource
+	resourceTrainingInactive fyne.Resource
+	ship                     *widget.Label
+	showInfoWindow           func(c app.EveEntityCategory, id int32)
+	skillpoints              *widget.Label
+	solarSystem              *iwidget.RichText
+	trainingStatus           *ttwidget.Icon
+	wallet                   *widget.Label
 }
 
 func newCharacterCardLarge(eis characterCardEIS, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCardLarge {
@@ -536,20 +530,23 @@ func newCharacterCardLarge(eis characterCardEIS, showInfoWindow func(c app.EveEn
 		icons.Characterplaceholder512Jpeg,
 		fyne.NewSquareSize(200),
 	)
+	resTraining := theme.MediaRecordIcon()
 	w := &characterCardLarge{
-		allianceLogo:    iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
-		border:          canvas.NewRectangle(color.Transparent),
-		characterName:   widget.NewLabel("Veronica Blomquist"),
-		corporationLogo: iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
-		eis:             eis,
-		location:        widget.NewLabel("Veronica Blomquist"),
-		mails:           makeLabel(numberTemplate),
-		portrait:        portrait,
-		ship:            makeLabel("Merlin"),
-		showInfoWindow:  showInfoWindow,
-		skillpoints:     makeLabel(numberTemplate),
-		solarSystem:     iwidget.NewRichText(),
-		wallet:          makeLabel(numberTemplate + " ISK"),
+		allianceLogo:             iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		border:                   canvas.NewRectangle(color.Transparent),
+		characterName:            widget.NewLabel("Veronica Blomquist"),
+		corporationLogo:          iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		eis:                      eis,
+		mails:                    makeLabel(numberTemplate),
+		portrait:                 portrait,
+		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
+		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
+		ship:                     makeLabel("Merlin"),
+		showInfoWindow:           showInfoWindow,
+		skillpoints:              makeLabel(numberTemplate),
+		solarSystem:              iwidget.NewRichText(),
+		trainingStatus:           ttwidget.NewIcon(resTraining),
+		wallet:                   makeLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
 
@@ -568,9 +565,7 @@ func newCharacterCardLarge(eis characterCardEIS, showInfoWindow func(c app.EveEn
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 
-	w.location.Alignment = fyne.TextAlignCenter
-	w.location.Truncation = fyne.TextTruncateEllipsis
-
+	w.trainingStatus.Hide()
 	return w
 }
 
@@ -582,6 +577,16 @@ func (w *characterCardLarge) CreateRenderer() fyne.WidgetRenderer {
 		LeftPadding:   1 * p,
 		RightPadding:  1 * p,
 	}
+	skillpoints := ttwidget.NewIcon(theme.NewThemedResource(icons.SchoolSvg))
+	skillpoints.SetToolTip("Skillpoints & Training status")
+	wallet := ttwidget.NewIcon(theme.NewThemedResource(icons.CashSvg))
+	wallet.SetToolTip("Wallet balance")
+	mails := ttwidget.NewIcon(theme.MailComposeIcon())
+	mails.SetToolTip("Number of unread mails")
+	ship := ttwidget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg))
+	ship.SetToolTip("Current ship")
+	location := ttwidget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg))
+	location.SetToolTip("Current location")
 	c := container.NewBorder(
 		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.characterName),
 		container.New(
@@ -589,35 +594,35 @@ func (w *characterCardLarge) CreateRenderer() fyne.WidgetRenderer {
 			container.NewBorder(
 				nil,
 				nil,
-				widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
-				nil,
+				skillpoints,
+				container.New(layout.NewCustomPaddedLayout(0, 0, -2*p, p), w.trainingStatus),
 				w.skillpoints,
 			),
 			container.NewBorder(
 				nil,
 				nil,
-				widget.NewIcon(theme.NewThemedResource(icons.CashSvg)),
+				wallet,
 				nil,
 				w.wallet,
 			),
 			container.NewBorder(
 				nil,
 				nil,
-				widget.NewIcon(theme.MailComposeIcon()),
+				mails,
 				nil,
 				w.mails,
 			),
 			container.NewBorder(
 				nil,
 				nil,
-				widget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg)),
+				ship,
 				nil,
 				w.ship,
 			),
 			container.NewBorder(
 				nil,
 				nil,
-				widget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg)),
+				location,
 				nil,
 				w.solarSystem,
 			),
@@ -654,6 +659,7 @@ func (w *characterCardLarge) set(r characterOverviewRow) {
 	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
 		return w.eis.CharacterPortrait(r.characterID, 512)
 	})
+
 	w.corporationLogo.OnTapped = func() {
 		w.showInfoWindow(app.EveEntityCorporation, r.corporation.ID)
 	}
@@ -661,6 +667,7 @@ func (w *characterCardLarge) set(r characterOverviewRow) {
 	iwidget.RefreshTappableImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
 		return w.eis.CorporationLogo(r.corporation.ID, 64)
 	})
+
 	if r.alliance != nil {
 		w.allianceLogo.OnTapped = func() {
 			w.showInfoWindow(app.EveEntityAlliance, r.alliance.ID)
@@ -673,32 +680,46 @@ func (w *characterCardLarge) set(r characterOverviewRow) {
 	} else {
 		w.allianceLogo.Hide()
 	}
+
 	w.characterName.SetText(r.characterName)
+
 	w.mails.SetText(r.unreadCount.StringFunc("?", func(v int) string {
 		if v == 0 {
 			return "-"
 		}
 		return humanize.Comma(int64(v))
 	}))
+
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
+	if r.trainingActive.IsEmpty() {
+		w.trainingStatus.Hide()
+	} else {
+		if r.trainingActive.ValueOrZero() {
+			w.trainingStatus.SetResource(w.resourceTrainingActive)
+			w.trainingStatus.SetToolTip("Training active")
+		} else {
+			w.trainingStatus.SetResource(w.resourceTrainingInactive)
+			w.trainingStatus.SetToolTip("Training not active")
+		}
+		w.trainingStatus.Show()
+	}
+
 	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {
 		return humanize.Comma(int64(v)) + " ISK"
 	}))
+
 	w.ship.SetText(r.shipName())
+
 	var rt []widget.RichTextSegment
-	var location string
 	if r.location != nil && r.location.SolarSystem != nil {
 		rt = r.location.SolarSystem.DisplayRichText()
-		location = r.location.DisplayName2()
 	} else {
 		rt = iwidget.RichTextSegmentsFromText("?")
-		location = "?"
 	}
 	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)
-	w.location.SetText(location)
 }
 
 // characterCardSmall is a widget that shows a card for a character.
@@ -706,50 +727,60 @@ func (w *characterCardLarge) set(r characterOverviewRow) {
 type characterCardSmall struct {
 	widget.BaseWidget
 
-	allianceLogo    *canvas.Image
-	border          *canvas.Rectangle
-	background      *canvas.Rectangle
-	characterName   *widget.Label
-	corporationLogo *canvas.Image
-	eis             characterCardEIS
-	mails           *widget.Label
-	portrait        *canvas.Image
-	ship            *widget.Label
-	skillpoints     *widget.Label
-	solarSystem     *iwidget.RichText
-	wallet          *widget.Label
+	allianceLogo             *canvas.Image
+	border                   *canvas.Rectangle
+	background               *canvas.Rectangle
+	characterName            *widget.Label
+	corporationLogo          *canvas.Image
+	eis                      characterCardEIS
+	mails                    *widget.Label
+	portrait                 *canvas.Image
+	ship                     *widget.Label
+	skillpoints              *widget.Label
+	solarSystem              *iwidget.RichText
+	wallet                   *widget.Label
+	resourceTrainingActive   fyne.Resource
+	resourceTrainingInactive fyne.Resource
+	trainingStatus           *widget.Icon
 }
 
 func newCharacterCardSmall(eis characterCardEIS) *characterCardSmall {
 	const numberTemplate = "9.999.999.999"
 	makeInfoLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
-		l.Alignment = fyne.TextAlignLeading
+		l.Alignment = fyne.TextAlignTrailing
 		l.Truncation = fyne.TextTruncateEllipsis
 		return l
 	}
+	portrait := iwidget.NewImageFromResource(
+		icons.Characterplaceholder256Jpeg,
+		fyne.NewSquareSize(88),
+	)
+	corporation := iwidget.NewImageFromResource(
+		icons.Corporationplaceholder64Png,
+		fyne.NewSquareSize(app.IconUnitSize),
+	)
+	alliance := iwidget.NewImageFromResource(
+		icons.Corporationplaceholder64Png,
+		fyne.NewSquareSize(app.IconUnitSize),
+	)
+	resTraining := theme.MediaRecordIcon()
 	w := &characterCardSmall{
-		background:    canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
-		border:        canvas.NewRectangle(color.Transparent),
-		characterName: widget.NewLabel("Veronica Blomquist"),
-		eis:           eis,
-		mails:         makeInfoLabel(numberTemplate),
-		ship:          makeInfoLabel("Merlin"),
-		skillpoints:   makeInfoLabel(numberTemplate),
-		solarSystem:   iwidget.NewRichText(),
-		wallet:        makeInfoLabel(numberTemplate + " ISK"),
-		allianceLogo: iwidget.NewImageFromResource(
-			icons.Corporationplaceholder64Png,
-			fyne.NewSquareSize(app.IconUnitSize),
-		),
-		corporationLogo: iwidget.NewImageFromResource(
-			icons.Corporationplaceholder64Png,
-			fyne.NewSquareSize(app.IconUnitSize),
-		),
-		portrait: iwidget.NewImageFromResource(
-			icons.Characterplaceholder256Jpeg,
-			fyne.NewSquareSize(88),
-		),
+		allianceLogo:             alliance,
+		background:               canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
+		border:                   canvas.NewRectangle(color.Transparent),
+		characterName:            widget.NewLabel("Veronica Blomquist"),
+		corporationLogo:          corporation,
+		eis:                      eis,
+		mails:                    makeInfoLabel(numberTemplate),
+		portrait:                 portrait,
+		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
+		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
+		ship:                     makeInfoLabel("Merlin"),
+		skillpoints:              makeInfoLabel(numberTemplate),
+		solarSystem:              iwidget.NewRichText(),
+		trainingStatus:           widget.NewIcon(resTraining),
+		wallet:                   makeInfoLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
 
@@ -761,6 +792,8 @@ func newCharacterCardSmall(eis characterCardEIS) *characterCardSmall {
 
 	w.characterName.SizeName = theme.SizeNameSubHeadingText
 	w.characterName.Truncation = fyne.TextTruncateEllipsis
+
+	w.trainingStatus.Hide()
 	return w
 }
 
@@ -778,9 +811,7 @@ func (w *characterCardSmall) CreateRenderer() fyne.WidgetRenderer {
 						w.portrait,
 						container.New(layout.NewCustomPaddedLayout(p/2, 0, 0, 0),
 							container.NewHBox(
-								w.corporationLogo,
-								layout.NewSpacer(),
-								w.allianceLogo,
+								w.corporationLogo, layout.NewSpacer(), w.allianceLogo,
 							),
 						),
 					),
@@ -794,7 +825,7 @@ func (w *characterCardSmall) CreateRenderer() fyne.WidgetRenderer {
 				nil,
 				nil,
 				widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
-				nil,
+				container.New(layout.NewCustomPaddedLayout(0, 0, -2*p, p), w.trainingStatus),
 				w.skillpoints,
 			),
 			container.NewBorder(
@@ -861,9 +892,21 @@ func (w *characterCardSmall) set(r characterOverviewRow) {
 		}
 		return humanize.Comma(int64(v))
 	}))
+
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
+	if r.trainingActive.IsEmpty() {
+		w.trainingStatus.Hide()
+	} else {
+		if r.trainingActive.ValueOrZero() {
+			w.trainingStatus.SetResource(w.resourceTrainingActive)
+		} else {
+			w.trainingStatus.SetResource(w.resourceTrainingInactive)
+		}
+		w.trainingStatus.Show()
+	}
+
 	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {
 		return humanize.Comma(int64(v)) + " ISK"
 	}))
@@ -874,5 +917,6 @@ func (w *characterCardSmall) set(r characterOverviewRow) {
 	} else {
 		rt = iwidget.RichTextSegmentsFromText("?")
 	}
+	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)
 }

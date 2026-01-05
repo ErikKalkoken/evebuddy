@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSkillqueueItems(t *testing.T) {
@@ -82,7 +83,7 @@ func TestSkillqueueItems(t *testing.T) {
 
 }
 
-func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
+func TestSkillqueueItems_GetCharacterTotalTrainingTime(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -107,7 +108,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualDuration(t, 3*time.Hour, v, time.Second)
 	})
-	t.Run("should return 0 when training is not active", func(t *testing.T) {
+	t.Run("should report when training is not active", func(t *testing.T) {
 		// given
 		now := time.Now()
 		testutil.MustTruncateTables(db)
@@ -120,8 +121,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		// when
 		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.EqualValues(t, 0, v)
-		}
+		require.NoError(t, err)
+		assert.EqualValues(t, 0, v)
 	})
 }

@@ -196,7 +196,7 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	if !a.sq.IsActive() {
-		return "Training not active", widget.WarningImportance
+		return "Training not active", widget.MediumImportance
 	}
 	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))
 	return t, widget.MediumImportance
@@ -221,7 +221,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		isActive.Importance = widget.SuccessImportance
 	} else {
 		isActive = widget.NewLabel("inactive")
-		isActive.Importance = widget.DangerImportance
+		isActive.Importance = widget.LowImportance
 	}
 	items := []*widget.FormItem{
 		widget.NewFormItem(
