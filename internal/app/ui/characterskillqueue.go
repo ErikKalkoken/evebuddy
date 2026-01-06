@@ -8,8 +8,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -26,6 +28,8 @@ type characterSkillQueue struct {
 	showCurrentCharacter bool
 	signalKey            string
 	skillqueue           *app.CharacterSkillqueue
+	status               *ttwidget.Icon
+	statusResource       fyne.Resource
 	top                  *widget.Label
 	u                    *baseUI
 }
@@ -40,11 +44,14 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
+	statusResources := theme.MediaRecordIcon()
 	a := &characterSkillQueue{
 		emptyInfo:            emptyInfo,
 		showCurrentCharacter: c == nil,
 		signalKey:            generateUniqueID(),
 		skillqueue:           app.NewCharacterSkillqueue(),
+		statusResource:       statusResources,
+		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
 		top:                  makeTopLabel(),
 		u:                    u,
 	}
@@ -56,7 +63,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 
 func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		a.top,
+		container.NewBorder(nil, nil, a.status, nil, a.top),
 		nil,
 		nil,
 		nil,
@@ -158,6 +165,7 @@ func (a *characterSkillQueue) update() {
 		fyne.Do(func() {
 			a.list.Hide()
 			a.emptyInfo.Hide()
+			a.status.Hide()
 		})
 	}
 
@@ -183,7 +191,20 @@ func (a *characterSkillQueue) update() {
 	} else {
 		setTop("Training not active", widget.MediumImportance)
 	}
-
+	fyne.Do(func() {
+		var r fyne.Resource
+		var s string
+		if isActive {
+			r = theme.NewSuccessThemedResource(a.statusResource)
+			s = "Training is active"
+		} else {
+			r = theme.NewDisabledResource(a.statusResource)
+			s = "Training is not active"
+		}
+		a.status.SetResource(r)
+		a.status.SetToolTip(s)
+		a.status.Show()
+	})
 	if a.OnUpdate != nil {
 		var s1, s2 string
 		if !isActive {
