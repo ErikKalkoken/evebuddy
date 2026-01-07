@@ -77,9 +77,8 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		}
 	}
 	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
-		section:      section,
-		forcedUpdate: forceUpdate,
-		changed:      changed,
+		section: section,
+		changed: changed,
 	})
 }
 
@@ -299,13 +298,16 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 
 	needsRefresh := hasChanged || forceUpdate
-	if needsRefresh {
-		go u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
-			characterID:  characterID,
-			forcedUpdate: forceUpdate,
-			section:      section,
-		})
+	arg := characterSectionUpdated{
+		characterID:  characterID,
+		section:      section,
+		needsRefresh: needsRefresh,
 	}
+	if needsRefresh {
+		go u.characterSectionChanged.Emit(ctx, arg)
+	}
+	go u.characterSectionUpdated.Emit(ctx, arg)
+
 	switch section {
 	case app.SectionCharacterMailHeaders:
 		go func() {
@@ -452,7 +454,6 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	}
 	go u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
 		corporationID: corporationID,
-		forcedUpdate:  forceUpdate,
 		section:       section,
 	})
 }

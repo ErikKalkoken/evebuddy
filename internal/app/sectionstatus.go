@@ -38,14 +38,8 @@ func (s SectionStatus) IsExpired() bool {
 	if s.CompletedAt.IsZero() {
 		return true
 	}
-	timeout := s.Section.Timeout()
-	deadline := s.CompletedAt.Add(timeout)
+	deadline := s.CompletedAt.Add(s.Section.Timeout())
 	return time.Now().After(deadline)
-}
-
-// IsValid reports whether the last update was completed successfully.
-func (s SectionStatus) IsValid() bool {
-	return !s.CompletedAt.IsZero() && !s.HasError()
 }
 
 // CharacterSectionStatus represents the status for a character's section.

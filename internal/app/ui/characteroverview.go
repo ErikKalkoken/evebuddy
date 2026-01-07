@@ -183,13 +183,16 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}, a.u.window)
 
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		characterIDs := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+		characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
 			return r.characterID
 		}))
 		switch arg.section {
 		case app.SectionEveCharacters:
-			if arg.changed.ContainsAny(characterIDs.All()) {
-				a.update()
+			for characterID := range arg.changed.All() {
+				if characters.Contains(characterID) {
+					continue
+				}
+				a.updateItem(characterID)
 			}
 		}
 	})
@@ -208,9 +211,15 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			app.SectionCharacterLocation,
 			app.SectionCharacterMailHeaders,
 			app.SectionCharacterSkills,
-			app.SectionCharacterSkillqueue,
 			app.SectionCharacterWalletBalance:
-			a.update()
+			a.updateItem(arg.characterID)
+		}
+	})
+	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.section {
+		case
+			app.SectionCharacterSkillqueue:
+			a.updateItem(arg.characterID)
 		}
 	})
 	return a
@@ -405,7 +414,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 func (a *characterOverview) update() {
 	var rows []characterOverviewRow
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(a.u.services())
+		cc, err := a.fetchRows(context.Background())
 		if err != nil {
 			return "", 0, err
 		}
@@ -416,9 +425,6 @@ func (a *characterOverview) update() {
 			return "No characters", widget.LowImportance, nil
 		}
 		rows = cc
-		// walletText := ihumanize.OptionalWithDecimals(totals.wallet, 1, "?")
-		// unreadText := ihumanize.Optional(totals.unread, "?")
-		// skillpointsText := ihumanize.Optional(totals.skillpoints, "?")
 		s := fmt.Sprintf("%d characters", len(cc))
 		return s, widget.MediumImportance, nil
 	}()
@@ -439,55 +445,96 @@ func (a *characterOverview) update() {
 	})
 }
 
-func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, error) {
+func (a *characterOverview) updateItem(characterID int32) {
+	logErr := func(err error) {
+		slog.Error("CharacterOverview: Failed to update item", "characterID", characterID, "error", err)
+	}
 	ctx := context.Background()
-	characters, err := s.cs.ListCharacters(ctx)
+	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		logErr(err)
+		return
+	}
+	r, err := a.fetchRow(ctx, c)
+	if err != nil {
+		logErr(err)
+		return
+	}
+	fyne.Do(func() {
+		id := slices.IndexFunc(a.rowsFiltered, func(x characterOverviewRow) bool {
+			return x.characterID == characterID
+		})
+		if id == -1 {
+			return
+		}
+		a.rowsFiltered[id] = r
+		switch x := a.body.(type) {
+		case *widget.GridWrap:
+			x.RefreshItem(id)
+		case *widget.List:
+			x.RefreshItem(id)
+		default:
+			panic(fmt.Sprintf("Unhandled type: %T", x))
+		}
+	})
+}
+
+func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewRow, error) {
+	characters, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	cc := xslices.Map(characters, func(c *app.Character) characterOverviewRow {
-		r := characterOverviewRow{
-			alliance:      c.EveCharacter.Alliance,
-			characterID:   c.ID,
-			characterName: c.EveCharacter.Name,
-			corporation:   c.EveCharacter.Corporation,
-			faction:       c.EveCharacter.Faction,
-			location:      c.Location,
-			searchTarget:  strings.ToLower(c.EveCharacter.Name),
-			ship:          c.Ship,
-			skillpoints:   c.TotalSP,
-			walletBalance: c.WalletBalance,
-		}
-		if c.Location != nil && c.Location.SolarSystem != nil {
-			r.regionName = c.Location.SolarSystem.Constellation.Region.Name
-			r.solarSystemName = c.Location.SolarSystem.Name
-		}
-		return r
-	})
-	for i, c := range cc {
-		total, unread, err := s.cs.GetMailCounts(ctx, c.characterID)
+	rows := make([]characterOverviewRow, 0)
+	for _, c := range characters {
+		r, err := a.fetchRow(ctx, c)
 		if err != nil {
 			return nil, err
 		}
-		if total > 0 {
-			cc[i].unreadCount = optional.New(unread)
-		}
-		d, err := s.cs.TotalTrainingTime(ctx, c.characterID)
-		if err != nil {
-			return nil, err
-		}
-		if !d.IsEmpty() {
-			cc[i].trainingActive.Set(d.ValueOrZero() > 0)
-		}
+		rows = append(rows, r)
 	}
-	for i, c := range cc {
-		tags, err := s.cs.ListTagsForCharacter(ctx, c.characterID)
-		if err != nil {
-			return nil, err
-		}
-		cc[i].tags = tags
+	return rows, nil
+}
+
+func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (characterOverviewRow, error) {
+	if c == nil {
+		return characterOverviewRow{}, fmt.Errorf("fetchRow: c can not be nil: %w", app.ErrInvalid)
 	}
-	return cc, nil
+	r := characterOverviewRow{
+		alliance:      c.EveCharacter.Alliance,
+		characterID:   c.ID,
+		characterName: c.EveCharacter.Name,
+		corporation:   c.EveCharacter.Corporation,
+		faction:       c.EveCharacter.Faction,
+		location:      c.Location,
+		searchTarget:  strings.ToLower(c.EveCharacter.Name),
+		ship:          c.Ship,
+		skillpoints:   c.TotalSP,
+		walletBalance: c.WalletBalance,
+	}
+	if c.Location != nil && c.Location.SolarSystem != nil {
+		r.regionName = c.Location.SolarSystem.Constellation.Region.Name
+		r.solarSystemName = c.Location.SolarSystem.Name
+	}
+	total, unread, err := a.u.cs.GetMailCounts(ctx, c.ID)
+	if err != nil {
+		return r, err
+	}
+	if total > 0 {
+		r.unreadCount = optional.New(unread)
+	}
+	d, err := a.u.cs.TotalTrainingTime(ctx, c.ID)
+	if err != nil {
+		return r, err
+	}
+	if !d.IsEmpty() {
+		r.trainingActive.Set(d.ValueOrZero() > 0)
+	}
+	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	if err != nil {
+		return r, err
+	}
+	r.tags = tags
+	return r, nil
 }
 
 type characterCardEIS interface {
@@ -507,17 +554,18 @@ type characterCard struct {
 	characterName            *widget.Label
 	corporationLogo          *iwidget.TappableImage
 	eis                      characterCardEIS
+	isSmall                  bool
 	mails                    *widget.Label
 	portrait                 *canvas.Image
 	resourceTrainingActive   fyne.Resource
 	resourceTrainingInactive fyne.Resource
+	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
 	showInfoWindow           func(c app.EveEntityCategory, id int32)
 	skillpoints              *widget.Label
 	solarSystem              *iwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
-	isSmall                  bool
 }
 
 func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCard {
@@ -541,6 +589,7 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 		)
 	}
 	resTraining := theme.MediaRecordIcon()
+	trainingUnknown := theme.NewDisabledResource(icons.QuestionmarksmallSvg)
 	w := &characterCard{
 		allianceLogo:             iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		background:               canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
@@ -548,17 +597,18 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 		characterName:            widget.NewLabel("Veronica Blomquist"),
 		corporationLogo:          iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		eis:                      eis,
+		isSmall:                  isSmall,
 		mails:                    makeLabel(numberTemplate),
 		portrait:                 portrait,
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
+		resourceTrainingUnknown:  trainingUnknown,
 		ship:                     makeLabel("Merlin"),
 		showInfoWindow:           showInfoWindow,
 		skillpoints:              makeLabel(numberTemplate),
 		solarSystem:              iwidget.NewRichText(),
-		trainingStatus:           ttwidget.NewIcon(resTraining),
+		trainingStatus:           ttwidget.NewIcon(trainingUnknown),
 		wallet:                   makeLabel(numberTemplate + " ISK"),
-		isSmall:                  isSmall,
 	}
 	w.ExtendBaseWidget(w)
 	var logoSize float32
@@ -584,7 +634,6 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 
-	w.trainingStatus.Hide()
 	return w
 }
 
@@ -669,7 +718,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 				nil,
 				nil,
 				skillpoints,
-				container.New(layout.NewCustomPaddedLayout(0, 0, -2*p, p), w.trainingStatus),
+				container.New(layout.NewCustomPaddedLayout(0, 0, -p, p), w.trainingStatus),
 				w.skillpoints,
 			),
 			container.NewBorder(
@@ -780,16 +829,16 @@ func (w *characterCard) set(r characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	}))
 	if r.trainingActive.IsEmpty() {
-		w.trainingStatus.Hide()
+		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
+		w.trainingStatus.SetToolTip("Training status unknown")
 	} else {
 		if r.trainingActive.ValueOrZero() {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
-			w.trainingStatus.SetToolTip("Training active")
+			w.trainingStatus.SetToolTip("Training is active")
 		} else {
 			w.trainingStatus.SetResource(w.resourceTrainingInactive)
-			w.trainingStatus.SetToolTip("Training not active")
+			w.trainingStatus.SetToolTip("Training is not active")
 		}
-		w.trainingStatus.Show()
 	}
 
 	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {

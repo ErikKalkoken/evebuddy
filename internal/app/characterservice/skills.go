@@ -227,25 +227,33 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 }
 
 // TotalTrainingTime returns the total training time for a character when available.
-// The training time is 0 when the training is not active.
+// A training time of 0 means that training is not active.
+// An empty training time means that the training status could not be determined.
 func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
-	var d2 optional.Optional[time.Duration]
+	var z optional.Optional[time.Duration]
 	v, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionCharacterSkillqueue)
 	if errors.Is(err, app.ErrNotFound) {
-		return d2, nil
+		return z, nil
 	}
 	if err != nil {
-		return d2, err
+		return z, err
 	}
-	if !v.IsValid() {
-		return d2, nil
+	if !isValidSkillQueueStatus(v) {
+		return z, nil
 	}
 	d, err := s.st.GetCharacterTotalTrainingTime(ctx, characterID)
 	if err != nil {
-		return d2, err
+		return z, err
 	}
-	d2.Set(d)
-	return d2, nil
+	return optional.New(d), nil
+}
+
+func isValidSkillQueueStatus(v *app.CharacterSectionStatus) bool {
+	if v.CompletedAt.IsZero() || v.HasError() {
+		return false
+	}
+	stale := v.CompletedAt.Add(max(5*time.Minute, 2*v.Section.Timeout()))
+	return time.Now().Before(stale)
 }
 
 // IsTrainingActive reports whether training is active.
