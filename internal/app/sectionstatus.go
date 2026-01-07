@@ -38,8 +38,7 @@ func (s SectionStatus) IsExpired() bool {
 	if s.CompletedAt.IsZero() {
 		return true
 	}
-	timeout := s.Section.Timeout()
-	deadline := s.CompletedAt.Add(timeout)
+	deadline := s.CompletedAt.Add(s.Section.Timeout())
 	return time.Now().After(deadline)
 }
 

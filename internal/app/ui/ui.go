@@ -72,20 +72,18 @@ type services struct {
 
 type characterSectionUpdated struct {
 	characterID  int32
-	forcedUpdate bool
 	section      app.CharacterSection
+	needsRefresh bool
 }
 
 type corporationSectionUpdated struct {
 	corporationID int32
-	forcedUpdate  bool
 	section       app.CorporationSection
 }
 
 type generalSectionUpdated struct {
-	changed      set.Set[int32]
-	forcedUpdate bool
-	section      app.GeneralSection
+	changed set.Set[int32]
+	section app.GeneralSection
 }
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
@@ -156,6 +154,8 @@ type baseUI struct {
 	characterRemoved signals.Signal[*app.EntityShort[int32]]
 	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
+	// A character section has been updated from ESI.
+	characterSectionUpdated signals.Signal[characterSectionUpdated]
 	// The current character was exchanged with another character or reset.
 	currentCharacterExchanged signals.Signal[*app.Character]
 	// The current corporation was exchanged with another corporation or reset.
@@ -230,6 +230,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		characterAdded:              signals.New[*app.Character](),
 		characterRemoved:            signals.New[*app.EntityShort[int32]](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
+		characterSectionUpdated:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
 		corporationsChanged:         signals.New[struct{}](),
 		corporationSectionChanged:   signals.New[corporationSectionUpdated](),

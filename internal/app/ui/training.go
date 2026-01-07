@@ -496,12 +496,12 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 			r.skillProgress.Set(r.skill.CompletionP())
 		} else {
 			r.statusText = "Inactive"
-			r.statusImportance = widget.WarningImportance
+			r.statusImportance = widget.LowImportance
 			r.skillName = "N/A"
 			r.skillDisplay = iwidget.RichTextSegmentsFromText(
 				"Inactive",
 				widget.RichTextStyle{
-					ColorName: theme.ColorNameWarning,
+					ColorName: theme.ColorNameDisabled,
 				},
 			)
 		}
@@ -537,10 +537,11 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 	})
 	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
 	setDetailWindow(detailWindowParams{
-		content: sq,
-		minSize: fyne.NewSize(800, 450),
-		title:   subTitle,
-		window:  w,
+		content:        sq,
+		enableTooltips: true,
+		minSize:        fyne.NewSize(800, 450),
+		title:          subTitle,
+		window:         w,
 	})
 	w.Show()
 }

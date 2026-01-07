@@ -8,590 +8,604 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-//go:embed resources/access_time.svg
+//go:embed access_time.svg
 var AccesstimeSvgData []byte
 var AccesstimeSvg = &fyne.StaticResource{
-	StaticName:    "resources/access_time.svg",
+	StaticName:    "access_time.svg",
 	StaticContent: AccesstimeSvgData,
 }
 
-//go:embed resources/access_time_filled.svg
+//go:embed access_time_filled.svg
 var AccesstimefilledSvgData []byte
 var AccesstimefilledSvg = &fyne.StaticResource{
-	StaticName:    "resources/access_time_filled.svg",
+	StaticName:    "access_time_filled.svg",
 	StaticContent: AccesstimefilledSvgData,
 }
 
-//go:embed resources/account-circle.svg
+//go:embed account-circle.svg
 var AccountCircleSvgData []byte
 var AccountCircleSvg = &fyne.StaticResource{
-	StaticName:    "resources/account-circle.svg",
+	StaticName:    "account-circle.svg",
 	StaticContent: AccountCircleSvgData,
 }
 
-//go:embed resources/account-multiple-outline.svg
+//go:embed account-multiple-outline.svg
 var AccountMultipleOutlineSvgData []byte
 var AccountMultipleOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/account-multiple-outline.svg",
+	StaticName:    "account-multiple-outline.svg",
 	StaticContent: AccountMultipleOutlineSvgData,
 }
 
-//go:embed resources/account-multiple.svg
+//go:embed account-multiple.svg
 var AccountMultipleSvgData []byte
 var AccountMultipleSvg = &fyne.StaticResource{
-	StaticName:    "resources/account-multiple.svg",
+	StaticName:    "account-multiple.svg",
 	StaticContent: AccountMultipleSvgData,
 }
 
-//go:embed resources/account-outline.svg
+//go:embed account-outline.svg
 var AccountOutlineSvgData []byte
 var AccountOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/account-outline.svg",
+	StaticName:    "account-outline.svg",
 	StaticContent: AccountOutlineSvgData,
 }
 
-//go:embed resources/account.svg
+//go:embed account.svg
 var AccountSvgData []byte
 var AccountSvg = &fyne.StaticResource{
-	StaticName:    "resources/account.svg",
+	StaticName:    "account.svg",
 	StaticContent: AccountSvgData,
 }
 
-//go:embed resources/arrow-collapse-vertical.svg
+//go:embed arrow-collapse-vertical.svg
 var ArrowCollapseVerticalSvgData []byte
 var ArrowCollapseVerticalSvg = &fyne.StaticResource{
-	StaticName:    "resources/arrow-collapse-vertical.svg",
+	StaticName:    "arrow-collapse-vertical.svg",
 	StaticContent: ArrowCollapseVerticalSvgData,
 }
 
-//go:embed resources/arrow-left.svg
+//go:embed arrow-left.svg
 var ArrowLeftSvgData []byte
 var ArrowLeftSvg = &fyne.StaticResource{
-	StaticName:    "resources/arrow-left.svg",
+	StaticName:    "arrow-left.svg",
 	StaticContent: ArrowLeftSvgData,
 }
 
-//go:embed resources/arrow-right.svg
+//go:embed arrow-right.svg
 var ArrowRightSvgData []byte
 var ArrowRightSvg = &fyne.StaticResource{
-	StaticName:    "resources/arrow-right.svg",
+	StaticName:    "arrow-right.svg",
 	StaticContent: ArrowRightSvgData,
 }
 
-//go:embed resources/attach_money.svg
+//go:embed attach_money.svg
 var AttachmoneySvgData []byte
 var AttachmoneySvg = &fyne.StaticResource{
-	StaticName:    "resources/attach_money.svg",
+	StaticName:    "attach_money.svg",
 	StaticContent: AttachmoneySvgData,
 }
 
-//go:embed resources/blank.svg
+//go:embed blank.svg
 var BlankSvgData []byte
 var BlankSvg = &fyne.StaticResource{
-	StaticName:    "resources/blank.svg",
+	StaticName:    "blank.svg",
 	StaticContent: BlankSvgData,
 }
 
-//go:embed resources/bug.svg
+//go:embed bug.svg
 var BugSvgData []byte
 var BugSvg = &fyne.StaticResource{
-	StaticName:    "resources/bug.svg",
+	StaticName:    "bug.svg",
 	StaticContent: BugSvgData,
 }
 
-//go:embed resources/cash.svg
+//go:embed cash.svg
 var CashSvgData []byte
 var CashSvg = &fyne.StaticResource{
-	StaticName:    "resources/cash.svg",
+	StaticName:    "cash.svg",
 	StaticContent: CashSvgData,
 }
 
-//go:embed resources/character_placeholder_128.jpeg
+//go:embed character_placeholder_128.jpeg
 var Characterplaceholder128JpegData []byte
 var Characterplaceholder128Jpeg = &fyne.StaticResource{
-	StaticName:    "resources/character_placeholder_128.jpeg",
+	StaticName:    "character_placeholder_128.jpeg",
 	StaticContent: Characterplaceholder128JpegData,
 }
 
-//go:embed resources/character_placeholder_256.jpeg
+//go:embed character_placeholder_256.jpeg
 var Characterplaceholder256JpegData []byte
 var Characterplaceholder256Jpeg = &fyne.StaticResource{
-	StaticName:    "resources/character_placeholder_256.jpeg",
+	StaticName:    "character_placeholder_256.jpeg",
 	StaticContent: Characterplaceholder256JpegData,
 }
 
-//go:embed resources/character_placeholder_32.jpeg
+//go:embed character_placeholder_32.jpeg
 var Characterplaceholder32JpegData []byte
 var Characterplaceholder32Jpeg = &fyne.StaticResource{
-	StaticName:    "resources/character_placeholder_32.jpeg",
+	StaticName:    "character_placeholder_32.jpeg",
 	StaticContent: Characterplaceholder32JpegData,
 }
 
-//go:embed resources/character_placeholder_512.jpeg
+//go:embed character_placeholder_512.jpeg
 var Characterplaceholder512JpegData []byte
 var Characterplaceholder512Jpeg = &fyne.StaticResource{
-	StaticName:    "resources/character_placeholder_512.jpeg",
+	StaticName:    "character_placeholder_512.jpeg",
 	StaticContent: Characterplaceholder512JpegData,
 }
 
-//go:embed resources/character_placeholder_64.jpeg
+//go:embed character_placeholder_64.jpeg
 var Characterplaceholder64JpegData []byte
 var Characterplaceholder64Jpeg = &fyne.StaticResource{
-	StaticName:    "resources/character_placeholder_64.jpeg",
+	StaticName:    "character_placeholder_64.jpeg",
 	StaticContent: Characterplaceholder64JpegData,
 }
 
-//go:embed resources/chart-areaspline.svg
+//go:embed chart-areaspline.svg
 var ChartAreasplineSvgData []byte
 var ChartAreasplineSvg = &fyne.StaticResource{
-	StaticName:    "resources/chart-areaspline.svg",
+	StaticName:    "chart-areaspline.svg",
 	StaticContent: ChartAreasplineSvgData,
 }
 
-//go:embed resources/chart-bar.svg
+//go:embed chart-bar.svg
 var ChartBarSvgData []byte
 var ChartBarSvg = &fyne.StaticResource{
-	StaticName:    "resources/chart-bar.svg",
+	StaticName:    "chart-bar.svg",
 	StaticContent: ChartBarSvgData,
 }
 
-//go:embed resources/check-decagram.svg
+//go:embed check-decagram.svg
 var CheckDecagramSvgData []byte
 var CheckDecagramSvg = &fyne.StaticResource{
-	StaticName:    "resources/check-decagram.svg",
+	StaticName:    "check-decagram.svg",
 	StaticContent: CheckDecagramSvgData,
 }
 
-//go:embed resources/checklist_rtl.svg
+//go:embed checklist_rtl.svg
 var ChecklistrtlSvgData []byte
 var ChecklistrtlSvg = &fyne.StaticResource{
-	StaticName:    "resources/checklist_rtl.svg",
+	StaticName:    "checklist_rtl.svg",
 	StaticContent: ChecklistrtlSvgData,
 }
 
-//go:embed resources/cog-outline.svg
+//go:embed cog-outline.svg
 var CogOutlineSvgData []byte
 var CogOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/cog-outline.svg",
+	StaticName:    "cog-outline.svg",
 	StaticContent: CogOutlineSvgData,
 }
 
-//go:embed resources/cog.svg
+//go:embed cog.svg
 var CogSvgData []byte
 var CogSvg = &fyne.StaticResource{
-	StaticName:    "resources/cog.svg",
+	StaticName:    "cog.svg",
 	StaticContent: CogSvgData,
 }
 
-//go:embed resources/collapse-all-outline.svg
+//go:embed collapse-all-outline.svg
 var CollapseAllOutlineSvgData []byte
 var CollapseAllOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/collapse-all-outline.svg",
+	StaticName:    "collapse-all-outline.svg",
 	StaticContent: CollapseAllOutlineSvgData,
 }
 
-//go:embed resources/constellation_64.png
+//go:embed constellation_64.png
 var Constellation64PngData []byte
 var Constellation64Png = &fyne.StaticResource{
-	StaticName:    "resources/constellation_64.png",
+	StaticName:    "constellation_64.png",
 	StaticContent: Constellation64PngData,
 }
 
-//go:embed resources/corporation_placeholder_64.png
+//go:embed corporation_placeholder_64.png
 var Corporationplaceholder64PngData []byte
 var Corporationplaceholder64Png = &fyne.StaticResource{
-	StaticName:    "resources/corporation_placeholder_64.png",
+	StaticName:    "corporation_placeholder_64.png",
 	StaticContent: Corporationplaceholder64PngData,
 }
 
-//go:embed resources/crown.svg
+//go:embed crown.svg
 var CrownSvgData []byte
 var CrownSvg = &fyne.StaticResource{
-	StaticName:    "resources/crown.svg",
+	StaticName:    "crown.svg",
 	StaticContent: CrownSvgData,
 }
 
-//go:embed resources/dotlan-avatar.png
+//go:embed dotlan-avatar.png
 var DotlanAvatarPngData []byte
 var DotlanAvatarPng = &fyne.StaticResource{
-	StaticName:    "resources/dotlan-avatar.png",
+	StaticName:    "dotlan-avatar.png",
 	StaticContent: DotlanAvatarPngData,
 }
 
-//go:embed resources/earth.svg
+//go:embed earth.svg
 var EarthSvgData []byte
 var EarthSvg = &fyne.StaticResource{
-	StaticName:    "resources/earth.svg",
+	StaticName:    "earth.svg",
 	StaticContent: EarthSvgData,
 }
 
-//go:embed resources/evelogo.png
+//go:embed evelogo.png
 var EvelogoPngData []byte
 var EvelogoPng = &fyne.StaticResource{
-	StaticName:    "resources/evelogo.png",
+	StaticName:    "evelogo.png",
 	StaticContent: EvelogoPngData,
 }
 
-//go:embed resources/evemarketbrowser.jpg
+//go:embed evemarketbrowser.jpg
 var EvemarketbrowserJpgData []byte
 var EvemarketbrowserJpg = &fyne.StaticResource{
-	StaticName:    "resources/evemarketbrowser.jpg",
+	StaticName:    "evemarketbrowser.jpg",
 	StaticContent: EvemarketbrowserJpgData,
 }
 
-//go:embed resources/faction_placeholder_64.png
+//go:embed faction_placeholder_64.png
 var Factionplaceholder64PngData []byte
 var Factionplaceholder64Png = &fyne.StaticResource{
-	StaticName:    "resources/faction_placeholder_64.png",
+	StaticName:    "faction_placeholder_64.png",
 	StaticContent: Factionplaceholder64PngData,
 }
 
-//go:embed resources/factory.svg
+//go:embed factory.svg
 var FactorySvgData []byte
 var FactorySvg = &fyne.StaticResource{
-	StaticName:    "resources/factory.svg",
+	StaticName:    "factory.svg",
 	StaticContent: FactorySvgData,
 }
 
-//go:embed resources/file-sign.svg
+//go:embed file-sign.svg
 var FileSignSvgData []byte
 var FileSignSvg = &fyne.StaticResource{
-	StaticName:    "resources/file-sign.svg",
+	StaticName:    "file-sign.svg",
 	StaticContent: FileSignSvgData,
 }
 
-//go:embed resources/gold.svg
+//go:embed gold.svg
 var GoldSvgData []byte
 var GoldSvg = &fyne.StaticResource{
-	StaticName:    "resources/gold.svg",
+	StaticName:    "gold.svg",
 	StaticContent: GoldSvgData,
 }
 
-//go:embed resources/group.svg
+//go:embed group.svg
 var GroupSvgData []byte
 var GroupSvg = &fyne.StaticResource{
-	StaticName:    "resources/group.svg",
+	StaticName:    "group.svg",
 	StaticContent: GroupSvgData,
 }
 
-//go:embed resources/head-snowflake.svg
+//go:embed head-snowflake.svg
 var HeadSnowflakeSvgData []byte
 var HeadSnowflakeSvg = &fyne.StaticResource{
-	StaticName:    "resources/head-snowflake.svg",
+	StaticName:    "head-snowflake.svg",
 	StaticContent: HeadSnowflakeSvgData,
 }
 
-//go:embed resources/icon.png
+//go:embed help.svg
+var HelpSvgData []byte
+var HelpSvg = &fyne.StaticResource{
+	StaticName:    "help.svg",
+	StaticContent: HelpSvgData,
+}
+
+//go:embed icon.png
 var IconPngData []byte
 var IconPng = &fyne.StaticResource{
-	StaticName:    "resources/icon.png",
+	StaticName:    "icon.png",
 	StaticContent: IconPngData,
 }
 
-//go:embed resources/icon_marked.png
+//go:embed icon_marked.png
 var IconmarkedPngData []byte
 var IconmarkedPng = &fyne.StaticResource{
-	StaticName:    "resources/icon_marked.png",
+	StaticName:    "icon_marked.png",
 	StaticContent: IconmarkedPngData,
 }
 
-//go:embed resources/indy_canceled.svg
+//go:embed indy_canceled.svg
 var IndycanceledSvgData []byte
 var IndycanceledSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_canceled.svg",
+	StaticName:    "indy_canceled.svg",
 	StaticContent: IndycanceledSvgData,
 }
 
-//go:embed resources/indy_copying.svg
+//go:embed indy_copying.svg
 var IndycopyingSvgData []byte
 var IndycopyingSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_copying.svg",
+	StaticName:    "indy_copying.svg",
 	StaticContent: IndycopyingSvgData,
 }
 
-//go:embed resources/indy_delivered.svg
+//go:embed indy_delivered.svg
 var IndydeliveredSvgData []byte
 var IndydeliveredSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_delivered.svg",
+	StaticName:    "indy_delivered.svg",
 	StaticContent: IndydeliveredSvgData,
 }
 
-//go:embed resources/indy_halted.svg
+//go:embed indy_halted.svg
 var IndyhaltedSvgData []byte
 var IndyhaltedSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_halted.svg",
+	StaticName:    "indy_halted.svg",
 	StaticContent: IndyhaltedSvgData,
 }
 
-//go:embed resources/indy_invention.svg
+//go:embed indy_invention.svg
 var IndyinventionSvgData []byte
 var IndyinventionSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_invention.svg",
+	StaticName:    "indy_invention.svg",
 	StaticContent: IndyinventionSvgData,
 }
 
-//go:embed resources/indy_manufacturing.svg
+//go:embed indy_manufacturing.svg
 var IndymanufacturingSvgData []byte
 var IndymanufacturingSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_manufacturing.svg",
+	StaticName:    "indy_manufacturing.svg",
 	StaticContent: IndymanufacturingSvgData,
 }
 
-//go:embed resources/indy_material_research.svg
+//go:embed indy_material_research.svg
 var IndymaterialresearchSvgData []byte
 var IndymaterialresearchSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_material_research.svg",
+	StaticName:    "indy_material_research.svg",
 	StaticContent: IndymaterialresearchSvgData,
 }
 
-//go:embed resources/indy_reactions.svg
+//go:embed indy_reactions.svg
 var IndyreactionsSvgData []byte
 var IndyreactionsSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_reactions.svg",
+	StaticName:    "indy_reactions.svg",
 	StaticContent: IndyreactionsSvgData,
 }
 
-//go:embed resources/indy_ready.svg
+//go:embed indy_ready.svg
 var IndyreadySvgData []byte
 var IndyreadySvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_ready.svg",
+	StaticName:    "indy_ready.svg",
 	StaticContent: IndyreadySvgData,
 }
 
-//go:embed resources/indy_time_research.svg
+//go:embed indy_time_research.svg
 var IndytimeresearchSvgData []byte
 var IndytimeresearchSvg = &fyne.StaticResource{
-	StaticName:    "resources/indy_time_research.svg",
+	StaticName:    "indy_time_research.svg",
 	StaticContent: IndytimeresearchSvgData,
 }
 
-//go:embed resources/information-slab-circle.svg
+//go:embed information-slab-circle.svg
 var InformationSlabCircleSvgData []byte
 var InformationSlabCircleSvg = &fyne.StaticResource{
-	StaticName:    "resources/information-slab-circle.svg",
+	StaticName:    "information-slab-circle.svg",
 	StaticContent: InformationSlabCircleSvgData,
 }
 
-//go:embed resources/information.svg
+//go:embed information.svg
 var InformationSvgData []byte
 var InformationSvg = &fyne.StaticResource{
-	StaticName:    "resources/information.svg",
+	StaticName:    "information.svg",
 	StaticContent: InformationSvgData,
 }
 
-//go:embed resources/insights.svg
+//go:embed insights.svg
 var InsightsSvgData []byte
 var InsightsSvg = &fyne.StaticResource{
-	StaticName:    "resources/insights.svg",
+	StaticName:    "insights.svg",
 	StaticContent: InsightsSvgData,
 }
 
-//go:embed resources/inventory_2.svg
+//go:embed inventory_2.svg
 var Inventory2SvgData []byte
 var Inventory2Svg = &fyne.StaticResource{
-	StaticName:    "resources/inventory_2.svg",
+	StaticName:    "inventory_2.svg",
 	StaticContent: Inventory2SvgData,
 }
 
-//go:embed resources/janice.png
+//go:embed janice.png
 var JanicePngData []byte
 var JanicePng = &fyne.StaticResource{
-	StaticName:    "resources/janice.png",
+	StaticName:    "janice.png",
 	StaticContent: JanicePngData,
 }
 
-//go:embed resources/manage_accounts.svg
+//go:embed manage_accounts.svg
 var ManageaccountsSvgData []byte
 var ManageaccountsSvg = &fyne.StaticResource{
-	StaticName:    "resources/manage_accounts.svg",
+	StaticName:    "manage_accounts.svg",
 	StaticContent: ManageaccountsSvgData,
 }
 
-//go:embed resources/map-marker.svg
+//go:embed map-marker.svg
 var MapMarkerSvgData []byte
 var MapMarkerSvg = &fyne.StaticResource{
-	StaticName:    "resources/map-marker.svg",
+	StaticName:    "map-marker.svg",
 	StaticContent: MapMarkerSvgData,
 }
 
-//go:embed resources/message-outline.svg
+//go:embed message-outline.svg
 var MessageOutlineSvgData []byte
 var MessageOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/message-outline.svg",
+	StaticName:    "message-outline.svg",
 	StaticContent: MessageOutlineSvgData,
 }
 
-//go:embed resources/message.svg
+//go:embed message.svg
 var MessageSvgData []byte
 var MessageSvg = &fyne.StaticResource{
-	StaticName:    "resources/message.svg",
+	StaticName:    "message.svg",
 	StaticContent: MessageSvgData,
 }
 
-//go:embed resources/numeric-1-circle.svg
+//go:embed numeric-1-circle.svg
 var Numeric1CircleSvgData []byte
 var Numeric1CircleSvg = &fyne.StaticResource{
-	StaticName:    "resources/numeric-1-circle.svg",
+	StaticName:    "numeric-1-circle.svg",
 	StaticContent: Numeric1CircleSvgData,
 }
 
-//go:embed resources/office-building.svg
+//go:embed office-building.svg
 var OfficeBuildingSvgData []byte
 var OfficeBuildingSvg = &fyne.StaticResource{
-	StaticName:    "resources/office-building.svg",
+	StaticName:    "office-building.svg",
 	StaticContent: OfficeBuildingSvgData,
 }
 
-//go:embed resources/portrait.svg
+//go:embed portrait.svg
 var PortraitSvgData []byte
 var PortraitSvg = &fyne.StaticResource{
-	StaticName:    "resources/portrait.svg",
+	StaticName:    "portrait.svg",
 	StaticContent: PortraitSvgData,
 }
 
-//go:embed resources/question_mark.svg
+//go:embed question_mark.svg
 var QuestionmarkSvgData []byte
 var QuestionmarkSvg = &fyne.StaticResource{
-	StaticName:    "resources/question_mark.svg",
+	StaticName:    "question_mark.svg",
 	StaticContent: QuestionmarkSvgData,
 }
 
-//go:embed resources/question_mark_32.png
+//go:embed question_mark_32.png
 var Questionmark32PngData []byte
 var Questionmark32Png = &fyne.StaticResource{
-	StaticName:    "resources/question_mark_32.png",
+	StaticName:    "question_mark_32.png",
 	StaticContent: Questionmark32PngData,
 }
 
-//go:embed resources/region_64.png
+//go:embed question_mark_small.svg
+var QuestionmarksmallSvgData []byte
+var QuestionmarksmallSvg = &fyne.StaticResource{
+	StaticName:    "question_mark_small.svg",
+	StaticContent: QuestionmarksmallSvgData,
+}
+
+//go:embed region_64.png
 var Region64PngData []byte
 var Region64Png = &fyne.StaticResource{
-	StaticName:    "resources/region_64.png",
+	StaticName:    "region_64.png",
 	StaticContent: Region64PngData,
 }
 
-//go:embed resources/school.svg
+//go:embed school.svg
 var SchoolSvgData []byte
 var SchoolSvg = &fyne.StaticResource{
-	StaticName:    "resources/school.svg",
+	StaticName:    "school.svg",
 	StaticContent: SchoolSvgData,
 }
 
-//go:embed resources/script-text.svg
+//go:embed script-text.svg
 var ScriptTextSvgData []byte
 var ScriptTextSvg = &fyne.StaticResource{
-	StaticName:    "resources/script-text.svg",
+	StaticName:    "script-text.svg",
 	StaticContent: ScriptTextSvgData,
 }
 
-//go:embed resources/ship-wheel.svg
+//go:embed ship-wheel.svg
 var ShipWheelSvgData []byte
 var ShipWheelSvg = &fyne.StaticResource{
-	StaticName:    "resources/ship-wheel.svg",
+	StaticName:    "ship-wheel.svg",
 	StaticContent: ShipWheelSvgData,
 }
 
-//go:embed resources/sort-ascending.svg
+//go:embed sort-ascending.svg
 var SortAscendingSvgData []byte
 var SortAscendingSvg = &fyne.StaticResource{
-	StaticName:    "resources/sort-ascending.svg",
+	StaticName:    "sort-ascending.svg",
 	StaticContent: SortAscendingSvgData,
 }
 
-//go:embed resources/sort-descending.svg
+//go:embed sort-descending.svg
 var SortDescendingSvgData []byte
 var SortDescendingSvg = &fyne.StaticResource{
-	StaticName:    "resources/sort-descending.svg",
+	StaticName:    "sort-descending.svg",
 	StaticContent: SortDescendingSvgData,
 }
 
-//go:embed resources/sort.svg
+//go:embed sort.svg
 var SortSvgData []byte
 var SortSvg = &fyne.StaticResource{
-	StaticName:    "resources/sort.svg",
+	StaticName:    "sort.svg",
 	StaticContent: SortSvgData,
 }
 
-//go:embed resources/space-station.svg
+//go:embed space-station.svg
 var SpaceStationSvgData []byte
 var SpaceStationSvg = &fyne.StaticResource{
-	StaticName:    "resources/space-station.svg",
+	StaticName:    "space-station.svg",
 	StaticContent: SpaceStationSvgData,
 }
 
-//go:embed resources/star-circle-outline.svg
+//go:embed star-circle-outline.svg
 var StarCircleOutlineSvgData []byte
 var StarCircleOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/star-circle-outline.svg",
+	StaticName:    "star-circle-outline.svg",
 	StaticContent: StarCircleOutlineSvgData,
 }
 
-//go:embed resources/switch_account.svg
+//go:embed switch_account.svg
 var SwitchaccountSvgData []byte
 var SwitchaccountSvg = &fyne.StaticResource{
-	StaticName:    "resources/switch_account.svg",
+	StaticName:    "switch_account.svg",
 	StaticContent: SwitchaccountSvgData,
 }
 
-//go:embed resources/teddy-bear.svg
+//go:embed teddy-bear.svg
 var TeddyBearSvgData []byte
 var TeddyBearSvg = &fyne.StaticResource{
-	StaticName:    "resources/teddy-bear.svg",
+	StaticName:    "teddy-bear.svg",
 	StaticContent: TeddyBearSvgData,
 }
 
-//go:embed resources/tools.svg
+//go:embed tools.svg
 var ToolsSvgData []byte
 var ToolsSvg = &fyne.StaticResource{
-	StaticName:    "resources/tools.svg",
+	StaticName:    "tools.svg",
 	StaticContent: ToolsSvgData,
 }
 
-//go:embed resources/tune-variant.svg
+//go:embed tune-variant.svg
 var TuneVariantSvgData []byte
 var TuneVariantSvg = &fyne.StaticResource{
-	StaticName:    "resources/tune-variant.svg",
+	StaticName:    "tune-variant.svg",
 	StaticContent: TuneVariantSvgData,
 }
 
-//go:embed resources/tune.svg
+//go:embed tune.svg
 var TuneSvgData []byte
 var TuneSvg = &fyne.StaticResource{
-	StaticName:    "resources/tune.svg",
+	StaticName:    "tune.svg",
 	StaticContent: TuneSvgData,
 }
 
-//go:embed resources/type_placeholder_64.png
+//go:embed type_placeholder_64.png
 var Typeplaceholder64PngData []byte
 var Typeplaceholder64Png = &fyne.StaticResource{
-	StaticName:    "resources/type_placeholder_64.png",
+	StaticName:    "type_placeholder_64.png",
 	StaticContent: Typeplaceholder64PngData,
 }
 
-//go:embed resources/update.svg
+//go:embed update.svg
 var UpdateSvgData []byte
 var UpdateSvg = &fyne.StaticResource{
-	StaticName:    "resources/update.svg",
+	StaticName:    "update.svg",
 	StaticContent: UpdateSvgData,
 }
 
-//go:embed resources/wrench-cog-outline.svg
+//go:embed wrench-cog-outline.svg
 var WrenchCogOutlineSvgData []byte
 var WrenchCogOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/wrench-cog-outline.svg",
+	StaticName:    "wrench-cog-outline.svg",
 	StaticContent: WrenchCogOutlineSvgData,
 }
 
-//go:embed resources/wrench-cog.svg
+//go:embed wrench-cog.svg
 var WrenchCogSvgData []byte
 var WrenchCogSvg = &fyne.StaticResource{
-	StaticName:    "resources/wrench-cog.svg",
+	StaticName:    "wrench-cog.svg",
 	StaticContent: WrenchCogSvgData,
 }
 
-//go:embed resources/zkillboard.png
+//go:embed zkillboard.png
 var ZkillboardPngData []byte
 var ZkillboardPng = &fyne.StaticResource{
-	StaticName:    "resources/zkillboard.png",
+	StaticName:    "zkillboard.png",
 	StaticContent: ZkillboardPngData,
 }

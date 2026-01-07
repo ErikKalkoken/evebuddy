@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"log/slog"
 	"sync/atomic"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type characterSkillQueue struct {
@@ -22,33 +22,38 @@ type characterSkillQueue struct {
 
 	OnUpdate func(statusShort, statusLong string)
 
-	character          atomic.Pointer[app.Character]
-	emptyInfo          *widget.Label
-	isCharacterUpdated bool
-	list               *widget.List
-	signalKey          string
-	sq                 *app.CharacterSkillqueue
-	top                *widget.Label
-	u                  *baseUI
+	character            atomic.Pointer[app.Character]
+	emptyInfo            *widget.Label
+	list                 *widget.List
+	showCurrentCharacter bool
+	signalKey            string
+	skillqueue           *app.CharacterSkillqueue
+	status               *ttwidget.Icon
+	statusResource       fyne.Resource
+	top                  *widget.Label
+	u                    *baseUI
 }
 
-// newCharacterSkillQueue returns a new characterSkillQueue object with dynamic character.
+// newCharacterSkillQueue returns a new characterSkillQueue for the current character.
 func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
 	return newCharacterSkillQueueWithCharacter(u, nil)
 }
 
-// newCharacterSkillQueue returns a new characterSkillQueue object with static character.
+// newCharacterSkillQueue returns a new characterSkillQueue for character c.
 func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *characterSkillQueue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
+	statusResources := theme.MediaRecordIcon()
 	a := &characterSkillQueue{
-		emptyInfo:          emptyInfo,
-		isCharacterUpdated: c == nil,
-		signalKey:          generateUniqueID(),
-		sq:                 app.NewCharacterSkillqueue(),
-		top:                makeTopLabel(),
-		u:                  u,
+		emptyInfo:            emptyInfo,
+		showCurrentCharacter: c == nil,
+		signalKey:            generateUniqueID(),
+		skillqueue:           app.NewCharacterSkillqueue(),
+		statusResource:       statusResources,
+		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
+		top:                  makeTopLabel(),
+		u:                    u,
 	}
 	a.ExtendBaseWidget(a)
 	a.character.Store(c)
@@ -58,7 +63,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 
 func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		a.top,
+		container.NewBorder(nil, nil, a.status, nil, a.top),
 		nil,
 		nil,
 		nil,
@@ -70,7 +75,7 @@ func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 	list := widget.NewList(
 		func() int {
-			return a.sq.Size()
+			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
 			level := newSkillLevel()
@@ -80,7 +85,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(a.u.isMobile))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			qi := a.sq.Item(id)
+			qi := a.skillqueue.Item(id)
 			if qi == nil {
 				return
 			}
@@ -106,7 +111,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		q := a.sq.Item(id)
+		q := a.skillqueue.Item(id)
 		if q == nil {
 			list.UnselectAll()
 			return
@@ -117,7 +122,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 }
 
 func (a *characterSkillQueue) start() {
-	if a.isCharacterUpdated {
+	if a.showCurrentCharacter {
 		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update()
@@ -141,7 +146,7 @@ func (a *characterSkillQueue) start() {
 }
 
 func (a *characterSkillQueue) stop() {
-	if a.isCharacterUpdated {
+	if a.showCurrentCharacter {
 		a.u.currentCharacterExchanged.RemoveListener(a.signalKey)
 	}
 	a.u.characterSectionChanged.RemoveListener(a.signalKey)
@@ -149,57 +154,80 @@ func (a *characterSkillQueue) stop() {
 }
 
 func (a *characterSkillQueue) update() {
-	var t string
-	var i widget.Importance
-	err := a.sq.Update(context.Background(), a.u.cs, characterIDOrZero(a.character.Load()))
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text = s
+			a.top.Importance = i
+			a.top.Refresh()
+		})
+	}
+	clear := func() {
+		fyne.Do(func() {
+			a.list.Hide()
+			a.emptyInfo.Hide()
+			a.status.Hide()
+		})
+	}
+
+	characterID := characterIDOrZero(a.character.Load())
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkillqueue)
+	if !hasData {
+		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
+		clear()
+		return
+	}
+	err := a.skillqueue.Update(context.Background(), a.u.cs, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
+		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		clear()
+		return
+	}
+
+	isActive := a.skillqueue.IsActive()
+	if isActive {
+		s := fmt.Sprintf("Total training time: %s", ihumanize.Optional(a.skillqueue.RemainingTime(), "?"))
+		setTop(s, widget.MediumImportance)
 	} else {
+		setTop("Training not active", widget.MediumImportance)
+	}
+	fyne.Do(func() {
+		var r fyne.Resource
+		var s string
+		if isActive {
+			r = theme.NewSuccessThemedResource(a.statusResource)
+			s = "Training is active"
+		} else {
+			r = theme.NewDisabledResource(a.statusResource)
+			s = "Training is not active"
+		}
+		a.status.SetResource(r)
+		a.status.SetToolTip(s)
+		a.status.Show()
+	})
+	if a.OnUpdate != nil {
 		var s1, s2 string
-		isActive := a.sq.IsActive()
 		if !isActive {
 			s1 = "!"
 			s2 = "training paused"
-		} else if c := a.sq.CompletionP(); c.ValueOrZero() < 1 {
-			s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
-			s2 = fmt.Sprintf("%s (%s)", a.sq.Active(), s1)
+		} else {
+			if c := a.skillqueue.CompletionP(); c.ValueOrZero() < 1 {
+				s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
+				s2 = fmt.Sprintf("%s (%s)", a.skillqueue.Active(), s1)
+			}
 		}
-		if a.OnUpdate != nil {
-			a.OnUpdate(s1, s2)
-		}
-		var total optional.Optional[time.Duration]
-		if isActive {
-			total = a.sq.RemainingTime()
-		}
-		t, i = a.makeTopText(total)
+		a.OnUpdate(s1, s2)
 	}
+
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
-		if a.sq.Size() == 0 {
+		if a.skillqueue.Size() == 0 {
 			a.emptyInfo.Show()
 		} else {
 			a.emptyInfo.Hide()
 		}
 		a.list.Refresh()
+		a.list.Show()
 	})
-}
-
-func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.scs.HasCharacterSection(characterIDOrZero(a.character.Load()), app.SectionCharacterSkillqueue)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	if !a.sq.IsActive() {
-		return "Training not active", widget.WarningImportance
-	}
-	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))
-	return t, widget.MediumImportance
 }
 
 func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
@@ -221,7 +249,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		isActive.Importance = widget.SuccessImportance
 	} else {
 		isActive = widget.NewLabel("inactive")
-		isActive.Importance = widget.DangerImportance
+		isActive.Importance = widget.LowImportance
 	}
 	items := []*widget.FormItem{
 		widget.NewFormItem(

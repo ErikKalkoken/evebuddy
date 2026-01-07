@@ -2,11 +2,13 @@ package characterservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
@@ -222,6 +224,36 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			}
 			return nil
 		})
+}
+
+// TotalTrainingTime returns the total training time for a character when available.
+// A training time of 0 means that training is not active.
+// An empty training time means that the training status could not be determined.
+func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
+	var z optional.Optional[time.Duration]
+	v, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionCharacterSkillqueue)
+	if errors.Is(err, app.ErrNotFound) {
+		return z, nil
+	}
+	if err != nil {
+		return z, err
+	}
+	if !isValidSkillQueueStatus(v) {
+		return z, nil
+	}
+	d, err := s.st.GetCharacterTotalTrainingTime(ctx, characterID)
+	if err != nil {
+		return z, err
+	}
+	return optional.New(d), nil
+}
+
+func isValidSkillQueueStatus(v *app.CharacterSectionStatus) bool {
+	if v.CompletedAt.IsZero() || v.HasError() {
+		return false
+	}
+	stale := v.CompletedAt.Add(max(5*time.Minute, 2*v.Section.Timeout()))
+	return time.Now().Before(stale)
 }
 
 // IsTrainingActive reports whether training is active.

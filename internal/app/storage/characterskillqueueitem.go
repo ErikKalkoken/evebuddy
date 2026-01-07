@@ -21,8 +21,8 @@ type SkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-// GetCharacterTotalTrainingTime returns the total training time for a character.
-// It returns 0 when there is no active training.
+// GetCharacterTotalTrainingTime returns the total training time for a character
+// and reports whether the training is active.
 func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (time.Duration, error) {
 	x, err := st.qRO.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
