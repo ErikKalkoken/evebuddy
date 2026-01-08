@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -290,25 +289,6 @@ func (cp CharacterPlanet) ProducedSchematicNames() []string {
 	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
 		return a.Name
 	})
-}
-
-func (cp CharacterPlanet) IsExpired() bool {
-	due := cp.ExtractionsExpiryTime()
-	if due.IsZero() {
-		return false
-	}
-	return due.Before(time.Now())
-}
-
-func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
-	if cp.IsExpired() {
-		return iwidget.RichTextSegmentsFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
-	}
-	due := cp.ExtractionsExpiryTime()
-	if due.IsZero() {
-		return iwidget.RichTextSegmentsFromText("-")
-	}
-	return iwidget.RichTextSegmentsFromText(due.Format(DateTimeFormat))
 }
 
 func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
