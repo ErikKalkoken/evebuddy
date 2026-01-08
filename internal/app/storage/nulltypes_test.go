@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func TestNullTypes(t *testing.T) {
@@ -57,4 +58,10 @@ func TestTimeFromNullTime(t *testing.T) {
 		x := storage.NewTimeFromNullTime(t2)
 		assert.True(t, x.IsZero())
 	})
+}
+
+func TestIntegerFromNullInt64(t *testing.T) {
+	assert.Equal(t, 42, storage.NewIntegerFromNullInt64[int](sql.NullInt64{Int64: 42, Valid: true}))
+	assert.Equal(t, 0, storage.NewIntegerFromNullInt64[int](sql.NullInt64{}))
+	assert.Equal(t, int32(42), storage.NewIntegerFromNullInt64[int32](sql.NullInt64{Int64: 42, Valid: true}))
 }

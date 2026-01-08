@@ -315,14 +315,16 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 			return items, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
-			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
-			args := make([]storage.SkillqueueItemParams, len(items))
-			for i, o := range items {
+			items := make([]storage.SkillqueueItemParams, 0)
+			for _, o := range data.([]esi.GetCharactersCharacterIdSkillqueue200Ok) {
+				if o.SkillId == 0 || o.FinishedLevel == 0 {
+					continue
+				}
 				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}
-				args[i] = storage.SkillqueueItemParams{
+				items = append(items, storage.SkillqueueItemParams{
 					EveTypeID:       o.SkillId,
 					FinishDate:      o.FinishDate,
 					FinishedLevel:   int(o.FinishedLevel),
@@ -332,12 +334,12 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 					QueuePosition:   int(o.QueuePosition),
 					StartDate:       o.StartDate,
 					TrainingStartSP: int(o.TrainingStartSp),
-				}
+				})
 			}
-			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, args); err != nil {
+			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, items); err != nil {
 				return err
 			}
-			slog.Info("Stored updated skillqueue items", "characterID", characterID, "count", len(args))
+			slog.Info("Stored updated skillqueue items", "characterID", characterID, "count", len(items))
 			return nil
 		})
 

@@ -246,7 +246,10 @@ func (qi CharacterSkillqueueItem) StringShortened() string {
 // IsActive reports whether a skill is active.
 func (qi CharacterSkillqueueItem) IsActive() bool {
 	now := time.Now()
-	return !qi.StartDate.IsZero() && qi.StartDate.Before(now) && qi.FinishDate.After(now)
+	return !qi.StartDate.IsZero() &&
+		!qi.FinishDate.IsZero() &&
+		qi.StartDate.Before(now) &&
+		qi.FinishDate.After(now)
 }
 
 func (qi CharacterSkillqueueItem) IsCompleted() bool {
@@ -283,25 +286,12 @@ func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
 }
 
 func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
-	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
-		return optional.Optional[time.Duration]{}
+	p := qi.CompletionP()
+	if p == 1 {
+		return optional.New(time.Duration(0)) // completed
 	}
-	remainingP := 1 - qi.CompletionP()
-	d := qi.Duration()
-	return optional.New(time.Duration(float64(d.ValueOrZero()) * remainingP))
-}
-
-func (qi CharacterSkillqueueItem) FinishDateEstimate() optional.Optional[time.Time] {
-	if !qi.FinishDate.IsZero() {
-		return optional.New(qi.FinishDate)
+	if qi.IsActive() {
+		return optional.New(time.Until(qi.FinishDate))
 	}
-	d := qi.Remaining()
-	if d.IsEmpty() {
-		return optional.Optional[time.Time]{}
-	}
-	d2 := d.MustValue()
-	if d2 == 0 {
-		return optional.New(time.Time{})
-	}
-	return optional.New(time.Now().UTC().Add(d2))
+	return qi.Duration()
 }

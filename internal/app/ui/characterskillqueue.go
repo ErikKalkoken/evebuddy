@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -111,9 +112,9 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
 		q := a.skillqueue.Item(id)
 		if q == nil {
-			list.UnselectAll()
 			return
 		}
 		showSkillInTrainingWindow(a.u, q)
@@ -263,13 +264,24 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		widget.NewFormItem("Description", description),
 		widget.NewFormItem("Active?", isActive),
 		widget.NewFormItem("Completed", widget.NewLabel(fmt.Sprintf("%.0f%%", r.CompletionP()*100))),
-		widget.NewFormItem("Remaining", widget.NewLabel(ihumanize.Optional(r.Remaining(), "?"))),
-		widget.NewFormItem("Duration", widget.NewLabel(ihumanize.Optional(r.Duration(), "?"))),
+		widget.NewFormItem("Remaining", widget.NewLabel(r.Remaining().StringFunc("?", func(v time.Duration) string {
+			return ihumanize.DurationRoundedUp(v)
+		}))),
+		widget.NewFormItem("Duration", widget.NewLabel(r.Duration().StringFunc("?", func(v time.Duration) string {
+			return ihumanize.DurationRoundedUp(v)
+		}))),
 		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(r.StartDate, app.DateTimeFormat, "?"))),
 		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(r.FinishDate, app.DateTimeFormat, "?"))),
 		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
 		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(r.LevelEndSP-r.LevelStartSP)))),
 	}
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem(
+			"Queue Position",
+			widget.NewLabel(fmt.Sprint(r.QueuePosition)),
+		))
+	}
+
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)

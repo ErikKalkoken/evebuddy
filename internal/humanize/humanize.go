@@ -67,25 +67,45 @@ func number(value float64, decimals int) string {
 // Duration returns a humanized duration, e.g. "10h 5m".
 //
 // Shows days and hours for duration over 1 day, else hours and minutes.
-// Rounds to full minutes.
-// Negative durations are returned as "0 m"
-func Duration(duration time.Duration) string {
-	if duration <= 0 {
+// Rounds up to full minutes / full hours.
+// Negative durations are returned as "0m"
+func Duration(d time.Duration) string {
+	return duration(d, false)
+}
+
+// DurationRoundedUp returns a humanized duration similar to Duration, but always rounds up.
+func DurationRoundedUp(d time.Duration) string {
+	return duration(d, true)
+}
+
+func duration(d time.Duration, roundUp bool) string {
+	if d <= 0 {
 		return "0m"
 	}
-	mRaw := duration.Abs().Minutes()
-	if mRaw < 1 {
+	minutesFloat := d.Abs().Minutes()
+	if minutesFloat < 1 {
 		return "<1m"
 	}
-	m := int(math.Round(mRaw))
-	d := m / 60 / 24
-	m -= d * 60 * 24
-	h := m / 60
-	m -= h * 60
-	if d > 0 {
-		return fmt.Sprintf("%dd %dh", d, h)
+	var minutes int
+	if roundUp {
+		minutes = int(math.Ceil(minutesFloat))
+	} else {
+		minutes = int(math.Round(minutesFloat))
 	}
-	return fmt.Sprintf("%dh %dm", h, m)
+	days := minutes / 60 / 24
+	minutes -= days * 60 * 24
+	hours := minutes / 60
+	minutes -= hours * 60
+	if days > 0 {
+		if minutes > 30 || (roundUp && minutes > 0) {
+			hours++
+		}
+		return fmt.Sprintf("%dd %dh", days, hours)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	}
+	return fmt.Sprintf("%dm", minutes)
 }
 
 // RelTime returns the duration until a time in the future.
