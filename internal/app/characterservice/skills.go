@@ -252,7 +252,7 @@ func isValidSkillQueueStatus(v *app.CharacterSectionStatus) bool {
 	if v.CompletedAt.IsZero() || v.HasError() {
 		return false
 	}
-	stale := v.CompletedAt.Add(max(5*time.Minute, 2*v.Section.Timeout()))
+	stale := v.CompletedAt.Add(12 * time.Hour)
 	return time.Now().Before(stale)
 }
 
