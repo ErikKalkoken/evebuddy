@@ -10,6 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -28,10 +29,8 @@ const (
 type colonyRow struct {
 	characterID     int32
 	due             time.Time
-	dueDisplay      []widget.RichTextSegment
 	extracting      set.Set[string]
 	extractingText  string
-	isExpired       bool
 	name            string
 	nameDisplay     []widget.RichTextSegment
 	ownerName       string
@@ -44,6 +43,23 @@ type colonyRow struct {
 	regionName      string
 	solarSystemName string
 	tags            set.Set[string]
+}
+
+func (r colonyRow) isExpired() bool {
+	if r.due.IsZero() {
+		return false
+	}
+	return r.due.Before(time.Now())
+}
+
+func (r colonyRow) DueRichText() []widget.RichTextSegment {
+	if r.isExpired() {
+		return iwidget.RichTextSegmentsFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
+	}
+	if r.due.IsZero() {
+		return iwidget.RichTextSegmentsFromText("-")
+	}
+	return iwidget.RichTextSegmentsFromText(r.due.Format(app.DateTimeFormat))
 }
 
 type colonies struct {
@@ -128,7 +144,7 @@ func newColonies(u *baseUI) *colonies {
 		case coloniesColExtracting:
 			return iwidget.RichTextSegmentsFromText(r.extractingText)
 		case coloniesColDue:
-			return r.dueDisplay
+			return r.DueRichText()
 		case coloniesColProducing:
 			return iwidget.RichTextSegmentsFromText(r.producingText)
 		case coloniesColRegion:
@@ -177,6 +193,13 @@ func newColonies(u *baseUI) *colonies {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.body.Refresh()
+		})
+		a.setOnUpdate(a.rows)
+	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterPlanets {
 			a.update()
@@ -253,9 +276,9 @@ func (a *colonies) filterRows(sortCol int) {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
 			switch x {
 			case colonyStatusExtracting:
-				return !r.isExpired
+				return !r.isExpired()
 			case colonyStatusOffline:
-				return r.isExpired
+				return r.isExpired()
 			}
 			return false
 		})
@@ -343,8 +366,18 @@ func (a *colonies) update() {
 		a.rows = rows
 		a.filterRows(-1)
 	})
+	a.setOnUpdate(rows)
+}
+
+func (a *colonies) setOnUpdate(rows []colonyRow) {
+	var expired int
+	for _, r := range rows {
+		if r.isExpired() {
+			expired++
+		}
+	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(rows), expired)
+		a.OnUpdate(len(a.rows), expired)
 	}
 }
 
@@ -363,9 +396,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 		r := colonyRow{
 			characterID:     p.CharacterID,
 			due:             p.ExtractionsExpiryTime(),
-			dueDisplay:      p.DueRichText(),
 			extracting:      set.Of(extracting...),
-			isExpired:       p.IsExpired(),
 			name:            p.EvePlanet.Name,
 			nameDisplay:     p.NameRichText(),
 			ownerName:       a.u.scs.CharacterName(p.CharacterID),
@@ -393,7 +424,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if p.IsExpired() {
+		if r.isExpired() {
 			expired++
 		}
 	}
