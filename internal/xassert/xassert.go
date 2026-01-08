@@ -24,3 +24,9 @@ func EqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
 	t.Helper()
 	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
 }
+
+// EqualTime asserts that two time values are equal.
+func EqualTime(t *testing.T, want, got time.Time) {
+	t.Helper()
+	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+}

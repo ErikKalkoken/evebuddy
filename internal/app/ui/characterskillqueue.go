@@ -111,9 +111,9 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
 		q := a.skillqueue.Item(id)
 		if q == nil {
-			list.UnselectAll()
 			return
 		}
 		showSkillInTrainingWindow(a.u, q)
@@ -270,6 +270,13 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
 		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(r.LevelEndSP-r.LevelStartSP)))),
 	}
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem(
+			"Queue Position",
+			widget.NewLabel(fmt.Sprint(r.QueuePosition)),
+		))
+	}
+
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
