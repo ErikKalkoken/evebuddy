@@ -14,6 +14,9 @@ import (
 )
 
 func TestColonies_CanRenderEmpty(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cases := []struct {
@@ -41,6 +44,9 @@ func TestColonies_CanRenderEmpty(t *testing.T) {
 }
 
 func TestColonies_CanRenderFull(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 
