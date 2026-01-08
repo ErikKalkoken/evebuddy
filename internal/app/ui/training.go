@@ -492,7 +492,7 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 			r.skillID = r.skill.SkillID
 			r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
 			r.skillDisplay = iwidget.RichTextSegmentsFromText(r.skillName)
-			r.skillFinishDate = r.skill.FinishDateEstimate()
+			r.skillFinishDate.Set(r.skill.FinishDate)
 			r.skillProgress.Set(r.skill.CompletionP())
 		} else {
 			r.statusText = "Inactive"

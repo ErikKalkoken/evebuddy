@@ -84,7 +84,11 @@ func TestDuration(t *testing.T) {
 		in   time.Duration
 		want string
 	}{
-		{"days and hours", 24*3*time.Hour + 5*time.Hour + 3*time.Minute, "3d 5h"},
+		{"minutes round down", 1*time.Minute + 10*time.Second, "1m"},
+		{"minutes round up 2", 1*time.Minute + 31*time.Second, "2m"},
+		{"hours round down", 25*time.Hour + 10*time.Minute, "1d 1h"},
+		{"hours round up", 25*time.Hour + 31*time.Minute, "1d 2h"},
+		{"days and hours", 24*3*time.Hour + 5*time.Hour, "3d 5h"},
 		{"days and hours 2", 24*10*time.Hour + 5*time.Hour + 3*time.Minute, "10d 5h"},
 		{"hours and minutes", 5*time.Hour + 3*time.Minute, "5h 3m"},
 		{"below 1 minute", 59 * time.Second, "<1m"},
@@ -93,6 +97,30 @@ func TestDuration(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := humanize.Duration(tc.in)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestDurationRoundedUp(t *testing.T) {
+	var cases = []struct {
+		name string
+		in   time.Duration
+		want string
+	}{
+		{"minutes round up 1", 1*time.Minute + 10*time.Second, "2m"},
+		{"minutes round up 2", 1*time.Minute + 31*time.Second, "2m"},
+		{"hours round up 1", 25*time.Hour + 10*time.Minute, "1d 2h"},
+		{"hours round up 2", 25*time.Hour + 31*time.Minute, "1d 2h"},
+		{"days and hours", 24*3*time.Hour + 5*time.Hour, "3d 5h"},
+		{"days and hours 2", 24*10*time.Hour + 5*time.Hour + 3*time.Minute, "10d 6h"},
+		{"hours and minutes", 5*time.Hour + 3*time.Minute, "5h 3m"},
+		{"below 1 minute", 59 * time.Second, "<1m"},
+		{"negative duration", -5*time.Hour - 3*time.Minute, "0m"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := humanize.DurationRoundedUp(tc.in)
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -130,11 +158,11 @@ func TestOptional(t *testing.T) {
 	})
 	t.Run("time", func(t *testing.T) {
 		x := time.Now().Add(5 * time.Minute)
-		assert.Equal(t, "0h 5m", humanize.Optional(optional.New(x), ""))
+		assert.Equal(t, "5m", humanize.Optional(optional.New(x), ""))
 	})
 	t.Run("time", func(t *testing.T) {
 		x := 5 * time.Minute
-		assert.Equal(t, "0h 5m", humanize.Optional(optional.New(x), ""))
+		assert.Equal(t, "5m", humanize.Optional(optional.New(x), ""))
 	})
 	t.Run("string", func(t *testing.T) {
 		assert.Equal(t, "alpha", humanize.Optional(optional.New("alpha"), ""))
@@ -186,8 +214,8 @@ func TestRelTime(t *testing.T) {
 		in   time.Time
 		want string
 	}{
-		{"future", time.Now().Add(3 * time.Minute), "0h 3m"},
-		{"past", time.Now().Add(-3 * time.Minute), "0h 3m"},
+		{"future", time.Now().Add(3 * time.Minute), "3m"},
+		{"past", time.Now().Add(-3 * time.Minute), "3m"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -263,8 +264,12 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		widget.NewFormItem("Description", description),
 		widget.NewFormItem("Active?", isActive),
 		widget.NewFormItem("Completed", widget.NewLabel(fmt.Sprintf("%.0f%%", r.CompletionP()*100))),
-		widget.NewFormItem("Remaining", widget.NewLabel(ihumanize.Optional(r.Remaining(), "?"))),
-		widget.NewFormItem("Duration", widget.NewLabel(ihumanize.Optional(r.Duration(), "?"))),
+		widget.NewFormItem("Remaining", widget.NewLabel(r.Remaining().StringFunc("?", func(v time.Duration) string {
+			return ihumanize.DurationRoundedUp(v)
+		}))),
+		widget.NewFormItem("Duration", widget.NewLabel(r.Duration().StringFunc("?", func(v time.Duration) string {
+			return ihumanize.DurationRoundedUp(v)
+		}))),
 		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(r.StartDate, app.DateTimeFormat, "?"))),
 		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(r.FinishDate, app.DateTimeFormat, "?"))),
 		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
