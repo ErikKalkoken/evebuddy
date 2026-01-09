@@ -54,9 +54,6 @@ func showManageCharactersWindow(u *baseUI) {
 		if onClosed != nil {
 			onClosed()
 		}
-		if mcw.tagsChanged {
-			go u.tagsChanged.Emit(context.Background(), struct{}{})
-		}
 		mcw.sb.Stop()
 	})
 	w.SetCloseIntercept(func() {
@@ -67,10 +64,9 @@ func showManageCharactersWindow(u *baseUI) {
 }
 
 type manageCharactersWindow struct {
-	sb          *iwidget.Snackbar
-	tagsChanged bool
-	u           *baseUI
-	w           fyne.Window
+	sb *iwidget.Snackbar
+	u  *baseUI
+	w  fyne.Window
 }
 
 func (a *manageCharactersWindow) reportError(text string, err error) {
@@ -368,10 +364,10 @@ type characterTags struct {
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *iwidget.AppBar
+	mcw                 *manageCharactersWindow
 	selectedTag         *app.CharacterTag
 	tagList             *widget.List
 	tags                []*app.CharacterTag
-	mcw                 *manageCharactersWindow
 }
 
 func newCharacterTags(mcw *manageCharactersWindow) *characterTags {
@@ -532,7 +528,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					}
 				}
 				a.updateCharacters(a.selectedTag)
-				a.mcw.tagsChanged = true
+				go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 			},
 			a.mcw.w,
 		)
@@ -591,8 +587,8 @@ func (a *characterTags) makeTagList() *widget.List {
 							a.mcw.u.showErrorDialog("Failed to delete tag", err, a.mcw.w)
 							return
 						}
-						a.mcw.tagsChanged = true
 						a.updateTags()
+						go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
 							return
@@ -673,7 +669,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					return
 				}
 				a.updateCharacters(a.selectedTag)
-				a.mcw.tagsChanged = true
+				go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
 	)
@@ -738,8 +734,8 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			a.updateTags()
-			a.mcw.tagsChanged = true
 			a.selectTagByName(name.Text)
+			go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 		}, a.mcw.w,
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d, a.mcw.w)
