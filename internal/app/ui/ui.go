@@ -53,9 +53,7 @@ const (
 
 // ticker
 const (
-	characterSectionsUpdateTicker = 60 * time.Second
-	generalSectionsUpdateTicker   = 300 * time.Second
-	refreshUITicker               = 30 * time.Second
+	refreshUITicker = 30 * time.Second
 )
 
 // Default ScaleMode for images

@@ -498,25 +498,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	notifyTraining := NewSettingItemSwitch(SettingItemSwitch{
 		defaultValue: a.u.settings.NotifyTrainingEnabled(),
 		label:        "Notify Training",
-		hint:         "Whether to notify when skillqueue is empty",
+		hint:         "Whether to notify when skillqueue is empty for watched characters",
 		getter:       a.u.settings.NotifyTrainingEnabled,
 		onChanged: func(on bool) {
-			ctx := context.Background()
-			if on {
-				err := a.u.cs.EnableAllTrainingWatchers(ctx)
-				if err != nil {
-					a.u.showErrorDialog("Failed to enable training notification", err, a.w)
-				} else {
-					a.u.settings.SetNotifyTrainingEnabled(on)
-				}
-			} else {
-				err := a.u.cs.DisableAllTrainingWatchers(ctx)
-				if err != nil {
-					a.u.showErrorDialog("Failed to disable training notification", err, a.w)
-				} else {
-					a.u.settings.SetNotifyCommunicationsEnabled(false)
-				}
-			}
+			a.u.settings.SetNotifyTrainingEnabled(on)
 		},
 	})
 
@@ -701,8 +686,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	send := settingAction{
 		Label: "Send test notification",
 		Action: func() {
-			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
-			a.u.App().SendNotification(n)
+			go func() {
+				n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
+				a.u.App().SendNotification(n)
+			}()
 		},
 	}
 	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
