@@ -284,7 +284,8 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 		title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
 		content := "There is currently no skill being trained for this character."
 		notify(title, content)
-		return nil, s.UpdateIsTrainingWatched(ctx, characterID, false)
+		err = s.UpdateIsTrainingWatched(ctx, characterID, false)
+		return nil, err
 	})
 	if err != nil {
 		return fmt.Errorf("NotifyExpiredTraining for character %d: %w", characterID, err)

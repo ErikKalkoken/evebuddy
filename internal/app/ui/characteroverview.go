@@ -35,6 +35,7 @@ type characterOverviewRow struct {
 	characterName   string
 	corporation     *app.EveEntity
 	faction         *app.EveEntity
+	isWatched       bool
 	location        *app.EveLocation
 	regionName      string
 	searchTarget    string
@@ -505,6 +506,7 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		characterName: c.EveCharacter.Name,
 		corporation:   c.EveCharacter.Corporation,
 		faction:       c.EveCharacter.Faction,
+		isWatched:     c.IsTrainingWatched,
 		location:      c.Location,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
 		ship:          c.Ship,
@@ -558,6 +560,7 @@ type characterCard struct {
 	mails                    *widget.Label
 	portrait                 *canvas.Image
 	resourceTrainingActive   fyne.Resource
+	resourceTrainingExpired  fyne.Resource
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
@@ -601,6 +604,7 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 		mails:                    makeLabel(numberTemplate),
 		portrait:                 portrait,
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
+		resourceTrainingExpired:  theme.NewErrorThemedResource(resTraining),
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
 		resourceTrainingUnknown:  trainingUnknown,
 		ship:                     makeLabel("Merlin"),
@@ -828,6 +832,7 @@ func (w *characterCard) set(r characterOverviewRow) {
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
+
 	if r.trainingActive.IsEmpty() {
 		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
 		w.trainingStatus.SetToolTip("Training status unknown")
@@ -836,8 +841,13 @@ func (w *characterCard) set(r characterOverviewRow) {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
 			w.trainingStatus.SetToolTip("Training is active")
 		} else {
-			w.trainingStatus.SetResource(w.resourceTrainingInactive)
-			w.trainingStatus.SetToolTip("Training is not active")
+			if r.isWatched {
+				w.trainingStatus.SetResource(w.resourceTrainingExpired)
+				w.trainingStatus.SetToolTip("Training has expired")
+			} else {
+				w.trainingStatus.SetResource(w.resourceTrainingInactive)
+				w.trainingStatus.SetToolTip("Training is not active")
+			}
 		}
 	}
 

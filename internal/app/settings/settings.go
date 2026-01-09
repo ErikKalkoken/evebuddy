@@ -2,8 +2,8 @@
 package settings
 
 import (
+	"cmp"
 	"log/slog"
-	"maps"
 	"slices"
 	"time"
 
@@ -97,10 +97,23 @@ func (s Settings) SetDeveloperMode(v bool) {
 	s.p.SetBool(settingDeveloperMode, v)
 }
 
+// LogLevelNames returns the names of all log levels in ascending order of severity.
 func (s Settings) LogLevelNames() []string {
-	x := slices.Collect(maps.Keys(logLevelName2Level))
-	slices.Sort(x)
-	return x
+	type t struct {
+		name  string
+		level slog.Level
+	}
+	levels := make([]t, 0)
+	for name, level := range logLevelName2Level {
+		levels = append(levels, t{name, level})
+	}
+	slices.SortFunc(levels, func(a, b t) int {
+		return cmp.Compare(a.level, b.level)
+	})
+	names := xslices.Map(levels, func(x t) string {
+		return x.name
+	})
+	return names
 }
 
 func (s Settings) LogLevelSlog() slog.Level {

@@ -23,6 +23,9 @@ func NewImageFromResource(res fyne.Resource, minSize fyne.Size) *canvas.Image {
 
 // NewImageWithLoader shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
 func NewImageWithLoader(placeholder fyne.Resource, minSize fyne.Size, loader func() (fyne.Resource, error)) *canvas.Image {
+	if loader == nil {
+		panic("Need to define loader")
+	}
 	image := NewImageFromResource(placeholder, minSize)
 	RefreshImageAsync(image, loader)
 	return image

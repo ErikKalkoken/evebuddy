@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/eveauth"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
@@ -27,6 +28,43 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
+
+func showManageCharactersWindow(u *baseUI) {
+	w, created, onClosed := u.getOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+	if !created {
+		w.Show()
+		return
+	}
+	mcw := &manageCharactersWindow{
+		sb: iwidget.NewSnackbar(w),
+		u:  u,
+		w:  w,
+	}
+	characters := newManageCharacters(mcw)
+	characters.update()
+	c := container.NewAppTabs(
+		container.NewTabItem("Characters", characters),
+		container.NewTabItem("Tags", newCharacterTags(mcw)),
+		container.NewTabItem("Training", newTrainingWatcher(mcw)),
+	)
+	c.SetTabLocation(container.TabLocationLeading)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(c, w.Canvas()))
+	w.Resize(fyne.Size{Width: 700, Height: 500})
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		if mcw.tagsChanged {
+			go u.tagsChanged.Emit(context.Background(), struct{}{})
+		}
+		mcw.sb.Stop()
+	})
+	w.SetCloseIntercept(func() {
+		w.Close()
+		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+	})
+	w.Show()
+}
 
 type manageCharactersWindow struct {
 	sb          *iwidget.Snackbar
@@ -54,42 +92,6 @@ type manageCharacters struct {
 	characters []manageCharacterRow
 	list       *widget.List
 	mcw        *manageCharactersWindow
-}
-
-func showManageCharactersWindow(u *baseUI) {
-	w, created, onClosed := u.getOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
-	if !created {
-		w.Show()
-		return
-	}
-	mcw := &manageCharactersWindow{
-		sb: iwidget.NewSnackbar(w),
-		u:  u,
-		w:  w,
-	}
-	characters := newManageCharacters(mcw)
-	characters.update()
-	c := container.NewAppTabs(
-		container.NewTabItem("Characters", characters),
-		container.NewTabItem("Tags", newCharacterTags(mcw)),
-	)
-	c.SetTabLocation(container.TabLocationLeading)
-	w.SetContent(fynetooltip.AddWindowToolTipLayer(c, w.Canvas()))
-	w.Resize(fyne.Size{Width: 700, Height: 500})
-	w.SetOnClosed(func() {
-		if onClosed != nil {
-			onClosed()
-		}
-		if mcw.tagsChanged {
-			go u.tagsChanged.Emit(context.Background(), struct{}{})
-		}
-		mcw.sb.Stop()
-	})
-	w.SetCloseIntercept(func() {
-		w.Close()
-		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
-	})
-	w.Show()
 }
 
 func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
@@ -770,4 +772,158 @@ func (a *characterTags) updateTags() {
 	} else {
 		a.emptyTagsHint.Show()
 	}
+}
+
+type trainingWatcher struct {
+	widget.BaseWidget
+
+	characters []*app.Character
+	list       *widget.List
+	mcw        *manageCharactersWindow
+}
+
+func newTrainingWatcher(mcw *manageCharactersWindow) *trainingWatcher {
+	a := &trainingWatcher{
+		mcw: mcw,
+	}
+	a.ExtendBaseWidget(a)
+	a.list = a.makeList()
+	a.mcw.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.mcw.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.update()
+	return a
+}
+
+func (a *trainingWatcher) CreateRenderer() fyne.WidgetRenderer {
+	ab := iwidget.NewAppBar(
+		"Watched Training",
+		a.list,
+		kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
+			fyne.NewMenuItem("Set to currently trained", func() {
+				go func() {
+					ctx := context.Background()
+					for id, c := range a.characters {
+						d, err := a.mcw.u.cs.TotalTrainingTime(ctx, c.ID)
+						if err != nil {
+							slog.Error("Failed to set watcher for trained characters", "error", err)
+							continue
+						}
+						fyne.Do(func() {
+							a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
+						})
+					}
+				}()
+			}),
+			fyne.NewMenuItem("Enable all", func() {
+				ctx := context.Background()
+				for id := range a.characters {
+					a.updateCharacterWatched(ctx, id, true)
+				}
+			}),
+			fyne.NewMenuItem("Disable all", func() {
+				ctx := context.Background()
+				for id := range a.characters {
+					a.updateCharacterWatched(ctx, id, false)
+				}
+			}),
+		)),
+	)
+	ab.HideBackground = !a.mcw.u.isMobile
+	return widget.NewSimpleRenderer(ab)
+}
+
+func (a *trainingWatcher) makeList() *widget.List {
+	l := widget.NewList(
+		func() int {
+			return len(a.characters)
+		},
+		func() fyne.CanvasObject {
+			portrait := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			character := widget.NewLabel("Character")
+			character.Truncation = fyne.TextTruncateEllipsis
+			return container.NewBorder(
+				nil,
+				nil,
+				portrait,
+				kxwidget.NewSwitch(nil),
+				character,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.characters) {
+				return
+			}
+			c := a.characters[id]
+			row := co.(*fyne.Container).Objects
+
+			character := row[0].(*widget.Label)
+			character.SetText(c.EveCharacter.Name)
+
+			portrait := row[1].(*canvas.Image)
+			go a.mcw.u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
+				fyne.Do(func() {
+					portrait.Resource = r
+					portrait.Refresh()
+				})
+			})
+
+			sw := row[2].(*kxwidget.Switch)
+			sw.On = c.IsTrainingWatched
+			sw.Refresh()
+			sw.OnChanged = func(on bool) {
+				a.updateCharacterWatched(context.Background(), id, on)
+			}
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.characters) {
+			return
+		}
+		c := a.characters[id]
+		v := !c.IsTrainingWatched
+		a.updateCharacterWatched(context.Background(), id, v)
+	}
+	return l
+}
+
+func (a *trainingWatcher) updateCharacterWatched(ctx context.Context, id int, on bool) {
+	if id >= len(a.characters) {
+		return
+	}
+	c := a.characters[id]
+	go func() {
+		err := a.mcw.u.cs.UpdateIsTrainingWatched(ctx, c.ID, on)
+		if err != nil {
+			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
+			a.mcw.u.ShowSnackbar("Failed to update training watcher: " + a.mcw.u.humanizeError(err))
+		}
+		fyne.Do(func() {
+			a.characters[id].IsTrainingWatched = on
+			a.list.RefreshItem(id)
+		})
+		a.mcw.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletBalance, // FIXME: Workaround
+		})
+	}()
+}
+
+func (a *trainingWatcher) update() {
+	characters, err := a.mcw.u.cs.ListCharacters(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	slices.SortFunc(characters, func(a, b *app.Character) int {
+		return strings.Compare(a.EveCharacter.Name, b.EveCharacter.Name)
+	})
+	a.characters = characters
+	a.list.Refresh()
 }
