@@ -56,7 +56,7 @@ type trainingRow struct {
 }
 
 func (r trainingRow) currentRemainingTime() optional.Optional[time.Duration] {
-	return r.remainingTime(r.skillFinishDate)
+	return timeUntil(r.skillFinishDate)
 }
 
 func (r trainingRow) currentRemainingTimeString() string {
@@ -64,22 +64,11 @@ func (r trainingRow) currentRemainingTimeString() string {
 }
 
 func (r trainingRow) totalRemainingTime() optional.Optional[time.Duration] {
-	return r.remainingTime(r.totalFinishDate)
+	return timeUntil(r.totalFinishDate)
 }
 
 func (r trainingRow) totalRemainingTimeString() string {
 	return r.remainingTimeString(r.totalRemainingTime())
-}
-
-func (trainingRow) remainingTime(t optional.Optional[time.Time]) optional.Optional[time.Duration] {
-	if t.IsEmpty() {
-		return optional.Optional[time.Duration]{}
-	}
-	d := time.Until(t.MustValue())
-	if d < 0 {
-		return optional.New(time.Duration(0))
-	}
-	return optional.New(time.Duration(d))
 }
 
 func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) string {
@@ -113,6 +102,17 @@ func (r trainingRow) status() (string, widget.Importance) {
 		return "Expired", widget.DangerImportance
 	}
 	return "Inactive", widget.LowImportance
+}
+
+func timeUntil(t optional.Optional[time.Time]) optional.Optional[time.Duration] {
+	if t.IsEmpty() {
+		return optional.Optional[time.Duration]{}
+	}
+	d := time.Until(t.MustValue())
+	if d < 0 {
+		return optional.New(time.Duration(0))
+	}
+	return optional.New(time.Duration(d))
 }
 
 type training struct {
