@@ -188,6 +188,21 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 
+	training := iwidget.NewNavPage(
+		"Training",
+		theme.NewThemedResource(icons.SchoolSvg),
+		newContentPage("Training", u.training),
+	)
+	u.training.onUpdate = func(expired int) {
+		var badge string
+		if expired > 0 {
+			badge = ihumanize.Comma(expired)
+		}
+		fyne.Do(func() {
+			homeNav.SetItemBadge(training, badge)
+		})
+	}
+
 	homeNav = iwidget.NewNavDrawer(
 		overview,
 		allAssets,
@@ -203,11 +218,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		overviewColonies,
 		industry,
 		marketOrders,
-		iwidget.NewNavPage(
-			"Training",
-			theme.NewThemedResource(icons.SchoolSvg),
-			newContentPage("Training", u.training),
-		),
+		training,
 		wealth,
 	)
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {

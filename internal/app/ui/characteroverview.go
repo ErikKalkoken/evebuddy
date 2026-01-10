@@ -3,6 +3,7 @@ package ui
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -72,7 +73,7 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
-	body              fyne.CanvasObject
+	main              fyne.CanvasObject
 	columnSorter      *iwidget.ColumnSorter
 	info              *widget.Label
 	onUpdate          func(characters int)
@@ -159,9 +160,9 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}
 	a.search.PlaceHolder = "Search character names"
 	if !a.u.isMobile {
-		a.body = a.makeGrid()
+		a.main = a.makeGrid()
 	} else {
-		a.body = a.makeList()
+		a.main = a.makeList()
 	}
 
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
@@ -183,6 +184,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
 		characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
 			return r.characterID
@@ -244,7 +246,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		container.NewStack(a.info, a.body),
+		container.NewStack(a.info, a.main),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -409,7 +411,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 		return r.tags
 	})...).All()))
 	a.rowsFiltered = rows
-	a.body.Refresh()
+	a.main.Refresh()
 }
 
 func (a *characterOverview) update() {
@@ -462,21 +464,14 @@ func (a *characterOverview) updateItem(characterID int32) {
 		return
 	}
 	fyne.Do(func() {
-		id := slices.IndexFunc(a.rowsFiltered, func(x characterOverviewRow) bool {
+		id := slices.IndexFunc(a.rows, func(x characterOverviewRow) bool {
 			return x.characterID == characterID
 		})
 		if id == -1 {
 			return
 		}
-		a.rowsFiltered[id] = r
-		switch x := a.body.(type) {
-		case *widget.GridWrap:
-			x.RefreshItem(id)
-		case *widget.List:
-			x.RefreshItem(id)
-		default:
-			panic(fmt.Sprintf("Unhandled type: %T", x))
-		}
+		a.rows[id] = r
+		a.filterRows(-1)
 	})
 }
 
@@ -488,6 +483,9 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	rows := make([]characterOverviewRow, 0)
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
+		if errors.Is(err, app.ErrInvalid) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -497,8 +495,8 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 }
 
 func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (characterOverviewRow, error) {
-	if c == nil {
-		return characterOverviewRow{}, fmt.Errorf("fetchRow: c can not be nil: %w", app.ErrInvalid)
+	if c == nil || c.EveCharacter == nil {
+		return characterOverviewRow{}, app.ErrInvalid
 	}
 	r := characterOverviewRow{
 		alliance:      c.EveCharacter.Alliance,

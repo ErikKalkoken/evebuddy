@@ -3,6 +3,7 @@ package ui
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -37,15 +38,13 @@ type trainingRow struct {
 	characterID                int32
 	characterName              string
 	isActive                   bool
+	isWatched                  bool
 	searchTarget               string
 	skill                      *app.CharacterSkillqueueItem
-	skillDisplay               []widget.RichTextSegment
 	skillFinishDate            optional.Optional[time.Time]
 	skillID                    int32
 	skillName                  string
 	skillProgress              optional.Optional[float64]
-	statusImportance           widget.Importance
-	statusText                 string
 	tags                       set.Set[string]
 	totalFinishDate            optional.Optional[time.Time]
 	totalRemainingCount        optional.Optional[int]
@@ -92,8 +91,34 @@ func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) str
 	})
 }
 
+func (r trainingRow) skillDisplay() []widget.RichTextSegment {
+	if r.isActive {
+		return iwidget.RichTextSegmentsFromText(r.skillName)
+	}
+	if r.isWatched {
+		return iwidget.RichTextSegmentsFromText("Expired", widget.RichTextStyle{
+			ColorName: theme.ColorNameError,
+		})
+	}
+	return iwidget.RichTextSegmentsFromText("Inactive", widget.RichTextStyle{
+		ColorName: theme.ColorNameDisabled,
+	})
+}
+
+func (r trainingRow) status() (string, widget.Importance) {
+	if r.isActive {
+		return "Active", widget.SuccessImportance
+	}
+	if r.isWatched {
+		return "Expired", widget.DangerImportance
+	}
+	return "Inactive", widget.LowImportance
+}
+
 type training struct {
 	widget.BaseWidget
+
+	onUpdate func(expired int)
 
 	bottom       *widget.Label
 	columnSorter *iwidget.ColumnSorter
@@ -175,7 +200,7 @@ func newTraining(u *baseUI) *training {
 			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
 			return iwidget.RichTextSegmentsFromText(s)
 		case trainingColCurrentSkill:
-			return r.skillDisplay
+			return r.skillDisplay()
 		case trainingColCurrentRemaining:
 			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
 		case trainingColQueuedCount:
@@ -199,7 +224,9 @@ func newTraining(u *baseUI) *training {
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
-	if !a.u.isMobile {
+	if a.u.isMobile {
+		a.main = a.makeDataList()
+	} else {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
@@ -210,8 +237,6 @@ func newTraining(u *baseUI) *training {
 				a.showTrainingQueueWindow(r)
 			},
 		)
-	} else {
-		a.main = a.makeDataList()
 	}
 	a.selectStatus = kxwidget.NewFilterChipSelect(
 		"Status",
@@ -229,16 +254,12 @@ func newTraining(u *baseUI) *training {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		switch arg.section {
-		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
-			a.update()
+		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue, app.SectionCharacterWalletBalance:
+			a.updateItem(arg.characterID)
 		}
-	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.main.Refresh()
-		})
 	})
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
@@ -248,6 +269,11 @@ func newTraining(u *baseUI) *training {
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update()
+	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.main.Refresh()
+		})
 	})
 	return a
 }
@@ -309,8 +335,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			b0 := vbox[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.characterName)
 			status := b0[1].(*widget.Label)
-			status.Text = r.statusText
-			status.Importance = r.statusImportance
+			status.Text, status.Importance = r.status()
 			status.Refresh()
 
 			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
@@ -418,9 +443,10 @@ func (a *training) filterRows(sortCol int) {
 }
 
 func (a *training) update() {
+	ctx := context.Background()
 	rows := make([]trainingRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(a.u.services())
+		cc, err := a.fetchRows(ctx)
 		if err != nil {
 			return "", 0, err
 		}
@@ -448,71 +474,113 @@ func (a *training) update() {
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
+		a.updateOnUpdate()
 	})
 }
 
-func (*training) fetchRows(s services) ([]trainingRow, error) {
+func (a *training) updateItem(characterID int32) {
+	logErr := func(err error) {
+		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
+	}
 	ctx := context.Background()
-	characters, err := s.cs.ListCharacters(ctx)
+	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		logErr(err)
+		return
+	}
+	r, err := a.fetchRow(ctx, c)
+	if err != nil {
+		logErr(err)
+		return
+	}
+	fyne.Do(func() {
+		id := slices.IndexFunc(a.rows, func(x trainingRow) bool {
+			return x.characterID == characterID
+		})
+		if id == -1 {
+			return
+		}
+		a.rows[id] = r
+		a.updateOnUpdate()
+		a.filterRows(-1)
+	})
+}
+
+func (a *training) updateOnUpdate() {
+	var expired int
+	for _, r := range a.rows {
+		if !r.isActive && r.isWatched {
+			expired++
+		}
+	}
+	if a.onUpdate != nil {
+		a.onUpdate(expired)
+	}
+}
+
+func (a *training) fetchRows(ctx context.Context) ([]trainingRow, error) {
+	characters, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]trainingRow, len(characters))
-	for i, c := range characters {
-		if c.EveCharacter == nil {
+	rows := make([]trainingRow, 0)
+	for _, c := range characters {
+		r, err := a.fetchRow(ctx, c)
+		if errors.Is(err, app.ErrInvalid) {
 			continue
 		}
-		r := trainingRow{
-			characterID:   c.ID,
-			characterName: c.EveCharacter.Name,
-			searchTarget:  strings.ToLower(c.EveCharacter.Name),
-			totalSP:       c.TotalSP,
-			totalSPDisplay: c.TotalSP.StringFunc("?", func(v int) string {
-				return humanize.Comma(int64(v))
-			}),
-			unallocatedSP: c.UnallocatedSP,
-			unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int) string {
-				return humanize.Comma(int64(v))
-			}),
-		}
-		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
 			return nil, err
 		}
-		r.tags = tags
-		queue := app.NewCharacterSkillqueue()
-		if err := queue.Update(ctx, s.cs, c.ID); err != nil {
-			return nil, err
-		}
-		r.skill = queue.Active()
-		if r.skill != nil {
-			r.isActive = true
-			r.statusText = "Active"
-			r.statusImportance = widget.SuccessImportance
-			r.skillID = r.skill.SkillID
-			r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
-			r.skillDisplay = iwidget.RichTextSegmentsFromText(r.skillName)
-			r.skillFinishDate.Set(r.skill.FinishDate)
-			r.skillProgress.Set(r.skill.CompletionP())
-		} else {
-			r.statusText = "Inactive"
-			r.statusImportance = widget.LowImportance
-			r.skillName = "N/A"
-			r.skillDisplay = iwidget.RichTextSegmentsFromText(
-				"Inactive",
-				widget.RichTextStyle{
-					ColorName: theme.ColorNameDisabled,
-				},
-			)
-		}
-		r.totalFinishDate = queue.FinishDate()
-		r.totalRemainingCount = queue.RemainingCount()
-		r.totalRemainingCountDisplay = r.totalRemainingCount.StringFunc("N/A", func(v int) string {
-			return ihumanize.Comma(v)
-		})
-		rows[i] = r
+		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow, error) {
+	var z trainingRow
+	if c == nil || c.EveCharacter == nil {
+		return z, app.ErrInvalid
+	}
+	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	if err != nil {
+		return z, err
+	}
+	r := trainingRow{
+		characterID:   c.ID,
+		characterName: c.EveCharacter.Name,
+		searchTarget:  strings.ToLower(c.EveCharacter.Name),
+		isWatched:     c.IsTrainingWatched,
+		tags:          tags,
+		totalSP:       c.TotalSP,
+		totalSPDisplay: c.TotalSP.StringFunc("?", func(v int) string {
+			return humanize.Comma(int64(v))
+		}),
+		unallocatedSP: c.UnallocatedSP,
+		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int) string {
+			return humanize.Comma(int64(v))
+		}),
+	}
+	queue := app.NewCharacterSkillqueue()
+	if err := queue.Update(ctx, a.u.cs, c.ID); err != nil {
+		return z, err
+	}
+	r.skill = queue.Active()
+	if r.skill != nil {
+		r.isActive = true
+		r.skillID = r.skill.SkillID
+		r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
+		r.skillFinishDate.Set(r.skill.FinishDate)
+		r.skillProgress.Set(r.skill.CompletionP())
+	} else {
+		r.skillName = "N/A"
+	}
+	r.totalFinishDate = queue.FinishDate()
+	r.totalRemainingCount = queue.RemainingCount()
+	r.totalRemainingCountDisplay = r.totalRemainingCount.StringFunc("N/A", func(v int) string {
+		return ihumanize.Comma(v)
+	})
+	return r, nil
 }
 
 func (a *training) showTrainingQueueWindow(r trainingRow) {

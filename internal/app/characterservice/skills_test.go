@@ -49,11 +49,11 @@ func TestIsTrainingActive(t *testing.T) {
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		cs := characterservice.NewFake(st)
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		// when
@@ -67,6 +67,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		cs := characterservice.NewFake(st)
 		c := factory.CreateCharacterFull()
 		var sendCount int
 		// when
@@ -80,6 +81,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		cs := characterservice.NewFake(st)
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		var sendCount int
@@ -94,6 +96,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("should only send one notification", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		cs := characterservice.NewFake(st)
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		err := cs.NotifyExpiredTrainingForWatched(ctx, c.ID, func(title, content string) {
