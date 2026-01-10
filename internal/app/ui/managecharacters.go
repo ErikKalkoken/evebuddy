@@ -905,10 +905,7 @@ func (a *trainingWatcher) updateCharacterWatched(ctx context.Context, id int, on
 			a.characters[id].IsTrainingWatched = on
 			a.list.RefreshItem(id)
 		})
-		a.mcw.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
-			characterID: c.ID,
-			section:     app.SectionCharacterWalletBalance, // FIXME: Workaround
-		})
+		a.mcw.u.characterChanged.Emit(ctx, c.ID)
 	}()
 }
 

@@ -785,7 +785,7 @@ func (a *characterMails) loadMail(mailID int32) {
 					}
 					a.updateUnreadCounts()
 					a.headerUpdate()
-					a.u.characterOverview.update()
+					a.u.characterOverview.updateItem(ctx, characterID)
 					a.u.updateMailIndicator()
 					fyne.Do(func() {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {

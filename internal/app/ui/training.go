@@ -255,10 +255,10 @@ func newTraining(u *baseUI) *training {
 	}, a.u.window)
 
 	// Signals
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
-		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue, app.SectionCharacterWalletBalance:
-			a.updateItem(arg.characterID)
+		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
+			a.updateItem(ctx, arg.characterID)
 		}
 	})
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
@@ -269,6 +269,9 @@ func newTraining(u *baseUI) *training {
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update()
+	})
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+		a.updateItem(ctx, characterID)
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
@@ -478,11 +481,10 @@ func (a *training) update() {
 	})
 }
 
-func (a *training) updateItem(characterID int32) {
+func (a *training) updateItem(ctx context.Context, characterID int32) {
 	logErr := func(err error) {
 		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
 	}
-	ctx := context.Background()
 	c, err := a.u.cs.GetCharacter(ctx, characterID)
 	if err != nil {
 		logErr(err)
@@ -596,7 +598,6 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 	}
 	sq := newCharacterSkillQueueWithCharacter(a.u, c)
 	sq.update()
-	sq.start()
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()

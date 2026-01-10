@@ -301,17 +301,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		return
 	}
 
-	needsRefresh := hasChanged || forceUpdate
-	arg := characterSectionUpdated{
-		characterID:  characterID,
-		section:      section,
-		needsRefresh: needsRefresh,
-	}
-	if needsRefresh {
-		go u.characterSectionChanged.Emit(ctx, arg)
-	}
-	go u.characterSectionUpdated.Emit(ctx, arg)
-
 	switch section {
 	case app.SectionCharacterMailHeaders:
 		go func() {
@@ -356,6 +345,23 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}
 		}
 	}
+
+	needsRefresh := hasChanged || forceUpdate
+	arg := characterSectionUpdated{
+		characterID:  characterID,
+		section:      section,
+		needsRefresh: needsRefresh,
+	}
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.characterSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		u.characterSectionUpdated.Emit(ctx, arg)
+	})
+	wg.Wait()
 }
 
 // update corporation sections

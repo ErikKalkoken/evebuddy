@@ -185,17 +185,14 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}, a.u.window)
 
 	// Signals
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
-			return r.characterID
-		}))
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		switch arg.section {
 		case app.SectionEveCharacters:
-			for characterID := range arg.changed.All() {
-				if characters.Contains(characterID) {
-					continue
-				}
-				a.updateItem(characterID)
+			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+				return r.characterID
+			}))
+			for characterID := range set.Intersection(characters, arg.changed).All() {
+				a.updateItem(ctx, characterID)
 			}
 		}
 	})
@@ -208,22 +205,25 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update()
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case
 			app.SectionCharacterLocation,
 			app.SectionCharacterMailHeaders,
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
-			a.updateItem(arg.characterID)
+			a.updateItem(ctx, arg.characterID)
 		}
 	})
-	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case
 			app.SectionCharacterSkillqueue:
-			a.updateItem(arg.characterID)
+			a.updateItem(ctx, arg.characterID)
 		}
+	})
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+		a.updateItem(ctx, characterID)
 	})
 	return a
 }
@@ -448,11 +448,10 @@ func (a *characterOverview) update() {
 	})
 }
 
-func (a *characterOverview) updateItem(characterID int32) {
+func (a *characterOverview) updateItem(ctx context.Context, characterID int32) {
 	logErr := func(err error) {
-		slog.Error("CharacterOverview: Failed to update item", "characterID", characterID, "error", err)
+		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
-	ctx := context.Background()
 	c, err := a.u.cs.GetCharacter(ctx, characterID)
 	if err != nil {
 		logErr(err)
@@ -465,7 +464,7 @@ func (a *characterOverview) updateItem(characterID int32) {
 	}
 	fyne.Do(func() {
 		id := slices.IndexFunc(a.rows, func(x characterOverviewRow) bool {
-			return x.characterID == characterID
+			return x.characterID == c.ID
 		})
 		if id == -1 {
 			return
