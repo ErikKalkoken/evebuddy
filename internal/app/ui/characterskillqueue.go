@@ -41,6 +41,7 @@ func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
 }
 
 // newCharacterSkillQueue returns a new characterSkillQueue for character c.
+// This type of skillqueue is meant to be temporary.
 func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *characterSkillQueue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
@@ -59,6 +60,40 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	a.ExtendBaseWidget(a)
 	a.character.Store(c)
 	a.list = a.makeSkillQueue()
+
+	// Signals
+	if a.showCurrentCharacter {
+		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+			a.character.Store(c)
+			a.update()
+		}, a.signalKey)
+	}
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
+			return
+		}
+		switch arg.section {
+		case app.SectionCharacterSkillqueue:
+			a.update()
+		}
+	}, a.signalKey)
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+		if characterIDOrZero(a.character.Load()) != characterID {
+			return
+		}
+		c, err := a.u.cs.GetCharacter(ctx, characterID)
+		if err != nil {
+			slog.Error("characterSkillQueue: update character", "error", err)
+			return
+		}
+		a.character.Store(c)
+		a.update()
+	}, a.signalKey)
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.update()
+		})
+	}, a.signalKey)
 	return a
 }
 
@@ -122,30 +157,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 	return list
 }
 
-func (a *characterSkillQueue) start() {
-	if a.showCurrentCharacter {
-		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-			a.character.Store(c)
-			a.update()
-		},
-			a.signalKey,
-		)
-	}
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
-			return
-		}
-		if arg.section == app.SectionCharacterSkillqueue {
-			a.update()
-		}
-	}, a.signalKey)
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.update()
-		})
-	}, a.signalKey)
-}
-
+// stop frees resources and removes event listeners.
 func (a *characterSkillQueue) stop() {
 	if a.showCurrentCharacter {
 		a.u.currentCharacterExchanged.RemoveListener(a.signalKey)
@@ -170,14 +182,19 @@ func (a *characterSkillQueue) update() {
 		})
 	}
 
-	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkillqueue)
+	c := a.character.Load()
+	if c == nil {
+		setTop("No character", widget.LowImportance)
+		clear()
+		return
+	}
+	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
 		clear()
 		return
 	}
-	err := a.skillqueue.Update(context.Background(), a.u.cs, characterID)
+	err := a.skillqueue.Update(context.Background(), a.u.cs, c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
@@ -189,6 +206,8 @@ func (a *characterSkillQueue) update() {
 	if isActive {
 		s := fmt.Sprintf("Total training time: %s", ihumanize.Optional(a.skillqueue.RemainingTime(), "?"))
 		setTop(s, widget.MediumImportance)
+	} else if c.IsTrainingWatched {
+		setTop("No skill in training", widget.DangerImportance)
 	} else {
 		setTop("Training not active", widget.MediumImportance)
 	}
@@ -198,6 +217,9 @@ func (a *characterSkillQueue) update() {
 		if isActive {
 			r = theme.NewSuccessThemedResource(a.statusResource)
 			s = "Training is active"
+		} else if c.IsTrainingWatched {
+			r = theme.NewErrorThemedResource(a.statusResource)
+			s = "Training expired"
 		} else {
 			r = theme.NewDisabledResource(a.statusResource)
 			s = "Training is not active"
@@ -208,14 +230,14 @@ func (a *characterSkillQueue) update() {
 	})
 	if a.OnUpdate != nil {
 		var s1, s2 string
-		if !isActive {
-			s1 = "!"
-			s2 = "training paused"
-		} else {
+		if isActive {
 			if c := a.skillqueue.CompletionP(); c.ValueOrZero() < 1 {
 				s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
 				s2 = fmt.Sprintf("%s (%s)", a.skillqueue.Active(), s1)
 			}
+		} else if c.IsTrainingWatched {
+			s1 = "!"
+			s2 = "No skill in training"
 		}
 		a.OnUpdate(s1, s2)
 	}

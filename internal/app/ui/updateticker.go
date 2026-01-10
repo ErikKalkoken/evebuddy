@@ -12,6 +12,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
+// ticker
+const (
+	characterSectionsUpdateTicker = 60 * time.Second
+	generalSectionsUpdateTicker   = 300 * time.Second
+)
+
 // update general sections
 
 func (u *baseUI) startUpdateTickerGeneralSections() {
@@ -126,30 +132,28 @@ func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool)
 }
 
 func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
-	characters, err := u.cs.ListCharacterIDs(ctx)
+	characters, err := u.cs.ListCharacters(ctx)
 	if err != nil {
 		return err
 	}
+	if len(characters) == 0 {
+		return nil
+	}
 	var wg sync.WaitGroup
-	for c := range characters.All() {
-		wg.Go(func() {
-			u.notifyExpiredTrainingIfNeeded(ctx, c)
-		})
+	for _, c := range characters {
+		if c.IsTrainingWatched && u.settings.NotifyTrainingEnabled() {
+			wg.Go(func() {
+				err := u.cs.NotifyExpiredTrainingForWatched(ctx, c.ID, u.sendDesktopNotification)
+				if err != nil {
+					slog.Error("Notify expired training", "characterID", c.ID, "error", err)
+				}
+			})
+		}
 	}
 	slog.Debug("Started notifying characters", "characters", characters)
 	wg.Wait()
 	slog.Debug("Finished notifying characters", "characters", characters)
 	return nil
-}
-
-func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
-	if u.settings.NotifyTrainingEnabled() {
-		// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-		err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
-		if err != nil {
-			slog.Error("Notify expired training", "characterID", characterID, "error", err)
-		}
-	}
 }
 
 func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32) {
@@ -297,17 +301,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		return
 	}
 
-	needsRefresh := hasChanged || forceUpdate
-	arg := characterSectionUpdated{
-		characterID:  characterID,
-		section:      section,
-		needsRefresh: needsRefresh,
-	}
-	if needsRefresh {
-		go u.characterSectionChanged.Emit(ctx, arg)
-	}
-	go u.characterSectionUpdated.Emit(ctx, arg)
-
 	switch section {
 	case app.SectionCharacterMailHeaders:
 		go func() {
@@ -351,17 +344,24 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				logErr(err)
 			}
 		}
-	case app.SectionCharacterSkillqueue:
-		if u.settings.NotifyTrainingEnabled() {
-			if needsRefresh {
-				go u.notifyExpiredTrainingIfNeeded(ctx, characterID)
-			}
-			err := u.cs.EnableTrainingWatcher(ctx, characterID)
-			if err != nil {
-				logErr(err)
-			}
-		}
 	}
+
+	needsRefresh := hasChanged || forceUpdate
+	arg := characterSectionUpdated{
+		characterID:  characterID,
+		section:      section,
+		needsRefresh: needsRefresh,
+	}
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.characterSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		u.characterSectionUpdated.Emit(ctx, arg)
+	})
+	wg.Wait()
 }
 
 // update corporation sections

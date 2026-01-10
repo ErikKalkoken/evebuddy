@@ -247,6 +247,10 @@ func NewCacheFake2() CacheFake2 {
 	return make(CacheFake2)
 }
 
+func (c CacheFake2) Delete(k string) {
+	delete(c, k)
+}
+
 func (c CacheFake2) GetInt64(k string) (int64, bool) {
 	v, ok := c[k]
 	if !ok {
@@ -255,6 +259,18 @@ func (c CacheFake2) GetInt64(k string) (int64, bool) {
 	return v.(int64), true
 }
 
+func (c CacheFake2) GetString(k string) (string, bool) {
+	v, ok := c[k]
+	if !ok {
+		return "", false
+	}
+	return v.(string), true
+}
+
 func (c CacheFake2) SetInt64(k string, v int64, d time.Duration) {
+	c[k] = v
+}
+
+func (c CacheFake2) SetString(k string, v string, d time.Duration) {
 	c[k] = v
 }

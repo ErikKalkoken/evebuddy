@@ -47,61 +47,6 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) (bool,
 	return true, nil
 }
 
-// EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
-func (s *CharacterService) EnableTrainingWatcher(ctx context.Context, characterID int32) error {
-	c, err := s.GetCharacter(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if c.IsTrainingWatched {
-		return nil
-	}
-	isActive, err := s.IsTrainingActive(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !isActive {
-		return nil
-	}
-	err = s.UpdateIsTrainingWatched(ctx, characterID, true)
-	if err != nil {
-		return err
-	}
-	slog.Info("Enabled training watcher", "characterID", characterID)
-	return nil
-}
-
-// EnableAllTrainingWatchers enables training watches for any currently active training queue.
-func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error {
-	ids, err := s.st.ListCharacterIDs(ctx)
-	if err != nil {
-		return err
-	}
-	for id := range ids.All() {
-		isActive, err := s.IsTrainingActive(ctx, id)
-		if err != nil {
-			return err
-		}
-		if !isActive {
-			continue
-		}
-		err = s.UpdateIsTrainingWatched(ctx, id, true)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// DisableAllTrainingWatchers disables training watches for all characters.
-func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error {
-	return s.st.DisableAllTrainingWatchers(ctx)
-}
-
-func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, id int32, v bool) error {
-	return s.st.UpdateCharacterIsTrainingWatched(ctx, id, v)
-}
-
 // GetCharacter returns a character from storage and updates calculated fields.
 func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
 	c, err := s.st.GetCharacter(ctx, id)

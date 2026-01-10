@@ -19,6 +19,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
+const cacheKeyTrainingNotified = "expired-training-notified"
+
 func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
@@ -265,7 +267,12 @@ func (s *CharacterService) IsTrainingActive(ctx context.Context, characterID int
 	return queue.IsActive(), nil
 }
 
-func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterID int32, notify func(title, content string)) error {
+func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, characterID int32, v bool) error {
+	s.cache.Delete(makeKeyTrainingNotified(characterID))
+	return s.st.UpdateCharacterIsTrainingWatched(ctx, characterID, v)
+}
+
+func (s *CharacterService) NotifyExpiredTrainingForWatched(ctx context.Context, characterID int32, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredTraining-%d", characterID), func() (any, error) {
 		c, err := s.GetCharacter(ctx, characterID)
 		if err != nil {
@@ -281,15 +288,28 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 		if isActive {
 			return nil, nil
 		}
+		key := makeKeyTrainingNotified(characterID)
+		_, found := s.cache.GetString(key)
+		if found {
+			return nil, nil
+		}
 		title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
-		content := "There is currently no skill being trained for this character."
+		content := fmt.Sprintf(
+			"There is currently no skill in trained for the watched character %s.",
+			c.EveCharacter.Name,
+		)
 		notify(title, content)
-		return nil, s.UpdateIsTrainingWatched(ctx, characterID, false)
+		s.cache.SetString(key, title, 24*time.Hour)
+		return nil, nil
 	})
 	if err != nil {
 		return fmt.Errorf("NotifyExpiredTraining for character %d: %w", characterID, err)
 	}
 	return nil
+}
+
+func makeKeyTrainingNotified(characterID int32) string {
+	return fmt.Sprintf("%s-%d", cacheKeyTrainingNotified, characterID)
 }
 
 // ListSkillqueueItems returns the list of skillqueue items.

@@ -26,6 +26,9 @@ type AuthClient interface {
 type Cache interface {
 	GetInt64(string) (int64, bool)
 	SetInt64(string, int64, time.Duration)
+	GetString(string) (string, bool)
+	SetString(string, string, time.Duration)
+	Delete(string)
 }
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.

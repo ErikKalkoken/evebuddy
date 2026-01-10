@@ -3,6 +3,7 @@ package ui
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -35,6 +36,7 @@ type characterOverviewRow struct {
 	characterName   string
 	corporation     *app.EveEntity
 	faction         *app.EveEntity
+	isWatched       bool
 	location        *app.EveLocation
 	regionName      string
 	searchTarget    string
@@ -71,7 +73,7 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
-	body              fyne.CanvasObject
+	main              fyne.CanvasObject
 	columnSorter      *iwidget.ColumnSorter
 	info              *widget.Label
 	onUpdate          func(characters int)
@@ -158,9 +160,9 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}
 	a.search.PlaceHolder = "Search character names"
 	if !a.u.isMobile {
-		a.body = a.makeGrid()
+		a.main = a.makeGrid()
 	} else {
-		a.body = a.makeList()
+		a.main = a.makeList()
 	}
 
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
@@ -182,17 +184,15 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
-			return r.characterID
-		}))
+	// Signals
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		switch arg.section {
 		case app.SectionEveCharacters:
-			for characterID := range arg.changed.All() {
-				if characters.Contains(characterID) {
-					continue
-				}
-				a.updateItem(characterID)
+			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+				return r.characterID
+			}))
+			for characterID := range set.Intersection(characters, arg.changed).All() {
+				a.updateItem(ctx, characterID)
 			}
 		}
 	})
@@ -205,22 +205,25 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update()
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case
 			app.SectionCharacterLocation,
 			app.SectionCharacterMailHeaders,
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
-			a.updateItem(arg.characterID)
+			a.updateItem(ctx, arg.characterID)
 		}
 	})
-	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case
 			app.SectionCharacterSkillqueue:
-			a.updateItem(arg.characterID)
+			a.updateItem(ctx, arg.characterID)
 		}
+	})
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+		a.updateItem(ctx, characterID)
 	})
 	return a
 }
@@ -243,7 +246,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		container.NewStack(a.info, a.body),
+		container.NewStack(a.info, a.main),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -408,7 +411,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 		return r.tags
 	})...).All()))
 	a.rowsFiltered = rows
-	a.body.Refresh()
+	a.main.Refresh()
 }
 
 func (a *characterOverview) update() {
@@ -445,11 +448,10 @@ func (a *characterOverview) update() {
 	})
 }
 
-func (a *characterOverview) updateItem(characterID int32) {
+func (a *characterOverview) updateItem(ctx context.Context, characterID int32) {
 	logErr := func(err error) {
-		slog.Error("CharacterOverview: Failed to update item", "characterID", characterID, "error", err)
+		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
-	ctx := context.Background()
 	c, err := a.u.cs.GetCharacter(ctx, characterID)
 	if err != nil {
 		logErr(err)
@@ -461,21 +463,14 @@ func (a *characterOverview) updateItem(characterID int32) {
 		return
 	}
 	fyne.Do(func() {
-		id := slices.IndexFunc(a.rowsFiltered, func(x characterOverviewRow) bool {
-			return x.characterID == characterID
+		id := slices.IndexFunc(a.rows, func(x characterOverviewRow) bool {
+			return x.characterID == c.ID
 		})
 		if id == -1 {
 			return
 		}
-		a.rowsFiltered[id] = r
-		switch x := a.body.(type) {
-		case *widget.GridWrap:
-			x.RefreshItem(id)
-		case *widget.List:
-			x.RefreshItem(id)
-		default:
-			panic(fmt.Sprintf("Unhandled type: %T", x))
-		}
+		a.rows[id] = r
+		a.filterRows(-1)
 	})
 }
 
@@ -487,6 +482,9 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	rows := make([]characterOverviewRow, 0)
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
+		if errors.Is(err, app.ErrInvalid) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -496,8 +494,8 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 }
 
 func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (characterOverviewRow, error) {
-	if c == nil {
-		return characterOverviewRow{}, fmt.Errorf("fetchRow: c can not be nil: %w", app.ErrInvalid)
+	if c == nil || c.EveCharacter == nil {
+		return characterOverviewRow{}, app.ErrInvalid
 	}
 	r := characterOverviewRow{
 		alliance:      c.EveCharacter.Alliance,
@@ -505,6 +503,7 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		characterName: c.EveCharacter.Name,
 		corporation:   c.EveCharacter.Corporation,
 		faction:       c.EveCharacter.Faction,
+		isWatched:     c.IsTrainingWatched,
 		location:      c.Location,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
 		ship:          c.Ship,
@@ -558,6 +557,7 @@ type characterCard struct {
 	mails                    *widget.Label
 	portrait                 *canvas.Image
 	resourceTrainingActive   fyne.Resource
+	resourceTrainingExpired  fyne.Resource
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
@@ -601,6 +601,7 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 		mails:                    makeLabel(numberTemplate),
 		portrait:                 portrait,
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
+		resourceTrainingExpired:  theme.NewErrorThemedResource(resTraining),
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
 		resourceTrainingUnknown:  trainingUnknown,
 		ship:                     makeLabel("Merlin"),
@@ -828,6 +829,7 @@ func (w *characterCard) set(r characterOverviewRow) {
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
+
 	if r.trainingActive.IsEmpty() {
 		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
 		w.trainingStatus.SetToolTip("Training status unknown")
@@ -836,8 +838,13 @@ func (w *characterCard) set(r characterOverviewRow) {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
 			w.trainingStatus.SetToolTip("Training is active")
 		} else {
-			w.trainingStatus.SetResource(w.resourceTrainingInactive)
-			w.trainingStatus.SetToolTip("Training is not active")
+			if r.isWatched {
+				w.trainingStatus.SetResource(w.resourceTrainingExpired)
+				w.trainingStatus.SetToolTip("Training has expired")
+			} else {
+				w.trainingStatus.SetResource(w.resourceTrainingInactive)
+				w.trainingStatus.SetToolTip("Training is not active")
+			}
 		}
 	}
 

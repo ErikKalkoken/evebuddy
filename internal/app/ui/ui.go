@@ -53,9 +53,7 @@ const (
 
 // ticker
 const (
-	characterSectionsUpdateTicker = 60 * time.Second
-	generalSectionsUpdateTicker   = 300 * time.Second
-	refreshUITicker               = 30 * time.Second
+	refreshUITicker = 30 * time.Second
 )
 
 // Default ScaleMode for images
@@ -170,6 +168,8 @@ type baseUI struct {
 	refreshTickerExpired signals.Signal[struct{}]
 	// A tag as been added, removed or renamed.
 	tagsChanged signals.Signal[struct{}]
+	// A Character has changed [only: trainingWatcher].
+	characterChanged signals.Signal[int32]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -228,6 +228,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                         arg.App,
 		characterAdded:              signals.New[*app.Character](),
+		characterChanged:            signals.New[int32](),
 		characterRemoved:            signals.New[*app.EntityShort[int32]](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		characterSectionUpdated:     signals.New[characterSectionUpdated](),
@@ -502,7 +503,6 @@ func (u *baseUI) Start() bool {
 	}
 	u.snackbar.Start()
 	go func() {
-		u.characterSkillQueue.start()
 		var wg sync.WaitGroup
 		wg.Go(u.initHome)
 		wg.Go(u.initCharacter)

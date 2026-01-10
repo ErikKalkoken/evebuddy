@@ -706,6 +706,7 @@ func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject,
 func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 	var homeNav *iwidget.Navigator
 	var homeList *iwidget.List
+
 	navItemColonies2 := iwidget.NewListItemWithIcon(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
@@ -713,6 +714,13 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
+	u.colonies.OnUpdate = func(_, expired int) {
+		fyne.Do(func() {
+			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+			homeList.Refresh()
+		})
+	}
+
 	navItemIndustry := iwidget.NewListItemWithIcon(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
@@ -747,6 +755,16 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
 		},
 	)
+	u.contracts.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%d contracts active", count)
+		}
+		fyne.Do(func() {
+			navItemContracts.Supporting = badge
+			homeList.Refresh()
+		})
+	}
 
 	navItemWealth := iwidget.NewListItemWithIcon(
 		"Wealth",
@@ -773,6 +791,12 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			u.assets.focus()
 		},
 	)
+	u.assets.onUpdate = func(_ int, s string) {
+		fyne.Do(func() {
+			navItemAssets.Supporting = s
+			homeList.Refresh()
+		})
+	}
 
 	navItemCharacters := iwidget.NewListItemWithIcon(
 		"Character Overview",
@@ -781,6 +805,27 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
 		},
 	)
+	u.characterOverview.onUpdate = func(characters int) {
+		fyne.Do(func() {
+			navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
+			homeList.Refresh()
+		})
+	}
+
+	navItemTraining := iwidget.NewListItemWithIcon(
+		"Training",
+		theme.NewThemedResource(icons.SchoolSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Training", u.training))
+		},
+	)
+	u.training.onUpdate = func(expired int) {
+		fyne.Do(func() {
+			navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
+			homeList.Refresh()
+		})
+	}
+
 	homeList = iwidget.NewNavList(
 		navItemCharacters,
 		navItemAssets,
@@ -809,47 +854,9 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 				))
 			},
 		),
-		iwidget.NewListItemWithIcon(
-			"Training",
-			theme.NewThemedResource(icons.SchoolSvg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Training", u.training))
-			},
-		),
+		navItemTraining,
 		navItemWealth,
 	)
-
-	u.characterOverview.onUpdate = func(characters int) {
-		fyne.Do(func() {
-			navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
-			homeList.Refresh()
-		})
-	}
-
-	u.assets.onUpdate = func(_ int, s string) {
-		fyne.Do(func() {
-			navItemAssets.Supporting = s
-			homeList.Refresh()
-		})
-	}
-
-	u.contracts.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = fmt.Sprintf("%d contracts active", count)
-		}
-		fyne.Do(func() {
-			navItemContracts.Supporting = badge
-			homeList.Refresh()
-		})
-	}
-
-	u.colonies.OnUpdate = func(_, expired int) {
-		fyne.Do(func() {
-			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-			homeList.Refresh()
-		})
-	}
 
 	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
 	return homeNav
