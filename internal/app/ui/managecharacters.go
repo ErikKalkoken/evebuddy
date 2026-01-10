@@ -35,26 +35,15 @@ func showManageCharactersWindow(u *baseUI) {
 		w.Show()
 		return
 	}
-	mcw := &manageCharactersWindow{
-		sb: iwidget.NewSnackbar(w),
-		u:  u,
-		w:  w,
-	}
-	characters := newManageCharacters(mcw)
-	characters.update()
-	c := container.NewAppTabs(
-		container.NewTabItem("Characters", characters),
-		container.NewTabItem("Tags", newCharacterTags(mcw)),
-		container.NewTabItem("Training", newTrainingWatcher(mcw)),
-	)
-	c.SetTabLocation(container.TabLocationLeading)
-	w.SetContent(fynetooltip.AddWindowToolTipLayer(c, w.Canvas()))
+	mcw := newManageCharacters(u)
+	mcw.setWindow(w)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(mcw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
-		mcw.sb.Stop()
+		mcw.stop()
 	})
 	w.SetCloseIntercept(func() {
 		w.Close()
@@ -63,36 +52,81 @@ func showManageCharactersWindow(u *baseUI) {
 	w.Show()
 }
 
-type manageCharactersWindow struct {
-	sb *iwidget.Snackbar
-	u  *baseUI
-	w  fyne.Window
+type manageCharacters struct {
+	widget.BaseWidget
+
+	characterAdmin    *characterAdmin
+	characterTags     *characterTags
+	characterTraining *characterTraining
+	sb                *iwidget.Snackbar
+	u                 *baseUI
+	w                 fyne.Window
 }
 
-func (a *manageCharactersWindow) reportError(text string, err error) {
+func newManageCharacters(u *baseUI) *manageCharacters {
+	a := &manageCharacters{
+		sb: u.snackbar,
+		u:  u,
+		w:  u.MainWindow(),
+	}
+	a.ExtendBaseWidget(a)
+	a.characterAdmin = newCharacterAdmin(a)
+	a.characterTags = newCharacterTags(a)
+	a.characterTraining = newCharacterTraining(a)
+	a.update()
+	return a
+}
+
+func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewAppTabs(
+		container.NewTabItem("Characters", a.characterAdmin),
+		container.NewTabItem("Tags", a.characterTags),
+		container.NewTabItem("Training", a.characterTraining),
+	)
+	c.SetTabLocation(container.TabLocationLeading)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *manageCharacters) setWindow(w fyne.Window) {
+	a.w = w
+	a.sb = iwidget.NewSnackbar(w)
+}
+
+func (a *manageCharacters) stop() {
+	a.sb.Stop()
+}
+
+func (a *manageCharacters) update() {
+	a.characterAdmin.update()
+	a.characterTags.updateTags()
+	a.characterTraining.update()
+}
+
+func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
 }
 
-type manageCharacterRow struct {
+type characterAdminRow struct {
 	characterID   int32
 	corporationID int32
 	characterName string
 	missingScopes set.Set[string]
 }
 
-type manageCharacters struct {
+// characterAdmin is a UI component for authorizing and removing EVE Online characters.
+type characterAdmin struct {
 	widget.BaseWidget
 
 	ab         *iwidget.AppBar
-	characters []manageCharacterRow
+	characters []characterAdminRow
 	list       *widget.List
-	mcw        *manageCharactersWindow
+	mcw        *manageCharacters
 }
 
-func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
-	a := &manageCharacters{
-		characters: make([]manageCharacterRow, 0),
+func newCharacterAdmin(mcw *manageCharacters) *characterAdmin {
+	a := &characterAdmin{
+		characters: make([]characterAdminRow, 0),
 		mcw:        mcw,
 	}
 	a.ExtendBaseWidget(a)
@@ -115,11 +149,11 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	return a
 }
 
-func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterAdmin) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.ab)
 }
 
-func (a *manageCharacters) makeCharacterList() *widget.List {
+func (a *characterAdmin) makeCharacterList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -189,7 +223,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *manageCharacters) update() {
+func (a *characterAdmin) update() {
 	characters, err := a.fetchRows()
 	if err != nil {
 		a.mcw.reportError("Failed to update characters", err)
@@ -202,9 +236,9 @@ func (a *manageCharacters) update() {
 	})
 }
 
-func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
+func (a *characterAdmin) fetchRows() ([]characterAdminRow, error) {
 	ctx := context.Background()
-	rows := make([]manageCharacterRow, 0)
+	rows := make([]characterAdminRow, 0)
 	cc, err := a.mcw.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return rows, err
@@ -214,7 +248,7 @@ func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
 		if err != nil {
 			return rows, err
 		}
-		r := manageCharacterRow{
+		r := characterAdminRow{
 			characterID:   c.ID,
 			corporationID: c.EveCharacter.Corporation.ID,
 			characterName: c.EveCharacter.Name,
@@ -225,7 +259,7 @@ func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
 	return rows, nil
 }
 
-func (a *manageCharacters) showAddCharacterDialog() {
+func (a *characterAdmin) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	infoText := widget.NewLabel(
 		"Please follow instructions in your\nbrowser to add a new character.",
@@ -300,7 +334,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	}()
 }
 
-func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
+func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 	a.mcw.u.ShowConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
@@ -364,13 +398,13 @@ type characterTags struct {
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *iwidget.AppBar
-	mcw                 *manageCharactersWindow
+	mcw                 *manageCharacters
 	selectedTag         *app.CharacterTag
 	tagList             *widget.List
 	tags                []*app.CharacterTag
 }
 
-func newCharacterTags(mcw *manageCharactersWindow) *characterTags {
+func newCharacterTags(mcw *manageCharacters) *characterTags {
 	a := &characterTags{
 		characters: make([]*app.EntityShort[int32], 0),
 		mcw:        mcw,
@@ -390,10 +424,6 @@ func newCharacterTags(mcw *manageCharactersWindow) *characterTags {
 	a.characterList = a.makeCharacterList()
 	a.manageCharacters = a.makeManageCharacters()
 	a.tagList = a.makeTagList()
-	a.updateTags()
-	if len(a.tags) > 0 {
-		a.tagList.Select(0)
-	}
 	return a
 }
 
@@ -770,16 +800,17 @@ func (a *characterTags) updateTags() {
 	}
 }
 
-type trainingWatcher struct {
+// characterTraining is a UI component that allows to configure training watchers for characters.
+type characterTraining struct {
 	widget.BaseWidget
 
 	characters []*app.Character
 	list       *widget.List
-	mcw        *manageCharactersWindow
+	mcw        *manageCharacters
 }
 
-func newTrainingWatcher(mcw *manageCharactersWindow) *trainingWatcher {
-	a := &trainingWatcher{
+func newCharacterTraining(mcw *manageCharacters) *characterTraining {
+	a := &characterTraining{
 		mcw: mcw,
 	}
 	a.ExtendBaseWidget(a)
@@ -794,7 +825,7 @@ func newTrainingWatcher(mcw *manageCharactersWindow) *trainingWatcher {
 	return a
 }
 
-func (a *trainingWatcher) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 	ab := iwidget.NewAppBar(
 		"Watched Training",
 		a.list,
@@ -832,7 +863,7 @@ func (a *trainingWatcher) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(ab)
 }
 
-func (a *trainingWatcher) makeList() *widget.List {
+func (a *characterTraining) makeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -890,7 +921,7 @@ func (a *trainingWatcher) makeList() *widget.List {
 	return l
 }
 
-func (a *trainingWatcher) updateCharacterWatched(ctx context.Context, id int, on bool) {
+func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, on bool) {
 	if id >= len(a.characters) {
 		return
 	}
@@ -909,7 +940,7 @@ func (a *trainingWatcher) updateCharacterWatched(ctx context.Context, id int, on
 	}()
 }
 
-func (a *trainingWatcher) update() {
+func (a *characterTraining) update() {
 	characters, err := a.mcw.u.cs.ListCharacters(context.Background())
 	if err != nil {
 		panic(err)

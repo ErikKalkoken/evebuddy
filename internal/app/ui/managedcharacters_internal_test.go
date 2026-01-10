@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
-func TestManagedCharacters_CanRenderWithData(t *testing.T) {
+func TestCharacterAdmin_CanRenderWithData(t *testing.T) {
 	if testing.Short() {
 		t.Skip(SkipUIReason)
 	}
@@ -32,7 +32,7 @@ func TestManagedCharacters_CanRenderWithData(t *testing.T) {
 		test.ApplyTheme(t, test.Theme())
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCharacter(character)
-		a := newManageCharacters(&manageCharactersWindow{
+		a := newCharacterAdmin(&manageCharacters{
 			u: ui,
 		})
 		w := test.NewWindow(a)
