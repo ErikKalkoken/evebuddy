@@ -35,7 +35,7 @@ func showManageCharactersWindow(u *baseUI) {
 		w.Show()
 		return
 	}
-	mcw := newManageCharacters(u)
+	mcw := u.manageCharacters
 	mcw.setWindow(w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mcw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
@@ -43,7 +43,7 @@ func showManageCharactersWindow(u *baseUI) {
 		if onClosed != nil {
 			onClosed()
 		}
-		mcw.stop()
+		mcw.unsetWindow()
 	})
 	w.SetCloseIntercept(func() {
 		w.Close()
@@ -73,7 +73,6 @@ func newManageCharacters(u *baseUI) *manageCharacters {
 	a.characterAdmin = newCharacterAdmin(a)
 	a.characterTags = newCharacterTags(a)
 	a.characterTraining = newCharacterTraining(a)
-	a.update()
 	return a
 }
 
@@ -92,13 +91,13 @@ func (a *manageCharacters) setWindow(w fyne.Window) {
 	a.sb = iwidget.NewSnackbar(w)
 }
 
-func (a *manageCharacters) stop() {
+func (a *manageCharacters) unsetWindow() {
 	a.sb.Stop()
 }
 
 func (a *manageCharacters) update() {
 	a.characterAdmin.update()
-	a.characterTags.updateTags()
+	a.characterTags.update()
 	a.characterTraining.update()
 }
 
@@ -617,7 +616,7 @@ func (a *characterTags) makeTagList() *widget.List {
 							a.mcw.u.showErrorDialog("Failed to delete tag", err, a.mcw.w)
 							return
 						}
-						a.updateTags()
+						a.update()
 						go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
@@ -763,7 +762,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				a.mcw.u.showErrorDialog("Failed to modify tag", err, a.mcw.w)
 				return
 			}
-			a.updateTags()
+			a.update()
 			a.selectTagByName(name.Text)
 			go a.mcw.u.tagsChanged.Emit(context.Background(), struct{}{})
 		}, a.mcw.w,
@@ -784,7 +783,7 @@ func (a *characterTags) selectTagByName(name string) {
 	}
 }
 
-func (a *characterTags) updateTags() {
+func (a *characterTags) update() {
 	tags, err := a.mcw.u.cs.ListTagsByName(context.Background())
 	if err != nil {
 		a.mcw.reportError("Failed to list tags", err)
@@ -792,12 +791,14 @@ func (a *characterTags) updateTags() {
 		return
 	}
 	a.tags = tags
-	a.tagList.Refresh()
-	if len(tags) > 0 {
-		a.emptyTagsHint.Hide()
-	} else {
-		a.emptyTagsHint.Show()
-	}
+	fyne.Do(func() {
+		a.tagList.Refresh()
+		if len(tags) > 0 {
+			a.emptyTagsHint.Hide()
+		} else {
+			a.emptyTagsHint.Show()
+		}
+	})
 }
 
 // characterTraining is a UI component that allows to configure training watchers for characters.
@@ -821,7 +822,6 @@ func newCharacterTraining(mcw *manageCharacters) *characterTraining {
 	a.mcw.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
 		a.update()
 	})
-	a.update()
 	return a
 }
 
@@ -948,6 +948,8 @@ func (a *characterTraining) update() {
 	slices.SortFunc(characters, func(a, b *app.Character) int {
 		return strings.Compare(a.EveCharacter.Name, b.EveCharacter.Name)
 	})
-	a.characters = characters
-	a.list.Refresh()
+	fyne.Do(func() {
+		a.characters = characters
+		a.list.Refresh()
+	})
 }

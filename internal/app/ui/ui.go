@@ -134,6 +134,7 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
+	manageCharacters        *manageCharacters
 	marketOrdersBuy         *marketOrders
 	marketOrdersSell        *marketOrders
 	slotsManufacturing      *industrySlots
@@ -446,6 +447,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
+	u.manageCharacters = newManageCharacters(u)
 
 	u.MainWindow().SetMaster()
 
@@ -873,6 +875,7 @@ func (u *baseUI) initHome() {
 		"slotsResearch":      u.slotsResearch.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
+		"manageCharacters":   u.manageCharacters.update,
 	}
 	myLog := slog.With("title", "startup")
 	myLog.Debug("started")
