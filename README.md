@@ -64,11 +64,11 @@ Below are example screenshots for both the desktop and mobile version (EVE Buddy
 
 ### Desktop version
 
-![Desktop](https://cdn.imgpile.com/f/jOLWbDX_xl.png)
+![Desktop](https://cdn.imgpile.com/f/Vr2PbBG_xl.png)
 
 ### Mobile version
 
-<img width="288" height="640" alt="mobile_screenshot" src="https://cdn.imgpile.com/f/p8FTcmd_xl.png" />
+<img width="288" height="640" alt="mobile_screenshot" src="https://cdn.imgpile.com/f/ovTdGT9_xl.png" />
 
 ## Features
 
