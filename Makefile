@@ -54,4 +54,7 @@ build:
 	fyne build --tags migrated_fynedo
 
 ratelimitdoc:
-	go run ./tools/genratelimit/ -f md  > ratelimits.md
+	go run ./tools/genratelimit/ -f md  > ratelimits.md ;
+
+test:
+	go test -test.short ./... ;

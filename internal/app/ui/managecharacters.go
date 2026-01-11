@@ -423,6 +423,29 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 	a.characterList = a.makeCharacterList()
 	a.manageCharacters = a.makeManageCharacters()
 	a.tagList = a.makeTagList()
+
+	// Signals
+	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort[int32]) {
+		fyne.Do(func() {
+			if a.selectedTag == nil {
+				return
+			}
+			if slices.ContainsFunc(a.characters, func(x *app.EntityShort[int32]) bool {
+				return x.ID == c.ID
+			}) {
+				a.updateCharacters(a.selectedTag)
+			}
+		})
+		tags, err := a.mc.u.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			slog.Error("Failed update tags", "error", err)
+			return
+		}
+		if tags.Size() == 0 {
+			return
+		}
+		a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+	})
 	return a
 }
 
@@ -816,6 +839,8 @@ func newCharacterTraining(mc *manageCharacters) *characterTraining {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeList()
+
+	// Signals
 	a.mc.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
