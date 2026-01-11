@@ -58,6 +58,7 @@ const (
 	appName             = "evebuddy"
 	authClientID        = "11ae857fe4d149b2be60d875649c05f1"
 	authPort            = 30123
+	remotePort          = 30125
 	cacheCleanUpTimeout = time.Minute * 30
 	concurrentLimit     = 10 // max concurrent Goroutines per group
 	crashFileName       = "crash.txt"
@@ -213,7 +214,7 @@ func main() {
 		// ensure single instance
 		mu, err := ensureSingleInstance()
 		if errors.Is(err, mutex.ErrTimeout) {
-			err := remoteservice.ShowPrimaryInstance()
+			err := remoteservice.ShowPrimaryInstance(remotePort)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -398,11 +399,12 @@ func main() {
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)
-		if err := remoteservice.Start(func() {
+		err := remoteservice.Start(remotePort, func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()
 			})
-		}); err != nil {
+		})
+		if err != nil {
 			log.Fatal(err)
 		}
 		u.ShowAndRun()
