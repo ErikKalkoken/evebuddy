@@ -6,6 +6,12 @@ import (
 	"log/slog"
 	"net"
 	"net/rpc"
+	"time"
+)
+
+const (
+	dialTimeout = 3 * time.Second
+	callTimeout = 3 * time.Second
 )
 
 // RemoteService is a RPC service allows to communicate between multiple instances of EVE Buddy.
@@ -58,15 +64,25 @@ func Start(port int, showInstance func()) error {
 // ShowPrimaryInstance sends a request to the primary instance to show it.
 // This function should be called by a secondary instance.
 func ShowPrimaryInstance(port int) error {
-	client, err := rpc.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), dialTimeout)
 	if err != nil {
-		return fmt.Errorf("dial remote service: %w", err)
+		return fmt.Errorf("remote service: %w", err)
 	}
+	defer conn.Close()
+
+	client := rpc.NewClient(conn)
 	defer client.Close()
+
 	var reply string
-	err = client.Call("RemoteService.ShowInstance", "", &reply)
-	if err != nil {
-		return fmt.Errorf("call remote service: %w", err)
+	call := client.Go("RemoteService.ShowInstance", "", &reply, nil)
+
+	select {
+	case replyCall := <-call.Done:
+		if err := replyCall.Error; err != nil {
+			return fmt.Errorf("call remote service: %w", err)
+		}
+	case <-time.After(callTimeout):
+		return fmt.Errorf("RPC call timed out")
 	}
 	slog.Info("RemoteService.ShowInstance called")
 	return nil
