@@ -11,9 +11,10 @@ import (
 func TestRemoteService(t *testing.T) {
 	const port = 30125
 	var isCalled bool
-	err := remoteservice.Start(port, func() {
+	stop, err := remoteservice.Start(port, func() {
 		isCalled = true
 	})
+	defer stop()
 	if assert.NoError(t, err) {
 		err := remoteservice.ShowPrimaryInstance(port)
 		if assert.NoError(t, err) {

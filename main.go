@@ -399,7 +399,7 @@ func main() {
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)
-		err := remoteservice.Start(remotePort, func() {
+		stop, err := remoteservice.Start(remotePort, func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()
 			})
@@ -407,6 +407,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer stop()
 		u.ShowAndRun()
 	} else {
 		u := ui.NewMobileUI(bu)

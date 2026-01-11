@@ -2,6 +2,8 @@
 package remoteservice
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -10,8 +12,8 @@ import (
 )
 
 const (
-	dialTimeout = 3 * time.Second
 	callTimeout = 3 * time.Second
+	dialTimeout = 3 * time.Second
 )
 
 // RemoteService is a RPC service allows to communicate between multiple instances of EVE Buddy.
@@ -37,20 +39,29 @@ func (sw RemoteService) ShowInstance(request string, reply *string) error {
 }
 
 // Start starts the remote service.
-func Start(port int, showInstance func()) error {
-	err := rpc.Register(newRemoteService(showInstance))
+func Start(port int, showInstance func()) (stop func(), err error) {
+	err = rpc.Register(newRemoteService(showInstance))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		return fmt.Errorf("remote service: listen error: %w", err)
+		return nil, fmt.Errorf("remote service: listen error: %w", err)
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	stop2 := context.AfterFunc(ctx, func() {
+		listener.Close()
+	})
 	go func() {
+		defer stop2()
 		defer listener.Close()
 		slog.Info("Remote service running", "port", port)
 		for {
 			conn, err := listener.Accept()
+			if errors.Is(err, net.ErrClosed) {
+				slog.Info("remote service: closed")
+				return
+			}
 			if err != nil {
 				slog.Error("remote service: Failed to accept connection", "err", err)
 				return
@@ -58,7 +69,10 @@ func Start(port int, showInstance func()) error {
 			go rpc.ServeConn(conn)
 		}
 	}()
-	return nil
+	stop = func() {
+		cancel()
+	}
+	return stop, nil
 }
 
 // ShowPrimaryInstance sends a request to the primary instance to show it.
