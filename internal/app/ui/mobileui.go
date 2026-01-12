@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -595,15 +596,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		togglePermittedSections()
 	}
 
-	var hasUpdate, hasUpdateError, hasScopeError, isOffline bool
+	var hasUpdateError, isOffline, hasUpdate, hasScopeError atomic.Bool
 	refreshMoreBadge := func() {
-		if hasUpdateError || hasUpdate || hasScopeError || isOffline {
+		if hasUpdateError.Load() || hasUpdate.Load() || hasScopeError.Load() || isOffline.Load() {
 			var importance widget.Importance
-			if hasUpdateError {
+			if hasUpdateError.Load() {
 				importance = widget.DangerImportance
-			} else if hasScopeError || isOffline {
+			} else if hasScopeError.Load() || isOffline.Load() {
 				importance = widget.WarningImportance
-			} else if hasUpdate {
+			} else if hasUpdate.Load() {
 				importance = widget.HighImportance
 			}
 			navBar.ShowBadge(4, importance)
@@ -625,17 +626,17 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				var icon fyne.Resource
 				var s string
 				if u.ess.IsDailyDowntime() {
-					isOffline = true
+					isOffline.Store(true)
 					icon = theme.NewWarningThemedResource(theme.WarningIcon())
 					s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
 				} else {
-					isOffline = false
+					isOffline.Store(false)
 					status := u.scs.Summary()
 					if status.Errors > 0 {
 						icon = theme.NewErrorThemedResource(theme.WarningIcon())
-						hasUpdateError = true
+						hasUpdateError.Store(true)
 					} else {
-						hasUpdateError = false
+						hasUpdateError.Store(false)
 					}
 					s = status.Display()
 				}
@@ -657,12 +658,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				} else {
 					fyne.Do(func() {
 						if v.IsRemoteNewer {
-							hasUpdate = true
+							hasUpdate.Store(true)
 							refreshMoreBadge()
 							navItemAbout.Supporting = "Update available"
 							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
 						} else {
-							hasUpdate = false
+							hasUpdate.Store(false)
 							refreshMoreBadge()
 							navItemAbout.Supporting = ""
 							navItemAbout.Trailing = nil
@@ -680,10 +681,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		var icon fyne.Resource
 		if characterCount > 0 {
 			icon = theme.NewWarningThemedResource(theme.WarningIcon())
-			hasScopeError = true
+			hasScopeError.Store(true)
 		} else {
 			icon = nil
-			hasScopeError = false
+			hasScopeError.Store(false)
 		}
 		fyne.Do(func() {
 			navItemManageCharacters.Trailing = icon
