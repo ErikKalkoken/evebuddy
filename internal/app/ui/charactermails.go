@@ -818,7 +818,9 @@ func newMailDetail(u *baseUI) *mailDetail {
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText
 	w.subject.Truncation = fyne.TextTruncateClip
+	w.subject.Selectable = true
 	w.body.Wrapping = fyne.TextWrapWord
+	w.body.Selectable = true
 	w.ExtendBaseWidget(w)
 	return w
 }

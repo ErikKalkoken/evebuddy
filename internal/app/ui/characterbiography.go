@@ -21,10 +21,11 @@ type characterBiography struct {
 }
 
 func newCharacterBiography(u *baseUI) *characterBiography {
-	text := widget.NewLabel("")
-	text.Wrapping = fyne.TextWrapWord
+	body := widget.NewLabel("")
+	body.Wrapping = fyne.TextWrapWord
+	body.Selectable = true
 	a := &characterBiography{
-		body: text,
+		body: body,
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
