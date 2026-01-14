@@ -46,7 +46,9 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		return widget.NewHyperlink("?", nil)
 	}
 	makeLabel := func() *widget.Label {
-		return widget.NewLabel("?")
+		l := widget.NewLabel("?")
+		l.Selectable = true
+		return l
 	}
 	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)

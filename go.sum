@@ -31,12 +31,8 @@ cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohl
 cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RXyy7KQOVs=
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-fyne.io/fyne/v2 v2.7.1 h1:ja7rNHWWEooha4XBIZNnPP8tVFwmTfwMJdpZmLxm2Zc=
-fyne.io/fyne/v2 v2.7.1/go.mod h1:xClVlrhxl7D+LT+BWYmcrW4Nf+dJTvkhnPgji7spAwE=
 fyne.io/fyne/v2 v2.7.2 h1:XiNpWkn0PzX43ZCjbb0QYGg1RCxVbugwfVgikWZBCMw=
 fyne.io/fyne/v2 v2.7.2/go.mod h1:PXbqY3mQmJV3J1NRUR2VbVgUUx3vgvhuFJxyjRK/4Ug=
-fyne.io/systray v1.11.1-0.20250603113521-ca66a66d8b58 h1:eA5/u2XRd8OUkoMqEv3IBlFYSruNlXD8bRHDiqm0VNI=
-fyne.io/systray v1.11.1-0.20250603113521-ca66a66d8b58/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 fyne.io/systray v1.12.0 h1:CA1Kk0e2zwFlxtc02L3QFSiIbxJ/P0n582YrZHT7aTM=
 fyne.io/systray v1.12.0/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 fyne.io/tools v1.7.0 h1:FlH0I8J8v59uvh+jfLDu4YBQ0Ll0hY0EK57E65dwp7Q=
@@ -45,14 +41,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/ErikKalkoken/eveauth v0.1.0 h1:sK/wJK2puqbgZy20zYBkpC963CkSUQkz8uAlBcSLaus=
-github.com/ErikKalkoken/eveauth v0.1.0/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
 github.com/ErikKalkoken/eveauth v0.1.1 h1:VR8LfEHwR0y0CW1j3jEzepbbkrvmJ5AoStqRSJHfU9c=
 github.com/ErikKalkoken/eveauth v0.1.1/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
-github.com/ErikKalkoken/fyne-kx v0.7.0 h1:L2fvduPvGMuLj1q6BZAmA/16Wn5VPkUFUE4byEmEZwc=
-github.com/ErikKalkoken/fyne-kx v0.7.0/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
-github.com/ErikKalkoken/fyne-kx v0.7.1 h1:CqSNZWp3W/lsFcFI/6m6T8xyCBF5B+Hwwcwk5WcXW1A=
-github.com/ErikKalkoken/fyne-kx v0.7.1/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
 github.com/ErikKalkoken/fyne-kx v0.7.2 h1:KD2F4FBFcAUpHlGQ1bpfvw2NRYTVIBVDo9DjdwYmaes=
 github.com/ErikKalkoken/fyne-kx v0.7.2/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
 github.com/ErikKalkoken/go-set v0.3.0 h1:yJxMD/7UfVB4+wEJ9PD0A+pODy0vreyo72szy1UcgZQ=

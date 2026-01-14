@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type notificationFolder struct {
@@ -398,7 +397,7 @@ func (a *characterCommunications) clearDetail() {
 type communicationDetail struct {
 	widget.BaseWidget
 
-	body    *iwidget.RichText
+	body    *widget.Label
 	header  *mailHeader
 	subject *widget.Label
 }
@@ -407,8 +406,10 @@ func newCommunicationDetail(eis app.EveImageService, show func(*app.EveEntity)) 
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
-	body := iwidget.NewRichTextWithText("")
+	subject.Selectable = true
+	body := widget.NewLabel("")
 	body.Wrapping = fyne.TextWrapWord
+	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
 		header:  newMailHeader(eis, show),
@@ -426,14 +427,12 @@ func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
 func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
 	w.subject.SetText(n.TitleDisplay())
 	w.header.Set(n.CharacterID, n.Sender, n.Timestamp, recipient)
-	s, err := n.BodyPlain() // using markdown blocked by #61
+	b, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown for notification %+v: %w", n, err)
 	}
-	if n.Body.IsEmpty() {
-		w.body.ParseMarkdown("*This notification type is not fully supported yet*")
-	} else {
-		w.body.SetWithText(s.ValueOrZero())
-	}
+	w.body.SetText(b.StringFunc("[This notification type is not fully supported yet]", func(v string) string {
+		return v
+	}))
 	return nil
 }

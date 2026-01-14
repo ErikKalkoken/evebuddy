@@ -359,17 +359,13 @@ func infoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 
 // baseInfo represents shared functionality between all info widgets.
 type baseInfo struct {
-	name *kxwidget.TappableLabel
+	name *widget.Label
 	iw   *infoWindow
 }
 
 func (b *baseInfo) initBase(iw *infoWindow) {
 	b.iw = iw
-	b.name = kxwidget.NewTappableLabel("Loading...", func() {
-		b.iw.u.app.Clipboard().SetContent(b.name.Text)
-		b.iw.sb.Show(fmt.Sprintf("\"%s\" added to clipboard", b.name.Text))
-	})
-	b.name.Wrapping = fyne.TextWrapWord
+	b.name = newLabelWithWrapAndSelectable("Loading...")
 }
 
 func (b *baseInfo) setError(s string) {
@@ -538,8 +534,6 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	title.Wrapping = fyne.TextWrapWord
 	bio := widget.NewLabel("")
 	bio.Wrapping = fyne.TextWrapWord
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	ownedIcon := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
 	ownedIcon.SetToolTip("You own this character")
 	a := &characterInfo{
@@ -547,7 +541,7 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 		bio:             bio,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		description:     description,
+		description:     newLabelWithWrapAndSelectable(""),
 		id:              id,
 		isOwned:         iw.u.scs.ListCharacterIDs().Contains(id),
 		membership:      widget.NewLabel(""),
@@ -962,12 +956,10 @@ func newCorporationInfo(iw *infoWindow, id int32) *corporationInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := widget.NewHyperlink("", nil)
 	hq.Wrapping = fyne.TextWrapWord
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	a := &corporationInfo{
 		alliance:     alliance,
 		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		description:  description,
+		description:  newLabelWithWrapAndSelectable(""),
 		hq:           hq,
 		id:           id,
 		logo:         makeInfoLogo(),
@@ -1185,13 +1177,11 @@ func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := widget.NewHyperlink("", nil)
 	owner.Wrapping = fyne.TextWrapWord
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	typeImage := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
-		description: description,
+		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
 		owner:       owner,
 		ownerLogo:   iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
@@ -1337,10 +1327,8 @@ type raceInfo struct {
 }
 
 func newRaceInfo(iw *infoWindow, id int32) *raceInfo {
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	a := &raceInfo{
-		description: description,
+		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
 		logo:        makeInfoLogo(),
 		tabs:        container.NewAppTabs(),
@@ -1422,11 +1410,9 @@ type regionInfo struct {
 }
 
 func newRegionInfo(iw *infoWindow, id int32) *regionInfo {
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	a := &regionInfo{
 		id:          id,
-		description: description,
+		description: newLabelWithWrapAndSelectable(""),
 		logo:        makeInfoLogo(),
 		tabs:        container.NewAppTabs(),
 	}
@@ -1716,8 +1702,6 @@ type inventoryTypeInfo struct {
 }
 
 func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryTypeInfo {
-	description := widget.NewLabel("")
-	description.Wrapping = fyne.TextWrapWord
 	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
@@ -1725,7 +1709,7 @@ func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryT
 		characterIcon: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		characterID:   characterID,
 		checkIcon:     widget.NewIcon(icons.BlankSvg),
-		description:   description,
+		description:   newLabelWithWrapAndSelectable(""),
 		typeIcon:      typeIcon,
 		typeID:        typeID,
 	}
@@ -2774,4 +2758,11 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 func makeInfoLogo() *canvas.Image {
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
 	return logo
+}
+
+func newLabelWithWrapAndSelectable(s string) *widget.Label {
+	description := widget.NewLabel(s)
+	description.Wrapping = fyne.TextWrapWord
+	description.Selectable = true
+	return description
 }

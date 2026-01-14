@@ -43,6 +43,7 @@ type corporationSheet struct {
 func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	roles := widget.NewLabel("")
 	roles.Truncation = fyne.TextTruncateEllipsis
+	roles.Selectable = true
 	logo := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
@@ -53,11 +54,11 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		home:       widget.NewHyperlink("", nil),
 		isCorpMode: isCorpMode,
 		logo:       logo,
-		members:    widget.NewLabel(""),
+		members:    iwidget.NewLabelWithSelection(""),
 		name:       widget.NewHyperlink("", nil),
 		roles:      roles,
-		taxRate:    widget.NewLabel(""),
-		ticker:     widget.NewLabel(""),
+		taxRate:    iwidget.NewLabelWithSelection(""),
+		ticker:     iwidget.NewLabelWithSelection(""),
 		u:          u,
 	}
 	a.ExtendBaseWidget(a)
