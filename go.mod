@@ -1,6 +1,6 @@
 module github.com/ErikKalkoken/evebuddy
 
-go 1.25.3
+go 1.25.5
 
 tool (
 	fyne.io/tools/cmd/fyne
