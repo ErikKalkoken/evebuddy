@@ -39,6 +39,8 @@ func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int6
 	return o, err
 }
 
+// FIXME: Does not update existing structures
+
 // UpdateOrCreateLocationESI tries to fetch and create a new location from ESI.
 //
 // Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
@@ -47,7 +49,8 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 		o, err := s.st.GetLocation(ctx, id)
 		if err == nil {
 			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
+		}
+		if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
 		var arg storage.UpdateOrCreateLocationParams
