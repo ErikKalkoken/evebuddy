@@ -72,6 +72,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	}
 	a.ExtendBaseWidget(a)
 
+	// Sections
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update()
@@ -84,6 +85,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		case
 			app.SectionCharacterAssets,
 			app.SectionCharacterRoles,
+			app.SectionCharacterShip,
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
 			a.update()
@@ -155,6 +157,13 @@ func (a *characterSheet) update() {
 			a.name.Refresh()
 		})
 		return
+	}
+	c2, err := a.u.cs.GetCharacter(context.Background(), c.ID)
+	if err != nil {
+		slog.Error("Failed to fetch character for sheet", "err", err)
+	} else {
+		a.character.Store(c2)
+		c = c2
 	}
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
