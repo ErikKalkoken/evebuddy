@@ -1229,71 +1229,78 @@ func (a *locationInfo) update() error {
 	if err != nil {
 		return err
 	}
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+	})
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		fyne.Do(func() {
+			a.tabs.Append(attributesTab)
+		})
+	}
 	g := new(errgroup.Group)
-	g.Go(func() error {
-		r, err := a.iw.u.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.typeImage.SetResource(r)
-		})
-		return nil
-	})
-	g.Go(func() error {
-		r, err := a.iw.u.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.ownerLogo.Resource = r
-			a.ownerLogo.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.typeInfo.SetText(o.Type.Name)
-			a.typeInfo.OnTapped = func() {
-				a.iw.showEveEntity(o.Type.EveEntity())
-			}
-			a.owner.SetText(o.Owner.Name)
-			a.owner.OnTapped = func() {
-				a.iw.showEveEntity(o.Owner)
-			}
-			a.typeImage.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
-			}
-			description := o.Type.Description
-			if description == "" {
-				description = o.Type.Name
-			}
-			a.description.SetText(description)
-			a.tabs.Refresh()
-		})
-		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", o.ID)
-			x.Action = func(_ any) {
-				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-			}
-			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-			attributesTab := container.NewTabItem("Attributes", attributeList)
+	if o.Type != nil {
+		g.Go(func() error {
 			fyne.Do(func() {
-				a.tabs.Append(attributesTab)
-				a.tabs.Refresh()
+				a.typeInfo.SetText(o.Type.Name)
+				a.typeInfo.OnTapped = func() {
+					a.iw.showEveEntity(o.Type.EveEntity())
+				}
+				a.typeImage.OnTapped = func() {
+					a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
+				}
+				description := o.Type.Description
+				if description == "" {
+					description = o.Type.Name
+				}
+				a.description.SetText(description)
 			})
-		}
-		fyne.Do(func() {
-			a.location.set(
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
-				newEntityItemFromEveSolarSystem(o.SolarSystem),
-			)
-			a.tabs.Refresh()
+			r, err := a.iw.u.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
+			if err != nil {
+				return err
+			}
+			fyne.Do(func() {
+				a.typeImage.SetResource(r)
+			})
+			return nil
 		})
-		return nil
-	})
+	}
+	if o.Owner != nil {
+		g.Go(func() error {
+			fyne.Do(func() {
+				a.owner.SetText(o.Owner.Name)
+				a.owner.OnTapped = func() {
+					a.iw.showEveEntity(o.Owner)
+				}
+			})
+			r, err := a.iw.u.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
+			if err != nil {
+				return err
+			}
+			fyne.Do(func() {
+				a.ownerLogo.Resource = r
+				a.ownerLogo.Refresh()
+			})
+			return nil
+		})
+	}
+	if o.SolarSystem != nil {
+		g.Go(func() error {
+			fyne.Do(func() {
+				a.location.set(
+					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
+					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
+					newEntityItemFromEveSolarSystem(o.SolarSystem),
+				)
+			})
+			return nil
+		})
+	}
 	g.Go(func() error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
@@ -1309,11 +1316,16 @@ func (a *locationInfo) update() error {
 		})
 		fyne.Do(func() {
 			a.services.set(items...)
-			a.tabs.Refresh()
 		})
 		return nil
 	})
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	fyne.Do(func() {
+		a.tabs.Refresh()
+	})
+	return nil
 }
 
 type raceInfo struct {
