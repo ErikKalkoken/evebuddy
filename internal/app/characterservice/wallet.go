@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -245,4 +246,27 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 	}
 	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
 	return transactions, nil
+}
+
+func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
+	if arg.Section != app.SectionCharacterWalletBalance {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+	}
+	return s.updateSectionIfChanged(
+		ctx, arg,
+		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWallet")
+			balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return balance, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			balance := data.(float64)
+			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.New(balance)); err != nil {
+				return err
+			}
+			return nil
+		})
 }

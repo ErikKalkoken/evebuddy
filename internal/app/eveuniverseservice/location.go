@@ -44,12 +44,6 @@ func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int6
 // Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
 func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrCreateLocationESI-%d", id), func() (any, error) {
-		o, err := s.st.GetLocation(ctx, id)
-		if err == nil {
-			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
-			return nil, err
-		}
 		var arg storage.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
 		case app.EveLocationUnknown:

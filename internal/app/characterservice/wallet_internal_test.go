@@ -33,7 +33,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/journal/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -86,7 +86,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/journal/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -134,7 +134,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/journal/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -174,7 +174,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/journal/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
@@ -202,7 +202,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/journal/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -771,39 +771,35 @@ func TestListWalletTransactions(t *testing.T) {
 	})
 }
 
-// func TestLoadCacheInt64(t *testing.T) {
-// 	t.Run("returns value when key exists and is valid", func(t *testing.T) {
-// 		cache := testutil.NewCacheFake()
-// 		key := "session_id"
-// 		val := int64(12345)
-
-// 		// Manually prime the fake
-// 		data, _ := json.Marshal(val)
-// 		cache.Set(key, data, 0)
-
-// 		result, ok := loadCacheInt64(cache, key)
-
-// 		assert.True(t, ok)
-// 		assert.Equal(t, val, result)
-// 	})
-
-// 	t.Run("returns false when key does not exist", func(t *testing.T) {
-// 		cache := testutil.NewCacheFake()
-
-// 		result, ok := loadCacheInt64(cache, "missing_key")
-
-// 		assert.False(t, ok)
-// 		assert.Zero(t, result)
-// 	})
-
-// 	t.Run("returns false and logs error on invalid JSON", func(t *testing.T) {
-// 		cache := testutil.NewCacheFake()
-// 		key := "bad_data"
-// 		cache.Set(key, []byte("not-an-integer"), 0)
-
-// 		result, ok := loadCacheInt64(cache, key)
-
-// 		assert.False(t, ok)
-// 		assert.Zero(t, result)
-// 	})
-// }
+func TestUpdateWalletBalanceESI(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	ctx := context.Background()
+	t.Run("should update", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		const balance = 123.45
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/wallet/`,
+			httpmock.NewJsonResponderOrPanic(200, balance),
+		)
+		// when
+		changed, err := s.updateWalletBalanceESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletBalance,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		assert.EqualValues(t, balance, c2.WalletBalance.ValueOrZero())
+	})
+}
