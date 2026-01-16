@@ -19,6 +19,10 @@ func (s *CharacterService) DeleteTag(ctx context.Context, id int64) error {
 	return s.st.DeleteTag(ctx, id)
 }
 
+func (s *CharacterService) DeleteAllTags(ctx context.Context) error {
+	return s.st.DeleteAllTags(ctx)
+}
+
 func (s *CharacterService) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, error) {
 	return s.st.ListTagsByName(ctx)
 }
@@ -68,4 +72,52 @@ func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID
 		return x.Name
 	}))
 	return tags, nil
+}
+
+func (s *CharacterService) ExportTags(ctx context.Context) (map[string][]int32, error) {
+	tags, err := s.st.ListTagsByName(ctx)
+	if err != nil {
+		return nil, err
+	}
+	v := make(map[string][]int32)
+	for _, t := range tags {
+		characters, err := s.st.ListCharactersForCharacterTag(ctx, t.ID)
+		if err != nil {
+			return nil, err
+		}
+		v[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int32]) int32 {
+			return x.ID
+		})
+	}
+	return v, nil
+}
+
+func (s *CharacterService) ImportTags(ctx context.Context, v map[string][]int32) error {
+	err := s.st.DeleteAllTags(ctx)
+	if err != nil {
+		return err
+	}
+	cc, err := s.st.ListCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for tag, ids := range v {
+		t, err := s.st.CreateTag(ctx, tag)
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			if !cc.Contains(id) {
+				continue // ignore non existing character
+			}
+			err := s.st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
+				CharacterID: id,
+				TagID:       t.ID,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

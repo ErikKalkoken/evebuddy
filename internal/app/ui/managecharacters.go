@@ -2,8 +2,10 @@ package ui
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"slices"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/eveauth"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -89,6 +92,7 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 func (a *manageCharacters) setWindow(w fyne.Window) {
 	a.w = w
 	a.sb = iwidget.NewSnackbar(w)
+	a.sb.Start()
 }
 
 func (a *manageCharacters) unsetWindow() {
@@ -339,50 +343,51 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
 		"Delete",
 		func(confirmed bool) {
-			if confirmed {
-				m := kmodal.NewProgressInfinite(
-					"Deleting character",
-					fmt.Sprintf("Deleting %s...", r.characterName),
-					func() error {
-						ctx := context.Background()
-						corpDeleted, err := a.mc.u.cs.DeleteCharacter(ctx, r.characterID)
-						if err != nil {
-							return err
-						}
-						a.update()
-						if a.mc.u.currentCharacterID() == r.characterID {
-							a.mc.u.setAnyCharacter()
-						}
-						if corpDeleted {
-							a.mc.u.setAnyCorporation()
-						} else {
-							ok, err := a.mc.u.rs.HasCorporation(ctx, r.corporationID)
-							if err != nil {
-								slog.Error("Failed to determine if corp exists", "err", err)
-							}
-							if ok {
-								if err := a.mc.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
-									slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
-								}
-								go a.mc.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
-							}
-						}
-						go a.mc.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
-							ID:   r.characterID,
-							Name: r.characterName,
-						})
-						return nil
-					},
-					a.mc.w,
-				)
-				m.OnSuccess = func() {
-					a.mc.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
-				}
-				m.OnError = func(err error) {
-					a.mc.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
-				}
-				m.Start()
+			if !confirmed {
+				return
 			}
+			m := kmodal.NewProgressInfinite(
+				"Deleting character",
+				fmt.Sprintf("Deleting %s...", r.characterName),
+				func() error {
+					ctx := context.Background()
+					corpDeleted, err := a.mc.u.cs.DeleteCharacter(ctx, r.characterID)
+					if err != nil {
+						return err
+					}
+					a.update()
+					if a.mc.u.currentCharacterID() == r.characterID {
+						a.mc.u.setAnyCharacter()
+					}
+					if corpDeleted {
+						a.mc.u.setAnyCorporation()
+					} else {
+						ok, err := a.mc.u.rs.HasCorporation(ctx, r.corporationID)
+						if err != nil {
+							slog.Error("Failed to determine if corp exists", "err", err)
+						}
+						if ok {
+							if err := a.mc.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
+								slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+							}
+							go a.mc.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+						}
+					}
+					go a.mc.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
+						ID:   r.characterID,
+						Name: r.characterName,
+					})
+					return nil
+				},
+				a.mc.w,
+			)
+			m.OnSuccess = func() {
+				a.mc.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
+			}
+			m.OnError = func(err error) {
+				a.mc.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
+			}
+			m.Start()
 		},
 		a.mc.w,
 	)
@@ -426,24 +431,7 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 
 	// Signals
 	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort[int32]) {
-		fyne.Do(func() {
-			if a.selectedTag == nil {
-				return
-			}
-			if slices.ContainsFunc(a.characters, func(x *app.EntityShort[int32]) bool {
-				return x.ID == c.ID
-			}) {
-				a.updateCharacters(a.selectedTag)
-			}
-		})
-		tags, err := a.mc.u.cs.ListTagsForCharacter(ctx, c.ID)
-		if err != nil {
-			slog.Error("Failed update tags", "error", err)
-			return
-		}
-		if tags.Size() == 0 {
-			return
-		}
+		a.update()
 		a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
@@ -451,25 +439,159 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 
 func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
-	addTag := widget.NewButtonWithIcon("Create tag",
-		theme.ContentAddIcon(), func() {
-			a.modifyTag("Create Character Tag", "Create", func(name string) error {
-				_, err := a.mc.u.cs.CreateTag(context.Background(), name)
-				return err
-			})
-		},
-	)
+	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
+		a.modifyTag("Create Character Tag", "Create", func(name string) error {
+			_, err := a.mc.u.cs.CreateTag(context.Background(), name)
+			return err
+		})
+	})
 	addTag.Importance = widget.HighImportance
-	manageTags := iwidget.NewAppBar(
-		"Tags",
-		container.NewBorder(nil, container.NewVBox(addTag, newStandardSpacer()), nil, nil, a.tagList),
+	main := container.NewBorder(
+		nil,
+		container.NewVBox(addTag, newStandardSpacer()),
+		nil,
+		nil,
+		a.tagList,
 	)
-	manageTags.HideBackground = !a.mc.u.isMobile
+	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
+		fyne.NewMenuItem("Export tags", a.exportTags),
+		fyne.NewMenuItem("Import tags", a.importTags),
+		fyne.NewMenuItem("Delete tags", a.deleteTags),
+	))
+	ab := iwidget.NewAppBar("Tags", main, actions)
+	ab.HideBackground = !a.mc.u.isMobile
 	c := container.NewVSplit(
-		container.NewStack(manageTags, a.emptyTagsHint),
+		container.NewStack(ab, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *characterTags) deleteTags() {
+	a.mc.u.ShowConfirmDialog(
+		"Delete Tags",
+		"Are you sure you want to delete all tags?",
+		"Delete",
+		func(confirmed bool) {
+			if !confirmed {
+				return
+			}
+			m := kmodal.NewProgressInfinite(
+				"Deleting tags",
+				"Deleting...",
+				func() error {
+					ctx := context.Background()
+					err := a.mc.u.cs.DeleteAllTags(ctx)
+					if err != nil {
+						return err
+					}
+					a.update()
+					go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+					return nil
+				},
+				a.mc.w,
+			)
+			m.OnError = func(err error) {
+				fyne.Do(func() {
+					a.mc.reportError("Failed to delete tags", err)
+				})
+			}
+			m.Start()
+		},
+		a.mc.w,
+	)
+}
+
+func (a *characterTags) exportTags() {
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+		if writer == nil {
+			return
+		}
+		m := kmodal.NewProgressInfinite(
+			"Exporting tags",
+			"Exporting...",
+			func() error {
+				defer writer.Close()
+				if err != nil {
+					return err
+				}
+				v, err := a.mc.u.cs.ExportTags(context.Background())
+				if err != nil {
+					return err
+				}
+				b, err := json.Marshal(v)
+				if err != nil {
+					return err
+				}
+				_, err = writer.Write(b)
+				if err != nil {
+					return err
+				}
+				slog.Info("Tags exported to file", "uri", writer.URI())
+				a.mc.sb.Show("Tags exported")
+				return nil
+			},
+			a.mc.w,
+		)
+		m.OnError = func(err error) {
+			fyne.Do(func() {
+				a.mc.u.showErrorDialog("Failed to export tags", err, a.mc.w)
+			})
+		}
+		m.Start()
+	},
+		a.mc.w,
+	)
+	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	d.Show()
+}
+
+func (a *characterTags) importTags() {
+	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		m := kmodal.NewProgressInfinite(
+			"Importing tags",
+			"Importing...",
+			func() error {
+				if reader == nil {
+					return nil
+				}
+				defer reader.Close()
+				if err != nil {
+					return err
+				}
+				b, err := io.ReadAll(reader)
+				if err != nil {
+					return err
+				}
+				var v map[string][]int32
+				err = json.Unmarshal(b, &v)
+				if err != nil {
+					slog.Error("Failed to import tags", "uri", reader.URI(), "err", err)
+					return fmt.Errorf("unrecognized format")
+				}
+				ctx := context.Background()
+				err = a.mc.u.cs.ImportTags(ctx, v)
+				if err != nil {
+					return err
+				}
+				a.update()
+				go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+				slog.Info("Tags imported from file", "uri", reader.URI())
+				return nil
+			},
+			a.mc.w,
+		)
+		m.OnError = func(err error) {
+			fyne.Do(func() {
+				a.mc.u.showErrorDialog("Failed to import tags", err, a.mc.w)
+			})
+		}
+		m.Start()
+	},
+		a.mc.w,
+	)
+	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	d.Show()
 }
 
 func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
@@ -579,7 +701,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 						return
 					}
 				}
-				a.updateCharacters(a.selectedTag)
+				a.setCharacters(a.selectedTag)
 				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
 			},
 			a.mc.w,
@@ -664,7 +786,7 @@ func (a *characterTags) makeTagList() *widget.List {
 			return
 		}
 		tag := a.tags[id]
-		a.updateCharacters(tag)
+		a.setCharacters(tag)
 	}
 	return tagList
 }
@@ -720,7 +842,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					a.mc.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
 					return
 				}
-				a.updateCharacters(a.selectedTag)
+				a.setCharacters(a.selectedTag)
 				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
@@ -732,11 +854,14 @@ func (a *characterTags) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *characterTags) updateCharacters(tag *app.CharacterTag) {
+func (a *characterTags) setCharacters(tag *app.CharacterTag) {
+	a.selectedTag = tag
 	if tag == nil {
+		a.characters = make([]*app.EntityShort[int32], 0)
+		a.manageCharacters.Hide()
+		a.emptyCharactersHint.Show()
 		return
 	}
-	a.selectedTag = tag
 	a.manageCharacters.SetTitle("Tag: " + tag.Name)
 	a.manageCharacters.Show()
 	tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
@@ -786,7 +911,6 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			a.update()
-			a.selectTagByName(name.Text)
 			go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
 		}, a.mc.w,
 	)
@@ -813,13 +937,17 @@ func (a *characterTags) update() {
 		a.tags = make([]*app.CharacterTag, 0)
 		return
 	}
-	a.tags = tags
 	fyne.Do(func() {
+		a.tags = tags
 		a.tagList.Refresh()
+		a.tagList.UnselectAll()
 		if len(tags) > 0 {
 			a.emptyTagsHint.Hide()
+			a.selectTagByName(tags[0].Name)
+			a.setCharacters(tags[0])
 		} else {
 			a.emptyTagsHint.Show()
+			a.setCharacters(nil)
 		}
 	})
 }
@@ -851,39 +979,36 @@ func newCharacterTraining(mc *manageCharacters) *characterTraining {
 }
 
 func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
-	ab := iwidget.NewAppBar(
-		"Watched Training",
-		a.list,
-		kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
-			fyne.NewMenuItem("Set to currently trained", func() {
-				go func() {
-					ctx := context.Background()
-					for id, c := range a.characters {
-						d, err := a.mc.u.cs.TotalTrainingTime(ctx, c.ID)
-						if err != nil {
-							slog.Error("Failed to set watcher for trained characters", "error", err)
-							continue
-						}
-						fyne.Do(func() {
-							a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
-						})
+	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
+		fyne.NewMenuItem("Set to currently trained", func() {
+			go func() {
+				ctx := context.Background()
+				for id, c := range a.characters {
+					d, err := a.mc.u.cs.TotalTrainingTime(ctx, c.ID)
+					if err != nil {
+						slog.Error("Failed to set watcher for trained characters", "error", err)
+						continue
 					}
-				}()
-			}),
-			fyne.NewMenuItem("Enable all", func() {
-				ctx := context.Background()
-				for id := range a.characters {
-					a.updateCharacterWatched(ctx, id, true)
+					fyne.Do(func() {
+						a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
+					})
 				}
-			}),
-			fyne.NewMenuItem("Disable all", func() {
-				ctx := context.Background()
-				for id := range a.characters {
-					a.updateCharacterWatched(ctx, id, false)
-				}
-			}),
-		)),
-	)
+			}()
+		}),
+		fyne.NewMenuItem("Enable all", func() {
+			ctx := context.Background()
+			for id := range a.characters {
+				a.updateCharacterWatched(ctx, id, true)
+			}
+		}),
+		fyne.NewMenuItem("Disable all", func() {
+			ctx := context.Background()
+			for id := range a.characters {
+				a.updateCharacterWatched(ctx, id, false)
+			}
+		}),
+	))
+	ab := iwidget.NewAppBar("Watched Training", a.list, actions)
 	ab.HideBackground = !a.mc.u.isMobile
 	return widget.NewSimpleRenderer(ab)
 }

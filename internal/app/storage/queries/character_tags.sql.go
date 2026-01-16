@@ -13,7 +13,9 @@ const createCharacterTag = `-- name: CreateCharacterTag :one
 INSERT INTO
     character_tags (name)
 VALUES
-    (?) RETURNING id, name
+    (?)
+RETURNING
+    id, name
 `
 
 func (q *Queries) CreateCharacterTag(ctx context.Context, name string) (CharacterTag, error) {
@@ -37,6 +39,15 @@ type CreateCharactersCharacterTagParams struct {
 
 func (q *Queries) CreateCharactersCharacterTag(ctx context.Context, arg CreateCharactersCharacterTagParams) error {
 	_, err := q.db.ExecContext(ctx, createCharactersCharacterTag, arg.CharacterID, arg.TagID)
+	return err
+}
+
+const deleteAllCharacterTags = `-- name: DeleteAllCharacterTags :exec
+DELETE FROM character_tags
+`
+
+func (q *Queries) DeleteAllCharacterTags(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllCharacterTags)
 	return err
 }
 
@@ -153,7 +164,8 @@ func (q *Queries) ListCharacterTagsForCharacter(ctx context.Context, characterID
 
 const listCharactersForCharacterTag = `-- name: ListCharactersForCharacterTag :many
 SELECT
-    ec.id, ec.name
+    ec.id,
+    ec.name
 FROM
     characters_character_tags ct
     JOIN characters c ON c.id = ct.character_id

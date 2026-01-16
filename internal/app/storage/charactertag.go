@@ -33,6 +33,10 @@ func (st *Storage) DeleteTag(ctx context.Context, id int64) error {
 	return st.qRW.DeleteCharacterTag(ctx, id)
 }
 
+func (st *Storage) DeleteAllTags(ctx context.Context) error {
+	return st.qRW.DeleteAllCharacterTags(ctx)
+}
+
 func (st *Storage) GetTag(ctx context.Context, id int64) (*app.CharacterTag, error) {
 	row, err := st.qRO.GetCharacterTag(ctx, id)
 	if err != nil {
