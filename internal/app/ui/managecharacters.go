@@ -452,9 +452,9 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		a.tagList,
 	)
 	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
-		fyne.NewMenuItem("Export tags", a.exportTags),
-		fyne.NewMenuItem("Import tags", a.importTags),
-		fyne.NewMenuItem("Delete tags", a.deleteTags),
+		fyne.NewMenuItem("Save tags to file", a.exportTags),
+		fyne.NewMenuItem("Replace tags from file", a.importTags),
+		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := iwidget.NewAppBar("Tags", main, actions)
 	ab.HideBackground = !a.mc.u.isMobile
@@ -467,7 +467,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterTags) deleteTags() {
 	a.mc.u.ShowConfirmDialog(
-		"Delete Tags",
+		"Delete All Tags",
 		"Are you sure you want to delete all tags?",
 		"Delete",
 		func(confirmed bool) {
@@ -475,7 +475,7 @@ func (a *characterTags) deleteTags() {
 				return
 			}
 			m := kmodal.NewProgressInfinite(
-				"Deleting tags",
+				"Deleting all tags",
 				"Deleting...",
 				func() error {
 					ctx := context.Background()
@@ -506,8 +506,8 @@ func (a *characterTags) exportTags() {
 			return
 		}
 		m := kmodal.NewProgressInfinite(
-			"Exporting tags",
-			"Exporting...",
+			"Saving tags to file",
+			"Saving...",
 			func() error {
 				defer writer.Close()
 				if err != nil {
@@ -533,14 +533,15 @@ func (a *characterTags) exportTags() {
 		a.mc.w,
 	)
 	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	d.SetTitleText("Save tags to file")
 	d.Show()
 }
 
 func (a *characterTags) importTags() {
 	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 		m := kmodal.NewProgressInfinite(
-			"Importing tags",
-			"Importing...",
+			"Replacing tags from file",
+			"Replacing...",
 			func() error {
 				if reader == nil {
 					return nil
@@ -571,6 +572,8 @@ func (a *characterTags) importTags() {
 		a.mc.w,
 	)
 	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	d.SetTitleText("Replace tags from file")
+	d.SetConfirmText("Replace")
 	d.Show()
 }
 
