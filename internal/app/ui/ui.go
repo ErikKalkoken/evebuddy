@@ -1120,10 +1120,11 @@ func (u *baseUI) ShowConfirmDialog(title, message, confirm string, callback func
 }
 
 func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
-	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, u.humanizeError(err)))
-	text.Wrapping = fyne.TextWrapWord
-	text.Importance = widget.DangerImportance
-	c := container.NewVScroll(text)
+	title := widget.NewLabel(message)
+	error := widget.NewLabel(u.humanizeError(err))
+	error.TextStyle.Monospace = true
+	error.Wrapping = fyne.TextWrapBreak
+	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))
 	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", c, parent)
 	u.ModifyShortcutsForDialog(d, parent)

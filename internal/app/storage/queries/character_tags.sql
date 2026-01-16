@@ -2,7 +2,9 @@
 INSERT INTO
     character_tags (name)
 VALUES
-    (?) RETURNING *;
+    (?)
+RETURNING
+    *;
 
 -- name: GetCharacterTag :one
 SELECT
@@ -16,6 +18,9 @@ WHERE
 DELETE FROM character_tags
 WHERE
     id = ?;
+
+-- name: DeleteAllCharacterTags :exec
+DELETE FROM character_tags;
 
 -- name: ListCharacterTags :many
 SELECT
@@ -46,7 +51,8 @@ WHERE
 
 -- name: ListCharactersForCharacterTag :many
 SELECT
-    ec.id, ec.name
+    ec.id,
+    ec.name
 FROM
     characters_character_tags ct
     JOIN characters c ON c.id = ct.character_id
