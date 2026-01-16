@@ -2,10 +2,8 @@ package ui
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"slices"
 	"strings"
@@ -515,15 +513,7 @@ func (a *characterTags) exportTags() {
 				if err != nil {
 					return err
 				}
-				v, err := a.mc.u.cs.ExportTags(context.Background())
-				if err != nil {
-					return err
-				}
-				b, err := json.Marshal(v)
-				if err != nil {
-					return err
-				}
-				_, err = writer.Write(b)
+				err := a.mc.u.cs.WriteTags(context.Background(), writer, a.mc.u.app.Metadata().Version)
 				if err != nil {
 					return err
 				}
@@ -559,18 +549,8 @@ func (a *characterTags) importTags() {
 				if err != nil {
 					return err
 				}
-				b, err := io.ReadAll(reader)
-				if err != nil {
-					return err
-				}
-				var v map[string][]int32
-				err = json.Unmarshal(b, &v)
-				if err != nil {
-					slog.Error("Failed to import tags", "uri", reader.URI(), "err", err)
-					return fmt.Errorf("unrecognized format")
-				}
 				ctx := context.Background()
-				err = a.mc.u.cs.ImportTags(ctx, v)
+				err = a.mc.u.cs.ReadAndReplaceTags(ctx, reader, a.mc.u.app.Metadata().Version)
 				if err != nil {
 					return err
 				}

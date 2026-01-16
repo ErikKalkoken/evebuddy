@@ -11,7 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // DeleteCharacter deletes a character and corporations which have become orphaned as a result.
@@ -79,14 +78,7 @@ func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character
 }
 
 func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
-	cc, err := s.st.ListCharactersShort(ctx)
-	if err != nil {
-		return set.Set[int32]{}, err
-	}
-	ids := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
-		return x.ID
-	}))
-	return ids, nil
+	return s.st.ListCharacterIDs(ctx)
 }
 
 // ListCharactersShort returns all characters in short form and ordered by name.

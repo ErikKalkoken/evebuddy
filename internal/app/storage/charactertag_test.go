@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -90,6 +91,77 @@ func TestTag(t *testing.T) {
 			_, err := st.GetTag(ctx, t1.ID)
 			assert.Error(t, err, app.ErrNotFound)
 		}
+	})
+}
+
+func TestReplaceTags(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+
+	t.Run("can create tags for matching characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+
+		// when
+		exported := map[string][]int32{"Alpha": {c1.ID, c2.ID}, "Bravo": {}}
+		err := st.ReplaceTags(ctx, exported)
+
+		// then
+		require.NoError(t, err)
+
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		got := xslices.Map(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		})
+		assert.ElementsMatch(t, []string{"Alpha", "Bravo"}, got)
+
+		for _, tag := range tags {
+			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
+			require.NoError(t, err)
+			got := xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+				return x.ID
+			})
+			switch tag.Name {
+			case "Alpha":
+				assert.ElementsMatch(t, []int32{c1.ID, c2.ID}, got)
+			case "Bravo":
+				assert.ElementsMatch(t, []int32{}, got)
+			}
+		}
+	})
+
+	t.Run("should ignore missing characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+
+		// when
+		exported := map[string][]int32{
+			"Alpha": {c1.ID, 42},
+		}
+		err := st.ReplaceTags(ctx, exported)
+
+		// then
+		require.NoError(t, err)
+
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		gotNames := xslices.Map(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		})
+		assert.ElementsMatch(t, []string{"Alpha"}, gotNames)
+
+		tag := tags[0]
+		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
+		require.NoError(t, err)
+		gotIDs := xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+			return x.ID
+		})
+		assert.ElementsMatch(t, []int32{c1.ID}, gotIDs)
 	})
 }
 

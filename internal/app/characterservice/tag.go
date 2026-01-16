@@ -2,8 +2,12 @@ package characterservice
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/hashicorp/go-version"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -74,50 +78,101 @@ func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID
 	return tags, nil
 }
 
-func (s *CharacterService) ExportTags(ctx context.Context) (map[string][]int32, error) {
+// TagsExported represents the data structure for exported character tags.
+type TagsExported struct {
+	Info    string             // file information
+	Tags    map[string][]int32 // mapping of tags to character IDs
+	Version string             // app version that created an export
+}
+
+func (s *CharacterService) WriteTags(ctx context.Context, writer io.Writer, version string) error {
+	v, err := s.compileTags(ctx, version)
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *CharacterService) compileTags(ctx context.Context, version string) (TagsExported, error) {
+	data := TagsExported{
+		Tags:    make(map[string][]int32),
+		Info:    "Created by EVE Buddy",
+		Version: version,
+	}
 	tags, err := s.st.ListTagsByName(ctx)
 	if err != nil {
-		return nil, err
+		return data, err
 	}
-	v := make(map[string][]int32)
 	for _, t := range tags {
 		characters, err := s.st.ListCharactersForCharacterTag(ctx, t.ID)
 		if err != nil {
-			return nil, err
+			return data, err
 		}
-		v[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int32]) int32 {
+		data.Tags[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int32]) int32 {
 			return x.ID
 		})
 	}
-	return v, nil
+	return data, nil
 }
 
-func (s *CharacterService) ImportTags(ctx context.Context, v map[string][]int32) error {
-	err := s.st.DeleteAllTags(ctx)
+// ReadAndReplaceTags reads a tags definition from reader and replaces the current tags with it.
+func (s *CharacterService) ReadAndReplaceTags(ctx context.Context, reader io.Reader, version string) error {
+	b, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-	cc, err := s.st.ListCharacterIDs(ctx)
+	var data TagsExported
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return fmt.Errorf("unrecognized format")
+	}
+	err = s.replaceTags(ctx, data, version)
 	if err != nil {
 		return err
 	}
-	for tag, ids := range v {
-		t, err := s.st.CreateTag(ctx, tag)
-		if err != nil {
-			return err
+	return nil
+}
+
+func (s *CharacterService) replaceTags(ctx context.Context, data TagsExported, v string) error {
+	appVersion, err := version.NewVersion(v)
+	if err != nil {
+		return err
+	}
+	fileVersion, err := version.NewVersion(data.Version)
+	if err != nil {
+		return err
+	}
+	similar := func() bool {
+		fvs := fileVersion.Segments()
+		if len(fvs) != 3 {
+			return false
 		}
-		for _, id := range ids {
-			if !cc.Contains(id) {
-				continue // ignore non existing character
-			}
-			err := s.st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
-				CharacterID: id,
-				TagID:       t.ID,
-			})
-			if err != nil {
-				return err
-			}
+		avs := appVersion.Segments()
+		if len(avs) != 3 {
+			return false
 		}
+		if fvs[0] != avs[0] {
+			return false
+		}
+		if fvs[1] != avs[1] {
+			return false
+		}
+		return true
+	}()
+	if !similar {
+		return fmt.Errorf("file was created with a different version")
+	}
+	err = s.st.ReplaceTags(ctx, data.Tags)
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -203,7 +203,11 @@ func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
-	ids, err := st.qRO.ListCharacterIDs(ctx)
+	return st.listCharacterIDs(ctx, st.qRO)
+}
+
+func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (set.Set[int32], error) {
+	ids, err := q.ListCharacterIDs(ctx)
 	if err != nil {
 		return set.Set[int32]{}, fmt.Errorf("list character IDs: %w", err)
 	}

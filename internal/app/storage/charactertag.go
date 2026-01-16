@@ -11,13 +11,17 @@ import (
 )
 
 func (st *Storage) CreateTag(ctx context.Context, name string) (*app.CharacterTag, error) {
+	return st.createTag(ctx, st.qRW, name)
+}
+
+func (st *Storage) createTag(ctx context.Context, q *queries.Queries, name string) (*app.CharacterTag, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateTag: %s: %w", name, err)
+		return fmt.Errorf("createTag: %s: %w", name, err)
 	}
 	if name == "" {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	r, err := st.qRW.CreateCharacterTag(ctx, name)
+	r, err := q.CreateCharacterTag(ctx, name)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -58,6 +62,50 @@ func (st *Storage) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, err
 	return tags, nil
 }
 
+func (st *Storage) ReplaceTags(ctx context.Context, data map[string][]int32) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ReplaceTags: %+v: %w", data, err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+
+	err = qtx.DeleteAllCharacterTags(ctx)
+	if err != nil {
+		return wrapErr(err)
+	}
+	characters, err := st.listCharacterIDs(ctx, qtx)
+	if err != nil {
+		return wrapErr(err)
+	}
+	for tag, ids := range data {
+		t, err := st.createTag(ctx, qtx, tag)
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			if !characters.Contains(id) {
+				continue // ignore non existing character
+			}
+			err := st.createCharactersCharacterTag(ctx, qtx, CreateCharacterTagParams{
+				CharacterID: id,
+				TagID:       t.ID,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 func tagFromDBModel(r queries.CharacterTag) *app.CharacterTag {
 	return &app.CharacterTag{
 		ID:   r.ID,
@@ -82,13 +130,17 @@ type CreateCharacterTagParams struct {
 }
 
 func (st *Storage) CreateCharactersCharacterTag(ctx context.Context, arg CreateCharacterTagParams) error {
+	return st.createCharactersCharacterTag(ctx, st.qRW, arg)
+}
+
+func (st *Storage) createCharactersCharacterTag(ctx context.Context, q *queries.Queries, arg CreateCharacterTagParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharactersCharacterTag: %+v: %w", arg, err)
 	}
 	if arg.CharacterID == 0 || arg.TagID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateCharactersCharacterTag(ctx, queries.CreateCharactersCharacterTagParams{
+	err := q.CreateCharactersCharacterTag(ctx, queries.CreateCharactersCharacterTagParams{
 		CharacterID: int64(arg.CharacterID),
 		TagID:       arg.TagID,
 	})
