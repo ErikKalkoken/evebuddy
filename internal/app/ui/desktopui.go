@@ -321,6 +321,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// }
 
 	// Corporation
+	corpAssetsItem := iwidget.NewNavPage(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		newContentPage("Assets", u.corporationAssets),
+	)
+
 	var corporationNav *iwidget.NavDrawer
 	walletsNav := iwidget.NewNavSectionLabel("Wallets")
 	corpWalletItems := []*iwidget.NavItem{walletsNav}
@@ -390,8 +396,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			container.NewTabItem("Members", u.corporationMember),
 		)),
 	)
+
 	corporationNav = iwidget.NewNavDrawer(slices.Concat(
-		[]*iwidget.NavItem{corpSheetItem, corpContractsItem, corpIndustryItem, corpStructuresItem},
+		[]*iwidget.NavItem{
+			corpSheetItem,
+			corpAssetsItem,
+			corpContractsItem,
+			corpIndustryItem,
+			corpStructuresItem,
+		},
 		corpWalletItems,
 	)...)
 	corporationNav.MinWidth = navDrawerMinWidth
@@ -541,6 +554,28 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}
 		fyne.Do(func() {
 			var hasDisabled bool
+
+			if sections.Contains(app.SectionCorporationAssets) {
+				corpAssetsItem.Enable()
+			} else {
+				corpAssetsItem.Disable()
+				hasDisabled = true
+			}
+
+			if sections.Contains(app.SectionCorporationIndustryJobs) {
+				corpIndustryItem.Enable()
+			} else {
+				corpIndustryItem.Disable()
+				hasDisabled = true
+			}
+
+			if sections.Contains(app.SectionCorporationStructures) {
+				corpStructuresItem.Enable()
+			} else {
+				corpStructuresItem.Disable()
+				hasDisabled = true
+			}
+
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				for _, it := range corpWalletItems {
 					it.Enable()
@@ -551,18 +586,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 					hasDisabled = true
 				}
 			}
-			if sections.Contains(app.SectionCorporationIndustryJobs) {
-				corpIndustryItem.Enable()
-			} else {
-				corpIndustryItem.Disable()
-				hasDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationStructures) {
-				corpStructuresItem.Enable()
-			} else {
-				corpStructuresItem.Disable()
-				hasDisabled = true
-			}
+
 			if hasDisabled {
 				corporationNav.Select(corpSheetItem)
 			}

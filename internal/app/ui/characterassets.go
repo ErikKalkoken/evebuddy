@@ -19,7 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -93,7 +93,7 @@ type characterAssets struct {
 	OnSelected     func()
 	OnUpdate       func(string)
 
-	assetCollection    assetcollection.AssetCollection
+	assetCollection    asset.Collection
 	assetGrid          *widget.GridWrap
 	assets             []*app.CharacterAsset
 	assetsBottom       *widget.Label
@@ -282,7 +282,7 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 				slog.Warn("failed to select location", "error", "err")
 			}
 		} else {
-			showAssetDetailWindow(a.u, newAssetRow(ca, a.assetCollection, a.u.scs.CharacterName))
+			showAssetDetailWindow(a.u, newCharacterAssetRow(ca, a.assetCollection, a.u.scs.CharacterName))
 		}
 	}
 	return g
@@ -355,8 +355,8 @@ func (a *characterAssets) update() {
 	}
 }
 
-func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeData[locationNode], error) {
-	var ac assetcollection.AssetCollection
+func (*characterAssets) fetchData(characterID int32, s services) (asset.Collection, iwidget.TreeData[locationNode], error) {
+	var ac asset.Collection
 	var locations iwidget.TreeData[locationNode]
 	if characterID == 0 {
 		return ac, locations, nil
@@ -370,20 +370,20 @@ func (*characterAssets) fetchData(characterID int32, s services) (assetcollectio
 	if err != nil {
 		return ac, locations, err
 	}
-	ac = assetcollection.New(assets, el)
+	ac = asset.New(asset.ItemsFromCharacterAssets(assets), el)
 	locations = makeLocationTreeData(ac, characterID)
 	return ac, locations, nil
 }
 
-func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32) iwidget.TreeData[locationNode] {
-	itemCountSumExcludingShipContainer := func(s []*assetcollection.AssetNode) int {
+func makeLocationTreeData(ac asset.Collection, characterID int32) iwidget.TreeData[locationNode] {
+	itemCountSumExcludingShipContainer := func(s []*asset.ItemNode) int {
 		var n int
 		for _, an := range s {
 			n += an.ItemCountFiltered()
 		}
 		return n
 	}
-	itemCountSumAny := func(s []*assetcollection.AssetNode) int {
+	itemCountSumAny := func(s []*asset.ItemNode) int {
 		var n int
 		for _, an := range s {
 			n += an.ItemCountAny()
@@ -392,7 +392,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 	}
 	var tree iwidget.TreeData[locationNode]
 	locationNodes := ac.Locations()
-	slices.SortFunc(locationNodes, func(x *assetcollection.LocationNode, y *assetcollection.LocationNode) int {
+	slices.SortFunc(locationNodes, func(x *asset.LocationNode, y *asset.LocationNode) int {
 		return cmp.Compare(x.Location.DisplayName(), y.Location.DisplayName())
 	})
 	for _, ln := range locationNodes {
@@ -412,20 +412,20 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 		}
 		locationUID := tree.MustAdd(iwidget.TreeRootID, location)
 		topAssets := ln.Children()
-		slices.SortFunc(topAssets, func(a, b *assetcollection.AssetNode) int {
-			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
+		slices.SortFunc(topAssets, func(a, b *asset.ItemNode) int {
+			return cmp.Compare(a.MustCharacterAsset().DisplayName(), b.MustCharacterAsset().DisplayName())
 		})
-		ships := make([]*assetcollection.AssetNode, 0)
-		itemContainers := make([]*assetcollection.AssetNode, 0)
-		itemsOther := make([]*assetcollection.AssetNode, 0)
-		assetSafety := make([]*assetcollection.AssetNode, 0)
-		inSpace := make([]*assetcollection.AssetNode, 0)
+		ships := make([]*asset.ItemNode, 0)
+		itemContainers := make([]*asset.ItemNode, 0)
+		itemsOther := make([]*asset.ItemNode, 0)
+		assetSafety := make([]*asset.ItemNode, 0)
+		inSpace := make([]*asset.ItemNode, 0)
 		for _, an := range topAssets {
-			if an.Asset.IsInAssetSafety() {
+			if an.MustCharacterAsset().IsInAssetSafety() {
 				assetSafety = append(assetSafety, an)
-			} else if an.Asset.IsInHangar() {
-				if an.Asset.IsContainer() {
-					if an.Asset.Type.IsShip() {
+			} else if an.MustCharacterAsset().IsInHangar() {
+				if an.MustCharacterAsset().IsContainer() {
+					if an.MustCharacterAsset().Type.IsShip() {
 						ships = append(ships, an)
 					} else {
 						itemContainers = append(itemContainers, an)
@@ -439,12 +439,12 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 		}
 
 		// ship hangar
-		slices.SortFunc(ships, func(a, b *assetcollection.AssetNode) int {
-			return cmp.Compare(a.Asset.DisplayName2(), b.Asset.DisplayName2())
+		slices.SortFunc(ships, func(a, b *asset.ItemNode) int {
+			return cmp.Compare(a.MustCharacterAsset().DisplayName2(), b.MustCharacterAsset().DisplayName2())
 		})
 		x := make(map[int64]int)
 		for _, n := range ships {
-			x[n.Asset.ItemID] = n.ItemCountFiltered()
+			x[n.MustCharacterAsset().ItemID] = n.ItemCountFiltered()
 		}
 		shipsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
@@ -454,35 +454,35 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			variant:     nodeShipHangar,
 		})
 		for _, an := range ships {
-			ship := an.Asset
+			ship := an.MustCharacterAsset()
 			shipUID := tree.MustAdd(shipsUID, locationNode{
 				characterID: characterID,
-				containerID: an.Asset.ItemID,
+				containerID: an.MustCharacterAsset().ItemID,
 				name:        ship.DisplayName2(),
 				variant:     nodeShip,
 			})
-			cargo := make([]*assetcollection.AssetNode, 0)
-			drones := make([]*assetcollection.AssetNode, 0)
-			fitting := make([]*assetcollection.AssetNode, 0)
-			frigate := make([]*assetcollection.AssetNode, 0)
-			fighters := make([]*assetcollection.AssetNode, 0)
-			fuel := make([]*assetcollection.AssetNode, 0)
-			other := make([]*assetcollection.AssetNode, 0)
+			cargo := make([]*asset.ItemNode, 0)
+			drones := make([]*asset.ItemNode, 0)
+			fitting := make([]*asset.ItemNode, 0)
+			frigate := make([]*asset.ItemNode, 0)
+			fighters := make([]*asset.ItemNode, 0)
+			fuel := make([]*asset.ItemNode, 0)
+			other := make([]*asset.ItemNode, 0)
 			for _, an2 := range an.Children() {
 				switch {
-				case an2.Asset.IsInAnyCargoHold():
+				case an2.MustCharacterAsset().IsInAnyCargoHold():
 					cargo = append(cargo, an2)
-				case an2.Asset.IsInDroneBay():
+				case an2.MustCharacterAsset().IsInDroneBay():
 					drones = append(drones, an2)
-				case an2.Asset.IsInFrigateEscapeBay():
+				case an2.MustCharacterAsset().IsInFrigateEscapeBay():
 					frigate = append(frigate, an2)
-				case an2.Asset.IsInFuelBay():
+				case an2.MustCharacterAsset().IsInFuelBay():
 					fuel = append(fuel, an2)
-				case an2.Asset.IsInFighterBay():
+				case an2.MustCharacterAsset().IsInFighterBay():
 					fighters = append(fighters, an2)
-				case an2.Asset.IsFitted():
+				case an2.MustCharacterAsset().IsFitted():
 					fitting = append(fitting, an2)
-				case an2.Asset.IsShipOther():
+				case an2.MustCharacterAsset().IsShipOther():
 					other = append(other, an2)
 				}
 			}
@@ -516,7 +516,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			if len(drones) > 0 {
 				tree.MustAdd(shipUID, locationNode{
 					characterID: characterID,
-					containerID: an.Asset.ItemID,
+					containerID: an.MustCharacterAsset().ItemID,
 					name:        "Drone Bay",
 					itemCount:   itemCountSumAny(drones),
 					variant:     nodeDroneBay,
@@ -525,7 +525,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			if len(fuel) > 0 {
 				tree.MustAdd(shipUID, locationNode{
 					characterID: characterID,
-					containerID: an.Asset.ItemID,
+					containerID: an.MustCharacterAsset().ItemID,
 					name:        "Fuel Bay",
 					itemCount:   itemCountSumAny(fuel),
 					variant:     nodeFuelBay,
@@ -534,7 +534,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			if len(fighters) > 0 {
 				tree.MustAdd(shipUID, locationNode{
 					characterID: characterID,
-					containerID: an.Asset.ItemID,
+					containerID: an.MustCharacterAsset().ItemID,
 					name:        "Fighter Bay",
 					itemCount:   itemCountSumAny(fighters),
 					variant:     nodeFighterBay,
@@ -543,7 +543,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			if len(other) > 0 {
 				tree.MustAdd(shipUID, locationNode{
 					characterID: characterID,
-					containerID: an.Asset.ItemID,
+					containerID: an.MustCharacterAsset().ItemID,
 					name:        "Other",
 					itemCount:   itemCountSumAny(other),
 					variant:     nodeShipOther,
@@ -562,8 +562,8 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 		for _, an := range itemContainers {
 			tree.MustAdd(itemsUID, locationNode{
 				characterID: characterID,
-				containerID: an.Asset.ItemID,
-				name:        an.Asset.DisplayName(),
+				containerID: an.MustCharacterAsset().ItemID,
+				name:        an.MustCharacterAsset().DisplayName(),
 				itemCount:   an.ItemCountAny() - 1,
 				variant:     nodeContainer,
 			})
@@ -574,7 +574,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 			for _, an := range assetSafety {
 				tree.MustAdd(locationUID, locationNode{
 					characterID: characterID,
-					containerID: an.Asset.ItemID,
+					containerID: an.MustCharacterAsset().ItemID,
 					name:        "Asset Safety",
 					itemCount:   an.ItemCountAny() - 1,
 					variant:     nodeAssetSafety,
@@ -754,7 +754,7 @@ func (a *characterAssets) updateLocationTitle(ln locationNode) {
 	case nodeContainer, nodeShip:
 		a.locationInfoIcon.OnTapped = func() {
 			an, _ := a.assetCollection.Asset(ln.containerID)
-			showAssetDetailWindow(a.u, newAssetRow(an.Asset, a.assetCollection, a.u.scs.CharacterName))
+			showAssetDetailWindow(a.u, newCharacterAssetRow(an.MustCharacterAsset(), a.assetCollection, a.u.scs.CharacterName))
 		}
 		a.locationInfoIcon.Show()
 	default:

@@ -24,6 +24,7 @@ var locationFlagFromDBValue = map[string]app.LocationFlag{
 	"CorpseBay":                           app.FlagCorpseBay,
 	"Deliveries":                          app.FlagDeliveries,
 	"DroneBay":                            app.FlagDroneBay,
+	"ExpeditionHold":                      app.FlagExpeditionHold,
 	"FighterBay":                          app.FlagFighterBay,
 	"FighterTube0":                        app.FlagFighterTube0,
 	"FighterTube1":                        app.FlagFighterTube1,
@@ -316,7 +317,6 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		locationType = app.TypeUnknown
 	}
 	o := &app.CharacterAsset{
-		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
 		Type:            eveTypeFromDBModel(t, g, c),
 		IsBlueprintCopy: ca.IsBlueprintCopy,
@@ -326,7 +326,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		LocationID:      ca.LocationID,
 		LocationType:    locationType,
 		Name:            ca.Name,
-		Quantity:        int32(ca.Quantity),
+		Quantity:        int(ca.Quantity),
 		Price:           optional.FromNullFloat64(p),
 	}
 	return o

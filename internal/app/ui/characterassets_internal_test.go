@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -27,7 +27,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		d := &app.CharacterAsset{ItemID: 4, LocationID: 2}
 		assets := []*app.CharacterAsset{a, b, c, d}
 		locations := []*app.EveLocation{el}
-		ac := assetcollection.New(assets, locations)
+		ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
 		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})
@@ -49,7 +49,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		e := &app.CharacterAsset{ItemID: 5, LocationID: l2.ID}
 		assets := []*app.CharacterAsset{a, b, c, d, e}
 		locations := []*app.EveLocation{l1, l2}
-		ac := assetcollection.New(assets, locations)
+		ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
 		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})

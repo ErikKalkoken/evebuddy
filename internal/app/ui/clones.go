@@ -404,7 +404,6 @@ func (a *clones) updateRoutes() {
 			}
 			a.rows[i].route = m[solarSystem.ID]
 		}
-		a.body.Refresh()
 		a.columnSorter.Set(4, iwidget.SortOff)
 		a.filterRows(4)
 	})

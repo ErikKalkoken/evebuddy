@@ -53,6 +53,8 @@ type contractRow struct {
 	typeName           string
 }
 
+// contracts is a UI element for showing contracts.
+// It either shows all character contracts or the contracts for a corporation.
 type contracts struct {
 	widget.BaseWidget
 
@@ -62,7 +64,7 @@ type contracts struct {
 	bottom         *widget.Label
 	columnSorter   *iwidget.ColumnSorter
 	corporation    atomic.Pointer[app.Corporation]
-	forCorporation bool // run in corporation mode when true, else in overview mode
+	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
 	selectAssignee *kxwidget.FilterChipSelect
@@ -88,7 +90,7 @@ func newContractsForCorporation(u *baseUI) *contracts {
 	return newContracts(u, true)
 }
 
-func newContractsForOverview(u *baseUI) *contracts {
+func newContractsForCharacters(u *baseUI) *contracts {
 	return newContracts(u, false)
 }
 
@@ -130,7 +132,9 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	if !a.u.isMobile {
+	if a.u.isMobile {
+		a.body = a.makeDataList()
+	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
@@ -158,8 +162,6 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 				}
 			},
 		)
-	} else {
-		a.body = a.makeDataList()
 	}
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
@@ -190,13 +192,12 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(
-			func(_ context.Context, c *app.Corporation) {
-				a.corporation.Store(c)
-				a.update()
-			},
-		)
+		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+			a.corporation.Store(c)
+			a.update()
+		})
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return

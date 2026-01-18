@@ -1,11 +1,12 @@
-package assetcollection
+package asset
 
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBaseNode(t *testing.T) {
@@ -21,8 +22,8 @@ func TestBaseNode(t *testing.T) {
 	n1.add(d)
 	t.Run("can return nodes", func(t *testing.T) {
 		got := ln.Children()
-		assert.ElementsMatch(t, []int{1, 2}, xslices.Map(got, func(a *AssetNode) int {
-			return int(a.Asset.ItemID)
+		assert.ElementsMatch(t, []int{1, 2}, xslices.Map(got, func(a *ItemNode) int {
+			return int(a.Item().ID())
 		}))
 	})
 	t.Run("can count size", func(t *testing.T) {

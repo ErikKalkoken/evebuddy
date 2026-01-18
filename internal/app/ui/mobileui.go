@@ -241,7 +241,17 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		items = append(items, corpSelector)
 		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
+
 	var corpNav *iwidget.Navigator
+
+	corpAssetsNav := iwidget.NewListItemWithIcon(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		func() {
+			corpNav.Push(newCorpAppBar("Assets", u.corporationAssets))
+		},
+	)
+
 	corpWalletItems := make([]*iwidget.ListItem, 0)
 	corporationWalletNavs := make(map[app.Division]*iwidget.ListItem)
 	for _, d := range app.Divisions {
@@ -309,22 +319,25 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
+	corpSheetNav := iwidget.NewListItemWithIcon(
+		"Corporation Sheet",
+		theme.NewThemedResource(icons.PortraitSvg),
+		func() {
+			corpNav.Push(
+				newCorpAppBar(
+					"Corporation Sheet",
+					container.NewAppTabs(
+						container.NewTabItem("Corporation", u.corporationSheet),
+						container.NewTabItem("Members", u.corporationMember),
+					),
+				))
+		},
+	)
+
 	corpList := iwidget.NewNavList(
 		slices.Concat([]*iwidget.ListItem{
-			iwidget.NewListItemWithIcon(
-				"Corporation Sheet",
-				theme.NewThemedResource(icons.PortraitSvg),
-				func() {
-					corpNav.Push(
-						newCorpAppBar(
-							"Corporation Sheet",
-							container.NewAppTabs(
-								container.NewTabItem("Corporation", u.corporationSheet),
-								container.NewTabItem("Members", u.corporationMember),
-							),
-						))
-				},
-			),
+			corpSheetNav,
+			corpAssetsNav,
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
@@ -498,15 +511,20 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			sections.Clear()
 		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWalletNav.IsDisabled = false
+			if sections.Contains(app.SectionCorporationAssets) {
+				corpAssetsNav.IsDisabled = false
 			} else {
-				corpWalletNav.IsDisabled = true
+				corpAssetsNav.IsDisabled = true
 			}
 			if sections.Contains(app.SectionCorporationIndustryJobs) {
 				corpIndustryNav.IsDisabled = false
 			} else {
 				corpIndustryNav.IsDisabled = true
+			}
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWalletNav.IsDisabled = false
+			} else {
+				corpWalletNav.IsDisabled = true
 			}
 			corpList.Refresh()
 		})
