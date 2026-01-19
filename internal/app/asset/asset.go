@@ -2,6 +2,7 @@
 package asset
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 
@@ -9,6 +10,7 @@ import (
 )
 
 type Item interface {
+	DisplayName2() string
 	ID() int64
 	LocationID_() int64
 	Quantity_() int
@@ -34,8 +36,8 @@ func ItemsFromCorporationAssets(assets []*app.CorporationAsset) []Item {
 // Collection is a collection of asset trees.
 type Collection struct {
 	rootLocations map[int64]*Node // lookup for root location of items
-	itemNodes     map[int64]*Node // item trees
-	locationNodes map[int64]*Node // location trees
+	itemNodes     map[int64]*Node // Trees of asset items
+	locationNodes map[int64]*Node // Trees of asset locations
 }
 
 // New returns a new Collection.
@@ -123,8 +125,8 @@ func (ac Collection) RootLocationNode(itemID int64) (*Node, bool) {
 	return ln, true
 }
 
-// ItemNode returns the node for an item and reports whether it was found.
-func (ac Collection) ItemNode(itemID int64) (*Node, bool) {
+// Node returns the node for an ID and reports whether it was found.
+func (ac Collection) Node(itemID int64) (*Node, bool) {
 	an, found := ac.itemNodes[itemID]
 	if !found {
 		return nil, false
@@ -146,52 +148,13 @@ func (ac Collection) LocationNodes() []*Node {
 	return slices.Collect(maps.Values(ac.locationNodes))
 }
 
-// LocationNode returns the node for a location and reports whether it was found.
-func (ac Collection) LocationNode(locationID int64) (*Node, bool) {
-	ln, found := ac.locationNodes[locationID]
-	if !found {
-		return nil, false
-	}
-	return ln, true
-}
-
-// Node represents a node in an asset tree. A node can a location or an item.
+// Node is a node in an asset tree.
+// A node can represent an asset item or a location in Eve.
 type Node struct {
+	children []*Node
 	item     Item
 	location *app.EveLocation
-	children []*Node
-}
-
-// ID returns the ID of the node. This is the item ID or the location ID.
-func (n *Node) ID() int64 {
-	if n.location != nil {
-		return n.location.ID
-	}
-	return n.item.ID()
-}
-
-func (n *Node) Children() []*Node {
-	return slices.Clone(n.children)
-}
-
-func (n *Node) Item() Item {
-	return n.item
-}
-
-func (n *Node) Location() *app.EveLocation {
-	return n.location
-}
-
-func (n *Node) add(it Item) *Node {
-	n2 := &Node{item: it}
-	n.children = append(n.children, n2)
-	return n2
-}
-
-// MustCharacterAsset returns the current item as character asset.
-// Will panic if the item has a different type.
-func (n *Node) MustCharacterAsset() *app.CharacterAsset {
-	return n.item.(*app.CharacterAsset)
+	parent   *Node
 }
 
 // All returns all nodes of a sub tree (order is undefined)
@@ -202,6 +165,22 @@ func (n *Node) All() []*Node {
 		s = slices.Concat(s, c.All())
 	}
 	return s
+}
+
+func (n *Node) Children() []*Node {
+	return slices.Clone(n.children)
+}
+
+// ID returns the ID of the node. This is the item ID or the location ID.
+func (n *Node) ID() int64 {
+	if n.location != nil {
+		return n.location.ID
+	}
+	return n.item.ID()
+}
+
+func (n *Node) Item() Item {
+	return n.item
 }
 
 // ItemCountAny returns the consolidated count of any items in this sub tree.
@@ -231,4 +210,60 @@ func (n *Node) ItemCountFiltered() int {
 		q += c.ItemCountFiltered()
 	}
 	return q
+}
+
+func (n *Node) Location() *app.EveLocation {
+	return n.location
+}
+
+// MustCharacterAsset returns the current item as character asset.
+// Will panic if the item has a different type.
+func (n *Node) MustCharacterAsset() *app.CharacterAsset {
+	x, ok := n.CharacterAsset()
+	if !ok {
+		panic(fmt.Sprintf("Not a character asset: %d", n.ID()))
+	}
+	return x
+}
+
+func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
+	if n.item == nil {
+		return nil, false
+	}
+	x, ok := n.item.(*app.CharacterAsset)
+	if !ok {
+		return nil, false
+	}
+	return x, true
+}
+
+func (n *Node) DisplayName() string {
+	if n.location != nil {
+		return n.location.DisplayName()
+	}
+	if n.item != nil {
+		return n.item.DisplayName2()
+	}
+	return "?"
+}
+
+func (n *Node) Parent() *Node {
+	return n.parent
+}
+
+func (n *Node) Path() []*Node {
+	nodes := make([]*Node, 0)
+	current := n
+	for current.parent != nil {
+		nodes = append(nodes, current.parent)
+		current = current.parent
+	}
+	slices.Reverse(nodes)
+	return nodes
+}
+
+func (n *Node) add(it Item) *Node {
+	n2 := &Node{item: it, parent: n}
+	n.children = append(n.children, n2)
+	return n2
 }

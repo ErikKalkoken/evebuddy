@@ -753,8 +753,15 @@ func (a *characterAssets) updateLocationTitle(ln locationNode) {
 		a.locationInfoIcon.Show()
 	case nodeContainer, nodeShip:
 		a.locationInfoIcon.OnTapped = func() {
-			an, _ := a.assetCollection.ItemNode(ln.containerID)
-			showAssetDetailWindow(a.u, newCharacterAssetRow(an.MustCharacterAsset(), a.assetCollection, a.u.scs.CharacterName))
+			n, ok := a.assetCollection.Node(ln.containerID)
+			if !ok {
+				return
+			}
+			ca, ok := n.CharacterAsset()
+			if !ok {
+				return
+			}
+			showAssetDetailWindow(a.u, newCharacterAssetRow(ca, a.assetCollection, a.u.scs.CharacterName))
 		}
 		a.locationInfoIcon.Show()
 	default:

@@ -56,6 +56,7 @@ type assetRow struct {
 	typeName        string
 	typeNameDisplay string
 	variant         app.InventoryTypeVariant
+	locationPath    []string
 }
 
 func newCharacterAssetRow(ca *app.CharacterAsset, assetCollection asset.Collection, characterName func(int32) string) assetRow {
@@ -104,12 +105,21 @@ func newCorporationAssetRow(ca *app.CorporationAsset, assetCollection asset.Coll
 	return r
 }
 
-func (r *assetRow) setLocation(assetCollection asset.Collection, itemID int64) {
-	ln, ok := assetCollection.RootLocationNode(itemID)
+func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
+	ln, ok := ac.RootLocationNode(itemID)
 	if ok {
 		r.location = ln.Location().ToShort()
 		r.locationName = ln.Location().DisplayName()
 		r.locationDisplay = ln.Location().DisplayRichText()
+		n, ok := ac.Node(itemID)
+		if ok {
+			p := n.Path()
+			if len(p) > 0 {
+				r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
+					return x.DisplayName()
+				})
+			}
+		}
 		if ln.Location().SolarSystem != nil {
 			r.regionName = ln.Location().SolarSystem.Constellation.Region.Name
 			r.regionID = ln.Location().SolarSystem.Constellation.Region.ID
@@ -702,6 +712,16 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		location = widget.NewLabel("?")
 		region = widget.NewLabel("?")
 	}
+
+	var p string
+	if len(r.locationPath) > 0 {
+		p = strings.Join(r.locationPath, " / ")
+	} else {
+		p = "-"
+	}
+	path := widget.NewLabel(p)
+	path.Wrapping = fyne.TextWrapWord
+
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
@@ -712,6 +732,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
 		widget.NewFormItem("Category", widget.NewLabel(r.categoryName)),
 		widget.NewFormItem("Location", location),
+		widget.NewFormItem("Path", path),
 		widget.NewFormItem("Region", region),
 		widget.NewFormItem(
 			"Price",
