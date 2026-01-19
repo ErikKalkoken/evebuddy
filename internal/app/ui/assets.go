@@ -105,14 +105,14 @@ func newCorporationAssetRow(ca *app.CorporationAsset, assetCollection asset.Coll
 }
 
 func (r *assetRow) setLocation(assetCollection asset.Collection, itemID int64) {
-	ln, ok := assetCollection.AssetLocation(itemID)
+	ln, ok := assetCollection.RootLocationNode(itemID)
 	if ok {
-		r.location = ln.Location.ToShort()
-		r.locationName = ln.Location.DisplayName()
-		r.locationDisplay = ln.Location.DisplayRichText()
-		if ln.Location.SolarSystem != nil {
-			r.regionName = ln.Location.SolarSystem.Constellation.Region.Name
-			r.regionID = ln.Location.SolarSystem.Constellation.Region.ID
+		r.location = ln.Location().ToShort()
+		r.locationName = ln.Location().DisplayName()
+		r.locationDisplay = ln.Location().DisplayRichText()
+		if ln.Location().SolarSystem != nil {
+			r.regionName = ln.Location().SolarSystem.Constellation.Region.Name
+			r.regionID = ln.Location().SolarSystem.Constellation.Region.ID
 		}
 	} else {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")

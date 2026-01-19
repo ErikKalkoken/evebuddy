@@ -58,10 +58,10 @@ func TestAssetCollection(t *testing.T) {
 	locations := []*app.EveLocation{loc1, loc2}
 	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
 	t.Run("can create tree from character assets", func(t *testing.T) {
-		locations := ac.Locations()
+		locations := ac.LocationNodes()
 		assert.Len(t, locations, 2)
 		for _, l := range locations {
-			if l.Location.ID == locationID1 {
+			if l.ID() == locationID1 {
 				nodes := l.Children()
 				assert.Len(t, nodes, 2)
 				for _, n := range nodes {
@@ -79,7 +79,7 @@ func TestAssetCollection(t *testing.T) {
 					}
 				}
 			}
-			if l.Location.ID == locationID2 {
+			if l.ID() == locationID2 {
 				nodes := l.Children()
 				assert.Len(t, nodes, 1)
 				sub := nodes[0]
@@ -91,12 +91,12 @@ func TestAssetCollection(t *testing.T) {
 		}
 	})
 	t.Run("can return parent location for assets", func(t *testing.T) {
-		ln1, _ := ac.Location(loc1.ID)
-		ln2, _ := ac.Location(loc2.ID)
+		ln1, _ := ac.LocationNode(loc1.ID)
+		ln2, _ := ac.LocationNode(loc2.ID)
 		cases := []struct {
 			itemID   int64
 			found    bool
-			location *asset.LocationNode
+			location *asset.Node
 		}{
 			{a1.ItemID, true, ln1},
 			{a2.ItemID, true, ln1},
@@ -108,7 +108,7 @@ func TestAssetCollection(t *testing.T) {
 			{666, false, nil},
 		}
 		for _, tc := range cases {
-			got, found := ac.AssetLocation(tc.itemID)
+			got, found := ac.RootLocationNode(tc.itemID)
 			if assert.Equal(t, tc.found, found) {
 				assert.Equal(t, tc.location, got)
 			}
@@ -129,7 +129,7 @@ func TestAssetCollection(t *testing.T) {
 			{666, false},
 		}
 		for _, tc := range cases {
-			got, found := ac.Asset(tc.itemID)
+			got, found := ac.ItemNode(tc.itemID)
 			if tc.found {
 				assert.True(t, found)
 				assert.Equal(t, tc.itemID, got.Item().ID())
@@ -156,9 +156,9 @@ func TestAssetCollection_Walk(t *testing.T) {
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
 	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
 	t.Run("can walk branch", func(t *testing.T) {
-		an, _ := ac.Asset(a1.ItemID)
+		an, _ := ac.ItemNode(a1.ItemID)
 		s := an.All()
-		got := slices.Collect(xiter.MapSlice(s, func(x *asset.ItemNode) int64 {
+		got := slices.Collect(xiter.MapSlice(s, func(x *asset.Node) int64 {
 			return x.Item().ID()
 		}))
 		want := slices.Collect(xiter.MapSlice(assets, func(x *app.CharacterAsset) int64 {
@@ -170,13 +170,13 @@ func TestAssetCollection_Walk(t *testing.T) {
 
 func TestAssetCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
 	var ac asset.Collection
-	_, x1 := ac.AssetLocation(99)
+	_, x1 := ac.RootLocationNode(99)
 	assert.False(t, x1)
-	_, x2 := ac.Asset(99)
+	_, x2 := ac.ItemNode(99)
 	assert.False(t, x2)
-	_, x3 := ac.Location(99)
+	_, x3 := ac.LocationNode(99)
 	assert.False(t, x3)
-	x4 := ac.Locations()
+	x4 := ac.LocationNodes()
 	assert.Empty(t, x4)
 }
 
@@ -211,17 +211,17 @@ func TestAssetCollection_ItemCount(t *testing.T) {
 	locations := []*app.EveLocation{loc1}
 	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
 	t.Run("can calculate item count for a location", func(t *testing.T) {
-		ln, found := ac.Location(locationID)
+		n, found := ac.LocationNode(locationID)
 		if !found {
 			t.Fatal("could not find location")
 		}
-		assert.Equal(t, 6, ln.ItemCountFiltered())
+		assert.Equal(t, 6, n.ItemCountFiltered())
 	})
 	t.Run("can calculate item count for an asset", func(t *testing.T) {
-		an, found := ac.Asset(a1.ItemID)
+		n, found := ac.ItemNode(a1.ItemID)
 		if !assert.True(t, found) {
 			t.Fatal()
 		}
-		assert.Equal(t, 5, an.ItemCountFiltered())
+		assert.Equal(t, 5, n.ItemCountFiltered())
 	})
 }
