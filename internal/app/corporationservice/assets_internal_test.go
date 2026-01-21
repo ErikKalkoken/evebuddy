@@ -8,6 +8,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -31,7 +32,14 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
-		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryShip,
+			Name: "Ship",
+		})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: category.ID,
+		})
+		ship := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516, GroupID: group.ID})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
@@ -57,7 +65,8 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{"1"}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{"1"}}),
+		)
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
@@ -70,36 +79,33 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"item_id": 1000000016836,
 					"name":    "None",
 				},
-			}))
+			}),
+		)
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationAssets,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, 2, ids.Size())
-				x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
-				if assert.NoError(t, err) {
-					assert.Equal(t, eveType.ID, x.Type.ID)
-					assert.Equal(t, eveType.Name, x.Type.Name)
-					assert.True(t, x.IsBlueprintCopy)
-					assert.True(t, x.IsSingleton)
-					assert.Equal(t, app.FlagHangar, x.LocationFlag)
-					assert.Equal(t, location.ID, x.LocationID)
-					assert.Equal(t, app.TypeStation, x.LocationType)
-					assert.Equal(t, "Awesome Name", x.Name)
-					assert.EqualValues(t, 1, x.Quantity)
-				}
-				x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
-				if assert.NoError(t, err) {
-					assert.Equal(t, "", x.Name)
-				}
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, ids.Size())
+		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
+		require.NoError(t, err)
+		assert.Equal(t, ship.ID, x.Type.ID)
+		assert.Equal(t, ship.Name, x.Type.Name)
+		assert.True(t, x.IsBlueprintCopy)
+		assert.True(t, x.IsSingleton)
+		assert.Equal(t, app.FlagHangar, x.LocationFlag)
+		assert.Equal(t, location.ID, x.LocationID)
+		assert.Equal(t, app.TypeStation, x.LocationType)
+		assert.Equal(t, "Awesome Name", x.Name)
+		assert.EqualValues(t, 1, x.Quantity)
+		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
+		require.NoError(t, err)
+		assert.Equal(t, "", x.Name)
 	})
 	t.Run("should remove obsolete items", func(t *testing.T) {
 		// given
@@ -138,7 +144,8 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{"1"}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{"1"}}),
+		)
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
@@ -151,20 +158,19 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"item_id": 1000000016836,
 					"name":    "None",
 				},
-			}))
+			}),
+		)
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationAssets,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.EqualSet(t, set.Of[int64](1000000016835, 1000000016836), ids)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualSet(t, set.Of[int64](1000000016835, 1000000016836), ids)
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
@@ -174,7 +180,14 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
-		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryShip,
+			Name: "Ship",
+		})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: category.ID,
+		})
+		ship := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516, GroupID: group.ID})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		pages := "2"
 		httpmock.RegisterResponder(
@@ -191,7 +204,8 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/?page=2", c.ID),
@@ -219,35 +233,32 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 					"item_id": 1000000016836,
 					"name":    "None",
 				},
-			}))
+			}),
+		)
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationAssets,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, 2, ids.Size())
-				x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
-				if assert.NoError(t, err) {
-					assert.Equal(t, eveType.ID, x.Type.ID)
-					assert.Equal(t, eveType.Name, x.Type.Name)
-					assert.True(t, x.IsBlueprintCopy)
-					assert.True(t, x.IsSingleton)
-					assert.Equal(t, app.FlagHangar, x.LocationFlag)
-					assert.Equal(t, location.ID, x.LocationID)
-					assert.Equal(t, app.TypeStation, x.LocationType)
-					assert.Equal(t, "Awesome Name", x.Name)
-					assert.EqualValues(t, 1, x.Quantity)
-				}
-				x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
-				if assert.NoError(t, err) {
-					assert.Equal(t, "", x.Name)
-				}
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, ids.Size())
+		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
+		require.NoError(t, err)
+		assert.Equal(t, ship.ID, x.Type.ID)
+		assert.Equal(t, ship.Name, x.Type.Name)
+		assert.True(t, x.IsBlueprintCopy)
+		assert.True(t, x.IsSingleton)
+		assert.Equal(t, app.FlagHangar, x.LocationFlag)
+		assert.Equal(t, location.ID, x.LocationID)
+		assert.Equal(t, app.TypeStation, x.LocationType)
+		assert.Equal(t, "Awesome Name", x.Name)
+		assert.EqualValues(t, 1, x.Quantity)
+		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
+		require.NoError(t, err)
+		assert.Equal(t, "", x.Name)
 	})
 }

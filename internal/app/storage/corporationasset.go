@@ -178,8 +178,11 @@ type CreateCorporationAssetParams struct {
 }
 
 func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorporationAssetParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCorporationAsset: %+v, %w", arg, err)
+	}
 	if arg.CorporationID == 0 || arg.EveTypeID == 0 || arg.ItemID == 0 {
-		return fmt.Errorf("CreateCorporationAsset: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.CreateCorporationAsset(ctx, queries.CreateCorporationAssetParams{
 		CorporationID:   int64(arg.CorporationID),
@@ -193,7 +196,7 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 		Name:            arg.Name,
 		Quantity:        int64(arg.Quantity),
 	}); err != nil {
-		return fmt.Errorf("create corporation asset %+v, %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -289,13 +292,15 @@ type UpdateCorporationAssetParams struct {
 	LocationFlag  app.LocationFlag
 	LocationID    int64
 	LocationType  app.LocationType
-	Name          string
 	Quantity      int32
 }
 
 func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporationAssetParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
+	}
 	if arg.CorporationID == 0 || arg.ItemID == 0 {
-		return fmt.Errorf("IDs must not be zero %+v", arg)
+		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
 		CorporationID: int64(arg.CorporationID),
@@ -303,10 +308,32 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 		LocationFlag:  locationFlagToDBValue2[arg.LocationFlag],
 		LocationID:    arg.LocationID,
 		LocationType:  locationTypeToDBValue2[arg.LocationType],
-		Name:          arg.Name,
 		Quantity:      int64(arg.Quantity),
 	}); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+type UpdateCorporationAssetNameParams struct {
+	CorporationID int32
+	ItemID        int64
+	Name          string
+}
+
+func (st *Storage) UpdateCorporationAssetName(ctx context.Context, arg UpdateCorporationAssetNameParams) error {
+	wrapErr := func(err error) error {
 		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
+	}
+	if arg.CorporationID == 0 || arg.ItemID == 0 {
+		wrapErr(app.ErrInvalid)
+	}
+	if err := st.qRW.UpdateCorporationAssetName(ctx, queries.UpdateCorporationAssetNameParams{
+		CorporationID: int64(arg.CorporationID),
+		ItemID:        arg.ItemID,
+		Name:          arg.Name,
+	}); err != nil {
+		wrapErr(err)
 	}
 	return nil
 }

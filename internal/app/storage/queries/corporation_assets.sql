@@ -131,7 +131,13 @@ SET
     location_flag = ?,
     location_id = ?,
     location_type = ?,
-    name = ?,
     quantity = ?
+WHERE corporation_id = ?
+AND item_id = ?;
+
+-- name: UpdateCorporationAssetName :exec
+UPDATE corporation_assets
+SET
+    name = ?
 WHERE corporation_id = ?
 AND item_id = ?;

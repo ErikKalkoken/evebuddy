@@ -642,7 +642,6 @@ SET
     location_flag = ?,
     location_id = ?,
     location_type = ?,
-    name = ?,
     quantity = ?
 WHERE corporation_id = ?
 AND item_id = ?
@@ -652,7 +651,6 @@ type UpdateCorporationAssetParams struct {
 	LocationFlag  string
 	LocationID    int64
 	LocationType  string
-	Name          string
 	Quantity      int64
 	CorporationID int64
 	ItemID        int64
@@ -663,10 +661,28 @@ func (q *Queries) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporat
 		arg.LocationFlag,
 		arg.LocationID,
 		arg.LocationType,
-		arg.Name,
 		arg.Quantity,
 		arg.CorporationID,
 		arg.ItemID,
 	)
+	return err
+}
+
+const updateCorporationAssetName = `-- name: UpdateCorporationAssetName :exec
+UPDATE corporation_assets
+SET
+    name = ?
+WHERE corporation_id = ?
+AND item_id = ?
+`
+
+type UpdateCorporationAssetNameParams struct {
+	Name          string
+	CorporationID int64
+	ItemID        int64
+}
+
+func (q *Queries) UpdateCorporationAssetName(ctx context.Context, arg UpdateCorporationAssetNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateCorporationAssetName, arg.Name, arg.CorporationID, arg.ItemID)
 	return err
 }

@@ -187,6 +187,10 @@ func (ca CharacterAsset) LocationID_() int64 {
 	return ca.LocationID
 }
 
+func (ca CharacterAsset) CanHaveName() bool {
+	return assetCanHaveName(ca.IsSingleton, ca.Type.Group.Category.ID, ca.Type.Group.ID)
+}
+
 func (ca CharacterAsset) DisplayName() string {
 	if ca.Name != "" {
 		return ca.Name
@@ -228,8 +232,8 @@ func (ca CharacterAsset) IsContainer() bool {
 		return true
 	}
 	switch ca.Type.Group.ID {
-	case EveGroupAuditLogFreightContainer,
-		EveGroupAuditLogSecureCargoContainer,
+	case EveGroupFreightContainer,
+		EveGroupAuditLogSecureContainer,
 		EveGroupCargoContainer,
 		EveGroupSecureCargoContainer:
 		return true
@@ -475,8 +479,8 @@ func (ca CorporationAsset) IsContainer() bool {
 		return true
 	}
 	switch ca.Type.Group.ID {
-	case EveGroupAuditLogFreightContainer,
-		EveGroupAuditLogSecureCargoContainer,
+	case EveGroupFreightContainer,
+		EveGroupAuditLogSecureContainer,
 		EveGroupCargoContainer,
 		EveGroupSecureCargoContainer:
 		return true
@@ -484,8 +488,31 @@ func (ca CorporationAsset) IsContainer() bool {
 	return false
 }
 
-func (ca CorporationAsset) LocationCategory() LocationFlag {
-	return FlagUndefined
+func (ca CorporationAsset) CanHaveName() bool {
+	return assetCanHaveName(ca.IsSingleton, ca.Type.Group.Category.ID, ca.Type.Group.ID)
+}
+
+func assetCanHaveName(isSingleton bool, categoryID, groupID int32) bool {
+	if !isSingleton {
+		return false
+	}
+	switch categoryID {
+	case
+		EveCategoryDeployable,
+		EveCategoryShip,
+		EveCategoryStructure:
+		return true
+	}
+	switch groupID {
+	case
+		EveGroupAuditLogSecureContainer,
+		EveGroupBiomass,
+		EveGroupCargoContainer,
+		EveGroupFreightContainer,
+		EveGroupSecureCargoContainer:
+		return true
+	}
+	return false
 }
 
 func (ca CorporationAsset) IsInAssetSafety() bool {

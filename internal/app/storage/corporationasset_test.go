@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -40,50 +41,61 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		err := st.CreateCorporationAsset(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCorporationAsset(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, eveType.ID, x.Type.ID)
-				assert.Equal(t, eveType.Name, x.Type.Name)
-				assert.False(t, x.IsBlueprintCopy)
-				assert.True(t, x.IsSingleton)
-				assert.Equal(t, int64(42), x.ItemID)
-				assert.Equal(t, app.FlagHangar, x.LocationFlag)
-				assert.Equal(t, int64(99), x.LocationID)
-				assert.Equal(t, app.TypeOther, x.LocationType)
-				assert.Equal(t, "Alpha", x.Name)
-				assert.EqualValues(t, 7, x.Quantity)
-				assert.Equal(t, 1.24, x.Price.ValueOrZero())
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCorporationAsset(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.Equal(t, eveType.ID, x.Type.ID)
+		assert.Equal(t, eveType.Name, x.Type.Name)
+		assert.False(t, x.IsBlueprintCopy)
+		assert.True(t, x.IsSingleton)
+		assert.Equal(t, int64(42), x.ItemID)
+		assert.Equal(t, app.FlagHangar, x.LocationFlag)
+		assert.Equal(t, int64(99), x.LocationID)
+		assert.Equal(t, app.TypeOther, x.LocationType)
+		assert.Equal(t, "Alpha", x.Name)
+		assert.EqualValues(t, 7, x.Quantity)
+		assert.Equal(t, 1.24, x.Price.ValueOrZero())
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		x1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
-		arg := storage.UpdateCorporationAssetParams{
+		// when
+		err := st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
 			CorporationID: c.ID,
 			ItemID:        x1.ItemID,
 			LocationFlag:  app.FlagHangar,
 			LocationID:    99,
 			LocationType:  app.TypeOther,
-			Name:          "Alpha",
 			Quantity:      7,
-		}
-		// when
-		err := st.UpdateCorporationAsset(ctx, arg)
+		})
 		// then
-		if assert.NoError(t, err) {
-			x2, err := st.GetCorporationAsset(ctx, c.ID, x1.ItemID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, app.FlagHangar, x2.LocationFlag)
-				assert.Equal(t, int64(99), x2.LocationID)
-				assert.Equal(t, app.TypeOther, x2.LocationType)
-				assert.Equal(t, "Alpha", x2.Name)
-				assert.EqualValues(t, 7, x2.Quantity)
-			}
-		}
+		require.NoError(t, err)
+		x2, err := st.GetCorporationAsset(ctx, c.ID, x1.ItemID)
+		require.NoError(t, err)
+		assert.Equal(t, app.FlagHangar, x2.LocationFlag)
+		assert.Equal(t, int64(99), x2.LocationID)
+		assert.Equal(t, app.TypeOther, x2.LocationType)
+		assert.Equal(t, x1.Name, x2.Name)
+		assert.EqualValues(t, 7, x2.Quantity)
+	})
+	t.Run("can update name", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		x1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		// when
+		err := st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
+			CorporationID: c.ID,
+			ItemID:        x1.ItemID,
+			Name:          "Alpha",
+		})
+		// then
+		require.NoError(t, err)
+		x2, err := st.GetCorporationAsset(ctx, c.ID, x1.ItemID)
+		require.NoError(t, err)
+		assert.Equal(t, "Alpha", x2.Name)
 	})
 	t.Run("can list assets in ship hangar", func(t *testing.T) {
 		// given
@@ -108,10 +120,9 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationAssetsInShipHangar(ctx, c.ID, location.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 1)
-			assert.Equal(t, x1.Type, oo[0].Type)
-		}
+		require.NoError(t, err)
+		assert.Len(t, oo, 1)
+		assert.Equal(t, x1.Type, oo[0].Type)
 	})
 	t.Run("can delete assets", func(t *testing.T) {
 		// given
@@ -122,13 +133,11 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		err := st.DeleteCorporationAssets(ctx, c.ID, set.Of(x2.ItemID))
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCorporationAssetIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				want := set.Of(x1.ItemID)
-				xassert.EqualSet(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCorporationAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(x1.ItemID)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list assets for corporation", func(t *testing.T) {
 		// given
@@ -139,10 +148,9 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		got, err := st.ListCorporationAssets(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := []*app.CorporationAsset{ca1, ca2}
-			assert.ElementsMatch(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CorporationAsset{ca1, ca2}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can list assets for corporation in item hangar", func(t *testing.T) {
 		// given
@@ -162,10 +170,9 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		got, err := st.ListCorporationAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
 		// then
-		if assert.NoError(t, err) {
-			want := []*app.CorporationAsset{ca1}
-			assert.ElementsMatch(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CorporationAsset{ca1}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can list assets for corporation in location", func(t *testing.T) {
 		// given
@@ -176,10 +183,9 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		got, err := st.ListCorporationAssetsInLocation(ctx, c.ID, ca1.LocationID)
 		// then
-		if assert.NoError(t, err) {
-			want := []*app.CorporationAsset{ca1}
-			assert.ElementsMatch(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CorporationAsset{ca1}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can list all assets", func(t *testing.T) {
 		// given
@@ -189,10 +195,9 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		got, err := st.ListAllCorporationAssets(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := []*app.CorporationAsset{ca1, ca2}
-			assert.ElementsMatch(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CorporationAsset{ca1, ca2}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can calculate total asset value for corporation", func(t *testing.T) {
 		// given
@@ -217,9 +222,8 @@ func TestCorporationAsset(t *testing.T) {
 		// when
 		got, err := st.CalculateCorporationAssetTotalValue(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.InDelta(t, 500.5, got, 0.1)
-		}
+		require.NoError(t, err)
+		assert.InDelta(t, 500.5, got, 0.1)
 	})
 	t.Run("returns not found error", func(t *testing.T) {
 		// given

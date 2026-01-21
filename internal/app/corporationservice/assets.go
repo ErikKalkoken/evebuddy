@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 
@@ -37,11 +38,6 @@ func (s *CorporationService) ListAllAssets(ctx context.Context) ([]*app.Corporat
 	return s.st.ListAllCorporationAssets(ctx)
 }
 
-type esiCorporationAssetPlus struct {
-	esi.GetCorporationsCorporationIdAssets200Ok
-	Name string
-}
-
 func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCorporationAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
@@ -61,24 +57,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				return false, err
 			}
 			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.CorporationID)
-			ids := make([]int64, len(assets))
-			for i, a := range assets {
-				ids[i] = a.ItemId
-			}
-			names, err := s.fetchAssetNamesESI(ctx, arg.CorporationID, ids) // FIXME: only try to fetch valid ids
-			if err != nil {
-				return false, err
-			}
-			slog.Debug("Received corporation asset names from ESI", "count", len(names), "corporationID", arg.CorporationID)
-			assetsPlus := make([]esiCorporationAssetPlus, len(assets))
-			for i, a := range assets {
-				o := esiCorporationAssetPlus{
-					GetCorporationsCorporationIdAssets200Ok: a,
-					Name:                                    names[a.ItemId],
-				}
-				assetsPlus[i] = o
-			}
-			return assetsPlus, nil
+			return assets, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			locationFlagFromESIValue := map[string]app.LocationFlag{
@@ -215,7 +194,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				"item":         app.TypeItem,
 				"other":        app.TypeOther,
 			}
-			assets := data.([]esiCorporationAssetPlus)
+			assets := data.([]esi.GetCorporationsCorporationIdAssets200Ok)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
 				incomingIDs.Add(ca.ItemId)
@@ -261,7 +240,6 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 						LocationFlag:  locationFlag,
 						LocationID:    a.LocationId,
 						LocationType:  locationType,
-						Name:          a.Name,
 						Quantity:      a.Quantity,
 					}
 					if err := s.st.UpdateCorporationAsset(ctx, arg); err != nil {
@@ -278,7 +256,6 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 						LocationFlag:    locationFlag,
 						LocationID:      a.LocationId,
 						LocationType:    locationType,
-						Name:            a.Name,
 						Quantity:        a.Quantity,
 					}
 					if err := s.st.CreateCorporationAsset(ctx, arg); err != nil {
@@ -288,11 +265,46 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				}
 			}
 			slog.Info("Stored corporation assets", "corporationID", arg.CorporationID, "created", created, "updated", updated)
+
+			// remove obsolete assets
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCorporationAssets(ctx, arg.CorporationID, ids); err != nil {
 					return err
 				}
 				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.CorporationID, "count", ids.Size())
+			}
+
+			// update names
+			assets2, err := s.st.ListCorporationAssets(ctx, arg.CorporationID)
+			if err != nil {
+				return err
+			}
+			names := make(map[int64]string)
+			for _, a := range assets2 {
+				if a.CanHaveName() {
+					names[a.ItemID] = a.Name
+				}
+			}
+			names2, err := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
+			if err != nil {
+				return err
+			}
+			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
+			var changed set.Set[int64]
+			for id, name := range names {
+				if names2[id] != name {
+					changed.Add(id)
+				}
+			}
+			for id := range changed.All() {
+				err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
+					CorporationID: arg.CorporationID,
+					ItemID:        id,
+					Name:          names2[id],
+				})
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -302,15 +314,17 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int32, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
 	results := make([][]esi.PostCorporationsCorporationIdAssetsNames200Ok, 0)
-	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
-	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-		names, _, err := s.esiClient.ESI.AssetsApi.PostCorporationsCorporationIdAssetsNames(ctx, corporationID, chunk, nil)
-		if err != nil {
-			// We can live temporarily without asset names and will try again to fetch them next time
-			// If some of the requests have succeeded we will use those names
-			slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
+	if len(ids) > 0 {
+		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
+		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
+			names, _, err := s.esiClient.ESI.AssetsApi.PostCorporationsCorporationIdAssetsNames(ctx, corporationID, chunk, nil)
+			if err != nil {
+				// We can live temporarily without asset names and will try again to fetch them next time
+				// If some of the requests have succeeded we will use those names
+				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
+			}
+			results = append(results, names)
 		}
-		results = append(results, names)
 	}
 	m := make(map[int64]string)
 	for _, names := range results {
