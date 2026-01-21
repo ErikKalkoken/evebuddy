@@ -17,31 +17,32 @@ type Item interface {
 	QuantityFiltered() (int, bool)
 }
 
-func ItemsFromCharacterAssets(assets []*app.CharacterAsset) []Item {
-	items := make([]Item, 0)
-	for _, ca := range assets {
-		items = append(items, ca)
-	}
-	return items
-}
-
-func ItemsFromCorporationAssets(assets []*app.CorporationAsset) []Item {
-	items := make([]Item, 0)
-	for _, ca := range assets {
-		items = append(items, ca)
-	}
-	return items
-}
-
 // Collection is a collection of asset trees.
 type Collection struct {
-	rootLocations map[int64]*Node // lookup for root location of items
+	isCorporation bool            // True when this collection contains corporation assets, false for character assets.
 	itemNodes     map[int64]*Node // Trees of asset items
 	locationNodes map[int64]*Node // Trees of asset locations
+	rootLocations map[int64]*Node // lookup for root location of items
 }
 
-// New returns a new Collection.
-func New(items []Item, loc []*app.EveLocation) Collection {
+func NewFromCharacterAssets(assets []*app.CharacterAsset, loc []*app.EveLocation) Collection {
+	items := make([]Item, 0)
+	for _, ca := range assets {
+		items = append(items, ca)
+	}
+	return new(items, loc, false)
+}
+
+func NewFromCorporationAssets(assets []*app.CorporationAsset, loc []*app.EveLocation) Collection {
+	items := make([]Item, 0)
+	for _, ca := range assets {
+		items = append(items, ca)
+	}
+	return new(items, loc, true)
+}
+
+// new returns a new Collection.
+func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	locationMap := make(map[int64]*app.EveLocation)
 	for _, loc := range loc {
 		locationMap[loc.ID] = loc
@@ -88,9 +89,10 @@ func New(items []Item, loc []*app.EveLocation) Collection {
 		}
 	}
 	ac := Collection{
-		rootLocations: rootLocations,
+		isCorporation: isCorporation,
 		itemNodes:     itemNodes,
 		locationNodes: locationNodes,
+		rootLocations: rootLocations,
 	}
 	return ac
 }
@@ -226,6 +228,8 @@ func (n *Node) MustCharacterAsset() *app.CharacterAsset {
 	return x
 }
 
+// CharacterAsset tries to return the current item as character asset
+// and reports whether it was successful.
 func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
 	if n.item == nil {
 		return nil, false
@@ -235,6 +239,29 @@ func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
 		return nil, false
 	}
 	return x, true
+}
+
+// CorporationAsset tries to return the current item as corporation asset
+// and reports whether it was successful.
+func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
+	if n.item == nil {
+		return nil, false
+	}
+	x, ok := n.item.(*app.CorporationAsset)
+	if !ok {
+		return nil, false
+	}
+	return x, true
+}
+
+// MustCorporationAsset returns the current item as corporation asset.
+// Will panic if the item has a different type.
+func (n *Node) MustCorporationAsset() *app.CorporationAsset {
+	x, ok := n.CorporationAsset()
+	if !ok {
+		panic(fmt.Sprintf("Not a character asset: %d", n.ID()))
+	}
+	return x
 }
 
 func (n *Node) DisplayName() string {

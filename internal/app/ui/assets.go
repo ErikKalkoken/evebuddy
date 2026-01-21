@@ -59,7 +59,7 @@ type assetRow struct {
 	locationPath    []string
 }
 
-func newCharacterAssetRow(ca *app.CharacterAsset, assetCollection asset.Collection, characterName func(int32) string) assetRow {
+func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, characterName func(int32) string) assetRow {
 	r := assetRow{
 		categoryName:    ca.Type.Group.Category.Name,
 		groupID:         ca.Type.Group.ID,
@@ -77,12 +77,12 @@ func newCharacterAssetRow(ca *app.CharacterAsset, assetCollection asset.Collecti
 		},
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
-	r.setLocation(assetCollection, ca.ItemID)
+	r.setLocation(ac, ca.ItemID)
 	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
 	return r
 }
 
-func newCorporationAssetRow(ca *app.CorporationAsset, assetCollection asset.Collection, corporationName string) assetRow {
+func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corporationName string) assetRow {
 	r := assetRow{
 		categoryName:    ca.Type.Group.Category.Name,
 		groupID:         ca.Type.Group.ID,
@@ -100,7 +100,7 @@ func newCorporationAssetRow(ca *app.CorporationAsset, assetCollection asset.Coll
 		},
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
-	r.setLocation(assetCollection, ca.ItemID)
+	r.setLocation(ac, ca.ItemID)
 	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
 	return r
 }
@@ -615,7 +615,7 @@ func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, int, f
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+	ac := asset.NewFromCharacterAssets(assets, locations)
 	rows := make([]assetRow, len(assets))
 	var quantity int
 	var total float64
@@ -645,7 +645,7 @@ func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, int, 
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	ac := asset.New(asset.ItemsFromCorporationAssets(assets), locations)
+	ac := asset.NewFromCorporationAssets(assets, locations)
 	rows := make([]assetRow, len(assets))
 	var quantity int
 	var total float64

@@ -58,7 +58,7 @@ func TestAssetCollection(t *testing.T) {
 	loc1 := &app.EveLocation{ID: locationID1, Name: "Alpha"}
 	loc2 := &app.EveLocation{ID: locationID2, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
-	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+	ac := asset.NewFromCharacterAssets(assets, locations)
 	t.Run("can create tree from character assets", func(t *testing.T) {
 		locations := ac.LocationNodes()
 		assert.Len(t, locations, 2)
@@ -171,7 +171,7 @@ func TestAssetCollection_Walk(t *testing.T) {
 	})
 	assets := []*app.CharacterAsset{a1, a11, a111, a1111, a1112}
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
-	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+	ac := asset.NewFromCharacterAssets(assets, locations)
 	t.Run("can walk branch", func(t *testing.T) {
 		an, _ := ac.Node(a1.ItemID)
 		s := an.All()
@@ -224,7 +224,7 @@ func TestAssetCollection_ItemCount(t *testing.T) {
 	assets := []*app.CharacterAsset{a1, a2, a11, a111, a1111, a1112, a1113, a1114, a1115}
 	loc1 := &app.EveLocation{ID: locationID, Name: "Alpha"}
 	locations := []*app.EveLocation{loc1}
-	ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+	ac := asset.NewFromCharacterAssets(assets, locations)
 	t.Run("can calculate item count for an asset", func(t *testing.T) {
 		n, found := ac.Node(a1.ItemID)
 		if !assert.True(t, found) {

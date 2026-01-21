@@ -370,7 +370,7 @@ func (*characterAssets) fetchData(characterID int32, s services) (asset.Collecti
 	if err != nil {
 		return ac, locations, err
 	}
-	ac = asset.New(asset.ItemsFromCharacterAssets(assets), el)
+	ac = asset.NewFromCharacterAssets(assets, el)
 	locations = makeLocationTreeData(ac, characterID)
 	return ac, locations, nil
 }

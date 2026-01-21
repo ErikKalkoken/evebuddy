@@ -27,7 +27,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		d := &app.CharacterAsset{ItemID: 4, LocationID: 2}
 		assets := []*app.CharacterAsset{a, b, c, d}
 		locations := []*app.EveLocation{el}
-		ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+		ac := asset.NewFromCharacterAssets(assets, locations)
 		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})
@@ -49,7 +49,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		e := &app.CharacterAsset{ItemID: 5, LocationID: l2.ID}
 		assets := []*app.CharacterAsset{a, b, c, d, e}
 		locations := []*app.EveLocation{l1, l2}
-		ac := asset.New(asset.ItemsFromCharacterAssets(assets), locations)
+		ac := asset.NewFromCharacterAssets(assets, locations)
 		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})

@@ -181,7 +181,7 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 	if arg.CorporationID == 0 || arg.EveTypeID == 0 || arg.ItemID == 0 {
 		return fmt.Errorf("CreateCorporationAsset: %+v: %w", arg, app.ErrInvalid)
 	}
-	arg2 := queries.CreateCorporationAssetParams{
+	if err := st.qRW.CreateCorporationAsset(ctx, queries.CreateCorporationAssetParams{
 		CorporationID:   int64(arg.CorporationID),
 		EveTypeID:       int64(arg.EveTypeID),
 		IsBlueprintCopy: arg.IsBlueprintCopy,
@@ -192,27 +192,24 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 		LocationType:    locationTypeToDBValue2[arg.LocationType],
 		Name:            arg.Name,
 		Quantity:        int64(arg.Quantity),
-	}
-	if err := st.qRW.CreateCorporationAsset(ctx, arg2); err != nil {
+	}); err != nil {
 		return fmt.Errorf("create corporation asset %+v, %w", arg, err)
 	}
 	return nil
 }
 
 func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID int32, itemIDs set.Set[int64]) error {
-	arg := queries.DeleteCorporationAssetsParams{
+	return st.qRW.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
 		CorporationID: int64(corporationID),
 		ItemIds:       slices.Collect(itemIDs.All()),
-	}
-	return st.qRW.DeleteCorporationAssets(ctx, arg)
+	})
 }
 
 func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int32, itemID int64) (*app.CorporationAsset, error) {
-	arg := queries.GetCorporationAssetParams{
+	r, err := st.qRO.GetCorporationAsset(ctx, queries.GetCorporationAssetParams{
 		CorporationID: int64(corporationID),
 		ItemID:        itemID,
-	}
-	r, err := st.qRO.GetCorporationAsset(ctx, arg)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get corporation asset for corporation %d: %w", corporationID, convertGetError(err))
 	}
@@ -254,13 +251,12 @@ func (st *Storage) ListCorporationAssetsInShipHangar(ctx context.Context, corpor
 }
 
 func (st *Storage) ListCorporationAssetsInItemHangar(ctx context.Context, corporationID int32, locationID int64) ([]*app.CorporationAsset, error) {
-	arg := queries.ListCorporationAssetsInItemHangarParams{
+	rows, err := st.qRO.ListCorporationAssetsInItemHangar(ctx, queries.ListCorporationAssetsInItemHangarParams{
 		CorporationID: int64(corporationID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
 		EveCategoryID: app.EveCategoryShip,
-	}
-	rows, err := st.qRO.ListCorporationAssetsInItemHangar(ctx, arg)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list assets in item hangar for corporation ID %d: %w", corporationID, err)
 	}
@@ -301,7 +297,7 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 	if arg.CorporationID == 0 || arg.ItemID == 0 {
 		return fmt.Errorf("IDs must not be zero %+v", arg)
 	}
-	arg2 := queries.UpdateCorporationAssetParams{
+	if err := st.qRW.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
 		CorporationID: int64(arg.CorporationID),
 		ItemID:        arg.ItemID,
 		LocationFlag:  locationFlagToDBValue2[arg.LocationFlag],
@@ -309,8 +305,7 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 		LocationType:  locationTypeToDBValue2[arg.LocationType],
 		Name:          arg.Name,
 		Quantity:      int64(arg.Quantity),
-	}
-	if err := st.qRW.UpdateCorporationAsset(ctx, arg2); err != nil {
+	}); err != nil {
 		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
 	}
 	return nil
