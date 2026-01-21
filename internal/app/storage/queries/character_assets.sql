@@ -131,7 +131,13 @@ SET
     location_flag = ?,
     location_id = ?,
     location_type = ?,
-    name = ?,
     quantity = ?
+WHERE character_id = ?
+AND item_id = ?;
+
+-- name: UpdateCharacterAssetName :exec
+UPDATE character_assets
+SET
+    name = ?
 WHERE character_id = ?
 AND item_id = ?;

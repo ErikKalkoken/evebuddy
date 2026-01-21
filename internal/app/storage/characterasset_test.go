@@ -67,7 +67,6 @@ func TestCharacterAsset(t *testing.T) {
 			LocationFlag: app.FlagHangar,
 			LocationID:   99,
 			LocationType: app.TypeOther,
-			Name:         "Alpha",
 			Quantity:     7,
 		})
 		// then
@@ -77,8 +76,25 @@ func TestCharacterAsset(t *testing.T) {
 		assert.Equal(t, app.FlagHangar, x2.LocationFlag)
 		assert.Equal(t, int64(99), x2.LocationID)
 		assert.Equal(t, app.TypeOther, x2.LocationType)
-		assert.Equal(t, "Alpha", x2.Name)
+		assert.Equal(t, x1.Name, x2.Name)
 		assert.EqualValues(t, 7, x2.Quantity)
+	})
+	t.Run("can update name", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		err := st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
+			CharacterID: c.ID,
+			ItemID:      x1.ItemID,
+			Name:        "Alpha",
+		})
+		// then
+		require.NoError(t, err)
+		x2, err := st.GetCharacterAsset(ctx, c.ID, x1.ItemID)
+		require.NoError(t, err)
+		assert.Equal(t, "Alpha", x2.Name)
 	})
 	t.Run("can list assets in ship hangar", func(t *testing.T) {
 		// given

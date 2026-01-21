@@ -306,6 +306,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					return err
 				}
 			}
+
 			return nil
 		},
 	)

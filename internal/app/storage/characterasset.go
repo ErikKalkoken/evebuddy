@@ -250,38 +250,6 @@ func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterI
 	return ii2, nil
 }
 
-type UpdateCharacterAssetParams struct {
-	CharacterID  int32
-	ItemID       int64
-	LocationFlag app.LocationFlag
-	LocationID   int64
-	LocationType app.LocationType
-	Name         string
-	Quantity     int32
-}
-
-func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateCharacterAsset: %+v: %w", arg, err)
-
-	}
-	if arg.CharacterID == 0 || arg.ItemID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if err := st.qRW.UpdateCharacterAsset(ctx, queries.UpdateCharacterAssetParams{
-		CharacterID:  int64(arg.CharacterID),
-		ItemID:       arg.ItemID,
-		LocationFlag: locationFlagToDBValue[arg.LocationFlag],
-		LocationID:   arg.LocationID,
-		LocationType: locationTypeToDBValue[arg.LocationType],
-		Name:         arg.Name,
-		Quantity:     int64(arg.Quantity),
-	}); err != nil {
-		return wrapErr(err)
-	}
-	return nil
-}
-
 func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	rows, err := st.qRO.ListAllCharacterAssets(ctx)
 	if err != nil {
@@ -334,4 +302,58 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		},
 	}
 	return o
+}
+
+type UpdateCharacterAssetParams struct {
+	CharacterID  int32
+	ItemID       int64
+	LocationFlag app.LocationFlag
+	LocationID   int64
+	LocationType app.LocationType
+	Quantity     int32
+}
+
+func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterAsset: %+v: %w", arg, err)
+
+	}
+	if arg.CharacterID == 0 || arg.ItemID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if err := st.qRW.UpdateCharacterAsset(ctx, queries.UpdateCharacterAssetParams{
+		CharacterID:  int64(arg.CharacterID),
+		ItemID:       arg.ItemID,
+		LocationFlag: locationFlagToDBValue[arg.LocationFlag],
+		LocationID:   arg.LocationID,
+		LocationType: locationTypeToDBValue[arg.LocationType],
+		Quantity:     int64(arg.Quantity),
+	}); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+type UpdateCharacterAssetNameParams struct {
+	CharacterID int32
+	ItemID      int64
+	Name        string
+}
+
+func (st *Storage) UpdateCharacterAssetName(ctx context.Context, arg UpdateCharacterAssetNameParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterAssetName: %+v: %w", arg, err)
+
+	}
+	if arg.CharacterID == 0 || arg.ItemID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if err := st.qRW.UpdateCharacterAssetName(ctx, queries.UpdateCharacterAssetNameParams{
+		CharacterID: int64(arg.CharacterID),
+		ItemID:      arg.ItemID,
+		Name:        arg.Name,
+	}); err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
