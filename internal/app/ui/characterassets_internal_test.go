@@ -15,16 +15,22 @@ import (
 )
 
 func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
+	makeAsset := func(asset app.Asset) *app.CharacterAsset {
+		return &app.CharacterAsset{
+			CharacterID: 42,
+			Asset:       asset,
+		}
+	}
 	t.Run("can create simple tree", func(t *testing.T) {
 		el := &app.EveLocation{
 			ID:          100000,
 			Name:        "Alpha 1",
 			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
 		}
-		a := &app.CharacterAsset{ItemID: 1, LocationID: el.ID}
-		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
-		c := &app.CharacterAsset{ItemID: 3, LocationID: 2}
-		d := &app.CharacterAsset{ItemID: 4, LocationID: 2}
+		a := makeAsset(app.Asset{ItemID: 1, LocationID: el.ID})
+		b := makeAsset(app.Asset{ItemID: 2, LocationID: 1})
+		c := makeAsset(app.Asset{ItemID: 3, LocationID: 2})
+		d := makeAsset(app.Asset{ItemID: 4, LocationID: 2})
 		assets := []*app.CharacterAsset{a, b, c, d}
 		locations := []*app.EveLocation{el}
 		ac := asset.NewFromCharacterAssets(assets, locations)
@@ -42,11 +48,11 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 			Name:        "Alpha 2",
 			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
 		}
-		a := &app.CharacterAsset{ItemID: 1, LocationID: l1.ID}
-		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
-		c := &app.CharacterAsset{ItemID: 3, LocationID: 1}
-		d := &app.CharacterAsset{ItemID: 4, LocationID: 1}
-		e := &app.CharacterAsset{ItemID: 5, LocationID: l2.ID}
+		a := makeAsset(app.Asset{ItemID: 1, LocationID: l1.ID})
+		b := makeAsset(app.Asset{ItemID: 2, LocationID: 1})
+		c := makeAsset(app.Asset{ItemID: 3, LocationID: 1})
+		d := makeAsset(app.Asset{ItemID: 4, LocationID: 1})
+		e := makeAsset(app.Asset{ItemID: 5, LocationID: l2.ID})
 		assets := []*app.CharacterAsset{a, b, c, d, e}
 		locations := []*app.EveLocation{l1, l2}
 		ac := asset.NewFromCharacterAssets(assets, locations)

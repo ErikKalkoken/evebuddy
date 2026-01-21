@@ -35,10 +35,12 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 		arg.locationFlag = app.FlagHangar
 	}
 	return &app.CharacterAsset{
-		ItemID:       arg.itemID,
-		LocationID:   arg.locationID,
-		Quantity:     arg.quantity,
-		LocationFlag: arg.locationFlag,
+		Asset: app.Asset{
+			ItemID:       arg.itemID,
+			LocationID:   arg.locationID,
+			Quantity:     arg.quantity,
+			LocationFlag: arg.locationFlag,
+		},
 	}
 }
 

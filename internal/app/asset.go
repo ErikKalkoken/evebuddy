@@ -163,8 +163,8 @@ const (
 	VariantSKIN
 )
 
-type CharacterAsset struct {
-	CharacterID     int32
+// Asset represents a generic asset in Eve Online.
+type Asset struct {
 	IsBlueprintCopy bool
 	IsSingleton     bool
 	ItemID          int64
@@ -178,332 +178,27 @@ type CharacterAsset struct {
 }
 
 // ID returns the item ID.
-func (ca CharacterAsset) ID() int64 {
+func (ca Asset) ID() int64 {
 	return ca.ItemID
 }
 
 // LocationID_ returns the location ID.
-func (ca CharacterAsset) LocationID_() int64 {
+func (ca Asset) LocationID_() int64 {
 	return ca.LocationID
 }
 
-func (ca CharacterAsset) CanHaveName() bool {
-	return assetCanHaveName(ca.IsSingleton, ca.Type.Group.Category.ID, ca.Type.Group.ID)
-}
-
-func (ca CharacterAsset) DisplayName() string {
-	if ca.Name != "" {
-		return ca.Name
-	}
-	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
-		s += " (Copy)"
-	}
-	return s
-}
-
-func (ca CharacterAsset) DisplayName2() string {
-	if ca.Name != "" {
-		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
-	}
-	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
-		s += " (Copy)"
-	}
-	return s
-}
-
-func (ca CharacterAsset) IsBPO() bool {
-	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
-}
-
-func (ca CharacterAsset) IsSKIN() bool {
-	return ca.Type.Group.Category.ID == EveCategorySKINs
-}
-
-func (ca CharacterAsset) IsContainer() bool {
+func (ca Asset) CanHaveName() bool {
 	if !ca.IsSingleton {
 		return false
 	}
-	if ca.Type.IsShip() {
-		return true
-	}
-	if ca.Type.ID == EveTypeAssetSafetyWrap {
-		return true
-	}
-	switch ca.Type.Group.ID {
-	case EveGroupFreightContainer,
-		EveGroupAuditLogSecureContainer,
-		EveGroupCargoContainer,
-		EveGroupSecureCargoContainer:
-		return true
-	}
-	return false
-}
-
-func (ca CharacterAsset) LocationCategory() LocationFlag {
-	return FlagUndefined
-}
-
-func (ca CharacterAsset) IsInAssetSafety() bool {
-	return ca.LocationFlag == FlagAssetSafety
-}
-
-func (ca CharacterAsset) IsInAnyCargoHold() bool {
-	switch ca.LocationFlag {
-	case
-		FlagCargo,
-		FlagFleetHangar,
-		FlagMobileDepotHold,
-		FlagMoonMaterialBay,
-		FlagQuafeBay,
-		FlagSpecializedAmmoHold,
-		FlagSpecializedAsteroidHold,
-		FlagSpecializedCommandCenterHold,
-		FlagSpecializedGasHold,
-		FlagSpecializedIceHold,
-		FlagSpecializedIndustrialShipHold,
-		FlagSpecializedLargeShipHold,
-		FlagSpecializedMaterialBay,
-		FlagSpecializedMediumShipHold,
-		FlagSpecializedMineralHold,
-		FlagSpecializedOreHold,
-		FlagSpecializedPlanetaryCommoditiesHold,
-		FlagSpecializedSalvageHold,
-		FlagSpecializedShipHold,
-		FlagSpecializedSmallShipHold,
-		FlagStructureDeedBay:
-		return true
-	}
-	return false
-}
-
-func (ca CharacterAsset) IsInDroneBay() bool {
-	return ca.LocationFlag == FlagDroneBay
-}
-
-func (ca CharacterAsset) IsInFighterBay() bool {
-	switch ca.LocationFlag {
-	case
-		FlagFighterBay,
-		FlagFighterTube0,
-		FlagFighterTube1,
-		FlagFighterTube2,
-		FlagFighterTube3,
-		FlagFighterTube4:
-		return true
-	}
-	return false
-}
-
-func (ca CharacterAsset) IsInFrigateEscapeBay() bool {
-	return ca.LocationFlag == FlagFrigateEscapeBay
-}
-
-func (ca CharacterAsset) IsInFuelBay() bool {
-	return ca.LocationFlag == FlagSpecializedFuelBay
-}
-
-func (ca CharacterAsset) IsInSpace() bool {
-	return ca.LocationType == TypeSolarSystem
-}
-
-func (ca CharacterAsset) IsInHangar() bool {
-	return ca.LocationFlag == FlagHangar
-}
-
-func (ca CharacterAsset) IsFitted() bool {
-	switch ca.LocationFlag {
-	case
-		FlagHiSlot0,
-		FlagHiSlot1,
-		FlagHiSlot2,
-		FlagHiSlot3,
-		FlagHiSlot4,
-		FlagHiSlot5,
-		FlagHiSlot6,
-		FlagHiSlot7:
-		return true
-	case
-		FlagMedSlot0,
-		FlagMedSlot1,
-		FlagMedSlot2,
-		FlagMedSlot3,
-		FlagMedSlot4,
-		FlagMedSlot5,
-		FlagMedSlot6,
-		FlagMedSlot7:
-		return true
-	case
-		FlagLoSlot0,
-		FlagLoSlot1,
-		FlagLoSlot2,
-		FlagLoSlot3,
-		FlagLoSlot4,
-		FlagLoSlot5,
-		FlagLoSlot6,
-		FlagLoSlot7:
-		return true
-	case
-		FlagRigSlot0,
-		FlagRigSlot1,
-		FlagRigSlot2,
-		FlagRigSlot3,
-		FlagRigSlot4,
-		FlagRigSlot5,
-		FlagRigSlot6,
-		FlagRigSlot7:
-		return true
-	case
-		FlagSubSystemSlot0,
-		FlagSubSystemSlot1,
-		FlagSubSystemSlot2,
-		FlagSubSystemSlot3,
-		FlagSubSystemSlot4,
-		FlagSubSystemSlot5,
-		FlagSubSystemSlot6,
-		FlagSubSystemSlot7:
-	}
-	return false
-}
-
-func (ca CharacterAsset) IsShipOther() bool {
-	return !ca.IsInAnyCargoHold() &&
-		!ca.IsInDroneBay() &&
-		!ca.IsInFighterBay() &&
-		!ca.IsInFuelBay() &&
-		!ca.IsFitted() &&
-		!ca.IsInFrigateEscapeBay()
-}
-
-func (ca CharacterAsset) Quantity_() int {
-	return int(ca.Quantity)
-}
-
-// QuantityFiltered returns the quantity for items which are not inside a container
-// and reports whether this item should be counted.
-func (ca CharacterAsset) QuantityFiltered() (int, bool) {
-	if ca.IsFitted() ||
-		ca.IsInDroneBay() ||
-		ca.IsInFrigateEscapeBay() ||
-		ca.IsInFighterBay() ||
-		ca.IsInFuelBay() ||
-		ca.IsInAnyCargoHold() {
-		return 0, false
-	}
-	return int(ca.Quantity), true
-}
-
-func (ca CharacterAsset) TypeName() string {
-	if ca.Type == nil {
-		return ""
-	}
-	return ca.Type.Name
-}
-
-func (ca CharacterAsset) Variant() InventoryTypeVariant {
-	if ca.IsSKIN() {
-		return VariantSKIN
-	}
-	if ca.IsBPO() {
-		return VariantBPO
-	}
-	if ca.IsBlueprintCopy {
-		return VariantBPC
-	}
-	return VariantRegular
-}
-
-type CorporationAsset struct {
-	CorporationID   int32
-	IsBlueprintCopy bool
-	IsSingleton     bool
-	ItemID          int64
-	LocationFlag    LocationFlag
-	LocationID      int64
-	LocationType    LocationType
-	Name            string
-	Price           optional.Optional[float64]
-	Quantity        int
-	Type            *EveType
-}
-
-// ID returns the item ID.
-func (ca CorporationAsset) ID() int64 {
-	return ca.ItemID
-}
-
-// LocationID_ returns the location ID.
-func (ca CorporationAsset) LocationID_() int64 {
-	return ca.LocationID
-}
-
-func (ca CorporationAsset) DisplayName() string {
-	if ca.Name != "" {
-		return ca.Name
-	}
-	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
-		s += " (Copy)"
-	}
-	return s
-}
-
-func (ca CorporationAsset) DisplayName2() string {
-	if ca.Name != "" {
-		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
-	}
-	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
-		s += " (Copy)"
-	}
-	return s
-}
-
-func (ca CorporationAsset) IsBPO() bool {
-	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
-}
-
-func (ca CorporationAsset) IsSKIN() bool {
-	return ca.Type.Group.Category.ID == EveCategorySKINs
-}
-
-func (ca CorporationAsset) IsContainer() bool {
-	if !ca.IsSingleton {
-		return false
-	}
-	if ca.Type.IsShip() {
-		return true
-	}
-	if ca.Type.ID == EveTypeAssetSafetyWrap {
-		return true
-	}
-	switch ca.Type.Group.ID {
-	case EveGroupFreightContainer,
-		EveGroupAuditLogSecureContainer,
-		EveGroupCargoContainer,
-		EveGroupSecureCargoContainer:
-		return true
-	}
-	return false
-}
-
-func (ca CorporationAsset) CanHaveName() bool {
-	return assetCanHaveName(ca.IsSingleton, ca.Type.Group.Category.ID, ca.Type.Group.ID)
-}
-
-func assetCanHaveName(isSingleton bool, categoryID, groupID int32) bool {
-	if !isSingleton {
-		return false
-	}
-	switch categoryID {
+	switch ca.Type.Group.Category.ID {
 	case
 		EveCategoryDeployable,
 		EveCategoryShip,
 		EveCategoryStructure:
 		return true
 	}
-	switch groupID {
+	switch ca.Type.Group.ID {
 	case
 		EveGroupAuditLogSecureContainer,
 		EveGroupBiomass,
@@ -515,11 +210,65 @@ func assetCanHaveName(isSingleton bool, categoryID, groupID int32) bool {
 	return false
 }
 
-func (ca CorporationAsset) IsInAssetSafety() bool {
+func (ca Asset) DisplayName() string {
+	if ca.Name != "" {
+		return ca.Name
+	}
+	s := ca.TypeName()
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
+}
+
+func (ca Asset) DisplayName2() string {
+	if ca.Name != "" {
+		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
+	}
+	s := ca.TypeName()
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
+}
+
+func (ca Asset) IsBPO() bool {
+	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
+}
+
+func (ca Asset) IsSKIN() bool {
+	return ca.Type.Group.Category.ID == EveCategorySKINs
+}
+
+func (ca Asset) IsContainer() bool {
+	if !ca.IsSingleton {
+		return false
+	}
+	if ca.Type.IsShip() {
+		return true
+	}
+	if ca.Type.ID == EveTypeAssetSafetyWrap {
+		return true
+	}
+	switch ca.Type.Group.ID {
+	case EveGroupFreightContainer,
+		EveGroupAuditLogSecureContainer,
+		EveGroupCargoContainer,
+		EveGroupSecureCargoContainer:
+		return true
+	}
+	return false
+}
+
+func (ca Asset) LocationCategory() LocationFlag {
+	return FlagUndefined
+}
+
+func (ca Asset) IsInAssetSafety() bool {
 	return ca.LocationFlag == FlagAssetSafety
 }
 
-func (ca CorporationAsset) IsInAnyCargoHold() bool {
+func (ca Asset) IsInAnyCargoHold() bool {
 	switch ca.LocationFlag {
 	case
 		FlagCargo,
@@ -548,11 +297,11 @@ func (ca CorporationAsset) IsInAnyCargoHold() bool {
 	return false
 }
 
-func (ca CorporationAsset) IsInDroneBay() bool {
+func (ca Asset) IsInDroneBay() bool {
 	return ca.LocationFlag == FlagDroneBay
 }
 
-func (ca CorporationAsset) IsInFighterBay() bool {
+func (ca Asset) IsInFighterBay() bool {
 	switch ca.LocationFlag {
 	case
 		FlagFighterBay,
@@ -566,23 +315,23 @@ func (ca CorporationAsset) IsInFighterBay() bool {
 	return false
 }
 
-func (ca CorporationAsset) IsInFrigateEscapeBay() bool {
+func (ca Asset) IsInFrigateEscapeBay() bool {
 	return ca.LocationFlag == FlagFrigateEscapeBay
 }
 
-func (ca CorporationAsset) IsInFuelBay() bool {
+func (ca Asset) IsInFuelBay() bool {
 	return ca.LocationFlag == FlagSpecializedFuelBay
 }
 
-func (ca CorporationAsset) IsInSpace() bool {
+func (ca Asset) IsInSpace() bool {
 	return ca.LocationType == TypeSolarSystem
 }
 
-func (ca CorporationAsset) IsInHangar() bool {
+func (ca Asset) IsInHangar() bool {
 	return ca.LocationFlag == FlagHangar
 }
 
-func (ca CorporationAsset) IsFitted() bool {
+func (ca Asset) IsFitted() bool {
 	switch ca.LocationFlag {
 	case
 		FlagHiSlot0,
@@ -637,7 +386,7 @@ func (ca CorporationAsset) IsFitted() bool {
 	return false
 }
 
-func (ca CorporationAsset) IsShipOther() bool {
+func (ca Asset) IsShipOther() bool {
 	return !ca.IsInAnyCargoHold() &&
 		!ca.IsInDroneBay() &&
 		!ca.IsInFighterBay() &&
@@ -646,13 +395,13 @@ func (ca CorporationAsset) IsShipOther() bool {
 		!ca.IsInFrigateEscapeBay()
 }
 
-func (ca CorporationAsset) Quantity_() int {
+func (ca Asset) Quantity_() int {
 	return int(ca.Quantity)
 }
 
 // QuantityFiltered returns the quantity for items which are not inside a container
 // and reports whether this item should be counted.
-func (ca CorporationAsset) QuantityFiltered() (int, bool) {
+func (ca Asset) QuantityFiltered() (int, bool) {
 	if ca.IsFitted() ||
 		ca.IsInDroneBay() ||
 		ca.IsInFrigateEscapeBay() ||
@@ -664,14 +413,14 @@ func (ca CorporationAsset) QuantityFiltered() (int, bool) {
 	return int(ca.Quantity), true
 }
 
-func (ca CorporationAsset) TypeName() string {
+func (ca Asset) TypeName() string {
 	if ca.Type == nil {
 		return ""
 	}
 	return ca.Type.Name
 }
 
-func (ca CorporationAsset) Variant() InventoryTypeVariant {
+func (ca Asset) Variant() InventoryTypeVariant {
 	if ca.IsSKIN() {
 		return VariantSKIN
 	}
@@ -682,4 +431,14 @@ func (ca CorporationAsset) Variant() InventoryTypeVariant {
 		return VariantBPC
 	}
 	return VariantRegular
+}
+
+type CharacterAsset struct {
+	Asset
+	CharacterID int32
+}
+
+type CorporationAsset struct {
+	Asset
+	CorporationID int32
 }
