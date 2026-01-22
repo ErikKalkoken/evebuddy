@@ -10,18 +10,15 @@ import (
 )
 
 type Item interface {
-	DisplayName2() string
 	ID() int64
-	LocationID_() int64
-	Quantity_() int
-	QuantityFiltered() (int, bool)
+	Unwrap() app.Asset
 }
 
 // Collection is a collection of asset trees.
 type Collection struct {
 	isCorporation bool            // True when this collection contains corporation assets, false for character assets.
-	itemNodes     map[int64]*Node // Trees of asset items
-	locationNodes map[int64]*Node // Trees of asset locations
+	items         map[int64]*Node // Trees of asset items
+	locations     map[int64]*Node // Trees of asset locations
 	rootLocations map[int64]*Node // lookup for root location of items
 }
 
@@ -55,11 +52,12 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	}
 	locationNodes := make(map[int64]*Node)
 	for _, it := range items2 {
-		_, found := items2[it.LocationID_()]
+		asset := it.Unwrap()
+		_, found := items2[asset.LocationID]
 		if found {
 			continue
 		}
-		loc, found := locationMap[it.LocationID_()]
+		loc, found := locationMap[asset.LocationID]
 		if !found {
 			continue
 		}
@@ -68,12 +66,11 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	// add top itemNodes to locations
 	itemNodes := make(map[int64]*Node)
 	for _, it := range items2 {
-		location, found := locationNodes[it.LocationID_()]
+		location, found := locationNodes[it.Unwrap().LocationID]
 		if !found {
 			continue
 		}
-		an := location.add(it)
-		itemNodes[it.ID()] = an
+		itemNodes[it.ID()] = location.add(it)
 		delete(items2, it.ID())
 	}
 	// add others assets to locations
@@ -90,8 +87,8 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	}
 	ac := Collection{
 		isCorporation: isCorporation,
-		itemNodes:     itemNodes,
-		locationNodes: locationNodes,
+		items:         itemNodes,
+		locations:     locationNodes,
 		rootLocations: rootLocations,
 	}
 	return ac
@@ -103,14 +100,17 @@ func addChildNodes(parents []*Node, items2 map[int64]Item, itemNodes map[int64]*
 	for _, n := range parents {
 		parents2[n.ID()] = n
 	}
+
 	for _, it := range items2 {
-		_, found := parents2[it.LocationID_()]
+		asset := it.Unwrap()
+		_, found := parents2[asset.LocationID]
 		if found {
-			n := parents2[it.LocationID_()].add(it)
+			n := parents2[asset.LocationID].add(it)
 			itemNodes[it.ID()] = n
 			delete(items2, it.ID())
 		}
 	}
+
 	for _, n := range parents {
 		if len(n.children) > 0 {
 			addChildNodes(n.children, items2, itemNodes)
@@ -129,7 +129,7 @@ func (ac Collection) RootLocationNode(itemID int64) (*Node, bool) {
 
 // Node returns the node for an ID and reports whether it was found.
 func (ac Collection) Node(itemID int64) (*Node, bool) {
-	an, found := ac.itemNodes[itemID]
+	an, found := ac.items[itemID]
 	if !found {
 		return nil, false
 	}
@@ -139,7 +139,7 @@ func (ac Collection) Node(itemID int64) (*Node, bool) {
 // ItemCountFiltered returns the consolidated count of all items excluding items inside ships containers.
 func (ac Collection) ItemCountFiltered() int {
 	var n int
-	for _, l := range ac.locationNodes {
+	for _, l := range ac.locations {
 		n += l.ItemCountFiltered()
 	}
 	return n
@@ -147,7 +147,7 @@ func (ac Collection) ItemCountFiltered() int {
 
 // LocationNodes returns a slice of all location nodes.
 func (ac Collection) LocationNodes() []*Node {
-	return slices.Collect(maps.Values(ac.locationNodes))
+	return slices.Collect(maps.Values(ac.locations))
 }
 
 // Node is a node in an asset tree.
@@ -156,6 +156,7 @@ type Node struct {
 	children []*Node
 	item     Item
 	location *app.EveLocation
+	name     string
 	parent   *Node
 }
 
@@ -189,7 +190,7 @@ func (n *Node) Item() Item {
 func (n *Node) ItemCountAny() int {
 	var q int
 	if n.item != nil {
-		q = n.item.Quantity_()
+		q = n.item.Unwrap().Quantity
 	}
 	for _, c := range n.children {
 		q += c.ItemCountAny()
@@ -202,7 +203,7 @@ func (n *Node) ItemCountAny() int {
 func (n *Node) ItemCountFiltered() int {
 	var q int
 	if n.item != nil {
-		q2, ok := n.item.QuantityFiltered()
+		q2, ok := n.item.Unwrap().QuantityFiltered()
 		if !ok {
 			return 0
 		}
@@ -265,11 +266,14 @@ func (n *Node) MustCorporationAsset() *app.CorporationAsset {
 }
 
 func (n *Node) DisplayName() string {
+	if n.name != "" {
+		return n.name
+	}
 	if n.location != nil {
 		return n.location.DisplayName()
 	}
 	if n.item != nil {
-		return n.item.DisplayName2()
+		return n.item.Unwrap().DisplayName2()
 	}
 	return "?"
 }

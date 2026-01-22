@@ -44,7 +44,7 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 	}
 }
 
-func TestAssetCollection(t *testing.T) {
+func TestCollection(t *testing.T) {
 	const (
 		locationID1 = 100000
 		locationID2 = 101000
@@ -160,7 +160,7 @@ func TestAssetCollection(t *testing.T) {
 	})
 }
 
-func TestAssetCollection_Walk(t *testing.T) {
+func TestCollection_Walk(t *testing.T) {
 	const locationID = 100000
 	a1 := createCharacterAsset(characterAssetParams{locationID: locationID})
 	a11 := createCharacterAsset(characterAssetParams{locationID: a1.ItemID})
@@ -187,7 +187,7 @@ func TestAssetCollection_Walk(t *testing.T) {
 	})
 }
 
-func TestAssetCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
+func TestCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
 	var ac asset.Collection
 	_, x1 := ac.RootLocationNode(99)
 	assert.False(t, x1)
@@ -197,7 +197,7 @@ func TestAssetCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
 	assert.Empty(t, x4)
 }
 
-func TestAssetCollection_ItemCount(t *testing.T) {
+func TestCollection_ItemCount(t *testing.T) {
 	const locationID = 100000
 	a1 := createCharacterAsset(characterAssetParams{locationID: locationID})
 	a11 := createCharacterAsset(characterAssetParams{locationID: a1.ItemID})

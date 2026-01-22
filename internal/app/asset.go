@@ -182,9 +182,8 @@ func (ca Asset) ID() int64 {
 	return ca.ItemID
 }
 
-// LocationID_ returns the location ID.
-func (ca Asset) LocationID_() int64 {
-	return ca.LocationID
+func (ca Asset) Unwrap() Asset {
+	return ca
 }
 
 func (ca Asset) CanHaveName() bool {
@@ -393,10 +392,6 @@ func (ca Asset) IsShipOther() bool {
 		!ca.IsInFuelBay() &&
 		!ca.IsFitted() &&
 		!ca.IsInFrigateEscapeBay()
-}
-
-func (ca Asset) Quantity_() int {
-	return int(ca.Quantity)
 }
 
 // QuantityFiltered returns the quantity for items which are not inside a container
