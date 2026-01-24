@@ -109,7 +109,6 @@ type baseUI struct {
 	// UI elements
 	assets                  *assets
 	augmentations           *augmentations
-	characterAssets         *characterAssets
 	characterAssetBrowser   *assetBrowser
 	characterAttributes     *characterAttributes
 	characterAugmentations  *characterAugmentations
@@ -415,7 +414,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	u.assets = newAssetsForCharacters(u)
 	u.augmentations = newAugmentations(u)
-	u.characterAssets = newCharacterAssets(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterAugmentations = newCharacterAugmentations(u)

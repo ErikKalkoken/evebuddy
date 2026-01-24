@@ -10,6 +10,9 @@ import (
 
 //go:generate go tool stringer -type=NodeCategory
 
+// NodeCategory represents the category of a node.
+// [NodeAsset] represents assets and [NodeLocation] represent eve locations.
+// All other categories represent custom nodes.
 type NodeCategory uint
 
 const (
@@ -35,7 +38,6 @@ const (
 	NodeOffice7
 	NodeShipHangar
 	NodeDeliveries
-	NodeOther
 )
 
 var nodeCategoryNames = map[NodeCategory]string{
@@ -60,7 +62,6 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeOffice7:          "7th Division",
 	NodeImpounded:        "Impounded",
 	NodeDeliveries:       "Deliveries",
-	NodeOther:            "Other",
 }
 
 func (c NodeCategory) DisplayName() string {
@@ -117,7 +118,8 @@ func newCustomNode(category NodeCategory) *Node {
 		panic("invalid category for custom node: ")
 	}
 	return &Node{
-		category: category,
+		category:    category,
+		IsContainer: true,
 	}
 }
 
@@ -166,46 +168,14 @@ func (n *Node) MustAsset() app.Asset {
 	return a
 }
 
+// IsRoot reports whether a node is the root in a tree.
 func (n *Node) IsRoot() bool {
 	return n.parent == nil
 }
 
-func (n *Node) updateItemCounts() {
-	for _, x := range n.All() {
-		if len(x.children) == 0 {
-			continue
-		}
-		x.ItemCount.Set(len(x.children))
-	}
-}
-
-// ItemCountAny returns the consolidated count of any items in this sub tree.
-func (n *Node) ItemCountAny() int {
-	var q int
-	if n.item != nil {
-		q = n.item.Unwrap().Quantity
-	}
-	for _, c := range n.children {
-		q += c.ItemCountAny()
-	}
-	return q
-}
-
-// ItemCountFiltered returns the consolidated count of items in this sub tree
-// excluding items that are inside a ship container, e.g. fittings.
-func (n *Node) ItemCountFiltered() int {
-	var q int
-	if n.item != nil {
-		q2, ok := n.item.Unwrap().QuantityFiltered()
-		if !ok {
-			return 0
-		}
-		q = q2
-	}
-	for _, c := range n.children {
-		q += c.ItemCountFiltered()
-	}
-	return q
+// IsRootDirectChild reports whether a node is direct child of the root.
+func (n *Node) IsRootDirectChild() bool {
+	return n.parent != nil && n.parent.parent == nil
 }
 
 // Location returns the location for a node and reports whether the node is a location.
@@ -274,9 +244,17 @@ func (n *Node) MustCorporationAsset() *app.CorporationAsset {
 func (n *Node) DisplayName() string {
 	switch n.category {
 	case NodeLocation:
-		return n.location.DisplayName()
+		el, ok := n.Location()
+		if !ok {
+			return "?"
+		}
+		return el.DisplayName()
 	case NodeAsset:
-		return n.MustAsset().DisplayName2()
+		n, ok := n.Asset()
+		if !ok {
+			return "?"
+		}
+		return n.DisplayName2()
 	}
 	return n.category.DisplayName()
 }
@@ -315,7 +293,7 @@ func PrintTree(n *Node) {
 		if x := n.ID(); x != 0 {
 			id = fmt.Sprintf("#%d", x)
 		}
-		fmt.Printf("%s+-(%s)%s(%s)\n", indent, id, n.DisplayName(), n.ItemCount.StringFunc("", func(v int) string {
+		fmt.Printf("%s+-(%s)%s [%s] (%s)\n", indent, id, n.DisplayName(), n.Category().String(), n.ItemCount.StringFunc("-", func(v int) string {
 			return fmt.Sprint(v)
 		}))
 		if last {

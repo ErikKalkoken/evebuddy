@@ -201,55 +201,6 @@ func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32)
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
-	rows, err := st.qRO.ListCharacterAssetsInShipHangar(ctx, queries.ListCharacterAssetsInShipHangarParams{
-		CharacterID:   int64(characterID),
-		LocationID:    locationID,
-		LocationFlag:  "Hangar",
-		EveCategoryID: app.EveCategoryShip,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list assets in ship hangar for character ID %d: %w", characterID, err)
-	}
-	ii2 := make([]*app.CharacterAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
-func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
-	rows, err := st.qRO.ListCharacterAssetsInItemHangar(ctx, queries.ListCharacterAssetsInItemHangarParams{
-		CharacterID:   int64(characterID),
-		LocationID:    locationID,
-		LocationFlag:  "Hangar",
-		EveCategoryID: app.EveCategoryShip,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list assets in item hangar for character ID %d: %w", characterID, err)
-	}
-	ii2 := make([]*app.CharacterAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
-func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
-	rows, err := st.qRO.ListCharacterAssetsInLocation(ctx, queries.ListCharacterAssetsInLocationParams{
-		CharacterID: int64(characterID),
-		LocationID:  locationID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list assets in location for character ID %d: %w", characterID, err)
-	}
-	ii2 := make([]*app.CharacterAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
 func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	rows, err := st.qRO.ListAllCharacterAssets(ctx)
 	if err != nil {

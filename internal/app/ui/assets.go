@@ -577,14 +577,13 @@ func (a *assets) update() {
 		return
 	}
 	var rows []assetRow
-	var quantity int
 	var err error
 	var value float64
 	ctx := context.Background()
 	if a.forCorporation {
-		rows, quantity, value, err = a.fetchRowsForCorporation(ctx)
+		rows, value, err = a.fetchRowsForCorporation(ctx)
 	} else {
-		rows, quantity, value, err = a.fetchRowsForCharacters(ctx)
+		rows, value, err = a.fetchRowsForCharacters(ctx)
 	}
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
@@ -592,11 +591,11 @@ func (a *assets) update() {
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
-	top := fmt.Sprintf("%s items - %s ISK est.", ihumanize.Number(quantity, 1), ihumanize.NumberF(value, 1))
+	top := fmt.Sprintf("%s items - %s ISK Est. Price", ihumanize.Comma(len(rows)), ihumanize.Comma(int(value)))
 	setTop(top, widget.MediumImportance)
-	if a.onUpdate != nil {
-		a.onUpdate(quantity, top)
-	}
+	// if a.onUpdate != nil {
+	// 	a.onUpdate(quantity, top)
+	// }
 	fyne.Do(func() {
 		a.updateFoundInfo()
 	})
@@ -607,13 +606,13 @@ func (a *assets) update() {
 	})
 }
 
-func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, int, float64, error) {
+func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, float64, error) {
 	cc, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, err
 	}
 	if len(cc) == 0 {
-		return nil, 0, 0, nil
+		return nil, 0, nil
 	}
 	characterNames := make(map[int32]string)
 	for _, o := range cc {
@@ -623,69 +622,64 @@ func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, int, f
 	for _, c := range cc {
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
-			return nil, 0, 0, nil
+			return nil, 0, nil
 		}
 		tagsPerCharacter[c.ID] = tags
 	}
 	assets, err := a.u.cs.ListAllAssets(ctx)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, err
 	}
 	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, err
 	}
 	ac := asset.NewFromCharacterAssets(assets, locations)
-	rows := make([]assetRow, len(assets))
-	var quantity int
+	rows := make([]assetRow, 0)
 	var total float64
-	for i, ca := range assets {
+	for _, ca := range assets {
 		r := newCharacterAssetRow(ca, ac, func(id int32) string {
 			return characterNames[id]
 		})
 		r.searchTarget = strings.ToLower(r.typeNameDisplay)
 		r.tags = tagsPerCharacter[ca.CharacterID]
-		rows[i] = r
-		quantity += r.quantity
+		rows = append(rows, r)
 		total += r.total.ValueOrZero()
 	}
-	return rows, quantity, total, nil
+	return rows, total, nil
 }
 
-func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, int, float64, error) {
+func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, float64, error) {
 	c := a.corporation.Load()
 	if c == nil {
-		return []assetRow{}, 0, 0, nil
-	}
-	assets, err := a.u.rs.ListAssets(ctx, c.ID)
-	if err != nil {
-		return nil, 0, 0, err
+		return []assetRow{}, 0, nil
 	}
 	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, err
+	}
+	assets, err := a.u.rs.ListAssets(ctx, c.ID)
+	if err != nil {
+		return nil, 0, err
 	}
 	ac := asset.NewFromCorporationAssets(assets, locations)
-	rows := make([]assetRow, len(assets))
-	var quantity int
-	var total float64
-	for i, ca := range assets {
+	rows := make([]assetRow, 0)
+	var value float64
+	for _, ca := range assets {
+		if ca.Type != nil && ca.Type.ID == app.EveTypeOffice {
+			continue // filter out office item
+		}
 		r := newCorporationAssetRow(ca, ac, corporationNameOrZero(c))
 		r.searchTarget = strings.ToLower(r.typeNameDisplay)
-		rows[i] = r
-		quantity += r.quantity
-		total += r.total.ValueOrZero()
+		rows = append(rows, r)
+		value += r.total.ValueOrZero()
 	}
-	return rows, quantity, total, nil
+	return rows, value, nil
 }
 
 func (a *assets) updateFoundInfo() {
 	if len(a.rowsFiltered) < len(a.rows) {
-		var quantity int
-		for _, r := range a.rowsFiltered {
-			quantity += r.quantity
-		}
-		s := fmt.Sprintf("%s found", ihumanize.Comma(quantity))
+		s := fmt.Sprintf("%s found", ihumanize.Comma(len(a.rowsFiltered)))
 		a.found.SetText(s)
 		a.found.Show()
 	} else {

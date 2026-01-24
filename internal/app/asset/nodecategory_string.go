@@ -30,12 +30,11 @@ func _() {
 	_ = x[NodeOffice7-19]
 	_ = x[NodeShipHangar-20]
 	_ = x[NodeDeliveries-21]
-	_ = x[NodeOther-22]
 }
 
-const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyNodeCargoBayNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangarNodeDeliveriesNodeOther"
+const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyNodeCargoBayNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangarNodeDeliveries"
 
-var _NodeCategory_index = [...]uint16{0, 13, 22, 37, 49, 61, 75, 86, 106, 117, 130, 141, 155, 167, 178, 189, 200, 211, 222, 233, 244, 258, 272, 281}
+var _NodeCategory_index = [...]uint16{0, 13, 22, 37, 49, 61, 75, 86, 106, 117, 130, 141, 155, 167, 178, 189, 200, 211, 222, 233, 244, 258, 272}
 
 func (i NodeCategory) String() string {
 	idx := int(i) - 0

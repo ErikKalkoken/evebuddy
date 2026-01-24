@@ -58,3 +58,6 @@ ratelimitdoc:
 
 test:
 	go test -test.short ./... ;
+
+deadcode:
+	deadcode -test ./...

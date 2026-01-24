@@ -54,15 +54,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 	var characterNav *iwidget.Navigator
 
-	const assetsTitle = "Character Assets"
+	const assetsTitle = "Asset Browser"
 	navItemAssets := iwidget.NewListItemWithIcon(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			u.characterAssets.OnSelected = func() {
-				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAssets.LocationAssets))
+			u.characterAssetBrowser.Navigation.OnSelected = func() {
+				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAssetBrowser.Selected))
 			}
-			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAssets.Locations)))
+			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAssetBrowser.Navigation)))
 		},
 	)
 
@@ -183,7 +183,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterAssets.OnUpdate = func(s string) {
+	u.characterAssetBrowser.Navigation.OnUpdate = func(s string) {
 		fyne.Do(func() {
 			navItemAssets.Supporting = s
 			characterList.Refresh()
@@ -244,11 +244,25 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	var corpNav *iwidget.Navigator
 
-	corpAssetsNav := iwidget.NewListItemWithIcon(
-		"Assets",
+	const corpAssetBrowserTitle = "Asset Browser"
+	corpAssetBrowserNav := iwidget.NewListItemWithIcon(
+		corpAssetBrowserTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(newCorpAppBar("Assets", u.corporationAssets))
+			u.corporationAssetBrowser.Navigation.OnSelected = func() {
+				corpNav.PushAndHideNavBar(newCorpAppBar(corpAssetBrowserTitle, u.corporationAssetBrowser.Selected))
+			}
+			corpNav.Push(newCorpAppBar(corpAssetBrowserTitle, container.NewHScroll(u.corporationAssetBrowser.Navigation)))
+		},
+	)
+
+	const corpAssetSearchTitle = "Asset Search"
+	corpAssetSearchNav := iwidget.NewListItemWithIcon(
+		corpAssetSearchTitle,
+		theme.NewThemedResource(icons.Inventory2Svg),
+		func() {
+			corpNav.Push(iwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssets))
+			u.corporationAssets.focus()
 		},
 	)
 
@@ -337,7 +351,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	corpList := iwidget.NewNavList(
 		slices.Concat([]*iwidget.ListItem{
 			corpSheetNav,
-			corpAssetsNav,
+			corpAssetBrowserNav,
+			corpAssetSearchNav,
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
@@ -512,9 +527,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 		fyne.Do(func() {
 			if sections.Contains(app.SectionCorporationAssets) {
-				corpAssetsNav.IsDisabled = false
+				corpAssetBrowserNav.IsDisabled = false
 			} else {
-				corpAssetsNav.IsDisabled = true
+				corpAssetBrowserNav.IsDisabled = true
 			}
 			if sections.Contains(app.SectionCorporationIndustryJobs) {
 				corpIndustryNav.IsDisabled = false

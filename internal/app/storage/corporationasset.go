@@ -236,56 +236,6 @@ func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID in
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCorporationAssetsInShipHangar(ctx context.Context, corporationID int32, locationID int64) ([]*app.CorporationAsset, error) {
-	rows, err := st.qRO.ListCorporationAssetsInShipHangar(ctx, queries.ListCorporationAssetsInShipHangarParams{
-		CorporationID: int64(corporationID),
-		LocationID:    locationID,
-		LocationFlag:  "Hangar",
-		EveCategoryID: app.EveCategoryShip,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list assets in ship hangar for corporation ID %d: %w", corporationID, err)
-	}
-	ii2 := make([]*app.CorporationAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = corporationAssetFromDBModel(r.CorporationAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
-func (st *Storage) ListCorporationAssetsInItemHangar(ctx context.Context, corporationID int32, locationID int64) ([]*app.CorporationAsset, error) {
-	rows, err := st.qRO.ListCorporationAssetsInItemHangar(ctx, queries.ListCorporationAssetsInItemHangarParams{
-		CorporationID: int64(corporationID),
-		LocationID:    locationID,
-		LocationFlag:  "Hangar",
-		EveCategoryID: app.EveCategoryShip,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list assets in item hangar for corporation ID %d: %w", corporationID, err)
-	}
-	ii2 := make([]*app.CorporationAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = corporationAssetFromDBModel(r.CorporationAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
-func (st *Storage) ListCorporationAssetsInLocation(ctx context.Context, corporationID int32, locationID int64) ([]*app.CorporationAsset, error) {
-	arg := queries.ListCorporationAssetsInLocationParams{
-		CorporationID: int64(corporationID),
-		LocationID:    locationID,
-	}
-	rows, err := st.qRO.ListCorporationAssetsInLocation(ctx, arg)
-	if err != nil {
-		return nil, fmt.Errorf("list assets in location for corporation ID %d: %w", corporationID, err)
-	}
-	ii2 := make([]*app.CorporationAsset, len(rows))
-	for i, r := range rows {
-		ii2[i] = corporationAssetFromDBModel(r.CorporationAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
-	}
-	return ii2, nil
-}
-
 type UpdateCorporationAssetParams struct {
 	CorporationID int32
 	ItemID        int64

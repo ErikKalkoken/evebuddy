@@ -26,7 +26,8 @@ func TestCorporationAsset(t *testing.T) {
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID: eveType.ID, AveragePrice: 1.24,
 		})
-		arg := storage.CreateCorporationAssetParams{
+		// when
+		err := st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
 			CorporationID:   c.ID,
 			EveTypeID:       eveType.ID,
 			IsBlueprintCopy: false,
@@ -37,9 +38,7 @@ func TestCorporationAsset(t *testing.T) {
 			LocationType:    app.TypeOther,
 			Name:            "Alpha",
 			Quantity:        7,
-		}
-		// when
-		err := st.CreateCorporationAsset(ctx, arg)
+		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationAsset(ctx, c.ID, 42)
@@ -97,33 +96,6 @@ func TestCorporationAsset(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Alpha", x2.Name)
 	})
-	t.Run("can list assets in ship hangar", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		location := factory.CreateEveLocationStructure()
-		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
-		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
-		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: shipGroup.ID})
-		x1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
-			CorporationID: c.ID,
-			LocationID:    location.ID,
-			EveTypeID:     shipType.ID,
-		})
-		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
-			CorporationID: c.ID,
-			LocationID:    location.ID,
-		})
-		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
-			CorporationID: c.ID,
-		})
-		// when
-		oo, err := st.ListCorporationAssetsInShipHangar(ctx, c.ID, location.ID)
-		// then
-		require.NoError(t, err)
-		assert.Len(t, oo, 1)
-		assert.Equal(t, x1.Type, oo[0].Type)
-	})
 	t.Run("can delete assets", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -150,41 +122,6 @@ func TestCorporationAsset(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := []*app.CorporationAsset{ca1, ca2}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can list assets for corporation in item hangar", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		location := factory.CreateEveLocationStructure()
-		ca1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
-			CorporationID: c.ID,
-			LocationFlag:  app.FlagHangar,
-			LocationID:    location.ID,
-		})
-		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
-			CorporationID: c.ID,
-			LocationFlag:  app.FlagUnknown,
-			LocationID:    location.ID,
-		})
-		// when
-		got, err := st.ListCorporationAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
-		// then
-		require.NoError(t, err)
-		want := []*app.CorporationAsset{ca1}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can list assets for corporation in location", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		ca1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
-		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
-		// when
-		got, err := st.ListCorporationAssetsInLocation(ctx, c.ID, ca1.LocationID)
-		// then
-		require.NoError(t, err)
-		want := []*app.CorporationAsset{ca1}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can list all assets", func(t *testing.T) {

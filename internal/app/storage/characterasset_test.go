@@ -96,33 +96,6 @@ func TestCharacterAsset(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Alpha", x2.Name)
 	})
-	t.Run("can list assets in ship hangar", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		location := factory.CreateEveLocationStructure()
-		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
-		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
-		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: shipGroup.ID})
-		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID: c.ID,
-			LocationID:  location.ID,
-			EveTypeID:   shipType.ID,
-		})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID: c.ID,
-			LocationID:  location.ID,
-		})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID: c.ID,
-		})
-		// when
-		oo, err := st.ListCharacterAssetsInShipHangar(ctx, c.ID, location.ID)
-		// then
-		require.NoError(t, err)
-		assert.Len(t, oo, 1)
-		assert.Equal(t, x1.Type, oo[0].Type)
-	})
 	t.Run("can delete assets", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -149,41 +122,6 @@ func TestCharacterAsset(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := []*app.CharacterAsset{ca1, ca2}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can list assets for character in item hangar", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		location := factory.CreateEveLocationStructure()
-		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID:  c.ID,
-			LocationFlag: app.FlagHangar,
-			LocationID:   location.ID,
-		})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID:  c.ID,
-			LocationFlag: app.FlagUnknown,
-			LocationID:   location.ID,
-		})
-		// when
-		got, err := st.ListCharacterAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
-		// then
-		require.NoError(t, err)
-		want := []*app.CharacterAsset{ca1}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can list assets for character in location", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
-		// when
-		got, err := st.ListCharacterAssetsInLocation(ctx, c.ID, ca1.LocationID)
-		// then
-		require.NoError(t, err)
-		want := []*app.CharacterAsset{ca1}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can list all assets", func(t *testing.T) {

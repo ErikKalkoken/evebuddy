@@ -244,11 +244,6 @@ func (ca Asset) IsSKIN() bool {
 }
 
 func (ca Asset) IsContainer() bool {
-	switch ca.LocationFlag {
-	case
-		FlagOfficeFolder:
-		return true
-	}
 	if !ca.IsSingleton {
 		return false
 	}
@@ -258,7 +253,8 @@ func (ca Asset) IsContainer() bool {
 	if ca.Type.IsShip() {
 		return true
 	}
-	if ca.Type.ID == EveTypeAssetSafetyWrap {
+	switch ca.Type.ID {
+	case EveTypeAssetSafetyWrap, EveTypeOffice:
 		return true
 	}
 	switch ca.Type.Group.ID {
@@ -275,150 +271,89 @@ func (ca Asset) LocationCategory() LocationFlag {
 	return FlagUndefined
 }
 
-func (ca Asset) IsInAssetSafety() bool {
-	return ca.LocationFlag == FlagAssetSafety
-}
+// func (ca Asset) IsInAnyCargoHold() bool {
+// 	switch ca.LocationFlag {
+// 	case
+// 		FlagCargo,
+// 		FlagFleetHangar,
+// 		FlagMobileDepotHold,
+// 		FlagMoonMaterialBay,
+// 		FlagQuafeBay,
+// 		FlagSpecializedAmmoHold,
+// 		FlagSpecializedAsteroidHold,
+// 		FlagSpecializedCommandCenterHold,
+// 		FlagSpecializedGasHold,
+// 		FlagSpecializedIceHold,
+// 		FlagSpecializedIndustrialShipHold,
+// 		FlagSpecializedLargeShipHold,
+// 		FlagSpecializedMaterialBay,
+// 		FlagSpecializedMediumShipHold,
+// 		FlagSpecializedMineralHold,
+// 		FlagSpecializedOreHold,
+// 		FlagSpecializedPlanetaryCommoditiesHold,
+// 		FlagSpecializedSalvageHold,
+// 		FlagSpecializedShipHold,
+// 		FlagSpecializedSmallShipHold,
+// 		FlagStructureDeedBay:
+// 		return true
+// 	}
+// 	return false
+// }
 
-func (ca Asset) IsInAnyCargoHold() bool {
-	switch ca.LocationFlag {
-	case
-		FlagCargo,
-		FlagFleetHangar,
-		FlagMobileDepotHold,
-		FlagMoonMaterialBay,
-		FlagQuafeBay,
-		FlagSpecializedAmmoHold,
-		FlagSpecializedAsteroidHold,
-		FlagSpecializedCommandCenterHold,
-		FlagSpecializedGasHold,
-		FlagSpecializedIceHold,
-		FlagSpecializedIndustrialShipHold,
-		FlagSpecializedLargeShipHold,
-		FlagSpecializedMaterialBay,
-		FlagSpecializedMediumShipHold,
-		FlagSpecializedMineralHold,
-		FlagSpecializedOreHold,
-		FlagSpecializedPlanetaryCommoditiesHold,
-		FlagSpecializedSalvageHold,
-		FlagSpecializedShipHold,
-		FlagSpecializedSmallShipHold,
-		FlagStructureDeedBay:
-		return true
-	}
-	return false
-}
-
-func (ca Asset) IsInDroneBay() bool {
-	return ca.LocationFlag == FlagDroneBay
-}
-
-func (ca Asset) IsInFighterBay() bool {
-	switch ca.LocationFlag {
-	case
-		FlagFighterBay,
-		FlagFighterTube0,
-		FlagFighterTube1,
-		FlagFighterTube2,
-		FlagFighterTube3,
-		FlagFighterTube4:
-		return true
-	}
-	return false
-}
-
-func (ca Asset) IsInFrigateEscapeBay() bool {
-	return ca.LocationFlag == FlagFrigateEscapeBay
-}
-
-func (ca Asset) IsInFuelBay() bool {
-	return ca.LocationFlag == FlagSpecializedFuelBay
-}
-
-func (ca Asset) IsInSpace() bool {
-	return ca.LocationType == TypeSolarSystem
-}
-
-func (ca Asset) IsInHangar() bool {
-	return ca.LocationFlag == FlagHangar
-}
-
-func (ca Asset) IsFitted() bool {
-	switch ca.LocationFlag {
-	case
-		FlagHiSlot0,
-		FlagHiSlot1,
-		FlagHiSlot2,
-		FlagHiSlot3,
-		FlagHiSlot4,
-		FlagHiSlot5,
-		FlagHiSlot6,
-		FlagHiSlot7:
-		return true
-	case
-		FlagMedSlot0,
-		FlagMedSlot1,
-		FlagMedSlot2,
-		FlagMedSlot3,
-		FlagMedSlot4,
-		FlagMedSlot5,
-		FlagMedSlot6,
-		FlagMedSlot7:
-		return true
-	case
-		FlagLoSlot0,
-		FlagLoSlot1,
-		FlagLoSlot2,
-		FlagLoSlot3,
-		FlagLoSlot4,
-		FlagLoSlot5,
-		FlagLoSlot6,
-		FlagLoSlot7:
-		return true
-	case
-		FlagRigSlot0,
-		FlagRigSlot1,
-		FlagRigSlot2,
-		FlagRigSlot3,
-		FlagRigSlot4,
-		FlagRigSlot5,
-		FlagRigSlot6,
-		FlagRigSlot7:
-		return true
-	case
-		FlagSubSystemSlot0,
-		FlagSubSystemSlot1,
-		FlagSubSystemSlot2,
-		FlagSubSystemSlot3,
-		FlagSubSystemSlot4,
-		FlagSubSystemSlot5,
-		FlagSubSystemSlot6,
-		FlagSubSystemSlot7:
-	}
-	return false
-}
-
-func (ca Asset) IsShipOther() bool {
-	return !ca.IsInAnyCargoHold() &&
-		!ca.IsInDroneBay() &&
-		!ca.IsInFighterBay() &&
-		!ca.IsInFuelBay() &&
-		!ca.IsFitted() &&
-		!ca.IsInFrigateEscapeBay()
-}
-
-// QuantityFiltered returns the quantity for items which are not inside a container
-// and reports whether this item should be counted.
-func (ca Asset) QuantityFiltered() (int, bool) {
-	if ca.IsFitted() ||
-		ca.IsInDroneBay() ||
-		ca.IsInFrigateEscapeBay() ||
-		ca.IsInFighterBay() ||
-		ca.IsInFuelBay() ||
-		ca.IsInAnyCargoHold() {
-		return 0, false
-	}
-	return int(ca.Quantity), true
-}
+// func (ca Asset) IsFitted() bool {
+// 	switch ca.LocationFlag {
+// 	case
+// 		FlagHiSlot0,
+// 		FlagHiSlot1,
+// 		FlagHiSlot2,
+// 		FlagHiSlot3,
+// 		FlagHiSlot4,
+// 		FlagHiSlot5,
+// 		FlagHiSlot6,
+// 		FlagHiSlot7:
+// 		return true
+// 	case
+// 		FlagMedSlot0,
+// 		FlagMedSlot1,
+// 		FlagMedSlot2,
+// 		FlagMedSlot3,
+// 		FlagMedSlot4,
+// 		FlagMedSlot5,
+// 		FlagMedSlot6,
+// 		FlagMedSlot7:
+// 		return true
+// 	case
+// 		FlagLoSlot0,
+// 		FlagLoSlot1,
+// 		FlagLoSlot2,
+// 		FlagLoSlot3,
+// 		FlagLoSlot4,
+// 		FlagLoSlot5,
+// 		FlagLoSlot6,
+// 		FlagLoSlot7:
+// 		return true
+// 	case
+// 		FlagRigSlot0,
+// 		FlagRigSlot1,
+// 		FlagRigSlot2,
+// 		FlagRigSlot3,
+// 		FlagRigSlot4,
+// 		FlagRigSlot5,
+// 		FlagRigSlot6,
+// 		FlagRigSlot7:
+// 		return true
+// 	case
+// 		FlagSubSystemSlot0,
+// 		FlagSubSystemSlot1,
+// 		FlagSubSystemSlot2,
+// 		FlagSubSystemSlot3,
+// 		FlagSubSystemSlot4,
+// 		FlagSubSystemSlot5,
+// 		FlagSubSystemSlot6,
+// 		FlagSubSystemSlot7:
+// 	}
+// 	return false
+// }
 
 func (ca Asset) TypeName() string {
 	if ca.Type == nil {

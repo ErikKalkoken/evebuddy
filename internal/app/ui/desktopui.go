@@ -286,10 +286,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage("Assets", container.NewAppTabs(
-			container.NewTabItem("Old", u.characterAssets),
-			container.NewTabItem("New", u.characterAssetBrowser),
-		)),
+		newContentPage("Assets", u.characterAssetBrowser),
 	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
