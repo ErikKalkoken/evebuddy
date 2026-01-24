@@ -11,9 +11,10 @@ import (
 
 const (
 	EveCategoryBlueprint  = 9
-	EveCategoryDrone      = 18
 	EveCategoryDeployable = 22
+	EveCategoryDrone      = 18
 	EveCategoryFighter    = 87
+	EveCategoryMineral    = 4
 	EveCategoryOrbitals   = 46
 	EveCategoryShip       = 6
 	EveCategorySkill      = 16
@@ -64,6 +65,7 @@ const (
 	EveTypeAlliance                    = 16159
 	EveTypeAssetSafetyWrap             = 60
 	EveTypeCorporation                 = 2
+	EveTypeCustomsOffice               = 2233
 	EveTypeIHUB                        = 32458
 	EveTypeIndustry                    = 3380
 	EveTypeInfomorphSynchronizing      = 33399
@@ -71,6 +73,7 @@ const (
 	EveTypeLaboratoryOperation         = 3406
 	EveTypeMassProduction              = 3387
 	EveTypeMassReactions               = 45748
+	EveTypeOffice                      = 27
 	EveTypePlanetTemperate             = 11
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226

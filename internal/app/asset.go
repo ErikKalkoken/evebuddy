@@ -6,6 +6,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+//go:generate go tool stringer -type=LocationFlag
+
 // LocationFlag represents a location flag for assets.
 type LocationFlag uint
 
@@ -193,6 +195,8 @@ func (ca Asset) CanHaveName() bool {
 	switch ca.Type.Group.Category.ID {
 	case
 		EveCategoryDeployable,
+		EveCategoryOrbitals,
+		EveCategoryStarbase,
 		EveCategoryShip,
 		EveCategoryStructure:
 		return true
@@ -240,7 +244,15 @@ func (ca Asset) IsSKIN() bool {
 }
 
 func (ca Asset) IsContainer() bool {
+	switch ca.LocationFlag {
+	case
+		FlagOfficeFolder:
+		return true
+	}
 	if !ca.IsSingleton {
+		return false
+	}
+	if ca.Type == nil {
 		return false
 	}
 	if ca.Type.IsShip() {

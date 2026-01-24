@@ -139,12 +139,12 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 		nil,
 		a.assetGrid,
 	)
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character.Store(c)
-			a.update()
-		},
-	)
+
+	// Signals
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character.Store(c)
+		a.update()
+	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
@@ -239,27 +239,14 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			return newAssetItem(func(image *canvas.Image, ca *app.CharacterAsset) {
-				iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
-					switch ca.Variant() {
-					case app.VariantSKIN:
-						return a.u.eis.InventoryTypeSKIN(ca.Type.ID, app.IconPixelSize)
-					case app.VariantBPO:
-						return a.u.eis.InventoryTypeBPO(ca.Type.ID, app.IconPixelSize)
-					case app.VariantBPC:
-						return a.u.eis.InventoryTypeBPC(ca.Type.ID, app.IconPixelSize)
-					default:
-						return a.u.eis.InventoryTypeIcon(ca.Type.ID, app.IconPixelSize)
-					}
-				})
-			})
+			return newAssetIcon(a.u.eis)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.assets) {
 				return
 			}
 			ca := a.assets[id]
-			item := co.(*assetItem)
+			item := co.(*assetIcon)
 			item.Set(ca)
 		},
 	)
@@ -393,48 +380,52 @@ func makeLocationTreeData(ac asset.Collection, characterID int32) iwidget.TreeDa
 	var tree iwidget.TreeData[locationNode]
 	locationNodes := ac.LocationNodes()
 	slices.SortFunc(locationNodes, func(x *asset.Node, y *asset.Node) int {
-		return cmp.Compare(x.Location().DisplayName(), y.Location().DisplayName())
+		return cmp.Compare(x.MustLocation().DisplayName(), y.MustLocation().DisplayName())
 	})
 	for _, ln := range locationNodes {
 		location := locationNode{
 			characterID: characterID,
-			containerID: ln.Location().ID,
+			containerID: ln.MustLocation().ID,
 			variant:     nodeLocation,
-			name:        ln.Location().DisplayName(),
+			name:        ln.MustLocation().DisplayName(),
 			itemCount:   ln.ItemCountFiltered(),
 		}
-		if ln.Location().SolarSystem != nil {
-			location.systemName = ln.Location().SolarSystem.Name
-			location.systemSecurityValue = float32(ln.Location().SolarSystem.SecurityStatus)
-			location.systemSecurityType = ln.Location().SolarSystem.SecurityType()
+		if ln.MustLocation().SolarSystem != nil {
+			location.systemName = ln.MustLocation().SolarSystem.Name
+			location.systemSecurityValue = float32(ln.MustLocation().SolarSystem.SecurityStatus)
+			location.systemSecurityType = ln.MustLocation().SolarSystem.SecurityType()
 		} else {
 			location.isUnknown = true
 		}
 		locationUID := tree.MustAdd(iwidget.TreeRootID, location)
 		topAssets := ln.Children()
 		slices.SortFunc(topAssets, func(a, b *asset.Node) int {
-			return cmp.Compare(a.MustCharacterAsset().DisplayName(), b.MustCharacterAsset().DisplayName())
+			return cmp.Compare(a.DisplayName(), b.DisplayName())
 		})
 		ships := make([]*asset.Node, 0)
 		itemContainers := make([]*asset.Node, 0)
 		itemsOther := make([]*asset.Node, 0)
 		assetSafety := make([]*asset.Node, 0)
 		inSpace := make([]*asset.Node, 0)
-		for _, an := range topAssets {
-			if an.MustCharacterAsset().IsInAssetSafety() {
-				assetSafety = append(assetSafety, an)
-			} else if an.MustCharacterAsset().IsInHangar() {
-				if an.MustCharacterAsset().IsContainer() {
-					if an.MustCharacterAsset().Type.IsShip() {
-						ships = append(ships, an)
+		for _, n := range topAssets {
+			at, ok := n.CharacterAsset()
+			if !ok {
+				continue
+			}
+			if at.IsInAssetSafety() {
+				assetSafety = append(assetSafety, n)
+			} else if at.IsInHangar() {
+				if at.IsContainer() {
+					if at.Type.IsShip() {
+						ships = append(ships, n)
 					} else {
-						itemContainers = append(itemContainers, an)
+						itemContainers = append(itemContainers, n)
 					}
 				} else {
-					itemsOther = append(itemsOther, an)
+					itemsOther = append(itemsOther, n)
 				}
 			} else {
-				inSpace = append(inSpace, an)
+				inSpace = append(inSpace, n)
 			}
 		}
 
@@ -448,7 +439,7 @@ func makeLocationTreeData(ac asset.Collection, characterID int32) iwidget.TreeDa
 		}
 		shipsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
-			containerID: ln.Location().ID,
+			containerID: ln.MustLocation().ID,
 			name:        "Ship Hangar",
 			itemCount:   itemCountSumExcludingShipContainer(ships),
 			variant:     nodeShipHangar,
@@ -554,7 +545,7 @@ func makeLocationTreeData(ac asset.Collection, characterID int32) iwidget.TreeDa
 		// item hangar
 		itemsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
-			containerID: ln.Location().ID,
+			containerID: ln.MustLocation().ID,
 			name:        "Item Hangar",
 			itemCount:   itemCountSumAny(itemsOther) + itemCountSumAny(itemContainers),
 			variant:     nodeItemHangar,
@@ -586,7 +577,7 @@ func makeLocationTreeData(ac asset.Collection, characterID int32) iwidget.TreeDa
 		if len(inSpace) > 0 {
 			tree.MustAdd(locationUID, locationNode{
 				characterID: characterID,
-				containerID: ln.Location().ID,
+				containerID: ln.MustLocation().ID,
 				name:        "In Space",
 				itemCount:   len(inSpace),
 				variant:     nodeInSpace,
@@ -899,45 +890,64 @@ func (w *assetQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type assetItem struct {
-	widget.BaseWidget
-
-	badge      *assetQuantityBadge
-	icon       *canvas.Image
-	iconLoader func(*canvas.Image, *app.CharacterAsset)
-	label      *assetLabel
+type assetIconEIS interface {
+	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
+	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
+	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
 }
 
-func newAssetItem(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *assetItem {
+type assetIcon struct {
+	widget.BaseWidget
+
+	badge *assetQuantityBadge
+	icon  *canvas.Image
+	eis   assetIconEIS
+	label *assetLabel
+}
+
+func newAssetIcon(eis assetIconEIS) *assetIcon {
 	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
-	w := &assetItem{
-		icon:       icon,
-		label:      newAssetLabel(),
-		iconLoader: iconLoader,
-		badge:      newAssetQuantityBadge(),
+	w := &assetIcon{
+		icon:  icon,
+		label: newAssetLabel(),
+		eis:   eis,
+		badge: newAssetQuantityBadge(),
 	}
 	w.badge.Hide()
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (o *assetItem) Set(ca *app.CharacterAsset) {
-	o.label.SetText(ca.DisplayName())
-	if !ca.IsSingleton {
-		o.badge.SetQuantity(int(ca.Quantity))
-		o.badge.Show()
+func (w *assetIcon) Set(ai asset.Item) {
+	as := ai.Unwrap()
+	w.label.SetText(as.DisplayName())
+	if !as.IsSingleton {
+		w.badge.SetQuantity(int(as.Quantity))
+		w.badge.Show()
 	} else {
-		o.badge.Hide()
+		w.badge.Hide()
 	}
-	o.iconLoader(o.icon, ca)
+	iwidget.RefreshImageAsync(w.icon, func() (fyne.Resource, error) {
+		switch as.Variant() {
+		case app.VariantBPO:
+			return w.eis.InventoryTypeBPO(as.Type.ID, app.IconPixelSize)
+		case app.VariantBPC:
+			return w.eis.InventoryTypeBPC(as.Type.ID, app.IconPixelSize)
+		case app.VariantSKIN:
+			return w.eis.InventoryTypeSKIN(as.Type.ID, app.IconPixelSize)
+		default:
+			return w.eis.InventoryTypeIcon(as.Type.ID, app.IconPixelSize)
+		}
+	})
 }
 
-func (o *assetItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *assetIcon) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,
-		container.New(&bottomRightLayout{}, o.icon, o.badge),
-		o.label,
+		container.New(&bottomRightLayout{}, w.icon, w.badge),
+		w.label,
 	))
 	return widget.NewSimpleRenderer(c)
 }

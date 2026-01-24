@@ -286,7 +286,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage("Assets", u.characterAssets),
+		newContentPage("Assets", container.NewAppTabs(
+			container.NewTabItem("Old", u.characterAssets),
+			container.NewTabItem("New", u.characterAssetBrowser),
+		)),
 	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
@@ -324,7 +327,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corpAssetsItem := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage("Assets", u.corporationAssets),
+		newContentPage("Assets", container.NewAppTabs(
+			container.NewTabItem("Browse", u.corporationAssetBrowser),
+			container.NewTabItem("Search", u.corporationAssets),
+		)),
 	)
 
 	var corporationNav *iwidget.NavDrawer

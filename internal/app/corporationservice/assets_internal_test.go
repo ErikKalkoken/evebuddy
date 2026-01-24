@@ -262,3 +262,44 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		assert.Equal(t, "", x.Name)
 	})
 }
+
+func TestAssets_AdoptNames(t *testing.T) {
+	assets := []*app.CorporationAsset{
+		{
+			Asset: app.Asset{
+				ItemID: 1,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 2,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 3,
+				Type:   &app.EveType{ID: 42},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 4,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+	}
+	names := map[int64]string{
+		1: "Customs Office (Sirikur VII)",
+		3: "Alpha",
+		4: "Bravo",
+	}
+
+	modifyAssetNames(assets, names)
+
+	assert.Equal(t, "Sirikur VII", names[1])
+	assert.NotContains(t, names, 2)
+	assert.Equal(t, "Alpha", names[3])
+	assert.Equal(t, "Bravo", names[4])
+}

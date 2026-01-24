@@ -110,6 +110,7 @@ type baseUI struct {
 	assets                  *assets
 	augmentations           *augmentations
 	characterAssets         *characterAssets
+	characterAssetBrowser   *assetBrowser
 	characterAttributes     *characterAttributes
 	characterAugmentations  *characterAugmentations
 	characterBiography      *characterBiography
@@ -127,6 +128,7 @@ type baseUI struct {
 	colonies                *colonies
 	contracts               *contracts
 	corporationAssets       *assets
+	corporationAssetBrowser *assetBrowser
 	corporationContracts    *contracts
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationMember
@@ -414,6 +416,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.assets = newAssetsForCharacters(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssets = newCharacterAssets(u)
+	u.characterAssetBrowser = newCharacterAssetBrowser(u)
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
@@ -431,6 +434,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.colonies = newColonies(u)
 	u.contracts = newContractsForCharacters(u)
 	u.corporationAssets = newAssetsForCorporation(u)
+	u.corporationAssetBrowser = newCorporationAssetBrowser(u)
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
 	u.corporationMember = newCorporationMember(u)

@@ -129,6 +129,14 @@ func (el EveLocation) ToShort() *EveLocationShort {
 		ID:   el.ID,
 		Name: optional.New(el.Name),
 	}
+	switch el.Variant() {
+	case EveLocationSolarSystem:
+		if el.SolarSystem != nil {
+			o.Name = optional.New(el.SolarSystem.Name)
+		}
+	default:
+		o.Name = optional.New(el.Name)
+	}
 	if el.SolarSystem != nil {
 		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
 	}

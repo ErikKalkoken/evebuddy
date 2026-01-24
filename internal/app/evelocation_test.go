@@ -6,8 +6,10 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestEveLocationVariantFromID(t *testing.T) {
@@ -28,7 +30,7 @@ func TestEveLocationVariantFromID(t *testing.T) {
 	}
 }
 
-func TestEveLocationDisplayName2(t *testing.T) {
+func TestEveLocation_DisplayName2(t *testing.T) {
 	cases := []struct {
 		in  string
 		out string
@@ -48,7 +50,7 @@ func TestEveLocationDisplayName2(t *testing.T) {
 	}
 }
 
-func TestEveLocationDisplayName(t *testing.T) {
+func TestEveLocation_DisplayName(t *testing.T) {
 	cases := []struct {
 		description string
 		id          int64
@@ -75,7 +77,7 @@ func TestEveLocationDisplayName(t *testing.T) {
 		})
 	}
 }
-func TestEveLocationDisplayRichText(t *testing.T) {
+func TestEveLocation_DisplayRichText(t *testing.T) {
 	t.Run("can return as rich text", func(t *testing.T) {
 		ss := &app.EveSolarSystem{SecurityStatus: 0.5}
 		l := &app.EveLocation{Name: "location_name", SolarSystem: ss}
@@ -106,7 +108,7 @@ func TestEveLocationDisplayRichText(t *testing.T) {
 	})
 }
 
-func TestEveLocationRegionName(t *testing.T) {
+func TestEveLocation_RegionName(t *testing.T) {
 	o1 := app.EveLocation{
 		SolarSystem: &app.EveSolarSystem{
 			Constellation: &app.EveConstellation{
@@ -120,7 +122,7 @@ func TestEveLocationRegionName(t *testing.T) {
 	assert.Equal(t, "", app.EveLocation{}.RegionName())
 }
 
-func TestEveLocationSolarSystemName(t *testing.T) {
+func TestEveLocation_SolarSystemName(t *testing.T) {
 	o1 := app.EveLocation{
 		SolarSystem: &app.EveSolarSystem{
 			Name: "system",
@@ -130,7 +132,7 @@ func TestEveLocationSolarSystemName(t *testing.T) {
 	assert.Equal(t, "", app.EveLocation{}.SolarSystemName())
 }
 
-func TestEveLocationToEveEntity(t *testing.T) {
+func TestEveLocation_EveEntity(t *testing.T) {
 	cases := []struct {
 		name string
 		in   *app.EveLocation
@@ -174,6 +176,67 @@ func TestEveLocationToEveEntity(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, tc.in.EveEntity())
+		})
+	}
+}
+
+func TestEveLocation_ToShort(t *testing.T) {
+	cases := []struct {
+		name string
+		in   *app.EveLocation
+		want *app.EveLocationShort
+	}{
+		{
+			"solar system",
+			&app.EveLocation{
+				ID: 30000001,
+				SolarSystem: &app.EveSolarSystem{
+					Name:           "system",
+					SecurityStatus: 0.5,
+				},
+			},
+			&app.EveLocationShort{
+				ID:             30000001,
+				Name:           optional.New("system"),
+				SecurityStatus: optional.New[float32](0.5),
+			},
+		},
+		{
+			"station",
+			&app.EveLocation{
+				ID:   60000001,
+				Name: "station",
+				SolarSystem: &app.EveSolarSystem{
+					Name:           "system",
+					SecurityStatus: 0.5,
+				},
+			},
+			&app.EveLocationShort{
+				ID:             60000001,
+				Name:           optional.New("station"),
+				SecurityStatus: optional.New[float32](0.5),
+			},
+		},
+		{
+			"structure",
+			&app.EveLocation{
+				ID:   1_000_000_000_001,
+				Name: "structure",
+				SolarSystem: &app.EveSolarSystem{
+					Name:           "system",
+					SecurityStatus: 0.5,
+				},
+			},
+			&app.EveLocationShort{
+				ID:             1_000_000_000_001,
+				Name:           optional.New("structure"),
+				SecurityStatus: optional.New[float32](0.5),
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.in.ToShort())
 		})
 	}
 }

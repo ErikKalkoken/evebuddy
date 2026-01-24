@@ -39,6 +39,7 @@ type assetRow struct {
 	isSingleton     bool
 	itemID          int64
 	location        *app.EveLocationShort
+	locationFlag    app.LocationFlag
 	locationDisplay []widget.RichTextSegment
 	locationName    string
 	owner           *app.EveEntity
@@ -78,6 +79,7 @@ func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, character
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
+	r.setLocationFlag(ac, ca.ItemID)
 	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
 	return r
 }
@@ -101,31 +103,49 @@ func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corpo
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
+	r.setLocationFlag(ac, ca.ItemID)
 	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
 	return r
 }
 
+func (r *assetRow) setLocationFlag(ac asset.Collection, itemID int64) {
+	n, ok := ac.Node(itemID)
+	if !ok {
+		return
+	}
+	it, ok := n.Asset()
+	if !ok {
+		return
+	}
+	r.locationFlag = it.LocationFlag
+}
+
 func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
 	ln, ok := ac.RootLocationNode(itemID)
-	if ok {
-		r.location = ln.Location().ToShort()
-		r.locationName = ln.Location().DisplayName()
-		r.locationDisplay = ln.Location().DisplayRichText()
-		n, ok := ac.Node(itemID)
-		if ok {
-			p := n.Path()
-			if len(p) > 0 {
-				r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
-					return x.DisplayName()
-				})
-			}
-		}
-		if ln.Location().SolarSystem != nil {
-			r.regionName = ln.Location().SolarSystem.Constellation.Region.Name
-			r.regionID = ln.Location().SolarSystem.Constellation.Region.ID
-		}
-	} else {
+	if !ok {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
+		return
+	}
+	el, ok := ln.Location()
+	if !ok {
+		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
+		return
+	}
+	r.location = el.ToShort()
+	r.locationName = el.DisplayName()
+	r.locationDisplay = el.DisplayRichText()
+	n, ok := ac.Node(itemID)
+	if ok {
+		p := n.Path()
+		if len(p) > 0 {
+			r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
+				return x.DisplayName()
+			})
+		}
+	}
+	if el.SolarSystem != nil {
+		r.regionName = el.SolarSystem.Constellation.Region.Name
+		r.regionID = el.SolarSystem.Constellation.Region.ID
 	}
 }
 
@@ -650,7 +670,7 @@ func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, int, 
 	var quantity int
 	var total float64
 	for i, ca := range assets {
-		r := newCorporationAssetRow(ca, ac, c.EveCorporation.Name)
+		r := newCorporationAssetRow(ca, ac, corporationNameOrZero(c))
 		r.searchTarget = strings.ToLower(r.typeNameDisplay)
 		rows[i] = r
 		quantity += r.quantity
@@ -749,7 +769,10 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		),
 	}
 	if u.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Item ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.itemID))))
+		items = slices.Concat(items, []*widget.FormItem{
+			widget.NewFormItem("Location Flag", widget.NewLabel(r.locationFlag.String())),
+			widget.NewFormItem("Item ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.itemID))),
+		})
 	}
 
 	f := widget.NewForm(items...)

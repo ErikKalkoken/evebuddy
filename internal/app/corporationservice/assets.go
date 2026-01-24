@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"regexp"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
@@ -37,6 +38,8 @@ func (s *CorporationService) ListAssets(ctx context.Context, corporationID int32
 func (s *CorporationService) ListAllAssets(ctx context.Context) ([]*app.CorporationAsset, error) {
 	return s.st.ListAllCorporationAssets(ctx)
 }
+
+var reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
 
 func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCorporationAssets {
@@ -290,6 +293,9 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				return err
 			}
 			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
+
+			modifyAssetNames(assets2, names2)
+
 			var changed set.Set[int64]
 			for id, name := range names {
 				if names2[id] != name {
@@ -310,6 +316,27 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			return nil
 		},
 	)
+}
+
+// modifyAssetNames modifies the names of specific asset types.
+func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) {
+	for _, a := range assets2 {
+		name, ok := names2[a.ItemID]
+		if !ok {
+			continue
+		}
+		if a.Type == nil {
+			continue
+		}
+		switch a.Type.ID {
+		case app.EveTypeCustomsOffice:
+			match := reCustomsOffice.FindStringSubmatch(name)
+			if len(match) < 2 {
+				continue
+			}
+			names2[a.ItemID] = match[1]
+		}
+	}
 }
 
 func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int32, ids []int64) (map[int64]string, error) {
