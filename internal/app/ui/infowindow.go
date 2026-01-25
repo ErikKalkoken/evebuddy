@@ -171,7 +171,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		iw.w = w
 		iw.sb = iwidget.NewSnackbar(w)
 		iw.sb.Start()
-		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
+		iw.nav = iwidget.NewNavigator(ab)
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
 		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
 		w.SetCloseIntercept(func() {

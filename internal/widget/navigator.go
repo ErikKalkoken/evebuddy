@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/stack"
 )
 
@@ -19,22 +20,18 @@ type Navigator struct {
 	hideNavBar stack.Stack[bool]
 }
 
-// NewNavigatorWithAppBar return a new Navigator and defines the root page.
-func NewNavigatorWithAppBar(ab *AppBar) *Navigator {
+// NewNavigator returns a new Navigator and defines the root page.
+func NewNavigator(ab *AppBar) *Navigator {
+	if ab == nil {
+		panic("must provide an AppBar")
+	}
 	n := &Navigator{
 		pages: container.NewStack(),
 	}
 	n.ExtendBaseWidget(n)
-	if ab != nil {
-		n.pages.Add(ab)
-		n.hideNavBar.Push(false)
-	}
+	n.pages.Add(ab)
+	n.hideNavBar.Push(false)
 	return n
-}
-
-// NewNavigator return a new Navigator.
-func NewNavigator() *Navigator {
-	return NewNavigatorWithAppBar(nil)
 }
 
 // Push adds a new page and shows it.

@@ -232,7 +232,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	characterPage := newCharacterAppBar("Characters", characterList)
-	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
+	characterNav = iwidget.NewNavigator(characterPage)
 
 	// corporation destination
 	fallbackAvatar2, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
@@ -406,7 +406,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
-	corpNav = iwidget.NewNavigatorWithAppBar(corpPage)
+	corpNav = iwidget.NewNavigator(corpPage)
 
 	// other
 
@@ -450,7 +450,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemUpdateStatus,
 		navItemAbout,
 	)
-	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", moreList))
+	moreNav = iwidget.NewNavigator(iwidget.NewAppBar("More", moreList))
 
 	// navigation bar
 	characterDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), characterNav)
@@ -731,7 +731,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 }
 
 func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar, u *MobileUI) *iwidget.Navigator {
-	searchNav := iwidget.NewNavigatorWithAppBar(
+	searchNav := iwidget.NewNavigator(
 		newCharacterAppBar("Search", u.gameSearch),
 	)
 	return searchNav
@@ -892,6 +892,6 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemWealth,
 	)
 
-	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
+	homeNav = iwidget.NewNavigator(iwidget.NewAppBar("Home", homeList))
 	return homeNav
 }

@@ -193,12 +193,8 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		top:        makeTopLabel(),
 	}
 	a.ExtendBaseWidget(a)
-	a.navigation = a.makeNavigation()
-	return a
-}
 
-func (a *assetBrowserNavigation) makeNavigation() *iwidget.Tree[assetNavNode] {
-	tree := iwidget.NewTree(
+	a.navigation = iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			count := widget.NewLabel("99.999.999")
 			name := widget.NewLabel("Template")
@@ -221,13 +217,16 @@ func (a *assetBrowserNavigation) makeNavigation() *iwidget.Tree[assetNavNode] {
 			b[1].(*widget.Label).SetText(s)
 		},
 	)
-	tree.OnSelectedNode = func(n assetNavNode) {
+	a.navigation.OnSelectedNode = func(n assetNavNode) {
 		a.ab.Selected.set(n.node)
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
+		if ab.u.isMobile {
+			a.navigation.UnselectAll()
+		}
 	}
-	return tree
+	return a
 }
 
 func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
@@ -295,6 +294,7 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 		a.navigation.Set(td)
 		a.ab.Selected.clear()
 		a.navigation.UnselectAll()
+		a.navigation.CloseAllBranches()
 		a.setTop(top, widget.MediumImportance)
 	})
 	if a.OnUpdate != nil {
@@ -314,11 +314,13 @@ func (a *assetBrowserNavigation) selectContainer(n *asset.Node) {
 		return
 	}
 	a.navigation.UnselectAll()
-	a.navigation.Select(uid)
-	a.navigation.ScrollTo(uid)
+	if !a.ab.u.isMobile {
+		a.navigation.Select(uid)
+	}
 	for _, x := range a.navigation.Data().Path(uid) {
 		a.navigation.OpenBranch(x)
 	}
+	a.navigation.ScrollTo(uid)
 }
 
 type assetBrowserSelected struct {
