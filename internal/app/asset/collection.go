@@ -306,36 +306,6 @@ func addMissingOffices(trees map[int64]*Node) {
 	}
 }
 
-// UpdateItemCounts sets the items counts for all nodes.
-// This feature is usually only needed for the asset browsers.
-func (ac Collection) UpdateItemCounts() {
-	for _, root := range ac.trees {
-		// set initial counts
-		offices := make([]*Node, 0)
-		for _, n := range root.All() {
-			if n.category == NodeOfficeFolder {
-				offices = append(offices, n)
-			}
-			if len(n.children) == 0 {
-				continue
-			}
-			n.ItemCount.Set(len(n.children))
-		}
-		// update offices
-		for _, n := range offices {
-			var c int
-			for _, n2 := range n.children {
-				c += n2.ItemCount.ValueOrZero()
-			}
-			if c == 0 {
-				n.ItemCount.Clear()
-			} else {
-				n.ItemCount.Set(c)
-			}
-		}
-	}
-}
-
 // RootLocationNode returns the root location for an asset.
 func (ac Collection) RootLocationNode(itemID int64) (*Node, bool) {
 	ln, found := ac.locationLookup[itemID]

@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 //go:generate go tool stringer -type=NodeCategory
@@ -82,9 +81,6 @@ type Node struct {
 
 	// Whether this node is a ship
 	IsShip bool
-
-	// Count of items in this container. Empty for non-containers
-	ItemCount optional.Optional[int]
 
 	category NodeCategory
 	children []*Node
@@ -301,9 +297,7 @@ func PrintTree(n *Node) {
 		if x := n.ID(); x != 0 {
 			id = fmt.Sprintf("#%d", x)
 		}
-		fmt.Printf("%s+-(%s)%s [%s] (%s)\n", indent, id, n.DisplayName(), n.Category().String(), n.ItemCount.StringFunc("-", func(v int) string {
-			return fmt.Sprint(v)
-		}))
+		fmt.Printf("%s+-(%s)%s [%s]\n", indent, id, n.DisplayName(), n.Category().String())
 		if last {
 			indent += "   "
 		} else {

@@ -155,7 +155,6 @@ func (a *assetBrowser) update() {
 		}
 		ac = asset.NewFromCharacterAssets(assets, el)
 	}
-	ac.UpdateItemCounts()
 	a.Navigation.update(ac.Trees())
 
 	fyne.Do(func() {
@@ -263,13 +262,15 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 			id++
 			var itemCount optional.Optional[int]
 			if n.IsRoot() {
-				for _, x := range n.Children() {
-					if !x.ItemCount.IsEmpty() {
-						itemCount.Set(itemCount.ValueOrZero() + x.ItemCount.ValueOrZero())
+				for _, c := range n.Children() {
+					if n := len(c.Children()); n > 0 {
+						itemCount.Set(itemCount.ValueOrZero() + n)
 					}
 				}
 			} else if !n.IsShip && n.Category() != asset.NodeFitting {
-				itemCount = n.ItemCount
+				if n := len(n.Children()); n > 0 {
+					itemCount.Set(n)
+				}
 			}
 			uid, err := td.Add(uid, assetNavNode{
 				id:        id,

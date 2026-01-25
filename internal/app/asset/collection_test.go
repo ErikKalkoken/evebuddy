@@ -307,45 +307,6 @@ func TestCollection_CustomNodes(t *testing.T) {
 	// assert.Fail(t, "stop")
 }
 
-func TestCollection_ItemCounts(t *testing.T) {
-	const locationID = 42
-	a := createCharacterAsset(characterAssetParams{
-		Name:        "a",
-		Quantity:    1,
-		LocationID:  locationID,
-		Type:        CargoContainerType(),
-		IsSingleton: true,
-	})
-	b := createCharacterAsset(characterAssetParams{
-		Name:       "b",
-		Quantity:   2,
-		LocationID: a.ItemID,
-	})
-	c := createCharacterAsset(characterAssetParams{
-		Name:       "c",
-		Quantity:   3,
-		LocationID: locationID,
-	})
-	d := createCharacterAsset(characterAssetParams{
-		Name:       "d",
-		Quantity:   4,
-		LocationID: a.ItemID,
-	})
-	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
-	assets := []*app.CharacterAsset{a, b, c, d}
-	ac := asset.NewFromCharacterAssets(assets, locations)
-	ac.UpdateItemCounts()
-	root := ac.Trees()[0]
-
-	assert.Equal(t, 1, root.ItemCount.ValueOrZero())
-	assert.Equal(t, 2, root.Children()[0].ItemCount.ValueOrZero())
-	assert.Equal(t, 2, ac.MustNode(a.ItemID).ItemCount.ValueOrZero())
-	assert.Equal(t, 0, ac.MustNode(b.ItemID).ItemCount.ValueOrZero())
-
-	asset.PrintTree(root)
-	// assert.Fail(t, "")
-}
-
 func TestCollection_Impounded(t *testing.T) {
 	const locationID = 60007927
 	office := createCharacterAsset(characterAssetParams{
