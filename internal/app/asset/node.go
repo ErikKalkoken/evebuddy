@@ -12,7 +12,8 @@ import (
 
 // NodeCategory represents the category of a node.
 // [NodeAsset] represents assets and [NodeLocation] represent eve locations.
-// All other categories represent custom nodes.
+// All other categories represent custom nodes,
+// except for [NodeOfficeFolder] which is both an asset and a custom node.
 type NodeCategory uint
 
 const (
@@ -20,6 +21,7 @@ const (
 	NodeAsset
 	NodeAssetSafety
 	NodeCargoBay
+	NodeDeliveries
 	NodeDroneBay
 	NodeFighterBay
 	NodeFitting
@@ -29,6 +31,7 @@ const (
 	NodeInSpace
 	NodeItemHangar
 	NodeLocation
+	NodeOfficeFolder
 	NodeOffice1
 	NodeOffice2
 	NodeOffice3
@@ -37,7 +40,6 @@ const (
 	NodeOffice6
 	NodeOffice7
 	NodeShipHangar
-	NodeDeliveries
 )
 
 var nodeCategoryNames = map[NodeCategory]string{
@@ -53,6 +55,7 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeFrigateEscapeBay: "Frigate Escape Bay",
 	NodeFighterBay:       "Fighter Bay",
 	NodeFuelBay:          "Fuel Bay",
+	NodeOfficeFolder:     "Office",
 	NodeOffice1:          "1st Division",
 	NodeOffice2:          "2nd Division",
 	NodeOffice3:          "3rd Division",
@@ -88,7 +91,6 @@ type Node struct {
 	item     Item
 	location *app.EveLocation
 	parent   *Node
-	seen     bool
 }
 
 func newLocationNode(location *app.EveLocation) *Node {
@@ -99,15 +101,21 @@ func newLocationNode(location *app.EveLocation) *Node {
 	}
 }
 
-func newAssetNode(ai Item) *Node {
-	asset := ai.Unwrap()
-	n := &Node{
-		category:    NodeAsset,
-		item:        ai,
-		IsContainer: asset.IsContainer(),
+func newAssetNode(it Item) *Node {
+	as := it.Unwrap()
+	var c NodeCategory
+	if as.Type != nil && as.Type.ID == app.EveTypeOffice {
+		c = NodeOfficeFolder
+	} else {
+		c = NodeAsset
 	}
-	if asset.Type != nil {
-		n.IsShip = asset.Type.IsShip()
+	n := &Node{
+		category:    c,
+		item:        it,
+		IsContainer: as.IsContainer(),
+	}
+	if as.Type != nil {
+		n.IsShip = as.Type.IsShip()
 	}
 	return n
 }
@@ -140,17 +148,17 @@ func (n *Node) Children() []*Node {
 // ID returns the ID of the node. This is the item ID or the location ID.
 // Returns 0 when node has no ID.
 func (n *Node) ID() int64 {
-	if n.category == NodeAsset && n.item != nil {
+	if n.item != nil {
 		return n.item.ID()
 	}
-	if n.category == NodeLocation && n.location != nil {
+	if n.location != nil {
 		return n.location.ID
 	}
 	return 0
 }
 
 func (n *Node) Asset() (app.Asset, bool) {
-	if n.category != NodeAsset || n.item == nil {
+	if n.item == nil {
 		return app.Asset{}, false
 	}
 	return n.item.Unwrap(), true
@@ -180,7 +188,7 @@ func (n *Node) IsRootDirectChild() bool {
 
 // Location returns the location for a node and reports whether the node is a location.
 func (n *Node) Location() (*app.EveLocation, bool) {
-	if n.category != NodeLocation || n.location == nil {
+	if n.location == nil {
 		return nil, false
 	}
 	return n.location, true

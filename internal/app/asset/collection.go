@@ -76,24 +76,24 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	// add items to trees and make node lookup
 	nodeLookup := make(map[int64]*Node)
 	for _, it := range items2 {
-		location, found := trees[it.Unwrap().LocationID]
+		root, found := trees[it.Unwrap().LocationID]
 		if !found {
 			continue
 		}
-		node := location.addChildFromItem(it)
+		node := root.addChildFromItem(it)
 		nodeLookup[it.ID()] = node
 		delete(items2, it.ID())
 	}
-	for _, l := range trees {
-		addChildNodes(l.children, items2, nodeLookup)
+	for _, root := range trees {
+		addChildNodes(root.children, items2, nodeLookup)
 	}
 
 	// make locations lookup
 	locationLookup := make(map[int64]*Node)
-	for _, ln := range trees {
-		for _, n := range ln.children {
+	for _, root := range trees {
+		for _, n := range root.children {
 			for _, c := range n.All() {
-				locationLookup[c.item.ID()] = ln
+				locationLookup[c.item.ID()] = root
 			}
 		}
 	}
@@ -225,13 +225,10 @@ var locationFlag2Category = map[app.LocationFlag]NodeCategory{
 }
 
 func insertCustomNodes(trees map[int64]*Node) {
-	for _, tree := range trees {
-		for _, n := range tree.All() {
+	for _, root := range trees {
+		for _, n := range root.All() {
 			asset, ok := n.Asset()
 			if !ok {
-				continue
-			}
-			if n.seen {
 				continue
 			}
 			if asset.LocationType == app.TypeSolarSystem {
@@ -276,21 +273,13 @@ func addToCustomNode(n *Node, category NodeCategory) bool {
 		return x == n
 	})
 	n.parent = p2
-	n.seen = true
 	return isCreated
 }
 
 func addMissingOffices(trees map[int64]*Node) {
-	for _, tree := range trees {
-		for _, n := range tree.All() {
-			if !n.IsContainer || n.category != NodeAsset {
-				continue
-			}
-			an, ok := n.Asset()
-			if !ok {
-				continue
-			}
-			if an.Type == nil || an.Type.ID != app.EveTypeOffice {
+	for _, root := range trees {
+		for _, n := range root.All() {
+			if n.category != NodeOfficeFolder {
 				continue
 			}
 			current := set.Collect(xiter.MapSlice(n.children, func(x *Node) NodeCategory {
@@ -320,14 +309,12 @@ func addMissingOffices(trees map[int64]*Node) {
 // UpdateItemCounts sets the items counts for all nodes.
 // This feature is usually only needed for the asset browsers.
 func (ac Collection) UpdateItemCounts() {
-	for _, tree := range ac.trees {
+	for _, root := range ac.trees {
 		// set initial counts
 		offices := make([]*Node, 0)
-		for _, n := range tree.All() {
-			if an, ok := n.Asset(); ok {
-				if an.Type != nil && an.Type.ID == app.EveTypeOffice {
-					offices = append(offices, n)
-				}
+		for _, n := range root.All() {
+			if n.category == NodeOfficeFolder {
+				offices = append(offices, n)
 			}
 			if len(n.children) == 0 {
 				continue

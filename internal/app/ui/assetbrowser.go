@@ -514,12 +514,6 @@ func (a *assetBrowserLocation) set(node *asset.Node) {
 		}
 		a.info.Show()
 	case asset.NodeAsset:
-		if as, ok := node.Asset(); ok {
-			if as.Type != nil && as.Type.ID == app.EveTypeOffice {
-				a.info.Hide()
-				break
-			}
-		}
 		a.info.OnTapped = func() {
 			a.selected.showNodeInfo(node)
 		}
@@ -595,7 +589,7 @@ func (w *assetNodeIcon) Set(n *asset.Node) {
 		name = as.TypeName()
 	}
 	w.label.SetText(name)
-	if as.Type.ID == app.EveTypeOffice {
+	if n.Category() == asset.NodeOfficeFolder {
 		showFolder(w)
 		return
 	}

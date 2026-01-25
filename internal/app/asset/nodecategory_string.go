@@ -12,29 +12,30 @@ func _() {
 	_ = x[NodeAsset-1]
 	_ = x[NodeAssetSafety-2]
 	_ = x[NodeCargoBay-3]
-	_ = x[NodeDroneBay-4]
-	_ = x[NodeFighterBay-5]
-	_ = x[NodeFitting-6]
-	_ = x[NodeFrigateEscapeBay-7]
-	_ = x[NodeFuelBay-8]
-	_ = x[NodeImpounded-9]
-	_ = x[NodeInSpace-10]
-	_ = x[NodeItemHangar-11]
-	_ = x[NodeLocation-12]
-	_ = x[NodeOffice1-13]
-	_ = x[NodeOffice2-14]
-	_ = x[NodeOffice3-15]
-	_ = x[NodeOffice4-16]
-	_ = x[NodeOffice5-17]
-	_ = x[NodeOffice6-18]
-	_ = x[NodeOffice7-19]
-	_ = x[NodeShipHangar-20]
-	_ = x[NodeDeliveries-21]
+	_ = x[NodeDeliveries-4]
+	_ = x[NodeDroneBay-5]
+	_ = x[NodeFighterBay-6]
+	_ = x[NodeFitting-7]
+	_ = x[NodeFrigateEscapeBay-8]
+	_ = x[NodeFuelBay-9]
+	_ = x[NodeImpounded-10]
+	_ = x[NodeInSpace-11]
+	_ = x[NodeItemHangar-12]
+	_ = x[NodeLocation-13]
+	_ = x[NodeOfficeFolder-14]
+	_ = x[NodeOffice1-15]
+	_ = x[NodeOffice2-16]
+	_ = x[NodeOffice3-17]
+	_ = x[NodeOffice4-18]
+	_ = x[NodeOffice5-19]
+	_ = x[NodeOffice6-20]
+	_ = x[NodeOffice7-21]
+	_ = x[NodeShipHangar-22]
 }
 
-const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyNodeCargoBayNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangarNodeDeliveries"
+const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyNodeCargoBayNodeDeliveriesNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOfficeFolderNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangar"
 
-var _NodeCategory_index = [...]uint16{0, 13, 22, 37, 49, 61, 75, 86, 106, 117, 130, 141, 155, 167, 178, 189, 200, 211, 222, 233, 244, 258, 272}
+var _NodeCategory_index = [...]uint16{0, 13, 22, 37, 49, 63, 75, 89, 100, 120, 131, 144, 155, 169, 181, 197, 208, 219, 230, 241, 252, 263, 274, 288}
 
 func (i NodeCategory) String() string {
 	idx := int(i) - 0
