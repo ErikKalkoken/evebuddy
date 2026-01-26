@@ -107,7 +107,7 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assets                  *assets
+	assetSearchAll          *assetSearch
 	augmentations           *augmentations
 	characterAssetBrowser   *assetBrowser
 	characterAttributes     *characterAttributes
@@ -126,8 +126,8 @@ type baseUI struct {
 	clones                  *clones
 	colonies                *colonies
 	contracts               *contracts
-	corporationAssets       *assets
 	corporationAssetBrowser *assetBrowser
+	corporationAssetSearch  *assetSearch
 	corporationContracts    *contracts
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationMember
@@ -412,7 +412,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	u.assets = newAssetsForCharacters(u)
+	u.assetSearchAll = newAssetSearchForCharacters(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
 	u.characterAttributes = newCharacterAttributes(u)
@@ -431,8 +431,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.contracts = newContractsForCharacters(u)
-	u.corporationAssets = newAssetsForCorporation(u)
 	u.corporationAssetBrowser = newCorporationAssetBrowser(u)
+	u.corporationAssetSearch = newAssetSearchForCorporation(u)
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
 	u.corporationMember = newCorporationMember(u)
@@ -866,7 +866,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
 		"overview":           u.characterOverview.update,
-		"assets":             u.assets.update,
+		"assets":             u.assetSearchAll.update,
 		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
 		"cloneSearch":        u.clones.update,

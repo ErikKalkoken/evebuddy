@@ -119,7 +119,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	allAssets := iwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage(assetsTitle, u.assets),
+		newContentPage(assetsTitle, u.assetSearchAll),
 	)
 	// u.assets.onUpdate = func(quantity int, _ string) {
 	// 	fyne.Do(func() {
@@ -223,7 +223,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
-			u.assets.focus()
+			u.assetSearchAll.focus()
 		}
 	}
 	homeNav.MinWidth = navDrawerMinWidth
@@ -326,7 +326,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage("Assets", container.NewAppTabs(
 			container.NewTabItem("Browse", u.corporationAssetBrowser),
-			container.NewTabItem("Search", u.corporationAssets),
+			container.NewTabItem("Search", u.corporationAssetSearch),
 		)),
 	)
 

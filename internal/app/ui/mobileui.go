@@ -261,8 +261,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(iwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssets))
-			u.corporationAssets.focus()
+			corpNav.Push(iwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
+			u.corporationAssetSearch.focus()
 		},
 	)
 
@@ -821,11 +821,11 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Assets", u.assets))
-			u.assets.focus()
+			homeNav.Push(iwidget.NewAppBar("Assets", u.assetSearchAll))
+			u.assetSearchAll.focus()
 		},
 	)
-	u.assets.onUpdate = func(_ int, s string) {
+	u.assetSearchAll.onUpdate = func(_ int, s string) {
 		fyne.Do(func() {
 			navItemAssets.Supporting = s
 			homeList.Refresh()

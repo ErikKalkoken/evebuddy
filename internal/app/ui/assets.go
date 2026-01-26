@@ -174,7 +174,7 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 	})
 }
 
-type assets struct {
+type assetSearch struct {
 	widget.BaseWidget
 
 	onUpdate func(int, string)
@@ -208,15 +208,15 @@ const (
 	assetsColOwner    = 5
 )
 
-func newAssetsForCharacters(u *baseUI) *assets {
-	return newAssets(u, false)
+func newAssetSearchForCharacters(u *baseUI) *assetSearch {
+	return newAssetSearch(u, false)
 }
 
-func newAssetsForCorporation(u *baseUI) *assets {
-	return newAssets(u, true)
+func newAssetSearchForCorporation(u *baseUI) *assetSearch {
+	return newAssetSearch(u, true)
 }
 
-func newAssets(u *baseUI, forCorporation bool) *assets {
+func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
 		{
 			Col:   assetsColItem,
@@ -249,7 +249,7 @@ func newAssets(u *baseUI, forCorporation bool) *assets {
 			Width: columnWidthEntity,
 		},
 	})
-	a := &assets{
+	a := &assetSearch{
 		columnSorter:   headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
 		found:          widget.NewLabel(""),
@@ -370,7 +370,7 @@ func newAssets(u *baseUI, forCorporation bool) *assets {
 	return a
 }
 
-func (a *assets) CreateRenderer() fyne.WidgetRenderer {
+func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectCategory,
 		a.selectGroup,
@@ -394,7 +394,7 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assets) makeDataList() *iwidget.StripedList {
+func (a *assetSearch) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	l := iwidget.NewStripedList(
 		func() int {
@@ -444,11 +444,11 @@ func (a *assets) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *assets) focus() {
+func (a *assetSearch) focus() {
 	a.u.MainWindow().Canvas().Focus(a.search)
 }
 
-func (a *assets) filterRows(sortCol int) {
+func (a *assetSearch) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// other filters
 	if x := a.selectCategory.Selected; x != "" {
@@ -551,7 +551,7 @@ func (a *assets) filterRows(sortCol int) {
 	}
 }
 
-func (a *assets) update() {
+func (a *assetSearch) update() {
 	clear := func() {
 		if a.onUpdate != nil {
 			a.onUpdate(0, "")
@@ -606,7 +606,7 @@ func (a *assets) update() {
 	})
 }
 
-func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, float64, error) {
+func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, float64, error) {
 	cc, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -649,7 +649,7 @@ func (a *assets) fetchRowsForCharacters(ctx context.Context) ([]assetRow, float6
 	return rows, total, nil
 }
 
-func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, float64, error) {
+func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, float64, error) {
 	c := a.corporation.Load()
 	if c == nil {
 		return []assetRow{}, 0, nil
@@ -677,7 +677,7 @@ func (a *assets) fetchRowsForCorporation(ctx context.Context) ([]assetRow, float
 	return rows, value, nil
 }
 
-func (a *assets) updateFoundInfo() {
+func (a *assetSearch) updateFoundInfo() {
 	if len(a.rowsFiltered) < len(a.rows) {
 		s := fmt.Sprintf("%s found", ihumanize.Comma(len(a.rowsFiltered)))
 		a.found.SetText(s)
@@ -687,7 +687,7 @@ func (a *assets) updateFoundInfo() {
 	}
 }
 
-func (a *assets) characterCount() int {
+func (a *assetSearch) characterCount() int {
 	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
