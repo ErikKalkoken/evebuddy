@@ -16,7 +16,13 @@ import (
 
 var sequence atomic.Int64
 
-func TritaniumType() *app.EveType {
+func makePath(ac asset.Collection, id asset.Item) []string {
+	return xslices.Map(ac.MustNode(id.ID()).Path(), func(x *asset.Node) string {
+		return x.DisplayName()
+	})
+}
+
+func tritaniumType() *app.EveType {
 	return &app.EveType{
 		ID:    34,
 		Group: &app.EveGroup{ID: 18, Category: &app.EveCategory{ID: app.EveCategoryMineral}},
@@ -24,7 +30,7 @@ func TritaniumType() *app.EveType {
 	}
 }
 
-func OfficeType() *app.EveType {
+func officeType() *app.EveType {
 	return &app.EveType{
 		ID:    27,
 		Group: &app.EveGroup{Category: &app.EveCategory{ID: app.EveCategoryStation}},
@@ -32,11 +38,27 @@ func OfficeType() *app.EveType {
 	}
 }
 
-func CargoContainerType() *app.EveType {
+func cargoContainerType() *app.EveType {
 	return &app.EveType{
 		ID:    3293,
 		Group: &app.EveGroup{ID: 12, Category: &app.EveCategory{ID: 2}},
-		Name:  "Medium Standard Container",
+		Name:  "Container",
+	}
+}
+
+func assetSafetyWrapType() *app.EveType {
+	return &app.EveType{
+		ID:    60,
+		Group: &app.EveGroup{ID: 1319, Category: &app.EveCategory{ID: 29}},
+		Name:  "Asset Safety Wrap",
+	}
+}
+
+func customsOfficeType() *app.EveType {
+	return &app.EveType{
+		ID:    2233,
+		Group: &app.EveGroup{ID: 1025, Category: &app.EveCategory{ID: 46}},
+		Name:  "Customs Office",
 	}
 }
 
@@ -65,7 +87,7 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 		arg.LocationType = app.TypeItem
 	}
 	if arg.Type == nil {
-		arg.Type = TritaniumType()
+		arg.Type = tritaniumType()
 	}
 	return &app.CharacterAsset{
 		Asset: app.Asset{
@@ -82,93 +104,47 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 }
 
 func TestCollection(t *testing.T) {
-	t.Skip("need to be updated after recent changes")
 	const (
-		locationID1 = 100000
-		locationID2 = 101000
+		alphaID = 100000
+		bravoID = 101000
 	)
-	a1 := createCharacterAsset(characterAssetParams{LocationID: locationID1})
-	a11 := createCharacterAsset(characterAssetParams{LocationID: a1.ItemID})
-	a111 := createCharacterAsset(characterAssetParams{LocationID: a11.ItemID, Quantity: 3})
-	a1111 := createCharacterAsset(characterAssetParams{LocationID: a111.ItemID})
-	a2 := createCharacterAsset(characterAssetParams{LocationID: locationID1})
-	a3 := createCharacterAsset(characterAssetParams{LocationID: locationID2})
-	a31 := createCharacterAsset(characterAssetParams{LocationID: a3.ItemID})
-	assets := []*app.CharacterAsset{a1, a2, a11, a111, a3, a31, a1111}
-	loc1 := &app.EveLocation{ID: locationID1, Name: "Alpha"}
-	loc2 := &app.EveLocation{ID: locationID2, Name: "Bravo"}
+	a1 := createCharacterAsset(characterAssetParams{LocationID: alphaID, Type: cargoContainerType()})
+	a2 := createCharacterAsset(characterAssetParams{LocationID: a1.ItemID, Type: cargoContainerType()})
+	a3 := createCharacterAsset(characterAssetParams{LocationID: a2.ItemID, Type: cargoContainerType()})
+	a4 := createCharacterAsset(characterAssetParams{LocationID: a3.ItemID, Quantity: 3})
+	a5 := createCharacterAsset(characterAssetParams{LocationID: alphaID})
+	b1 := createCharacterAsset(characterAssetParams{LocationID: bravoID, Type: cargoContainerType()})
+	b2 := createCharacterAsset(characterAssetParams{LocationID: b1.ItemID})
+	assets := []*app.CharacterAsset{a1, a5, a2, a3, b1, b2, a4}
+	loc1 := &app.EveLocation{ID: alphaID, Name: "Alpha"}
+	loc2 := &app.EveLocation{ID: bravoID, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
 	ac := asset.NewFromCharacterAssets(assets, locations)
-	t.Run("can create tree from character assets", func(t *testing.T) {
-		locations := ac.Trees()
-		assert.Len(t, locations, 2)
-		for _, l := range locations {
-			if l.ID() == locationID1 {
-				nodes := l.Children()
-				assert.Len(t, nodes, 2)
-				for _, n := range nodes {
-					if n.ID() == a1.ItemID {
-						assert.Len(t, n.Children(), 1)
-						if n.ID() == a1.ItemID {
-							assert.Len(t, n.Children(), 1)
-							sub := n.Children()[0]
-							assert.Equal(t, a11.ItemID, sub.ID())
-							assert.Len(t, sub.Children(), 1)
-						}
-					}
-					if n.ID() == a2.ItemID {
-						assert.Len(t, n.Children(), 0)
-					}
-				}
-			}
-			if l.ID() == locationID2 {
-				nodes := l.Children()
-				assert.Len(t, nodes, 1)
-				sub := nodes[0]
-				assert.Equal(t, a3.ItemID, sub.ID())
-				sub2 := sub.Children()
-				assert.Len(t, sub2, 1)
-				assert.Equal(t, a31.ItemID, sub2[0].ID())
-			}
-			asset.PrintTree(l)
-		}
-	})
-	t.Run("can return parent", func(t *testing.T) {
-		cases := []struct {
-			item           asset.Item
-			isItem         bool
-			parentItem     asset.Item
-			parentLocation *app.EveLocation
-		}{
-			{a11, true, a1, nil},
-			{a1, false, nil, loc1},
-		}
-		for _, tc := range cases {
-			n, found := ac.Node(tc.item.ID())
-			require.True(t, found)
-			p := n.Parent()
-			if !tc.isItem {
-				assert.Equal(t, tc.parentLocation, p.MustLocation())
-				continue
-			}
-			assert.Equal(t, tc.parentItem, p.MustCharacterAsset())
-		}
+
+	t.Run("can create trees from character assets", func(t *testing.T) {
+		assert.Len(t, ac.Trees(), 2)
+
+		t1 := ac.MustLocationTree(loc1.ID)
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container"}, makePath(ac, a4))
+		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makePath(ac, a5))
+		asset.PrintTree(t1)
+
+		t2 := ac.MustLocationTree(loc2.ID)
+		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container"}, makePath(ac, b2))
+		asset.PrintTree(t2)
+		// t.Fail()
+
 	})
 	t.Run("can return path", func(t *testing.T) {
 		cases := []struct {
-			item int64
-			want []int64
+			item asset.Item
+			want []string
 		}{
-			{a11.ID(), []int64{loc1.ID, a1.ID()}},
-			{a1111.ID(), []int64{loc1.ID, a1.ID(), a11.ID(), a111.ID()}},
+			{a2, []string{"Alpha", "Item Hangar", "Container"}},
+			{a4, []string{"Alpha", "Item Hangar", "Container", "Container", "Container"}},
 		}
 		for _, tc := range cases {
-			n, found := ac.Node(tc.item)
-			require.True(t, found)
-			path := n.Path()
-			got := xslices.Map(path, func(x *asset.Node) int64 {
-				return x.ID()
-			})
+			got := makePath(ac, tc.item)
 			assert.Equal(t, tc.want, got)
 		}
 	})
@@ -178,12 +154,12 @@ func TestCollection(t *testing.T) {
 			found  bool
 		}{
 			{a1.ItemID, true},
+			{a5.ItemID, true},
 			{a2.ItemID, true},
-			{a11.ItemID, true},
-			{a111.ItemID, true},
-			{a1111.ItemID, true},
 			{a3.ItemID, true},
-			{a31.ItemID, true},
+			{a4.ItemID, true},
+			{b1.ItemID, true},
+			{b2.ItemID, true},
 			{666, false},
 		}
 		for _, tc := range cases {
@@ -275,7 +251,7 @@ func TestCollection_CustomNodes(t *testing.T) {
 		ItemID:       5,
 		LocationID:   locationID,
 		LocationFlag: app.FlagOfficeFolder,
-		Type:         OfficeType(),
+		Type:         officeType(),
 	})
 	mineral2 := createCharacterAsset(characterAssetParams{
 		ItemID:       6,
@@ -292,19 +268,13 @@ func TestCollection_CustomNodes(t *testing.T) {
 	ac := asset.NewFromCharacterAssets(assets, locations)
 	tree := ac.Trees()[0]
 
-	makePath := func(itemID int64) []string {
-		return xslices.Map(ac.MustNode(itemID).Path(), func(x *asset.Node) string {
-			return x.DisplayName()
-		})
-	}
-
 	assert.Equal(t, 3, len(tree.Children()))
-	assert.Equal(t, []string{"Alpha", "Item Hangar"}, makePath(mineral1.ItemID))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay"}, makePath(drone.ItemID))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar"}, makePath(ship2.ItemID))
-	assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(mineral2.ItemID))
+	assert.Equal(t, []string{"Alpha", "Item Hangar"}, makePath(ac, mineral1))
+	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay"}, makePath(ac, drone))
+	assert.Equal(t, []string{"Alpha", "Ship Hangar"}, makePath(ac, ship2))
+	assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(ac, mineral2))
 	asset.PrintTree(tree)
-	// assert.Fail(t, "stop")
+	// t.Fail()
 }
 
 func TestCollection_Impounded(t *testing.T) {
@@ -315,28 +285,24 @@ func TestCollection_Impounded(t *testing.T) {
 		LocationID:   locationID,
 		LocationFlag: app.FlagImpounded,
 		LocationType: app.TypeStation,
-		Type:         OfficeType(),
+		Type:         officeType(),
 	})
 	item1 := createCharacterAsset(characterAssetParams{
 		Quantity:     99,
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG1,
 		LocationType: app.TypeItem,
-		Type:         TritaniumType(),
+		Type:         tritaniumType(),
 	})
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
 	assets := []*app.CharacterAsset{office, item1}
 	ac := asset.NewFromCharacterAssets(assets, locations)
 	root := ac.Trees()[0]
 
-	bn := ac.MustNode(item1.ItemID)
-	path := xslices.Map(bn.Path(), func(x *asset.Node) string {
-		return x.DisplayName()
-	})
-	assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, path)
+	assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makePath(ac, item1))
 
 	asset.PrintTree(root)
-	// assert.Fail(t, "STOP")
+	// t.Fail()
 }
 
 func TestCollection_Offices(t *testing.T) {
@@ -347,32 +313,29 @@ func TestCollection_Offices(t *testing.T) {
 		LocationID:   locationID,
 		LocationFlag: app.FlagOfficeFolder,
 		LocationType: app.TypeStation,
-		Type:         OfficeType(),
+		Type:         officeType(),
 	})
 	item1 := createCharacterAsset(characterAssetParams{
 		Quantity:     99,
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG1,
 		LocationType: app.TypeItem,
-		Type:         TritaniumType(),
+		Type:         tritaniumType(),
 	})
 	item2 := createCharacterAsset(characterAssetParams{
 		Quantity:     33,
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG2,
 		LocationType: app.TypeItem,
-		Type:         TritaniumType(),
+		Type:         tritaniumType(),
 	})
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
 	assets := []*app.CharacterAsset{office, item1, item2}
-	ac := asset.NewFromCharacterAssets(assets, locations)
-	root := ac.Trees()[0]
 
-	itemNode := ac.MustNode(item1.ItemID)
-	path := xslices.Map(itemNode.Path(), func(x *asset.Node) string {
-		return x.DisplayName()
-	})
-	assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, path)
+	ac := asset.NewFromCharacterAssets(assets, locations)
+
+	root := ac.Trees()[0]
+	assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(ac, item1))
 
 	officeNode := ac.MustNode(office.ItemID)
 	offices := xslices.Map(officeNode.Children(), func(x *asset.Node) string {
@@ -391,5 +354,108 @@ func TestCollection_Offices(t *testing.T) {
 		offices,
 	)
 	asset.PrintTree(root)
-	// assert.Fail(t, "STOP")
+	// t.Fail()
+}
+
+func TestCollection_2(t *testing.T) {
+	const (
+		alphaID = 60007927
+		bravoID = 30002537
+	)
+	office := createCharacterAsset(characterAssetParams{
+		IsSingleton:  true,
+		Quantity:     1,
+		LocationID:   alphaID,
+		LocationFlag: app.FlagOfficeFolder,
+		LocationType: app.TypeStation,
+		Type:         officeType(),
+	})
+	officeItem1 := createCharacterAsset(characterAssetParams{
+		Quantity:     99,
+		LocationID:   office.ItemID,
+		LocationFlag: app.FlagCorpSAG1,
+		Type:         tritaniumType(),
+	})
+	impounded := createCharacterAsset(characterAssetParams{
+		IsSingleton:  true,
+		Quantity:     1,
+		LocationID:   alphaID,
+		LocationFlag: app.FlagImpounded,
+		LocationType: app.TypeStation,
+		Type:         officeType(),
+	})
+	officeItem2 := createCharacterAsset(characterAssetParams{
+		Quantity:     99,
+		LocationID:   impounded.ItemID,
+		LocationFlag: app.FlagCorpSAG1,
+		Type:         tritaniumType(),
+	})
+	deliveryItem := createCharacterAsset(characterAssetParams{
+		Quantity:     42,
+		LocationID:   alphaID,
+		LocationFlag: app.FlagCapsuleerDeliveries,
+		LocationType: app.TypeStation,
+		Type:         tritaniumType(),
+	})
+	safetyWrap := createCharacterAsset(characterAssetParams{
+		IsSingleton:  true,
+		Quantity:     1,
+		LocationID:   alphaID,
+		LocationFlag: app.FlagAssetSafety,
+		LocationType: app.TypeStation,
+		Type:         assetSafetyWrapType(),
+	})
+	safetyItem := createCharacterAsset(characterAssetParams{
+		Quantity:   42,
+		LocationID: safetyWrap.ItemID,
+		Type:       tritaniumType(),
+	})
+	spaceItem := createCharacterAsset(characterAssetParams{
+		IsSingleton:  true,
+		LocationFlag: app.FlagAutoFit,
+		LocationType: app.TypeSolarSystem,
+		LocationID:   bravoID,
+		Quantity:     1,
+		Type:         customsOfficeType(),
+	})
+	locations := []*app.EveLocation{
+		{
+			ID:   alphaID,
+			Name: "Alpha",
+		},
+		{
+			ID:   bravoID,
+			Name: "Bravo",
+		},
+	}
+	assets := []*app.CharacterAsset{
+		deliveryItem,
+		impounded,
+		office,
+		officeItem1,
+		officeItem2,
+		safetyItem,
+		safetyWrap,
+		spaceItem,
+	}
+	acAll := asset.NewFromCharacterAssets(assets, locations)
+
+	t.Run("no filter", func(t *testing.T) {
+		assert.Len(t, acAll.Trees(), 2)
+		alpha, ok := acAll.LocationTree(alphaID)
+		require.True(t, ok)
+		assert.Len(t, alpha.Children(), 4)
+		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(acAll, officeItem1))
+		assert.Equal(t, []string{"Alpha", "Deliveries"}, makePath(acAll, deliveryItem))
+		assert.Equal(t, []string{"Alpha", "Asset Safety", "Asset Safety Wrap"}, makePath(acAll, safetyItem))
+		assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makePath(acAll, officeItem2))
+		asset.PrintTree(alpha)
+
+		bravo, ok := acAll.LocationTree(bravoID)
+		require.True(t, ok)
+		assert.Equal(t, []string{"Bravo", "In Space"}, makePath(acAll, spaceItem))
+		asset.PrintTree(bravo)
+		// t.Fail()
+	})
+
 }

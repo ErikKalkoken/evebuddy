@@ -125,3 +125,21 @@ func FromTimeWithZero(v time.Time) Optional[time.Time] {
 	}
 	return New(v)
 }
+
+// Sum returns the sum of values v.
+// Empty values are added with their zero value (e.g. 0).
+// When all values are empty it returns an empty value.
+func Sum[T Numeric](v ...Optional[T]) Optional[T] {
+	var s T
+	var isPresent bool
+	for _, u := range v {
+		if u.isPresent {
+			s += u.value
+			isPresent = true
+		}
+	}
+	if !isPresent {
+		return Optional[T]{}
+	}
+	return New(s)
+}

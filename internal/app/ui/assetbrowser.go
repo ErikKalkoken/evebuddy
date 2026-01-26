@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -17,6 +18,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/dustin/go-humanize"
+
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
@@ -33,7 +36,6 @@ type assetBrowser struct {
 	Navigation *assetBrowserNavigation
 	Selected   *assetBrowserSelected
 
-	ac             asset.Collection
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
@@ -155,12 +157,18 @@ func (a *assetBrowser) update() {
 		}
 		ac = asset.NewFromCharacterAssets(assets, el)
 	}
-	a.Navigation.update(ac.Trees())
-
-	fyne.Do(func() {
-		a.ac = ac
-	})
+	a.Navigation.update(ac)
 }
+
+const (
+	assetCategoryAll        = "All"
+	assetCategoryDeliveries = "Deliveries"
+	assetCategoryImpounded  = "Impounded"
+	assetCategoryInSpace    = "In Space"
+	assetCategoryOffice     = "Office"
+	assetCategoryPersonal   = "Personal"
+	assetCategorySafety     = "Safety"
+)
 
 // assetNavNode represents a node in the navigation tree
 type assetNavNode struct {
@@ -177,12 +185,15 @@ type assetBrowserNavigation struct {
 	widget.BaseWidget
 
 	OnSelected func()
-	OnUpdate   func(string)
 
-	ab         *assetBrowser
-	navigation *iwidget.Tree[assetNavNode]
-	nodeLookup map[*asset.Node]widget.TreeNodeID
-	top        *widget.Label
+	ab             *assetBrowser
+	navigation     *iwidget.Tree[assetNavNode]
+	nodeLookup     map[*asset.Node]widget.TreeNodeID
+	selectCategory *kxwidget.FilterChipSelect
+	top            *widget.Label
+
+	mu sync.RWMutex
+	ac asset.Collection
 }
 
 func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
@@ -225,13 +236,39 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			a.navigation.UnselectAll()
 		}
 	}
+	if a.ab.forCorporation {
+		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+			assetCategoryOffice,
+			assetCategoryImpounded,
+			assetCategoryDeliveries,
+			assetCategoryInSpace,
+			assetCategorySafety,
+			assetCategoryAll,
+		}, func(string) {
+			go a.redraw()
+		})
+		a.selectCategory.Selected = assetCategoryOffice
+		a.selectCategory.SortDisabled = true
+	} else {
+		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+			assetCategoryPersonal,
+			assetCategoryDeliveries,
+			assetCategoryInSpace,
+			assetCategorySafety,
+			assetCategoryAll,
+		}, func(string) {
+			go a.redraw()
+		})
+		a.selectCategory.Selected = assetCategoryPersonal
+		a.selectCategory.SortDisabled = true
+	}
 	return a
 }
 
 func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
+		a.selectCategory,
 		a.top,
-		nil,
 		nil,
 		nil,
 		a.navigation,
@@ -244,10 +281,40 @@ func (a *assetBrowserNavigation) clear() {
 	a.top.SetText("")
 }
 
-func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
+func (a *assetBrowserNavigation) update(ac asset.Collection) {
+	a.mu.Lock()
+	a.ac = ac
+	a.mu.Unlock()
+	a.redraw()
+}
+
+func (a *assetBrowserNavigation) redraw() {
 	var td iwidget.TreeData[assetNavNode]
 	var id int
 	nodeLookUp := make(map[*asset.Node]widget.TreeNodeID)
+
+	filter := a.selectCategory.Selected
+
+	isExcluded := func(c asset.NodeCategory) bool {
+		switch filter {
+		case assetCategoryDeliveries:
+			return c != asset.NodeDeliveries
+		case assetCategoryImpounded:
+			return c != asset.NodeImpounded
+		case assetCategoryInSpace:
+			return c != asset.NodeInSpace
+		case assetCategoryOffice:
+			return c != asset.NodeOfficeFolder
+		case assetCategoryPersonal:
+			switch c {
+			case asset.NodeAssetSafety, asset.NodeDeliveries, asset.NodeInSpace:
+				return true
+			}
+		case assetCategorySafety:
+			return c != asset.NodeAssetSafety
+		}
+		return false
+	}
 
 	// addNodes adds a list of nodes with children recursively to tree data at uid.
 	var addNodes func(widget.TreeNodeID, []*asset.Node)
@@ -256,10 +323,23 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 			return strings.Compare(a.DisplayName(), b.DisplayName())
 		})
 		for _, n := range nodes {
-			if !n.IsContainer {
+			if !n.IsContainer() {
 				continue
 			}
-			id++
+			if n.IsRoot() {
+				var count int
+				for _, c := range n.Children() {
+					if !isExcluded(c.Category()) {
+						count++
+					}
+				}
+				if count == 0 {
+					continue
+				}
+			}
+			if n.IsRootDirectChild() && isExcluded(n.Category()) {
+				continue
+			}
 			var itemCount optional.Optional[int]
 			if n.IsRoot() {
 				for _, c := range n.Children() {
@@ -267,11 +347,12 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 						itemCount.Set(itemCount.ValueOrZero() + n)
 					}
 				}
-			} else if !n.IsShip && n.Category() != asset.NodeFitting {
+			} else if !n.IsShip() && n.Category() != asset.NodeFitting {
 				if n := len(n.Children()); n > 0 {
 					itemCount.Set(n)
 				}
 			}
+			id++
 			uid, err := td.Add(uid, assetNavNode{
 				id:        id,
 				node:      n,
@@ -288,8 +369,71 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 			}
 		}
 	}
-	addNodes(iwidget.TreeRootID, nodes)
-	top := fmt.Sprintf("%d locations", len(nodes))
+
+	var trees []*asset.Node
+	a.mu.RLock()
+	trees = a.ac.Trees()
+	a.mu.RUnlock()
+
+	addNodes(iwidget.TreeRootID, trees)
+
+	addSumsFrom2LevelsDown := func() {
+		for _, locations := range td.Children(iwidget.TreeRootID) {
+			for _, n1 := range td.Children(locations.UID()) {
+				var sum2 optional.Optional[int]
+				for _, n2 := range td.Children(n1.UID()) {
+					sum2 = optional.Sum(sum2, n2.itemCount)
+				}
+				n1.itemCount = sum2
+				td.Replace(n1)
+			}
+		}
+	}
+
+	addSumsFrom3LevelsDown := func() {
+		for _, locations := range td.Children(iwidget.TreeRootID) {
+			for _, n1 := range td.Children(locations.UID()) {
+				var sum2 optional.Optional[int]
+				for _, n2 := range td.Children(n1.UID()) {
+					var sum3 optional.Optional[int]
+					for _, n3 := range td.Children(n2.UID()) {
+						sum3 = optional.Sum(sum3, n3.itemCount)
+					}
+					n2.itemCount = sum3
+					td.Replace(n2)
+					sum2 = optional.Sum(sum2, sum3)
+				}
+				n1.itemCount = sum2
+				td.Replace(n1)
+			}
+		}
+	}
+
+	// Update counts
+	switch filter {
+	case assetCategoryOffice:
+		addSumsFrom2LevelsDown()
+	case assetCategorySafety:
+		if a.ab.forCorporation {
+			addSumsFrom3LevelsDown()
+		} else {
+			addSumsFrom2LevelsDown()
+		}
+	case assetCategoryImpounded:
+		addSumsFrom3LevelsDown()
+
+	}
+	for _, locations := range td.Children(iwidget.TreeRootID) {
+		var sum optional.Optional[int]
+		for _, n1 := range td.Children(locations.UID()) {
+			sum = optional.Sum(sum, n1.itemCount)
+		}
+		locations.itemCount = sum
+		td.Replace(locations)
+	}
+
+	count, _ := td.ChildrenCount(iwidget.TreeRootID)
+	top := fmt.Sprintf("%d locations", count)
 	fyne.Do(func() {
 		a.nodeLookup = nodeLookUp
 		a.navigation.Set(td)
@@ -298,9 +442,6 @@ func (a *assetBrowserNavigation) update(nodes []*asset.Node) {
 		a.navigation.CloseAllBranches()
 		a.setTop(top, widget.MediumImportance)
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(top)
-	}
 }
 
 func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
@@ -379,7 +520,7 @@ func (a *assetBrowserSelected) makeAssetGrid() *widget.GridWrap {
 			return
 		}
 		n := a.children[id]
-		if n.IsContainer {
+		if n.IsContainer() {
 			a.ab.Navigation.selectContainer(n)
 			a.set(n)
 		} else {
@@ -396,14 +537,14 @@ func (a *assetBrowserSelected) showNodeInfo(n *asset.Node) {
 			return
 		}
 		name := corporationNameOrZero(a.ab.corporation.Load())
-		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.ac, name))
+		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.Navigation.ac, name))
 		return
 	}
 	ca, ok := n.CharacterAsset()
 	if !ok {
 		return
 	}
-	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.ac, a.ab.u.scs.CharacterName))
+	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.Navigation.ac, a.ab.u.scs.CharacterName))
 }
 
 func (a *assetBrowserSelected) clear() {

@@ -76,24 +76,20 @@ func (c NodeCategory) DisplayName() string {
 // Node is a node in an asset tree.
 // A node can represent an Eve asset, an Eve location or a custom node.
 type Node struct {
-	// Whether this node is a container
-	IsContainer bool
-
-	// Whether this node is a ship
-	IsShip bool
-
-	category NodeCategory
-	children []*Node
-	item     Item
-	location *app.EveLocation
-	parent   *Node
+	category    NodeCategory
+	children    []*Node
+	isContainer bool
+	isShip      bool
+	item        Item
+	location    *app.EveLocation
+	parent      *Node
 }
 
 func newLocationNode(location *app.EveLocation) *Node {
 	return &Node{
 		category:    NodeLocation,
 		location:    location,
-		IsContainer: true,
+		isContainer: true,
 	}
 }
 
@@ -108,10 +104,10 @@ func newAssetNode(it Item) *Node {
 	n := &Node{
 		category:    c,
 		item:        it,
-		IsContainer: as.IsContainer(),
+		isContainer: as.IsContainer(),
 	}
 	if as.Type != nil {
-		n.IsShip = as.Type.IsShip()
+		n.isShip = as.Type.IsShip()
 	}
 	return n
 }
@@ -123,7 +119,7 @@ func newCustomNode(category NodeCategory) *Node {
 	}
 	return &Node{
 		category:    category,
-		IsContainer: true,
+		isContainer: true,
 	}
 }
 
@@ -139,6 +135,16 @@ func (n *Node) All() []*Node {
 
 func (n *Node) Children() []*Node {
 	return slices.Clone(n.children)
+}
+
+// IsContainer reports whether this node is a container
+func (n *Node) IsContainer() bool {
+	return n.isContainer
+}
+
+// IsShip reports whether this node is a ship
+func (n *Node) IsShip() bool {
+	return n.isShip
 }
 
 // ID returns the ID of the node. This is the item ID or the location ID.
@@ -261,10 +267,6 @@ func (n *Node) DisplayName() string {
 		return n.DisplayName2()
 	}
 	return n.category.DisplayName()
-}
-
-func (n *Node) Parent() *Node {
-	return n.parent
 }
 
 func (n *Node) Path() []*Node {

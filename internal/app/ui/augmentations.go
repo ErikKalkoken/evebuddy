@@ -199,7 +199,7 @@ func (a *augmentations) filterTree() {
 	}
 	td := a.treeData.Clone()
 	if len(del) > 0 {
-		characters, _ := td.Children(iwidget.TreeRootID)
+		characters := td.Children(iwidget.TreeRootID)
 		for _, c := range characters {
 			var toDelete bool
 			for _, d := range del {
@@ -214,7 +214,7 @@ func (a *augmentations) filterTree() {
 			}
 		}
 	}
-	characters, _ := td.Children(iwidget.TreeRootID)
+	characters := td.Children(iwidget.TreeRootID)
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(characters, func(n characterImplantsNode) set.Set[string] {
 		return n.tags
 	})...).All()))

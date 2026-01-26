@@ -55,7 +55,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var characterNav *iwidget.Navigator
 
 	const assetsTitle = "Asset Browser"
-	navItemAssets := iwidget.NewListItemWithIcon(
+	navItemAssetBrowser := iwidget.NewListItemWithIcon(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -176,19 +176,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					))
 			},
 		),
-		navItemAssets,
+		navItemAssetBrowser,
 		navItemCommunications,
 		navItemMail,
 		navItemSkills,
 		navItemWallet,
 	)
-
-	u.characterAssetBrowser.Navigation.OnUpdate = func(s string) {
-		fyne.Do(func() {
-			navItemAssets.Supporting = s
-			characterList.Refresh()
-		})
-	}
 
 	u.characterMails.onUpdate = func(unread, missing int) {
 		s := make([]string, 0)

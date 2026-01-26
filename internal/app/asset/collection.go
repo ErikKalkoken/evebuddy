@@ -17,38 +17,37 @@ type Item interface {
 	Unwrap() app.Asset
 }
 
-// TODO: Consider combining item and location nodes
-
-// Collection is a collection of asset trees.
+// Collection represents a collection of asset trees.
+// There is one tree for each location.
 type Collection struct {
-	isCorporation  bool            // True for corporation assets, false for character assets.
-	locationLookup map[int64]*Node // Lookup of root location for items
-	nodeLookup     map[int64]*Node // Lookup of nodes for items
-	trees          []*Node         // Asset trees per location. The root of each tree is a location node.
+	isCorporation bool            // True for corporation assets, false for character assets.
+	trees         map[int64]*Node // Map of location IDs to root nodes.
+	nodeLookup    map[int64]*Node // Lookup of nodes for items
+	rootLookup    map[int64]*Node // Lookup of root nodes for items
 }
 
-func NewFromCharacterAssets(assets []*app.CharacterAsset, loc []*app.EveLocation) Collection {
+func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Collection {
 	items := make([]Item, 0)
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
-	return new(items, loc, false)
+	return new(items, locations, false)
 }
 
-func NewFromCorporationAssets(assets []*app.CorporationAsset, loc []*app.EveLocation) Collection {
+func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Collection {
 	items := make([]Item, 0)
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
-	return new(items, loc, true)
+	return new(items, locations, true)
 }
 
 // new returns a new Collection.
-func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
-	// map of eve locations
-	locations := make(map[int64]*app.EveLocation)
-	for _, loc := range loc {
-		locations[loc.ID] = loc
+func new(items []Item, locations []*app.EveLocation, isCorporation bool) Collection {
+	// map of eve locationLookup
+	locationLookup := make(map[int64]*app.EveLocation)
+	for _, loc := range locations {
+		locationLookup[loc.ID] = loc
 	}
 
 	// initial map of all items
@@ -66,7 +65,7 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 		if found {
 			continue
 		}
-		loc, found := locations[asset.LocationID]
+		loc, found := locationLookup[asset.LocationID]
 		if !found {
 			continue
 		}
@@ -88,12 +87,12 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 		addChildNodes(root.children, items2, nodeLookup)
 	}
 
-	// make locations lookup
-	locationLookup := make(map[int64]*Node)
+	// make root lookup
+	rootLookup := make(map[int64]*Node)
 	for _, root := range trees {
 		for _, n := range root.children {
 			for _, c := range n.All() {
-				locationLookup[c.item.ID()] = root
+				rootLookup[c.item.ID()] = root
 			}
 		}
 	}
@@ -102,10 +101,10 @@ func new(items []Item, loc []*app.EveLocation, isCorporation bool) Collection {
 	addMissingOffices(trees)
 
 	ac := Collection{
-		isCorporation:  isCorporation,
-		locationLookup: locationLookup,
-		nodeLookup:     nodeLookup,
-		trees:          slices.Collect(maps.Values(trees)),
+		isCorporation: isCorporation,
+		nodeLookup:    nodeLookup,
+		rootLookup:    rootLookup,
+		trees:         trees,
 	}
 	return ac
 }
@@ -308,7 +307,7 @@ func addMissingOffices(trees map[int64]*Node) {
 
 // RootLocationNode returns the root location for an asset.
 func (ac Collection) RootLocationNode(itemID int64) (*Node, bool) {
-	ln, found := ac.locationLookup[itemID]
+	ln, found := ac.rootLookup[itemID]
 	if !found {
 		return nil, false
 	}
@@ -333,7 +332,24 @@ func (ac Collection) MustNode(itemID int64) *Node {
 	return n
 }
 
-// Trees returns the asset trees.
+// Trees returns the location trees.
 func (ac Collection) Trees() []*Node {
-	return slices.Clone(ac.trees)
+	return slices.Collect(maps.Values(ac.trees))
+}
+
+// LocationTree returns the tree for a location and reports if the tree was found.
+func (ac Collection) LocationTree(locationID int64) (*Node, bool) {
+	root, ok := ac.trees[locationID]
+	if !ok {
+		return nil, false
+	}
+	return root, true
+}
+
+func (ac Collection) MustLocationTree(locationID int64) *Node {
+	root, ok := ac.trees[locationID]
+	if !ok {
+		panic(fmt.Sprintf("location tree not found for ID %d", locationID))
+	}
+	return root
 }
