@@ -684,8 +684,8 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
-	u.settings.ResetLastCharacterID()
 	u.currentCharacterExchanged.Emit(context.Background(), nil)
+	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
 	// }
@@ -693,11 +693,11 @@ func (u *baseUI) resetCharacter() {
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
-	u.settings.SetLastCharacterID(c.ID)
-	u.currentCharacterExchanged.Emit(context.Background(), c)
 	if u.onSetCharacter != nil {
-		u.onSetCharacter(c)
+		go u.onSetCharacter(c)
 	}
+	u.currentCharacterExchanged.Emit(context.Background(), c)
+	u.settings.SetLastCharacterID(c.ID)
 }
 
 func (u *baseUI) setAnyCharacter() error {
@@ -711,38 +711,6 @@ func (u *baseUI) setAnyCharacter() error {
 	u.setCharacter(c)
 	return nil
 }
-
-// // updateCharacter updates all pages for the current character.
-// func (u *baseUI) updateCharacter() {
-// 	c := u.currentCharacter()
-// 	if c != nil {
-// 		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-// 	} else {
-// 		slog.Debug("Updating without character")
-// 	}
-// 	u.showInfoWhileExecuting("Loading character", map[string]func(){
-// 		"characterSheet":       u.characterSheet.update,
-// 		"assets":               u.characterAssets.update,
-// 		"attributes":           u.characterAttributes.update,
-// 		"biography":            u.characterBiography.update,
-// 		"implants":             u.characterAugmentations.update,
-// 		"jumpClones":           u.characterJumpClones.update,
-// 		"mail":                 u.characterMails.update,
-// 		"notifications":        u.characterCommunications.update,
-// 		"characterCorporation": u.characterCorporation.update,
-// 		"ships":                u.characterShips.update,
-// 		"skillCatalogue":       u.characterSkillCatalogue.update,
-// 		"skillqueue":           u.characterSkillQueue.update,
-// 		"wallet":               u.characterWallet.update,
-// 	}, func() {
-// 		if u.onUpdateCharacter != nil {
-// 			u.onUpdateCharacter(c)
-// 		}
-// 		// if c != nil && !u.isUpdateDisabled {
-// 		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-// 		// }
-// 	})
-// }
 
 func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
 	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
@@ -816,8 +784,8 @@ func (u *baseUI) loadCorporation(id int32) error {
 
 func (u *baseUI) resetCorporation() {
 	u.corporation.Store(nil)
-	u.settings.ResetLastCorporationID()
 	u.currentCorporationExchanged.Emit(context.Background(), nil)
+	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
 	// }
@@ -825,11 +793,11 @@ func (u *baseUI) resetCorporation() {
 
 func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.corporation.Store(c)
-	u.settings.SetLastCorporationID(c.ID)
-	u.currentCorporationExchanged.Emit(context.Background(), c)
 	if u.onSetCorporation != nil {
-		u.onSetCorporation(c)
+		go u.onSetCorporation(c)
 	}
+	u.currentCorporationExchanged.Emit(context.Background(), c)
+	u.settings.SetLastCorporationID(c.ID)
 }
 
 func (u *baseUI) setAnyCorporation() error {
@@ -966,11 +934,13 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			err := u.loadCharacter(c.ID)
-			if err != nil {
-				slog.Error("make character switch menu", "error", err)
-				u.snackbar.Show("ERROR: Failed to switch character")
-			}
+			go func() {
+				err := u.loadCharacter(c.ID)
+				if err != nil {
+					slog.Error("make character switch menu", "error", err)
+					u.snackbar.Show("ERROR: Failed to switch character")
+				}
+			}()
 		})
 		if c.ID == currentID {
 			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
@@ -1024,11 +994,13 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			err := u.loadCorporation(c.ID)
-			if err != nil {
-				slog.Error("make corporation switch menu", "error", err)
-				u.snackbar.Show("ERROR: Failed to switch corporation")
-			}
+			go func() {
+				err := u.loadCorporation(c.ID)
+				if err != nil {
+					slog.Error("make corporation switch menu", "error", err)
+					u.snackbar.Show("ERROR: Failed to switch corporation")
+				}
+			}()
 		})
 		if c.ID == currentID {
 			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)

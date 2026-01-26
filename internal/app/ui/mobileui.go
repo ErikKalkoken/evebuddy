@@ -552,10 +552,20 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
 				moreList.Refresh()
 			})
+		}()
+		go func() {
+			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
 			fyne.Do(func() {
-				characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
-				corpSelector.SetMenuItems(u.makeCorporationSwitchMenu(corpSelector.Refresh))
+				characterSelector.SetMenuItems(items)
 			})
+		}()
+		go func() {
+			items := u.makeCorporationSwitchMenu(corpSelector.Refresh)
+			fyne.Do(func() {
+				corpSelector.SetMenuItems(items)
+			})
+		}()
+		go func() {
 			cc, err := u.ListCorporationsForSelection()
 			if err != nil {
 				slog.Error("Failed to fetch corporations", "error", err)
@@ -600,33 +610,33 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	})
 	u.onSetCharacter = func(c *app.Character) {
+		fyne.Do(func() {
+			characterPage.SetTitle(c.EveCharacter.Name)
+			characterNav.PopAll()
+		})
 		go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
 		})
-		u.characterMails.resetCurrentFolder()
-		u.characterCommunications.resetCurrentFolder()
-		fyne.Do(func() {
-			characterPage.SetTitle(c.EveCharacter.Name)
-			characterNav.PopAll()
-		})
+		go u.characterMails.resetCurrentFolder()
+		go u.characterCommunications.resetCurrentFolder()
 	}
 	u.onShowCharacter = func() {
 		navBar.Select(1)
 	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
+		fyne.Do(func() {
+			corpPage.SetTitle(c.EveCorporation.Name)
+			corpNav.PopAll()
+		})
 		go u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				corpSelector.SetIcon(r)
 			})
 		})
-		fyne.Do(func() {
-			corpPage.SetTitle(c.EveCorporation.Name)
-			corpNav.PopAll()
-		})
-		togglePermittedSections()
+		go togglePermittedSections()
 	}
 
 	var hasUpdateError, isOffline, hasUpdate, hasScopeError atomic.Bool

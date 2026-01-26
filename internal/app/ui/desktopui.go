@@ -646,17 +646,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func() {
-		go statusBar.update()
-		go fyne.Do(func() {
-			characterHeader.SetButtonMenu(u.makeCharacterSwitchMenu(func() {
+		go func() {
+			items := u.makeCharacterSwitchMenu(func() {
 				characterHeader.Refresh()
-			}))
-		})
-		go fyne.Do(func() {
-			corporationHeader.SetButtonMenu(u.makeCorporationSwitchMenu(func() {
+			})
+			fyne.Do(func() {
+				characterHeader.SetButtonMenu(items)
+			})
+		}()
+		go func() {
+			items := u.makeCorporationSwitchMenu(func() {
 				corporationHeader.Refresh()
-			}))
-		})
+			})
+			fyne.Do(func() {
+				corporationHeader.SetButtonMenu(items)
+			})
+		}()
+		go statusBar.update()
 		go togglePermittedSections()
 		go func() {
 			cc, err := u.ListCorporationsForSelection()
