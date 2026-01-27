@@ -449,106 +449,128 @@ func (a *assetSearch) focus() {
 }
 
 func (a *assetSearch) filterRows(sortCol int) {
-	rows := slices.Clone(a.rows)
-	// other filters
-	if x := a.selectCategory.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.categoryName == x
+	allRows := a.rows
+	category := a.selectCategory.Selected
+	group := a.selectGroup.Selected
+	owner := a.selectOwner.Selected
+	region := a.selectRegion.Selected
+	location := a.selectLocation.Selected
+	total := a.selectTotal.Selected
+	tag := a.selectTag.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		rows := slices.Clone(allRows)
+		// other filters
+		if category != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.categoryName != category
+			})
+		}
+		if group != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.groupName != group
+			})
+		}
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.owner.Name != owner
+			})
+		}
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.regionName != region
+			})
+		}
+		if location != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.locationName != location
+			})
+		}
+		if total != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				switch total {
+				case assetsTotalYes:
+					return r.total.IsEmpty()
+				case assetsTotalNo:
+					return !r.total.IsEmpty()
+				}
+				return true
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// search filter
+		if search != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b assetRow) int {
+				var x int
+				switch sortCol {
+				case assetsColItem:
+					x = strings.Compare(a.typeNameDisplay, b.typeNameDisplay)
+				case assetsColGroup:
+					x = strings.Compare(a.groupName, b.groupName)
+				case assetsColLocation:
+					x = strings.Compare(a.locationName, b.locationName)
+				case assetsColOwner:
+					x = xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
+				case assetsColQuantity:
+					x = cmp.Compare(a.quantity, b.quantity)
+				case assetsColTotal:
+					x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
+			return r.tags
+		})...).All())
+		categoryOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.categoryName
 		})
-	}
-	if x := a.selectGroup.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.groupName == x
+		groupOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.groupName
 		})
-	}
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r assetRow) bool {
-			return r.owner.Name == x
+		ownerOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.owner.Name
 		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.regionName == x
+		regionOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectLocation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.locationName == x
+		locationOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.locationName
 		})
-	}
-	if x := a.selectTotal.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r assetRow) bool {
-			switch x {
-			case assetsTotalYes:
-				return !r.total.IsEmpty()
-			case assetsTotalNo:
-				return r.total.IsEmpty()
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.selectCategory.SetOptions(categoryOptions)
+			a.selectGroup.SetOptions(groupOptions)
+			a.selectOwner.SetOptions(ownerOptions)
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectLocation.SetOptions(locationOptions)
+			a.rowsFiltered = rows
+			a.updateFoundInfo()
+			a.body.Refresh()
+			switch x := a.body.(type) {
+			case *widget.Table:
+				x.ScrollToTop()
 			}
-			return false
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r assetRow) bool {
-			return r.tags.Contains(x)
-		})
-	}
-	// search filter
-	if search := strings.ToLower(a.search.Text); search != "" {
-		rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-			return !strings.Contains(r.searchTarget, search)
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b assetRow) int {
-			var x int
-			switch sortCol {
-			case assetsColItem:
-				x = strings.Compare(a.typeNameDisplay, b.typeNameDisplay)
-			case assetsColGroup:
-				x = strings.Compare(a.groupName, b.groupName)
-			case assetsColLocation:
-				x = strings.Compare(a.locationName, b.locationName)
-			case assetsColOwner:
-				x = xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
-			case assetsColQuantity:
-				x = cmp.Compare(a.quantity, b.quantity)
-			case assetsColTotal:
-				x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.selectCategory.SetOptions(xslices.Map(rows, func(r assetRow) string {
-		return r.categoryName
-	}))
-	a.selectGroup.SetOptions(xslices.Map(rows, func(r assetRow) string {
-		return r.groupName
-	}))
-	a.selectOwner.SetOptions(xslices.Map(rows, func(r assetRow) string {
-		return r.owner.Name
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r assetRow) string {
-		return r.regionName
-	}))
-	a.selectLocation.SetOptions(xslices.Map(rows, func(r assetRow) string {
-		return r.locationName
-	}))
-	a.rowsFiltered = rows
-	a.updateFoundInfo()
-	a.body.Refresh()
-	switch x := a.body.(type) {
-	case *widget.Table:
-		x.ScrollToTop()
-	}
+	}()
 }
 
 func (a *assetSearch) update() {

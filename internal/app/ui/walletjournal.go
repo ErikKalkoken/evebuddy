@@ -42,11 +42,11 @@ type walletJournalRow struct {
 	refTypeDisplay   string
 }
 
-func (e walletJournalRow) descriptionWithReason() string {
-	if e.reason == "" {
-		return e.description
+func (r walletJournalRow) descriptionWithReason() string {
+	if r.reason == "" {
+		return r.description
 	}
-	return fmt.Sprintf("[r] %s", e.description)
+	return fmt.Sprintf("[r] %s", r.description)
 }
 
 // walletJournal is a widget for showing wallet journals for both characters and corporations.
@@ -261,38 +261,48 @@ func (a *walletJournal) makeDataList() *iwidget.StripedList {
 }
 
 func (a *walletJournal) filterRows(sortCol int) {
-	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletJournalRow) bool {
-			return r.refTypeDisplay == x
+	allRows := a.rows
+	type_ := a.selectType.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		rows := slices.Clone(allRows)
+		// filter
+		if type_ != "" {
+			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
+				return r.refTypeDisplay != type_
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b walletJournalRow) int {
+				var x int
+				switch sortCol {
+				case walletJournalColDate:
+					x = a.date.Compare(b.date)
+				case walletJournalColType:
+					x = strings.Compare(a.refType, b.refType)
+				case walletJournalColAmount:
+					x = cmp.Compare(a.amount, b.amount)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// update filters
+		typeOptions := xslices.Map(rows, func(r walletJournalRow) string {
+			return r.refTypeDisplay
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b walletJournalRow) int {
-			var x int
-			switch sortCol {
-			case walletJournalColDate:
-				x = a.date.Compare(b.date)
-			case walletJournalColType:
-				x = strings.Compare(a.refType, b.refType)
-			case walletJournalColAmount:
-				x = cmp.Compare(a.amount, b.amount)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
+
+		fyne.Do(func() {
+			a.selectType.SetOptions(typeOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
 		})
-	})
-	// update filters
-	a.selectType.SetOptions(xslices.Map(rows, func(r walletJournalRow) string {
-		return r.refTypeDisplay
-	}))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+	}()
 }
 
 func (a *walletJournal) update() {

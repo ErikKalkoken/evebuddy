@@ -245,102 +245,125 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *colonies) filterRows(sortCol int) {
-	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectExtracting.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.extracting.Contains(x)
+	allRows := a.rows
+	extracting := a.selectExtracting.Selected
+	owner := a.selectOwner.Selected
+	producing := a.selectProducing.Selected
+	region := a.selectRegion.Selected
+	solarSystem := a.selectSolarSystem.Selected
+	status := a.selectStatus.Selected
+	planetType := a.selectPlanetType.Selected
+	tag := a.selectTag.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		rows := slices.Clone(allRows)
+		// filter
+		if extracting != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return !r.extracting.Contains(extracting)
+			})
+		}
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return r.ownerName != owner
+			})
+		}
+		if producing != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return !r.producing.Contains(producing)
+			})
+		}
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return r.regionName != region
+			})
+		}
+		if solarSystem != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return r.solarSystemName != solarSystem
+			})
+		}
+		if status != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				switch status {
+				case colonyStatusExtracting:
+					return r.isExpired()
+				case colonyStatusOffline:
+					return !r.isExpired()
+				}
+				return true
+			})
+		}
+		if planetType != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return r.planetTypeName != planetType
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b colonyRow) int {
+				var x int
+				switch sortCol {
+				case coloniesColPlanet:
+					x = strings.Compare(a.name, b.name)
+				case coloniesColType:
+					x = strings.Compare(a.planetTypeName, b.planetTypeName)
+				case coloniesColDue:
+					x = a.due.Compare(b.due)
+				case coloniesColRegion:
+					x = strings.Compare(a.regionName, b.regionName)
+				case coloniesColCharacter:
+					x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
+			return r.tags
+		})...).All())
+		ownerOptions := xslices.Map(rows, func(r colonyRow) string {
+			return r.ownerName
 		})
-	}
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.ownerName == x
+		regionOptions := xslices.Map(rows, func(r colonyRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectProducing.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.producing.Contains(x)
+		solarSystemOptions := xslices.Map(rows, func(r colonyRow) string {
+			return r.solarSystemName
 		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.regionName == x
+		planetTypeOptions := xslices.Map(rows, func(r colonyRow) string {
+			return r.planetTypeName
 		})
-	}
-	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.solarSystemName == x
+		var extracting2, producing2 set.Set[string]
+		for _, r := range rows {
+			extracting2.AddSeq(r.extracting.All())
+			producing2.AddSeq(r.producing.All())
+		}
+		extractingOptions := slices.Collect(extracting2.All())
+		producingOptions := slices.Collect(producing2.All())
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.selectOwner.SetOptions(ownerOptions)
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectSolarSystem.SetOptions(solarSystemOptions)
+			a.selectPlanetType.SetOptions(planetTypeOptions)
+			a.selectExtracting.SetOptions(extractingOptions)
+			a.selectProducing.SetOptions(producingOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
 		})
-	}
-	if x := a.selectStatus.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			switch x {
-			case colonyStatusExtracting:
-				return !r.isExpired()
-			case colonyStatusOffline:
-				return r.isExpired()
-			}
-			return false
-		})
-	}
-	if x := a.selectPlanetType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.planetTypeName == x
-		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.tags.Contains(x)
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b colonyRow) int {
-			var x int
-			switch sortCol {
-			case coloniesColPlanet:
-				x = strings.Compare(a.name, b.name)
-			case coloniesColType:
-				x = strings.Compare(a.planetTypeName, b.planetTypeName)
-			case coloniesColDue:
-				x = a.due.Compare(b.due)
-			case coloniesColRegion:
-				x = strings.Compare(a.regionName, b.regionName)
-			case coloniesColCharacter:
-				x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.selectOwner.SetOptions(xslices.Map(rows, func(r colonyRow) string {
-		return r.ownerName
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r colonyRow) string {
-		return r.regionName
-	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r colonyRow) string {
-		return r.solarSystemName
-	}))
-	a.selectPlanetType.SetOptions(xslices.Map(rows, func(r colonyRow) string {
-		return r.planetTypeName
-	}))
-	var extracting, producing set.Set[string]
-	for _, r := range rows {
-		extracting.AddSeq(r.extracting.All())
-		producing.AddSeq(r.producing.All())
-	}
-	a.selectExtracting.SetOptions(slices.Collect(extracting.All()))
-	a.selectProducing.SetOptions(slices.Collect(producing.All()))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+	}()
 }
 
 func (a *colonies) update() {

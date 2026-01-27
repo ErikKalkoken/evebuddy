@@ -204,14 +204,13 @@ func (cs *ColumnSorter) size() int {
 	return len(cs.cols)
 }
 
-// Sort sorts columns idx by applying function f.
-// It will re-apply the previous sort when idx is -1.
-func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
+// CalcSort calculates how and if to apply sorting to column idx.
+func (cs *ColumnSorter) CalcSort(idx int) (int, SortDir, bool) {
 	var dir SortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
 		if dir == sortNone {
-			return
+			return 0, 0, false
 		}
 		dir++
 		if dir > SortDesc {
@@ -221,9 +220,8 @@ func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
 	} else {
 		idx, dir = cs.current()
 	}
-	if idx >= 0 && dir.isSorting() {
-		f(idx, dir)
-	}
+	doSort := idx >= 0 && dir.isSorting()
+	return idx, dir, doSort
 }
 
 // NewSortButton returns a new sortButton.
