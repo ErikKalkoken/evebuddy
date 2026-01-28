@@ -289,50 +289,6 @@ func (a *assetBrowserNavigation) update(ac asset.Collection) {
 }
 
 func (a *assetBrowserNavigation) redraw() {
-	var td iwidget.TreeData[assetNavNode]
-	var id int
-	nodeLookUp := make(map[*asset.Node]widget.TreeNodeID)
-
-	// addNodes adds a list of nodes with children recursively to tree data at uid.
-	var addNodes func(widget.TreeNodeID, []*asset.Node)
-	addNodes = func(uid widget.TreeNodeID, nodes []*asset.Node) {
-		slices.SortFunc(nodes, func(a, b *asset.Node) int {
-			return strings.Compare(a.DisplayName(), b.DisplayName())
-		})
-		for _, n := range nodes {
-			if !n.IsContainer() {
-				continue
-			}
-			var itemCount optional.Optional[int]
-			if n.IsRoot() {
-				for _, c := range n.Children() {
-					if n := len(c.Children()); n > 0 {
-						itemCount.Set(itemCount.ValueOrZero() + n)
-					}
-				}
-			} else if !n.IsShip() && n.Category() != asset.NodeFitting {
-				if n := len(n.Children()); n > 0 {
-					itemCount.Set(n)
-				}
-			}
-			id++
-			uid, err := td.Add(uid, assetNavNode{
-				id:        id,
-				node:      n,
-				itemCount: itemCount,
-			})
-			if err != nil {
-				slog.Error("Failed to add node", "ID", n.ID(), "Name", n.DisplayName())
-				return
-			}
-			nodeLookUp[n] = uid
-			children := n.Children()
-			if len(children) > 0 {
-				addNodes(uid, children)
-			}
-		}
-	}
-
 	m := map[string]asset.Filter{
 		assetCategoryDeliveries: asset.FilterDeliveries,
 		assetCategoryImpounded:  asset.FilterImpounded,
@@ -347,7 +303,14 @@ func (a *assetBrowserNavigation) redraw() {
 	trees := a.ac.Trees()
 	a.mu.Unlock()
 
-	addNodes(iwidget.TreeRootID, trees)
+	var td iwidget.TreeData[assetNavNode]
+	var id int
+	addNodes(&td, iwidget.TreeRootID, trees, &id)
+
+	nodeLookUp := make(map[*asset.Node]widget.TreeNodeID)
+	for n := range td.All() {
+		nodeLookUp[n.node] = n.UID()
+	}
 
 	// addSumsFrom2LevelsDown := func() {
 	// 	for _, locations := range td.Children(iwidget.TreeRootID) {
@@ -408,12 +371,51 @@ func (a *assetBrowserNavigation) redraw() {
 	top := fmt.Sprintf("%d locations", count)
 	fyne.Do(func() {
 		a.nodeLookup = nodeLookUp
-		a.navigation.Set(td)
-		a.ab.Selected.clear()
 		a.navigation.UnselectAll()
 		a.navigation.CloseAllBranches()
+		a.navigation.Set(td)
+		a.ab.Selected.clear()
 		a.setTop(top, widget.MediumImportance)
 	})
+}
+
+// addNodes adds nodes with children recursively to tree data at uid
+// and sets initial item counts.
+func addNodes(td *iwidget.TreeData[assetNavNode], uid widget.TreeNodeID, nodes []*asset.Node, id *int) {
+	slices.SortFunc(nodes, func(a, b *asset.Node) int {
+		return strings.Compare(a.DisplayName(), b.DisplayName())
+	})
+	for _, n := range nodes {
+		if !n.IsContainer() {
+			continue
+		}
+		var itemCount optional.Optional[int]
+		if n.IsRoot() {
+			for _, c := range n.Children() {
+				if n := len(c.Children()); n > 0 {
+					itemCount.Set(itemCount.ValueOrZero() + n)
+				}
+			}
+		} else if !n.IsShip() && n.Category() != asset.NodeFitting {
+			if n := len(n.Children()); n > 0 {
+				itemCount.Set(n)
+			}
+		}
+		*id++
+		uid, err := td.Add(uid, assetNavNode{
+			id:        *id,
+			node:      n,
+			itemCount: itemCount,
+		})
+		if err != nil {
+			slog.Error("Failed to add node", "ID", n.ID(), "Name", n.DisplayName(), "error", err)
+			return
+		}
+		children := n.Children()
+		if len(children) > 0 {
+			addNodes(td, uid, children, id)
+		}
+	}
 }
 
 func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
