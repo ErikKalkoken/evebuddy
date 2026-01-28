@@ -833,12 +833,12 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
-		"overview":           u.characterOverview.update,
-		"assets":             u.assetSearchAll.update,
+		"characterOverview":  u.characterOverview.update,
+		"assetSearchAll":     u.assetSearchAll.update,
 		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
-		"cloneSearch":        u.clones.update,
-		"colony":             u.colonies.update,
+		"clones":             u.clones.update,
+		"colonies":           u.colonies.update,
 		"industryJobs":       u.industryJobs.update,
 		"marketOrdersSell":   u.marketOrdersSell.update,
 		"marketOrdersBuy":    u.marketOrdersBuy.update,
