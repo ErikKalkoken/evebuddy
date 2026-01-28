@@ -312,7 +312,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 }
 
 func (a *contracts) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
 	assignee := a.selectAssignee.Selected
 	type_ := a.selectType.Selected
@@ -320,7 +320,6 @@ func (a *contracts) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		rows = slices.DeleteFunc(rows, func(r contractRow) bool {
 			switch a.selectStatus.Selected {

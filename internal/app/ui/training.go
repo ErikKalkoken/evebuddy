@@ -386,14 +386,13 @@ func (a *training) makeDataList() *iwidget.StripedList {
 }
 
 func (a *training) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
 	selectTag := a.selectTag.Selected
 	search := strings.ToLower(a.search.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if selectStatus != "" {
 			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {

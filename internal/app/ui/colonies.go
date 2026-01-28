@@ -245,7 +245,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *colonies) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
 	owner := a.selectOwner.Selected
 	producing := a.selectProducing.Selected
@@ -257,7 +257,6 @@ func (a *colonies) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if extracting != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {

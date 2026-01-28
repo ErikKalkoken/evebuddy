@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -113,67 +114,74 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				slog.Info("Removed obsolete planets", "characterID", characterID, "count", obsolete.Size())
 			}
 			// update or create planet
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanetsPlanetId")
+			g := new(errgroup.Group)
 			for _, o := range planets {
-				_, err := s.eus.GetOrCreatePlanetESI(ctx, o.PlanetId)
-				if err != nil {
-					return err
-				}
-				characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, storage.UpdateOrCreateCharacterPlanetParams{
-					CharacterID:  characterID,
-					EvePlanetID:  o.PlanetId,
-					LastUpdate:   o.LastUpdate,
-					UpgradeLevel: int(o.UpgradeLevel),
-				})
-				if err != nil {
-					return err
-				}
-				ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanetsPlanetId")
-				planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
-				if err != nil {
-					return err
-				}
-				// replace planet pins
-				if err := s.st.DeletePlanetPins(ctx, characterPlanetID); err != nil {
-					return err
-				}
-				for _, pin := range planet.Pins {
-					et, err := s.eus.GetOrCreateTypeESI(ctx, pin.TypeId)
+				g.Go(func() error {
+					_, err := s.eus.GetOrCreatePlanetESI(ctx, o.PlanetId)
 					if err != nil {
 						return err
 					}
-					arg := storage.CreatePlanetPinParams{
-						CharacterPlanetID: characterPlanetID,
-						TypeID:            et.ID,
-						PinID:             pin.PinId,
-						ExpiryTime:        pin.ExpiryTime,
-						InstallTime:       pin.InstallTime,
-						LastCycleStart:    pin.LastCycleStart,
-					}
-					if pin.ExtractorDetails.ProductTypeId != 0 {
-						et, err := s.eus.GetOrCreateTypeESI(ctx, pin.ExtractorDetails.ProductTypeId)
-						if err != nil {
-							return err
-						}
-						arg.ExtractorProductTypeID = optional.New(et.ID)
-					}
-					if pin.FactoryDetails.SchematicId != 0 {
-						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
-						if err != nil {
-							return err
-						}
-						arg.FactorySchemaID = optional.New(es.ID)
-					}
-					if pin.SchematicId != 0 {
-						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
-						if err != nil {
-							return err
-						}
-						arg.SchematicID = optional.New(es.ID)
-					}
-					if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
+					characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, storage.UpdateOrCreateCharacterPlanetParams{
+						CharacterID:  characterID,
+						EvePlanetID:  o.PlanetId,
+						LastUpdate:   o.LastUpdate,
+						UpgradeLevel: int(o.UpgradeLevel),
+					})
+					if err != nil {
 						return err
 					}
-				}
+					planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
+					if err != nil {
+						return err
+					}
+					// replace planet pins
+					if err := s.st.DeletePlanetPins(ctx, characterPlanetID); err != nil {
+						return err
+					}
+					for _, pin := range planet.Pins {
+						et, err := s.eus.GetOrCreateTypeESI(ctx, pin.TypeId)
+						if err != nil {
+							return err
+						}
+						arg := storage.CreatePlanetPinParams{
+							CharacterPlanetID: characterPlanetID,
+							TypeID:            et.ID,
+							PinID:             pin.PinId,
+							ExpiryTime:        pin.ExpiryTime,
+							InstallTime:       pin.InstallTime,
+							LastCycleStart:    pin.LastCycleStart,
+						}
+						if pin.ExtractorDetails.ProductTypeId != 0 {
+							et, err := s.eus.GetOrCreateTypeESI(ctx, pin.ExtractorDetails.ProductTypeId)
+							if err != nil {
+								return err
+							}
+							arg.ExtractorProductTypeID = optional.New(et.ID)
+						}
+						if pin.FactoryDetails.SchematicId != 0 {
+							es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
+							if err != nil {
+								return err
+							}
+							arg.FactorySchemaID = optional.New(es.ID)
+						}
+						if pin.SchematicId != 0 {
+							es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
+							if err != nil {
+								return err
+							}
+							arg.SchematicID = optional.New(es.ID)
+						}
+						if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
+							return err
+						}
+					}
+					return nil
+				})
+			}
+			if err := g.Wait(); err != nil {
+				return err
 			}
 			slog.Info("Stored updated planets", "characterID", characterID, "count", len(planets))
 			return nil

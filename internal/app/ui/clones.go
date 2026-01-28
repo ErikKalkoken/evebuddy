@@ -243,7 +243,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *clones) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
@@ -251,7 +251,6 @@ func (a *clones) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if owner != "" {
 			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {

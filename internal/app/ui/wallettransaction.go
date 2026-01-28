@@ -335,7 +335,7 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 }
 
 func (a *walletTransactions) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
 	client := a.selectClient.Selected
 	location := a.selectLocation.Selected
@@ -344,7 +344,6 @@ func (a *walletTransactions) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if activity := a.selectActivity.Selected; activity != "" {
 			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {

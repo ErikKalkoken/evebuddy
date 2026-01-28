@@ -333,7 +333,7 @@ func (a *characterOverview) makeList() *widget.List {
 }
 
 func (a *characterOverview) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	alliance := a.selectAlliance.Selected
 	corporation := a.selectCorporation.Selected
 	region := a.selectRegion.Selected
@@ -343,7 +343,6 @@ func (a *characterOverview) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if alliance != "" {
 			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {

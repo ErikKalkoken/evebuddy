@@ -246,13 +246,13 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataTableDef, makeCell fun
 }
 
 func (a *industrySlots) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
+		rows := slices.Clone(rows)
 		// filter
 		if freeSlots != "" {
 			rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {

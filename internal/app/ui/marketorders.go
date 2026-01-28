@@ -349,7 +349,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 }
 
 func (a *marketOrders) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	owner := a.selectOwner.Selected
 	type_ := a.selectType.Selected
@@ -358,7 +358,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 
 	go func() {
 		// filter
-		rows := slices.DeleteFunc(allRows, func(r marketOrderRow) bool {
+		rows := slices.DeleteFunc(rows, func(r marketOrderRow) bool {
 			s := r.stateCorrected()
 			switch a.selectState.Selected {
 			case marketOrderStateActive:

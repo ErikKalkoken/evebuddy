@@ -261,12 +261,11 @@ func (a *walletJournal) makeDataList() *iwidget.StripedList {
 }
 
 func (a *walletJournal) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	type_ := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if type_ != "" {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {

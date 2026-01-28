@@ -449,7 +449,7 @@ func (a *assetSearch) focus() {
 }
 
 func (a *assetSearch) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
 	group := a.selectGroup.Selected
 	owner := a.selectOwner.Selected
@@ -461,7 +461,6 @@ func (a *assetSearch) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// other filters
 		if category != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {

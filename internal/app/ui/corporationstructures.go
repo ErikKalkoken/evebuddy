@@ -214,7 +214,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *corporationStructures) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
 	state := a.selectState.Selected
@@ -224,7 +224,6 @@ func (a *corporationStructures) filterRows(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		rows := slices.Clone(allRows)
 		// filter
 		if region != "" {
 			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {

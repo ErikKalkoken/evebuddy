@@ -342,7 +342,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 // filterRows applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *industryJobs) filterRows(sortCol int) {
-	allRows := a.rows
+	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
 	activity := a.selectActivity.Selected
 	owner := a.selectOwner.Selected
@@ -352,7 +352,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 
 	go func() {
 		// filter
-		rows := slices.DeleteFunc(allRows, func(r industryJobRow) bool {
+		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
 			status := r.statusCalculated()
 			switch a.selectStatus.Selected {
 			case industryStatusActive:
