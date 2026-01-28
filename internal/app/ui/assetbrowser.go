@@ -293,29 +293,6 @@ func (a *assetBrowserNavigation) redraw() {
 	var id int
 	nodeLookUp := make(map[*asset.Node]widget.TreeNodeID)
 
-	filter := a.selectCategory.Selected
-
-	isExcluded := func(c asset.NodeCategory) bool {
-		switch filter {
-		case assetCategoryDeliveries:
-			return c != asset.NodeDeliveries
-		case assetCategoryImpounded:
-			return c != asset.NodeImpounded
-		case assetCategoryInSpace:
-			return c != asset.NodeInSpace
-		case assetCategoryOffice:
-			return c != asset.NodeOfficeFolder
-		case assetCategoryPersonal:
-			switch c {
-			case asset.NodeAssetSafety, asset.NodeDeliveries, asset.NodeInSpace:
-				return true
-			}
-		case assetCategorySafety:
-			return c != asset.NodeAssetSafety
-		}
-		return false
-	}
-
 	// addNodes adds a list of nodes with children recursively to tree data at uid.
 	var addNodes func(widget.TreeNodeID, []*asset.Node)
 	addNodes = func(uid widget.TreeNodeID, nodes []*asset.Node) {
@@ -324,20 +301,6 @@ func (a *assetBrowserNavigation) redraw() {
 		})
 		for _, n := range nodes {
 			if !n.IsContainer() {
-				continue
-			}
-			if n.IsRoot() {
-				var count int
-				for _, c := range n.Children() {
-					if !isExcluded(c.Category()) {
-						count++
-					}
-				}
-				if count == 0 {
-					continue
-				}
-			}
-			if n.IsRootDirectChild() && isExcluded(n.Category()) {
 				continue
 			}
 			var itemCount optional.Optional[int]
@@ -370,67 +333,76 @@ func (a *assetBrowserNavigation) redraw() {
 		}
 	}
 
-	var trees []*asset.Node
-	a.mu.RLock()
-	trees = a.ac.Trees()
-	a.mu.RUnlock()
+	m := map[string]asset.Filter{
+		assetCategoryDeliveries: asset.FilterDeliveries,
+		assetCategoryImpounded:  asset.FilterImpounded,
+		assetCategoryInSpace:    asset.FilterInSpace,
+		assetCategoryOffice:     asset.FilterOffice,
+		assetCategoryPersonal:   asset.FilterPersonalAssets,
+		assetCategorySafety:     asset.FilterSafety,
+	}
+
+	a.mu.Lock()
+	a.ac.ApplyFilter(m[a.selectCategory.Selected])
+	trees := a.ac.Trees()
+	a.mu.Unlock()
 
 	addNodes(iwidget.TreeRootID, trees)
 
-	addSumsFrom2LevelsDown := func() {
-		for _, locations := range td.Children(iwidget.TreeRootID) {
-			for _, n1 := range td.Children(locations.UID()) {
-				var sum2 optional.Optional[int]
-				for _, n2 := range td.Children(n1.UID()) {
-					sum2 = optional.Sum(sum2, n2.itemCount)
-				}
-				n1.itemCount = sum2
-				td.Replace(n1)
-			}
-		}
-	}
+	// addSumsFrom2LevelsDown := func() {
+	// 	for _, locations := range td.Children(iwidget.TreeRootID) {
+	// 		for _, n1 := range td.Children(locations.UID()) {
+	// 			var sum2 optional.Optional[int]
+	// 			for _, n2 := range td.Children(n1.UID()) {
+	// 				sum2 = optional.Sum(sum2, n2.itemCount)
+	// 			}
+	// 			n1.itemCount = sum2
+	// 			td.Replace(n1)
+	// 		}
+	// 	}
+	// }
 
-	addSumsFrom3LevelsDown := func() {
-		for _, locations := range td.Children(iwidget.TreeRootID) {
-			for _, n1 := range td.Children(locations.UID()) {
-				var sum2 optional.Optional[int]
-				for _, n2 := range td.Children(n1.UID()) {
-					var sum3 optional.Optional[int]
-					for _, n3 := range td.Children(n2.UID()) {
-						sum3 = optional.Sum(sum3, n3.itemCount)
-					}
-					n2.itemCount = sum3
-					td.Replace(n2)
-					sum2 = optional.Sum(sum2, sum3)
-				}
-				n1.itemCount = sum2
-				td.Replace(n1)
-			}
-		}
-	}
+	// addSumsFrom3LevelsDown := func() {
+	// 	for _, locations := range td.Children(iwidget.TreeRootID) {
+	// 		for _, n1 := range td.Children(locations.UID()) {
+	// 			var sum2 optional.Optional[int]
+	// 			for _, n2 := range td.Children(n1.UID()) {
+	// 				var sum3 optional.Optional[int]
+	// 				for _, n3 := range td.Children(n2.UID()) {
+	// 					sum3 = optional.Sum(sum3, n3.itemCount)
+	// 				}
+	// 				n2.itemCount = sum3
+	// 				td.Replace(n2)
+	// 				sum2 = optional.Sum(sum2, sum3)
+	// 			}
+	// 			n1.itemCount = sum2
+	// 			td.Replace(n1)
+	// 		}
+	// 	}
+	// }
 
-	// Update counts
-	switch filter {
-	case assetCategoryOffice:
-		addSumsFrom2LevelsDown()
-	case assetCategorySafety:
-		if a.ab.forCorporation {
-			addSumsFrom3LevelsDown()
-		} else {
-			addSumsFrom2LevelsDown()
-		}
-	case assetCategoryImpounded:
-		addSumsFrom3LevelsDown()
+	// // Update counts
+	// switch filter {
+	// case assetCategoryOffice:
+	// 	addSumsFrom2LevelsDown()
+	// case assetCategorySafety:
+	// 	if a.ab.forCorporation {
+	// 		addSumsFrom3LevelsDown()
+	// 	} else {
+	// 		addSumsFrom2LevelsDown()
+	// 	}
+	// case assetCategoryImpounded:
+	// 	addSumsFrom3LevelsDown()
 
-	}
-	for _, locations := range td.Children(iwidget.TreeRootID) {
-		var sum optional.Optional[int]
-		for _, n1 := range td.Children(locations.UID()) {
-			sum = optional.Sum(sum, n1.itemCount)
-		}
-		locations.itemCount = sum
-		td.Replace(locations)
-	}
+	// }
+	// for _, locations := range td.Children(iwidget.TreeRootID) {
+	// 	var sum optional.Optional[int]
+	// 	for _, n1 := range td.Children(locations.UID()) {
+	// 		sum = optional.Sum(sum, n1.itemCount)
+	// 	}
+	// 	locations.itemCount = sum
+	// 	td.Replace(locations)
+	// }
 
 	count, _ := td.ChildrenCount(iwidget.TreeRootID)
 	top := fmt.Sprintf("%d locations", count)

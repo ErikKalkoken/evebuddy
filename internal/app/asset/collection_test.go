@@ -357,7 +357,7 @@ func TestCollection_Offices(t *testing.T) {
 	// t.Fail()
 }
 
-func TestCollection_2(t *testing.T) {
+func TestCollection_Filter(t *testing.T) {
 	const (
 		alphaID = 60007927
 		bravoID = 30002537
@@ -438,24 +438,83 @@ func TestCollection_2(t *testing.T) {
 		safetyWrap,
 		spaceItem,
 	}
-	acAll := asset.NewFromCharacterAssets(assets, locations)
 
 	t.Run("no filter", func(t *testing.T) {
-		assert.Len(t, acAll.Trees(), 2)
-		alpha, ok := acAll.LocationTree(alphaID)
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		ac.ApplyFilter(asset.FilterNone)
+
+		assert.Len(t, ac.Trees(), 2)
+
+		alpha, ok := ac.LocationTree(alphaID)
 		require.True(t, ok)
 		assert.Len(t, alpha.Children(), 4)
-		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(acAll, officeItem1))
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makePath(acAll, deliveryItem))
-		assert.Equal(t, []string{"Alpha", "Asset Safety", "Asset Safety Wrap"}, makePath(acAll, safetyItem))
-		assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makePath(acAll, officeItem2))
+		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(ac, officeItem1))
+		assert.Equal(t, []string{"Alpha", "Deliveries"}, makePath(ac, deliveryItem))
+		assert.Equal(t, []string{"Alpha", "Asset Safety", "Asset Safety Wrap"}, makePath(ac, safetyItem))
+		assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makePath(ac, officeItem2))
 		asset.PrintTree(alpha)
 
-		bravo, ok := acAll.LocationTree(bravoID)
+		bravo, ok := ac.LocationTree(bravoID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Bravo", "In Space"}, makePath(acAll, spaceItem))
+		assert.Equal(t, []string{"Bravo", "In Space"}, makePath(ac, spaceItem))
 		asset.PrintTree(bravo)
-		// t.Fail()
+		// assert.Fail(t, "STOP")
 	})
 
+	t.Run("deliveries filter", func(t *testing.T) {
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		ac.ApplyFilter(asset.FilterDeliveries)
+
+		assert.Len(t, ac.Trees(), 1)
+		alpha, ok := ac.LocationTree(alphaID)
+		require.True(t, ok)
+		assert.Len(t, alpha.Children(), 1)
+
+		assert.Equal(t, []string{"Alpha", "Deliveries"}, makePath(ac, deliveryItem))
+
+		asset.PrintTree(alpha)
+		// assert.Fail(t, "STOP")
+	})
+
+	t.Run("impounded filter", func(t *testing.T) {
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		ac.ApplyFilter(asset.FilterImpounded)
+
+		assert.Len(t, ac.Trees(), 1)
+		alpha, ok := ac.LocationTree(alphaID)
+		require.True(t, ok)
+
+		assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makePath(ac, officeItem2))
+
+		asset.PrintTree(alpha)
+		// assert.Fail(t, "STOP")
+	})
+
+	t.Run("office filter", func(t *testing.T) {
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		ac.ApplyFilter(asset.FilterOffice)
+
+		assert.Len(t, ac.Trees(), 1)
+		alpha, ok := ac.LocationTree(alphaID)
+		require.True(t, ok)
+
+		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makePath(ac, officeItem1))
+
+		asset.PrintTree(alpha)
+		// assert.Fail(t, "STOP")
+	})
+
+	t.Run("safety filter", func(t *testing.T) {
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		ac.ApplyFilter(asset.FilterSafety)
+
+		assert.Len(t, ac.Trees(), 1)
+		alpha, ok := ac.LocationTree(alphaID)
+		require.True(t, ok)
+
+		assert.Equal(t, []string{"Alpha", "Asset Safety", "Asset Safety Wrap"}, makePath(ac, safetyItem))
+
+		asset.PrintTree(alpha)
+		// assert.Fail(t, "STOP")
+	})
 }

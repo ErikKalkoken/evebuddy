@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 //go:generate go tool stringer -type=NodeCategory
@@ -83,6 +84,7 @@ type Node struct {
 	item        Item
 	location    *app.EveLocation
 	parent      *Node
+	isExcluded  bool
 }
 
 func newLocationNode(location *app.EveLocation) *Node {
@@ -124,17 +126,24 @@ func newCustomNode(category NodeCategory) *Node {
 }
 
 // All returns all nodes of a sub tree (order is undefined)
+// Does not return filtered nodes.
 func (n *Node) All() []*Node {
 	s := make([]*Node, 0)
 	s = append(s, n)
 	for _, c := range n.children {
+		if c.isExcluded {
+			continue
+		}
 		s = slices.Concat(s, c.All())
 	}
 	return s
 }
 
+// Children returns a new slice containing the unfiltered children of a node.
 func (n *Node) Children() []*Node {
-	return slices.Clone(n.children)
+	return xslices.Filter(n.children, func(x *Node) bool {
+		return !x.isExcluded
+	})
 }
 
 // IsContainer reports whether this node is a container
