@@ -334,84 +334,102 @@ func (a *characterOverview) makeList() *widget.List {
 
 func (a *characterOverview) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectAlliance.Selected; x != "" {
-		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.allianceName() != x
+	alliance := a.selectAlliance.Selected
+	corporation := a.selectCorporation.Selected
+	region := a.selectRegion.Selected
+	solarSystem := a.selectSolarSystem.Selected
+	tag := a.selectTag.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		if alliance != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return r.allianceName() != alliance
+			})
+		}
+		if corporation != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return r.corporationName() != corporation
+			})
+		}
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return r.regionName != region
+			})
+		}
+		if solarSystem != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return r.solarSystemName != solarSystem
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		if search != "" {
+			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b characterOverviewRow) int {
+				var x int
+				switch sortCol {
+				case overviewColAlliance:
+					x = xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
+				case overviewColCharacter:
+					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+				case overviewColCorporation:
+					x = xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
+				case overviewColMail:
+					x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
+				case overviewColRegion:
+					x = strings.Compare(a.regionName, b.regionName)
+				case overviewColSkillpoints:
+					x = cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
+				case overviewColSolarSystem:
+					x = strings.Compare(a.solarSystemName, b.solarSystemName)
+				case overviewColWallet:
+					x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+
+		allianceOptions := xslices.Map(rows, func(r characterOverviewRow) string {
+			return r.allianceName()
 		})
-	}
-	if x := a.selectCorporation.Selected; x != "" {
-		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.corporationName() != x
+		corporationOptions := xslices.Map(rows, func(r characterOverviewRow) string {
+			return r.corporationName()
 		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.regionName != x
+		regionOptions := xslices.Map(rows, func(r characterOverviewRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.solarSystemName != x
+		solarSystemOptions := xslices.Map(rows, func(r characterOverviewRow) string {
+			return r.solarSystemName
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = slices.DeleteFunc(rows, func(o characterOverviewRow) bool {
-			return !o.tags.Contains(x)
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r characterOverviewRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		fyne.Do(func() {
+			a.selectAlliance.SetOptions(allianceOptions)
+			a.selectCorporation.SetOptions(corporationOptions)
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectSolarSystem.SetOptions(solarSystemOptions)
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.main.Refresh()
 		})
-	}
-	// search filter
-	if search := strings.ToLower(a.search.Text); search != "" {
-		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return !strings.Contains(r.searchTarget, search)
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
-			var x int
-			switch sortCol {
-			case overviewColAlliance:
-				x = xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
-			case overviewColCharacter:
-				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-			case overviewColCorporation:
-				x = xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
-			case overviewColMail:
-				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
-			case overviewColRegion:
-				x = strings.Compare(a.regionName, b.regionName)
-			case overviewColSkillpoints:
-				x = cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
-			case overviewColSolarSystem:
-				x = strings.Compare(a.solarSystemName, b.solarSystemName)
-			case overviewColWallet:
-				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.allianceName()
-	}))
-	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.corporationName()
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.regionName
-	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.solarSystemName
-	}))
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterOverviewRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.rowsFiltered = rows
-	a.main.Refresh()
+	}()
 }
 
 func (a *characterOverview) update() {

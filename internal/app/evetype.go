@@ -11,9 +11,10 @@ import (
 
 const (
 	EveCategoryBlueprint  = 9
-	EveCategoryDrone      = 18
 	EveCategoryDeployable = 22
+	EveCategoryDrone      = 18
 	EveCategoryFighter    = 87
+	EveCategoryMineral    = 4
 	EveCategoryOrbitals   = 46
 	EveCategoryShip       = 6
 	EveCategorySkill      = 16
@@ -31,21 +32,22 @@ type EveCategory struct {
 }
 
 const (
-	EveGroupAuditLogFreightContainer     = 649
-	EveGroupAuditLogSecureCargoContainer = 448
-	EveGroupBlackOps                     = 898
-	EveGroupCapitalIndustrialShip        = 883
-	EveGroupCargoContainer               = 12
-	EveGroupCarrier                      = 547
-	EveGroupDreadnought                  = 485
-	EveGroupExtractorControlUnits        = 1063
-	EveGroupForceAuxiliary               = 1538
-	EveGroupJumpFreighter                = 902
-	EveGroupPlanet                       = 7
-	EveGroupProcessors                   = 1028
-	EveGroupSecureCargoContainer         = 340
-	EveGroupSuperCarrier                 = 659
-	EveGroupTitan                        = 30
+	EveGroupAuditLogSecureContainer = 448
+	EveGroupBiomass                 = 3779
+	EveGroupBlackOps                = 898
+	EveGroupCapitalIndustrialShip   = 883
+	EveGroupCargoContainer          = 12
+	EveGroupCarrier                 = 547
+	EveGroupDreadnought             = 485
+	EveGroupExtractorControlUnits   = 1063
+	EveGroupForceAuxiliary          = 1538
+	EveGroupFreightContainer        = 649
+	EveGroupJumpFreighter           = 902
+	EveGroupPlanet                  = 7
+	EveGroupProcessors              = 1028
+	EveGroupSecureCargoContainer    = 340
+	EveGroupSuperCarrier            = 659
+	EveGroupTitan                   = 30
 )
 
 // EveGroup is a group in Eve Online.
@@ -63,6 +65,7 @@ const (
 	EveTypeAlliance                    = 16159
 	EveTypeAssetSafetyWrap             = 60
 	EveTypeCorporation                 = 2
+	EveTypeCustomsOffice               = 2233
 	EveTypeIHUB                        = 32458
 	EveTypeIndustry                    = 3380
 	EveTypeInfomorphSynchronizing      = 33399
@@ -70,6 +73,7 @@ const (
 	EveTypeLaboratoryOperation         = 3406
 	EveTypeMassProduction              = 3387
 	EveTypeMassReactions               = 45748
+	EveTypeOffice                      = 27
 	EveTypePlanetTemperate             = 11
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226

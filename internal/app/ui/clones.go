@@ -244,65 +244,80 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *clones) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r cloneRow) bool {
-			return r.jc.Character.Name == x
+	owner := a.selectOwner.Selected
+	region := a.selectRegion.Selected
+	solarSystem := a.selectSolarSystem.Selected
+	tag := a.selectTag.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+				return r.jc.Character.Name != owner
+			})
+		}
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+				return r.jc.Location.RegionName() != region
+			})
+		}
+		if solarSystem != "" {
+			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+				return r.jc.Location.SolarSystemName() != solarSystem
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b cloneRow) int {
+				var x int
+				switch sortCol {
+				case clonesColLocation:
+					x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
+				case clonesColRegion:
+					x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
+				case clonesColImplants:
+					x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
+				case clonesColCharacter:
+					x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
+				case clonesColJumps:
+					x = a.compare(b)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
+			return r.tags
+		})...).All())
+		ownerOptions := xslices.Map(rows, func(r cloneRow) string {
+			return r.jc.Character.Name
 		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r cloneRow) bool {
-			return r.jc.Location.RegionName() == x
+		regionOptions := xslices.Map(rows, func(r cloneRow) string {
+			return r.jc.Location.RegionName()
 		})
-	}
-	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r cloneRow) bool {
-			return r.jc.Location.SolarSystemName() == x
+		solarSystemOptions := xslices.Map(rows, func(r cloneRow) string {
+			return r.jc.Location.SolarSystemName()
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r cloneRow) bool {
-			return r.tags.Contains(x)
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.selectOwner.SetOptions(ownerOptions)
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectSolarSystem.SetOptions(solarSystemOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b cloneRow) int {
-			var x int
-			switch sortCol {
-			case clonesColLocation:
-				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
-			case clonesColRegion:
-				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
-			case clonesColImplants:
-				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
-			case clonesColCharacter:
-				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
-			case clonesColJumps:
-				x = a.compare(b)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.selectOwner.SetOptions(xslices.Map(rows, func(r cloneRow) string {
-		return r.jc.Character.Name
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r cloneRow) string {
-		return r.jc.Location.RegionName()
-	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r cloneRow) string {
-		return r.jc.Location.SolarSystemName()
-	}))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+	}()
 }
 
 func (a *clones) update() {
@@ -404,7 +419,6 @@ func (a *clones) updateRoutes() {
 			}
 			a.rows[i].route = m[solarSystem.ID]
 		}
-		a.body.Refresh()
 		a.columnSorter.Set(4, iwidget.SortOff)
 		a.filterRows(4)
 	})

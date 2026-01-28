@@ -119,7 +119,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	allAssets := iwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage(assetsTitle, u.assets),
+		newContentPage(assetsTitle, u.assetSearchAll),
 	)
 	// u.assets.onUpdate = func(quantity int, _ string) {
 	// 	fyne.Do(func() {
@@ -223,7 +223,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
-			u.assets.focus()
+			u.assetSearchAll.focus()
 		}
 	}
 	homeNav.MinWidth = navDrawerMinWidth
@@ -286,7 +286,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage("Assets", u.characterAssets),
+		newContentPage("Assets", u.characterAssetBrowser),
 	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
@@ -321,6 +321,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// }
 
 	// Corporation
+	corpAssetsItem := iwidget.NewNavPage(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		newContentPage("Assets", container.NewAppTabs(
+			container.NewTabItem("Browse", u.corporationAssetBrowser),
+			container.NewTabItem("Search", u.corporationAssetSearch),
+		)),
+	)
+
 	var corporationNav *iwidget.NavDrawer
 	walletsNav := iwidget.NewNavSectionLabel("Wallets")
 	corpWalletItems := []*iwidget.NavItem{walletsNav}
@@ -390,8 +399,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			container.NewTabItem("Members", u.corporationMember),
 		)),
 	)
+
 	corporationNav = iwidget.NewNavDrawer(slices.Concat(
-		[]*iwidget.NavItem{corpSheetItem, corpContractsItem, corpIndustryItem, corpStructuresItem},
+		[]*iwidget.NavItem{
+			corpSheetItem,
+			corpAssetsItem,
+			corpContractsItem,
+			corpIndustryItem,
+			corpStructuresItem,
+		},
 		corpWalletItems,
 	)...)
 	corporationNav.MinWidth = navDrawerMinWidth
@@ -541,6 +557,28 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}
 		fyne.Do(func() {
 			var hasDisabled bool
+
+			if sections.Contains(app.SectionCorporationAssets) {
+				corpAssetsItem.Enable()
+			} else {
+				corpAssetsItem.Disable()
+				hasDisabled = true
+			}
+
+			if sections.Contains(app.SectionCorporationIndustryJobs) {
+				corpIndustryItem.Enable()
+			} else {
+				corpIndustryItem.Disable()
+				hasDisabled = true
+			}
+
+			if sections.Contains(app.SectionCorporationStructures) {
+				corpStructuresItem.Enable()
+			} else {
+				corpStructuresItem.Disable()
+				hasDisabled = true
+			}
+
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				for _, it := range corpWalletItems {
 					it.Enable()
@@ -551,18 +589,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 					hasDisabled = true
 				}
 			}
-			if sections.Contains(app.SectionCorporationIndustryJobs) {
-				corpIndustryItem.Enable()
-			} else {
-				corpIndustryItem.Disable()
-				hasDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationStructures) {
-				corpStructuresItem.Enable()
-			} else {
-				corpStructuresItem.Disable()
-				hasDisabled = true
-			}
+
 			if hasDisabled {
 				corporationNav.Select(corpSheetItem)
 			}
@@ -619,17 +646,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func() {
-		go statusBar.update()
-		go fyne.Do(func() {
-			characterHeader.SetButtonMenu(u.makeCharacterSwitchMenu(func() {
+		go func() {
+			items := u.makeCharacterSwitchMenu(func() {
 				characterHeader.Refresh()
-			}))
-		})
-		go fyne.Do(func() {
-			corporationHeader.SetButtonMenu(u.makeCorporationSwitchMenu(func() {
+			})
+			fyne.Do(func() {
+				characterHeader.SetButtonMenu(items)
+			})
+		}()
+		go func() {
+			items := u.makeCorporationSwitchMenu(func() {
 				corporationHeader.Refresh()
-			}))
-		})
+			})
+			fyne.Do(func() {
+				corporationHeader.SetButtonMenu(items)
+			})
+		}()
+		go statusBar.update()
 		go togglePermittedSections()
 		go func() {
 			cc, err := u.ListCorporationsForSelection()

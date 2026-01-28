@@ -137,6 +137,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	var f func(context.Context, app.CorporationSectionUpdateParams) (bool, error)
 	switch arg.Section {
+	case app.SectionCorporationAssets:
+		f = s.updateAssetsESI
 	case app.SectionCorporationContracts:
 		f = s.updateContractsESI
 	case app.SectionCorporationDivisions:

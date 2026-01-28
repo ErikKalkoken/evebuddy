@@ -1203,6 +1203,53 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 	return c
 }
 
+func (f Factory) CreateCorporationAsset(args ...storage.CreateCorporationAssetParams) *app.CorporationAsset {
+	ctx := context.Background()
+	var arg storage.CreateCorporationAssetParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.ItemID == 0 {
+		arg.ItemID = f.calcNewIDWithCorporation("corporation_assets", "item_id", arg.CorporationID)
+	}
+	if arg.LocationFlag == app.FlagUndefined {
+		arg.LocationFlag = app.FlagHangar
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.LocationType == app.TypeUndefined {
+		arg.LocationType = app.TypeOther
+	}
+	if arg.IsSingleton && arg.Name == "" {
+		arg.Name = fmt.Sprintf("Asset %d", arg.ItemID)
+	}
+	if arg.Quantity == 0 {
+		if arg.IsSingleton {
+			arg.Quantity = 1
+		} else {
+			arg.Quantity = rand.Int32N(10_000)
+		}
+	}
+	if err := f.st.CreateCorporationAsset(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationAsset(ctx, arg.CorporationID, arg.ItemID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCorporationContract(args ...storage.CreateCorporationContractParams) *app.CorporationContract {
 	ctx := context.Background()
 	var arg storage.CreateCorporationContractParams

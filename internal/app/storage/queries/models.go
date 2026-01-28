@@ -341,6 +341,20 @@ type Corporation struct {
 	CreatedAt time.Time
 }
 
+type CorporationAsset struct {
+	ID              int64
+	CorporationID   int64
+	EveTypeID       int64
+	IsBlueprintCopy bool
+	IsSingleton     bool
+	ItemID          int64
+	LocationFlag    string
+	LocationID      int64
+	LocationType    string
+	Name            string
+	Quantity        int64
+}
+
 type CorporationContract struct {
 	ID                  int64
 	AcceptorID          sql.NullInt64

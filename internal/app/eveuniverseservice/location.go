@@ -109,8 +109,8 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			if !xgoesi.ContextHasAccessToken(ctx) {
 				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
 			}
-			ctx = xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
-			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
+			ctx2 := xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
+			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx2, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
 					arg = storage.UpdateOrCreateLocationParams{ID: id}
@@ -118,11 +118,11 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				}
 				return nil, err
 			}
-			_, err = s.GetOrCreateSolarSystemESI(ctx, structure.SolarSystemId)
+			_, err = s.GetOrCreateSolarSystemESI(ctx2, structure.SolarSystemId)
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.AddMissingEntities(ctx, set.Of(structure.OwnerId))
+			_, err = s.AddMissingEntities(ctx2, set.Of(structure.OwnerId))
 			if err != nil {
 				return nil, err
 			}
@@ -133,7 +133,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				OwnerID:       optional.New(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
-				myType, err := s.GetOrCreateTypeESI(ctx, structure.TypeId)
+				myType, err := s.GetOrCreateTypeESI(ctx2, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
@@ -217,8 +217,8 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 					entityIDs[i] = x
 				}
 			case app.EveLocationStructure:
-				ctx = xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
-				structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
+				ctx2 := xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
+				structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx2, id, nil)
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusForbidden {
 						return nil

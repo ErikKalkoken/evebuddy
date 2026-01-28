@@ -30,7 +30,7 @@ func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichT
 		}
 		t, ok := s.(*widget.TextSegment)
 		if !ok {
-			slog.Warn("Skipping non inlinable segment")
+			slog.Warn("InlineRichTextSegments: Skipping non inlinable segment")
 			continue
 		}
 		t.Style.Inline = true

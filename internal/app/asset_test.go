@@ -3,21 +3,22 @@ package app_test
 import (
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-func TestCharacterAssetDisplayName(t *testing.T) {
+func TestAssetDisplayName(t *testing.T) {
 	cases := []struct {
 		name string
-		ca   *app.CharacterAsset
+		ca   *app.Asset
 		want string
 	}{
-		{"asset name", &app.CharacterAsset{Name: "name"}, "name"},
-		{"type name", &app.CharacterAsset{Type: &app.EveType{Name: "type"}}, "type"},
+		{"asset name", &app.Asset{Name: "name"}, "name"},
+		{"type name", &app.Asset{Type: &app.EveType{Name: "type"}}, "type"},
 		{
 			"BPC name",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Name: "type",
 				},
@@ -33,15 +34,15 @@ func TestCharacterAssetDisplayName(t *testing.T) {
 	}
 }
 
-func TestCharacterAssetDisplayName2(t *testing.T) {
+func TestAssetDisplayName2(t *testing.T) {
 	cases := []struct {
 		name string
-		ca   *app.CharacterAsset
+		ca   *app.Asset
 		want string
 	}{
 		{
 			"asset name",
-			&app.CharacterAsset{
+			&app.Asset{
 				Name: "name",
 				Type: &app.EveType{Name: "type"},
 			},
@@ -49,7 +50,7 @@ func TestCharacterAssetDisplayName2(t *testing.T) {
 		},
 		{
 			"type name",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Name: "type",
 				},
@@ -58,7 +59,7 @@ func TestCharacterAssetDisplayName2(t *testing.T) {
 		},
 		{
 			"BPC name",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Name: "type",
 				},
@@ -74,7 +75,7 @@ func TestCharacterAssetDisplayName2(t *testing.T) {
 	}
 }
 
-func TestCharacterAssetIsContainer(t *testing.T) {
+func TestAssetIsContainer(t *testing.T) {
 	cases := []struct {
 		IsSingleton   bool
 		EveCategoryID int32
@@ -89,15 +90,15 @@ func TestCharacterAssetIsContainer(t *testing.T) {
 			c := &app.EveCategory{ID: tc.EveCategoryID}
 			g := &app.EveGroup{Category: c}
 			typ := &app.EveType{Group: g}
-			ca := app.CharacterAsset{IsSingleton: tc.IsSingleton, Type: typ}
+			ca := app.Asset{IsSingleton: tc.IsSingleton, Type: typ}
 			assert.Equal(t, tc.want, ca.IsContainer())
 		})
 	}
 }
 
-func TestCharacterAssetTypeName(t *testing.T) {
+func TestAssetTypeName(t *testing.T) {
 	t.Run("has type", func(t *testing.T) {
-		ca := &app.CharacterAsset{
+		ca := &app.Asset{
 			Type: &app.EveType{
 				Name: "Alpha",
 			},
@@ -105,20 +106,20 @@ func TestCharacterAssetTypeName(t *testing.T) {
 		assert.Equal(t, "Alpha", ca.TypeName())
 	})
 	t.Run("no type", func(t *testing.T) {
-		ca := &app.CharacterAsset{}
+		ca := &app.Asset{}
 		assert.Equal(t, "", ca.TypeName())
 	})
 }
 
-func TestCharacterAssetVariant(t *testing.T) {
+func TestAssetVariant(t *testing.T) {
 	cases := []struct {
 		name string
-		ca   *app.CharacterAsset
+		ca   *app.Asset
 		want app.InventoryTypeVariant
 	}{
 		{
 			"bpo",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Group: &app.EveGroup{
 						Category: &app.EveCategory{
@@ -129,7 +130,7 @@ func TestCharacterAssetVariant(t *testing.T) {
 		},
 		{
 			"bpc",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Group: &app.EveGroup{
 						Category: &app.EveCategory{
@@ -141,7 +142,7 @@ func TestCharacterAssetVariant(t *testing.T) {
 		},
 		{
 			"skin",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Group: &app.EveGroup{
 						Category: &app.EveCategory{
@@ -152,7 +153,7 @@ func TestCharacterAssetVariant(t *testing.T) {
 		},
 		{
 			"other",
-			&app.CharacterAsset{
+			&app.Asset{
 				Type: &app.EveType{
 					Group: &app.EveGroup{
 						Category: &app.EveCategory{
@@ -187,7 +188,7 @@ func TestCharacterAssetVariant(t *testing.T) {
 // 	}
 // 	for _, tc := range cases {
 // 		t.Run(tc.locationFlag, func(t *testing.T) {
-// 			ca := &app.CharacterAsset{LocationFlag: tc.locationFlag}
+// 			ca := &app.Asset{LocationFlag: tc.locationFlag}
 // 			assert.Equal(t, tc.want, ca.IsInCargoBay())
 // 		})
 // 	}

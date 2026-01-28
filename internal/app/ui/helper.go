@@ -184,6 +184,14 @@ func corporationIDOrZero(c *app.Corporation) int32 {
 	return c.ID
 }
 
+// corporationNameOrZero returns the name of a corporation or "" if the c does not exist.
+func corporationNameOrZero(c *app.Corporation) string {
+	if c == nil || c.EveCorporation == nil {
+		return ""
+	}
+	return c.EveCorporation.Name
+}
+
 // generateUniqueID returns a unique ID.
 func generateUniqueID() string {
 	currentTime := time.Now().UnixNano()

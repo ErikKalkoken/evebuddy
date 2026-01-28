@@ -336,88 +336,105 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 
 func (a *walletTransactions) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectActivity.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			switch x {
-			case marketTransactionActivityBuy:
-				return r.isBuy
-			case marketTransactionActivitySell:
-				return !r.isBuy
-			}
-			return false
+	category := a.selectCategory.Selected
+	client := a.selectClient.Selected
+	location := a.selectLocation.Selected
+	region := a.selectRegion.Selected
+	type_ := a.selectType.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		if activity := a.selectActivity.Selected; activity != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				switch activity {
+				case marketTransactionActivityBuy:
+					return !r.isBuy
+				case marketTransactionActivitySell:
+					return r.isBuy
+				}
+				return true
+			})
+		}
+		if category != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				return r.categoryName != category
+			})
+		}
+		if client != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				return r.clientName != client
+			})
+		}
+		if location != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				return r.locationName != location
+			})
+		}
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				return r.regionName != region
+			})
+		}
+		if type_ != "" {
+			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+				return r.typeName != type_
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b walletTransactionRow) int {
+				var x int
+				switch sortCol {
+				case walletTransactionColDate:
+					x = a.date.Compare(b.date)
+				case walletTransactionColQuantity:
+					x = cmp.Compare(a.quantity, b.quantity)
+				case walletTransactionColType:
+					x = strings.Compare(a.typeName, b.typeName)
+				case walletTransactionColPrice:
+					x = cmp.Compare(a.unitPrice, b.unitPrice)
+				case walletTransactionColTotal:
+					x = cmp.Compare(a.total, b.total)
+				case walletTransactionColClient:
+					x = xstrings.CompareIgnoreCase(a.clientName, b.clientName)
+				case walletTransactionColLocation:
+					x = strings.Compare(a.locationName, b.locationName)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// update filters
+		categoryOptions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.categoryName
 		})
-	}
-	if x := a.selectCategory.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.categoryName == x
+		clientOptions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.clientName
 		})
-	}
-	if x := a.selectClient.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.clientName == x
+		locationOPtions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.locationName
 		})
-	}
-	if x := a.selectLocation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.locationName == x
+		regionOptions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.regionName == x
+		typeOptions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.typeName
 		})
-	}
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.typeName == x
+
+		fyne.Do(func() {
+			a.selectCategory.SetOptions(categoryOptions)
+			a.selectClient.SetOptions(clientOptions)
+			a.selectLocation.SetOptions(locationOPtions)
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectType.SetOptions(typeOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b walletTransactionRow) int {
-			var x int
-			switch sortCol {
-			case walletTransactionColDate:
-				x = a.date.Compare(b.date)
-			case walletTransactionColQuantity:
-				x = cmp.Compare(a.quantity, b.quantity)
-			case walletTransactionColType:
-				x = strings.Compare(a.typeName, b.typeName)
-			case walletTransactionColPrice:
-				x = cmp.Compare(a.unitPrice, b.unitPrice)
-			case walletTransactionColTotal:
-				x = cmp.Compare(a.total, b.total)
-			case walletTransactionColClient:
-				x = xstrings.CompareIgnoreCase(a.clientName, b.clientName)
-			case walletTransactionColLocation:
-				x = strings.Compare(a.locationName, b.locationName)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// update filters
-	a.selectCategory.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
-		return r.categoryName
-	}))
-	a.selectClient.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
-		return r.clientName
-	}))
-	a.selectLocation.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
-		return r.locationName
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
-		return r.regionName
-	}))
-	a.selectType.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
-		return r.typeName
-	}))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+	}()
 }
 
 func (a *walletTransactions) update() {

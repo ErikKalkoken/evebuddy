@@ -1,4 +1,4 @@
-package characterservice
+package corporationservice
 
 import (
 	"context"
@@ -18,19 +18,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestUpdateCharacterAssetsESI(t *testing.T) {
+func TestUpdateCorporationAssetsESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new assets from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{
 			ID:   app.EveCategoryShip,
 			Name: "Ship",
@@ -42,7 +43,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -68,7 +69,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -81,17 +82,17 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 2, ids.Size())
-		x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
+		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
 		require.NoError(t, err)
 		assert.Equal(t, ship.ID, x.Type.ID)
 		assert.Equal(t, ship.Name, x.Type.Name)
@@ -102,7 +103,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		assert.Equal(t, app.TypeStation, x.LocationType)
 		assert.Equal(t, "Awesome Name", x.Name)
 		assert.EqualValues(t, 1, x.Quantity)
-		x, err = st.GetCharacterAsset(ctx, c.ID, 1000000016836)
+		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
 		require.NoError(t, err)
 		assert.Equal(t, "", x.Name)
 	})
@@ -110,16 +111,18 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID: c.ID, ItemID: 1000000019999,
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID, ItemID: 1000000019999,
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -145,7 +148,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -158,14 +161,14 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.EqualSet(t, set.Of[int64](1000000016835, 1000000016836), ids)
 	})
@@ -173,8 +176,10 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{
 			ID:   app.EveCategoryShip,
 			Name: "Ship",
@@ -187,7 +192,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -203,7 +208,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/?page=2", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/?page=2", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -215,11 +220,10 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
-		)
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -232,17 +236,17 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 2, ids.Size())
-		x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
+		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
 		require.NoError(t, err)
 		assert.Equal(t, ship.ID, x.Type.ID)
 		assert.Equal(t, ship.Name, x.Type.Name)
@@ -253,8 +257,49 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		assert.Equal(t, app.TypeStation, x.LocationType)
 		assert.Equal(t, "Awesome Name", x.Name)
 		assert.EqualValues(t, 1, x.Quantity)
-		x, err = st.GetCharacterAsset(ctx, c.ID, 1000000016836)
+		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
 		require.NoError(t, err)
 		assert.Equal(t, "", x.Name)
 	})
+}
+
+func TestAssets_AdoptNames(t *testing.T) {
+	assets := []*app.CorporationAsset{
+		{
+			Asset: app.Asset{
+				ItemID: 1,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 2,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 3,
+				Type:   &app.EveType{ID: 42},
+			},
+		},
+		{
+			Asset: app.Asset{
+				ItemID: 4,
+				Type:   &app.EveType{ID: 2233},
+			},
+		},
+	}
+	names := map[int64]string{
+		1: "Customs Office (Sirikur VII)",
+		3: "Alpha",
+		4: "Bravo",
+	}
+
+	modifyAssetNames(assets, names)
+
+	assert.Equal(t, "Sirikur VII", names[1])
+	assert.NotContains(t, names, 2)
+	assert.Equal(t, "Alpha", names[3])
+	assert.Equal(t, "Bravo", names[4])
 }

@@ -343,113 +343,126 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *industryJobs) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	rows = xslices.Filter(rows, func(r industryJobRow) bool {
-		status := r.statusCalculated()
-		switch a.selectStatus.Selected {
-		case industryStatusActive:
-			return status.IsActive()
-		case industryStatusInProgress:
-			return status == app.JobActive
-		case industryStatusReady:
-			return status == app.JobReady
-		case industryStatusHalted:
-			return status == app.JobPaused
-		case industryStatusHistory:
-			return !status.IsActive()
+	installer := a.selectInstaller.Selected
+	activity := a.selectActivity.Selected
+	owner := a.selectOwner.Selected
+	tag := a.selectTag.Selected
+	search := a.search.Text
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
+			status := r.statusCalculated()
+			switch a.selectStatus.Selected {
+			case industryStatusActive:
+				return !status.IsActive()
+			case industryStatusInProgress:
+				return status != app.JobActive
+			case industryStatusReady:
+				return status != app.JobReady
+			case industryStatusHalted:
+				return status != app.JobPaused
+			case industryStatusHistory:
+				return status.IsActive()
+			}
+			return true
+		})
+		if installer != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch installer {
+				case industryInstallerMe:
+					return !r.isInstallerMe
+				case industryInstallerCorpmates:
+					return r.isInstallerMe
+				}
+				return true
+			})
 		}
-		return false
-	})
-	if x := a.selectInstaller.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industryJobRow) bool {
-			switch x {
-			case industryInstallerMe:
-				return r.isInstallerMe
-			case industryInstallerCorpmates:
-				return !r.isInstallerMe
+		if activity != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch activity {
+				case industryActivityCopying:
+					return r.activity != app.Copying
+				case industryActivityInvention:
+					return r.activity != app.Invention
+				case industryActivityManufacturing:
+					return r.activity != app.Manufacturing
+				case industryActivityMaterialResearch:
+					return r.activity != app.MaterialEfficiencyResearch
+				case industryActivityReaction:
+					return r.activity != app.Reactions1 || r.activity == app.Reactions2
+				case industryActivityTimeResearch:
+					return r.activity != app.TimeEfficiencyResearch
+				}
+				return true
+			})
+		}
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch owner {
+				case industryOwnerCorp:
+					return r.isOwnerMe
+				case industryOwnerMe:
+					return !r.isOwnerMe
+				}
+				return true
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b industryJobRow) int {
+				var c int
+				switch sortCol {
+				case industryJobsColBlueprint:
+					c = strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
+				case industryJobsColStatus:
+					c = cmp.Compare(a.remaining(), b.remaining())
+				case industryJobsColRuns:
+					c = cmp.Compare(a.runs, b.runs)
+				case industryJobsColActivity:
+					c = strings.Compare(a.activity.String(), b.activity.String())
+				case industryJobsColEndDate:
+					c = a.endDate.Compare(b.endDate)
+				case industryJobsColLocation:
+					c = strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
+				case industryJobsColOwner:
+					c = strings.Compare(a.owner.Name, b.owner.Name)
+				case industryJobsColInstaller:
+					c = strings.Compare(a.installer.Name, b.installer.Name)
+				}
+				if dir == iwidget.SortAsc {
+					return c
+				} else {
+					return -1 * c
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
+			switch x := a.body.(type) {
+			case *widget.Table:
+				x.ScrollToTop()
 			}
-			return false
 		})
-	}
-	if x := a.selectActivity.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industryJobRow) bool {
-			switch x {
-			case industryActivityCopying:
-				return r.activity == app.Copying
-			case industryActivityInvention:
-				return r.activity == app.Invention
-			case industryActivityManufacturing:
-				return r.activity == app.Manufacturing
-			case industryActivityMaterialResearch:
-				return r.activity == app.MaterialEfficiencyResearch
-			case industryActivityReaction:
-				return r.activity == app.Reactions1 || r.activity == app.Reactions2
-			case industryActivityTimeResearch:
-				return r.activity == app.TimeEfficiencyResearch
-			}
-			return false
-		})
-	}
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industryJobRow) bool {
-			switch x {
-			case industryOwnerCorp:
-				return !r.isOwnerMe
-			case industryOwnerMe:
-				return r.isOwnerMe
-			}
-			return false
-		})
-	}
-	if s := a.search.Text; len(s) > 1 {
-		rows = xslices.Filter(rows, func(r industryJobRow) bool {
-			return strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(s))
-		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industryJobRow) bool {
-			return r.tags.Contains(x)
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(j, k industryJobRow) int {
-			var c int
-			switch sortCol {
-			case industryJobsColBlueprint:
-				c = strings.Compare(j.blueprintType.Name, k.blueprintType.Name)
-			case industryJobsColStatus:
-				c = cmp.Compare(j.remaining(), k.remaining())
-			case industryJobsColRuns:
-				c = cmp.Compare(j.runs, k.runs)
-			case industryJobsColActivity:
-				c = strings.Compare(j.activity.String(), k.activity.String())
-			case industryJobsColEndDate:
-				c = j.endDate.Compare(k.endDate)
-			case industryJobsColLocation:
-				c = strings.Compare(j.location.Name.ValueOrZero(), k.location.Name.ValueOrZero())
-			case industryJobsColOwner:
-				c = strings.Compare(j.owner.Name, k.owner.Name)
-			case industryJobsColInstaller:
-				c = strings.Compare(j.installer.Name, k.installer.Name)
-			}
-			if dir == iwidget.SortAsc {
-				return c
-			} else {
-				return -1 * c
-			}
-		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.rowsFiltered = rows
-	a.body.Refresh()
-	switch x := a.body.(type) {
-	case *widget.Table:
-		x.ScrollToTop()
-	}
+	}()
 }
 
 func (a *industryJobs) makeDataList() *iwidget.StripedList {

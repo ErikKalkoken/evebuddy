@@ -44,7 +44,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		ec, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
-				return nil, app.ErrNotFound
+				return nil, app.ErrNotFound // character does not exist
 			}
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		}
 		af := affiliations[0]
 		if af.CharacterId != characterID {
-			return false, fmt.Errorf("wrong character %d in affiliations", af.CharacterId)
+			return false, fmt.Errorf("wrong character %d in affiliations. Expected %d", af.CharacterId, characterID)
 		}
 		arg := storage.CreateEveCharacterParams{
 			AllianceID:     af.AllianceId,

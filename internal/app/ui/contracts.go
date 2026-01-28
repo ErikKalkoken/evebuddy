@@ -53,6 +53,8 @@ type contractRow struct {
 	typeName           string
 }
 
+// contracts is a UI element for showing contracts.
+// It either shows all character contracts or the contracts for a corporation.
 type contracts struct {
 	widget.BaseWidget
 
@@ -62,7 +64,7 @@ type contracts struct {
 	bottom         *widget.Label
 	columnSorter   *iwidget.ColumnSorter
 	corporation    atomic.Pointer[app.Corporation]
-	forCorporation bool // run in corporation mode when true, else in overview mode
+	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
 	selectAssignee *kxwidget.FilterChipSelect
@@ -88,7 +90,7 @@ func newContractsForCorporation(u *baseUI) *contracts {
 	return newContracts(u, true)
 }
 
-func newContractsForOverview(u *baseUI) *contracts {
+func newContractsForCharacters(u *baseUI) *contracts {
 	return newContracts(u, false)
 }
 
@@ -130,7 +132,9 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	if !a.u.isMobile {
+	if a.u.isMobile {
+		a.body = a.makeDataList()
+	} else {
 		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
@@ -158,8 +162,6 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 				}
 			},
 		)
-	} else {
-		a.body = a.makeDataList()
 	}
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
@@ -190,13 +192,12 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(
-			func(_ context.Context, c *app.Corporation) {
-				a.corporation.Store(c)
-				a.update()
-			},
-		)
+		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+			a.corporation.Store(c)
+			a.update()
+		})
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
@@ -312,84 +313,99 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 
 func (a *contracts) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectIssuer.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r contractRow) bool {
-			return r.issuerName == x
+	issuer := a.selectIssuer.Selected
+	assignee := a.selectAssignee.Selected
+	type_ := a.selectType.Selected
+	tag := a.selectTag.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+			switch a.selectStatus.Selected {
+			case contractStatusAllActive:
+				return !r.isActive
+			case contractStatusOutstanding:
+				return r.status != app.ContractStatusOutstanding
+			case contractStatusInProgress:
+				return r.status != app.ContractStatusInProgress
+			case contractStatusHasIssue:
+				return !r.hasIssue
+			case contractStatusHistory:
+				return !r.isHistory
+			}
+			return true
 		})
-	}
-	if x := a.selectAssignee.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r contractRow) bool {
-			return r.assigneeName == x
-		})
-	}
-	rows = xslices.Filter(rows, func(r contractRow) bool {
-		switch a.selectStatus.Selected {
-		case contractStatusAllActive:
-			return r.isActive
-		case contractStatusOutstanding:
-			return r.status == app.ContractStatusOutstanding
-		case contractStatusInProgress:
-			return r.status == app.ContractStatusInProgress
-		case contractStatusHasIssue:
-			return r.hasIssue
-		case contractStatusHistory:
-			return r.isHistory
+		if issuer != "" {
+			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+				return r.issuerName != issuer
+			})
 		}
-		return false
-	})
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r contractRow) bool {
-			return r.typeName == x
+		if assignee != "" {
+			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+				return r.assigneeName != assignee
+			})
+		}
+		if type_ != "" {
+			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+				return r.typeName != type_
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b contractRow) int {
+				var x int
+				switch sortCol {
+				case contractsColName:
+					x = strings.Compare(a.name, b.name)
+				case contractsColType:
+					x = strings.Compare(a.typeName, b.typeName)
+				case contractsColIssuer:
+					x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
+				case contractsColAssignee:
+					x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
+				case contractsColStatus:
+					x = strings.Compare(a.statusText, b.statusText)
+				case contractsColIssuedAt:
+					x = a.dateIssued.Compare(b.dateIssued)
+				case contractsColExpiresAt:
+					x = a.dateExpired.Compare(b.dateExpired)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r contractRow) set.Set[string] {
+			return r.tags
+		})...).All())
+		issueOptions := xslices.Map(rows, func(r contractRow) string {
+			return r.issuerName
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r contractRow) bool {
-			return r.tags.Contains(x)
+		assigneeOptions := xslices.Map(rows, func(r contractRow) string {
+			return r.assigneeName
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b contractRow) int {
-			var x int
-			switch sortCol {
-			case contractsColName:
-				x = strings.Compare(a.name, b.name)
-			case contractsColType:
-				x = strings.Compare(a.typeName, b.typeName)
-			case contractsColIssuer:
-				x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
-			case contractsColAssignee:
-				x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
-			case contractsColStatus:
-				x = strings.Compare(a.statusText, b.statusText)
-			case contractsColIssuedAt:
-				x = a.dateIssued.Compare(b.dateIssued)
-			case contractsColExpiresAt:
-				x = a.dateExpired.Compare(b.dateExpired)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
+		typeOptions := xslices.Map(rows, func(r contractRow) string {
+			return r.typeName
 		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r contractRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.selectIssuer.SetOptions(xslices.Map(rows, func(r contractRow) string {
-		return r.issuerName
-	}))
-	a.selectAssignee.SetOptions(xslices.Map(rows, func(r contractRow) string {
-		return r.assigneeName
-	}))
-	a.selectType.SetOptions(xslices.Map(rows, func(r contractRow) string {
-		return r.typeName
-	}))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.selectIssuer.SetOptions(issueOptions)
+			a.selectAssignee.SetOptions(assigneeOptions)
+			a.selectType.SetOptions(typeOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
+		})
+	}()
 }
 
 func (a *contracts) update() {

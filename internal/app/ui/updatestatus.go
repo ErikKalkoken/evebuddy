@@ -159,7 +159,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 			theme.MoreVerticalIcon(),
 			updateMenu,
 		))
-		a.nav = iwidget.NewNavigatorWithAppBar(ab)
+		a.nav = iwidget.NewNavigator(ab)
 		c = a.nav
 	} else {
 		sections := container.NewBorder(a.top2, a.updateAllSections, nil, nil, a.sectionList)

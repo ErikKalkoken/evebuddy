@@ -1,4 +1,4 @@
-package characterservice
+package corporationservice
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"regexp"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
@@ -15,33 +16,50 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
-	return s.st.GetCharacterAssetValue(ctx, characterID)
+func (s *CorporationService) ListAssets(ctx context.Context, corporationID int32) ([]*app.CorporationAsset, error) {
+	assets, err := s.st.ListCorporationAssets(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	// Filter out unwanted assets
+	assets = slices.DeleteFunc(assets, func(x *app.CorporationAsset) bool {
+		return x.Type != nil && x.Type.ID == app.EveTypeAlliance
+	})
+	return assets, nil
 }
 
-func (s *CharacterService) ListAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
-	return s.st.ListCharacterAssets(ctx, characterID)
-}
-
-func (s *CharacterService) ListAllAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
-	return s.st.ListAllCharacterAssets(ctx)
+func (s *CorporationService) ListAllAssets(ctx context.Context) ([]*app.CorporationAsset, error) {
+	return s.st.ListAllCorporationAssets(ctx)
 }
 
 var (
 	locationFlagFromESIValue = map[string]app.LocationFlag{
 		"AssetSafety":                         app.FlagAssetSafety,
 		"AutoFit":                             app.FlagAutoFit,
+		"Bonus":                               app.FlagBonus,
+		"Booster":                             app.FlagBooster,
 		"BoosterBay":                          app.FlagBoosterBay,
+		"Capsule":                             app.FlagCapsule,
 		"CapsuleerDeliveries":                 app.FlagCapsuleerDeliveries,
 		"Cargo":                               app.FlagCargo,
+		"CorpDeliveries":                      app.FlagCorpDeliveries,
+		"CorpSAG1":                            app.FlagCorpSAG1,
+		"CorpSAG2":                            app.FlagCorpSAG2,
+		"CorpSAG3":                            app.FlagCorpSAG3,
+		"CorpSAG4":                            app.FlagCorpSAG4,
+		"CorpSAG5":                            app.FlagCorpSAG5,
+		"CorpSAG6":                            app.FlagCorpSAG6,
+		"CorpSAG7":                            app.FlagCorpSAG7,
 		"CorporationGoalDeliveries":           app.FlagCorporationGoalDeliveries,
-		"CorpseBay":                           app.FlagCorpseBay,
+		"CrateLoot":                           app.FlagCrateLoot,
 		"Deliveries":                          app.FlagDeliveries,
 		"DroneBay":                            app.FlagDroneBay,
+		"DustBattle":                          app.FlagDustBattle,
+		"DustDatabank":                        app.FlagDustDatabank,
+		"ExpeditionHold":                      app.FlagExpeditionHold,
 		"FighterBay":                          app.FlagFighterBay,
 		"FighterTube0":                        app.FlagFighterTube0,
 		"FighterTube1":                        app.FlagFighterTube1,
@@ -62,7 +80,10 @@ var (
 		"HiSlot7":                             app.FlagHiSlot7,
 		"HiddenModifiers":                     app.FlagHiddenModifiers,
 		"Implant":                             app.FlagImplant,
+		"Impounded":                           app.FlagImpounded,
 		"InfrastructureHangar":                app.FlagInfrastructureHangar,
+		"JunkyardReprocessed":                 app.FlagJunkyardReprocessed,
+		"JunkyardTrashed":                     app.FlagJunkyardTrashed,
 		"LoSlot0":                             app.FlagLoSlot0,
 		"LoSlot1":                             app.FlagLoSlot1,
 		"LoSlot2":                             app.FlagLoSlot2,
@@ -82,7 +103,12 @@ var (
 		"MedSlot7":                            app.FlagMedSlot7,
 		"MobileDepotHold":                     app.FlagMobileDepotHold,
 		"MoonMaterialBay":                     app.FlagMoonMaterialBay,
+		"OfficeFolder":                        app.FlagOfficeFolder,
+		"Pilot":                               app.FlagPilot,
+		"PlanetSurface":                       app.FlagPlanetSurface,
 		"QuafeBay":                            app.FlagQuafeBay,
+		"QuantumCoreRoom":                     app.FlagQuantumCoreRoom,
+		"Reward":                              app.FlagReward,
 		"RigSlot0":                            app.FlagRigSlot0,
 		"RigSlot1":                            app.FlagRigSlot1,
 		"RigSlot2":                            app.FlagRigSlot2,
@@ -91,8 +117,19 @@ var (
 		"RigSlot5":                            app.FlagRigSlot5,
 		"RigSlot6":                            app.FlagRigSlot6,
 		"RigSlot7":                            app.FlagRigSlot7,
+		"SecondaryStorage":                    app.FlagSecondaryStorage,
+		"ServiceSlot0":                        app.FlagServiceSlot0,
+		"ServiceSlot1":                        app.FlagServiceSlot1,
+		"ServiceSlot2":                        app.FlagServiceSlot2,
+		"ServiceSlot3":                        app.FlagServiceSlot3,
+		"ServiceSlot4":                        app.FlagServiceSlot4,
+		"ServiceSlot5":                        app.FlagServiceSlot5,
+		"ServiceSlot6":                        app.FlagServiceSlot6,
+		"ServiceSlot7":                        app.FlagServiceSlot7,
 		"ShipHangar":                          app.FlagShipHangar,
+		"ShipOffline":                         app.FlagShipOffline,
 		"Skill":                               app.FlagSkill,
+		"SkillInTraining":                     app.FlagSkillInTraining,
 		"SpecializedAmmoHold":                 app.FlagSpecializedAmmoHold,
 		"SpecializedAsteroidHold":             app.FlagSpecializedAsteroidHold,
 		"SpecializedCommandCenterHold":        app.FlagSpecializedCommandCenterHold,
@@ -109,7 +146,10 @@ var (
 		"SpecializedSalvageHold":              app.FlagSpecializedSalvageHold,
 		"SpecializedShipHold":                 app.FlagSpecializedShipHold,
 		"SpecializedSmallShipHold":            app.FlagSpecializedSmallShipHold,
-		"StructureDeedBay":                    app.FlagStructureDeedBay,
+		"StructureActive":                     app.FlagStructureActive,
+		"StructureFuel":                       app.FlagStructureFuel,
+		"StructureInactive":                   app.FlagStructureInactive,
+		"StructureOffline":                    app.FlagStructureOffline,
 		"SubSystemBay":                        app.FlagSubSystemBay,
 		"SubSystemSlot0":                      app.FlagSubSystemSlot0,
 		"SubSystemSlot1":                      app.FlagSubSystemSlot1,
@@ -120,6 +160,7 @@ var (
 		"SubSystemSlot6":                      app.FlagSubSystemSlot6,
 		"SubSystemSlot7":                      app.FlagSubSystemSlot7,
 		"Unlocked":                            app.FlagUnlocked,
+		"Wallet":                              app.FlagWallet,
 		"Wardrobe":                            app.FlagWardrobe,
 	}
 	locationTypeFromESIValue = map[string]app.LocationType{
@@ -129,31 +170,32 @@ var (
 		"item":         app.TypeItem,
 		"other":        app.TypeOther,
 	}
+	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
 )
 
-func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterAssets {
+func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
+	if arg.Section != app.SectionCorporationAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdAssets")
 			assets, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-					arg := &esi.GetCharactersCharacterIdAssetsOpts{
+				func(pageNum int) ([]esi.GetCorporationsCorporationIdAssets200Ok, *http.Response, error) {
+					opts := &esi.GetCorporationsCorporationIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
 					}
-					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+					return s.esiClient.ESI.AssetsApi.GetCorporationsCorporationIdAssets(ctx, arg.CorporationID, opts)
 				})
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received assets from ESI", "count", len(assets), "characterID", characterID)
+			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.CorporationID)
 			return assets, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			assets := data.([]esi.GetCharactersCharacterIdAssets200Ok)
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			assets := data.([]esi.GetCorporationsCorporationIdAssets200Ok)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
 				incomingIDs.Add(ca.ItemId)
@@ -176,7 +218,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			if err := g.Wait(); err != nil {
 				return err
 			}
-			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
+			currentIDs, err := s.st.ListCorporationAssetIDs(ctx, arg.CorporationID)
 			if err != nil {
 				return err
 			}
@@ -185,29 +227,29 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				locationFlag, found := locationFlagFromESIValue[a.LocationFlag]
 				if !found {
 					locationFlag = app.FlagUnknown
-					slog.Warn("Unknown location flag encountered", "characterID", characterID, "item", a)
+					slog.Warn("Unknown location flag encountered", "corporationID", arg.CorporationID, "item", a)
 				}
 				locationType, found := locationTypeFromESIValue[a.LocationType]
 				if !found {
 					locationType = app.TypeUnknown
-					slog.Warn("Unknown location type encountered", "characterID", characterID, "item", a)
+					slog.Warn("Unknown location type encountered", "corporationID", arg.CorporationID, "item", a)
 				}
 				if currentIDs.Contains(a.ItemId) {
-					arg := storage.UpdateCharacterAssetParams{
-						CharacterID:  characterID,
-						ItemID:       a.ItemId,
-						LocationFlag: locationFlag,
-						LocationID:   a.LocationId,
-						LocationType: locationType,
-						Quantity:     a.Quantity,
+					arg := storage.UpdateCorporationAssetParams{
+						CorporationID: arg.CorporationID,
+						ItemID:        a.ItemId,
+						LocationFlag:  locationFlag,
+						LocationID:    a.LocationId,
+						LocationType:  locationType,
+						Quantity:      a.Quantity,
 					}
-					if err := s.st.UpdateCharacterAsset(ctx, arg); err != nil {
+					if err := s.st.UpdateCorporationAsset(ctx, arg); err != nil {
 						return err
 					}
 					updated++
 				} else {
-					arg := storage.CreateCharacterAssetParams{
-						CharacterID:     characterID,
+					arg := storage.CreateCorporationAssetParams{
+						CorporationID:   arg.CorporationID,
 						EveTypeID:       a.TypeId,
 						IsBlueprintCopy: a.IsBlueprintCopy,
 						IsSingleton:     a.IsSingleton,
@@ -217,27 +259,24 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 						LocationType:    locationType,
 						Quantity:        a.Quantity,
 					}
-					if err := s.st.CreateCharacterAsset(ctx, arg); err != nil {
+					if err := s.st.CreateCorporationAsset(ctx, arg); err != nil {
 						return err
 					}
 					created++
 				}
 			}
-			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
+			slog.Info("Stored corporation assets", "corporationID", arg.CorporationID, "created", created, "updated", updated)
 
-			// Remove obsolete assets
+			// remove obsolete assets
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids); err != nil {
+				if err := s.st.DeleteCorporationAssets(ctx, arg.CorporationID, ids); err != nil {
 					return err
 				}
-				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
-			}
-			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
-				return err
+				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.CorporationID, "count", ids.Size())
 			}
 
 			// update names
-			assets2, err := s.st.ListCharacterAssets(ctx, characterID)
+			assets2, err := s.st.ListCorporationAssets(ctx, arg.CorporationID)
 			if err != nil {
 				return err
 			}
@@ -247,11 +286,14 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, err := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
+			names2, err := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
 			if err != nil {
 				return err
 			}
-			slog.Debug("Received character asset names from ESI", "count", len(names2), "characterID", characterID)
+			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
+
+			modifyAssetNames(assets2, names2)
+
 			var changed set.Set[int64]
 			for id, name := range names {
 				if names2[id] != name {
@@ -259,10 +301,10 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				}
 			}
 			for id := range changed.All() {
-				err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
-					CharacterID: characterID,
-					ItemID:      id,
-					Name:        names2[id],
+				err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
+					CorporationID: arg.CorporationID,
+					ItemID:        id,
+					Name:          names2[id],
 				})
 				if err != nil {
 					return err
@@ -274,17 +316,38 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	)
 }
 
-func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+// modifyAssetNames modifies the names of specific asset types.
+func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) {
+	for _, a := range assets2 {
+		name, ok := names2[a.ItemID]
+		if !ok {
+			continue
+		}
+		if a.Type == nil {
+			continue
+		}
+		switch a.Type.ID {
+		case app.EveTypeCustomsOffice:
+			match := reCustomsOffice.FindStringSubmatch(name)
+			if len(match) < 2 {
+				continue
+			}
+			names2[a.ItemID] = match[1]
+		}
+	}
+}
+
+func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int32, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, 0)
+	results := make([][]esi.PostCorporationsCorporationIdAssetsNames200Ok, 0)
 	if len(ids) > 0 {
-		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
+			names, _, err := s.esiClient.ESI.AssetsApi.PostCorporationsCorporationIdAssetsNames(ctx, corporationID, chunk, nil)
 			if err != nil {
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
-				slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
+				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
 			}
 			results = append(results, names)
 		}
@@ -298,15 +361,4 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 		}
 	}
 	return m, nil
-}
-
-func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
-	v, err := s.st.CalculateCharacterAssetTotalValue(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.New(v)); err != nil {
-		return 0, err
-	}
-	return v, nil
 }

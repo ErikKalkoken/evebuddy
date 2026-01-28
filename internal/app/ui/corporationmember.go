@@ -146,17 +146,24 @@ func (a *corporationMember) makeList() *widget.List {
 
 func (a *corporationMember) filterRows() {
 	rows := slices.Clone(a.rows)
-	// search filter
-	if search := strings.ToLower(a.searchBox.Text); search != "" {
-		rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
-			return !strings.Contains(r.searchTarget, search)
+	search := strings.ToLower(a.searchBox.Text)
+
+	go func() {
+		// search filter
+		if search != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		slices.SortFunc(rows, func(a, b corporationMemberRow) int {
+			return strings.Compare(a.name, b.name)
 		})
-	}
-	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
-		return strings.Compare(a.name, b.name)
-	})
-	a.rowsFiltered = rows
-	a.list.Refresh()
+
+		fyne.Do(func() {
+			a.rowsFiltered = rows
+			a.list.Refresh()
+		})
+	}()
 }
 
 func (a *corporationMember) update() {

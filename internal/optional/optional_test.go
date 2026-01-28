@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestOptional_New(t *testing.T) {
@@ -102,7 +103,7 @@ func TestOptional_Value(t *testing.T) {
 	})
 }
 
-func TestString(t *testing.T) {
+func TestOptional_StringFunc(t *testing.T) {
 	t.Run("should return converted string when optional has value", func(t *testing.T) {
 		x := optional.New(12)
 		got := x.StringFunc("", func(v int) string {
@@ -119,7 +120,7 @@ func TestString(t *testing.T) {
 	})
 }
 
-func TestValueOrZero(t *testing.T) {
+func TestOptional_ValueOrZero(t *testing.T) {
 	t.Run("should return value when set", func(t *testing.T) {
 		x := optional.New(12)
 		got := x.ValueOrZero()
@@ -164,4 +165,19 @@ func TestFromIntegerWithTime(t *testing.T) {
 	x := time.Now()
 	assert.Equal(t, optional.New(x), optional.FromTimeWithZero(x))
 	assert.Equal(t, optional.Optional[time.Time]{}, optional.FromTimeWithZero(time.Time{}))
+}
+
+func TestSum(t *testing.T) {
+	cases := []struct {
+		a, b, want optional.Optional[int]
+	}{
+		{optional.New(5), optional.New(3), optional.New(8)},
+		{optional.New(5), optional.Optional[int]{}, optional.New(5)},
+		{optional.Optional[int]{}, optional.New(5), optional.New(5)},
+		{optional.Optional[int]{}, optional.Optional[int]{}, optional.Optional[int]{}},
+	}
+	for _, tc := range cases {
+		got := optional.Sum(tc.a, tc.b)
+		assert.Equal(t, tc.want, got)
+	}
 }

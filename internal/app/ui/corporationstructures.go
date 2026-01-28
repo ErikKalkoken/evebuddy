@@ -215,80 +215,98 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationStructures) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.regionName == x
+	region := a.selectRegion.Selected
+	solarSystem := a.selectSolarSystem.Selected
+	state := a.selectState.Selected
+	service := a.selectService.Selected
+	type_ := a.selectType.Selected
+	power := a.selectPower.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				return r.regionName != region
+			})
+		}
+		if solarSystem != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				return r.solarSystemName != solarSystem
+			})
+		}
+		if state != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				return r.stateDisplay != state
+			})
+		}
+		if service != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				return !r.services.Contains(service)
+			})
+		}
+		if type_ != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				return r.typeName != type_
+			})
+		}
+		if power != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationStructureRow) bool {
+				switch power {
+				case structuresPowerHigh:
+					return !r.isFullPower
+				case structuresPowerLow:
+					return r.isFullPower
+				}
+				return true
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b corporationStructureRow) int {
+				var x int
+				switch sortCol {
+				case structuresColType:
+					x = strings.Compare(a.typeName, b.typeName)
+				case structuresColName:
+					x = xstrings.CompareIgnoreCase(a.structureName, b.structureName)
+				case structuresColFuelExpires:
+					x = a.fuelSort.Compare(b.fuelSort)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		selectOptions := xslices.Map(rows, func(r corporationStructureRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.solarSystemName == x
+		solarSystemOptions := xslices.Map(rows, func(r corporationStructureRow) string {
+			return r.solarSystemName
 		})
-	}
-	if x := a.selectState.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.stateDisplay == x
+		stateOptions := xslices.Map(rows, func(r corporationStructureRow) string {
+			return r.stateDisplay
 		})
-	}
-	if x := a.selectService.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.services.Contains(x)
+		servicesOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r corporationStructureRow) set.Set[string] {
+			return r.services
+		})...).All())
+		typeOptions := xslices.Map(rows, func(r corporationStructureRow) string {
+			return r.typeName
 		})
-	}
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.typeName == x
+
+		fyne.Do(func() {
+			a.selectRegion.SetOptions(selectOptions)
+			a.selectSolarSystem.SetOptions(solarSystemOptions)
+			a.selectState.SetOptions(stateOptions)
+			a.selectService.SetOptions(servicesOptions)
+			a.selectType.SetOptions(typeOptions)
+			a.rowsFiltered = rows
+			a.main.Refresh()
 		})
-	}
-	if x := a.selectPower.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			switch x {
-			case structuresPowerHigh:
-				return r.isFullPower
-			case structuresPowerLow:
-				return !r.isFullPower
-			}
-			return false
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b corporationStructureRow) int {
-			var x int
-			switch sortCol {
-			case structuresColType:
-				x = strings.Compare(a.typeName, b.typeName)
-			case structuresColName:
-				x = xstrings.CompareIgnoreCase(a.structureName, b.structureName)
-			case structuresColFuelExpires:
-				x = a.fuelSort.Compare(b.fuelSort)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// set data & refresh
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.regionName
-	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.solarSystemName
-	}))
-	a.selectState.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.stateDisplay
-	}))
-	a.selectService.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r corporationStructureRow) set.Set[string] {
-		return r.services
-	})...).All()))
-	a.selectType.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.typeName
-	}))
-	a.rowsFiltered = rows
-	a.main.Refresh()
+	}()
 }
 
 func (a *corporationStructures) update() {

@@ -44,10 +44,10 @@ check-device:
 interfaces:
 	ifacemaker -f internal/eveimageservice/eveimageservice.go -i EveImageService -p app -s EveImageService > internal/app/eveimageservice.go
 
-test_races:
+check_race:
 	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo .
 
-test_races_mobile:
+check_race_mobile:
 	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo . --mobile --dev
 
 build:
@@ -58,3 +58,6 @@ ratelimitdoc:
 
 test:
 	go test -test.short ./... ;
+
+deadcode:
+	deadcode -test ./...

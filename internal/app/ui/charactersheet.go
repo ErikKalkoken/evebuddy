@@ -18,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -222,12 +223,10 @@ func (a *characterSheet) update() {
 	})
 	fyne.Do(func() {
 		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TotalSP, "?"))
-		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
-			a.wealth.SetText("?")
-			return
-		}
-		v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
-		a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
+		v := optional.Sum(c.AssetValue, c.WalletBalance)
+		a.wealth.SetText(v.StringFunc("?", func(v float64) string {
+			return humanize.Comma(int64(v))
+		}) + " ISK")
 	})
 	fyne.Do(func() {
 		if c.EveCharacter.Faction == nil {
