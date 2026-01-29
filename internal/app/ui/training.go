@@ -387,62 +387,75 @@ func (a *training) makeDataList() *iwidget.StripedList {
 
 func (a *training) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectStatus.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r trainingRow) bool {
-			switch x {
-			case trainingStatusActive:
-				return r.isActive
-			case trainingStatusInActive:
-				return !r.isActive
-			}
-			return false
+	selectStatus := a.selectStatus.Selected
+	selectTag := a.selectTag.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		if selectStatus != "" {
+			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+				switch selectStatus {
+				case trainingStatusActive:
+					return !r.isActive
+				case trainingStatusInActive:
+					return r.isActive
+				}
+				return true
+			})
+		}
+		if selectTag != "" {
+			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+				return !r.tags.Contains(selectTag)
+			})
+		}
+		// search filter
+		if search != "" {
+			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		// sort
+
+		if doSort {
+			slices.SortFunc(rows, func(a, b trainingRow) int {
+				var x int
+				switch sortCol {
+				case trainingColName:
+					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+				case trainingColCurrentRemaining:
+					x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
+				case trainingColCurrentSkill:
+					x = strings.Compare(a.skillName, b.skillName)
+				case trainingColQueuedCount:
+					x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
+				case trainingColQueuedRemaining:
+					x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
+				case trainingColSkillpoints:
+					x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
+				case trainingColUnallocatedSP:
+					x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		// Queue UI changes
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.main.Refresh()
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r trainingRow) bool {
-			return r.tags.Contains(x)
-		})
-	}
-	// search filter
-	if search := strings.ToLower(a.search.Text); search != "" {
-		rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
-			return !strings.Contains(r.searchTarget, search)
-		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b trainingRow) int {
-			var x int
-			switch sortCol {
-			case trainingColName:
-				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-			case trainingColCurrentRemaining:
-				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
-			case trainingColCurrentSkill:
-				x = strings.Compare(a.skillName, b.skillName)
-			case trainingColQueuedCount:
-				x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-			case trainingColQueuedRemaining:
-				x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-			case trainingColSkillpoints:
-				x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-			case trainingColUnallocatedSP:
-				x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.rowsFiltered = rows
-	a.main.Refresh()
+	}()
 }
 
 func (a *training) update() {

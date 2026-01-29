@@ -180,42 +180,34 @@ func TestTreeData_Children(t *testing.T) {
 		branch := tree.MustAdd(iwidget.TreeRootID, MyNode{"1", "Root1"})
 		tree.Add(branch, MyNode{"2", "Alpha"})
 		tree.Add(branch, MyNode{"3", "Bravo"})
-		got, err := tree.Children(branch)
-		if assert.NoError(t, err) {
-			want := []MyNode{{"2", "Alpha"}, {"3", "Bravo"}}
-			assert.Equal(t, want, got)
-		}
+		got := tree.Children(branch)
+		want := []MyNode{{"2", "Alpha"}, {"3", "Bravo"}}
+		assert.Equal(t, want, got)
 	})
 	t.Run("can return children of root", func(t *testing.T) {
 		var tree iwidget.TreeData[MyNode]
 		branch := tree.MustAdd(iwidget.TreeRootID, MyNode{"1", "Branch"})
 		tree.Add(branch, MyNode{"2", "Alpha"})
 		tree.Add(branch, MyNode{"3", "Bravo"})
-		got, err := tree.Children(iwidget.TreeRootID)
-		if assert.NoError(t, err) {
-			want := []MyNode{{"1", "Branch"}}
-			assert.Equal(t, want, got)
-		}
+		got := tree.Children(iwidget.TreeRootID)
+		want := []MyNode{{"1", "Branch"}}
+		assert.Equal(t, want, got)
 	})
 	t.Run("returns empty if a node has no children", func(t *testing.T) {
 		var tree iwidget.TreeData[MyNode]
 		uid := tree.MustAdd(iwidget.TreeRootID, MyNode{"1", "Root1"})
-		got, err := tree.Children(uid)
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 0)
-		}
+		got := tree.Children(uid)
+		assert.Len(t, got, 0)
 	})
 	t.Run("the root ID always exists", func(t *testing.T) {
 		var tree iwidget.TreeData[MyNode]
-		got, err := tree.Children(iwidget.TreeRootID)
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 0)
-		}
+		got := tree.Children(iwidget.TreeRootID)
+		assert.Len(t, got, 0)
 	})
-	t.Run("should return error when node not found", func(t *testing.T) {
+	t.Run("should return empty when node not found", func(t *testing.T) {
 		var tree iwidget.TreeData[MyNode]
-		_, err := tree.Children("abc")
-		assert.ErrorIs(t, err, iwidget.ErrNotFound)
+		got := tree.Children("abc")
+		assert.Len(t, got, 0)
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -98,9 +99,11 @@ func (a *manageCharacters) unsetWindow() {
 }
 
 func (a *manageCharacters) update() {
-	a.characterAdmin.update()
-	a.characterTags.update()
-	a.characterTraining.update()
+	var wg sync.WaitGroup
+	wg.Go(a.characterAdmin.update)
+	wg.Go(a.characterTags.update)
+	wg.Go(a.characterTraining.update)
+	wg.Wait()
 }
 
 func (a *manageCharacters) reportError(text string, err error) {

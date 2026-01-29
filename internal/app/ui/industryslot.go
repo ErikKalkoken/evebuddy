@@ -247,67 +247,78 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataTableDef, makeCell fun
 
 func (a *industrySlots) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectFreeSlots.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industrySlotRow) bool {
-			switch x {
-			case slotsFreeSome:
-				return r.free > 0
-			case slotsFreeNone:
-				return r.free == 0
-			}
-			return false
+	freeSlots := a.selectFreeSlots.Selected
+	tag := a.selectTag.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		rows := slices.Clone(rows)
+		// filter
+		if freeSlots != "" {
+			rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
+				switch freeSlots {
+				case slotsFreeSome:
+					return r.free == 0
+				case slotsFreeNone:
+					return r.free > 0
+				}
+				return true
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b industrySlotRow) int {
+				var x int
+				switch sortCol {
+				case industrySlotsColCharacter:
+					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+				case industrySlotsColBusy:
+					x = cmp.Compare(a.busy, b.busy)
+				case industrySlotsColReady:
+					x = cmp.Compare(a.ready, b.ready)
+				case industrySlotsColFree:
+					x = cmp.Compare(a.free, b.free)
+				case industrySlotsColTotal:
+					x = cmp.Compare(a.total, b.total)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// add totals
+		var active, ready, free, total int
+		for _, r := range rows {
+			active += r.busy
+			ready += r.ready
+			free += r.free
+			total += r.total
+		}
+		rows = append(rows, industrySlotRow{
+			busy:      active,
+			ready:     ready,
+			free:      free,
+			total:     total,
+			isSummary: true,
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r industrySlotRow) bool {
-			return r.tags.Contains(x)
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b industrySlotRow) int {
-			var x int
-			switch sortCol {
-			case industrySlotsColCharacter:
-				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-			case industrySlotsColBusy:
-				x = cmp.Compare(a.busy, b.busy)
-			case industrySlotsColReady:
-				x = cmp.Compare(a.ready, b.ready)
-			case industrySlotsColFree:
-				x = cmp.Compare(a.free, b.free)
-			case industrySlotsColTotal:
-				x = cmp.Compare(a.total, b.total)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	// add totals
-	var active, ready, free, total int
-	for _, r := range rows {
-		active += r.busy
-		ready += r.ready
-		free += r.free
-		total += r.total
-	}
-	rows = append(rows, industrySlotRow{
-		busy:      active,
-		ready:     ready,
-		free:      free,
-		total:     total,
-		isSummary: true,
-	})
-	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.rowsFiltered = rows
-	a.body.Refresh()
+	}()
 }
 
 func (a *industrySlots) update() {

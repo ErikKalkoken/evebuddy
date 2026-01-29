@@ -350,86 +350,101 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 
 func (a *marketOrders) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r marketOrderRow) bool {
-			return r.regionName == x
+	region := a.selectRegion.Selected
+	owner := a.selectOwner.Selected
+	type_ := a.selectType.Selected
+	tag := a.selectTag.Selected
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		rows := slices.DeleteFunc(rows, func(r marketOrderRow) bool {
+			s := r.stateCorrected()
+			switch a.selectState.Selected {
+			case marketOrderStateActive:
+				return s != app.OrderOpen
+			case marketOrderStateHistory:
+				return s != app.OrderCancelled || s == app.OrderExpired
+			}
+			return true
 		})
-	}
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r marketOrderRow) bool {
-			return r.characterName == x
-		})
-	}
-	rows = xslices.Filter(rows, func(r marketOrderRow) bool {
-		s := r.stateCorrected()
-		switch a.selectState.Selected {
-		case marketOrderStateActive:
-			return s == app.OrderOpen
-		case marketOrderStateHistory:
-			return s == app.OrderCancelled || s == app.OrderExpired
+		if region != "" {
+			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
+				return r.regionName != region
+			})
 		}
-		return false
-	})
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r marketOrderRow) bool {
-			return r.typeName == x
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
+				return r.characterName != owner
+			})
+		}
+		if type_ != "" {
+			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
+				return r.typeName != type_
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		// sort
+		if doSort {
+			slices.SortFunc(rows, func(a, b marketOrderRow) int {
+				var x int
+				switch sortCol {
+				case marketOrdersColType:
+					x = strings.Compare(a.typeName, b.typeName)
+				case marketOrdersColVolume:
+					x = cmp.Compare(a.volumeRemain, b.volumeRemain)
+				case marketOrdersColPrice:
+					x = cmp.Compare(a.price, b.price)
+				case marketOrdersColState:
+					x = a.expires.Compare(b.expires)
+				case marketOrdersColRegion:
+					x = strings.Compare(a.regionName, b.regionName)
+				case marketOrdersColLocation:
+					x = strings.Compare(a.locationName, b.locationName)
+				case marketOrdersColOwner:
+					x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+		// set data & refresh
+		regionOptions := xslices.Map(rows, func(r marketOrderRow) string {
+			return r.regionName
 		})
-	}
-	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r marketOrderRow) bool {
-			return r.tags.Contains(x)
+		ownerOptions := xslices.Map(rows, func(r marketOrderRow) string {
+			return r.ownerName
 		})
-	}
-	// sort
-	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
-		slices.SortFunc(rows, func(a, b marketOrderRow) int {
-			var x int
-			switch sortCol {
-			case marketOrdersColType:
-				x = strings.Compare(a.typeName, b.typeName)
-			case marketOrdersColVolume:
-				x = cmp.Compare(a.volumeRemain, b.volumeRemain)
-			case marketOrdersColPrice:
-				x = cmp.Compare(a.price, b.price)
-			case marketOrdersColState:
-				x = a.expires.Compare(b.expires)
-			case marketOrdersColRegion:
-				x = strings.Compare(a.regionName, b.regionName)
-			case marketOrdersColLocation:
-				x = strings.Compare(a.locationName, b.locationName)
-			case marketOrdersColOwner:
-				x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-			}
-			if dir == iwidget.SortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r marketOrderRow) set.Set[string] {
+			return r.tags
+		})...).All())
+		typeOptions := xslices.Map(rows, func(r marketOrderRow) string {
+			return r.typeName
 		})
-	})
-	// set data & refresh
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
-		return r.regionName
-	}))
-	a.selectOwner.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
-		return r.ownerName
-	}))
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r marketOrderRow) set.Set[string] {
-		return r.tags
-	})...).All()))
-	a.selectType.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
-		return r.typeName
-	}))
-	a.rowsFiltered = rows
-	a.main.Refresh()
-	var total optional.Optional[float64]
-	for _, r := range rows {
-		total.Set(total.ValueOrZero() + r.price*float64(r.volumeRemain))
-	}
-	a.footer.SetText(fmt.Sprintf("Orders total: %s ISK", total.StringFunc("?", func(v float64) string {
-		return ihumanize.NumberF(v, 1)
-	})))
+
+		var total float64
+		for _, r := range rows {
+			total += r.price * float64(r.volumeRemain)
+		}
+		footerText := fmt.Sprintf("Orders total: %s ISK", ihumanize.NumberF(total, 1))
+
+		fyne.Do(func() {
+			a.selectRegion.SetOptions(regionOptions)
+			a.selectOwner.SetOptions(ownerOptions)
+			a.selectTag.SetOptions(tagOptions)
+			a.selectType.SetOptions(typeOptions)
+			a.rowsFiltered = rows
+			a.main.Refresh()
+			a.footer.SetText(footerText)
+		})
+	}()
 }
 
 func (a *marketOrders) update() {

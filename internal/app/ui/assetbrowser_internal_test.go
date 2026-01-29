@@ -6,54 +6,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
-	t.Run("can create simple tree", func(t *testing.T) {
-		el := &app.EveLocation{
-			ID:          100000,
-			Name:        "Alpha 1",
-			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
-		}
-		a := &app.CharacterAsset{ItemID: 1, LocationID: el.ID}
-		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
-		c := &app.CharacterAsset{ItemID: 3, LocationID: 2}
-		d := &app.CharacterAsset{ItemID: 4, LocationID: 2}
-		assets := []*app.CharacterAsset{a, b, c, d}
-		locations := []*app.EveLocation{el}
-		ac := assetcollection.New(assets, locations)
-		tree := makeLocationTreeData(ac, 42)
-		assert.False(t, tree.IsEmpty())
-	})
-	t.Run("can have multiple locations with items in space", func(t *testing.T) {
-		l1 := &app.EveLocation{
-			ID:          100000,
-			Name:        "Alpha 1",
-			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
-		}
-		l2 := &app.EveLocation{
-			ID:          100001,
-			Name:        "Alpha 2",
-			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
-		}
-		a := &app.CharacterAsset{ItemID: 1, LocationID: l1.ID}
-		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
-		c := &app.CharacterAsset{ItemID: 3, LocationID: 1}
-		d := &app.CharacterAsset{ItemID: 4, LocationID: 1}
-		e := &app.CharacterAsset{ItemID: 5, LocationID: l2.ID}
-		assets := []*app.CharacterAsset{a, b, c, d, e}
-		locations := []*app.EveLocation{l1, l2}
-		ac := assetcollection.New(assets, locations)
-		tree := makeLocationTreeData(ac, 42)
-		assert.False(t, tree.IsEmpty())
-	})
-}
 
 func TestSplitLines(t *testing.T) {
 	const maxLine = 10
@@ -118,20 +77,17 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	a := ui.characterAssets
+	a := ui.characterAssetBrowser
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
 	a.update()
-	a.locations.OpenAllBranches()
-	uid, ok := a.containerLocations[loc.ID]
-	if !ok {
-		t.Fail()
-	}
-	a.locations.Select(uid)
-
-	test.AssertImageMatches(t, "characterasset/full.png", w.Canvas().Capture())
+	a.Navigation.navigation.OpenAllBranches()
+	n, ok := a.Navigation.ac.LocationTree(loc.ID)
+	require.True(t, ok)
+	a.Navigation.navigation.SelectNode(n)
+	test.AssertImageMatches(t, "characterassetbrowser/full.png", w.Canvas().Capture())
 }
 
 func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
@@ -150,12 +106,12 @@ func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	a := ui.characterAssets
+	a := ui.characterAssetBrowser
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
 	a.update()
 
-	test.AssertImageMatches(t, "characterasset/minimal.png", w.Canvas().Capture())
+	test.AssertImageMatches(t, "characterassetbrowser/minimal.png", w.Canvas().Capture())
 }

@@ -180,6 +180,7 @@ type CorporationSection string
 var _ section = (*CorporationSection)(nil)
 
 const (
+	SectionCorporationAssets              CorporationSection = "assets"                // corp-assets
 	SectionCorporationContracts           CorporationSection = "contracts"             // corp-contract
 	SectionCorporationDivisions           CorporationSection = "divisions"             // corp-wallet
 	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"         // corp-industry
@@ -203,6 +204,7 @@ const (
 )
 
 var CorporationSections = []CorporationSection{
+	SectionCorporationAssets,
 	SectionCorporationContracts,
 	SectionCorporationDivisions,
 	SectionCorporationIndustryJobs,
@@ -294,6 +296,7 @@ func (cs CorporationSection) Timeout() time.Duration {
 		walletJournal      = 3600 * time.Second
 	)
 	m := map[CorporationSection]time.Duration{
+		SectionCorporationAssets:              3600 * time.Second,
 		SectionCorporationContracts:           300 * time.Second,
 		SectionCorporationDivisions:           3600 * time.Second,
 		SectionCorporationIndustryJobs:        300 * time.Second,
@@ -329,6 +332,7 @@ func (cs CorporationSection) Roles() set.Set[Role] {
 		anyAccountant = []Role{RoleAccountant, RoleJuniorAccountant}
 	)
 	m := map[CorporationSection][]Role{
+		SectionCorporationAssets:              {RoleDirector},
 		SectionCorporationContracts:           {},
 		SectionCorporationDivisions:           {RoleDirector},
 		SectionCorporationIndustryJobs:        {RoleFactoryManager},
@@ -362,6 +366,7 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 	journal := []string{"esi-wallet.read_corporation_wallets.v1"}
 	transactions := []string{"esi-wallet.read_corporation_wallets.v1", "esi-universe.read_structures.v1"}
 	m := map[CorporationSection][]string{
+		SectionCorporationAssets:              {"esi-assets.read_corporation_assets.v1"},
 		SectionCorporationContracts:           {"esi-contracts.read_corporation_contracts.v1"},
 		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
 		SectionCorporationIndustryJobs:        {"esi-industry.read_corporation_jobs.v1"},

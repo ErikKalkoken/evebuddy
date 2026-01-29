@@ -209,28 +209,21 @@ func (t TreeData[T]) All() iter.Seq[T] {
 	return maps.Values(t.nodes)
 }
 
-// Children returns the direct children of a node.
-// It returns an error if the node does not exist.
+// Children returns the direct children of a node or an empty slice if the node could not be found.
 // The root node always exists and has no children if the tree is empty.
-func (t TreeData[T]) Children(uid widget.TreeNodeID) ([]T, error) {
+func (t TreeData[T]) Children(uid widget.TreeNodeID) []T {
 	var nodes []T
 	if t.IsEmpty() && uid == TreeRootID {
-		return nodes, nil
-	}
-	if uid != TreeRootID {
-		_, found := t.nodes[uid]
-		if !found {
-			return nil, fmt.Errorf("children for uid: %s: %w", uid, ErrNotFound)
-		}
+		return nodes
 	}
 	_, found := t.children[uid]
 	if !found {
-		return nodes, nil
+		return nodes
 	}
 	for _, id := range t.children[uid] {
 		nodes = append(nodes, t.nodes[id])
 	}
-	return nodes, nil
+	return nodes
 }
 
 // ChildrenCount returns the number of direct children of a node.

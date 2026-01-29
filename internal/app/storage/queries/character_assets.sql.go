@@ -357,292 +357,12 @@ func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([
 	return items, nil
 }
 
-const listCharacterAssetsInItemHangar = `-- name: ListCharacterAssetsInItemHangar :many
-SELECT
-    ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
-    eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published,
-    average_price as price
-FROM character_assets ca
-JOIN eve_types et ON et.id = ca.eve_type_id
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
-WHERE character_id = ?
-AND location_id = ?
-AND location_flag = ?
-AND eg.eve_category_id != ?
-ORDER BY et.id, ca.name
-`
-
-type ListCharacterAssetsInItemHangarParams struct {
-	CharacterID   int64
-	LocationID    int64
-	LocationFlag  string
-	EveCategoryID int64
-}
-
-type ListCharacterAssetsInItemHangarRow struct {
-	CharacterAsset CharacterAsset
-	EveType        EveType
-	EveGroup       EveGroup
-	EveCategory    EveCategory
-	Price          sql.NullFloat64
-}
-
-func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListCharacterAssetsInItemHangarParams) ([]ListCharacterAssetsInItemHangarRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetsInItemHangar,
-		arg.CharacterID,
-		arg.LocationID,
-		arg.LocationFlag,
-		arg.EveCategoryID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterAssetsInItemHangarRow
-	for rows.Next() {
-		var i ListCharacterAssetsInItemHangarRow
-		if err := rows.Scan(
-			&i.CharacterAsset.ID,
-			&i.CharacterAsset.CharacterID,
-			&i.CharacterAsset.EveTypeID,
-			&i.CharacterAsset.IsBlueprintCopy,
-			&i.CharacterAsset.IsSingleton,
-			&i.CharacterAsset.ItemID,
-			&i.CharacterAsset.LocationFlag,
-			&i.CharacterAsset.LocationID,
-			&i.CharacterAsset.LocationType,
-			&i.CharacterAsset.Name,
-			&i.CharacterAsset.Quantity,
-			&i.EveType.ID,
-			&i.EveType.EveGroupID,
-			&i.EveType.Capacity,
-			&i.EveType.Description,
-			&i.EveType.GraphicID,
-			&i.EveType.IconID,
-			&i.EveType.IsPublished,
-			&i.EveType.MarketGroupID,
-			&i.EveType.Mass,
-			&i.EveType.Name,
-			&i.EveType.PackagedVolume,
-			&i.EveType.PortionSize,
-			&i.EveType.Radius,
-			&i.EveType.Volume,
-			&i.EveGroup.ID,
-			&i.EveGroup.EveCategoryID,
-			&i.EveGroup.Name,
-			&i.EveGroup.IsPublished,
-			&i.EveCategory.ID,
-			&i.EveCategory.Name,
-			&i.EveCategory.IsPublished,
-			&i.Price,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterAssetsInLocation = `-- name: ListCharacterAssetsInLocation :many
-SELECT
-    ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
-    eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published,
-    average_price as price
-FROM character_assets ca
-JOIN eve_types et ON et.id = ca.eve_type_id
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
-WHERE character_id = ?
-AND location_id = ?
-ORDER BY et.id, ca.name
-`
-
-type ListCharacterAssetsInLocationParams struct {
-	CharacterID int64
-	LocationID  int64
-}
-
-type ListCharacterAssetsInLocationRow struct {
-	CharacterAsset CharacterAsset
-	EveType        EveType
-	EveGroup       EveGroup
-	EveCategory    EveCategory
-	Price          sql.NullFloat64
-}
-
-func (q *Queries) ListCharacterAssetsInLocation(ctx context.Context, arg ListCharacterAssetsInLocationParams) ([]ListCharacterAssetsInLocationRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetsInLocation, arg.CharacterID, arg.LocationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterAssetsInLocationRow
-	for rows.Next() {
-		var i ListCharacterAssetsInLocationRow
-		if err := rows.Scan(
-			&i.CharacterAsset.ID,
-			&i.CharacterAsset.CharacterID,
-			&i.CharacterAsset.EveTypeID,
-			&i.CharacterAsset.IsBlueprintCopy,
-			&i.CharacterAsset.IsSingleton,
-			&i.CharacterAsset.ItemID,
-			&i.CharacterAsset.LocationFlag,
-			&i.CharacterAsset.LocationID,
-			&i.CharacterAsset.LocationType,
-			&i.CharacterAsset.Name,
-			&i.CharacterAsset.Quantity,
-			&i.EveType.ID,
-			&i.EveType.EveGroupID,
-			&i.EveType.Capacity,
-			&i.EveType.Description,
-			&i.EveType.GraphicID,
-			&i.EveType.IconID,
-			&i.EveType.IsPublished,
-			&i.EveType.MarketGroupID,
-			&i.EveType.Mass,
-			&i.EveType.Name,
-			&i.EveType.PackagedVolume,
-			&i.EveType.PortionSize,
-			&i.EveType.Radius,
-			&i.EveType.Volume,
-			&i.EveGroup.ID,
-			&i.EveGroup.EveCategoryID,
-			&i.EveGroup.Name,
-			&i.EveGroup.IsPublished,
-			&i.EveCategory.ID,
-			&i.EveCategory.Name,
-			&i.EveCategory.IsPublished,
-			&i.Price,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterAssetsInShipHangar = `-- name: ListCharacterAssetsInShipHangar :many
-SELECT
-    ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
-    eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published,
-    average_price as price
-FROM character_assets ca
-JOIN eve_types et ON et.id = ca.eve_type_id
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
-WHERE character_id = ?
-AND location_id = ?
-AND location_flag = ?
-AND eg.eve_category_id = ?
-ORDER BY et.id, ca.name
-`
-
-type ListCharacterAssetsInShipHangarParams struct {
-	CharacterID   int64
-	LocationID    int64
-	LocationFlag  string
-	EveCategoryID int64
-}
-
-type ListCharacterAssetsInShipHangarRow struct {
-	CharacterAsset CharacterAsset
-	EveType        EveType
-	EveGroup       EveGroup
-	EveCategory    EveCategory
-	Price          sql.NullFloat64
-}
-
-func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListCharacterAssetsInShipHangarParams) ([]ListCharacterAssetsInShipHangarRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetsInShipHangar,
-		arg.CharacterID,
-		arg.LocationID,
-		arg.LocationFlag,
-		arg.EveCategoryID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterAssetsInShipHangarRow
-	for rows.Next() {
-		var i ListCharacterAssetsInShipHangarRow
-		if err := rows.Scan(
-			&i.CharacterAsset.ID,
-			&i.CharacterAsset.CharacterID,
-			&i.CharacterAsset.EveTypeID,
-			&i.CharacterAsset.IsBlueprintCopy,
-			&i.CharacterAsset.IsSingleton,
-			&i.CharacterAsset.ItemID,
-			&i.CharacterAsset.LocationFlag,
-			&i.CharacterAsset.LocationID,
-			&i.CharacterAsset.LocationType,
-			&i.CharacterAsset.Name,
-			&i.CharacterAsset.Quantity,
-			&i.EveType.ID,
-			&i.EveType.EveGroupID,
-			&i.EveType.Capacity,
-			&i.EveType.Description,
-			&i.EveType.GraphicID,
-			&i.EveType.IconID,
-			&i.EveType.IsPublished,
-			&i.EveType.MarketGroupID,
-			&i.EveType.Mass,
-			&i.EveType.Name,
-			&i.EveType.PackagedVolume,
-			&i.EveType.PortionSize,
-			&i.EveType.Radius,
-			&i.EveType.Volume,
-			&i.EveGroup.ID,
-			&i.EveGroup.EveCategoryID,
-			&i.EveGroup.Name,
-			&i.EveGroup.IsPublished,
-			&i.EveCategory.ID,
-			&i.EveCategory.Name,
-			&i.EveCategory.IsPublished,
-			&i.Price,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateCharacterAsset = `-- name: UpdateCharacterAsset :exec
 UPDATE character_assets
 SET
     location_flag = ?,
     location_id = ?,
     location_type = ?,
-    name = ?,
     quantity = ?
 WHERE character_id = ?
 AND item_id = ?
@@ -652,7 +372,6 @@ type UpdateCharacterAssetParams struct {
 	LocationFlag string
 	LocationID   int64
 	LocationType string
-	Name         string
 	Quantity     int64
 	CharacterID  int64
 	ItemID       int64
@@ -663,10 +382,28 @@ func (q *Queries) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterA
 		arg.LocationFlag,
 		arg.LocationID,
 		arg.LocationType,
-		arg.Name,
 		arg.Quantity,
 		arg.CharacterID,
 		arg.ItemID,
 	)
+	return err
+}
+
+const updateCharacterAssetName = `-- name: UpdateCharacterAssetName :exec
+UPDATE character_assets
+SET
+    name = ?
+WHERE character_id = ?
+AND item_id = ?
+`
+
+type UpdateCharacterAssetNameParams struct {
+	Name        string
+	CharacterID int64
+	ItemID      int64
+}
+
+func (q *Queries) UpdateCharacterAssetName(ctx context.Context, arg UpdateCharacterAssetNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterAssetName, arg.Name, arg.CharacterID, arg.ItemID)
 	return err
 }
