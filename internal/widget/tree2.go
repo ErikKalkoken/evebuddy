@@ -11,8 +11,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// Tree2 is a thin wrapper around Fyne's Tree widget that allows building
-// and maintaining trees with generic nodes.
+// Tree2 is an extension of Fyne's Tree widget that allows to create trees
+// with generic nodes.
+//
+// It also provides wrappers for most tree methods that work directly
+// with nodes instead of tree IDs.
 //
 // # Example
 //
@@ -61,13 +64,13 @@ type Tree2[T any] struct {
 	td TreeData2[T]
 }
 
-// NewTree2 returns a new [Tree2] object.
+// NewTree2 returns a new Tree2 object.
 func NewTree2[T any](
 	create func(isBranch bool) fyne.CanvasObject,
 	update func(n *T, isBranch bool, co fyne.CanvasObject),
 ) *Tree2[T] {
 	w := &Tree2[T]{
-		td: newTreeData[T](),
+		td: newTreeData2[T](),
 	}
 	w.ChildUIDs = func(uid widget.TreeNodeID) []widget.TreeNodeID {
 		return w.td.children[uid]
@@ -145,14 +148,11 @@ func (w *Tree2[T]) callWhenFound(n *T, f func(widget.TreeNodeID)) {
 	}
 }
 
-// TreeData2 holds the data for rendering a [Tree2] widget.
+// TreeData2 represents the tree structure for rendering a [Tree2] widget.
 //
-// It is designed to make it easier to construct a tree widget
-// by providing a graph like API and sanity checks.
-//
-// Trees are constructed by adding nodes to a virtual root node.
-// Nodes can be any struct.
-// The virtual root node always exists and is represented with nil.
+// The tree is constructed by adding nodes to a virtual root node.
+// The root node always exists and represented by a nil node.
+// Nodes are stores as pointers and can be changed after the have been added.
 //
 // The zero value is an empty tree ready to use.
 type TreeData2[T any] struct {
@@ -164,7 +164,7 @@ type TreeData2[T any] struct {
 	uidLookup    map[*T]widget.TreeNodeID
 }
 
-func newTreeData[T any]() TreeData2[T] {
+func newTreeData2[T any]() TreeData2[T] {
 	td := TreeData2[T]{}
 	td.init()
 	return td
@@ -181,9 +181,10 @@ func (t *TreeData2[T]) init() {
 
 // Add adds a node to the tree.
 // The order in which nodes are added is preserved.
-// It returns an error when the node can not be added.
+// Add performs sanity checks to ensure the resulting tree structure is valid
+// and returns an error when a problem was found.
 //
-// The root node is represented as nil parent.
+// A nil parent represents the root node.
 func (t *TreeData2[T]) Add(parent *T, node *T, isBranch bool) error {
 	if t == nil || node == nil {
 		return ErrInvalid
@@ -214,7 +215,7 @@ func (t TreeData2[T]) All() iter.Seq[*T] {
 // Children returns a new slice with the direct children of a node
 // and reports whether the node exists.
 // The children are returns in the same order as they were added.
-// When a node does not exit it returns a nil slice.
+// When the node was not found a nil slice is returned.
 func (t TreeData2[T]) Children(node *T) []*T {
 	uid, ok := t.UID(node)
 	if !ok {
@@ -228,7 +229,7 @@ func (t TreeData2[T]) Children(node *T) []*T {
 }
 
 // ChildrenCount returns the number of direct children of a node
-// and reports whether the operation was successful.
+// and reports whether the node was found.
 func (t TreeData2[T]) ChildrenCount(node *T) (int, bool) {
 	uid, found := t.UID(node)
 	if !found {
@@ -249,19 +250,34 @@ func (t *TreeData2[T]) Clear() {
 	t.init()
 }
 
-// Delete deletes a subtree given by the UID of it's root node.
-// It will return [ErrNotFound] if the node does not exist.
+// Clone returns a shallow copy of the tree data which uses the same node objects.
+// The clone can be used to modify the tree structure
+// and then update the tree widget with the result in one operation.
+func (t TreeData2[T]) Clone() TreeData2[T] {
+	t2 := TreeData2[T]{
+		children:     make(map[widget.TreeNodeID][]widget.TreeNodeID),
+		id:           t.id,
+		isBranchNode: maps.Clone(t.isBranchNode),
+		nodes:        maps.Clone(t.nodes),
+		parents:      maps.Clone(t.parents),
+		uidLookup:    maps.Clone(t.uidLookup),
+	}
+	for k, v := range t.children {
+		t2.children[k] = slices.Clone(v)
+	}
+	return t2
+}
+
+// Delete deletes a subtree given by the UID of it's root node
+// It will return an error if the node can not be deleted.
 // The root node can not be removed.
 func (t TreeData2[T]) Delete(node *T) error {
 	if node == nil {
 		return fmt.Errorf("Delete: can not remove root node: %w", ErrInvalid)
 	}
-	if t.IsEmpty() {
-		return fmt.Errorf("Delete: %w", ErrNotFound)
-	}
 	uid, found := t.uidLookup[node]
 	if !found {
-		return fmt.Errorf("uid: %s: %w", uid, ErrNotFound)
+		return fmt.Errorf("Delete: uid %s: %w", uid, ErrNotFound)
 	}
 	t.delete(uid)
 	return nil
@@ -273,7 +289,8 @@ func (t TreeData2[T]) delete(uid widget.TreeNodeID) {
 		s2 := slices.Clone(s)
 		for _, n := range s2 {
 			if n == TreeRootID {
-				panic("root ID found in children: " + uid)
+				fyne.LogError("root ID found in children: "+uid, ErrInvalid)
+				return
 			}
 			t.delete(n)
 		}
@@ -281,7 +298,8 @@ func (t TreeData2[T]) delete(uid widget.TreeNodeID) {
 	}
 	parent, found := t.parents[uid]
 	if !found {
-		panic("Parent not found for UID: " + uid)
+		fyne.LogError("Parent not found for UID: "+uid, ErrInvalid)
+		return
 	}
 	t.children[parent] = slices.DeleteFunc(t.children[parent], func(x widget.TreeNodeID) bool {
 		return x == uid

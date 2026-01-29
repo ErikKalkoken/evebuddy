@@ -233,7 +233,7 @@ func TestTreeData2_ChildrenCount(t *testing.T) {
 }
 
 func TestTreeData2_Delete(t *testing.T) {
-	t.Run("can remove a node from simple tree", func(t *testing.T) {
+	t.Run("can remove a node from a simple tree", func(t *testing.T) {
 		var tree iwidget.TreeData2[MyNode2]
 		alpha := &MyNode2{"Alpha"}
 		tree.Add(nil, alpha, true)
@@ -243,7 +243,7 @@ func TestTreeData2_Delete(t *testing.T) {
 		require.NoError(t, err)
 		assert.ElementsMatch(t, slices.Collect(tree.All()), []*MyNode2{alpha})
 	})
-	t.Run("can remove node from complex tree", func(t *testing.T) {
+	t.Run("can remove node from a complex tree", func(t *testing.T) {
 		var tree iwidget.TreeData2[MyNode2]
 		n1 := &MyNode2{"Branch1"}
 		tree.Add(nil, n1, true)

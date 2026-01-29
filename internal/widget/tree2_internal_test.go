@@ -69,3 +69,38 @@ func TestTreeData2_ChildUIDs(t *testing.T) {
 		assert.ElementsMatch(t, want, got)
 	})
 }
+
+func TestTreeData2_Clone(t *testing.T) {
+	t.Run("can clone a td object", func(t *testing.T) {
+		// given
+		var td TreeData2[MyNode2]
+		root := &MyNode2{"Root"}
+		td.Add(nil, root, true)
+		alpha := &MyNode2{"Alpha"}
+		td.Add(root, alpha, false)
+		bravo := &MyNode2{"Bravo"}
+		td.Add(root, bravo, false)
+		// when
+		got := td.Clone()
+		// then
+		TreeDataEqual(t, td, got)
+	})
+	t.Run("can clone a empty td object", func(t *testing.T) {
+		// given
+		td := newTreeData2[MyNode2]()
+		// when
+		got := td.Clone()
+		// then
+		TreeDataEqual(t, td, got)
+	})
+}
+
+func TreeDataEqual[T any](t *testing.T, want, got TreeData2[T]) {
+	t.Helper()
+	assert.Equal(t, want.children, got.children)
+	assert.Equal(t, want.id, got.id)
+	assert.Equal(t, want.isBranchNode, got.isBranchNode)
+	assert.Equal(t, want.nodes, got.nodes)
+	assert.Equal(t, want.parents, got.parents)
+	assert.Equal(t, want.uidLookup, got.uidLookup)
+}
