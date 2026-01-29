@@ -3,7 +3,15 @@ package ui
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestSplitLines(t *testing.T) {
@@ -33,82 +41,77 @@ func TestSplitLines(t *testing.T) {
 	}
 }
 
-// FIXME
+func TestCharacterAsset_CanRenderWithData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
+		AssetValue: optional.New(1000000000.0),
+	})
+	et := factory.CreateEveType(storage.CreateEveTypeParams{
+		ID:   42,
+		Name: "Merlin",
+	})
+	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		ID:             1001,
+		SecurityStatus: 0.2,
+	})
+	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+		Name:          "Abune - My castle",
+		SolarSystemID: optional.New(system.ID),
+	})
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		CharacterID:  character.ID,
+		EveTypeID:    et.ID,
+		Quantity:     10,
+		LocationID:   loc.ID,
+		LocationType: app.TypeOther,
+		LocationFlag: app.FlagHangar,
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+	ui.setCharacter(character)
+	a := ui.characterAssetBrowser
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// func TestCharacterAsset_CanRenderWithData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-// 		AssetValue: optional.New(1000000000.0),
-// 	})
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 		ID:   42,
-// 		Name: "Merlin",
-// 	})
-// 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 		ID:             1001,
-// 		SecurityStatus: 0.2,
-// 	})
-// 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 		Name:          "Abune - My castle",
-// 		SolarSystemID: optional.New(system.ID),
-// 	})
-// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-// 		CharacterID:  character.ID,
-// 		EveTypeID:    et.ID,
-// 		Quantity:     10,
-// 		LocationID:   loc.ID,
-// 		LocationType: app.TypeOther,
-// 		LocationFlag: app.FlagHangar,
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.setCharacter(character)
-// 	a := ui.characterAssets
-// 	w := test.NewWindow(a)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+	a.update()
+	a.Navigation.navigation.OpenAllBranches()
+	n, ok := a.Navigation.ac.LocationTree(loc.ID)
+	require.True(t, ok)
+	a.Navigation.navigation.SelectNode(n)
+	test.AssertImageMatches(t, "characterassetbrowser/full.png", w.Canvas().Capture())
+}
 
-// 	a.update()
-// 	a.locations.OpenAllBranches()
-// 	uid, ok := a.containerLocations[loc.ID]
-// 	if !ok {
-// 		t.Fail()
-// 	}
-// 	a.locations.Select(uid)
+func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(SkipUIReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
+		AssetValue: optional.New(1000000000.0),
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+	ui.setCharacter(character)
+	a := ui.characterAssetBrowser
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	test.AssertImageMatches(t, "characterasset/full.png", w.Canvas().Capture())
-// }
+	a.update()
 
-// func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	character := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		AssetValue: optional.New(1000000000.0),
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.setCharacter(character)
-// 	a := ui.characterAssets
-// 	w := test.NewWindow(a)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
-
-// 	a.update()
-
-// 	test.AssertImageMatches(t, "characterasset/minimal.png", w.Canvas().Capture())
-// }
+	test.AssertImageMatches(t, "characterassetbrowser/minimal.png", w.Canvas().Capture())
+}

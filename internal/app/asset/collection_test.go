@@ -127,47 +127,64 @@ func TestCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
 }
 
 func TestCollection_CustomNodes(t *testing.T) {
-	const locationID = 100000
+	const (
+		alphaID   = 100001
+		bravoID   = 100002
+		charlieID = 10003
+	)
 	ship1 := createCharacterAsset(assetParams{
-		ItemID:     1,
-		LocationID: locationID,
+		LocationID: alphaID,
 		Type:       shipType(),
 	})
 	drone := createCharacterAsset(assetParams{
-		ItemID:       2,
 		LocationID:   ship1.ItemID,
 		LocationFlag: app.FlagDroneBay,
-		Type: &app.EveType{
-			Group: &app.EveGroup{Category: &app.EveCategory{ID: app.EveCategoryDrone}},
-			Name:  "Hobgoblin",
-		},
+		Type:         droneType(),
 	})
 	mineral1 := createCharacterAsset(assetParams{
-		ItemID:     3,
-		LocationID: locationID,
-		Type: &app.EveType{
-			Group: &app.EveGroup{Category: &app.EveCategory{ID: app.EveCategoryMineral}},
-			Name:  "Tritanium",
-		},
+		LocationID: alphaID,
+		Type:       mineralType(),
 	})
 	ship2 := createCharacterAsset(assetParams{
-		ItemID:     4,
-		LocationID: locationID,
-		Type: &app.EveType{
-			Group: &app.EveGroup{Category: &app.EveCategory{ID: app.EveCategoryShip}},
-			Name:  "Tristan",
-		},
+		LocationID: alphaID,
+		Type:       shipType(),
 	})
-	assets := []*app.CharacterAsset{ship1, mineral1, drone, ship2}
-	loc := &app.EveLocation{ID: locationID, Name: "Alpha"}
-	locations := []*app.EveLocation{loc}
+	mineral2 := createCharacterAsset(assetParams{
+		LocationID: bravoID,
+		Type:       mineralType(),
+	})
+	ship3 := createCharacterAsset(assetParams{
+		LocationID: charlieID,
+		Type:       shipType(),
+	})
+	assets := []*app.CharacterAsset{ship1, mineral1, drone, ship2, mineral2, ship3}
+	locations := []*app.EveLocation{
+		{
+			ID:   alphaID,
+			Name: "Alpha",
+		},
+		{
+			ID:   bravoID,
+			Name: "Bravo",
+		},
+		{
+			ID:   charlieID,
+			Name: "Charlie",
+		},
+	}
 	ac := asset.NewFromCharacterAssets(assets, locations)
-	tree := mustLocation(ac, locationID)
 
-	assert.Equal(t, 2, tree.ChildrenCount())
+	assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
 	assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, mineral1))
 	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay"}, makeNamesPath(ac, drone))
 	assert.Equal(t, []string{"Alpha", "Ship Hangar"}, makeNamesPath(ac, ship2))
+
+	assert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
+	assert.Equal(t, []string{"Bravo", "Item Hangar"}, makeNamesPath(ac, mineral2))
+
+	assert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
+	assert.Equal(t, []string{"Charlie", "Ship Hangar"}, makeNamesPath(ac, ship3))
+
 	printTrees(ac)
 	// t.Fail()
 }
@@ -187,7 +204,7 @@ func TestCollection_Impounded(t *testing.T) {
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG1,
 		LocationType: app.TypeItem,
-		Type:         tritaniumType(),
+		Type:         mineralType(),
 	})
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
 	assets := []*app.CorporationAsset{office, item1}
@@ -214,14 +231,14 @@ func TestCollection_Offices(t *testing.T) {
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG1,
 		LocationType: app.TypeItem,
-		Type:         tritaniumType(),
+		Type:         mineralType(),
 	})
 	item2 := createCorporationAsset(assetParams{
 		Quantity:     33,
 		LocationID:   office.ItemID,
 		LocationFlag: app.FlagCorpSAG2,
 		LocationType: app.TypeItem,
-		Type:         tritaniumType(),
+		Type:         mineralType(),
 	})
 	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
 	assets := []*app.CorporationAsset{office, item1, item2}
@@ -699,7 +716,7 @@ func makeCountsPath(ac asset.Collection, it asset.Item) []int {
 	})
 }
 
-func tritaniumType() *app.EveType {
+func mineralType() *app.EveType {
 	return &app.EveType{
 		ID:    34,
 		Group: &app.EveGroup{ID: 18, Category: &app.EveCategory{ID: app.EveCategoryMineral}},
@@ -720,6 +737,14 @@ func cargoContainerType() *app.EveType {
 		ID:    3293,
 		Group: &app.EveGroup{ID: 12, Category: &app.EveCategory{ID: 2}},
 		Name:  "Container",
+	}
+}
+
+func droneType() *app.EveType {
+	return &app.EveType{
+		ID:    2454,
+		Group: &app.EveGroup{ID: 100, Category: &app.EveCategory{ID: app.EveCategoryDrone}},
+		Name:  "Hobgoblin I",
 	}
 }
 
@@ -786,7 +811,7 @@ func createAsset(arg assetParams) app.Asset {
 		arg.LocationType = app.TypeItem
 	}
 	if arg.Type == nil {
-		arg.Type = tritaniumType()
+		arg.Type = mineralType()
 	}
 	return app.Asset{
 		IsSingleton:  arg.IsSingleton,
@@ -803,7 +828,7 @@ func createAsset(arg assetParams) app.Asset {
 func mustLocation(ac asset.Collection, locationID int64) *asset.Node {
 	n, ok := ac.LocationTree(locationID)
 	if !ok {
-		panic("location not found")
+		panic(fmt.Sprintf("location not found: %d", locationID))
 	}
 	return n
 }

@@ -101,7 +101,11 @@ func new(items []Item, locations []*app.EveLocation, isCorporation bool) Collect
 	}
 
 	insertCustomNodes(trees, isCorporation)
-	addMissingOffices(trees)
+	if isCorporation {
+		addMissingOffices(trees)
+	} else {
+		addMissingHangars(trees)
+	}
 
 	ac := Collection{
 		isCorporation: isCorporation,
@@ -337,6 +341,25 @@ func addMissingOffices(trees map[int64]*Node) {
 				n2.parent = n
 				n.addChild(n2)
 			}
+		}
+	}
+}
+
+func addMissingHangars(trees map[int64]*Node) {
+	for _, root := range trees {
+		current := set.Collect(xiter.MapSlice(root.children, func(x *Node) NodeCategory {
+			return x.category
+		}))
+		var missing set.Set[NodeCategory]
+		if current.Contains(NodeItemHangar) && !current.Contains(NodeShipHangar) {
+			missing.Add(NodeShipHangar)
+		} else if current.Contains(NodeShipHangar) && !current.Contains(NodeItemHangar) {
+			missing.Add(NodeShipHangar)
+		}
+		for c := range missing.All() {
+			n2 := newCustomNode(c)
+			n2.parent = root
+			root.addChild(n2)
 		}
 	}
 }
