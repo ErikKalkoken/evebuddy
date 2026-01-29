@@ -2,9 +2,12 @@ package asset
 
 import (
 	"fmt"
+	"iter"
 	"slices"
+	"strconv"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -19,7 +22,8 @@ type NodeCategory uint
 const (
 	NodeUndefined NodeCategory = iota
 	NodeAsset
-	NodeAssetSafety
+	NodeAssetSafetyCharacter
+	NodeAssetSafetyCorporation
 	NodeCargoBay
 	NodeDeliveries
 	NodeDroneBay
@@ -43,28 +47,29 @@ const (
 )
 
 var nodeCategoryNames = map[NodeCategory]string{
-	NodeAsset:            "Asset",
-	NodeAssetSafety:      "Asset Safety",
-	NodeItemHangar:       "Item Hangar",
-	NodeLocation:         "Location",
-	NodeShipHangar:       "Ship Hangar",
-	NodeInSpace:          "In Space",
-	NodeCargoBay:         "Cargo Bay",
-	NodeDroneBay:         "Drone Bay",
-	NodeFitting:          "Fitting",
-	NodeFrigateEscapeBay: "Frigate Escape Bay",
-	NodeFighterBay:       "Fighter Bay",
-	NodeFuelBay:          "Fuel Bay",
-	NodeOfficeFolder:     "Office",
-	NodeOffice1:          "1st Division",
-	NodeOffice2:          "2nd Division",
-	NodeOffice3:          "3rd Division",
-	NodeOffice4:          "4th Division",
-	NodeOffice5:          "5th Division",
-	NodeOffice6:          "6th Division",
-	NodeOffice7:          "7th Division",
-	NodeImpounded:        "Impounded",
-	NodeDeliveries:       "Deliveries",
+	NodeAsset:                  "Asset",
+	NodeAssetSafetyCharacter:   "Asset Safety",
+	NodeAssetSafetyCorporation: "Asset Safety",
+	NodeItemHangar:             "Item Hangar",
+	NodeLocation:               "Location",
+	NodeShipHangar:             "Ship Hangar",
+	NodeInSpace:                "In Space",
+	NodeCargoBay:               "Cargo Bay",
+	NodeDroneBay:               "Drone Bay",
+	NodeFitting:                "Fitting",
+	NodeFrigateEscapeBay:       "Frigate Escape Bay",
+	NodeFighterBay:             "Fighter Bay",
+	NodeFuelBay:                "Fuel Bay",
+	NodeOfficeFolder:           "Office",
+	NodeOffice1:                "1st Division",
+	NodeOffice2:                "2nd Division",
+	NodeOffice3:                "3rd Division",
+	NodeOffice4:                "4th Division",
+	NodeOffice5:                "5th Division",
+	NodeOffice6:                "6th Division",
+	NodeOffice7:                "7th Division",
+	NodeImpounded:              "Impounded",
+	NodeDeliveries:             "Deliveries",
 }
 
 func (c NodeCategory) DisplayName() string {
@@ -80,11 +85,12 @@ type Node struct {
 	category    NodeCategory
 	children    []*Node
 	isContainer bool
+	isExcluded  bool
 	isShip      bool
 	item        Item
+	itemCount   optional.Optional[int]
 	location    *app.EveLocation
 	parent      *Node
-	isExcluded  bool
 }
 
 func newLocationNode(location *app.EveLocation) *Node {
@@ -125,18 +131,50 @@ func newCustomNode(category NodeCategory) *Node {
 	}
 }
 
-// All returns all nodes of a sub tree (order is undefined)
-// Does not return filtered nodes.
-func (n *Node) All() []*Node {
+// All returns an iterator over all nodes of a sub tree.
+// The iterator runs a depth-first search and returns the children of each node
+// in the same order as they where added.
+func (n *Node) All() iter.Seq[*Node] {
+	return func(yield func(*Node) bool) {
+		if n == nil {
+			return
+		}
+
+		var traverse func(*Node) bool
+		traverse = func(curr *Node) bool {
+			if curr == nil {
+				return true
+			}
+			if !yield(curr) {
+				return false
+			}
+			for _, c := range curr.children {
+				if !traverse(c) {
+					return false
+				}
+			}
+			return true
+		}
+
+		traverse(n)
+	}
+}
+
+// all returns a new slices with all nodes in a breath first search order.
+func (n *Node) all() []*Node {
 	s := make([]*Node, 0)
 	s = append(s, n)
 	for _, c := range n.children {
 		if c.isExcluded {
 			continue
 		}
-		s = slices.Concat(s, c.All())
+		s = slices.Concat(s, c.all())
 	}
 	return s
+}
+
+func (n *Node) ItemCount() optional.Optional[int] {
+	return n.itemCount
 }
 
 // Children returns a new slice containing the unfiltered children of a node.
@@ -144,6 +182,16 @@ func (n *Node) Children() []*Node {
 	return xslices.Filter(n.children, func(x *Node) bool {
 		return !x.isExcluded
 	})
+}
+
+func (n *Node) ChildrenCount() int {
+	var count int
+	for _, n := range n.children {
+		if !n.isExcluded {
+			count++
+		}
+	}
+	return count
 }
 
 // IsContainer reports whether this node is a container
@@ -179,14 +227,6 @@ func (n *Node) Category() NodeCategory {
 	return n.category
 }
 
-func (n *Node) MustAsset() app.Asset {
-	a, ok := n.Asset()
-	if !ok {
-		panic("No asset found")
-	}
-	return a
-}
-
 // IsRoot reports whether a node is the root in a tree.
 func (n *Node) IsRoot() bool {
 	return n.parent == nil
@@ -205,27 +245,8 @@ func (n *Node) Location() (*app.EveLocation, bool) {
 	return n.location, true
 }
 
-// MustLocation returns the location for a node or panics if the node is not a location.
-func (n *Node) MustLocation() *app.EveLocation {
-	el, ok := n.Location()
-	if !ok {
-		panic("not a location")
-	}
-	return el
-}
-
-// MustCharacterAsset returns the current item as character asset.
-// Will panic if the item has a different type.
-func (n *Node) MustCharacterAsset() *app.CharacterAsset {
-	x, ok := n.CharacterAsset()
-	if !ok {
-		panic(fmt.Sprintf("Not a character asset: %d", n.ID()))
-	}
-	return x
-}
-
 // CharacterAsset tries to return the current item as character asset
-// and reports whether it was successful.
+// and reports whether it was found.
 func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
 	if n.item == nil {
 		return nil, false
@@ -238,7 +259,7 @@ func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
 }
 
 // CorporationAsset tries to return the current item as corporation asset
-// and reports whether it was successful.
+// and reports whether it was found.
 func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	if n.item == nil {
 		return nil, false
@@ -248,16 +269,6 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 		return nil, false
 	}
 	return x, true
-}
-
-// MustCorporationAsset returns the current item as corporation asset.
-// Will panic if the item has a different type.
-func (n *Node) MustCorporationAsset() *app.CorporationAsset {
-	x, ok := n.CorporationAsset()
-	if !ok {
-		panic(fmt.Sprintf("Not a corporation asset: %d", n.ID()))
-	}
-	return x
 }
 
 func (n *Node) DisplayName() string {
@@ -301,14 +312,29 @@ func (n *Node) addChildFromItem(it Item) *Node {
 }
 
 // PrintTree prints the subtree of n.
-func PrintTree(n *Node) {
+func (n *Node) PrintTree() {
 	var printTree func(n *Node, indent string, last bool)
 	printTree = func(n *Node, indent string, last bool) {
 		var id string
-		if x := n.ID(); x != 0 {
-			id = fmt.Sprintf("#%d", x)
+		if v := n.ID(); v != 0 {
+			id = fmt.Sprintf(" (#%d)", v)
 		}
-		fmt.Printf("%s+-(%s)%s [%s]\n", indent, id, n.DisplayName(), n.Category().String())
+		var count string
+		if x := n.ChildrenCount(); x > 0 {
+			count = fmt.Sprint(x)
+		} else {
+			count = "-"
+		}
+		fmt.Printf("%s+-%s%s [%s] %s: %s\n",
+			indent,
+			n.DisplayName(),
+			id,
+			count,
+			n.Category().String(),
+			n.itemCount.StringFunc("-", func(v int) string {
+				return strconv.Itoa(v)
+			}),
+		)
 		if last {
 			indent += "   "
 		} else {
@@ -320,4 +346,13 @@ func PrintTree(n *Node) {
 	}
 
 	printTree(n, "", false)
+	fmt.Println()
+}
+
+func (n *Node) String() string {
+	var id string
+	if v := n.ID(); v != 0 {
+		id = fmt.Sprintf(" (#%d)", v)
+	}
+	return fmt.Sprintf("%s%s", n.DisplayName(), id)
 }

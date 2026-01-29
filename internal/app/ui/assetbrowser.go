@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -167,13 +166,8 @@ const (
 	assetCategoryOffice     = "Office"
 	assetCategoryPersonal   = "Personal"
 	assetCategorySafety     = "Safety"
+	assetCategoryOther      = "Other"
 )
-
-// assetTreeNode represents a node in the navigation tree
-type assetTreeNode struct {
-	itemCount optional.Optional[int]
-	node      *asset.Node
-}
 
 type assetBrowserNavigation struct {
 	widget.BaseWidget
@@ -181,8 +175,7 @@ type assetBrowserNavigation struct {
 	OnSelected func()
 
 	ab             *assetBrowser
-	navigation     *iwidget.Tree2[assetTreeNode]
-	nodeLookup     map[*asset.Node]*assetTreeNode
+	navigation     *iwidget.Tree2[asset.Node]
 	selectCategory *kxwidget.FilterChipSelect
 	top            *widget.Label
 
@@ -192,9 +185,8 @@ type assetBrowserNavigation struct {
 
 func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
-		ab:         ab,
-		nodeLookup: make(map[*asset.Node]*assetTreeNode),
-		top:        makeTopLabel(),
+		ab:  ab,
+		top: makeTopLabel(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -211,18 +203,18 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 				name,
 			)
 		},
-		func(n *assetTreeNode, _ bool, co fyne.CanvasObject) {
+		func(n *asset.Node, _ bool, co fyne.CanvasObject) {
 			b := co.(*fyne.Container).Objects
-			b[0].(*widget.Label).SetText(n.node.DisplayName())
+			b[0].(*widget.Label).SetText(n.DisplayName())
 			var s string
-			if !n.itemCount.IsEmpty() {
-				s = humanize.Comma(int64(n.itemCount.ValueOrZero()))
+			if !n.ItemCount().IsEmpty() {
+				s = humanize.Comma(int64(n.ItemCount().ValueOrZero()))
 			}
 			b[1].(*widget.Label).SetText(s)
 		},
 	)
-	a.navigation.OnSelectedNode = func(n *assetTreeNode) {
-		a.ab.Selected.set(n.node)
+	a.navigation.OnSelectedNode = func(n *asset.Node) {
+		a.ab.Selected.set(n)
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
@@ -237,6 +229,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategoryDeliveries,
 			assetCategoryInSpace,
 			assetCategorySafety,
+			assetCategoryOther,
 			assetCategoryAll,
 		}, func(string) {
 			go a.redraw()
@@ -290,96 +283,21 @@ func (a *assetBrowserNavigation) redraw() {
 		assetCategoryOffice:     asset.FilterOffice,
 		assetCategoryPersonal:   asset.FilterPersonalAssets,
 		assetCategorySafety:     asset.FilterSafety,
+		assetCategoryOther:      asset.FilterCorpOther,
 	}
 
 	a.mu.Lock()
 	a.ac.ApplyFilter(m[a.selectCategory.Selected])
+	a.ac.UpdateItemCounts()
 	trees := a.ac.Trees()
 	a.mu.Unlock()
 
-	var td iwidget.TreeData2[assetTreeNode]
+	var td iwidget.TreeData2[asset.Node]
 	addNodes(&td, nil, trees)
-
-	nodeLookUp := make(map[*asset.Node]*assetTreeNode)
-	for n := range td.All() {
-		nodeLookUp[n.node] = n
-	}
-
-	// TODO
-	// for _, location := range td.Children(nil) {
-	// 	for _, n1 := range td.Children(location) {
-	// 		var sum2 optional.Optional[int]
-	// 		for _, n2 := range td.Children(n1) {
-	// 			var sum3 optional.Optional[int]
-	// 			for _, n3 := range td.Children(n2) {
-	// 				sum3 = optional.Sum(sum3, n3.itemCount)
-	// 			}
-	// 			n2.itemCount = sum3
-	// 			sum2 = optional.Sum(sum2, sum3)
-	// 		}
-	// 		n1.itemCount = sum2
-	// 	}
-	// }
-
-	// addSumsFrom2LevelsDown := func() {
-	// 	for _, locations := range td.Children(iwidget.TreeRootID) {
-	// 		for _, n1 := range td.Children(locations.UID()) {
-	// 			var sum2 optional.Optional[int]
-	// 			for _, n2 := range td.Children(n1.UID()) {
-	// 				sum2 = optional.Sum(sum2, n2.itemCount)
-	// 			}
-	// 			n1.itemCount = sum2
-	// 			td.Replace(n1)
-	// 		}
-	// 	}
-	// }
-
-	// addSumsFrom3LevelsDown := func() {
-	// 	for _, locations := range td.Children(iwidget.TreeRootID) {
-	// 		for _, n1 := range td.Children(locations.UID()) {
-	// 			var sum2 optional.Optional[int]
-	// 			for _, n2 := range td.Children(n1.UID()) {
-	// 				var sum3 optional.Optional[int]
-	// 				for _, n3 := range td.Children(n2.UID()) {
-	// 					sum3 = optional.Sum(sum3, n3.itemCount)
-	// 				}
-	// 				n2.itemCount = sum3
-	// 				td.Replace(n2)
-	// 				sum2 = optional.Sum(sum2, sum3)
-	// 			}
-	// 			n1.itemCount = sum2
-	// 			td.Replace(n1)
-	// 		}
-	// 	}
-	// }
-
-	// // Update counts
-	// switch filter {
-	// case assetCategoryOffice:
-	// 	addSumsFrom2LevelsDown()
-	// case assetCategorySafety:
-	// 	if a.ab.forCorporation {
-	// 		addSumsFrom3LevelsDown()
-	// 	} else {
-	// 		addSumsFrom2LevelsDown()
-	// 	}
-	// case assetCategoryImpounded:
-	// 	addSumsFrom3LevelsDown()
-
-	// }
-	// for _, locations := range td.Children(iwidget.TreeRootID) {
-	// 	var sum optional.Optional[int]
-	// 	for _, n1 := range td.Children(locations.UID()) {
-	// 		sum = optional.Sum(sum, n1.itemCount)
-	// 	}
-	// 	locations.itemCount = sum
-	// 	td.Replace(locations)
-	// }
 
 	count, _ := td.ChildrenCount(nil)
 	top := fmt.Sprintf("%d locations", count)
 	fyne.Do(func() {
-		a.nodeLookup = nodeLookUp
 		a.navigation.UnselectAll()
 		a.navigation.CloseAllBranches()
 		a.navigation.Set(td)
@@ -390,7 +308,7 @@ func (a *assetBrowserNavigation) redraw() {
 
 // addNodes adds nodes with children recursively to tree data at uid
 // and sets initial item counts.
-func addNodes(td *iwidget.TreeData2[assetTreeNode], parent *assetTreeNode, nodes []*asset.Node) {
+func addNodes(td *iwidget.TreeData2[asset.Node], parent *asset.Node, nodes []*asset.Node) {
 	slices.SortFunc(nodes, func(a, b *asset.Node) int {
 		return strings.Compare(a.DisplayName(), b.DisplayName())
 	})
@@ -398,30 +316,21 @@ func addNodes(td *iwidget.TreeData2[assetTreeNode], parent *assetTreeNode, nodes
 		if !n.IsContainer() {
 			continue
 		}
-		var itemCount optional.Optional[int]
-		if n.IsRoot() {
-			for _, c := range n.Children() {
-				if n := len(c.Children()); n > 0 {
-					itemCount.Set(itemCount.ValueOrZero() + n)
-				}
-			}
-		} else if !n.IsShip() && n.Category() != asset.NodeFitting {
-			if n := len(n.Children()); n > 0 {
-				itemCount.Set(n)
-			}
-		}
-		tn := &assetTreeNode{
-			node:      n,
-			itemCount: itemCount,
-		}
 		children := n.Children()
-		err := td.Add(parent, tn, len(children) > 0)
+		var hasContainerChildren bool
+		for _, c := range children {
+			if c.IsContainer() {
+				hasContainerChildren = true
+				break
+			}
+		}
+		err := td.Add(parent, n, hasContainerChildren)
 		if err != nil {
 			slog.Error("Failed to add node", "ID", n.ID(), "Name", n.DisplayName(), "error", err)
 			return
 		}
 		if len(children) > 0 {
-			addNodes(td, tn, children)
+			addNodes(td, n, children)
 		}
 	}
 }
@@ -432,19 +341,15 @@ func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
 	a.top.Refresh()
 }
 
-func (a *assetBrowserNavigation) selectContainer(n *asset.Node) {
-	treeNode, found := a.nodeLookup[n]
-	if !found {
-		return
-	}
+func (a *assetBrowserNavigation) selectContainer(node *asset.Node) {
 	a.navigation.UnselectAll()
 	if !a.ab.u.isMobile {
-		a.navigation.SelectNode(treeNode)
+		a.navigation.SelectNode(node)
 	}
-	for _, x := range a.navigation.Data().Path(treeNode) {
-		a.navigation.OpenBranchNode(x)
+	for _, n := range a.navigation.Data().Path(node) {
+		a.navigation.OpenBranchNode(n)
 	}
-	a.navigation.ScrollToNode(treeNode)
+	a.navigation.ScrollToNode(node)
 }
 
 type assetBrowserSelected struct {

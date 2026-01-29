@@ -61,8 +61,11 @@ func TestTreeData2_ChildUIDs(t *testing.T) {
 		uid, ok := tree.UID(sub1)
 		require.True(t, ok)
 		got := tree.children[uid]
-		want := []widget.TreeNodeID{tree.MustUID(c1), tree.MustUID(c2)}
+		c1UID, ok := tree.UID(c1)
+		require.True(t, ok)
+		c2UID, ok := tree.UID(c2)
+		require.True(t, ok)
+		want := []widget.TreeNodeID{c1UID, c2UID}
 		assert.ElementsMatch(t, want, got)
 	})
-
 }

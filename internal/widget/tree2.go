@@ -214,13 +214,13 @@ func (t TreeData2[T]) All() iter.Seq[*T] {
 // Children returns a new slice with the direct children of a node
 // and reports whether the node exists.
 // The children are returns in the same order as they were added.
-// When a node does not exit it returns an empty slice.
+// When a node does not exit it returns a nil slice.
 func (t TreeData2[T]) Children(node *T) []*T {
-	nodes := make([]*T, 0)
 	uid, ok := t.UID(node)
 	if !ok {
-		return nodes
+		return nil
 	}
+	nodes := make([]*T, 0)
 	for _, id := range t.children[uid] {
 		nodes = append(nodes, t.nodes[id])
 	}
@@ -228,7 +228,7 @@ func (t TreeData2[T]) Children(node *T) []*T {
 }
 
 // ChildrenCount returns the number of direct children of a node
-// and reports whether the node exists.
+// and reports whether the operation was successful.
 func (t TreeData2[T]) ChildrenCount(node *T) (int, bool) {
 	uid, found := t.UID(node)
 	if !found {
@@ -295,7 +295,7 @@ func (t TreeData2[T]) delete(uid widget.TreeNodeID) {
 	}
 }
 
-// IsBranch reports whether a node is a branch and reports whether the node exists.
+// IsBranch reports whether a node is a branch and it exists.
 func (t TreeData2[T]) IsBranch(node *T) (isBranch bool, ok bool) {
 	uid, ok := t.UID(node)
 	if !ok {
@@ -304,8 +304,9 @@ func (t TreeData2[T]) IsBranch(node *T) (isBranch bool, ok bool) {
 	return t.isBranchNode[uid], true
 }
 
-// SetBranch sets the branch state for a node and reports whether it exists.
+// SetBranch sets the branch state for a node.
 // The root node can not be changed.
+// Does nothing if the node is not found.
 func (t *TreeData2[T]) SetBranch(node *T, isBranch bool) bool {
 	if t == nil {
 		fyne.LogError("Trying to set a branch in a nil tree", ErrInvalid)
@@ -324,7 +325,7 @@ func (t TreeData2[T]) IsEmpty() bool {
 	return len(t.nodes) == 0
 }
 
-// Node returns a node by UID and reports whether it exists.
+// Node returns a node by UID and reports whether it was found.
 // The root node will be returned as nil.
 func (t TreeData2[T]) Node(uid widget.TreeNodeID) (node *T, ok bool) {
 	if uid == TreeRootID {
@@ -334,7 +335,7 @@ func (t TreeData2[T]) Node(uid widget.TreeNodeID) (node *T, ok bool) {
 	return
 }
 
-// UID returns the UID for a node and reports whether the operation succeeded.
+// UID returns the UID for a node and reports whether it was found.
 // Nil represents the root node and is valid.
 func (t TreeData2[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
 	if node == nil {
@@ -342,15 +343,6 @@ func (t TreeData2[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
 	}
 	uid, ok = t.uidLookup[node]
 	return
-}
-
-// MustUID is similar to UID(), but will panic if the node does not exist.
-func (t TreeData2[T]) MustUID(node *T) widget.TreeNodeID {
-	uid, ok := t.UID(node)
-	if !ok {
-		panic("UID not found")
-	}
-	return uid
 }
 
 // Exists reports whether a node exists.

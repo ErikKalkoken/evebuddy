@@ -2,12 +2,12 @@
 package asset
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -21,6 +21,7 @@ const (
 	FilterOffice
 	FilterPersonalAssets
 	FilterSafety
+	FilterCorpOther
 )
 
 type Item interface {
@@ -99,7 +100,7 @@ func new(items []Item, locations []*app.EveLocation, isCorporation bool) Collect
 		addChildNodes(root.children, items2, nodeLookup)
 	}
 
-	insertCustomNodes(trees)
+	insertCustomNodes(trees, isCorporation)
 	addMissingOffices(trees)
 
 	ac := Collection{
@@ -115,7 +116,7 @@ func makeRootLookup(trees map[int64]*Node) map[int64]*Node {
 	rootLookup := make(map[int64]*Node)
 	for _, root := range trees {
 		for _, n := range root.children {
-			for _, c := range n.All() {
+			for c := range n.All() {
 				if c.item != nil {
 					rootLookup[c.item.ID()] = root
 				}
@@ -154,18 +155,8 @@ func addChildNodes(parents []*Node, items2 map[int64]Item, nodeLookup map[int64]
 
 // TODO: Add node categories for all cargo variant
 
-var locationFlag2Category = map[app.LocationFlag]NodeCategory{
-	app.FlagAssetSafety:                         NodeAssetSafety,
-	app.FlagCapsuleerDeliveries:                 NodeDeliveries,
+var locationFlag2CategoryShared = map[app.LocationFlag]NodeCategory{
 	app.FlagCargo:                               NodeCargoBay,
-	app.FlagCorpDeliveries:                      NodeDeliveries,
-	app.FlagCorpSAG1:                            NodeOffice1,
-	app.FlagCorpSAG2:                            NodeOffice2,
-	app.FlagCorpSAG3:                            NodeOffice3,
-	app.FlagCorpSAG4:                            NodeOffice4,
-	app.FlagCorpSAG5:                            NodeOffice5,
-	app.FlagCorpSAG6:                            NodeOffice6,
-	app.FlagCorpSAG7:                            NodeOffice7,
 	app.FlagDroneBay:                            NodeDroneBay,
 	app.FlagFighterBay:                          NodeFighterBay,
 	app.FlagFighterTube0:                        NodeFighterBay,
@@ -183,7 +174,6 @@ var locationFlag2Category = map[app.LocationFlag]NodeCategory{
 	app.FlagHiSlot5:                             NodeFitting,
 	app.FlagHiSlot6:                             NodeFitting,
 	app.FlagHiSlot7:                             NodeFitting,
-	app.FlagImpounded:                           NodeImpounded,
 	app.FlagLoSlot0:                             NodeFitting,
 	app.FlagLoSlot1:                             NodeFitting,
 	app.FlagLoSlot2:                             NodeFitting,
@@ -237,11 +227,24 @@ var locationFlag2Category = map[app.LocationFlag]NodeCategory{
 	app.FlagSubSystemSlot5:                      NodeFitting,
 	app.FlagSubSystemSlot6:                      NodeFitting,
 	app.FlagSubSystemSlot7:                      NodeFitting,
+	app.FlagCapsuleerDeliveries:                 NodeDeliveries,
 }
 
-func insertCustomNodes(trees map[int64]*Node) {
+var locationFlag2CategoryCorp = map[app.LocationFlag]NodeCategory{
+	app.FlagCorpDeliveries: NodeDeliveries,
+	app.FlagCorpSAG1:       NodeOffice1,
+	app.FlagCorpSAG2:       NodeOffice2,
+	app.FlagCorpSAG3:       NodeOffice3,
+	app.FlagCorpSAG4:       NodeOffice4,
+	app.FlagCorpSAG5:       NodeOffice5,
+	app.FlagCorpSAG6:       NodeOffice6,
+	app.FlagCorpSAG7:       NodeOffice7,
+	app.FlagImpounded:      NodeImpounded,
+}
+
+func insertCustomNodes(trees map[int64]*Node, isCorporation bool) {
 	for _, root := range trees {
-		for _, n := range root.All() {
+		for _, n := range root.all() {
 			asset, ok := n.Asset()
 			if !ok {
 				continue
@@ -250,15 +253,32 @@ func insertCustomNodes(trees map[int64]*Node) {
 				addToCustomNode(n, NodeInSpace)
 				continue
 			}
-			if n.IsRootDirectChild() && asset.Type != nil && asset.Type.IsShip() {
-				addToCustomNode(n, NodeShipHangar)
-				continue
+			if isCorporation {
+				if asset.LocationFlag == app.FlagAssetSafety {
+					addToCustomNode(n, NodeAssetSafetyCorporation)
+					continue
+				}
+				if c, ok := locationFlag2CategoryCorp[asset.LocationFlag]; ok {
+					addToCustomNode(n, c)
+					continue
+				}
+			} else {
+				if n.IsRootDirectChild() {
+					if asset.Type != nil && asset.Type.IsShip() {
+						addToCustomNode(n, NodeShipHangar)
+						continue
+					}
+					if asset.LocationFlag == app.FlagHangar {
+						addToCustomNode(n, NodeItemHangar)
+						continue
+					}
+				}
+				if asset.LocationFlag == app.FlagAssetSafety {
+					addToCustomNode(n, NodeAssetSafetyCharacter)
+					continue
+				}
 			}
-			if n.IsRootDirectChild() && asset.LocationFlag == app.FlagHangar {
-				addToCustomNode(n, NodeItemHangar)
-				continue
-			}
-			if c, ok := locationFlag2Category[asset.LocationFlag]; ok {
+			if c, ok := locationFlag2CategoryShared[asset.LocationFlag]; ok {
 				addToCustomNode(n, c)
 				continue
 			}
@@ -293,7 +313,7 @@ func addToCustomNode(n *Node, category NodeCategory) bool {
 
 func addMissingOffices(trees map[int64]*Node) {
 	for _, root := range trees {
-		for _, n := range root.All() {
+		for n := range root.All() {
 			if n.category != NodeOfficeFolder {
 				continue
 			}
@@ -339,21 +359,12 @@ func (ac Collection) Node(itemID int64) (*Node, bool) {
 	return an, true
 }
 
-// MustNode returns the node for an ID or panics if not found.
-func (ac Collection) MustNode(itemID int64) *Node {
-	n, ok := ac.Node(itemID)
-	if !ok {
-		panic(fmt.Sprintf("node not found for ID %d", itemID))
-	}
-	return n
-}
-
 // Trees returns a new slice with all root nodes.
 // Trees which do not have any filtered nodes will be excluded.
 func (ac Collection) Trees() []*Node {
 	trees := make([]*Node, 0)
 	for _, root := range ac.trees {
-		if len(root.Children()) > 0 {
+		if root.ChildrenCount() > 0 {
 			trees = append(trees, root)
 		}
 	}
@@ -369,14 +380,6 @@ func (ac Collection) LocationTree(locationID int64) (*Node, bool) {
 	return root, true
 }
 
-func (ac Collection) MustLocationTree(locationID int64) *Node {
-	root, ok := ac.trees[locationID]
-	if !ok {
-		panic(fmt.Sprintf("location tree not found for ID %d", locationID))
-	}
-	return root
-}
-
 // Filter returns the current filter.
 func (ac Collection) Filter() Filter {
 	return ac.filter
@@ -388,6 +391,18 @@ func (ac *Collection) ApplyFilter(filter Filter) {
 		for _, n := range root.children {
 			var isExcluded bool
 			switch filter {
+			case FilterCorpOther:
+				switch n.category {
+				case
+					NodeAssetSafetyCorporation,
+					NodeDeliveries,
+					NodeImpounded,
+					NodeInSpace,
+					NodeOfficeFolder:
+					isExcluded = true
+				default:
+					isExcluded = false
+				}
 			case FilterDeliveries:
 				isExcluded = n.category != NodeDeliveries
 			case FilterImpounded:
@@ -396,13 +411,51 @@ func (ac *Collection) ApplyFilter(filter Filter) {
 				isExcluded = n.category != NodeInSpace
 			case FilterOffice:
 				isExcluded = n.category != NodeOfficeFolder
+
 			case FilterPersonalAssets:
-				isExcluded = n.category != NodeInSpace && n.category != NodeAssetSafety && n.category != NodeDeliveries
+				switch n.category {
+				case NodeAssetSafetyCharacter, NodeDeliveries, NodeInSpace:
+					isExcluded = true
+				default:
+					isExcluded = false
+				}
 			case FilterSafety:
-				isExcluded = n.category != NodeAssetSafety
+				if ac.isCorporation {
+					isExcluded = n.category != NodeAssetSafetyCorporation
+				} else {
+					isExcluded = n.category != NodeAssetSafetyCharacter
+				}
 			}
 			n.isExcluded = isExcluded
 		}
 	}
 	ac.filter = filter
+}
+
+func (ac Collection) UpdateItemCounts() {
+	for _, location := range ac.trees {
+		for n := range location.All() {
+			n.itemCount.Clear()
+		}
+		for _, top := range location.children {
+			switch top.category {
+			case NodeOfficeFolder, NodeAssetSafetyCharacter:
+				for _, n1 := range top.children {
+					n1.itemCount = optional.FromIntegerWithZero(len(n1.children))
+					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+				}
+			case NodeAssetSafetyCorporation, NodeImpounded:
+				for _, n1 := range top.children {
+					for _, n2 := range n1.children {
+						n2.itemCount = optional.FromIntegerWithZero(len(n2.children))
+						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
+					}
+					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+				}
+			default:
+				top.itemCount = optional.FromIntegerWithZero(len(top.children))
+			}
+			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
+		}
+	}
 }

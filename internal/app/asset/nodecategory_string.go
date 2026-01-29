@@ -10,32 +10,33 @@ func _() {
 	var x [1]struct{}
 	_ = x[NodeUndefined-0]
 	_ = x[NodeAsset-1]
-	_ = x[NodeAssetSafety-2]
-	_ = x[NodeCargoBay-3]
-	_ = x[NodeDeliveries-4]
-	_ = x[NodeDroneBay-5]
-	_ = x[NodeFighterBay-6]
-	_ = x[NodeFitting-7]
-	_ = x[NodeFrigateEscapeBay-8]
-	_ = x[NodeFuelBay-9]
-	_ = x[NodeImpounded-10]
-	_ = x[NodeInSpace-11]
-	_ = x[NodeItemHangar-12]
-	_ = x[NodeLocation-13]
-	_ = x[NodeOfficeFolder-14]
-	_ = x[NodeOffice1-15]
-	_ = x[NodeOffice2-16]
-	_ = x[NodeOffice3-17]
-	_ = x[NodeOffice4-18]
-	_ = x[NodeOffice5-19]
-	_ = x[NodeOffice6-20]
-	_ = x[NodeOffice7-21]
-	_ = x[NodeShipHangar-22]
+	_ = x[NodeAssetSafetyCharacter-2]
+	_ = x[NodeAssetSafetyCorporation-3]
+	_ = x[NodeCargoBay-4]
+	_ = x[NodeDeliveries-5]
+	_ = x[NodeDroneBay-6]
+	_ = x[NodeFighterBay-7]
+	_ = x[NodeFitting-8]
+	_ = x[NodeFrigateEscapeBay-9]
+	_ = x[NodeFuelBay-10]
+	_ = x[NodeImpounded-11]
+	_ = x[NodeInSpace-12]
+	_ = x[NodeItemHangar-13]
+	_ = x[NodeLocation-14]
+	_ = x[NodeOfficeFolder-15]
+	_ = x[NodeOffice1-16]
+	_ = x[NodeOffice2-17]
+	_ = x[NodeOffice3-18]
+	_ = x[NodeOffice4-19]
+	_ = x[NodeOffice5-20]
+	_ = x[NodeOffice6-21]
+	_ = x[NodeOffice7-22]
+	_ = x[NodeShipHangar-23]
 }
 
-const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyNodeCargoBayNodeDeliveriesNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOfficeFolderNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangar"
+const _NodeCategory_name = "NodeUndefinedNodeAssetNodeAssetSafetyCharacterNodeAssetSafetyCorporationNodeCargoBayNodeDeliveriesNodeDroneBayNodeFighterBayNodeFittingNodeFrigateEscapeBayNodeFuelBayNodeImpoundedNodeInSpaceNodeItemHangarNodeLocationNodeOfficeFolderNodeOffice1NodeOffice2NodeOffice3NodeOffice4NodeOffice5NodeOffice6NodeOffice7NodeShipHangar"
 
-var _NodeCategory_index = [...]uint16{0, 13, 22, 37, 49, 63, 75, 89, 100, 120, 131, 144, 155, 169, 181, 197, 208, 219, 230, 241, 252, 263, 274, 288}
+var _NodeCategory_index = [...]uint16{0, 13, 22, 46, 72, 84, 98, 110, 124, 135, 155, 166, 179, 190, 204, 216, 232, 243, 254, 265, 276, 287, 298, 309, 323}
 
 func (i NodeCategory) String() string {
 	idx := int(i) - 0

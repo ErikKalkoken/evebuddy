@@ -420,13 +420,3 @@ func TestTreeData2_String(t *testing.T) {
 	s := fmt.Sprint(tree)
 	assert.Equal(t, "{nodes map[1:Alpha 2:Bravo], children: map[:[1] 1:[2]]}", s)
 }
-
-// nodeByUID returns a node from a tree or a zero nodeByUID if not found.
-// This is a helper for simpler test code.
-func nodeByUID[T any](td iwidget.TreeData2[T], uid widget.TreeNodeID) *T {
-	v, ok := td.Node(uid)
-	if !ok {
-		return nil
-	}
-	return v
-}
