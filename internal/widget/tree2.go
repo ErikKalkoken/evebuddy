@@ -78,10 +78,7 @@ func NewTree2[T any](
 		return w.td.children[uid]
 	}
 	w.IsBranch = func(uid widget.TreeNodeID) bool {
-		if uid == TreeRootID {
-			return true
-		}
-		return w.td.isBranchNode[uid]
+		return w.td.isBranch(uid)
 	}
 	w.CreateNode = create
 	w.UpdateNode = func(uid widget.TreeNodeID, isBranch bool, co fyne.CanvasObject) {
@@ -158,12 +155,11 @@ func (w *Tree2[T]) callWhenFound(n *T, f func(widget.TreeNodeID)) {
 //
 // The zero value is an empty tree ready to use.
 type TreeData2[T any] struct {
-	children     map[widget.TreeNodeID][]widget.TreeNodeID
-	id           int
-	isBranchNode map[widget.TreeNodeID]bool
-	nodes        map[widget.TreeNodeID]*T
-	parents      map[widget.TreeNodeID]widget.TreeNodeID
-	uidLookup    map[*T]widget.TreeNodeID
+	children  map[widget.TreeNodeID][]widget.TreeNodeID
+	id        int
+	nodes     map[widget.TreeNodeID]*T
+	parents   map[widget.TreeNodeID]widget.TreeNodeID
+	uidLookup map[*T]widget.TreeNodeID
 }
 
 func newTreeData2[T any]() TreeData2[T] {
@@ -175,7 +171,6 @@ func newTreeData2[T any]() TreeData2[T] {
 func (td *TreeData2[T]) init() {
 	td.children = make(map[widget.TreeNodeID][]widget.TreeNodeID)
 	td.id = 0
-	td.isBranchNode = make(map[widget.TreeNodeID]bool)
 	td.nodes = make(map[widget.TreeNodeID]*T)
 	td.parents = make(map[widget.TreeNodeID]widget.TreeNodeID)
 	td.uidLookup = make(map[*T]widget.TreeNodeID)
@@ -187,7 +182,7 @@ func (td *TreeData2[T]) init() {
 // and returns an error when a problem was found.
 //
 // A nil parent represents the root node.
-func (td *TreeData2[T]) Add(parent *T, node *T, isBranch bool) error {
+func (td *TreeData2[T]) Add(parent *T, node *T) error {
 	if td == nil || node == nil {
 		return ErrInvalid
 	}
@@ -203,7 +198,6 @@ func (td *TreeData2[T]) Add(parent *T, node *T, isBranch bool) error {
 	td.children[parentUID] = append(td.children[parentUID], uid)
 	td.nodes[uid] = node
 	td.parents[uid] = parentUID
-	td.isBranchNode[uid] = isBranch
 	td.uidLookup[node] = uid
 	return nil
 }
@@ -283,12 +277,11 @@ func (td *TreeData2[T]) Clear() {
 // and then update the tree widget with the result in one operation.
 func (td TreeData2[T]) Clone() TreeData2[T] {
 	t2 := TreeData2[T]{
-		children:     make(map[widget.TreeNodeID][]widget.TreeNodeID),
-		id:           td.id,
-		isBranchNode: maps.Clone(td.isBranchNode),
-		nodes:        maps.Clone(td.nodes),
-		parents:      maps.Clone(td.parents),
-		uidLookup:    maps.Clone(td.uidLookup),
+		children:  make(map[widget.TreeNodeID][]widget.TreeNodeID),
+		id:        td.id,
+		nodes:     maps.Clone(td.nodes),
+		parents:   maps.Clone(td.parents),
+		uidLookup: maps.Clone(td.uidLookup),
 	}
 	for k, v := range td.children {
 		t2.children[k] = slices.Clone(v)
@@ -334,7 +327,6 @@ func (td TreeData2[T]) delete(uid widget.TreeNodeID) {
 	})
 	delete(td.parents, uid)
 	delete(td.nodes, uid)
-	delete(td.isBranchNode, uid)
 	n, found := td.nodes[uid]
 	if found {
 		delete(td.uidLookup, n)
@@ -347,28 +339,36 @@ func (td TreeData2[T]) IsBranch(node *T) (isBranch bool, ok bool) {
 	if !ok {
 		return false, false
 	}
-	return td.isBranchNode[uid], true
+	return td.isBranch(uid), true
 }
 
-// SetBranch sets the branch state for a node.
-// The root node can not be changed.
-// Does nothing if the node is not found.
-func (td *TreeData2[T]) SetBranch(node *T, isBranch bool) bool {
-	if td == nil {
-		fyne.LogError("Trying to set a branch in a nil tree", ErrInvalid)
-		return false
+func (td TreeData2[T]) isBranch(uid widget.TreeNodeID) bool {
+	if uid == TreeRootID {
+		return true
 	}
-	uid, ok := td.uidLookup[node]
-	if !ok {
-		return false
-	}
-	td.isBranchNode[uid] = isBranch
-	return true
+	return len(td.children[uid]) > 0
 }
 
 // IsEmpty reports whether the tree has any nodes (other then the root node).
 func (td TreeData2[T]) IsEmpty() bool {
 	return len(td.nodes) == 0
+}
+
+// LeafPaths returns a slice of paths to all leafs for a subtree.
+// This is useful for quickly comparing trees in tests.
+// T is expected to implement the stringer interface.
+// The nil node represents the root.
+func (td TreeData2[T]) LeafPaths(parent *T) [][]string {
+	all := make([][]string, 0)
+	for n := range td.All(parent) {
+		if c, ok := td.ChildrenCount(n); ok && c == 0 {
+			p := xslices.Map(td.path(parent, n), func(x *T) string {
+				return fmt.Sprint(x)
+			})
+			all = append(all, p)
+		}
+	}
+	return all
 }
 
 // Node returns a node by UID and reports whether it was found.
@@ -411,20 +411,21 @@ func (td TreeData2[T]) Parent(node *T) (*T, bool) {
 	return td.nodes[parent], true
 }
 
-// Path returns the path between node a and the root.
+// Path returns the path from the root to node n.
+// The path includes node n, but not the root.
 // Returns a nil slice when node was not found.
-func (td TreeData2[T]) Path(node *T) []*T {
-	return td.path(node, nil)
+func (td TreeData2[T]) Path(n *T) []*T {
+	return td.path(nil, n)
 }
 
 // path returns the nodes between the nodes a and parent,
-// where b must be an ancestor of a.
+// where b must be an ancestor of n.
 // Returns a nil slice when no path can be found.
-func (td TreeData2[T]) path(a, parent *T) []*T {
-	if a == nil {
+func (td TreeData2[T]) path(parent, n *T) []*T {
+	if n == nil {
 		return nil
 	}
-	aUID, ok := td.UID(a)
+	aUID, ok := td.UID(n)
 	if !ok {
 		return nil
 	}
@@ -433,7 +434,7 @@ func (td TreeData2[T]) path(a, parent *T) []*T {
 		return nil
 	}
 	path := make([]*T, 0)
-	path = append(path, a)
+	path = append(path, n)
 	for {
 		aUID = td.parents[aUID]
 		if aUID != TreeRootID {
@@ -447,10 +448,10 @@ func (td TreeData2[T]) path(a, parent *T) []*T {
 	return path
 }
 
-// Print prints a sub tree to the console.
-// Nodes are expected to implement the stringer interface.
-func (td TreeData2[T]) Print(node *T) {
-	if uid, ok := td.UID(node); ok {
+// Print prints a sub tree of node n to the console.
+// T is expected to implement the stringer interface.
+func (td TreeData2[T]) Print(n *T) {
+	if uid, ok := td.UID(n); ok {
 		td.print(uid, "", false)
 		fmt.Println()
 	}
@@ -473,23 +474,6 @@ func (td TreeData2[T]) print(uid widget.TreeNodeID, indent string, last bool) {
 	for _, id := range td.children[uid] {
 		td.print(id, indent, len(td.children[id]) == 0)
 	}
-}
-
-// LeafPaths returns a slice of paths to all leafs for a subtree.
-// They are useful for quickly comparing trees in tests.
-// Nodes are expected to implement the stringer interface.
-// The nil node represents the root.
-func (td TreeData2[T]) LeafPaths(parent *T) [][]string {
-	all := make([][]string, 0)
-	for n := range td.All(parent) {
-		if c, ok := td.ChildrenCount(n); ok && c == 0 {
-			p := xslices.Map(td.path(n, parent), func(x *T) string {
-				return fmt.Sprint(x)
-			})
-			all = append(all, p)
-		}
-	}
-	return all
 }
 
 // Size returns the total number of nodes in the tree excluding the root node.

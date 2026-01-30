@@ -268,10 +268,11 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	return x, true
 }
 
-// TODO: Return complete path with origin and dest
-
+// Path returns the path from the root to this node.
+// The path includes the root and the node itself.
 func (n *Node) Path() []*Node {
 	nodes := make([]*Node, 0)
+	nodes = append(nodes, n)
 	current := n
 	for current.parent != nil {
 		nodes = append(nodes, current.parent)
@@ -296,23 +297,7 @@ func (n *Node) addChildFromItem(it Item) *Node {
 func (n *Node) PrintTree() {
 	var printTree func(n *Node, indent string, last bool)
 	printTree = func(n *Node, indent string, last bool) {
-		var id string
-		if v := n.ID(); v != 0 {
-			id = fmt.Sprintf(" (#%d)", v)
-		}
-		var count string
-		if x := n.ChildrenCount(); x > 0 {
-			count = fmt.Sprint(x)
-		} else {
-			count = "-"
-		}
-		fmt.Printf("%s+-%s%s [%s] %s\n",
-			indent,
-			n.String(),
-			id,
-			count,
-			n.Category().String(),
-		)
+		fmt.Printf("%s+-%s\n", indent, n)
 		if last {
 			indent += "   "
 		} else {
@@ -327,6 +312,7 @@ func (n *Node) PrintTree() {
 	fmt.Println()
 }
 
+// String returns a string representation of the node which is usually it's name.
 func (n *Node) String() string {
 	switch n.category {
 	case NodeLocation:
@@ -355,7 +341,6 @@ func (n *Node) LeafPaths() [][]string {
 			p := xslices.Map(n.Path(), func(x *Node) string {
 				return x.String()
 			})
-			p = append(p, n.String())
 			all = append(all, p)
 		}
 	}

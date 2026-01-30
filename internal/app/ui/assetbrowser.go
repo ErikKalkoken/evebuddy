@@ -409,24 +409,16 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 		if n.IsRootDirectChild() && isExcluded(n.Category()) {
 			continue
 		}
-		children := n.Children()
-		var hasContainerChildren bool
-		for _, c := range children {
-			if c.IsContainer() {
-				hasContainerChildren = true
-				break
-			}
-		}
 		cn := &assetContainerNode{
 			node: n,
 		}
-		err := td.Add(parent, cn, hasContainerChildren)
+		err := td.Add(parent, cn)
 		if err != nil {
 			slog.Error("Failed to add node", "ID", n.ID(), "Name", n.String(), "error", err)
 			return
 		}
-		if len(children) > 0 {
-			addNodes(td, cn, children, filter, isCorporation)
+		if c := n.Children(); len(c) > 0 {
+			addNodes(td, cn, c, filter, isCorporation)
 		}
 	}
 }
@@ -689,19 +681,21 @@ func (a *assetBrowserLocation) clear() {
 func (a *assetBrowserLocation) set(cn *assetContainerNode) {
 	a.breadcrumbs.RemoveAll()
 	p := theme.Padding()
-	for _, n := range cn.node.Path() {
-		l := widget.NewHyperlink(n.String(), nil)
-		l.OnTapped = func() {
-			cn, ok := a.selected.ab.Navigation.nodeLookup(n)
-			if !ok {
-				return
+	if path := cn.node.Path(); len(path) > 0 {
+		for _, n := range path[:len(path)-1] {
+			l := widget.NewHyperlink(n.String(), nil)
+			l.OnTapped = func() {
+				cn, ok := a.selected.ab.Navigation.nodeLookup(n)
+				if !ok {
+					return
+				}
+				a.selected.ab.Navigation.selectContainer(cn)
+				a.selected.set(cn)
 			}
-			a.selected.ab.Navigation.selectContainer(cn)
-			a.selected.set(cn)
+			a.breadcrumbs.Add(l)
+			x := container.New(layout.NewCustomPaddedLayout(0, 0, -2*p, -2*p), widget.NewLabel("＞"))
+			a.breadcrumbs.Add(x)
 		}
-		a.breadcrumbs.Add(l)
-		x := container.New(layout.NewCustomPaddedLayout(0, 0, -2*p, -2*p), widget.NewLabel("＞"))
-		a.breadcrumbs.Add(x)
 	}
 	a.breadcrumbs.Add(widget.NewLabel(cn.node.String()))
 

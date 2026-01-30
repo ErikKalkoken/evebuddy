@@ -15,13 +15,13 @@ type MyNode2 struct {
 func TestTreeData2_CanCreateFullTree(t *testing.T) {
 	var tree TreeData2[MyNode2]
 	alpha := &MyNode2{"Alpha"}
-	tree.Add(nil, alpha, true)
+	tree.Add(nil, alpha)
 	n11 := &MyNode2{"one"}
-	tree.Add(alpha, n11, false)
+	tree.Add(alpha, n11)
 	n12 := &MyNode2{"two"}
-	tree.Add(alpha, n12, false)
+	tree.Add(alpha, n12)
 	bravo := &MyNode2{"Bravo"}
-	tree.Add(nil, bravo, false)
+	tree.Add(nil, bravo)
 	assert.Equal(t, 4, tree.Size())
 	got1 := tree.Children(alpha)
 	assert.Equal(t, []*MyNode2{n11, n12}, got1)
@@ -53,11 +53,11 @@ func TestTreeData2_ChildUIDs(t *testing.T) {
 		c1 := &MyNode2{"Bravo"}
 		c2 := &MyNode2{"Charlie"}
 		sub2 := &MyNode2{"Delta"}
-		tree.Add(nil, sub1, true)
-		tree.Add(sub1, c1, true)
-		tree.Add(sub1, c2, true)
-		tree.Add(nil, sub2, true)
-		tree.Add(sub2, &MyNode2{"Echo"}, true)
+		tree.Add(nil, sub1)
+		tree.Add(sub1, c1)
+		tree.Add(sub1, c2)
+		tree.Add(nil, sub2)
+		tree.Add(sub2, &MyNode2{"Echo"})
 		uid, ok := tree.UID(sub1)
 		require.True(t, ok)
 		got := tree.children[uid]
@@ -75,11 +75,11 @@ func TestTreeData2_Clone(t *testing.T) {
 		// given
 		var td TreeData2[MyNode2]
 		root := &MyNode2{"Root"}
-		td.Add(nil, root, true)
+		td.Add(nil, root)
 		alpha := &MyNode2{"Alpha"}
-		td.Add(root, alpha, false)
+		td.Add(root, alpha)
 		bravo := &MyNode2{"Bravo"}
-		td.Add(root, bravo, false)
+		td.Add(root, bravo)
 		// when
 		got := td.Clone()
 		// then
@@ -99,7 +99,6 @@ func TreeDataEqual[T any](t *testing.T, want, got TreeData2[T]) {
 	t.Helper()
 	assert.Equal(t, want.children, got.children)
 	assert.Equal(t, want.id, got.id)
-	assert.Equal(t, want.isBranchNode, got.isBranchNode)
 	assert.Equal(t, want.nodes, got.nodes)
 	assert.Equal(t, want.parents, got.parents)
 	assert.Equal(t, want.uidLookup, got.uidLookup)

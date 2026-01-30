@@ -284,7 +284,7 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData2[characterAugmentatio
 			implantCount:  implantCount,
 			tags:          tags,
 		}
-		err = tree.Add(nil, clone, implantCount > 0)
+		err = tree.Add(nil, clone)
 		if err != nil {
 			return tree, err
 		}
@@ -295,7 +295,7 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData2[characterAugmentatio
 				implantTypeName:        o.EveType.Name,
 				characterID:            c.ID,
 			}
-			err := tree.Add(clone, implant, false)
+			err := tree.Add(clone, implant)
 			if err != nil {
 				return tree, err
 			}

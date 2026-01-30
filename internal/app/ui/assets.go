@@ -136,9 +136,8 @@ func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
 	r.locationDisplay = el.DisplayRichText()
 	n, ok := ac.Node(itemID)
 	if ok {
-		p := n.Path()
-		if len(p) > 0 {
-			r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
+		if p := n.Path(); len(p) > 0 {
+			r.locationPath = xslices.Map(p[:len(p)-1], func(x *asset.Node) string {
 				return x.String()
 			})
 		}
