@@ -88,7 +88,7 @@ type characterMails struct {
 	currentFolder    atomic.Pointer[mailFolderNode]
 	folderDefault    *mailFolderNode
 	folderDownloaded *ttwidget.Label
-	folders          *iwidget.Tree2[mailFolderNode]
+	folders          *iwidget.Tree[mailFolderNode]
 	folderStatus     *widget.Label
 	folderTotal      *widget.Label
 	headerList       *widget.List
@@ -195,8 +195,8 @@ func (a *characterMails) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterMails) makeFolderTree() *iwidget.Tree2[mailFolderNode] {
-	t := iwidget.NewTree2(
+func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
+	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icons.BlankSvg),
@@ -340,8 +340,8 @@ func (a *characterMails) updateDownloadedAsync() {
 	a.callOnUpdate()
 }
 
-func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget.TreeData2[mailFolderNode], *mailFolderNode, error) {
-	var td iwidget.TreeData2[mailFolderNode]
+func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
+	var td iwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return td, nil, nil
 	}
@@ -472,7 +472,7 @@ func (a *characterMails) updateUnreadCounts() {
 	a.callOnUpdate()
 }
 
-func (*characterMails) updateCountsInTreeAsync(s services, characterID int32, td iwidget.TreeData2[mailFolderNode]) (int, error) {
+func (*characterMails) updateCountsInTreeAsync(s services, characterID int32, td iwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}

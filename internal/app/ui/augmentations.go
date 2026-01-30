@@ -48,8 +48,8 @@ type augmentations struct {
 	selectImplants *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	top            *widget.Label
-	treeData       iwidget.TreeData2[characterAugmentationNode]
-	tree           *iwidget.Tree2[characterAugmentationNode]
+	treeData       iwidget.TreeData[characterAugmentationNode]
+	tree           *iwidget.Tree[characterAugmentationNode]
 	u              *baseUI
 }
 
@@ -99,8 +99,8 @@ func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *augmentations) makeTree() *iwidget.Tree2[characterAugmentationNode] {
-	t := iwidget.NewTree2(
+func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
+	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			main := ttwidget.NewRichText()
@@ -244,8 +244,8 @@ func (a *augmentations) update() {
 	})
 }
 
-func (a *augmentations) updateTreeData() (iwidget.TreeData2[characterAugmentationNode], error) {
-	var tree iwidget.TreeData2[characterAugmentationNode]
+func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentationNode], error) {
+	var tree iwidget.TreeData[characterAugmentationNode]
 	ctx := context.Background()
 	characters, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {

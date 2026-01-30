@@ -199,7 +199,7 @@ func (n assetContainerNode) String() string {
 }
 
 type filteredTree struct {
-	td         iwidget.TreeData2[assetContainerNode]
+	td         iwidget.TreeData[assetContainerNode]
 	nodeLookup map[*asset.Node]*assetContainerNode
 }
 
@@ -209,7 +209,7 @@ type assetBrowserNavigation struct {
 	OnSelected func()
 
 	ab             *assetBrowser
-	navigation     *iwidget.Tree2[assetContainerNode]
+	navigation     *iwidget.Tree[assetContainerNode]
 	selectCategory *kxwidget.FilterChipSelect
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
@@ -225,7 +225,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.navigation = iwidget.NewTree2(
+	a.navigation = iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			count := widget.NewLabel("99.999.999")
 			name := widget.NewLabel("Template")
@@ -339,15 +339,15 @@ func (a *assetBrowserNavigation) updateAsync(trees []*asset.Node) {
 	})
 }
 
-func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) iwidget.TreeData2[assetContainerNode] {
-	var td iwidget.TreeData2[assetContainerNode]
+func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) iwidget.TreeData[assetContainerNode] {
+	var td iwidget.TreeData[assetContainerNode]
 
 	addNodes(&td, nil, trees, filter, isCorporation)
 	updateItemCounts(td)
 	return td
 }
 
-func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
+func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
 	slices.SortFunc(nodes, func(a, b *asset.Node) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -424,7 +424,7 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 	}
 }
 
-func updateItemCounts(td iwidget.TreeData2[assetContainerNode]) {
+func updateItemCounts(td iwidget.TreeData[assetContainerNode]) {
 	td.Walk(nil, func(n *assetContainerNode) bool {
 		n.itemCount.Clear()
 		return true

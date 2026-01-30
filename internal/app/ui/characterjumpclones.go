@@ -58,7 +58,7 @@ type characterJumpClones struct {
 
 	character atomic.Pointer[app.Character]
 	top       *iwidget.RichText
-	tree      *iwidget.Tree2[jumpCloneNode]
+	tree      *iwidget.Tree[jumpCloneNode]
 	u         *baseUI
 }
 
@@ -98,8 +98,8 @@ func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterJumpClones) makeTree() *iwidget.Tree2[jumpCloneNode] {
-	t := iwidget.NewTree2(
+func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
+	t := iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			main := ttwidget.NewRichText()
@@ -200,8 +200,8 @@ func (a *characterJumpClones) updateAsync() {
 	})
 }
 
-func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData2[jumpCloneNode], error) {
-	var td iwidget.TreeData2[jumpCloneNode]
+func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode], error) {
+	var td iwidget.TreeData[jumpCloneNode]
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		return td, nil

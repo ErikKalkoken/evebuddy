@@ -12,8 +12,8 @@ type MyNode2 struct {
 	Text string
 }
 
-func TestTreeData2_CanCreateFullTree(t *testing.T) {
-	var tree TreeData2[MyNode2]
+func TestTreeData_CanCreateFullTree(t *testing.T) {
+	var tree TreeData[MyNode2]
 	alpha := &MyNode2{"Alpha"}
 	tree.Add(nil, alpha)
 	n11 := &MyNode2{"one"}
@@ -46,9 +46,9 @@ func TestTreeData2_CanCreateFullTree(t *testing.T) {
 	}
 }
 
-func TestTreeData2_ChildUIDs(t *testing.T) {
+func TestTreeData_ChildUIDs(t *testing.T) {
 	t.Run("can return child UIDs of existing node", func(t *testing.T) {
-		var tree TreeData2[MyNode2]
+		var tree TreeData[MyNode2]
 		sub1 := &MyNode2{"Alpha"}
 		c1 := &MyNode2{"Bravo"}
 		c2 := &MyNode2{"Charlie"}
@@ -70,10 +70,10 @@ func TestTreeData2_ChildUIDs(t *testing.T) {
 	})
 }
 
-func TestTreeData2_Clone(t *testing.T) {
+func TestTreeData_Clone(t *testing.T) {
 	t.Run("can clone a td object", func(t *testing.T) {
 		// given
-		var td TreeData2[MyNode2]
+		var td TreeData[MyNode2]
 		root := &MyNode2{"Root"}
 		td.Add(nil, root)
 		alpha := &MyNode2{"Alpha"}
@@ -87,7 +87,7 @@ func TestTreeData2_Clone(t *testing.T) {
 	})
 	t.Run("can clone a empty td object", func(t *testing.T) {
 		// given
-		td := newTreeData2[MyNode2]()
+		td := newTreeData[MyNode2]()
 		// when
 		got := td.Clone()
 		// then
@@ -95,7 +95,7 @@ func TestTreeData2_Clone(t *testing.T) {
 	})
 }
 
-func TreeDataEqual[T any](t *testing.T, want, got TreeData2[T]) {
+func TreeDataEqual[T any](t *testing.T, want, got TreeData[T]) {
 	t.Helper()
 	assert.Equal(t, want.children, got.children)
 	assert.Equal(t, want.id, got.id)

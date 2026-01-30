@@ -39,7 +39,7 @@ type gameSearch struct {
 	recentItems         []*app.EveEntity
 	recentPage          *fyne.Container
 	resultCount         *widget.Label
-	results             *iwidget.Tree2[resultNode]
+	results             *iwidget.Tree[resultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
@@ -231,8 +231,8 @@ func (a *gameSearch) setWindow(w fyne.Window) {
 	a.w = w
 }
 
-func (a *gameSearch) makeResults() *iwidget.Tree2[resultNode] {
-	t := iwidget.NewTree2(
+func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
+	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
 				return widget.NewLabel("Template")
@@ -382,7 +382,7 @@ func (a *gameSearch) doSearch2(search string) {
 	if total == 0 {
 		return
 	}
-	var td iwidget.TreeData2[resultNode]
+	var td iwidget.TreeData[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
 		_, ok := results[c]
