@@ -1,8 +1,6 @@
 package widget_test
 
 import (
-	"fmt"
-	"slices"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -241,7 +239,12 @@ func TestTreeData2_Delete(t *testing.T) {
 		td.Add(nil, n2)
 		err := td.Delete(n2)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, slices.Collect(td.All(nil)), []*MyNode2{alpha})
+		want := make([]*MyNode2, 0)
+		td.Walk(nil, func(n *MyNode2) bool {
+			want = append(want, n)
+			return true
+		})
+		assert.ElementsMatch(t, want, []*MyNode2{alpha})
 	})
 	t.Run("can remove node from a complex td", func(t *testing.T) {
 		var td iwidget.TreeData2[MyNode2]
@@ -257,7 +260,12 @@ func TestTreeData2_Delete(t *testing.T) {
 		td.Print(nil)
 		err := td.Delete(n1)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, slices.Collect(td.All(nil)), []*MyNode2{a, b, c})
+		want := make([]*MyNode2, 0)
+		td.Walk(nil, func(n *MyNode2) bool {
+			want = append(want, n)
+			return true
+		})
+		assert.ElementsMatch(t, want, []*MyNode2{a, b, c})
 		// t.Fail()
 	})
 	t.Run("can not remove the root node", func(t *testing.T) {
@@ -356,12 +364,12 @@ func TestTreeData2_Path(t *testing.T) {
 		td.Add(a, b)
 		c := &MyNode2{"Charlie"}
 		td.Add(b, c)
-		p := td.Path(c)
+		p := td.Path(nil, c)
 		assert.Equal(t, []*MyNode2{a, b, c}, p)
 	})
-	t.Run("should return empty array for root node", func(t *testing.T) {
+	t.Run("should return empty slice for root node", func(t *testing.T) {
 		var td iwidget.TreeData2[MyNode2]
-		p := td.Path(nil)
+		p := td.Path(nil, nil)
 		assert.Empty(t, p)
 	})
 }
@@ -374,7 +382,11 @@ func TestTreeData2_Values(t *testing.T) {
 	td.Add(root, alpha)
 	bravo := &MyNode2{"Bravo"}
 	td.Add(root, bravo)
-	got := slices.Collect(td.All(nil))
+	got := make([]*MyNode2, 0)
+	td.Walk(nil, func(n *MyNode2) bool {
+		got = append(got, n)
+		return true
+	})
 	want := []*MyNode2{root, alpha, bravo}
 	assert.ElementsMatch(t, want, got)
 
@@ -412,16 +424,7 @@ func TestTreeData2_Size(t *testing.T) {
 	})
 }
 
-func TestTreeData2_String(t *testing.T) {
-	var td iwidget.TreeData2[MyNode2]
-	alpha := &MyNode2{"Alpha"}
-	td.Add(nil, alpha)
-	td.Add(alpha, &MyNode2{"Bravo"})
-	s := fmt.Sprint(td)
-	assert.Equal(t, "{nodes map[1:Alpha 2:Bravo], children: map[:[1] 1:[2]]}", s)
-}
-
-func TestTreeData2_All2(t *testing.T) {
+func TestTreeData2_Walk(t *testing.T) {
 	var td iwidget.TreeData2[MyNode2]
 	top := &MyNode2{"Top"}
 	td.Add(nil, top)
@@ -435,7 +438,11 @@ func TestTreeData2_All2(t *testing.T) {
 	b := &MyNode2{"Bravo"}
 	td.Add(top, b)
 
-	got := slices.Collect(td.All(nil))
+	got := make([]*MyNode2, 0)
+	td.Walk(nil, func(n *MyNode2) bool {
+		got = append(got, n)
+		return true
+	})
 	want := []*MyNode2{top, a, c, b}
 	assert.Equal(t, want, got)
 }
@@ -454,14 +461,14 @@ func TestTreeData2_Leafs(t *testing.T) {
 	b := &MyNode2{"Bravo"}
 	td.Add(top, b)
 
-	got1 := td.LeafPaths(nil)
+	got1 := td.AllPaths(nil)
 	want1 := [][]string{
 		{"Top", "Bravo"},
 		{"Top", "Alpha", "Charlie"},
 	}
 	assert.ElementsMatch(t, want1, got1)
 
-	got2 := td.LeafPaths(a)
+	got2 := td.AllPaths(a)
 	want2 := [][]string{
 		{"Alpha", "Charlie"},
 	}

@@ -331,10 +331,10 @@ func (n *Node) String() string {
 	return n.category.DisplayName()
 }
 
-// LeafPaths returns a slice of paths to all leafs for a subtree.
+// AllPaths returns a slice of paths to all leafs for a subtree.
 // Nodes are expected to implement the stringer interface.
 // The nil node represents the root.
-func (n *Node) LeafPaths() [][]string {
+func (n *Node) AllPaths() [][]string {
 	all := make([][]string, 0)
 	for n := range n.All() {
 		if c := n.ChildrenCount(); c == 0 {

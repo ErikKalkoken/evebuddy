@@ -22,7 +22,7 @@ func TestNode_Leafs(t *testing.T) {
 	c := newCustomNode(NodeDroneBay)
 	top.addChild(c)
 
-	got := top.LeafPaths()
+	got := top.AllPaths()
 
 	want := [][]string{
 		{"Item Hangar", "Cargo Bay", "Fuel Bay"},

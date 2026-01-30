@@ -324,9 +324,10 @@ func (a *assetBrowserNavigation) updateAsync(trees []*asset.Node) {
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.ab.forCorporation)
 		lookup := make(map[*asset.Node]*assetContainerNode)
-		for n := range td.All(nil) {
+		td.Walk(nil, func(n *assetContainerNode) bool {
 			lookup[n.node] = n
-		}
+			return true
+		})
 		filteredTrees[f] = filteredTree{
 			td:         td,
 			nodeLookup: lookup,
@@ -424,9 +425,10 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 }
 
 func updateItemCounts(td iwidget.TreeData2[assetContainerNode]) {
-	for n := range td.All(nil) {
+	td.Walk(nil, func(n *assetContainerNode) bool {
 		n.itemCount.Clear()
-	}
+		return true
+	})
 	for _, location := range td.Children(nil) {
 		for _, top := range td.Children(location) {
 			switch top.node.Category() {
@@ -498,7 +500,7 @@ func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
 	if !a.ab.u.isMobile {
 		a.navigation.SelectNode(cn)
 	}
-	for _, cn2 := range a.navigation.Data().Path(cn) {
+	for _, cn2 := range a.navigation.Data().Path(nil, cn) {
 		a.navigation.OpenBranchNode(cn2)
 	}
 	a.navigation.ScrollToNode(cn)

@@ -223,7 +223,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetNoFilter, false)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Deliveries"},
 			{"Alpha", "Item Hangar", "Container"},
@@ -241,7 +241,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetDeliveries, false)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Deliveries"},
 		}
@@ -255,7 +255,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetPersonalAssets, false)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Item Hangar", "Container"},
 			{"Alpha", "Ship Hangar", "Merlin", "Drone Bay"},
@@ -270,7 +270,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetSafety, false)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Charlie", "Asset Safety", "Asset Safety Wrap"},
 		}
@@ -460,7 +460,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		want1 := []string{"Alpha", "Bravo", "Charlie", "Delta", "Echo"}
 		assert.ElementsMatch(t, want1, got1)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Deliveries"},
 			{"Alpha", "Office", "1st Division"},
@@ -490,7 +490,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetDeliveries, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Deliveries"},
 		}
@@ -504,7 +504,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetImpounded, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Charlie", "Impounded", "Office", "1st Division"},
 			{"Charlie", "Impounded", "Office", "2nd Division"},
@@ -524,7 +524,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetOffice, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Alpha", "Office", "1st Division"},
 			{"Alpha", "Office", "2nd Division"},
@@ -544,7 +544,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetSafety, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries"},
 		}
@@ -558,7 +558,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetInSpace, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Bravo", "In Space"},
 		}
@@ -572,7 +572,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetCorpOther, true)
 
-		got := td.LeafPaths(nil)
+		got := td.AllPaths(nil)
 		want := [][]string{
 			{"Delta", "Cargo Bay"},
 		}
@@ -610,19 +610,20 @@ func makeCountsPath(ac asset.Tree, td iwidget.TreeData2[assetContainerNode], it 
 	if !ok {
 		return nil
 	}
-	return xslices.Map(td.Path(x), func(x *assetContainerNode) int {
+	return xslices.Map(td.Path(nil, x), func(x *assetContainerNode) int {
 		return x.itemCount.ValueOrZero()
 	})
 }
 
 func findContainer(td iwidget.TreeData2[assetContainerNode], node *asset.Node) (*assetContainerNode, bool) {
 	var found *assetContainerNode
-	for cn := range td.All(nil) {
-		if cn.node == node {
-			found = cn
-			break
+	td.Walk(nil, func(n *assetContainerNode) bool {
+		if n.node == node {
+			found = n
+			return false
 		}
-	}
+		return true
+	})
 	if found == nil {
 		return nil, false
 	}
