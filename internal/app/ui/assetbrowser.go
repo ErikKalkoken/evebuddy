@@ -222,8 +222,8 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			b := co.(*fyne.Container).Objects
 			b[0].(*widget.Label).SetText(cn.node.String())
 			var s string
-			if !cn.node.ItemCount().IsEmpty() {
-				s = humanize.Comma(int64(cn.node.ItemCount().ValueOrZero()))
+			if !cn.itemCount.IsEmpty() {
+				s = humanize.Comma(int64(cn.itemCount.ValueOrZero()))
 			}
 			b[1].(*widget.Label).SetText(s)
 		},
@@ -305,7 +305,6 @@ const (
 
 func (a *assetBrowserNavigation) redraw() {
 	a.mu.Lock()
-	a.ac.UpdateItemCounts()
 	trees := a.ac.Trees()
 	a.mu.Unlock()
 
@@ -342,6 +341,7 @@ func generateTreeData(trees []*asset.Node, filter AssetFilter, isCorporation boo
 	var td iwidget.TreeData2[assetContainerNode]
 
 	addNodes(&td, nil, trees, filter, isCorporation)
+	updateItemCounts(td)
 	return td
 }
 
@@ -425,6 +425,34 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 		}
 		if len(children) > 0 {
 			addNodes(td, cn, children, filter, isCorporation)
+		}
+	}
+}
+
+func updateItemCounts(td iwidget.TreeData2[assetContainerNode]) {
+	for n := range td.All(nil) {
+		n.itemCount.Clear()
+	}
+	for _, location := range td.Children(nil) {
+		for _, top := range td.Children(location) {
+			switch top.node.Category() {
+			case asset.NodeOfficeFolder, asset.NodeAssetSafetyCharacter:
+				for _, n1 := range td.Children(top) {
+					n1.itemCount = optional.FromIntegerWithZero(len(n1.node.Children()))
+					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+				}
+			case asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
+				for _, n1 := range td.Children(top) {
+					for _, n2 := range td.Children(n1) {
+						n2.itemCount = optional.FromIntegerWithZero(len(n2.node.Children()))
+						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
+					}
+					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+				}
+			default:
+				top.itemCount = optional.FromIntegerWithZero(len(top.node.Children()))
+			}
+			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
 		}
 	}
 }

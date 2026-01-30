@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
-	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -362,9 +361,8 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		spaceItem2,
 	}
 
-	t.Run("no filter", func(t *testing.T) {
+	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterNone)
 
 		assert.Len(t, ac.Trees(), 3)
 
@@ -381,55 +379,6 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		assert.Equal(t, 1, delta.ChildrenCount())
 		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap"}, makeNamesPath(ac, safetyItem1))
 
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("deliveries filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterDeliveries)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, 1, mustLocation(ac, alphaID).ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("personal assets filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterPersonalAssets)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, item1))
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, item2))
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container"}, makeNamesPath(ac, item3))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("safety filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterSafety)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap"}, makeNamesPath(ac, safetyItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("item counts", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.UpdateItemCounts()
-
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, item1))
-		xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, ship1))
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, safetyItem1))
 		printTrees(ac)
 		// assert.Fail(t, "STOP")
 	})
@@ -591,7 +540,7 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 		structureCargoItem,
 	}
 
-	t.Run("no filter", func(t *testing.T) {
+	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 
 		assert.Len(t, ac.Trees(), 5)
@@ -615,85 +564,6 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 		printTrees(ac)
 		// assert.Fail(t, "STOP")
 	})
-
-	t.Run("deliveries filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterDeliveries)
-
-		assert.Len(t, ac.Trees(), 1)
-		alpha := mustLocation(ac, alphaID)
-		assert.Equal(t, 1, alpha.ChildrenCount())
-
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("impounded filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterImpounded)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division"}, makeNamesPath(ac, impoundedItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("office filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterOffice)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makeNamesPath(ac, officeItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("safety filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterSafety)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries"}, makeNamesPath(ac, safetyItem2))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("other filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterCorpOther)
-
-		assert.Len(t, ac.Trees(), 1)
-		delta := mustLocation(ac, deltaID)
-		assert.Equal(t, 1, delta.ChildrenCount())
-		assert.Equal(t, []string{"Delta", "Cargo Bay"}, makeNamesPath(ac, structureCargoItem))
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("item counts", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.UpdateItemCounts()
-
-		xassert.Equal(t, []int{5, 3, 2}, makeCountsPath(ac, officeItem1))
-		xassert.Equal(t, []int{5, 3, 1}, makeCountsPath(ac, officeItem3))
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-		xassert.Equal(t, []int{4, 4, 4, 1}, makeCountsPath(ac, impoundedItem1))
-		xassert.Equal(t, []int{1, 1}, makeCountsPath(ac, structureCargoItem))
-		xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, safetyItem2))
-
-		mustLocation(ac, alphaID).PrintTree()
-		mustLocation(ac, bravoID).PrintTree()
-		mustLocation(ac, charlieID).PrintTree()
-		mustLocation(ac, deltaID).PrintTree()
-		mustLocation(ac, echoID).PrintTree()
-		// assert.Fail(t, "STOP")
-	})
 }
 
 // test helpers
@@ -706,11 +576,11 @@ func makeNamesPath(ac asset.Collection, it asset.Item) []string {
 	})
 }
 
-func makeCountsPath(ac asset.Collection, it asset.Item) []int {
-	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) int {
-		return x.ItemCount().ValueOrZero()
-	})
-}
+// func makeCountsPath(ac asset.Collection, it asset.Item) []int {
+// 	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) int {
+// 		return x.ItemCount().ValueOrZero()
+// 	})
+// }
 
 func mineralType() *app.EveType {
 	return &app.EveType{

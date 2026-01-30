@@ -357,12 +357,12 @@ func TestTreeData2_Path(t *testing.T) {
 		c := &MyNode2{"Charlie"}
 		td.Add(b, c, true)
 		p := td.Path(c)
-		assert.Equal(t, []*MyNode2{a, b}, p)
+		assert.Equal(t, []*MyNode2{a, b, c}, p)
 	})
 	t.Run("should return empty array for root node", func(t *testing.T) {
 		var td iwidget.TreeData2[MyNode2]
 		p := td.Path(nil)
-		assert.Equal(t, []*MyNode2{}, p)
+		assert.Empty(t, p)
 	})
 }
 
@@ -461,10 +461,9 @@ func TestTreeData2_Leafs(t *testing.T) {
 	}
 	assert.ElementsMatch(t, want1, got1)
 
-	got2 := td.LeafPaths(top)
+	got2 := td.LeafPaths(a)
 	want2 := [][]string{
 		{"Alpha", "Charlie"},
-		{"Bravo"},
 	}
 	assert.ElementsMatch(t, want2, got2)
 }

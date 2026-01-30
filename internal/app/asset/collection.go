@@ -7,21 +7,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-)
-
-type Filter uint
-
-const (
-	FilterNone = iota
-	FilterDeliveries
-	FilterImpounded
-	FilterInSpace
-	FilterOffice
-	FilterPersonalAssets
-	FilterSafety
-	FilterCorpOther
 )
 
 type Item interface {
@@ -32,7 +18,6 @@ type Item interface {
 // Collection represents a collection of asset trees.
 // There is one tree for each location.
 type Collection struct {
-	filter        Filter
 	isCorporation bool            // True for corporation assets, false for character assets.
 	nodeLookup    map[int64]*Node // Lookup of nodes for items
 	rootLookup    map[int64]*Node // Lookup of root nodes for items
@@ -401,86 +386,4 @@ func (ac Collection) LocationTree(locationID int64) (*Node, bool) {
 		return nil, false
 	}
 	return root, true
-}
-
-// Filter returns the current filter.
-func (ac Collection) Filter() Filter {
-	return ac.filter
-}
-
-// TODO: No longer used => remove
-
-// ApplyFilter applies the specified filter to the collection.
-func (ac *Collection) ApplyFilter(filter Filter) {
-	for _, root := range ac.trees {
-		for _, n := range root.children {
-			var isExcluded bool
-			switch filter {
-			case FilterCorpOther:
-				switch n.category {
-				case
-					NodeAssetSafetyCorporation,
-					NodeDeliveries,
-					NodeImpounded,
-					NodeInSpace,
-					NodeOfficeFolder:
-					isExcluded = true
-				default:
-					isExcluded = false
-				}
-			case FilterDeliveries:
-				isExcluded = n.category != NodeDeliveries
-			case FilterImpounded:
-				isExcluded = n.category != NodeImpounded
-			case FilterInSpace:
-				isExcluded = n.category != NodeInSpace
-			case FilterOffice:
-				isExcluded = n.category != NodeOfficeFolder
-
-			case FilterPersonalAssets:
-				switch n.category {
-				case NodeAssetSafetyCharacter, NodeDeliveries, NodeInSpace:
-					isExcluded = true
-				default:
-					isExcluded = false
-				}
-			case FilterSafety:
-				if ac.isCorporation {
-					isExcluded = n.category != NodeAssetSafetyCorporation
-				} else {
-					isExcluded = n.category != NodeAssetSafetyCharacter
-				}
-			}
-			n.isExcluded = isExcluded
-		}
-	}
-	ac.filter = filter
-}
-
-func (ac Collection) UpdateItemCounts() {
-	for _, location := range ac.trees {
-		for n := range location.All() {
-			n.itemCount.Clear()
-		}
-		for _, top := range location.children {
-			switch top.category {
-			case NodeOfficeFolder, NodeAssetSafetyCharacter:
-				for _, n1 := range top.children {
-					n1.itemCount = optional.FromIntegerWithZero(len(n1.children))
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
-				}
-			case NodeAssetSafetyCorporation, NodeImpounded:
-				for _, n1 := range top.children {
-					for _, n2 := range n1.children {
-						n2.itemCount = optional.FromIntegerWithZero(len(n2.children))
-						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
-					}
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
-				}
-			default:
-				top.itemCount = optional.FromIntegerWithZero(len(top.children))
-			}
-			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
-		}
-	}
 }

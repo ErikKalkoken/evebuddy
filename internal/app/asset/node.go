@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"iter"
 	"slices"
-	"strconv"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -88,7 +86,6 @@ type Node struct {
 	isExcluded  bool
 	isShip      bool
 	item        Item
-	itemCount   optional.Optional[int]
 	location    *app.EveLocation
 	parent      *Node
 }
@@ -173,8 +170,8 @@ func (n *Node) all() []*Node {
 	return s
 }
 
-func (n *Node) ItemCount() optional.Optional[int] {
-	return n.itemCount
+func (n *Node) Parent() *Node {
+	return n.parent
 }
 
 // Children returns a new slice containing the unfiltered children of a node.
@@ -271,6 +268,8 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	return x, true
 }
 
+// TODO: Return complete path with origin and dest
+
 func (n *Node) Path() []*Node {
 	nodes := make([]*Node, 0)
 	current := n
@@ -307,15 +306,12 @@ func (n *Node) PrintTree() {
 		} else {
 			count = "-"
 		}
-		fmt.Printf("%s+-%s%s [%s] %s: %s\n",
+		fmt.Printf("%s+-%s%s [%s] %s\n",
 			indent,
 			n.String(),
 			id,
 			count,
 			n.Category().String(),
-			n.itemCount.StringFunc("-", func(v int) string {
-				return strconv.Itoa(v)
-			}),
 		)
 		if last {
 			indent += "   "

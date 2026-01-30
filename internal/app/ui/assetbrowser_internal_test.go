@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"sync/atomic"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -280,18 +280,18 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		// assert.Fail(t, "STOP")
 	})
 
-	// t.Run("item counts", func(t *testing.T) {
-	// 	ac := asset.NewFromCharacterAssets(assets, locations)
-	// 	ac.UpdateItemCounts()
+	t.Run("item counts", func(t *testing.T) {
+		ac := asset.NewFromCharacterAssets(assets, locations)
+		td := generateTreeData(ac.Trees(), AssetNoFilter, false)
 
-	// 	xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, item1))
-	// 	xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, ship1))
-	// 	xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-	// 	xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-	// 	xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, safetyItem1))
-	// 	printTrees(ac)
-	// 	// assert.Fail(t, "STOP")
-	// })
+		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, item1))
+		xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, td, ship1))
+		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, deliveryItem1))
+		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, td, spaceItem1))
+		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, td, safetyItem1))
+		td.Print(nil)
+		// assert.Fail(t, "STOP")
+	})
 }
 
 func TestGenerateTreeData_Corporation(t *testing.T) {
@@ -582,48 +582,51 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		// assert.Fail(t, "STOP")
 	})
 
-	// t.Run("item counts", func(t *testing.T) {
-	// 	ac := asset.NewFromCorporationAssets(assets, locations)
-	// 	ac.UpdateItemCounts()
+	t.Run("item counts", func(t *testing.T) {
+		ac := asset.NewFromCorporationAssets(assets, locations)
+		td := generateTreeData(ac.Trees(), AssetNoFilter, true)
 
-	// 	xassert.Equal(t, []int{5, 3, 2}, makeCountsPath(ac, officeItem1))
-	// 	xassert.Equal(t, []int{5, 3, 1}, makeCountsPath(ac, officeItem3))
-	// 	xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-	// 	xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-	// 	xassert.Equal(t, []int{4, 4, 4, 1}, makeCountsPath(ac, impoundedItem1))
-	// 	xassert.Equal(t, []int{1, 1}, makeCountsPath(ac, structureCargoItem))
-	// 	xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, safetyItem2))
+		xassert.Equal(t, []int{5, 3, 2}, makeCountsPath(ac, td, officeItem1))
+		xassert.Equal(t, []int{5, 3, 1}, makeCountsPath(ac, td, officeItem3))
+		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, deliveryItem1))
+		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, td, spaceItem1))
+		xassert.Equal(t, []int{4, 4, 4, 1}, makeCountsPath(ac, td, impoundedItem1))
+		xassert.Equal(t, []int{1, 1}, makeCountsPath(ac, td, structureCargoItem))
+		xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, td, safetyItem2))
 
-	// 	mustLocation(ac, alphaID).PrintTree()
-	// 	mustLocation(ac, bravoID).PrintTree()
-	// 	mustLocation(ac, charlieID).PrintTree()
-	// 	mustLocation(ac, deltaID).PrintTree()
-	// 	mustLocation(ac, echoID).PrintTree()
-	// 	// assert.Fail(t, "STOP")
-	// })
+		td.Print(nil)
+		// assert.Fail(t, "STOP")
+	})
 }
 
 var sequence atomic.Int64
 
-// mustNode returns the node for an ID or panics if not found.
-func mustNode(td iwidget.TreeData2[assetContainerNode], itemID int64) *assetContainerNode {
+func makeCountsPath(ac asset.Collection, td iwidget.TreeData2[assetContainerNode], it asset.Item) []int {
+	n, ok := ac.Node(it.ID())
+	if !ok {
+		return nil
+	}
+	x, ok := findContainer(td, n.Parent())
+	if !ok {
+		return nil
+	}
+	return xslices.Map(td.Path(x), func(x *assetContainerNode) int {
+		return x.itemCount.ValueOrZero()
+	})
+}
+
+func findContainer(td iwidget.TreeData2[assetContainerNode], node *asset.Node) (*assetContainerNode, bool) {
 	var found *assetContainerNode
 	for cn := range td.All(nil) {
-		if cn.node.ID() == itemID {
+		if cn.node == node {
 			found = cn
 			break
 		}
 	}
 	if found == nil {
-		panic(fmt.Sprintf("node not found for ID %d", itemID))
+		return nil, false
 	}
-	return found
-}
-
-func makeCountsPath(td iwidget.TreeData2[assetContainerNode], it asset.Item) []int {
-	return xslices.Map(td.Path(mustNode(td, it.ID())), func(x *assetContainerNode) int {
-		return x.itemCount.ValueOrZero()
-	})
+	return found, true
 }
 
 func mineralType() *app.EveType {

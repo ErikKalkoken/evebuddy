@@ -244,8 +244,8 @@ func (td TreeData2[T]) All(parent *T) iter.Seq[*T] {
 // and reports whether the node exists.
 // The children are returns in the same order as they were added.
 // When the node was not found a nil slice is returned.
-func (td TreeData2[T]) Children(node *T) []*T {
-	uid, ok := td.UID(node)
+func (td TreeData2[T]) Children(parent *T) []*T {
+	uid, ok := td.UID(parent)
 	if !ok {
 		return nil
 	}
@@ -411,7 +411,7 @@ func (td TreeData2[T]) Parent(node *T) (*T, bool) {
 	return td.nodes[parent], true
 }
 
-// Path returns the nodes between node a and the root.
+// Path returns the path between node a and the root.
 // Returns a nil slice when node was not found.
 func (td TreeData2[T]) Path(node *T) []*T {
 	return td.path(node, nil)
@@ -433,15 +433,15 @@ func (td TreeData2[T]) path(a, parent *T) []*T {
 		return nil
 	}
 	path := make([]*T, 0)
-	if a == parent {
-		return path
-	}
+	path = append(path, a)
 	for {
 		aUID = td.parents[aUID]
+		if aUID != TreeRootID {
+			path = append(path, td.nodes[aUID])
+		}
 		if aUID == bUID {
 			break
 		}
-		path = append(path, td.nodes[aUID])
 	}
 	slices.Reverse(path)
 	return path
@@ -476,6 +476,7 @@ func (td TreeData2[T]) print(uid widget.TreeNodeID, indent string, last bool) {
 }
 
 // LeafPaths returns a slice of paths to all leafs for a subtree.
+// They are useful for quickly comparing trees in tests.
 // Nodes are expected to implement the stringer interface.
 // The nil node represents the root.
 func (td TreeData2[T]) LeafPaths(parent *T) [][]string {
@@ -485,7 +486,6 @@ func (td TreeData2[T]) LeafPaths(parent *T) [][]string {
 			p := xslices.Map(td.path(n, parent), func(x *T) string {
 				return fmt.Sprint(x)
 			})
-			p = append(p, fmt.Sprint(n))
 			all = append(all, p)
 		}
 	}
