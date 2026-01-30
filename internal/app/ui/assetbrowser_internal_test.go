@@ -221,7 +221,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 	t.Run("correct structure without filters", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetNoFilter, false)
+		td := generateTreeData(ac.Trees(), assetNoFilter, false)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -239,7 +239,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 	t.Run("deliveries filter", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetDeliveries, false)
+		td := generateTreeData(ac.Trees(), assetDeliveries, false)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -253,7 +253,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 	t.Run("personal assets filter", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetPersonalAssets, false)
+		td := generateTreeData(ac.Trees(), assetPersonalAssets, false)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -268,7 +268,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 	t.Run("safety filter", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetSafety, false)
+		td := generateTreeData(ac.Trees(), assetSafety, false)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -282,7 +282,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 	t.Run("item counts", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetNoFilter, false)
+		td := generateTreeData(ac.Trees(), assetNoFilter, false)
 
 		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, item1))
 		xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, td, ship1))
@@ -452,7 +452,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("no filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetNoFilter, true)
+		td := generateTreeData(ac.Trees(), assetNoFilter, true)
 
 		got1 := xslices.Map(td.Children(nil), func(x *assetContainerNode) string {
 			return x.String()
@@ -488,7 +488,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 	})
 	t.Run("deliveries filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetDeliveries, true)
+		td := generateTreeData(ac.Trees(), assetDeliveries, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -502,7 +502,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("impounded filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetImpounded, true)
+		td := generateTreeData(ac.Trees(), assetImpounded, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -522,7 +522,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("office filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetOffice, true)
+		td := generateTreeData(ac.Trees(), assetOffice, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -542,7 +542,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("safety filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetSafety, true)
+		td := generateTreeData(ac.Trees(), assetSafety, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -556,7 +556,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("in space filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetInSpace, true)
+		td := generateTreeData(ac.Trees(), assetInSpace, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -570,7 +570,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("other filter", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetCorpOther, true)
+		td := generateTreeData(ac.Trees(), assetCorpOther, true)
 
 		got := td.LeafPaths(nil)
 		want := [][]string{
@@ -584,7 +584,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 	t.Run("item counts", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
-		td := generateTreeData(ac.Trees(), AssetNoFilter, true)
+		td := generateTreeData(ac.Trees(), assetNoFilter, true)
 
 		xassert.Equal(t, []int{5, 3, 2}, makeCountsPath(ac, td, officeItem1))
 		xassert.Equal(t, []int{5, 3, 1}, makeCountsPath(ac, td, officeItem3))

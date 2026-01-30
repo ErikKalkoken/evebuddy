@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
-	"sync"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -28,6 +27,19 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type assetFilter uint
+
+const (
+	assetNoFilter = iota
+	assetCorpOther
+	assetDeliveries
+	assetImpounded
+	assetInSpace
+	assetOffice
+	assetPersonalAssets
+	assetSafety
+)
+
 // assetBrowser shows the attributes for the current character.
 type assetBrowser struct {
 	widget.BaseWidget
@@ -35,6 +47,7 @@ type assetBrowser struct {
 	Navigation *assetBrowserNavigation
 	Selected   *assetBrowserSelected
 
+	ac             asset.Collection
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
@@ -63,27 +76,27 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 	if a.forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.update()
+			a.updateAsync()
 		})
 		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section == app.SectionCorporationAssets {
-				a.update()
+				a.updateAsync()
 			}
 		})
 	} else {
 		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.update()
+			a.updateAsync()
 		})
 		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 			if characterIDOrZero(a.character.Load()) != arg.characterID {
 				return
 			}
 			if arg.section == app.SectionCharacterAssets {
-				a.update()
+				a.updateAsync()
 			}
 		})
 	}
@@ -96,7 +109,7 @@ func (a *assetBrowser) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetBrowser) update() {
+func (a *assetBrowser) updateAsync() {
 	clear := func() {
 		fyne.Do(func() {
 			a.Navigation.clear()
@@ -156,7 +169,10 @@ func (a *assetBrowser) update() {
 		}
 		ac = asset.NewFromCharacterAssets(assets, el)
 	}
-	a.Navigation.update(ac)
+	fyne.DoAndWait(func() {
+		a.ac = ac
+	})
+	a.Navigation.updateAsync(ac.Trees())
 }
 
 const (
@@ -182,6 +198,11 @@ func (n assetContainerNode) String() string {
 	return n.node.String()
 }
 
+type filteredTree struct {
+	td         iwidget.TreeData2[assetContainerNode]
+	nodeLookup map[*asset.Node]*assetContainerNode
+}
+
 type assetBrowserNavigation struct {
 	widget.BaseWidget
 
@@ -190,18 +211,17 @@ type assetBrowserNavigation struct {
 	ab             *assetBrowser
 	navigation     *iwidget.Tree2[assetContainerNode]
 	selectCategory *kxwidget.FilterChipSelect
+	filteredTrees  map[assetFilter]filteredTree
+	filters        []assetFilter
 	top            *widget.Label
-	nodeLookup     map[*asset.Node]*assetContainerNode
-
-	mu sync.RWMutex
-	ac asset.Collection
 }
 
 func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
-		ab:         ab,
-		top:        makeTopLabel(),
-		nodeLookup: make(map[*asset.Node]*assetContainerNode),
+		ab:            ab,
+		filteredTrees: make(map[assetFilter]filteredTree),
+		top:           makeTopLabel(),
+		filters:       make([]assetFilter, 0),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -238,6 +258,15 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		}
 	}
 	if a.ab.forCorporation {
+		a.filters = []assetFilter{
+			assetOffice,
+			assetImpounded,
+			assetDeliveries,
+			assetInSpace,
+			assetSafety,
+			assetCorpOther,
+			assetNoFilter,
+		}
 		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
 			assetCategoryOffice,
 			assetCategoryImpounded,
@@ -247,11 +276,18 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategoryOther,
 			assetCategoryAll,
 		}, func(string) {
-			go a.redraw()
+			a.redraw()
 		})
 		a.selectCategory.Selected = assetCategoryOffice
 		a.selectCategory.SortDisabled = true
 	} else {
+		a.filters = []assetFilter{
+			assetPersonalAssets,
+			assetDeliveries,
+			assetInSpace,
+			assetSafety,
+			assetNoFilter,
+		}
 		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
 			assetCategoryPersonal,
 			assetCategoryDeliveries,
@@ -259,7 +295,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategorySafety,
 			assetCategoryAll,
 		}, func(string) {
-			go a.redraw()
+			a.redraw()
 		})
 		a.selectCategory.Selected = assetCategoryPersonal
 		a.selectCategory.SortDisabled = true
@@ -283,61 +319,26 @@ func (a *assetBrowserNavigation) clear() {
 	a.top.SetText("")
 }
 
-func (a *assetBrowserNavigation) update(ac asset.Collection) {
-	a.mu.Lock()
-	a.ac = ac
-	a.mu.Unlock()
-	a.redraw()
-}
-
-type AssetFilter uint
-
-const (
-	AssetNoFilter = iota
-	AssetDeliveries
-	AssetImpounded
-	AssetInSpace
-	AssetOffice
-	AssetPersonalAssets
-	AssetSafety
-	AssetCorpOther
-)
-
-func (a *assetBrowserNavigation) redraw() {
-	a.mu.Lock()
-	trees := a.ac.Trees()
-	a.mu.Unlock()
-
-	filterLookup := map[string]AssetFilter{
-		assetCategoryDeliveries: AssetDeliveries,
-		assetCategoryImpounded:  AssetImpounded,
-		assetCategoryInSpace:    AssetInSpace,
-		assetCategoryOffice:     AssetOffice,
-		assetCategoryPersonal:   AssetPersonalAssets,
-		assetCategorySafety:     AssetSafety,
-		assetCategoryOther:      AssetCorpOther,
+func (a *assetBrowserNavigation) updateAsync(trees []*asset.Node) {
+	filteredTrees := make(map[assetFilter]filteredTree)
+	for _, f := range a.filters {
+		td := generateTreeData(trees, f, a.ab.forCorporation)
+		lookup := make(map[*asset.Node]*assetContainerNode)
+		for n := range td.All(nil) {
+			lookup[n.node] = n
+		}
+		filteredTrees[f] = filteredTree{
+			td:         td,
+			nodeLookup: lookup,
+		}
 	}
-	filter := filterLookup[a.selectCategory.Selected]
-	td := generateTreeData(trees, filter, a.ab.forCorporation)
-
-	lookup := make(map[*asset.Node]*assetContainerNode)
-	for n := range td.All(nil) {
-		lookup[n.node] = n
-	}
-
-	count, _ := td.ChildrenCount(nil)
-	top := fmt.Sprintf("%d locations", count)
 	fyne.Do(func() {
-		a.nodeLookup = lookup
-		a.navigation.UnselectAll()
-		a.navigation.CloseAllBranches()
-		a.navigation.Set(td)
-		a.ab.Selected.clear()
-		a.setTop(top, widget.MediumImportance)
+		a.filteredTrees = filteredTrees
+		a.redraw()
 	})
 }
 
-func generateTreeData(trees []*asset.Node, filter AssetFilter, isCorporation bool) iwidget.TreeData2[assetContainerNode] {
+func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) iwidget.TreeData2[assetContainerNode] {
 	var td iwidget.TreeData2[assetContainerNode]
 
 	addNodes(&td, nil, trees, filter, isCorporation)
@@ -345,14 +346,14 @@ func generateTreeData(trees []*asset.Node, filter AssetFilter, isCorporation boo
 	return td
 }
 
-func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter AssetFilter, isCorporation bool) {
+func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
 	slices.SortFunc(nodes, func(a, b *asset.Node) int {
 		return strings.Compare(a.String(), b.String())
 	})
 
 	isExcluded := func(category asset.NodeCategory) bool {
 		switch filter {
-		case AssetCorpOther:
+		case assetCorpOther:
 			switch category {
 			case
 				asset.NodeAssetSafetyCorporation,
@@ -364,23 +365,23 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 			default:
 				return false
 			}
-		case AssetDeliveries:
+		case assetDeliveries:
 			return category != asset.NodeDeliveries
-		case AssetImpounded:
+		case assetImpounded:
 			return category != asset.NodeImpounded
-		case AssetInSpace:
+		case assetInSpace:
 			return category != asset.NodeInSpace
-		case AssetOffice:
+		case assetOffice:
 			return category != asset.NodeOfficeFolder
 
-		case AssetPersonalAssets:
+		case assetPersonalAssets:
 			switch category {
 			case asset.NodeAssetSafetyCharacter, asset.NodeDeliveries, asset.NodeInSpace:
 				return true
 			default:
 				return false
 			}
-		case AssetSafety:
+		case assetSafety:
 			if isCorporation {
 				return category != asset.NodeAssetSafetyCorporation
 			} else {
@@ -389,6 +390,7 @@ func addNodes(td *iwidget.TreeData2[assetContainerNode], parent *assetContainerN
 		}
 		return false
 	}
+
 	for _, n := range nodes {
 		if !n.IsContainer() {
 			continue
@@ -457,23 +459,55 @@ func updateItemCounts(td iwidget.TreeData2[assetContainerNode]) {
 	}
 }
 
+var assetFilterLookup = map[string]assetFilter{
+	assetCategoryAll:        assetNoFilter,
+	assetCategoryDeliveries: assetDeliveries,
+	assetCategoryImpounded:  assetImpounded,
+	assetCategoryInSpace:    assetInSpace,
+	assetCategoryOffice:     assetOffice,
+	assetCategoryOther:      assetCorpOther,
+	assetCategoryPersonal:   assetPersonalAssets,
+	assetCategorySafety:     assetSafety,
+}
+
+func (a *assetBrowserNavigation) redraw() {
+	filter := assetFilterLookup[a.selectCategory.Selected]
+	ft := a.filteredTrees[filter]
+	a.navigation.UnselectAll()
+	a.navigation.CloseAllBranches()
+	a.navigation.Set(ft.td)
+	a.ab.Selected.clear()
+	count, _ := ft.td.ChildrenCount(nil)
+	top := fmt.Sprintf("%d locations", count)
+	a.setTop(top, widget.MediumImportance)
+}
+
+func (a *assetBrowserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode, bool) {
+	filter := assetFilterLookup[a.selectCategory.Selected]
+	ft, ok := a.filteredTrees[filter]
+	if !ok {
+		ft = a.filteredTrees[assetNoFilter]
+	}
+	cn, ok := ft.nodeLookup[n]
+	if !ok {
+		return nil, false
+	}
+	return cn, true
+}
+
 func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
 	a.top.Text = s
 	a.top.Importance = i
 	a.top.Refresh()
 }
 
-func (a *assetBrowserNavigation) selectContainer(node *asset.Node) {
+func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
 	a.navigation.UnselectAll()
-	cn, ok := a.ab.Navigation.nodeLookup[node]
-	if !ok {
-		return
-	}
 	if !a.ab.u.isMobile {
 		a.navigation.SelectNode(cn)
 	}
-	for _, n := range a.navigation.Data().Path(cn) {
-		a.navigation.OpenBranchNode(n)
+	for _, cn2 := range a.navigation.Data().Path(cn) {
+		a.navigation.OpenBranchNode(cn2)
 	}
 	a.navigation.ScrollToNode(cn)
 }
@@ -534,11 +568,11 @@ func (a *assetBrowserSelected) makeAssetGrid() *widget.GridWrap {
 		}
 		n := a.children[id]
 		if n.IsContainer() {
-			a.ab.Navigation.selectContainer(n)
-			cn, ok := a.ab.Navigation.nodeLookup[n]
+			cn, ok := a.ab.Navigation.nodeLookup(n)
 			if !ok {
 				return
 			}
+			a.ab.Navigation.selectContainer(cn)
 			a.set(cn)
 		} else {
 			a.showNodeInfo(n)
@@ -554,14 +588,14 @@ func (a *assetBrowserSelected) showNodeInfo(n *asset.Node) {
 			return
 		}
 		name := corporationNameOrZero(a.ab.corporation.Load())
-		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.Navigation.ac, name))
+		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.ac, name))
 		return
 	}
 	ca, ok := n.CharacterAsset()
 	if !ok {
 		return
 	}
-	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.Navigation.ac, a.ab.u.scs.CharacterName))
+	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.ac, a.ab.u.scs.CharacterName))
 }
 
 func (a *assetBrowserSelected) clear() {
@@ -658,11 +692,11 @@ func (a *assetBrowserLocation) set(cn *assetContainerNode) {
 	for _, n := range cn.node.Path() {
 		l := widget.NewHyperlink(n.String(), nil)
 		l.OnTapped = func() {
-			cn, ok := a.selected.ab.Navigation.nodeLookup[n]
+			cn, ok := a.selected.ab.Navigation.nodeLookup(n)
 			if !ok {
 				return
 			}
-			a.selected.ab.Navigation.selectContainer(n)
+			a.selected.ab.Navigation.selectContainer(cn)
 			a.selected.set(cn)
 		}
 		a.breadcrumbs.Add(l)
