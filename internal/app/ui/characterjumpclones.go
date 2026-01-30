@@ -24,6 +24,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type hasCharacterSection interface {
+	HasCharacterSection(characterID int32, section app.CharacterSection) bool
+}
+
 type jumpCloneNode struct {
 	implantCount           int
 	implantTypeID          int32
@@ -54,7 +58,7 @@ type characterJumpClones struct {
 
 	character atomic.Pointer[app.Character]
 	top       *iwidget.RichText
-	tree      *iwidget.Tree[jumpCloneNode]
+	tree      *iwidget.Tree2[jumpCloneNode]
 	u         *baseUI
 }
 
@@ -70,22 +74,21 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.updateAsync()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterJumpClones {
-			a.update()
+			a.updateAsync()
 		}
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		var n int
-		fyne.DoAndWait(func() {
-			n, _ = a.tree.Data().ChildrenCount(iwidget.TreeRootID)
+		fyne.Do(func() {
+			n, _ := a.tree.Data().ChildrenCount(nil)
+			a.refreshTop(n)
 		})
-		a.refreshTop(n)
 	})
 	return a
 }
@@ -95,9 +98,9 @@ func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
-	t := iwidget.NewTree(
-		func(branch bool) fyne.CanvasObject {
+func (a *characterJumpClones) makeTree() *iwidget.Tree2[jumpCloneNode] {
+	t := iwidget.NewTree2(
+		func(_ bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			main := ttwidget.NewRichText()
 			main.Truncation = fyne.TextTruncateEllipsis
@@ -113,7 +116,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				main,
 			)
 		},
-		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
+		func(n *jumpCloneNode, _ bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			main := border[0].(*ttwidget.RichText)
 			hbox := border[1].(*fyne.Container).Objects
@@ -170,17 +173,17 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			}
 		},
 	)
-	t.OnSelectedNode = func(n jumpCloneNode) {
+	t.OnSelectedNode = func(n *jumpCloneNode) {
 		defer t.UnselectAll()
 		if n.isTop() {
-			t.ToggleBranch(n.UID())
+			t.ToggleBranchNode(n)
 		}
 	}
 	return t
 }
 
-func (a *characterJumpClones) update() {
-	td, err := a.updateTreeData()
+func (a *characterJumpClones) updateAsync() {
+	td, err := a.fetchDataAsync()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
@@ -188,28 +191,28 @@ func (a *characterJumpClones) update() {
 				ColorName: theme.ColorNameError,
 			}))
 		})
-	} else {
-		n, _ := td.ChildrenCount(iwidget.TreeRootID)
-		a.refreshTop(n)
-		fyne.Do(func() {
-			a.tree.Set(td)
-		})
+		return
 	}
+	fyne.Do(func() {
+		n, _ := td.ChildrenCount(nil)
+		a.refreshTop(n)
+		a.tree.Set(td)
+	})
 }
 
-func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode], error) {
-	var tree iwidget.TreeData[jumpCloneNode]
+func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData2[jumpCloneNode], error) {
+	var td iwidget.TreeData2[jumpCloneNode]
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
-		return tree, nil
+		return td, nil
 	}
 	ctx := context.Background()
 	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
 	if err != nil {
-		return tree, err
+		return td, err
 	}
 	for _, c := range clones {
-		n := jumpCloneNode{
+		clone := &jumpCloneNode{
 			implantCount:  len(c.Implants),
 			jumpCloneID:   c.CloneID,
 			jumpCloneName: c.Name,
@@ -217,36 +220,40 @@ func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode],
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location != nil && !c.Location.Name.IsEmpty() && !c.Location.SecurityStatus.IsEmpty() {
-			n.locationName = c.Location.Name.ValueOrZero()
-			n.systemSecurityValue = c.Location.SecurityStatus.MustValue()
-			n.systemSecurityType = app.NewSolarSystemSecurityTypeFromValue(n.systemSecurityValue)
+			clone.locationName = c.Location.Name.ValueOrZero()
+			clone.systemSecurityValue = c.Location.SecurityStatus.MustValue()
+			clone.systemSecurityType = app.NewSolarSystemSecurityTypeFromValue(clone.systemSecurityValue)
 		}
-		if n.locationName == "" {
-			n.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
-			n.isUnknown = true
+		if clone.locationName == "" {
+			clone.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+			clone.isUnknown = true
 		}
-		uid := tree.MustAdd(iwidget.TreeRootID, n)
+		err := td.Add(nil, clone)
+		if err != nil {
+			return td, err
+		}
 		for _, i := range c.Implants {
-			n := jumpCloneNode{
+			implant := &jumpCloneNode{
 				implantTypeDescription: i.EveType.DescriptionPlain(),
 				implantTypeID:          i.EveType.ID,
 				implantTypeName:        i.EveType.Name,
 				jumpCloneID:            c.CloneID,
 			}
-			tree.MustAdd(uid, n)
+			err := td.Add(clone, implant)
+			if err != nil {
+				return td, err
+			}
 		}
 	}
-	return tree, err
+	return td, err
 }
 
 func (a *characterJumpClones) refreshTop(cloneCount int) {
-	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.services())
-	fyne.Do(func() {
-		a.top.Set(segs)
-	})
+	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.scs)
+	a.top.Set(segs)
 }
 
-func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character, s services) []widget.RichTextSegment {
+func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character, s hasCharacterSection) []widget.RichTextSegment {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
@@ -259,7 +266,7 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 		ts.Style.ColorName = theme.ColorNameDisabled
 		return []widget.RichTextSegment{ts}
 	}
-	hasData := s.scs.HasCharacterSection(character.ID, app.SectionCharacterJumpClones)
+	hasData := s.HasCharacterSection(character.ID, app.SectionCharacterJumpClones)
 	if !hasData {
 		ts.Text = "Waiting for character data to be loaded..."
 		ts.Style.ColorName = theme.ColorNameWarning
