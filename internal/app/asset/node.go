@@ -271,24 +271,6 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	return x, true
 }
 
-func (n *Node) DisplayName() string {
-	switch n.category {
-	case NodeLocation:
-		el, ok := n.Location()
-		if !ok {
-			return "?"
-		}
-		return el.DisplayName()
-	case NodeAsset:
-		n, ok := n.Asset()
-		if !ok {
-			return "?"
-		}
-		return n.DisplayName2()
-	}
-	return n.category.DisplayName()
-}
-
 func (n *Node) Path() []*Node {
 	nodes := make([]*Node, 0)
 	current := n
@@ -327,7 +309,7 @@ func (n *Node) PrintTree() {
 		}
 		fmt.Printf("%s+-%s%s [%s] %s: %s\n",
 			indent,
-			n.DisplayName(),
+			n.String(),
 			id,
 			count,
 			n.Category().String(),
@@ -350,9 +332,36 @@ func (n *Node) PrintTree() {
 }
 
 func (n *Node) String() string {
-	var id string
-	if v := n.ID(); v != 0 {
-		id = fmt.Sprintf(" (#%d)", v)
+	switch n.category {
+	case NodeLocation:
+		el, ok := n.Location()
+		if !ok {
+			return "?"
+		}
+		return el.DisplayName()
+	case NodeAsset:
+		n, ok := n.Asset()
+		if !ok {
+			return "?"
+		}
+		return n.DisplayName2()
 	}
-	return fmt.Sprintf("%s%s", n.DisplayName(), id)
+	return n.category.DisplayName()
+}
+
+// LeafPaths returns a slice of paths to all leafs for a subtree.
+// Nodes are expected to implement the stringer interface.
+// The nil node represents the root.
+func (n *Node) LeafPaths() [][]string {
+	all := make([][]string, 0)
+	for n := range n.All() {
+		if c := n.ChildrenCount(); c == 0 {
+			p := xslices.Map(n.Path(), func(x *Node) string {
+				return x.String()
+			})
+			p = append(p, n.String())
+			all = append(all, p)
+		}
+	}
+	return all
 }

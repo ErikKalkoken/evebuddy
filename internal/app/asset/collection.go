@@ -408,6 +408,8 @@ func (ac Collection) Filter() Filter {
 	return ac.filter
 }
 
+// TODO: No longer used => remove
+
 // ApplyFilter applies the specified filter to the collection.
 func (ac *Collection) ApplyFilter(filter Filter) {
 	for _, root := range ac.trees {

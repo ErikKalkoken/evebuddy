@@ -249,7 +249,7 @@ func TestCollection_Offices(t *testing.T) {
 
 	officeNode := mustNode(ac, office.ItemID)
 	offices := xslices.Map(officeNode.Children(), func(x *asset.Node) string {
-		return x.DisplayName()
+		return x.String()
 	})
 	assert.Len(t, offices, 7)
 	assert.ElementsMatch(t, []string{
@@ -278,9 +278,10 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		LocationID: alphaID,
 	})
 	item2 := createCharacterAsset(assetParams{
-		Quantity:   3,
-		LocationID: alphaID,
-		Type:       cargoContainerType(),
+		IsSingleton: true,
+		Quantity:    1,
+		LocationID:  alphaID,
+		Type:        cargoContainerType(),
 	})
 	item3 := createCharacterAsset(assetParams{
 		Quantity:    1,
@@ -430,11 +431,6 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
 		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, safetyItem1))
 		printTrees(ac)
-		// assert.Fail(t, "STOP")
-
-		// xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, safetyItem2))
-		// echo := mustLocation(ac, echoID)
-		// printTrees(ac)
 		// assert.Fail(t, "STOP")
 	})
 }
@@ -706,7 +702,7 @@ var sequence atomic.Int64
 
 func makeNamesPath(ac asset.Collection, it asset.Item) []string {
 	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) string {
-		return x.DisplayName()
+		return x.String()
 	})
 }
 
@@ -845,7 +841,7 @@ func mustNode(ac asset.Collection, itemID int64) *asset.Node {
 func printTrees(ac asset.Collection) {
 	trees := ac.Trees()
 	slices.SortFunc(trees, func(a, b *asset.Node) int {
-		return strings.Compare(a.DisplayName(), b.DisplayName())
+		return strings.Compare(a.String(), b.String())
 	})
 	for _, root := range trees {
 		root.PrintTree()

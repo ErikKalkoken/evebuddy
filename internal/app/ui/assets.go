@@ -139,7 +139,7 @@ func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
 		p := n.Path()
 		if len(p) > 0 {
 			r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
-				return x.DisplayName()
+				return x.String()
 			})
 		}
 	}
