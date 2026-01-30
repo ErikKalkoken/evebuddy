@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func TestCollection(t *testing.T) {
+func TestTree(t *testing.T) {
 	const (
 		alphaID = 100000
 		bravoID = 101000
@@ -32,21 +32,21 @@ func TestCollection(t *testing.T) {
 	loc1 := &app.EveLocation{ID: alphaID, Name: "Alpha"}
 	loc2 := &app.EveLocation{ID: bravoID, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
-	ac := asset.NewFromCharacterAssets(assets, locations)
+	tree := asset.NewFromCharacterAssets(assets, locations)
 
 	t.Run("can create trees from character assets", func(t *testing.T) {
-		assert.Len(t, ac.Trees(), 2)
+		assert.Len(t, tree.Locations(), 2)
 
-		_, ok := ac.LocationTree(loc1.ID)
+		_, ok := tree.Location(loc1.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(ac, a4))
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, a5))
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
 
-		_, ok = ac.LocationTree(loc2.ID)
+		_, ok = tree.Location(loc2.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(ac, b2))
+		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
 
-		printTrees(ac)
+		printTrees(tree)
 		// t.Fail()
 
 	})
@@ -59,7 +59,7 @@ func TestCollection(t *testing.T) {
 			{a4, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}},
 		}
 		for _, tc := range cases {
-			got := makeNamesPath(ac, tc.item)
+			got := makeNamesPath(tree, tc.item)
 			assert.Equal(t, tc.want, got)
 		}
 	})
@@ -78,7 +78,7 @@ func TestCollection(t *testing.T) {
 			{666, false},
 		}
 		for _, tc := range cases {
-			got, found := ac.Node(tc.itemID)
+			got, found := tree.Node(tc.itemID)
 			if tc.found {
 				assert.True(t, found)
 				assert.Equal(t, tc.itemID, got.ID())
@@ -90,7 +90,7 @@ func TestCollection(t *testing.T) {
 	})
 }
 
-func TestCollection_All(t *testing.T) {
+func TestTree_All(t *testing.T) {
 	const locationID = 100000
 	a := createCharacterAsset(assetParams{LocationID: locationID})
 	b := createCharacterAsset(assetParams{LocationID: a.ItemID})
@@ -115,17 +115,17 @@ func TestCollection_All(t *testing.T) {
 	})
 }
 
-func TestCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
-	var ac asset.Collection
-	_, x1 := ac.RootLocationNode(99)
+func TestTree_ReturnEmptyWhenNotInitialized(t *testing.T) {
+	var ac asset.Tree
+	_, x1 := ac.LocationForItem(99)
 	assert.False(t, x1)
 	_, x2 := ac.Node(99)
 	assert.False(t, x2)
-	x4 := ac.Trees()
+	x4 := ac.Locations()
 	assert.Empty(t, x4)
 }
 
-func TestCollection_CustomNodes(t *testing.T) {
+func TestTree_CustomNodes(t *testing.T) {
 	const (
 		alphaID   = 100001
 		bravoID   = 100002
@@ -188,7 +188,7 @@ func TestCollection_CustomNodes(t *testing.T) {
 	// t.Fail()
 }
 
-func TestCollection_Impounded(t *testing.T) {
+func TestTree_Impounded(t *testing.T) {
 	const locationID = 60007927
 	office := createCorporationAsset(assetParams{
 		IsSingleton:  true,
@@ -215,7 +215,7 @@ func TestCollection_Impounded(t *testing.T) {
 	// t.Fail()
 }
 
-func TestCollection_Offices(t *testing.T) {
+func TestTree_Offices(t *testing.T) {
 	const locationID = 60007927
 	office := createCorporationAsset(assetParams{
 		IsSingleton:  true,
@@ -266,7 +266,7 @@ func TestCollection_Offices(t *testing.T) {
 	// t.Fail()
 }
 
-func TestCollection_Character(t *testing.T) {
+func TestTree_Character(t *testing.T) {
 	const (
 		alphaID   = 60000001
 		bravoID   = 30000001
@@ -362,7 +362,7 @@ func TestCollection_Character(t *testing.T) {
 	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
 
-		assert.Len(t, ac.Trees(), 3)
+		assert.Len(t, ac.Locations(), 3)
 
 		alpha := mustLocation(ac, alphaID)
 		assert.Equal(t, 3, alpha.ChildrenCount())
@@ -382,7 +382,7 @@ func TestCollection_Character(t *testing.T) {
 	})
 }
 
-func TestCollection_Corporation(t *testing.T) {
+func TestTree_Corporation(t *testing.T) {
 	const (
 		alphaID   = 60000001
 		bravoID   = 30000001
@@ -539,7 +539,7 @@ func TestCollection_Corporation(t *testing.T) {
 	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 
-		assert.Len(t, ac.Trees(), 5)
+		assert.Len(t, ac.Locations(), 5)
 
 		assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
 		assert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
@@ -566,17 +566,11 @@ func TestCollection_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeNamesPath(ac asset.Collection, it asset.Item) []string {
+func makeNamesPath(ac asset.Tree, it asset.Item) []string {
 	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) string {
 		return x.String()
 	})
 }
-
-// func makeCountsPath(ac asset.Collection, it asset.Item) []int {
-// 	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) int {
-// 		return x.ItemCount().ValueOrZero()
-// 	})
-// }
 
 func mineralType() *app.EveType {
 	return &app.EveType{
@@ -687,8 +681,8 @@ func createAsset(arg assetParams) app.Asset {
 	}
 }
 
-func mustLocation(ac asset.Collection, locationID int64) *asset.Node {
-	n, ok := ac.LocationTree(locationID)
+func mustLocation(ac asset.Tree, locationID int64) *asset.Node {
+	n, ok := ac.Location(locationID)
 	if !ok {
 		panic(fmt.Sprintf("location not found: %d", locationID))
 	}
@@ -696,7 +690,7 @@ func mustLocation(ac asset.Collection, locationID int64) *asset.Node {
 }
 
 // mustNode returns the node for an ID or panics if not found.
-func mustNode(ac asset.Collection, itemID int64) *asset.Node {
+func mustNode(ac asset.Tree, itemID int64) *asset.Node {
 	n, ok := ac.Node(itemID)
 	if !ok {
 		panic(fmt.Sprintf("node not found for ID %d", itemID))
@@ -704,8 +698,8 @@ func mustNode(ac asset.Collection, itemID int64) *asset.Node {
 	return n
 }
 
-func printTrees(ac asset.Collection) {
-	trees := ac.Trees()
+func printTrees(ac asset.Tree) {
+	trees := ac.Locations()
 	slices.SortFunc(trees, func(a, b *asset.Node) int {
 		return strings.Compare(a.String(), b.String())
 	})

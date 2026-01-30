@@ -47,7 +47,7 @@ type assetBrowser struct {
 	Navigation *assetBrowserNavigation
 	Selected   *assetBrowserSelected
 
-	ac             asset.Collection
+	at             asset.Tree
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
@@ -131,7 +131,7 @@ func (a *assetBrowser) updateAsync() {
 		reportError(err)
 		return
 	}
-	var ac asset.Collection
+	var at asset.Tree
 	if a.forCorporation {
 		corporationID := corporationIDOrZero(a.corporation.Load())
 		if corporationID == 0 {
@@ -149,7 +149,7 @@ func (a *assetBrowser) updateAsync() {
 			reportError(err)
 			return
 		}
-		ac = asset.NewFromCorporationAssets(assets, el)
+		at = asset.NewFromCorporationAssets(assets, el)
 	} else {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
@@ -167,12 +167,12 @@ func (a *assetBrowser) updateAsync() {
 			reportError(err)
 			return
 		}
-		ac = asset.NewFromCharacterAssets(assets, el)
+		at = asset.NewFromCharacterAssets(assets, el)
 	}
 	fyne.DoAndWait(func() {
-		a.ac = ac
+		a.at = at
 	})
-	a.Navigation.updateAsync(ac.Trees())
+	a.Navigation.updateAsync(at.Locations())
 }
 
 const (
@@ -580,14 +580,14 @@ func (a *assetBrowserSelected) showNodeInfo(n *asset.Node) {
 			return
 		}
 		name := corporationNameOrZero(a.ab.corporation.Load())
-		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.ac, name))
+		showAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
 		return
 	}
 	ca, ok := n.CharacterAsset()
 	if !ok {
 		return
 	}
-	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.ac, a.ab.u.scs.CharacterName))
+	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, a.ab.u.scs.CharacterName))
 }
 
 func (a *assetBrowserSelected) clear() {

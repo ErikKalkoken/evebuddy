@@ -60,7 +60,7 @@ type assetRow struct {
 	locationPath    []string
 }
 
-func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, characterName func(int32) string) assetRow {
+func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int32) string) assetRow {
 	r := assetRow{
 		categoryName:    ca.Type.Group.Category.Name,
 		groupID:         ca.Type.Group.ID,
@@ -84,7 +84,7 @@ func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, character
 	return r
 }
 
-func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corporationName string) assetRow {
+func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Tree, corporationName string) assetRow {
 	r := assetRow{
 		categoryName:    ca.Type.Group.Category.Name,
 		groupID:         ca.Type.Group.ID,
@@ -108,7 +108,7 @@ func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corpo
 	return r
 }
 
-func (r *assetRow) setLocationFlag(ac asset.Collection, itemID int64) {
+func (r *assetRow) setLocationFlag(ac asset.Tree, itemID int64) {
 	n, ok := ac.Node(itemID)
 	if !ok {
 		return
@@ -120,8 +120,8 @@ func (r *assetRow) setLocationFlag(ac asset.Collection, itemID int64) {
 	r.locationFlag = it.LocationFlag
 }
 
-func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
-	ln, ok := ac.RootLocationNode(itemID)
+func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
+	ln, ok := ac.LocationForItem(itemID)
 	if !ok {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 		return
