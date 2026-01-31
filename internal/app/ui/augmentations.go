@@ -44,13 +44,13 @@ const (
 type augmentations struct {
 	widget.BaseWidget
 
-	collapseAll    *ttwidget.Button
-	selectImplants *kxwidget.FilterChipSelect
-	selectTag      *kxwidget.FilterChipSelect
-	top            *widget.Label
-	treeData       iwidget.TreeData[characterAugmentationNode]
-	tree           *iwidget.Tree[characterAugmentationNode]
-	u              *baseUI
+	collapseBranches *ttwidget.Button
+	selectImplants   *kxwidget.FilterChipSelect
+	selectTag        *kxwidget.FilterChipSelect
+	top              *widget.Label
+	treeData         iwidget.TreeData[characterAugmentationNode]
+	tree             *iwidget.Tree[characterAugmentationNode]
+	u                *baseUI
 }
 
 func newAugmentations(u *baseUI) *augmentations {
@@ -71,10 +71,10 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTree()
 	})
-	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.ArrowCollapseVerticalSvg), func() {
+	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
-	a.collapseAll.SetToolTip("Collapse branches")
+	a.collapseBranches.SetToolTip("Collapse branches")
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterImplants {
@@ -94,7 +94,7 @@ func newAugmentations(u *baseUI) *augmentations {
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseAll))
+	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
 	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }

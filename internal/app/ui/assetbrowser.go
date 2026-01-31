@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -105,7 +106,7 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 
 func (a *assetBrowser) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHSplit(a.Navigation, a.Selected)
-	c.SetOffset(0.4)
+	c.SetOffset(0.33)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -209,10 +210,11 @@ type assetBrowserNavigation struct {
 	OnSelected func()
 
 	ab             *assetBrowser
-	navigation     *iwidget.Tree[assetContainerNode]
-	selectCategory *kxwidget.FilterChipSelect
+	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
+	tree           *iwidget.Tree[assetContainerNode]
+	selectCategory *kxwidget.FilterChipSelect
 	top            *widget.Label
 }
 
@@ -225,7 +227,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.navigation = iwidget.NewTree(
+	a.tree = iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			count := widget.NewLabel("99.999.999")
 			name := widget.NewLabel("Template")
@@ -248,13 +250,13 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			b[1].(*widget.Label).SetText(s)
 		},
 	)
-	a.navigation.OnSelectedNode = func(cn *assetContainerNode) {
+	a.tree.OnSelectedNode = func(cn *assetContainerNode) {
 		a.ab.Selected.set(cn)
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
 		if ab.u.isMobile {
-			a.navigation.UnselectAll()
+			a.tree.UnselectAll()
 		}
 	}
 	if a.ab.forCorporation {
@@ -300,22 +302,26 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		a.selectCategory.Selected = assetCategoryPersonal
 		a.selectCategory.SortDisabled = true
 	}
+	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
+		a.tree.CloseAllBranches()
+	})
+	a.collapseAll.SetToolTip("Collapse branches")
 	return a
 }
 
 func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
-		a.selectCategory,
+		container.NewHBox(a.selectCategory, a.collapseAll),
 		a.top,
 		nil,
 		nil,
-		a.navigation,
+		a.tree,
 	))
 }
 
 func (a *assetBrowserNavigation) clear() {
-	a.navigation.Clear()
-	a.navigation.UnselectAll()
+	a.tree.Clear()
+	a.tree.UnselectAll()
 	a.top.SetText("")
 }
 
@@ -475,9 +481,9 @@ var assetFilterLookup = map[string]assetFilter{
 func (a *assetBrowserNavigation) redraw() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft := a.filteredTrees[filter]
-	a.navigation.UnselectAll()
-	a.navigation.CloseAllBranches()
-	a.navigation.Set(ft.td)
+	a.tree.UnselectAll()
+	a.tree.CloseAllBranches()
+	a.tree.Set(ft.td)
 	a.ab.Selected.clear()
 	count, _ := ft.td.ChildrenCount(nil)
 	top := fmt.Sprintf("%d locations", count)
@@ -504,14 +510,14 @@ func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
 }
 
 func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
-	a.navigation.UnselectAll()
+	a.tree.UnselectAll()
 	if !a.ab.u.isMobile {
-		a.navigation.SelectNode(cn)
+		a.tree.SelectNode(cn)
 	}
-	for _, cn2 := range a.navigation.Data().Path(nil, cn) {
-		a.navigation.OpenBranchNode(cn2)
+	for _, cn2 := range a.tree.Data().Path(nil, cn) {
+		a.tree.OpenBranchNode(cn2)
 	}
-	a.navigation.ScrollToNode(cn)
+	a.tree.ScrollToNode(cn)
 }
 
 type assetBrowserSelected struct {
@@ -613,7 +619,7 @@ func (a *assetBrowserSelected) set(cn *assetContainerNode) {
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
-		for _, n := range a.ab.Navigation.navigation.Data().Children(cn) {
+		for _, n := range a.ab.Navigation.tree.Data().Children(cn) {
 			nodes = append(nodes, n.node)
 		}
 	} else {
