@@ -190,6 +190,13 @@ var CollapseAllOutlineSvg = &fyne.StaticResource{
 	StaticContent: CollapseAllOutlineSvgData,
 }
 
+//go:embed collapse-all.svg
+var CollapseAllSvgData []byte
+var CollapseAllSvg = &fyne.StaticResource{
+	StaticName:    "collapse-all.svg",
+	StaticContent: CollapseAllSvgData,
+}
+
 //go:embed constellation_64.png
 var Constellation64PngData []byte
 var Constellation64Png = &fyne.StaticResource{
@@ -237,6 +244,13 @@ var EvemarketbrowserJpgData []byte
 var EvemarketbrowserJpg = &fyne.StaticResource{
 	StaticName:    "evemarketbrowser.jpg",
 	StaticContent: EvemarketbrowserJpgData,
+}
+
+//go:embed expand-all.svg
+var ExpandAllSvgData []byte
+var ExpandAllSvg = &fyne.StaticResource{
+	StaticName:    "expand-all.svg",
+	StaticContent: ExpandAllSvgData,
 }
 
 //go:embed faction_placeholder_64.png

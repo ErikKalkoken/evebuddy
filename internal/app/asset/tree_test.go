@@ -12,12 +12,11 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
-	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func TestCollection(t *testing.T) {
+func TestTree(t *testing.T) {
 	const (
 		alphaID = 100000
 		bravoID = 101000
@@ -33,21 +32,21 @@ func TestCollection(t *testing.T) {
 	loc1 := &app.EveLocation{ID: alphaID, Name: "Alpha"}
 	loc2 := &app.EveLocation{ID: bravoID, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
-	ac := asset.NewFromCharacterAssets(assets, locations)
+	tree := asset.NewFromCharacterAssets(assets, locations)
 
 	t.Run("can create trees from character assets", func(t *testing.T) {
-		assert.Len(t, ac.Trees(), 2)
+		assert.Len(t, tree.Locations(), 2)
 
-		_, ok := ac.LocationTree(loc1.ID)
+		_, ok := tree.Location(loc1.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container"}, makeNamesPath(ac, a4))
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, a5))
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
 
-		_, ok = ac.LocationTree(loc2.ID)
+		_, ok = tree.Location(loc2.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container"}, makeNamesPath(ac, b2))
+		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
 
-		printTrees(ac)
+		printTrees(tree)
 		// t.Fail()
 
 	})
@@ -56,11 +55,11 @@ func TestCollection(t *testing.T) {
 			item asset.Item
 			want []string
 		}{
-			{a2, []string{"Alpha", "Item Hangar", "Container"}},
-			{a4, []string{"Alpha", "Item Hangar", "Container", "Container", "Container"}},
+			{a2, []string{"Alpha", "Item Hangar", "Container", "Container"}},
+			{a4, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}},
 		}
 		for _, tc := range cases {
-			got := makeNamesPath(ac, tc.item)
+			got := makeNamesPath(tree, tc.item)
 			assert.Equal(t, tc.want, got)
 		}
 	})
@@ -79,7 +78,7 @@ func TestCollection(t *testing.T) {
 			{666, false},
 		}
 		for _, tc := range cases {
-			got, found := ac.Node(tc.itemID)
+			got, found := tree.Node(tc.itemID)
 			if tc.found {
 				assert.True(t, found)
 				assert.Equal(t, tc.itemID, got.ID())
@@ -91,7 +90,7 @@ func TestCollection(t *testing.T) {
 	})
 }
 
-func TestCollection_All(t *testing.T) {
+func TestTree_All(t *testing.T) {
 	const locationID = 100000
 	a := createCharacterAsset(assetParams{LocationID: locationID})
 	b := createCharacterAsset(assetParams{LocationID: a.ItemID})
@@ -116,17 +115,17 @@ func TestCollection_All(t *testing.T) {
 	})
 }
 
-func TestCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
-	var ac asset.Collection
-	_, x1 := ac.RootLocationNode(99)
+func TestTree_ReturnEmptyWhenNotInitialized(t *testing.T) {
+	var ac asset.Tree
+	_, x1 := ac.LocationForItem(99)
 	assert.False(t, x1)
 	_, x2 := ac.Node(99)
 	assert.False(t, x2)
-	x4 := ac.Trees()
+	x4 := ac.Locations()
 	assert.Empty(t, x4)
 }
 
-func TestCollection_CustomNodes(t *testing.T) {
+func TestTree_CustomNodes(t *testing.T) {
 	const (
 		alphaID   = 100001
 		bravoID   = 100002
@@ -175,21 +174,21 @@ func TestCollection_CustomNodes(t *testing.T) {
 	ac := asset.NewFromCharacterAssets(assets, locations)
 
 	assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-	assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, mineral1))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay"}, makeNamesPath(ac, drone))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar"}, makeNamesPath(ac, ship2))
+	assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral1))
+	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay", "Hobgoblin I"}, makeNamesPath(ac, drone))
+	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship2))
 
 	assert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
-	assert.Equal(t, []string{"Bravo", "Item Hangar"}, makeNamesPath(ac, mineral2))
+	assert.Equal(t, []string{"Bravo", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral2))
 
 	assert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
-	assert.Equal(t, []string{"Charlie", "Ship Hangar"}, makeNamesPath(ac, ship3))
+	assert.Equal(t, []string{"Charlie", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship3))
 
 	printTrees(ac)
 	// t.Fail()
 }
 
-func TestCollection_Impounded(t *testing.T) {
+func TestTree_Impounded(t *testing.T) {
 	const locationID = 60007927
 	office := createCorporationAsset(assetParams{
 		IsSingleton:  true,
@@ -210,13 +209,13 @@ func TestCollection_Impounded(t *testing.T) {
 	assets := []*app.CorporationAsset{office, item1}
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-	assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division"}, makeNamesPath(ac, item1))
+	assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	printTrees(ac)
 	// t.Fail()
 }
 
-func TestCollection_Offices(t *testing.T) {
+func TestTree_Offices(t *testing.T) {
 	const locationID = 60007927
 	office := createCorporationAsset(assetParams{
 		IsSingleton:  true,
@@ -245,11 +244,11 @@ func TestCollection_Offices(t *testing.T) {
 
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-	assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makeNamesPath(ac, item1))
+	assert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	officeNode := mustNode(ac, office.ItemID)
 	offices := xslices.Map(officeNode.Children(), func(x *asset.Node) string {
-		return x.DisplayName()
+		return x.String()
 	})
 	assert.Len(t, offices, 7)
 	assert.ElementsMatch(t, []string{
@@ -267,7 +266,7 @@ func TestCollection_Offices(t *testing.T) {
 	// t.Fail()
 }
 
-func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
+func TestTree_Character(t *testing.T) {
 	const (
 		alphaID   = 60000001
 		bravoID   = 30000001
@@ -278,9 +277,10 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		LocationID: alphaID,
 	})
 	item2 := createCharacterAsset(assetParams{
-		Quantity:   3,
-		LocationID: alphaID,
-		Type:       cargoContainerType(),
+		IsSingleton: true,
+		Quantity:    1,
+		LocationID:  alphaID,
+		Type:        cargoContainerType(),
 	})
 	item3 := createCharacterAsset(assetParams{
 		Quantity:    1,
@@ -317,7 +317,6 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		LocationID: safetyWrap1.ItemID,
 	})
 	spaceItem1 := createCharacterAsset(assetParams{
-		Name:         "Anna",
 		IsSingleton:  true,
 		LocationFlag: app.FlagAutoFit,
 		LocationType: app.TypeSolarSystem,
@@ -326,7 +325,6 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		Type:         customsOfficeType(),
 	})
 	spaceItem2 := createCharacterAsset(assetParams{
-		Name:         "Bob",
 		IsSingleton:  true,
 		LocationFlag: app.FlagAutoFit,
 		LocationType: app.TypeSolarSystem,
@@ -361,85 +359,30 @@ func TestCollection_FilterAndItemCounts_Character(t *testing.T) {
 		spaceItem2,
 	}
 
-	t.Run("no filter", func(t *testing.T) {
+	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterNone)
 
-		assert.Len(t, ac.Trees(), 3)
+		assert.Len(t, ac.Locations(), 3)
 
 		alpha := mustLocation(ac, alphaID)
 		assert.Equal(t, 3, alpha.ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, item1))
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
+		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, item1))
+		assert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
 		bravo := mustLocation(ac, bravoID)
 		assert.Equal(t, 1, bravo.ChildrenCount())
-		assert.Equal(t, []string{"Bravo", "In Space"}, makeNamesPath(ac, spaceItem1))
+		assert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
 		delta := mustLocation(ac, charlieID)
 		assert.Equal(t, 1, delta.ChildrenCount())
-		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap"}, makeNamesPath(ac, safetyItem1))
+		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap", "Tritanium"}, makeNamesPath(ac, safetyItem1))
 
 		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("deliveries filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterDeliveries)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, 1, mustLocation(ac, alphaID).ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("personal assets filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterPersonalAssets)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, item1))
-		assert.Equal(t, []string{"Alpha", "Item Hangar"}, makeNamesPath(ac, item2))
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container"}, makeNamesPath(ac, item3))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("safety filter", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterSafety)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap"}, makeNamesPath(ac, safetyItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("item counts", func(t *testing.T) {
-		ac := asset.NewFromCharacterAssets(assets, locations)
-		ac.UpdateItemCounts()
-
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, item1))
-		xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, ship1))
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, safetyItem1))
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-
-		// xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, safetyItem2))
-		// echo := mustLocation(ac, echoID)
-		// printTrees(ac)
 		// assert.Fail(t, "STOP")
 	})
 }
 
-func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
+func TestTree_Corporation(t *testing.T) {
 	const (
 		alphaID   = 60000001
 		bravoID   = 30000001
@@ -512,7 +455,6 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 		Type:         shipType(),
 	})
 	spaceItem1 := createCorporationAsset(assetParams{
-		Name:         "Anna",
 		IsSingleton:  true,
 		LocationFlag: app.FlagAutoFit,
 		LocationType: app.TypeSolarSystem,
@@ -521,7 +463,6 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 		Type:         customsOfficeType(),
 	})
 	spaceItem2 := createCorporationAsset(assetParams{
-		Name:         "Bob",
 		IsSingleton:  true,
 		LocationFlag: app.FlagAutoFit,
 		LocationType: app.TypeSolarSystem,
@@ -595,107 +536,28 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 		structureCargoItem,
 	}
 
-	t.Run("no filter", func(t *testing.T) {
+	t.Run("can create full structure", func(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 
-		assert.Len(t, ac.Trees(), 5)
+		assert.Len(t, ac.Locations(), 5)
 
 		assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makeNamesPath(ac, officeItem1))
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
+		assert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
+		assert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
 		assert.Equal(t, 1, mustLocation(ac, bravoID).ChildrenCount())
-		assert.Equal(t, []string{"Bravo", "In Space"}, makeNamesPath(ac, spaceItem1))
+		assert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
 		assert.Equal(t, 1, mustLocation(ac, charlieID).ChildrenCount())
-		assert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division"}, makeNamesPath(ac, impoundedItem1))
+		assert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, impoundedItem1))
 
 		assert.Equal(t, 1, mustLocation(ac, deltaID).ChildrenCount())
-		assert.Equal(t, []string{"Delta", "Cargo Bay"}, makeNamesPath(ac, structureCargoItem))
+		assert.Equal(t, []string{"Delta", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, structureCargoItem))
 
 		assert.Equal(t, 1, mustLocation(ac, echoID).ChildrenCount())
-		assert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries"}, makeNamesPath(ac, safetyItem3))
+		assert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries", "Tritanium"}, makeNamesPath(ac, safetyItem3))
 
 		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("deliveries filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterDeliveries)
-
-		assert.Len(t, ac.Trees(), 1)
-		alpha := mustLocation(ac, alphaID)
-		assert.Equal(t, 1, alpha.ChildrenCount())
-
-		assert.Equal(t, []string{"Alpha", "Deliveries"}, makeNamesPath(ac, deliveryItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("impounded filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterImpounded)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division"}, makeNamesPath(ac, impoundedItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("office filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterOffice)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Alpha", "Office", "1st Division"}, makeNamesPath(ac, officeItem1))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("safety filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterSafety)
-
-		assert.Len(t, ac.Trees(), 1)
-		assert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries"}, makeNamesPath(ac, safetyItem2))
-
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("other filter", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.ApplyFilter(asset.FilterCorpOther)
-
-		assert.Len(t, ac.Trees(), 1)
-		delta := mustLocation(ac, deltaID)
-		assert.Equal(t, 1, delta.ChildrenCount())
-		assert.Equal(t, []string{"Delta", "Cargo Bay"}, makeNamesPath(ac, structureCargoItem))
-		printTrees(ac)
-		// assert.Fail(t, "STOP")
-	})
-
-	t.Run("item counts", func(t *testing.T) {
-		ac := asset.NewFromCorporationAssets(assets, locations)
-		ac.UpdateItemCounts()
-
-		xassert.Equal(t, []int{5, 3, 2}, makeCountsPath(ac, officeItem1))
-		xassert.Equal(t, []int{5, 3, 1}, makeCountsPath(ac, officeItem3))
-		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, deliveryItem1))
-		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, spaceItem1))
-		xassert.Equal(t, []int{4, 4, 4, 1}, makeCountsPath(ac, impoundedItem1))
-		xassert.Equal(t, []int{1, 1}, makeCountsPath(ac, structureCargoItem))
-		xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, safetyItem2))
-
-		mustLocation(ac, alphaID).PrintTree()
-		mustLocation(ac, bravoID).PrintTree()
-		mustLocation(ac, charlieID).PrintTree()
-		mustLocation(ac, deltaID).PrintTree()
-		mustLocation(ac, echoID).PrintTree()
 		// assert.Fail(t, "STOP")
 	})
 }
@@ -704,15 +566,9 @@ func TestCollection_FilterAndItemCounts_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeNamesPath(ac asset.Collection, it asset.Item) []string {
+func makeNamesPath(ac asset.Tree, it asset.Item) []string {
 	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) string {
-		return x.DisplayName()
-	})
-}
-
-func makeCountsPath(ac asset.Collection, it asset.Item) []int {
-	return xslices.Map(mustNode(ac, it.ID()).Path(), func(x *asset.Node) int {
-		return x.ItemCount().ValueOrZero()
+		return x.String()
 	})
 }
 
@@ -825,8 +681,8 @@ func createAsset(arg assetParams) app.Asset {
 	}
 }
 
-func mustLocation(ac asset.Collection, locationID int64) *asset.Node {
-	n, ok := ac.LocationTree(locationID)
+func mustLocation(ac asset.Tree, locationID int64) *asset.Node {
+	n, ok := ac.Location(locationID)
 	if !ok {
 		panic(fmt.Sprintf("location not found: %d", locationID))
 	}
@@ -834,7 +690,7 @@ func mustLocation(ac asset.Collection, locationID int64) *asset.Node {
 }
 
 // mustNode returns the node for an ID or panics if not found.
-func mustNode(ac asset.Collection, itemID int64) *asset.Node {
+func mustNode(ac asset.Tree, itemID int64) *asset.Node {
 	n, ok := ac.Node(itemID)
 	if !ok {
 		panic(fmt.Sprintf("node not found for ID %d", itemID))
@@ -842,12 +698,31 @@ func mustNode(ac asset.Collection, itemID int64) *asset.Node {
 	return n
 }
 
-func printTrees(ac asset.Collection) {
-	trees := ac.Trees()
+func printTrees(ac asset.Tree) {
+	trees := ac.Locations()
 	slices.SortFunc(trees, func(a, b *asset.Node) int {
-		return strings.Compare(a.DisplayName(), b.DisplayName())
+		return strings.Compare(a.String(), b.String())
 	})
 	for _, root := range trees {
-		root.PrintTree()
+		printTree(root)
 	}
+}
+
+// PrintTree prints the subtree of n.
+func printTree(n *asset.Node) {
+	var printTree func(n *asset.Node, indent string, last bool)
+	printTree = func(n *asset.Node, indent string, last bool) {
+		fmt.Printf("%s+-%s\n", indent, n)
+		if last {
+			indent += "   "
+		} else {
+			indent += "|  "
+		}
+		for _, c := range n.Children() {
+			printTree(c, indent, len(c.Children()) == 0)
+		}
+	}
+
+	printTree(n, "", false)
+	fmt.Println()
 }

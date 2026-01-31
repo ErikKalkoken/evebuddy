@@ -12,8 +12,8 @@ type MyNode2 struct {
 	Text string
 }
 
-func TestTreeData2_CanCreateFullTree(t *testing.T) {
-	var tree TreeData2[MyNode2]
+func TestTreeData_CanCreateFullTree(t *testing.T) {
+	var tree TreeData[MyNode2]
 	alpha := &MyNode2{"Alpha"}
 	tree.Add(nil, alpha, true)
 	n11 := &MyNode2{"one"}
@@ -46,18 +46,18 @@ func TestTreeData2_CanCreateFullTree(t *testing.T) {
 	}
 }
 
-func TestTreeData2_ChildUIDs(t *testing.T) {
+func TestTreeData_ChildUIDs(t *testing.T) {
 	t.Run("can return child UIDs of existing node", func(t *testing.T) {
-		var tree TreeData2[MyNode2]
+		var tree TreeData[MyNode2]
 		sub1 := &MyNode2{"Alpha"}
 		c1 := &MyNode2{"Bravo"}
 		c2 := &MyNode2{"Charlie"}
 		sub2 := &MyNode2{"Delta"}
 		tree.Add(nil, sub1, true)
-		tree.Add(sub1, c1, true)
-		tree.Add(sub1, c2, true)
-		tree.Add(nil, sub2, true)
-		tree.Add(sub2, &MyNode2{"Echo"}, true)
+		tree.Add(sub1, c1, false)
+		tree.Add(sub1, c2, false)
+		tree.Add(nil, sub2, false)
+		tree.Add(sub2, &MyNode2{"Echo"}, false)
 		uid, ok := tree.UID(sub1)
 		require.True(t, ok)
 		got := tree.children[uid]
@@ -68,4 +68,47 @@ func TestTreeData2_ChildUIDs(t *testing.T) {
 		want := []widget.TreeNodeID{c1UID, c2UID}
 		assert.ElementsMatch(t, want, got)
 	})
+}
+
+func TestTreeData_Node(t *testing.T) {
+	t.Run("the root node does exist", func(t *testing.T) {
+		var td TreeData[MyNode2]
+		_, ok := td.Node(treeRootID)
+		assert.True(t, ok)
+	})
+}
+
+func TestTreeData_Clone(t *testing.T) {
+	t.Run("can clone a td object", func(t *testing.T) {
+		// given
+		var td TreeData[MyNode2]
+		top := &MyNode2{"Top"}
+		td.Add(nil, top, true)
+		alpha := &MyNode2{"Alpha"}
+		td.Add(top, alpha, false)
+		bravo := &MyNode2{"Bravo"}
+		td.Add(top, bravo, false)
+		// when
+		got := td.Clone()
+		// then
+		equalTreeData(t, td, got)
+	})
+	t.Run("can clone a empty td object", func(t *testing.T) {
+		// given
+		td := newTreeData[MyNode2]()
+		// when
+		got := td.Clone()
+		// then
+		equalTreeData(t, td, got)
+	})
+}
+
+func equalTreeData[T any](t *testing.T, want, got TreeData[T]) {
+	t.Helper()
+	assert.Equal(t, want.children, got.children)
+	assert.Equal(t, want.isBranch, got.isBranch)
+	assert.Equal(t, want.lastID, got.lastID)
+	assert.Equal(t, want.nodes, got.nodes)
+	assert.Equal(t, want.parents, got.parents)
+	assert.Equal(t, want.uidLookup, got.uidLookup)
 }

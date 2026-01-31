@@ -411,7 +411,7 @@ func (a *training) filterRows(sortCol int) {
 			})
 		}
 		// search filter
-		if search != "" {
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})

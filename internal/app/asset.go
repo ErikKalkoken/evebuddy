@@ -235,6 +235,17 @@ func (ca Asset) DisplayName2() string {
 	return s
 }
 
+func (ca Asset) DisplayName3() string {
+	if ca.Name != "" {
+		return fmt.Sprintf("%s (%s)", ca.Name, ca.TypeName())
+	}
+	s := ca.TypeName()
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
+}
+
 func (ca Asset) IsBPO() bool {
 	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
 }

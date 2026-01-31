@@ -369,7 +369,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		if search != "" {
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})

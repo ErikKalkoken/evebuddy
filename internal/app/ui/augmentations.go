@@ -22,7 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type characterImplantsNode struct {
+type characterAugmentationNode struct {
 	characterID            int32
 	characterName          string
 	implantCount           int
@@ -32,15 +32,8 @@ type characterImplantsNode struct {
 	tags                   set.Set[string]
 }
 
-func (n characterImplantsNode) IsTop() bool {
+func (n characterAugmentationNode) IsTop() bool {
 	return n.implantTypeID == 0
-}
-
-func (n characterImplantsNode) UID() widget.TreeNodeID {
-	if n.characterID == 0 {
-		panic("some IDs are not set")
-	}
-	return fmt.Sprintf("%d-%d", n.characterID, n.implantTypeID)
 }
 
 const (
@@ -51,13 +44,13 @@ const (
 type augmentations struct {
 	widget.BaseWidget
 
-	collapseAll    *ttwidget.Button
-	selectImplants *kxwidget.FilterChipSelect
-	selectTag      *kxwidget.FilterChipSelect
-	top            *widget.Label
-	treeData       iwidget.TreeData[characterImplantsNode]
-	tree           *iwidget.Tree[characterImplantsNode]
-	u              *baseUI
+	collapseBranches *ttwidget.Button
+	selectImplants   *kxwidget.FilterChipSelect
+	selectTag        *kxwidget.FilterChipSelect
+	top              *widget.Label
+	treeData         iwidget.TreeData[characterAugmentationNode]
+	tree             *iwidget.Tree[characterAugmentationNode]
+	u                *baseUI
 }
 
 func newAugmentations(u *baseUI) *augmentations {
@@ -78,10 +71,10 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTree()
 	})
-	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.ArrowCollapseVerticalSvg), func() {
+	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
-	a.collapseAll.SetToolTip("Collapse branches")
+	a.collapseBranches.SetToolTip("Collapse branches")
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterImplants {
@@ -101,12 +94,12 @@ func newAugmentations(u *baseUI) *augmentations {
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseAll))
+	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
 	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
+func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
@@ -120,7 +113,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 				main,
 			)
 		},
-		func(n characterImplantsNode, b bool, co fyne.CanvasObject) {
+		func(n *characterAugmentationNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			main := border[0].(*ttwidget.RichText)
 			main.Truncation = fyne.TextTruncateEllipsis
@@ -165,10 +158,10 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 			}
 		},
 	)
-	t.OnSelectedNode = func(n characterImplantsNode) {
+	t.OnSelectedNode = func(n *characterAugmentationNode) {
 		defer t.UnselectAll()
 		if n.IsTop() {
-			t.ToggleBranch(n.UID())
+			t.ToggleBranchNode(n)
 		}
 	}
 	return t
@@ -179,46 +172,57 @@ func (a *augmentations) filterTree() {
 		a.tree.Set(a.treeData)
 		return
 	}
-	var del []func(c characterImplantsNode) bool // f returns true when c is to be deleted
-	if x := a.selectTag.Selected; x != "" {
-		del = append(del, func(c characterImplantsNode) bool {
-			return !c.tags.Contains(x)
-		})
-	}
-	if x := a.selectImplants.Selected; x != "" {
-		switch x {
-		case augmentationsImplantsNone:
-			del = append(del, func(c characterImplantsNode) bool {
-				return c.implantCount != 0
-			})
-		case augmentationsImplantsSome:
-			del = append(del, func(c characterImplantsNode) bool {
-				return c.implantCount == 0
-			})
-		}
-	}
+
+	tag := a.selectTag.Selected
+	implants := a.selectImplants.Selected
 	td := a.treeData.Clone()
-	if len(del) > 0 {
-		characters := td.Children(iwidget.TreeRootID)
-		for _, c := range characters {
-			var toDelete bool
-			for _, d := range del {
-				toDelete = toDelete || d(c)
-			}
-			if !toDelete {
-				continue
-			}
-			err := td.Delete(c.UID())
-			if err != nil {
-				slog.Error("Failed to remove a character from an augmentations tree", "node", c)
+
+	go func() {
+		var del []func(c *characterAugmentationNode) bool // f returns true when c is to be deleted
+		if tag != "" {
+			del = append(del, func(c *characterAugmentationNode) bool {
+				return !c.tags.Contains(tag)
+			})
+		}
+		if implants != "" {
+			switch implants {
+			case augmentationsImplantsNone:
+				del = append(del, func(c *characterAugmentationNode) bool {
+					return c.implantCount != 0
+				})
+			case augmentationsImplantsSome:
+				del = append(del, func(c *characterAugmentationNode) bool {
+					return c.implantCount == 0
+				})
 			}
 		}
-	}
-	characters := td.Children(iwidget.TreeRootID)
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(characters, func(n characterImplantsNode) set.Set[string] {
-		return n.tags
-	})...).All()))
-	a.tree.Set(td)
+
+		if len(del) > 0 {
+			characters := td.Children(nil)
+			for _, c := range characters {
+				var toDelete bool
+				for _, d := range del {
+					toDelete = toDelete || d(c)
+				}
+				if !toDelete {
+					continue
+				}
+				err := td.Delete(c)
+				if err != nil {
+					slog.Error("Failed to remove a character from an augmentations tree", "node", c)
+				}
+			}
+		}
+		characters := td.Children(nil)
+		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *characterAugmentationNode) set.Set[string] {
+			return n.tags
+		})...).All())
+
+		fyne.Do(func() {
+			a.selectTag.SetOptions(tagOptions)
+			a.tree.Set(td)
+		})
+	}()
 }
 
 func (a *augmentations) update() {
@@ -233,62 +237,69 @@ func (a *augmentations) update() {
 		})
 		return
 	}
-	a.treeData = td
 	fyne.Do(func() {
+		a.treeData = td
 		a.filterTree()
 		a.top.Hide()
 	})
 }
 
-func (a *augmentations) updateTreeData() (iwidget.TreeData[characterImplantsNode], error) {
-	var tree iwidget.TreeData[characterImplantsNode]
+func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentationNode], error) {
+	var td iwidget.TreeData[characterAugmentationNode]
 	ctx := context.Background()
 	characters, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
-		return tree, err
+		return td, err
 	}
-	m := make(map[int32][]*app.CharacterImplant)
+	characterImplants := make(map[int32][]*app.CharacterImplant)
 	for _, c := range characters {
-		m[c.ID] = make([]*app.CharacterImplant, 0)
+		characterImplants[c.ID] = make([]*app.CharacterImplant, 0)
 	}
-	oo, err := a.u.cs.ListAllImplants(ctx)
+	implants, err := a.u.cs.ListAllImplants(ctx)
 	if err != nil {
-		return tree, err
+		return td, err
 	}
-	for _, o := range oo {
-		_, ok := m[o.CharacterID]
+	for _, im := range implants {
+		_, ok := characterImplants[im.CharacterID]
 		if !ok {
-			slog.Warn("Unknown character for implant", "characterID", o.CharacterID)
+			slog.Warn("Unknown character for implant", "characterID", im.CharacterID)
 			continue
 		}
-		m[o.CharacterID] = append(m[o.CharacterID], o)
+		characterImplants[im.CharacterID] = append(characterImplants[im.CharacterID], im)
 	}
-	for k := range m {
-		slices.SortFunc(m[k], func(a, b *app.CharacterImplant) int {
+	for k := range characterImplants {
+		slices.SortFunc(characterImplants[k], func(a, b *app.CharacterImplant) int {
 			return cmp.Compare(a.SlotNum, b.SlotNum)
 		})
 	}
 	for _, c := range characters {
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
-			return tree, err
+			return td, err
 		}
-		n := characterImplantsNode{
+		implantCount := len(characterImplants[c.ID])
+		clone := &characterAugmentationNode{
 			characterID:   c.ID,
 			characterName: c.Name,
-			implantCount:  len(m[c.ID]),
+			implantCount:  implantCount,
 			tags:          tags,
 		}
-		uid := tree.MustAdd(iwidget.TreeRootID, n)
-		for _, o := range m[c.ID] {
-			n := characterImplantsNode{
+		err = td.Add(nil, clone, implantCount > 0)
+		if err != nil {
+			return td, err
+		}
+		for _, o := range characterImplants[c.ID] {
+			implant := &characterAugmentationNode{
 				implantTypeDescription: o.EveType.DescriptionPlain(),
 				implantTypeID:          o.EveType.ID,
 				implantTypeName:        o.EveType.Name,
 				characterID:            c.ID,
 			}
-			tree.MustAdd(uid, n)
+			err := td.Add(clone, implant, false)
+			if err != nil {
+				return td, err
+			}
 		}
 	}
-	return tree, nil
+	return td, nil
 }

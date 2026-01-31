@@ -150,7 +150,7 @@ func (a *corporationMember) filterRows() {
 
 	go func() {
 		// search filter
-		if search != "" {
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})

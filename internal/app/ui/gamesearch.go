@@ -239,7 +239,7 @@ func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
 			}
 			return newSearchResult(a.u, a.supportedCategories)
 		},
-		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
+		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
 				co.(*widget.Label).SetText(n.String())
 				return
@@ -247,10 +247,10 @@ func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
 			co.(*searchResult).set(n.ee)
 		},
 	)
-	t.OnSelectedNode = func(n resultNode) {
+	t.OnSelectedNode = func(n *resultNode) {
 		defer t.UnselectAll()
 		if n.isCategory() {
-			t.ToggleBranch(n.UID())
+			t.ToggleBranchNode(n)
 			return
 		}
 		a.showSupportedResult(n.ee)
@@ -382,27 +382,28 @@ func (a *gameSearch) doSearch2(search string) {
 	if total == 0 {
 		return
 	}
-	var t iwidget.TreeData[resultNode]
+	var td iwidget.TreeData[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
-		_, ok := results[c]
+		items, ok := results[c]
 		if !ok {
 			continue
 		}
 		categoriesFound++
-		n := resultNode{category: c, count: len(results[c])}
-		parentUID, err := t.Add(iwidget.TreeRootID, n)
+		itemsCount := len(items)
+		category := &resultNode{category: c, count: itemsCount}
+		err := td.Add(nil, category, itemsCount > 0)
 		if err != nil {
-			slog.Error("game search: adding node", "node", n)
+			slog.Error("game search: adding node", "node", category)
 			continue
 		}
-		for _, o := range results[c] {
-			n := resultNode{ee: o}
-			t.Add(parentUID, n)
+		for _, o := range items {
+			entity := &resultNode{ee: o}
+			td.Add(category, entity, false)
 		}
 	}
 	fyne.Do(func() {
-		a.results.Set(t)
+		a.results.Set(td)
 		if categoriesFound == 1 {
 			a.results.OpenAllBranches()
 		}
@@ -520,13 +521,6 @@ type resultNode struct {
 
 func (sn resultNode) isCategory() bool {
 	return sn.ee == nil
-}
-
-func (sn resultNode) UID() widget.TreeNodeID {
-	if sn.isCategory() {
-		return "C_" + string(sn.category)
-	}
-	return fmt.Sprintf("EE_%d", sn.ee.ID)
 }
 
 func (sn resultNode) String() string {
