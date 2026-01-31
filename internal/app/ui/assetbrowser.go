@@ -213,7 +213,8 @@ type assetBrowserNavigation struct {
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
-	tree           *iwidget.Tree[assetContainerNode]
+	locations      *iwidget.Tree[assetContainerNode]
+	search         *widget.Entry
 	selectCategory *kxwidget.FilterChipSelect
 	top            *widget.Label
 }
@@ -222,12 +223,13 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
 		ab:            ab,
 		filteredTrees: make(map[assetFilter]filteredTree),
-		top:           makeTopLabel(),
 		filters:       make([]assetFilter, 0),
+		search:        widget.NewEntry(),
+		top:           makeTopLabel(),
 	}
 	a.ExtendBaseWidget(a)
 
-	a.tree = iwidget.NewTree(
+	a.locations = iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			count := widget.NewLabel("99.999.999")
 			name := widget.NewLabel("Template")
@@ -250,13 +252,13 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			b[1].(*widget.Label).SetText(s)
 		},
 	)
-	a.tree.OnSelectedNode = func(cn *assetContainerNode) {
+	a.locations.OnSelectedNode = func(cn *assetContainerNode) {
 		a.ab.Selected.set(cn)
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
 		if ab.u.isMobile {
-			a.tree.UnselectAll()
+			a.locations.UnselectAll()
 		}
 	}
 	if a.ab.forCorporation {
@@ -278,7 +280,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategoryOther,
 			assetCategoryAll,
 		}, func(string) {
-			a.redraw()
+			a.filterLocations()
 		})
 		a.selectCategory.Selected = assetCategoryOffice
 		a.selectCategory.SortDisabled = true
@@ -297,31 +299,45 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategorySafety,
 			assetCategoryAll,
 		}, func(string) {
-			a.redraw()
+			a.filterLocations()
 		})
 		a.selectCategory.Selected = assetCategoryPersonal
 		a.selectCategory.SortDisabled = true
 	}
 	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
-		a.tree.CloseAllBranches()
+		a.locations.CloseAllBranches()
 	})
 	a.collapseAll.SetToolTip("Collapse branches")
+	a.search.OnChanged = func(s string) {
+		a.filterLocations()
+	}
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterLocations()
+	})
+	a.search.PlaceHolder = "Search locations"
 	return a
 }
 
 func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
-		container.NewHBox(a.selectCategory, a.collapseAll),
+		container.NewBorder(
+			nil,
+			nil,
+			a.selectCategory,
+			a.collapseAll,
+			a.search,
+		),
 		a.top,
 		nil,
 		nil,
-		a.tree,
+		a.locations,
 	))
 }
 
 func (a *assetBrowserNavigation) clear() {
-	a.tree.Clear()
-	a.tree.UnselectAll()
+	a.locations.Clear()
+	a.locations.UnselectAll()
 	a.top.SetText("")
 }
 
@@ -341,7 +357,7 @@ func (a *assetBrowserNavigation) updateAsync(trees []*asset.Node) {
 	}
 	fyne.Do(func() {
 		a.filteredTrees = filteredTrees
-		a.redraw()
+		a.filterLocations()
 	})
 }
 
@@ -478,16 +494,31 @@ var assetFilterLookup = map[string]assetFilter{
 	assetCategorySafety:     assetSafety,
 }
 
-func (a *assetBrowserNavigation) redraw() {
+func (a *assetBrowserNavigation) filterLocations() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
+	var td iwidget.TreeData[assetContainerNode]
 	ft := a.filteredTrees[filter]
-	a.tree.UnselectAll()
-	a.tree.CloseAllBranches()
-	a.tree.Set(ft.td)
-	a.ab.Selected.clear()
 	count, _ := ft.td.ChildrenCount(nil)
 	top := fmt.Sprintf("%d locations", count)
-	a.setTop(top, widget.MediumImportance)
+	search := strings.ToLower(a.search.Text)
+
+	go func() {
+		if search != "" {
+			td = ft.td.Clone()
+			td.DeleteChildrenFunc(nil, func(n *assetContainerNode) bool {
+				return !strings.Contains(strings.ToLower(n.String()), search)
+			})
+		} else {
+			td = ft.td
+		}
+		fyne.Do(func() {
+			a.locations.UnselectAll()
+			a.locations.CloseAllBranches()
+			a.locations.Set(td)
+			a.ab.Selected.clear()
+			a.setTop(top, widget.MediumImportance)
+		})
+	}()
 }
 
 func (a *assetBrowserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode, bool) {
@@ -510,14 +541,14 @@ func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
 }
 
 func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
-	a.tree.UnselectAll()
+	a.locations.UnselectAll()
 	if !a.ab.u.isMobile {
-		a.tree.SelectNode(cn)
+		a.locations.SelectNode(cn)
 	}
-	for _, cn2 := range a.tree.Data().Path(nil, cn) {
-		a.tree.OpenBranchNode(cn2)
+	for _, cn2 := range a.locations.Data().Path(nil, cn) {
+		a.locations.OpenBranchNode(cn2)
 	}
-	a.tree.ScrollToNode(cn)
+	a.locations.ScrollToNode(cn)
 }
 
 type assetBrowserSelected struct {
@@ -619,7 +650,7 @@ func (a *assetBrowserSelected) set(cn *assetContainerNode) {
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
-		for _, n := range a.ab.Navigation.tree.Data().Children(cn) {
+		for _, n := range a.ab.Navigation.locations.Data().Children(cn) {
 			nodes = append(nodes, n.node)
 		}
 	} else {
