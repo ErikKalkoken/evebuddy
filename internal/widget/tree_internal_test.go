@@ -70,6 +70,14 @@ func TestTreeData_ChildUIDs(t *testing.T) {
 	})
 }
 
+func TestTreeData_Node(t *testing.T) {
+	t.Run("the root node does exist", func(t *testing.T) {
+		var td TreeData[MyNode2]
+		_, ok := td.Node(treeRootID)
+		assert.True(t, ok)
+	})
+}
+
 func TestTreeData_Clone(t *testing.T) {
 	t.Run("can clone a td object", func(t *testing.T) {
 		// given
@@ -83,7 +91,7 @@ func TestTreeData_Clone(t *testing.T) {
 		// when
 		got := td.Clone()
 		// then
-		TreeDataEqual(t, td, got)
+		equalTreeData(t, td, got)
 	})
 	t.Run("can clone a empty td object", func(t *testing.T) {
 		// given
@@ -91,11 +99,11 @@ func TestTreeData_Clone(t *testing.T) {
 		// when
 		got := td.Clone()
 		// then
-		TreeDataEqual(t, td, got)
+		equalTreeData(t, td, got)
 	})
 }
 
-func TreeDataEqual[T any](t *testing.T, want, got TreeData[T]) {
+func equalTreeData[T any](t *testing.T, want, got TreeData[T]) {
 	t.Helper()
 	assert.Equal(t, want.children, got.children)
 	assert.Equal(t, want.id, got.id)
