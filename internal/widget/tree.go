@@ -157,11 +157,11 @@ func (w *Tree[T]) callWhenFound(n *T, f func(widget.TreeNodeID)) {
 	}
 }
 
-// TreeData represents the tree structure for rendering a [Tree] widget.
+// TreeData represents the data for rendering a [Tree] widget
+// and provides operations for querying and modifying the tree.
 //
-// The tree is constructed by adding nodes to a virtual root node.
-// The root node always exists and represented by a nil node.
-// Nodes are stores as pointers and can be changed after the have been added.
+// A tree is constructed by adding nodes to a virtual root node.
+// The root node always exists and is represented by the nil node.
 //
 // The zero value is an empty tree ready to use.
 type TreeData[T any] struct {
@@ -444,15 +444,28 @@ func (td TreeData[T]) print(uid widget.TreeNodeID, indent string, last bool) {
 	}
 }
 
-// SortChildren sorts the direct children of parent in ascending order
+// SortChildrenFunc sorts the direct children of parent in ascending order
 // as determined by the cmp function.
-func (td TreeData[T]) SortChildren(parent *T, cmp func(a *T, b *T) int) {
+// It does nothing when parent is not found.
+func (td TreeData[T]) SortChildrenFunc(parent *T, cmp func(a *T, b *T) int) {
 	uid, ok := td.UID(parent)
 	if !ok {
 		return
 	}
 	slices.SortFunc(td.children[uid], func(a, b widget.TreeNodeID) int {
 		return cmp(td.nodes[a], td.nodes[b])
+	})
+}
+
+// DeleteChildrenFunc removes any nodes from parent for which del returns true.
+// It does nothing when parent is not found.
+func (td TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
+	uid, ok := td.UID(parent)
+	if !ok {
+		return
+	}
+	td.children[uid] = slices.DeleteFunc(td.children[uid], func(n widget.TreeNodeID) bool {
+		return del(td.nodes[n])
 	})
 }
 

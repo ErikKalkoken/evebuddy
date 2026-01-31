@@ -493,7 +493,7 @@ func TestTreeData_AllPaths(t *testing.T) {
 	assert.ElementsMatch(t, want2, got2)
 }
 
-func TestTreeData_SortChilren(t *testing.T) {
+func TestTreeData_SortChildren(t *testing.T) {
 	var td iwidget.TreeData[Node]
 	top := &Node{"Top"}
 	td.Add(nil, top, true)
@@ -504,13 +504,31 @@ func TestTreeData_SortChilren(t *testing.T) {
 	a := &Node{"Alpha"}
 	td.Add(top, a, false)
 
-	td.SortChildren(top, func(a, b *Node) int {
+	td.SortChildrenFunc(top, func(a, b *Node) int {
 		return strings.Compare(a.Text, b.Text)
 	})
 	got := td.Children(top)
 	want := []*Node{a, b}
 	assert.ElementsMatch(t, want, got)
+}
 
+func TestTreeData_DeleteChildren(t *testing.T) {
+	var td iwidget.TreeData[Node]
+	top := &Node{"Top"}
+	td.Add(nil, top, true)
+
+	b := &Node{"Bravo"}
+	td.Add(top, b, false)
+
+	a := &Node{"Alpha"}
+	td.Add(top, a, false)
+
+	td.DeleteChildrenFunc(top, func(n *Node) bool {
+		return n.Text == "Alpha"
+	})
+	got := td.Children(top)
+	want := []*Node{b}
+	assert.ElementsMatch(t, want, got)
 }
 
 func ExampleTree() {
