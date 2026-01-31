@@ -353,7 +353,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 		Type:        folderNodeUnread,
 		Name:        "Unread",
 		ObjID:       app.MailLabelUnread,
-	})
+	}, false)
 	if err != nil {
 		return td, nil, err
 	}
@@ -376,7 +376,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 			Type:        o.nodeType,
 			Name:        o.name,
 			ObjID:       o.labelID,
-		})
+		}, false)
 		if err != nil {
 			return td, nil, err
 		}
@@ -395,7 +395,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 			Name:        "Labels",
 			Type:        folderNodeLabel,
 		}
-		err := td.Add(nil, n)
+		err := td.Add(nil, n, len(labels) > 0)
 		if err != nil {
 			return td, nil, err
 		}
@@ -406,7 +406,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 				Name:        l.Name,
 				ObjID:       l.LabelID,
 				Type:        folderNodeLabel,
-			})
+			}, false)
 			if err != nil {
 				return td, nil, err
 			}
@@ -425,7 +425,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 			Name:        "Mailing Lists",
 			Type:        folderNodeList,
 		}
-		err := td.Add(nil, n)
+		err := td.Add(nil, n, len(lists) > 0)
 		if err != nil {
 			return td, nil, err
 		}
@@ -436,7 +436,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 				ObjID:       l.ID,
 				Name:        l.Name,
 				Type:        folderNodeList,
-			})
+			}, false)
 			if err != nil {
 				return td, nil, err
 			}
@@ -450,7 +450,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 		Name:        "All",
 		ObjID:       app.MailLabelAll,
 	}
-	err = td.Add(nil, folderAll)
+	err = td.Add(nil, folderAll, false)
 	if err != nil {
 		return td, nil, err
 	}

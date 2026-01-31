@@ -396,9 +396,10 @@ func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNo
 		if !n.IsContainer() {
 			continue
 		}
-		if n.IsRoot() {
+		children := n.Children()
+		if n.AncestorCount() == 0 {
 			var remaining int
-			for _, c := range n.Children() {
+			for _, c := range children {
 				if !isExcluded(c.Category()) {
 					remaining++
 				}
@@ -407,19 +408,26 @@ func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNo
 				continue
 			}
 		}
-		if n.IsRootDirectChild() && isExcluded(n.Category()) {
+		if n.AncestorCount() == 1 && isExcluded(n.Category()) {
 			continue
 		}
 		cn := &assetContainerNode{
 			node: n,
 		}
-		err := td.Add(parent, cn)
+		var hasContainerChildren bool
+		for _, n := range children {
+			if n.IsContainer() {
+				hasContainerChildren = true
+				break
+			}
+		}
+		err := td.Add(parent, cn, hasContainerChildren)
 		if err != nil {
 			slog.Error("Failed to add node", "ID", n.ID(), "Name", n.String(), "error", err)
 			return
 		}
-		if c := n.Children(); len(c) > 0 {
-			addNodes(td, cn, c, filter, isCorporation)
+		if len(children) > 0 {
+			addNodes(td, cn, children, filter, isCorporation)
 		}
 	}
 }
@@ -603,7 +611,7 @@ func (a *assetBrowserSelected) clear() {
 func (a *assetBrowserSelected) set(cn *assetContainerNode) {
 	a.node = cn.node
 	var nodes []*asset.Node
-	if cn.node.IsRoot() {
+	if cn.node.IsFirstLevel() {
 		// ensuring the location container shows the same items like the nav tree
 		for _, n := range a.ab.Navigation.navigation.Data().Children(cn) {
 			nodes = append(nodes, n.node)

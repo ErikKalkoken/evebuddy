@@ -245,11 +245,11 @@ func (a *augmentations) update() {
 }
 
 func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentationNode], error) {
-	var tree iwidget.TreeData[characterAugmentationNode]
+	var td iwidget.TreeData[characterAugmentationNode]
 	ctx := context.Background()
 	characters, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
-		return tree, err
+		return td, err
 	}
 	characterImplants := make(map[int32][]*app.CharacterImplant)
 	for _, c := range characters {
@@ -257,7 +257,7 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentation
 	}
 	implants, err := a.u.cs.ListAllImplants(ctx)
 	if err != nil {
-		return tree, err
+		return td, err
 	}
 	for _, im := range implants {
 		_, ok := characterImplants[im.CharacterID]
@@ -275,7 +275,7 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentation
 	for _, c := range characters {
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
-			return tree, err
+			return td, err
 		}
 		implantCount := len(characterImplants[c.ID])
 		clone := &characterAugmentationNode{
@@ -284,9 +284,9 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentation
 			implantCount:  implantCount,
 			tags:          tags,
 		}
-		err = tree.Add(nil, clone)
+		err = td.Add(nil, clone, implantCount > 0)
 		if err != nil {
-			return tree, err
+			return td, err
 		}
 		for _, o := range characterImplants[c.ID] {
 			implant := &characterAugmentationNode{
@@ -295,11 +295,11 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentation
 				implantTypeName:        o.EveType.Name,
 				characterID:            c.ID,
 			}
-			err := tree.Add(clone, implant)
+			err := td.Add(clone, implant, false)
 			if err != nil {
-				return tree, err
+				return td, err
 			}
 		}
 	}
-	return tree, nil
+	return td, nil
 }

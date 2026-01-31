@@ -253,7 +253,7 @@ func insertCustomNodes(locations map[int64]*Node, isCorporation bool) {
 					continue
 				}
 			} else {
-				if n.IsRootDirectChild() {
+				if n.IsSecondLevel() {
 					if asset.Type != nil && asset.Type.IsShip() {
 						addToCustomNode(n, NodeShipHangar)
 						continue

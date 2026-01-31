@@ -385,20 +385,21 @@ func (a *gameSearch) doSearch2(search string) {
 	var td iwidget.TreeData[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
-		_, ok := results[c]
+		items, ok := results[c]
 		if !ok {
 			continue
 		}
 		categoriesFound++
-		category := &resultNode{category: c, count: len(results[c])}
-		err := td.Add(nil, category)
+		itemsCount := len(items)
+		category := &resultNode{category: c, count: itemsCount}
+		err := td.Add(nil, category, itemsCount > 0)
 		if err != nil {
 			slog.Error("game search: adding node", "node", category)
 			continue
 		}
-		for _, o := range results[c] {
+		for _, o := range items {
 			entity := &resultNode{ee: o}
-			td.Add(category, entity)
+			td.Add(category, entity, false)
 		}
 	}
 	fyne.Do(func() {

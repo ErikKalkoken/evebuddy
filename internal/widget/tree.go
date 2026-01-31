@@ -29,7 +29,8 @@ var (
 // The tree structure is defined through a [TreeData] object.
 // This allows creating the structure of a tree independently from the rendered tree.
 //
-// Do not set the vanilla OnX callbacks as that would disable the OnXNode callbacks.
+// Do not set any of the original callbacks as this would disable the functionality
+// of this widget.
 type Tree[T any] struct {
 	widget.Tree
 
@@ -57,7 +58,7 @@ func NewTree[T any](
 		if uid == treeRootID {
 			return true
 		}
-		return len(w.td.children[uid]) > 0
+		return w.td.isBranch[uid]
 	}
 	w.CreateNode = create
 	w.UpdateNode = func(uid widget.TreeNodeID, isBranch bool, co fyne.CanvasObject) {
@@ -67,7 +68,7 @@ func NewTree[T any](
 	}
 	callWhenExists := func(f func(n *T), uid widget.TreeNodeID) {
 		if f != nil {
-			if n, ok := w.td.Node(uid); ok {
+			if n, ok := w.td.nodes[uid]; ok {
 				f(n)
 			}
 		}
@@ -165,7 +166,8 @@ func (w *Tree[T]) callWhenFound(n *T, f func(widget.TreeNodeID)) {
 // The zero value is an empty tree ready to use.
 type TreeData[T any] struct {
 	children  map[widget.TreeNodeID][]widget.TreeNodeID
-	id        int
+	isBranch  map[widget.TreeNodeID]bool
+	lastID    int
 	nodes     map[widget.TreeNodeID]*T
 	parents   map[widget.TreeNodeID]widget.TreeNodeID
 	uidLookup map[*T]widget.TreeNodeID
@@ -179,19 +181,21 @@ func newTreeData[T any]() TreeData[T] {
 
 func (td *TreeData[T]) init() {
 	td.children = make(map[widget.TreeNodeID][]widget.TreeNodeID)
-	td.id = 0
+	td.lastID = 0
+	td.isBranch = make(map[widget.TreeNodeID]bool)
 	td.nodes = make(map[widget.TreeNodeID]*T)
 	td.parents = make(map[widget.TreeNodeID]widget.TreeNodeID)
 	td.uidLookup = make(map[*T]widget.TreeNodeID)
 }
 
-// Add adds nodes to a parent.
+// Add adds a node to parent.
+//
 // The order in which nodes are added is preserved.
 // Add performs sanity checks to ensure the resulting tree structure is valid
 // and returns an error when a problem was found.
 //
 // Nodes can be added to the root by providing nil for parent.
-func (td *TreeData[T]) Add(parent *T, node ...*T) error {
+func (td *TreeData[T]) Add(parent *T, node *T, isBranch bool) error {
 	if td == nil || node == nil {
 		return ErrInvalid
 	}
@@ -202,14 +206,16 @@ func (td *TreeData[T]) Add(parent *T, node ...*T) error {
 	if !ok {
 		return fmt.Errorf("parent not found: %w", ErrNotFound)
 	}
-	for _, n := range node {
-		td.id++
-		uid := strconv.Itoa(td.id)
-		td.children[parentUID] = append(td.children[parentUID], uid)
-		td.nodes[uid] = n
-		td.parents[uid] = parentUID
-		td.uidLookup[n] = uid
+	if parentUID != treeRootID && !td.isBranch[parentUID] {
+		return fmt.Errorf("can not add to non-branch: %w", ErrInvalid)
 	}
+	td.lastID++
+	uid := strconv.Itoa(td.lastID)
+	td.children[parentUID] = append(td.children[parentUID], uid)
+	td.nodes[uid] = node
+	td.parents[uid] = parentUID
+	td.uidLookup[node] = uid
+	td.isBranch[uid] = isBranch
 	return nil
 }
 
@@ -256,7 +262,8 @@ func (td *TreeData[T]) Clear() {
 func (td TreeData[T]) Clone() TreeData[T] {
 	t2 := TreeData[T]{
 		children:  make(map[widget.TreeNodeID][]widget.TreeNodeID),
-		id:        td.id,
+		isBranch:  maps.Clone(td.isBranch),
+		lastID:    td.lastID,
 		nodes:     maps.Clone(td.nodes),
 		parents:   maps.Clone(td.parents),
 		uidLookup: maps.Clone(td.uidLookup),
@@ -326,6 +333,16 @@ func (td TreeData[T]) Exists(node *T) bool {
 // IsEmpty reports whether the tree has any nodes (other then the root node).
 func (td TreeData[T]) IsEmpty() bool {
 	return len(td.nodes) == 0
+}
+
+func (td TreeData[T]) IsBranch(node *T) bool {
+	if node == nil {
+		return true // root is always a branch
+	}
+	if uid, ok := td.uidLookup[node]; ok {
+		return td.isBranch[uid]
+	}
+	return false
 }
 
 // Node returns a node by UID and reports whether it was found.
@@ -437,6 +454,21 @@ func (td TreeData[T]) SortChildren(parent *T, cmp func(a *T, b *T) int) {
 	slices.SortFunc(td.children[uid], func(a, b widget.TreeNodeID) int {
 		return cmp(td.nodes[a], td.nodes[b])
 	})
+}
+
+func (td TreeData[T]) SetBranch(node *T, isBranch bool) error {
+	if node == nil {
+		return fmt.Errorf("SetBranch: can not set root: %w", ErrInvalid)
+	}
+	uid, ok := td.uidLookup[node]
+	if !ok {
+		return fmt.Errorf("SetBranch: %w", ErrNotFound)
+	}
+	if !isBranch && len(td.children[uid]) > 0 {
+		return fmt.Errorf("SetBranch: node with children can not be leaf %w", ErrInvalid)
+	}
+	td.isBranch[uid] = isBranch
+	return nil
 }
 
 // Size returns the number of nodes in the tree excluding the virtual root node.

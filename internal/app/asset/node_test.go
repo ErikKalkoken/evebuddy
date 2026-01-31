@@ -13,7 +13,7 @@ func TestNodeCategory_DisplayName(t *testing.T) {
 	xassert.Equal(t, "Cargo Bay", NodeCargoBay.DisplayName())
 }
 
-func TestNode_Leafs(t *testing.T) {
+func TestNode_AllPaths(t *testing.T) {
 	top := newCustomNode(NodeItemHangar)
 	a := newCustomNode(NodeCargoBay)
 	top.addChild(a)
@@ -29,6 +29,20 @@ func TestNode_Leafs(t *testing.T) {
 		{"Item Hangar", "Drone Bay"},
 	}
 	assert.ElementsMatch(t, want, got)
+}
+
+func TestNode_AnchestorCount(t *testing.T) {
+	top := newCustomNode(NodeItemHangar)
+	a := newCustomNode(NodeCargoBay)
+	top.addChild(a)
+	b := newCustomNode(NodeFuelBay)
+	a.addChild(b)
+	c := newCustomNode(NodeDroneBay)
+	top.addChild(c)
+
+	xassert.Equal(t, 0, top.AncestorCount())
+	xassert.Equal(t, 1, a.AncestorCount())
+	xassert.Equal(t, 2, b.AncestorCount())
 }
 
 func TestNode_Path(t *testing.T) {

@@ -224,14 +224,19 @@ func (n *Node) Category() NodeCategory {
 	return n.category
 }
 
-// IsRoot reports whether a node is the root in a tree.
-func (n *Node) IsRoot() bool {
+// IsFirstLevel reports whether a node is in the first level of the tree.
+func (n *Node) IsFirstLevel() bool {
 	return n.parent == nil
 }
 
-// IsRootDirectChild reports whether a node is direct child of the root.
-func (n *Node) IsRootDirectChild() bool {
+// IsSecondLevel reports whether a node is direct child of the root.
+func (n *Node) IsSecondLevel() bool {
 	return n.parent != nil && n.parent.parent == nil
+}
+
+// AncestorCount returns the number of ancestors of a node.
+func (n *Node) AncestorCount() int {
+	return len(n.Path()) - 1
 }
 
 // Location returns the location for a node and reports whether the node is a location.

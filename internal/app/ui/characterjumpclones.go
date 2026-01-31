@@ -228,7 +228,7 @@ func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode],
 			clone.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			clone.isUnknown = true
 		}
-		err := td.Add(nil, clone)
+		err := td.Add(nil, clone, len(c.Implants) > 0)
 		if err != nil {
 			return td, err
 		}
@@ -239,7 +239,7 @@ func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode],
 				implantTypeName:        i.EveType.Name,
 				jumpCloneID:            c.CloneID,
 			}
-			err := td.Add(clone, implant)
+			err := td.Add(clone, implant, false)
 			if err != nil {
 				return td, err
 			}
