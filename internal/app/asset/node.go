@@ -8,8 +8,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-//go:generate go tool stringer -type=NodeCategory
-
 // NodeCategory represents the category of a node.
 // [NodeAsset] represents assets and [NodeLocation] represent eve locations.
 // All other categories represent custom nodes,
@@ -32,7 +30,6 @@ const (
 	NodeInSpace
 	NodeItemHangar
 	NodeLocation
-	NodeOfficeFolder
 	NodeOffice1
 	NodeOffice2
 	NodeOffice3
@@ -40,6 +37,7 @@ const (
 	NodeOffice5
 	NodeOffice6
 	NodeOffice7
+	NodeOfficeFolder
 	NodeShipHangar
 )
 
@@ -47,17 +45,17 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeAsset:                  "Asset",
 	NodeAssetSafetyCharacter:   "Asset Safety",
 	NodeAssetSafetyCorporation: "Asset Safety",
-	NodeItemHangar:             "Item Hangar",
-	NodeLocation:               "Location",
-	NodeShipHangar:             "Ship Hangar",
-	NodeInSpace:                "In Space",
 	NodeCargoBay:               "Cargo Bay",
+	NodeDeliveries:             "Deliveries",
 	NodeDroneBay:               "Drone Bay",
+	NodeFighterBay:             "Fighter Bay",
 	NodeFitting:                "Fitting",
 	NodeFrigateEscapeBay:       "Frigate Escape Bay",
-	NodeFighterBay:             "Fighter Bay",
 	NodeFuelBay:                "Fuel Bay",
-	NodeOfficeFolder:           "Office",
+	NodeImpounded:              "Impounded",
+	NodeInSpace:                "In Space",
+	NodeItemHangar:             "Item Hangar",
+	NodeLocation:               "Location",
 	NodeOffice1:                "1st Division",
 	NodeOffice2:                "2nd Division",
 	NodeOffice3:                "3rd Division",
@@ -65,15 +63,15 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeOffice5:                "5th Division",
 	NodeOffice6:                "6th Division",
 	NodeOffice7:                "7th Division",
-	NodeImpounded:              "Impounded",
-	NodeDeliveries:             "Deliveries",
+	NodeOfficeFolder:           "Office",
+	NodeShipHangar:             "Ship Hangar",
 }
 
-func (c NodeCategory) DisplayName() string {
+func (c NodeCategory) String() string {
 	if n, ok := nodeCategoryNames[c]; ok {
 		return n
 	}
-	return c.String()
+	return "?"
 }
 
 // Node is a node in an asset tree.
@@ -315,9 +313,9 @@ func (n *Node) String() string {
 		if !ok {
 			return "?"
 		}
-		return n.DisplayName2()
+		return n.DisplayName()
 	}
-	return n.category.DisplayName()
+	return n.category.String()
 }
 
 func (n *Node) addChild(c *Node) {

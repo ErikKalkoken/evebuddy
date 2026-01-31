@@ -503,7 +503,7 @@ func (a *assetSearch) filterRows(sortCol int) {
 			})
 		}
 		// search filter
-		if search != "" {
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})

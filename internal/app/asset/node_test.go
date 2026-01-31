@@ -10,7 +10,7 @@ import (
 )
 
 func TestNodeCategory_DisplayName(t *testing.T) {
-	xassert.Equal(t, "Cargo Bay", NodeCargoBay.DisplayName())
+	xassert.Equal(t, "Cargo Bay", NodeCargoBay.String())
 }
 
 func TestNode_AllPaths(t *testing.T) {
@@ -59,6 +59,27 @@ func TestNode_Path(t *testing.T) {
 
 	want := []*Node{top, a, b}
 	xassert.Equal(t, want, got)
+}
+
+func TestNode_ID(t *testing.T) {
+	t.Run("should return item ID of assets", func(t *testing.T) {
+		n := newAssetNode(&app.CharacterAsset{
+			Asset: app.Asset{
+				ItemID: 42,
+			},
+		})
+		xassert.Equal(t, 42, n.ID())
+	})
+	t.Run("should return location ID of locations", func(t *testing.T) {
+		n := newLocationNode(&app.EveLocation{
+			ID: 123,
+		})
+		xassert.Equal(t, 123, n.ID())
+	})
+	t.Run("should return 0 of other nodes", func(t *testing.T) {
+		n := newCustomNode(NodeItemHangar)
+		xassert.Equal(t, 0, n.ID())
+	})
 }
 
 func TestNode_CharacterAsset(t *testing.T) {
