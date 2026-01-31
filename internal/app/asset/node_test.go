@@ -38,11 +38,12 @@ func TestNode_AnchestorCount(t *testing.T) {
 	b := newCustomNode(NodeFuelBay)
 	a.addChild(b)
 	c := newCustomNode(NodeDroneBay)
-	top.addChild(c)
+	b.addChild(c)
 
 	xassert.Equal(t, 0, top.AncestorCount())
 	xassert.Equal(t, 1, a.AncestorCount())
 	xassert.Equal(t, 2, b.AncestorCount())
+	xassert.Equal(t, 3, c.AncestorCount())
 }
 
 func TestNode_Path(t *testing.T) {

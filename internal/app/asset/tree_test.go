@@ -704,6 +704,25 @@ func printTrees(ac asset.Tree) {
 		return strings.Compare(a.String(), b.String())
 	})
 	for _, root := range trees {
-		root.PrintTree()
+		printTree(root)
 	}
+}
+
+// PrintTree prints the subtree of n.
+func printTree(n *asset.Node) {
+	var printTree func(n *asset.Node, indent string, last bool)
+	printTree = func(n *asset.Node, indent string, last bool) {
+		fmt.Printf("%s+-%s\n", indent, n)
+		if last {
+			indent += "   "
+		} else {
+			indent += "|  "
+		}
+		for _, c := range n.Children() {
+			printTree(c, indent, len(c.Children()) == 0)
+		}
+	}
+
+	printTree(n, "", false)
+	fmt.Println()
 }

@@ -611,7 +611,7 @@ func (a *assetBrowserSelected) clear() {
 func (a *assetBrowserSelected) set(cn *assetContainerNode) {
 	a.node = cn.node
 	var nodes []*asset.Node
-	if cn.node.IsFirstLevel() {
+	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
 		for _, n := range a.ab.Navigation.navigation.Data().Children(cn) {
 			nodes = append(nodes, n.node)
