@@ -13,20 +13,18 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestInit(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("Can init a status cache with character, corporation and general sections", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 		section1 := app.SectionCharacterImplants
@@ -84,13 +82,13 @@ func TestInit(t *testing.T) {
 func TestStatusCacheSummary(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		for range 2 {
 			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
@@ -137,7 +135,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report when a character section has an error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
 			c := factory.CreateCharacterFull()
@@ -196,7 +194,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("corporation section has an error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		corporations := make([]int32, 0)
 		for range 2 {
 			c := factory.CreateCharacterFull()
@@ -255,7 +253,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report when a general section has an error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		for range 2 {
 			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
@@ -311,7 +309,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report when a character section is missing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		characterSections := app.CharacterSections[:len(app.CharacterSections)-1]
 		for range 2 {
 			c := factory.CreateCharacterFull()
@@ -361,7 +359,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report when a corporation section is missing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		for range 2 {
 			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
@@ -409,7 +407,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report when a general section is missing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		for range 2 {
 			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
@@ -446,7 +444,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report current progress when a character section is stale", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
 			c := factory.CreateCharacterFull()
@@ -492,7 +490,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	t.Run("should report current progress when a general section is stale", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		for range 2 {
 			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
@@ -537,13 +535,13 @@ func TestStatusCacheSummary(t *testing.T) {
 func TestCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("update and list characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCharacterFull()
 		// when
 		if err := sc.UpdateCharacters(ctx); err != nil {
@@ -558,7 +556,7 @@ func TestCharacter(t *testing.T) {
 	t.Run("list character IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
 		if err := sc.UpdateCharacters(ctx); err != nil {
@@ -575,13 +573,13 @@ func TestCharacter(t *testing.T) {
 func TestCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("update and list corporations", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
 		c := factory.CreateCorporation(ec.ID)
 		// when
@@ -599,13 +597,13 @@ func TestCorporations(t *testing.T) {
 func TestCharacterSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("Can get and set a character section status", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCharacterFull()
 		section := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -627,7 +625,7 @@ func TestCharacterSections(t *testing.T) {
 	t.Run("can report whether a character section exists", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCharacterFull()
 		section := app.SectionCharacterImplants
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -646,7 +644,7 @@ func TestCharacterSections(t *testing.T) {
 	t.Run("list character sections", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -671,7 +669,7 @@ func TestCharacterSections(t *testing.T) {
 	t.Run("list character sections all empty", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCharacterFull()
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -693,13 +691,13 @@ func TestCharacterSections(t *testing.T) {
 func TestCorporationSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("Can get and set a corporation section status", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCorporation()
 		section := app.SectionCorporationIndustryJobs
 		x1 := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
@@ -723,7 +721,7 @@ func TestCorporationSections(t *testing.T) {
 	t.Run("can report whether a corporation section exists", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCorporation()
 		section := app.SectionCorporationIndustryJobs
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
@@ -739,7 +737,7 @@ func TestCorporationSections(t *testing.T) {
 	t.Run("list corporation sections 1", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCorporation()
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
@@ -763,7 +761,7 @@ func TestCorporationSections(t *testing.T) {
 	t.Run("list corporation sections all empty", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		c := factory.CreateCorporation()
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -785,12 +783,12 @@ func TestCorporationSections(t *testing.T) {
 func TestGeneralSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, st)
+
+	sc := statuscacheservice.New(st)
 	ctx := context.Background()
 	t.Run("Can get and set a general section status", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		section := app.SectionEveTypes
 		x1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section,
@@ -807,7 +805,7 @@ func TestGeneralSections(t *testing.T) {
 	t.Run("can report whether a general section exists 1", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})
@@ -820,7 +818,7 @@ func TestGeneralSections(t *testing.T) {
 	t.Run("can report whether a general section exists 2", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -830,7 +828,7 @@ func TestGeneralSections(t *testing.T) {
 	t.Run("list general sections", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cache.Clear()
+		sc.Clear()
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})
@@ -853,13 +851,12 @@ func TestGeneralSections(t *testing.T) {
 }
 
 func TestCharacterSectionSummary(t *testing.T) {
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, nil)
+	sc := statuscacheservice.New(nil)
 	// given
 	const (
 		characterID = 42
 	)
-	cache.Clear()
+	sc.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
 		SectionStatus: app.SectionStatus{
@@ -894,8 +891,7 @@ func TestCharacterSectionSummary(t *testing.T) {
 }
 
 func TestCorporationSectionSummary(t *testing.T) {
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, nil)
+	sc := statuscacheservice.New(nil)
 	// given
 	const (
 		corporationID = 42
@@ -920,10 +916,9 @@ func TestCorporationSectionSummary(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 func TestGeneralSectionSummary(t *testing.T) {
-	cache := memcache.New()
-	sc := statuscacheservice.New(cache, nil)
+	sc := statuscacheservice.New(nil)
 	// given
-	cache.Clear()
+	sc.Clear()
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: "error",

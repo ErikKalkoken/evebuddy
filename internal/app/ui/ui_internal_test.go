@@ -178,7 +178,7 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
-	scs := statuscacheservice.New(cache, st)
+	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		panic(err)
 	}

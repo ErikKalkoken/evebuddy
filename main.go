@@ -309,9 +309,9 @@ func main() {
 	rhc2.ResponseLogHook = logResponse
 
 	// Init StatusCache service
-	memCache := memcache.NewWithTimeout(0) // FIXME: Workaround: Statuscache might report wrong results when cache clears
+	memCache := memcache.NewWithTimeout(1 * time.Hour)
 	defer memCache.Close()
-	scs := statuscacheservice.New(memCache, st)
+	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)

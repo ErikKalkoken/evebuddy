@@ -10,9 +10,14 @@ type Map[K comparable, V any] struct {
 	m sync.Map
 }
 
-// Store sets the value for a key.
-func (m *Map[K, V]) Store(key K, value V) {
-	m.m.Store(key, value)
+// Clear deletes all the entries, resulting in an empty Map.
+func (m *Map[K, V]) Clear() {
+	m.m.Clear()
+}
+
+// Delete deletes the value for a key.
+func (m *Map[K, V]) Delete(key K) {
+	m.m.Delete(key)
 }
 
 // Load returns the value stored in the map for a key, or nil if no value is present.
@@ -33,15 +38,15 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (V, bool) {
 	return v.(V), loaded
 }
 
-// Delete deletes the value for a key.
-func (m *Map[K, V]) Delete(key K) {
-	m.m.Delete(key)
-}
-
 // Range calls f sequentially for each key and value present in the map.
 // If f returns false, range stops the iteration.
 func (m *Map[K, V]) Range(f func(key K, value V) bool) {
 	m.m.Range(func(k, v any) bool {
 		return f(k.(K), v.(V))
 	})
+}
+
+// Store sets the value for a key.
+func (m *Map[K, V]) Store(key K, value V) {
+	m.m.Store(key, value)
 }

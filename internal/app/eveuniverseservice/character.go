@@ -9,7 +9,6 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -106,29 +105,6 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		}
 	}
 	return c2, changed, nil
-}
-
-// RandomizeAllCharacterNames randomizes the names of all characters.
-func (s *EveUniverseService) RandomizeAllCharacterNames(ctx context.Context) error {
-	ids, err := s.st.ListEveCharacterIDs(ctx)
-	if err != nil {
-		return err
-	}
-	if ids.Size() == 0 {
-		return nil
-	}
-	for id := range ids.All() {
-		name := fake.FullName()
-		err := s.st.UpdateEveCharacterName(ctx, id, name)
-		if err != nil {
-			return err
-		}
-		err = s.updateEntityNameIfExists(ctx, id, name)
-		if err != nil {
-			return err
-		}
-	}
-	return s.scs.UpdateCharacters(ctx)
 }
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI

@@ -63,9 +63,16 @@ type StatusCacheService struct {
 
 // New creates and returns a new instance of a character status service.
 // When nil is provided it will create and use it's own cache instance.
-func New(cache *memcache.Cache, st *storage.Storage) *StatusCacheService {
-	sc := &StatusCacheService{cache: cache, st: st}
+func New(st *storage.Storage) *StatusCacheService {
+	sc := &StatusCacheService{
+		cache: memcache.NewWithTimeout(0),
+		st:    st,
+	}
 	return sc
+}
+
+func (sc *StatusCacheService) Clear() {
+	sc.cache.Clear()
 }
 
 // InitCache initializes the internal state from local storage.
