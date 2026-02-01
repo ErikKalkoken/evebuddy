@@ -58,10 +58,22 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
+type eveImageService interface {
+	AllianceLogo(id int32, size int) (fyne.Resource, error)
+	CharacterPortrait(id int32, size int) (fyne.Resource, error)
+	CorporationLogo(id int32, size int) (fyne.Resource, error)
+	FactionLogo(id int32, size int) (fyne.Resource, error)
+	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
+	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
+	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+}
+
 // services represents a wrapper for passing the main services to functions.
 type services struct {
 	cs  *characterservice.CharacterService
-	eis app.EveImageService
+	eis eveImageService
 	eus *eveuniverseservice.EveUniverseService
 	rs  *corporationservice.CorporationService
 	scs *statuscacheservice.StatusCacheService
@@ -175,7 +187,7 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      app.EveImageService
+	eis      eveImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EveUniverseService
 	js       *janiceservice.JaniceService
@@ -207,7 +219,7 @@ type BaseUIParams struct {
 	CharacterService   *characterservice.CharacterService
 	CorporationService *corporationservice.CorporationService
 	ESIStatusService   *esistatusservice.ESIStatusService
-	EveImageService    app.EveImageService
+	EveImageService    eveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	StatusCacheService *statuscacheservice.StatusCacheService

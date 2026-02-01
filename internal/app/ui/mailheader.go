@@ -22,14 +22,14 @@ type mailHeaderItem struct {
 
 	FallbackIcon fyne.Resource
 
-	eis       app.EveImageService
+	eis       eveEntityEIS
 	from      *widget.Label
 	icon      *canvas.Image
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func newMailHeaderItem(eis app.EveImageService) *mailHeaderItem {
+func newMailHeaderItem(eis eveEntityEIS) *mailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
@@ -90,7 +90,7 @@ func (w *mailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 type mailHeader struct {
 	widget.BaseWidget
 
-	eis        app.EveImageService
+	eis        eveEntityEIS
 	from       *kxwidget.TappableLabel
 	icon       *iwidget.TappableImage
 	recipients *fyne.Container
@@ -99,7 +99,7 @@ type mailHeader struct {
 	timestamp  *widget.Label
 }
 
-func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHeader {
+func newMailHeader(eis eveEntityEIS, show func(*app.EveEntity)) *mailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()

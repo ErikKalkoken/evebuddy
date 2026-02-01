@@ -402,7 +402,7 @@ type communicationDetail struct {
 	subject *widget.Label
 }
 
-func newCommunicationDetail(eis app.EveImageService, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(eis eveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord

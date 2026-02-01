@@ -456,7 +456,7 @@ func (w *searchResult) set(o *app.EveEntity) {
 					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return EntityIcon(w.u.eis, o, app.IconPixelSize, icons.BlankSvg)
+				return entityIcon(w.u.eis, o, app.IconPixelSize, icons.BlankSvg)
 			}
 		}()
 		if err != nil {

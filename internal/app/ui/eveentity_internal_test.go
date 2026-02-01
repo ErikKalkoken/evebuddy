@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEntityIcon(t *testing.T) {
@@ -37,7 +38,7 @@ func TestEntityIcon(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.category.String(), func(t *testing.T) {
 			ee := &app.EveEntity{ID: 1, Category: tc.category, Name: "Dummy"}
-			got, err := EntityIcon(eis, ee, 64, fallback)
+			got, err := entityIcon(eis, ee, 64, fallback)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tc.want, got)
 			}
