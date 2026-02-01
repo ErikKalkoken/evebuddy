@@ -309,7 +309,7 @@ func main() {
 	rhc2.ResponseLogHook = logResponse
 
 	// Init StatusCache service
-	memCache := memcache.New()
+	memCache := memcache.NewWithTimeout(0) // FIXME: Workaround: Statuscache might report wrong results when cache clears
 	defer memCache.Close()
 	scs := statuscacheservice.New(memCache, st)
 	if err := scs.InitCache(context.Background()); err != nil {

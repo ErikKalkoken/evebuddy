@@ -26,6 +26,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type assetFilter uint
@@ -863,6 +864,9 @@ type assetIconEIS interface {
 	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
 }
 
+// assetIconCache caches the images for asset icons.
+var assetIconCache xsync.Map[string, fyne.Resource]
+
 // assetItem represents an asset shown with an icon and label.
 type assetItem struct {
 	widget.BaseWidget
@@ -926,18 +930,38 @@ func (w *assetItem) Set(n *asset.Node) {
 	} else {
 		w.badge.Hide()
 	}
-	iwidget.RefreshImageAsync(w.icon, func() (fyne.Resource, error) {
-		switch as.Variant() {
-		case app.VariantBPO:
-			return w.eis.InventoryTypeBPO(as.Type.ID, app.IconPixelSize)
-		case app.VariantBPC:
-			return w.eis.InventoryTypeBPC(as.Type.ID, app.IconPixelSize)
-		case app.VariantSKIN:
-			return w.eis.InventoryTypeSKIN(as.Type.ID, app.IconPixelSize)
-		default:
-			return w.eis.InventoryTypeIcon(as.Type.ID, app.IconPixelSize)
+	key := fmt.Sprint(as.ItemID)
+	r, ok := assetIconCache.Load(key)
+	if ok {
+		w.icon.Resource = r
+		w.icon.Refresh()
+		return
+	}
+	w.icon.Resource = icons.BlankSvg
+	w.icon.Refresh()
+	go func() {
+		r, err := func() (fyne.Resource, error) {
+			switch as.Variant() {
+			case app.VariantBPO:
+				return w.eis.InventoryTypeBPO(as.Type.ID, app.IconPixelSize)
+			case app.VariantBPC:
+				return w.eis.InventoryTypeBPC(as.Type.ID, app.IconPixelSize)
+			case app.VariantSKIN:
+				return w.eis.InventoryTypeSKIN(as.Type.ID, app.IconPixelSize)
+			default:
+				return w.eis.InventoryTypeIcon(as.Type.ID, app.IconPixelSize)
+			}
+		}()
+		if err != nil {
+			slog.Warn("Failed to fetch image resource", "err", err)
+			r = theme.BrokenImageIcon()
 		}
-	})
+		assetIconCache.Store(key, r)
+		fyne.Do(func() {
+			w.icon.Resource = r
+			w.icon.Refresh()
+		})
+	}()
 }
 
 type assetLabel struct {
