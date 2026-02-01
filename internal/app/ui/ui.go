@@ -59,15 +59,15 @@ const (
 var defaultImageScaleMode canvas.ImageScale
 
 type eveImageService interface {
-	AllianceLogo(id int32, size int) (fyne.Resource, error)
-	CharacterPortrait(id int32, size int) (fyne.Resource, error)
-	CorporationLogo(id int32, size int) (fyne.Resource, error)
-	FactionLogo(id int32, size int) (fyne.Resource, error)
-	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
-	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
-	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+	AllianceLogo(int32, int) (fyne.Resource, error)
+	CharacterPortrait(int32, int) (fyne.Resource, error)
+	CorporationLogo(int32, int) (fyne.Resource, error)
+	FactionLogo(int32, int) (fyne.Resource, error)
+	InventoryTypeRender(int32, int) (fyne.Resource, error)
+	InventoryTypeIcon(int32, int) (fyne.Resource, error)
+	InventoryTypeBPO(int32, int) (fyne.Resource, error)
+	InventoryTypeBPC(int32, int) (fyne.Resource, error)
+	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
 }
 
 // services represents a wrapper for passing the main services to functions.

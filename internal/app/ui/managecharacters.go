@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 func showManageCharactersWindow(u *baseUI) {
@@ -63,6 +64,7 @@ type manageCharacters struct {
 	sb                *iwidget.Snackbar
 	u                 *baseUI
 	w                 fyne.Window
+	iconCache         xsync.Map[int32, fyne.Resource]
 }
 
 func newManageCharacters(u *baseUI) *manageCharacters {
@@ -109,6 +111,26 @@ func (a *manageCharacters) update() {
 func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+}
+
+func (a *manageCharacters) loadCharacterAsyncWithCache(portrait *canvas.Image, characterID int32) {
+	iwidget.LoadResourceAsyncWithCache(
+		icons.Characterplaceholder64Jpeg,
+		func() (fyne.Resource, bool) {
+			return a.iconCache.Load(characterID)
+		},
+		func(r fyne.Resource) {
+			portrait.Resource = r
+			portrait.Refresh()
+		},
+		func() (fyne.Resource, error) {
+			return a.u.eis.CharacterPortrait(characterID, app.IconPixelSize)
+		},
+		func(r fyne.Resource) {
+			a.iconCache.Store(characterID, r)
+		},
+	)
+
 }
 
 type characterAdminRow struct {
@@ -168,6 +190,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
+			portrait.CornerRadius = app.IconUnitSize / 2
 			name := widget.NewLabel("Template")
 			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 			delete.Importance = widget.DangerImportance
@@ -192,12 +215,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 			row := co.(*fyne.Container).Objects
 
 			portrait := row[0].(*canvas.Image)
-			go a.mc.u.updateCharacterAvatar(c.characterID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					portrait.Resource = r
-					portrait.Refresh()
-				})
-			})
+			a.mc.loadCharacterAsyncWithCache(portrait, c.characterID)
 
 			name := row[1].(*widget.Label)
 			name.SetText(c.characterName)
@@ -621,6 +639,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					icons.Characterplaceholder64Jpeg,
 					fyne.NewSquareSize(app.IconUnitSize),
 				)
+				portrait.CornerRadius = app.IconUnitSize / 2
 				return container.NewBorder(
 					nil,
 					nil,
@@ -639,12 +658,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				icons := box[1].(*fyne.Container).Objects
 
 				portrait := icons[1].(*canvas.Image)
-				go a.mc.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
-					fyne.Do(func() {
-						portrait.Resource = r
-						portrait.Refresh()
-					})
-				})
+				a.mc.loadCharacterAsyncWithCache(portrait, character.ID)
 
 				check := icons[0].(*widget.Icon)
 				if selected[character.ID] {
@@ -789,6 +803,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
+			portrait.CornerRadius = app.IconUnitSize / 2
 			name := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
@@ -807,12 +822,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
-			go a.mc.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					portrait.Resource = r
-					portrait.Refresh()
-				})
-			})
+			a.mc.loadCharacterAsyncWithCache(portrait, character.ID)
 
 			remove := box[2].(*ttwidget.Button)
 			remove.OnTapped = func() {
@@ -1009,6 +1019,7 @@ func (a *characterTraining) makeList() *widget.List {
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
+			portrait.CornerRadius = app.IconUnitSize / 2
 			character := widget.NewLabel("Character")
 			character.Truncation = fyne.TextTruncateEllipsis
 			return container.NewBorder(
@@ -1030,12 +1041,7 @@ func (a *characterTraining) makeList() *widget.List {
 			character.SetText(c.EveCharacter.Name)
 
 			portrait := row[1].(*canvas.Image)
-			go a.mc.u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					portrait.Resource = r
-					portrait.Refresh()
-				})
-			})
+			a.mc.loadCharacterAsyncWithCache(portrait, c.ID)
 
 			sw := row[2].(*kxwidget.Switch)
 			sw.On = c.IsTrainingWatched

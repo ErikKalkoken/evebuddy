@@ -930,17 +930,18 @@ func (w *assetItem) Set(n *asset.Node) {
 	} else {
 		w.badge.Hide()
 	}
+
 	key := fmt.Sprint(as.ItemID)
-	r, ok := assetIconCache.Load(key)
-	if ok {
-		w.icon.Resource = r
-		w.icon.Refresh()
-		return
-	}
-	w.icon.Resource = icons.BlankSvg
-	w.icon.Refresh()
-	go func() {
-		r, err := func() (fyne.Resource, error) {
+	iwidget.LoadResourceAsyncWithCache(
+		icons.BlankSvg,
+		func() (fyne.Resource, bool) {
+			return assetIconCache.Load(key)
+		},
+		func(r fyne.Resource) {
+			w.icon.Resource = r
+			w.icon.Refresh()
+		},
+		func() (fyne.Resource, error) {
 			switch as.Variant() {
 			case app.VariantBPO:
 				return w.eis.InventoryTypeBPO(as.Type.ID, app.IconPixelSize)
@@ -951,17 +952,11 @@ func (w *assetItem) Set(n *asset.Node) {
 			default:
 				return w.eis.InventoryTypeIcon(as.Type.ID, app.IconPixelSize)
 			}
-		}()
-		if err != nil {
-			slog.Warn("Failed to fetch image resource", "err", err)
-			r = theme.BrokenImageIcon()
-		}
-		assetIconCache.Store(key, r)
-		fyne.Do(func() {
-			w.icon.Resource = r
-			w.icon.Refresh()
-		})
-	}()
+		},
+		func(r fyne.Resource) {
+			assetIconCache.Store(key, r)
+		},
+	)
 }
 
 type assetLabel struct {

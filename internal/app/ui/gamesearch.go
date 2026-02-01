@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 const (
@@ -237,7 +238,7 @@ func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return newSearchResult(a.u, a.supportedCategories)
+			return newSearchResult(a.u.eis, a.u.eus, a.supportedCategories)
 		},
 		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -281,7 +282,7 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.u, infoWindowSupportedEveEntities())
+			return newSearchResult(a.u.eis, a.u.eus, infoWindowSupportedEveEntities())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			a.mu.RLock()
@@ -410,64 +411,89 @@ func (a *gameSearch) doSearch2(search string) {
 	})
 }
 
+type searchResultEIS interface {
+	AllianceLogo(int32, int) (fyne.Resource, error)
+	CharacterPortrait(int32, int) (fyne.Resource, error)
+	CorporationLogo(int32, int) (fyne.Resource, error)
+	FactionLogo(int32, int) (fyne.Resource, error)
+	InventoryTypeIcon(int32, int) (fyne.Resource, error)
+	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
+	InventoryTypeBPO(int32, int) (fyne.Resource, error)
+}
+
+type searchResultEUS interface {
+	GetOrCreateTypeESI(context.Context, int32) (*app.EveType, error)
+}
+
+var searchResultResourceCache xsync.Map[int32, fyne.Resource]
+
 type searchResult struct {
 	widget.BaseWidget
 
-	name                *widget.Label
+	eis                 searchResultEIS
+	eus                 searchResultEUS
 	image               *canvas.Image
+	name                *widget.Label
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *baseUI
 }
 
-func newSearchResult(u *baseUI, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
+func newSearchResult(eis searchResultEIS, eus searchResultEUS, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
 	w := &searchResult{
 		supportedCategories: supportedCategories,
 		name:                widget.NewLabel(""),
-		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		u:                   u,
+		image: iwidget.NewImageFromResource(
+			icons.BlankSvg,
+			fyne.NewSquareSize(app.IconUnitSize),
+		),
+		eis: eis,
+		eus: eus,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *searchResult) set(o *app.EveEntity) {
-	w.name.Text = o.Name
 	var i widget.Importance
 	if !w.supportedCategories.Contains(o.Category) {
 		i = widget.LowImportance
 	}
 	w.name.Importance = i
+	w.name.Text = o.Name
 	w.name.Refresh()
-	go func() {
-		ctx := context.Background()
-		res, err := func() (fyne.Resource, error) {
+
+	iwidget.LoadResourceAsyncWithCache(
+		icons.BlankSvg,
+		func() (fyne.Resource, bool) {
+			return searchResultResourceCache.Load(o.ID)
+		},
+		func(r fyne.Resource) {
+			w.image.Resource = r
+			w.image.Refresh()
+
+		},
+		func() (fyne.Resource, error) {
 			switch o.Category {
 			case app.EveEntityInventoryType:
-				et, err := w.u.eus.GetOrCreateTypeESI(ctx, o.ID)
+				et, err := w.eus.GetOrCreateTypeESI(context.Background(), o.ID)
 				if err != nil {
 					return nil, err
 				}
 				switch et.Group.Category.ID {
 				case app.EveCategorySKINs:
-					return w.u.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+					return w.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
 				case app.EveCategoryBlueprint:
-					return w.u.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
+					return w.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
 				default:
-					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
+					return w.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return entityIcon(w.u.eis, o, app.IconPixelSize, icons.BlankSvg)
+				return entityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
 			}
-		}()
-		if err != nil {
-			res = theme.BrokenImageIcon()
-			slog.Error("failed to load w.image", "error", err)
-		}
-		fyne.Do(func() {
-			w.image.Resource = res
-			w.image.Refresh()
-		})
-	}()
+		},
+		func(r fyne.Resource) {
+			searchResultResourceCache.Store(o.ID, r)
+		},
+	)
 }
 
 func (w *searchResult) CreateRenderer() fyne.WidgetRenderer {

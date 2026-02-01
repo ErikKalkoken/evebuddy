@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type characterOverviewRow struct {
@@ -73,9 +74,9 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
-	main              fyne.CanvasObject
 	columnSorter      *iwidget.ColumnSorter
 	info              *widget.Label
+	main              fyne.CanvasObject
 	onUpdate          func(characters int)
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
@@ -560,6 +561,8 @@ type characterCardEIS interface {
 	CorporationLogo(id int32, size int) (fyne.Resource, error)
 }
 
+var characterCardResourceCache xsync.Map[int32, fyne.Resource]
+
 // characterCard is a widget that shows a card for a character.
 // It has a large version designed for desktop and a small version designed for mobile.
 type characterCard struct {
@@ -798,65 +801,106 @@ func (w *characterCard) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *characterCard) set(r characterOverviewRow) {
+func (w *characterCard) set(c characterOverviewRow) {
 	var portraitSize, logoSize int
+	var initial fyne.Resource
 	if w.isSmall {
 		portraitSize = 256
 		logoSize = 64
+		initial = icons.Characterplaceholder256Jpeg
 	} else {
 		portraitSize = 512
 		logoSize = 64
+		initial = icons.Characterplaceholder512Jpeg
 	}
-	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
-		return w.eis.CharacterPortrait(r.characterID, portraitSize)
-	})
+	iwidget.LoadResourceAsyncWithCache(
+		initial,
+		func() (fyne.Resource, bool) {
+			return characterCardResourceCache.Load(c.characterID)
+		},
+		func(r fyne.Resource) {
+			w.portrait.Resource = r
+			w.portrait.Refresh()
+		},
+		func() (fyne.Resource, error) {
+			return w.eis.CharacterPortrait(c.characterID, portraitSize)
+		},
+		func(r fyne.Resource) {
+			characterCardResourceCache.Store(c.characterID, r)
+		},
+	)
+
 	if !w.isSmall {
 		w.corporationLogo.OnTapped = func() {
-			w.showInfoWindow(app.EveEntityCorporation, r.corporation.ID)
+			w.showInfoWindow(app.EveEntityCorporation, c.corporation.ID)
 		}
-		w.corporationLogo.SetToolTip(r.corporationName())
+		w.corporationLogo.SetToolTip(c.corporationName())
 	}
-	iwidget.RefreshTappableImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
-		return w.eis.CorporationLogo(r.corporation.ID, logoSize)
-	})
+	iwidget.LoadResourceAsyncWithCache(
+		icons.Corporationplaceholder64Png,
+		func() (fyne.Resource, bool) {
+			return characterCardResourceCache.Load(c.corporation.ID)
+		},
+		func(r fyne.Resource) {
+			w.corporationLogo.SetResource(r)
+		},
+		func() (fyne.Resource, error) {
+			return w.eis.CorporationLogo(c.corporation.ID, logoSize)
+		},
+		func(r fyne.Resource) {
+			characterCardResourceCache.Store(c.corporation.ID, r)
+		},
+	)
 
-	if r.alliance != nil {
+	if c.alliance != nil {
 		if !w.isSmall {
 			w.allianceLogo.OnTapped = func() {
-				w.showInfoWindow(app.EveEntityAlliance, r.alliance.ID)
+				w.showInfoWindow(app.EveEntityAlliance, c.alliance.ID)
 			}
-			w.allianceLogo.SetToolTip(r.allianceName())
+			w.allianceLogo.SetToolTip(c.allianceName())
 		}
 		w.allianceLogo.Show()
-		iwidget.RefreshTappableImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
-			return w.eis.AllianceLogo(r.alliance.ID, logoSize)
-		})
+		iwidget.LoadResourceAsyncWithCache(
+			icons.Corporationplaceholder64Png,
+			func() (fyne.Resource, bool) {
+				return characterCardResourceCache.Load(c.alliance.ID)
+			},
+			func(r fyne.Resource) {
+				w.allianceLogo.SetResource(r)
+			},
+			func() (fyne.Resource, error) {
+				return w.eis.AllianceLogo(c.alliance.ID, logoSize)
+			},
+			func(r fyne.Resource) {
+				characterCardResourceCache.Store(c.alliance.ID, r)
+			},
+		)
 	} else {
 		w.allianceLogo.Hide()
 	}
 
-	w.characterName.SetText(r.characterName)
+	w.characterName.SetText(c.characterName)
 
-	w.mails.SetText(r.unreadCount.StringFunc("?", func(v int) string {
+	w.mails.SetText(c.unreadCount.StringFunc("?", func(v int) string {
 		if v == 0 {
 			return "-"
 		}
 		return humanize.Comma(int64(v))
 	}))
 
-	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
+	w.skillpoints.SetText(c.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
 
-	if r.trainingActive.IsEmpty() {
+	if c.trainingActive.IsEmpty() {
 		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
 		w.trainingStatus.SetToolTip("Training status unknown")
 	} else {
-		if r.trainingActive.ValueOrZero() {
+		if c.trainingActive.ValueOrZero() {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
 			w.trainingStatus.SetToolTip("Training is active")
 		} else {
-			if r.isWatched {
+			if c.isWatched {
 				w.trainingStatus.SetResource(w.resourceTrainingExpired)
 				w.trainingStatus.SetToolTip("Training has expired")
 			} else {
@@ -866,15 +910,15 @@ func (w *characterCard) set(r characterOverviewRow) {
 		}
 	}
 
-	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {
+	w.wallet.SetText(c.walletBalance.StringFunc("?", func(v float64) string {
 		return humanize.Comma(int64(v)) + " ISK"
 	}))
 
-	w.ship.SetText(r.shipName())
+	w.ship.SetText(c.shipName())
 
 	var rt []widget.RichTextSegment
-	if r.location != nil && r.location.SolarSystem != nil {
-		rt = r.location.SolarSystem.DisplayRichText()
+	if c.location != nil && c.location.SolarSystem != nil {
+		rt = c.location.SolarSystem.DisplayRichText()
 	} else {
 		rt = iwidget.RichTextSegmentsFromText("?")
 	}
