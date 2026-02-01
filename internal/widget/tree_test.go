@@ -280,7 +280,9 @@ func TestTreeData_Delete(t *testing.T) {
 		td.Add(a, b, false)
 		c := &Node{"Charlie"}
 		td.Add(nil, c, true)
-		td.Print(nil)
+		td.Print(nil, func(n *Node) string {
+			return n.String()
+		})
 		err := td.Delete(n1)
 		require.NoError(t, err)
 		want := make([]*Node, 0)
@@ -479,14 +481,18 @@ func TestTreeData_AllPaths(t *testing.T) {
 	b := &Node{"Bravo"}
 	td.Add(top, b, false)
 
-	got1 := td.AllPaths(nil)
+	got1 := td.AllPaths(nil, func(n *Node) string {
+		return n.String()
+	})
 	want1 := [][]string{
 		{"Top", "Bravo"},
 		{"Top", "Alpha", "Charlie"},
 	}
 	assert.ElementsMatch(t, want1, got1)
 
-	got2 := td.AllPaths(a)
+	got2 := td.AllPaths(a, func(n *Node) string {
+		return n.String()
+	})
 	want2 := [][]string{
 		{"Alpha", "Charlie"},
 	}

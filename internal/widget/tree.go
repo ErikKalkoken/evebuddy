@@ -320,6 +320,18 @@ func (td TreeData[T]) delete(uid widget.TreeNodeID) {
 	}
 }
 
+// DeleteChildrenFunc removes any nodes from parent for which del returns true.
+// It does nothing when parent is not found.
+func (td TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
+	uid, ok := td.UID(parent)
+	if !ok {
+		return
+	}
+	td.children[uid] = slices.DeleteFunc(td.children[uid], func(n widget.TreeNodeID) bool {
+		return del(td.nodes[n])
+	})
+}
+
 // Exists reports whether a node exists.
 // Nil will also return represents the root node and will also return true.
 func (td TreeData[T]) Exists(node *T) bool {
@@ -396,18 +408,18 @@ func (td TreeData[T]) Path(parent, n *T) []*T {
 	return path
 }
 
-// AllPaths returns a slice of paths from parent to all leafs.
+// AllPaths returns a slice of node paths from parent to all leafs.
+// Each node is converted to a string using stringify.
 // This is a type of linearization and can be useful for comparing trees in tests.
 //
-// T is expected to implement the stringer interface.
 // Will return all paths from root when parent is nil.
-func (td TreeData[T]) AllPaths(parent *T) [][]string {
+func (td TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string {
 	all := make([][]string, 0)
 	td.Walk(parent, func(n *T) bool {
-		if c, ok := td.ChildrenCount(n); ok && c == 0 {
+		if k, ok := td.ChildrenCount(n); ok && k == 0 {
 			p := make([]string, 0)
 			for _, x := range td.Path(parent, n) {
-				p = append(p, fmt.Sprint(x))
+				p = append(p, stringify(x))
 			}
 			all = append(all, p)
 		}
@@ -416,32 +428,36 @@ func (td TreeData[T]) AllPaths(parent *T) [][]string {
 	return all
 }
 
-// Print prints a sub tree of node n to the console.
-// T is expected to implement the stringer interface.
-func (td TreeData[T]) Print(n *T) {
-	if uid, ok := td.UID(n); ok {
-		td.print(uid, "", false)
-		fmt.Println()
+// Print prints a sub tree of node n to the console using stringify for each node.
+// This can be useful to visualize a tree for debugging.
+func (td TreeData[T]) Print(n *T, stringify func(*T) string) {
+	uid, ok := td.UID(n)
+	if !ok {
+		return
 	}
-}
 
-func (td TreeData[T]) print(uid widget.TreeNodeID, indent string, last bool) {
-	var s string
-	if uid == treeRootID {
-		s = "ROOT"
-	} else {
-		n, _ := td.Node(uid)
-		s = fmt.Sprint(n)
+	var printTreeData func(widget.TreeNodeID, string, bool)
+	printTreeData = func(uid widget.TreeNodeID, indent string, last bool) {
+		var s string
+		if uid == treeRootID {
+			s = "ROOT"
+		} else {
+			n, _ := td.Node(uid)
+			s = stringify(n)
+		}
+		fmt.Println(indent + "+- " + s)
+		if last {
+			indent += "   "
+		} else {
+			indent += "|  "
+		}
+		for _, id := range td.children[uid] {
+			printTreeData(id, indent, len(td.children[id]) == 0)
+		}
 	}
-	fmt.Println(indent + "+- " + s)
-	if last {
-		indent += "   "
-	} else {
-		indent += "|  "
-	}
-	for _, id := range td.children[uid] {
-		td.print(id, indent, len(td.children[id]) == 0)
-	}
+
+	printTreeData(uid, "", false)
+	fmt.Println()
 }
 
 // SortChildrenFunc sorts the direct children of parent in ascending order
@@ -454,18 +470,6 @@ func (td TreeData[T]) SortChildrenFunc(parent *T, cmp func(a *T, b *T) int) {
 	}
 	slices.SortFunc(td.children[uid], func(a, b widget.TreeNodeID) int {
 		return cmp(td.nodes[a], td.nodes[b])
-	})
-}
-
-// DeleteChildrenFunc removes any nodes from parent for which del returns true.
-// It does nothing when parent is not found.
-func (td TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
-	uid, ok := td.UID(parent)
-	if !ok {
-		return
-	}
-	td.children[uid] = slices.DeleteFunc(td.children[uid], func(n widget.TreeNodeID) bool {
-		return del(td.nodes[n])
 	})
 }
 
