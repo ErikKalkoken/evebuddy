@@ -285,16 +285,20 @@ func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 // assetIconCache caches the images for asset icons.
 var shipImageCache xsync.Map[string, *image.RGBA]
 
+type shipItemEIS interface {
+	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
+}
+
 // The shipItem widget is used to render items on the type info window.
 type shipItem struct {
 	widget.BaseWidget
 
-	eis   app.EveImageService
+	eis   shipItemEIS
 	image *canvas.Image
 	label *widget.Label
 }
 
-func newShipItem(eis app.EveImageService) *shipItem {
+func newShipItem(eis shipItemEIS) *shipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))

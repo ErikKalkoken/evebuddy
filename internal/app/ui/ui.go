@@ -37,7 +37,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -180,7 +179,6 @@ type baseUI struct {
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EveUniverseService
 	js       *janiceservice.JaniceService
-	memcache *memcache.Cache
 	rs       *corporationservice.CorporationService
 	scs      *statuscacheservice.StatusCacheService
 	settings *settings.Settings
@@ -212,7 +210,6 @@ type BaseUIParams struct {
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
-	MemCache           *memcache.Cache
 	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
@@ -251,7 +248,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		isOffline:                   arg.IsOffline,
 		isUpdateDisabled:            arg.IsUpdateDisabled,
 		js:                          arg.JaniceService,
-		memcache:                    arg.MemCache,
 		onSectionUpdateCompleted:    func() {},
 		onSectionUpdateStarted:      func() {},
 		refreshTickerExpired:        signals.New[struct{}](),

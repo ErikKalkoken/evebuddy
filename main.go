@@ -47,7 +47,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
@@ -309,8 +308,6 @@ func main() {
 	rhc2.ResponseLogHook = logResponse
 
 	// Init StatusCache service
-	memCache := memcache.NewWithTimeout(1 * time.Hour)
-	defer memCache.Close()
 	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		slog.Error("Failed to init cache", "error", err)
@@ -380,7 +377,6 @@ func main() {
 		CharacterService: cs,
 		ClearCacheFunc: func() {
 			pc.Clear()
-			memCache.Clear()
 
 		},
 		ConcurrencyLimit:   concurrentLimit,
@@ -394,7 +390,6 @@ func main() {
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
 		JaniceService:      janiceservice.New(rhc1.StandardClient(), key),
-		MemCache:           memCache,
 		StatusCacheService: scs,
 	})
 	if isDesktop {

@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
 const (
@@ -177,7 +176,6 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 
 func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
-	cache := memcache.New()
 	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		panic(err)
@@ -217,7 +215,6 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 			Type:        icons.Typeplaceholder64Png,
 		},
 		EveUniverseService: eus,
-		MemCache:           cache,
 		StatusCacheService: scs,
 		IsOffline:          true,
 		IsMobile:           !isDesktop,
