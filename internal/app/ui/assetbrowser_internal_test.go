@@ -286,6 +286,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 
 		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, item1))
 		xassert.Equal(t, []int{5, 1}, makeCountsPath(ac, td, ship1))
+		xassert.Equal(t, []int{5, 1, 0, 1}, makeCountsPath(ac, td, drone))
 		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, deliveryItem1))
 		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, td, spaceItem1))
 		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, td, safetyItem1))

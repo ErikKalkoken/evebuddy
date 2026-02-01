@@ -501,11 +501,11 @@ func (td TreeData[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
 
 // Walk walks the sub tree of parent, calling f for each node in the tree,
 // including parent (except the root).
+// It continues walking until all nodes have been visited or f returns false.
 //
 // The nodes are walked in depth first order.
 // Walk starts at the root when parent is nil.
 // Walk does nothing if parent is not found.
-// The caller can return true to continue walking and false to exit early.
 func (td TreeData[T]) Walk(parent *T, f func(n *T) bool) {
 	var traverse func(widget.TreeNodeID) bool
 	traverse = func(curr widget.TreeNodeID) bool {

@@ -461,11 +461,15 @@ func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNo
 
 func updateItemCounts(td iwidget.TreeData[assetContainerNode]) {
 	td.Walk(nil, func(n *assetContainerNode) bool {
-		n.itemCount.Clear()
+		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
+			n.itemCount.Set(k)
+		}
 		return true
 	})
 	for _, location := range td.Children(nil) {
+		location.itemCount.Clear()
 		for _, top := range td.Children(location) {
+			top.itemCount.Clear()
 			switch top.node.Category() {
 			case asset.NodeOfficeFolder, asset.NodeAssetSafetyCharacter:
 				for _, n1 := range td.Children(top) {
@@ -474,6 +478,7 @@ func updateItemCounts(td iwidget.TreeData[assetContainerNode]) {
 				}
 			case asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
 				for _, n1 := range td.Children(top) {
+					n1.itemCount.Clear()
 					for _, n2 := range td.Children(n1) {
 						n2.itemCount = optional.FromIntegerWithZero(len(n2.node.Children()))
 						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
