@@ -77,27 +77,27 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 	if a.forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.updateAsync()
+			a.update(ctx)
 		})
 		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section == app.SectionCorporationAssets {
-				a.updateAsync()
+				a.update(ctx)
 			}
 		})
 	} else {
-		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.updateAsync()
+			a.update(ctx)
 		})
-		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 			if characterIDOrZero(a.character.Load()) != arg.characterID {
 				return
 			}
 			if arg.section == app.SectionCharacterAssets {
-				a.updateAsync()
+				a.update(ctx)
 			}
 		})
 	}
@@ -110,7 +110,7 @@ func (a *assetBrowser) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetBrowser) updateAsync() {
+func (a *assetBrowser) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.Navigation.clear()
@@ -126,7 +126,6 @@ func (a *assetBrowser) updateAsync() {
 		slog.Error("Failed to update asset browser", "error", err)
 		setTop(a.u.humanizeError(err), widget.DangerImportance)
 	}
-	ctx := context.Background()
 	el, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		reportError(err)
@@ -173,7 +172,7 @@ func (a *assetBrowser) updateAsync() {
 	fyne.DoAndWait(func() {
 		a.at = at
 	})
-	a.Navigation.updateAsync(at.Locations())
+	a.Navigation.update(ctx, at.Locations())
 }
 
 const (
@@ -343,7 +342,7 @@ func (a *assetBrowserNavigation) clear() {
 	a.top.SetText("")
 }
 
-func (a *assetBrowserNavigation) updateAsync(trees []*asset.Node) {
+func (a *assetBrowserNavigation) update(ctx context.Context, trees []*asset.Node) {
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.ab.forCorporation)
