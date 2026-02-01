@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"slices"
 	"sync/atomic"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -22,8 +21,7 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 const (
@@ -34,7 +32,7 @@ const (
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	character      atomic.Pointer[app.Character]
+	character       atomic.Pointer[app.Character]
 	flyableSelect   *kxwidget.FilterChipSelect
 	flyableSelected string
 	grid            *widget.GridWrap
@@ -149,7 +147,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return newShipItem(a.u.eis, a.u.memcache, icons.QuestionmarkSvg)
+			return newShipItem(a.u.eis)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -284,18 +282,19 @@ func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 	return text, widget.MediumImportance, true, nil
 }
 
+// assetIconCache caches the images for asset icons.
+var shipImageCache xsync.Map[string, *image.RGBA]
+
 // The shipItem widget is used to render items on the type info window.
 type shipItem struct {
 	widget.BaseWidget
 
-	cache        *memcache.Cache
-	fallbackIcon fyne.Resource
-	image        *canvas.Image
-	label        *widget.Label
-	eis          app.EveImageService
+	eis   app.EveImageService
+	image *canvas.Image
+	label *widget.Label
 }
 
-func newShipItem(eis app.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *shipItem {
+func newShipItem(eis app.EveImageService) *shipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
@@ -304,11 +303,9 @@ func newShipItem(eis app.EveImageService, cache *memcache.Cache, fallbackIcon fy
 	image.CornerRadius = theme.InputRadiusSize()
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &shipItem{
-		image:        image,
-		label:        widget.NewLabel("First line\nSecond Line\nThird Line"),
-		fallbackIcon: fallbackIcon,
-		eis:          eis,
-		cache:        cache,
+		image: image,
+		label: widget.NewLabel("First line\nSecond Line\nThird Line"),
+		eis:   eis,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -326,33 +323,48 @@ func (w *shipItem) Set(typeID int32, label string, canFly bool) {
 	}
 	w.label.Importance = i
 	w.label.Refresh()
+
+	// TODO: Move grayscale feature into general package
+
+	key := fmt.Sprintf("%d-%v", typeID, canFly)
+	img, ok := shipImageCache.Load(key)
+	if ok {
+		w.image.Image = img
+		w.image.Refresh()
+		return
+	}
 	go func() {
-		// TODO: Move grayscale feature into general package
-		key := fmt.Sprintf("ship-image-%d", typeID)
-		var img *image.RGBA
-		y, ok := w.cache.Get(key)
-		if !ok {
+		j, err := func() (image.Image, error) {
 			r, err := w.eis.InventoryTypeRender(typeID, 256)
 			if err != nil {
-				slog.Error("failed to fetch image for ship render", "error", err)
-				return
+				return nil, err
 			}
 			j, _, err := image.Decode(bytes.NewReader(r.Content()))
 			if err != nil {
-				slog.Error("failed to decode image for ship render", "error", err)
-				return
+				return nil, err
 			}
-			b := j.Bounds()
-			img = image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-			draw.Draw(img, img.Bounds(), j, b.Min, draw.Src)
-			w.cache.Set(key, img, 3600*time.Second)
-		} else {
-			img = y.(*image.RGBA)
+			return j, nil
+		}()
+		if err != nil {
+			slog.Error("shipItem: image render", "error", err)
+			fyne.Do(func() {
+				w.image.Image = nil
+				w.image.Resource = theme.BrokenImageIcon()
+				w.image.Refresh()
+			})
+			return
 		}
+
+		b := j.Bounds()
+		img = image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+		draw.Draw(img, img.Bounds(), j, b.Min, draw.Src)
 		if !canFly {
 			img = effect.Grayscale(img)
 		}
+		shipImageCache.Store(key, img)
+
 		fyne.Do(func() {
+			w.image.Resource = nil
 			w.image.Image = img
 			w.image.Refresh()
 		})
