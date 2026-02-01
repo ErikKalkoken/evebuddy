@@ -623,14 +623,14 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 			return len(a.itemsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newAssetNodeIcon(a.ab.u.eis)
+			return newAssetIcon(a.ab.u.eis)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.itemsFiltered) {
 				return
 			}
 			it := a.itemsFiltered[id]
-			item := co.(*assetNodeIcon)
+			item := co.(*assetItem)
 			item.Set(it.node)
 		},
 	)
@@ -653,14 +653,6 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 		}
 	}
 	return g
-}
-
-func (a *assetBrowserContainer) clear() {
-	a.location.clear()
-	a.search.Hide()
-	a.bottom.SetText("")
-	a.items = make([]containerItem, 0)
-	a.filterItems()
 }
 
 func (a *assetBrowserContainer) set(cn *assetContainerNode) {
@@ -731,16 +723,16 @@ func (a *assetBrowserContainer) filterItems() {
 		})
 
 		var itemCount int64
-		var value float64
+		var value optional.Optional[float64]
 		for _, it := range items {
+			itemCount++
 			if as, ok := it.node.Asset(); ok {
-				itemCount++
-				value += as.Price.ValueOrZero() * float64(as.Quantity)
+				value = optional.Sum(value, optional.New(as.Price.ValueOrZero()*float64(as.Quantity)))
 			}
 		}
 		bottom := fmt.Sprintf("%s items", humanize.Comma(itemCount))
-		if itemCount > 0 {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(value)))
+		if !value.IsEmpty() {
+			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(value.ValueOrZero())))
 		}
 
 		fyne.Do(func() {
@@ -749,6 +741,14 @@ func (a *assetBrowserContainer) filterItems() {
 			a.bottom.SetText(bottom)
 		})
 	}()
+}
+
+func (a *assetBrowserContainer) clear() {
+	a.location.clear()
+	a.search.Hide()
+	a.bottom.SetText("")
+	a.items = make([]containerItem, 0)
+	a.filterItems()
 }
 
 func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
@@ -850,31 +850,32 @@ func (a *assetBrowserLocation) set(cn *assetContainerNode) {
 }
 
 const (
-	typeIconSize                      = 55
-	sizeLabelText                     = 12
 	colorAssetQuantityBadgeBackground = theme.ColorNameMenuBackground
 	labelMaxCharacters                = 10
+	sizeLabelText                     = 12
+	typeIconSize                      = 55
 )
 
-type assetNodeIconEIS interface {
+type assetIconEIS interface {
 	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
 	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
 	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
 	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
 }
 
-type assetNodeIcon struct {
+// assetItem represents an asset shown with an icon and label.
+type assetItem struct {
 	widget.BaseWidget
 
 	badge *assetQuantityBadge
+	eis   assetIconEIS
 	icon  *canvas.Image
-	eis   assetNodeIconEIS
 	label *assetLabel
 }
 
-func newAssetNodeIcon(eis assetNodeIconEIS) *assetNodeIcon {
+func newAssetIcon(eis assetIconEIS) *assetItem {
 	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
-	w := &assetNodeIcon{
+	w := &assetItem{
 		icon:  icon,
 		label: newAssetLabel(),
 		eis:   eis,
@@ -885,7 +886,7 @@ func newAssetNodeIcon(eis assetNodeIconEIS) *assetNodeIcon {
 	return w
 }
 
-func (w *assetNodeIcon) CreateRenderer() fyne.WidgetRenderer {
+func (w *assetItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewPadded(container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.New(&bottomRightLayout{}, w.icon, w.badge),
 		w.label,
@@ -893,9 +894,9 @@ func (w *assetNodeIcon) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *assetNodeIcon) Set(n *asset.Node) {
+func (w *assetItem) Set(n *asset.Node) {
 	defer w.Refresh()
-	showFolder := func(w *assetNodeIcon) {
+	showFolder := func(w *assetItem) {
 		fyne.Do(func() {
 			w.icon.Resource = theme.FolderIcon()
 			w.icon.Refresh()
