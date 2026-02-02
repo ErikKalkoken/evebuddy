@@ -115,8 +115,9 @@ func (a *corporationMember) makeList() *widget.List {
 			r := a.rowsFiltered[id]
 			box := co.(*fyne.Container).Objects
 			portrait := box[0].(*canvas.Image)
-			iwidget.RefreshImageAsync(portrait, func() (fyne.Resource, error) {
-				return a.u.eis.CharacterPortrait(r.id, app.IconPixelSize)
+			a.u.eis.CharacterPortraitAsync(r.id, app.IconPixelSize, func(r fyne.Resource) {
+				portrait.Resource = r
+				portrait.Refresh()
 			})
 			box[1].(*widget.Label).SetText(r.name)
 			owned := box[2]

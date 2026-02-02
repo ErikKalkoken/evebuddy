@@ -796,16 +796,16 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		imageAction: func() {
 			u.ShowTypeInfoWindow(r.typeID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
+		imageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {
 			case app.VariantSKIN:
-				return u.eis.InventoryTypeSKIN(r.typeID, app.IconPixelSize)
+				u.eis.InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
 			case app.VariantBPO:
-				return u.eis.InventoryTypeBPO(r.typeID, app.IconPixelSize)
+				u.eis.InventoryTypeBPOAsync(r.typeID, app.IconPixelSize, setter)
 			case app.VariantBPC:
-				return u.eis.InventoryTypeBPC(r.typeID, app.IconPixelSize)
+				u.eis.InventoryTypeBPCAsync(r.typeID, app.IconPixelSize, setter)
 			default:
-				return u.eis.InventoryTypeIcon(r.typeID, app.IconPixelSize)
+				u.eis.InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
 			}
 		},
 		minSize: fyne.NewSize(500, 450),

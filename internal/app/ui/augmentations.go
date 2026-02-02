@@ -120,7 +120,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 			iconMain := border[1].(*canvas.Image)
 			info := border[2].(*iwidget.TappableIcon)
 			if n.IsTop() {
-				go a.u.updateCharacterAvatar(n.characterID, func(r fyne.Resource) {
+				go a.u.setCharacterAvatar(n.characterID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						iconMain.Resource = r
 						iconMain.Refresh()
@@ -145,8 +145,9 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 					a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
 				}
 			} else {
-				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
+				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+					iconMain.Resource = r
+					iconMain.Refresh()
 				})
 				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
 				main.Refresh()

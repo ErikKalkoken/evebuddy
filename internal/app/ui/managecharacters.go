@@ -29,7 +29,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 func showManageCharactersWindow(u *baseUI) {
@@ -64,7 +63,6 @@ type manageCharacters struct {
 	sb                *iwidget.Snackbar
 	u                 *baseUI
 	w                 fyne.Window
-	iconCache         xsync.Map[int32, fyne.Resource]
 }
 
 func newManageCharacters(u *baseUI) *manageCharacters {
@@ -111,26 +109,6 @@ func (a *manageCharacters) update() {
 func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
-}
-
-func (a *manageCharacters) loadCharacterAsyncWithCache(portrait *canvas.Image, characterID int32) {
-	iwidget.LoadResourceAsyncWithCache(
-		icons.Characterplaceholder64Jpeg,
-		func() (fyne.Resource, bool) {
-			return a.iconCache.Load(characterID)
-		},
-		func(r fyne.Resource) {
-			portrait.Resource = r
-			portrait.Refresh()
-		},
-		func() (fyne.Resource, error) {
-			return a.u.eis.CharacterPortrait(characterID, app.IconPixelSize)
-		},
-		func(r fyne.Resource) {
-			a.iconCache.Store(characterID, r)
-		},
-	)
-
 }
 
 type characterAdminRow struct {
@@ -215,7 +193,10 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 			row := co.(*fyne.Container).Objects
 
 			portrait := row[0].(*canvas.Image)
-			a.mc.loadCharacterAsyncWithCache(portrait, c.characterID)
+			a.mc.u.eis.CharacterPortraitAsync(c.characterID, app.IconPixelSize, func(r fyne.Resource) {
+				portrait.Resource = r
+				portrait.Refresh()
+			})
 
 			name := row[1].(*widget.Label)
 			name.SetText(c.characterName)
@@ -658,7 +639,10 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				icons := box[1].(*fyne.Container).Objects
 
 				portrait := icons[1].(*canvas.Image)
-				a.mc.loadCharacterAsyncWithCache(portrait, character.ID)
+				a.mc.u.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
+					portrait.Resource = r
+					portrait.Refresh()
+				})
 
 				check := icons[0].(*widget.Icon)
 				if selected[character.ID] {
@@ -822,7 +806,10 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
-			a.mc.loadCharacterAsyncWithCache(portrait, character.ID)
+			a.mc.u.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
+				portrait.Resource = r
+				portrait.Refresh()
+			})
 
 			remove := box[2].(*ttwidget.Button)
 			remove.OnTapped = func() {
@@ -1041,7 +1028,10 @@ func (a *characterTraining) makeList() *widget.List {
 			character.SetText(c.EveCharacter.Name)
 
 			portrait := row[1].(*canvas.Image)
-			a.mc.loadCharacterAsyncWithCache(portrait, c.ID)
+			a.mc.u.eis.CharacterPortraitAsync(c.ID, app.IconPixelSize, func(r fyne.Resource) {
+				portrait.Resource = r
+				portrait.Refresh()
+			})
 
 			sw := row[2].(*kxwidget.Switch)
 			sw.On = c.IsTrainingWatched

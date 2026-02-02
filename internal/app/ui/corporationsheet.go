@@ -191,9 +191,9 @@ func (a *corporationSheet) update() {
 		a.members.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRate.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
 		a.ticker.SetText(corporation.Ticker)
-	})
-	iwidget.RefreshTappableImageAsync(a.logo, func() (fyne.Resource, error) {
-		return a.u.eis.CorporationLogo(corporation.ID, 512)
+		a.u.eis.CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
+			a.logo.SetResource(r)
+		})
 	})
 	fyne.Do(func() {
 		if alliance := corporation.Alliance; alliance != nil {

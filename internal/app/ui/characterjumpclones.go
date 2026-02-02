@@ -157,8 +157,9 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				prefix.Show()
 				spacer.Show()
 			} else {
-				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
+				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+					iconMain.Resource = r
+					iconMain.Refresh()
 				})
 				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
 				main.Refresh()

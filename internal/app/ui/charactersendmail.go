@@ -145,7 +145,6 @@ func (a *characterSendMail) SendAction() bool {
 func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	results := make([]*app.EveEntity, 0)
-	fallbackIcon := icons.Questionmark32Png
 	list := widget.NewList(
 		func() int {
 			return len(results)
@@ -156,6 +155,7 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 			category := widget.NewLabel("Template")
 			category.SizeName = theme.SizeNameCaptionText
 			icon := iwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
+			icon.CornerRadius = app.IconUnitSize / 2
 			return container.NewBorder(
 				nil,
 				nil,
@@ -172,12 +172,9 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
-				res, err := fetchEveEntityAvatar(u.eis, ee, fallbackIcon)
-				if err != nil {
-					return fallbackIcon, err
-				}
-				return res, nil
+			fetchEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
+				image.Resource = r
+				image.Refresh()
 			})
 			row[2].(*widget.Label).SetText(ee.CategoryDisplay())
 		},

@@ -673,8 +673,9 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 			im := clone.Implants[id]
 			border := co.(*fyne.Container).Objects
 			icon := border[1].(*canvas.Image)
-			iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
-				return a.u.eis.InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
+			a.u.eis.InventoryTypeIconAsync(im.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
+				icon.Resource = r
+				icon.Refresh()
 			})
 			name := border[0]
 			name.(*widget.Label).SetText(im.EveType.Name)

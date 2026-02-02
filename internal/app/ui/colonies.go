@@ -540,9 +540,9 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		imageAction: func() {
 			a.u.ShowTypeInfoWindow(cp.EvePlanet.Type.ID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
+		imageLoader: func(setter func(r fyne.Resource)) {
 			r, _ := cp.EvePlanet.Type.Icon()
-			return r, nil
+			setter(r)
 		},
 		window: w,
 	})

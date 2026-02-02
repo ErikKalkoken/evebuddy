@@ -22,7 +22,7 @@ import (
 type characterAugmentations struct {
 	widget.BaseWidget
 
-	character      atomic.Pointer[app.Character]
+	character atomic.Pointer[app.Character]
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
@@ -100,8 +100,9 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := border[1].(*canvas.Image)
-			iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-				return a.u.eis.InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
+			a.u.eis.InventoryTypeIconAsync(o.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
+				iconMain.Resource = r
+				iconMain.Refresh()
 			})
 			info := border[2].(*iwidget.TappableIcon)
 			info.OnTapped = func() {

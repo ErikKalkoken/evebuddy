@@ -658,8 +658,8 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 		imageAction: func() {
 			u.ShowTypeInfoWindow(o.Type.ID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.InventoryTypeIcon(o.Type.ID, 256)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			u.eis.InventoryTypeIconAsync(o.Type.ID, 256, setter)
 		},
 		title:  title,
 		window: w,
@@ -720,8 +720,8 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 		imageAction: func() {
 			u.ShowTypeInfoWindow(o.Type.ID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.InventoryTypeIcon(o.Type.ID, 256)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			u.eis.InventoryTypeIconAsync(o.Type.ID, 256, setter)
 		},
 		title:  title,
 		window: w,

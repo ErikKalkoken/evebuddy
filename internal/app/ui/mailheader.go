@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -43,6 +42,7 @@ func newMailHeaderItem(eis eveEntityEIS) *mailHeaderItem {
 		timestamp:    widget.NewLabel(""),
 	}
 	w.icon = iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
+	w.icon.CornerRadius = app.IconUnitSize / 2
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -54,18 +54,11 @@ func (w *mailHeaderItem) Set(characterID int32, from *app.EveEntity, subject str
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
+	fetchEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+		w.icon.Resource = r
+		w.icon.Refresh()
+	})
 	w.Refresh()
-	go func() {
-		res, err := fetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
-		if err != nil {
-			slog.Error("fetch eve entity avatar", "characterID", characterID, "from", from, "timestamp", timestamp, "error", err)
-			res = w.FallbackIcon
-		}
-		fyne.Do(func() {
-			w.icon.Resource = res
-			w.icon.Refresh()
-		})
-	}()
 }
 
 func (w *mailHeaderItem) Refresh() {
@@ -115,6 +108,7 @@ func newMailHeader(eis eveEntityEIS, show func(*app.EveEntity)) *mailHeader {
 	w.icon = iwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
+	w.icon.SetCornerRadius(app.IconUnitSize / 2)
 	w.to.Hide()
 	return w
 }
@@ -136,17 +130,10 @@ func (w *mailHeader) Set(characterID int32, from *app.EveEntity, timestamp time.
 		w.showInfo(from)
 	}
 	w.to.Show()
+	fetchEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+		w.icon.SetResource(r)
+	})
 	w.Refresh()
-	go func() {
-		res, err := fetchEveEntityAvatar(w.eis, from, icons.BlankSvg)
-		if err != nil {
-			slog.Error("fetch eve entity avatar", "characterID", characterID, "from", from, "timestamp", timestamp, "error", err)
-			res = icons.Questionmark32Png
-		}
-		fyne.Do(func() {
-			w.icon.SetResource(res)
-		})
-	}()
 }
 
 func (w *mailHeader) Clear() {

@@ -16,7 +16,7 @@ type detailWindowParams struct {
 	content        fyne.CanvasObject
 	enableTooltips bool
 	imageAction    func()
-	imageLoader    func() (fyne.Resource, error) // async loader
+	imageLoader    func(setter func(r fyne.Resource))
 	imageSize      float32
 	minSize        fyne.Size
 	title          string
@@ -41,7 +41,9 @@ func setDetailWindow(arg detailWindowParams) {
 		image := iwidget.NewTappableImage(icons.BlankSvg, arg.imageAction)
 		image.SetFillMode(canvas.ImageFillContain)
 		image.SetMinSize(fyne.NewSquareSize(arg.imageSize))
-		iwidget.RefreshTappableImageAsync(image, arg.imageLoader)
+		arg.imageLoader(func(r fyne.Resource) {
+			image.SetResource(r)
+		})
 		image2 = container.NewPadded(container.NewVBox((image)))
 	}
 

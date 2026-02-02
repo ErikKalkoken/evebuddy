@@ -28,7 +28,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type characterOverviewRow struct {
@@ -556,12 +555,10 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 }
 
 type characterCardEIS interface {
-	AllianceLogo(id int32, size int) (fyne.Resource, error)
-	CharacterPortrait(id int32, size int) (fyne.Resource, error)
-	CorporationLogo(id int32, size int) (fyne.Resource, error)
+	AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource))
+	CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource))
 }
-
-var characterCardResourceCache xsync.Map[int32, fyne.Resource]
 
 // characterCard is a widget that shows a card for a character.
 // It has a large version designed for desktop and a small version designed for mobile.
@@ -803,32 +800,18 @@ func (w *characterCard) Refresh() {
 
 func (w *characterCard) set(c characterOverviewRow) {
 	var portraitSize, logoSize int
-	var initial fyne.Resource
 	if w.isSmall {
 		portraitSize = 256
 		logoSize = 64
-		initial = icons.Characterplaceholder256Jpeg
 	} else {
 		portraitSize = 512
 		logoSize = 64
-		initial = icons.Characterplaceholder512Jpeg
 	}
-	iwidget.LoadResourceAsyncWithCache(
-		initial,
-		func() (fyne.Resource, bool) {
-			return characterCardResourceCache.Load(c.characterID)
-		},
-		func(r fyne.Resource) {
-			w.portrait.Resource = r
-			w.portrait.Refresh()
-		},
-		func() (fyne.Resource, error) {
-			return w.eis.CharacterPortrait(c.characterID, portraitSize)
-		},
-		func(r fyne.Resource) {
-			characterCardResourceCache.Store(c.characterID, r)
-		},
-	)
+
+	w.eis.CharacterPortraitAsync(c.characterID, portraitSize, func(r fyne.Resource) {
+		w.portrait.Resource = r
+		w.portrait.Refresh()
+	})
 
 	if !w.isSmall {
 		w.corporationLogo.OnTapped = func() {
@@ -836,21 +819,10 @@ func (w *characterCard) set(c characterOverviewRow) {
 		}
 		w.corporationLogo.SetToolTip(c.corporationName())
 	}
-	iwidget.LoadResourceAsyncWithCache(
-		icons.Corporationplaceholder64Png,
-		func() (fyne.Resource, bool) {
-			return characterCardResourceCache.Load(c.corporation.ID)
-		},
-		func(r fyne.Resource) {
-			w.corporationLogo.SetResource(r)
-		},
-		func() (fyne.Resource, error) {
-			return w.eis.CorporationLogo(c.corporation.ID, logoSize)
-		},
-		func(r fyne.Resource) {
-			characterCardResourceCache.Store(c.corporation.ID, r)
-		},
-	)
+
+	w.eis.CorporationLogoAsync(c.corporation.ID, logoSize, func(r fyne.Resource) {
+		w.corporationLogo.SetResource(r)
+	})
 
 	if c.alliance != nil {
 		if !w.isSmall {
@@ -860,21 +832,9 @@ func (w *characterCard) set(c characterOverviewRow) {
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}
 		w.allianceLogo.Show()
-		iwidget.LoadResourceAsyncWithCache(
-			icons.Corporationplaceholder64Png,
-			func() (fyne.Resource, bool) {
-				return characterCardResourceCache.Load(c.alliance.ID)
-			},
-			func(r fyne.Resource) {
-				w.allianceLogo.SetResource(r)
-			},
-			func() (fyne.Resource, error) {
-				return w.eis.AllianceLogo(c.alliance.ID, logoSize)
-			},
-			func(r fyne.Resource) {
-				characterCardResourceCache.Store(c.alliance.ID, r)
-			},
-		)
+		w.eis.AllianceLogoAsync(c.alliance.ID, logoSize, func(r fyne.Resource) {
+			w.allianceLogo.SetResource(r)
+		})
 	} else {
 		w.allianceLogo.Hide()
 	}

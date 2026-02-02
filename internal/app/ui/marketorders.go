@@ -607,8 +607,8 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		imageAction: func() {
 			u.ShowTypeInfoWindow(r.typeID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.InventoryTypeIcon(r.typeID, 256)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			u.eis.InventoryTypeIconAsync(r.typeID, 256, setter)
 		},
 		title:  title,
 		window: w,

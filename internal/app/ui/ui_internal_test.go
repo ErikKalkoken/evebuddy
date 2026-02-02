@@ -132,36 +132,71 @@ type EveImageServiceFake struct {
 func (s *EveImageServiceFake) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 	return s.Alliance, s.Err
 }
+
+func (s *EveImageServiceFake) AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Alliance)
+}
+
 func (s *EveImageServiceFake) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
 	return s.Character, s.Err
+}
+
+func (s *EveImageServiceFake) CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Character)
 }
 
 func (s *EveImageServiceFake) CorporationLogo(id int32, size int) (fyne.Resource, error) {
 	return s.Corporation, s.Err
 }
 
+func (s *EveImageServiceFake) CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Corporation)
+}
 func (s *EveImageServiceFake) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	return s.Faction, s.Err
+}
+
+func (s *EveImageServiceFake) FactionLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Faction)
 }
 
 func (s *EveImageServiceFake) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
+func (s *EveImageServiceFake) InventoryTypeRenderAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
+}
+
 func (s *EveImageServiceFake) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeIconAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
 }
 
 func (s *EveImageServiceFake) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
+func (s *EveImageServiceFake) InventoryTypeBPOAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
+}
+
 func (s *EveImageServiceFake) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
+func (s *EveImageServiceFake) InventoryTypeBPCAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
+}
 func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
 }
 
 type CharacterServiceFake struct {

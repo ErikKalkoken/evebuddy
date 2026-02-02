@@ -854,8 +854,8 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		imageAction: func() {
 			a.u.ShowTypeInfoWindow(r.blueprintType.ID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return a.u.eis.InventoryTypeBPO(r.blueprintType.ID, 256)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			a.u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)
 		},
 		title:  title,
 		window: w,

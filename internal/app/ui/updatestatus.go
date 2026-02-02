@@ -208,15 +208,21 @@ func (a *updateStatus) makeEntityList() *widget.List {
 			case sectionCharacter, sectionCorporation:
 				name.TextStyle.Bold = false
 				name.Refresh()
-				iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
-					switch c.category {
-					case sectionCharacter:
-						return a.u.eis.CharacterPortrait(c.id, app.IconPixelSize)
-					case sectionCorporation:
-						return a.u.eis.CorporationLogo(c.id, app.IconPixelSize)
-					}
-					return icons.BlankSvg, nil
-				})
+				switch c.category {
+				case sectionCharacter:
+					a.u.eis.CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+						icon.Resource = r
+						icon.Refresh()
+					})
+				case sectionCorporation:
+					a.u.eis.CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+						icon.Resource = r
+						icon.Refresh()
+					})
+				default:
+					icon.Resource = icons.BlankSvg
+					icon.Refresh()
+				}
 			case sectionHeader:
 				name.TextStyle.Bold = true
 				name.Refresh()
