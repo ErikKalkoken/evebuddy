@@ -8,6 +8,13 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+//go:embed resources/blank.svg
+var resourceBlankSvgData []byte
+var resourceBlankSvg = &fyne.StaticResource{
+	StaticName:    "resources/blank.svg",
+	StaticContent: resourceBlankSvgData,
+}
+
 //go:embed resources/question_mark_32.png
 var resourceQuestionmark32PngData []byte
 var resourceQuestionmark32Png = &fyne.StaticResource{
