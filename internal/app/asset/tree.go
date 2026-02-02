@@ -7,21 +7,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-)
-
-type Filter uint
-
-const (
-	FilterNone = iota
-	FilterDeliveries
-	FilterImpounded
-	FilterInSpace
-	FilterOffice
-	FilterPersonalAssets
-	FilterSafety
-	FilterCorpOther
 )
 
 type Item interface {
@@ -29,17 +15,18 @@ type Item interface {
 	Unwrap() app.Asset
 }
 
-// Collection represents a collection of asset trees.
-// There is one tree for each location.
-type Collection struct {
-	filter        Filter
-	isCorporation bool            // True for corporation assets, false for character assets.
-	nodeLookup    map[int64]*Node // Lookup of nodes for items
-	rootLookup    map[int64]*Node // Lookup of root nodes for items
-	trees         map[int64]*Node // Map of location IDs to root nodes.
+// Tree represents an asset tree in Eve Online.
+// It can contain both character and corporation assets from one or multiple owners.
+//
+// Assets are organized by EVE locations (e.g. station) which form the main branches of the tree.
+// The root node is implicit.
+type Tree struct {
+	nodeLookup     map[int64]*Node // Lookup of nodes for items
+	locationLookup map[int64]*Node // Lookup of location nodes for items
+	locations      map[int64]*Node // Map of location IDs to location nodes.
 }
 
-func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Collection {
+func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Tree {
 	items := make([]Item, 0)
 	for _, ca := range assets {
 		items = append(items, ca)
@@ -47,7 +34,7 @@ func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLo
 	return new(items, locations, false)
 }
 
-func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Collection {
+func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Tree {
 	items := make([]Item, 0)
 	for _, ca := range assets {
 		items = append(items, ca)
@@ -55,23 +42,23 @@ func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.E
 	return new(items, locations, true)
 }
 
-// new returns a new Collection.
-func new(items []Item, locations []*app.EveLocation, isCorporation bool) Collection {
-	// map of eve locationLookup
+// new returns a new asset tree.
+func new(items []Item, locations []*app.EveLocation, isCorporation bool) Tree {
+	// map of location ID to eve locations
 	locationLookup := make(map[int64]*app.EveLocation)
 	for _, loc := range locations {
 		locationLookup[loc.ID] = loc
 	}
 
 	// initial map of all items
-	// items will be removed from this map as they are added to the trees
+	// items will be removed from this map as they are added to the locations
 	items2 := make(map[int64]Item)
 	for _, it := range items {
 		items2[it.ID()] = it
 	}
 
-	// create tree roots
-	trees := make(map[int64]*Node)
+	// create location nodes, which form the foundation of the main branches
+	locations2 := make(map[int64]*Node)
 	for _, it := range items2 {
 		asset := it.Unwrap()
 		_, found := items2[asset.LocationID]
@@ -82,52 +69,51 @@ func new(items []Item, locations []*app.EveLocation, isCorporation bool) Collect
 		if !found {
 			continue
 		}
-		trees[loc.ID] = newLocationNode(loc)
+		locations2[loc.ID] = newLocationNode(loc)
 	}
 
-	// add items to trees and make node lookup
+	// add items to locations and make node lookup
 	nodeLookup := make(map[int64]*Node)
 	for _, it := range items2 {
-		root, found := trees[it.Unwrap().LocationID]
+		loc, found := locations2[it.Unwrap().LocationID]
 		if !found {
 			continue
 		}
-		node := root.addChildFromItem(it)
+		node := loc.addChildFromItem(it)
 		nodeLookup[it.ID()] = node
 		delete(items2, it.ID())
 	}
-	for _, root := range trees {
-		addChildNodes(root.children, items2, nodeLookup)
+	for _, loc := range locations2 {
+		addChildNodes(loc.children, items2, nodeLookup)
 	}
 
-	insertCustomNodes(trees, isCorporation)
+	insertCustomNodes(locations2, isCorporation)
 	if isCorporation {
-		addMissingOffices(trees)
+		addMissingOffices(locations2)
 	} else {
-		addMissingHangars(trees)
+		addMissingHangars(locations2)
 	}
 
-	ac := Collection{
-		isCorporation: isCorporation,
-		nodeLookup:    nodeLookup,
-		rootLookup:    makeRootLookup(trees),
-		trees:         trees,
+	ac := Tree{
+		nodeLookup:     nodeLookup,
+		locationLookup: makeLocationLookup(locations2),
+		locations:      locations2,
 	}
 	return ac
 }
 
-func makeRootLookup(trees map[int64]*Node) map[int64]*Node {
-	rootLookup := make(map[int64]*Node)
-	for _, root := range trees {
-		for _, n := range root.children {
+func makeLocationLookup(locations map[int64]*Node) map[int64]*Node {
+	lookup := make(map[int64]*Node)
+	for _, loc := range locations {
+		for _, n := range loc.children {
 			for c := range n.All() {
 				if c.item != nil {
-					rootLookup[c.item.ID()] = root
+					lookup[c.item.ID()] = loc
 				}
 			}
 		}
 	}
-	return rootLookup
+	return lookup
 }
 
 // addChildNodes adds assets as nodes to parents. Recursive.
@@ -246,9 +232,9 @@ var locationFlag2CategoryCorp = map[app.LocationFlag]NodeCategory{
 	app.FlagImpounded:      NodeImpounded,
 }
 
-func insertCustomNodes(trees map[int64]*Node, isCorporation bool) {
-	for _, root := range trees {
-		for _, n := range root.all() {
+func insertCustomNodes(locations map[int64]*Node, isCorporation bool) {
+	for _, location := range locations {
+		for _, n := range location.all() {
 			asset, ok := n.Asset()
 			if !ok {
 				continue
@@ -267,7 +253,7 @@ func insertCustomNodes(trees map[int64]*Node, isCorporation bool) {
 					continue
 				}
 			} else {
-				if n.IsRootDirectChild() {
+				if n.AncestorCount() == 1 {
 					if asset.Type != nil && asset.Type.IsShip() {
 						addToCustomNode(n, NodeShipHangar)
 						continue
@@ -315,9 +301,9 @@ func addToCustomNode(n *Node, category NodeCategory) bool {
 	return isCreated
 }
 
-func addMissingOffices(trees map[int64]*Node) {
-	for _, root := range trees {
-		for n := range root.All() {
+func addMissingOffices(locations map[int64]*Node) {
+	for _, location := range locations {
+		for n := range location.All() {
 			if n.category != NodeOfficeFolder {
 				continue
 			}
@@ -345,9 +331,9 @@ func addMissingOffices(trees map[int64]*Node) {
 	}
 }
 
-func addMissingHangars(trees map[int64]*Node) {
-	for _, root := range trees {
-		current := set.Collect(xiter.MapSlice(root.children, func(x *Node) NodeCategory {
+func addMissingHangars(locations map[int64]*Node) {
+	for _, location := range locations {
+		current := set.Collect(xiter.MapSlice(location.children, func(x *Node) NodeCategory {
 			return x.category
 		}))
 		var missing set.Set[NodeCategory]
@@ -358,23 +344,33 @@ func addMissingHangars(trees map[int64]*Node) {
 		}
 		for c := range missing.All() {
 			n2 := newCustomNode(c)
-			n2.parent = root
-			root.addChild(n2)
+			n2.parent = location
+			location.addChild(n2)
 		}
 	}
 }
 
-// RootLocationNode returns the root location for an asset.
-func (ac Collection) RootLocationNode(itemID int64) (*Node, bool) {
-	ln, found := ac.rootLookup[itemID]
+// LocationForItem returns the location node for an asset.
+func (ac Tree) LocationForItem(itemID int64) (*Node, bool) {
+	ln, found := ac.locationLookup[itemID]
 	if !found {
 		return nil, false
 	}
 	return ln, true
 }
 
-// Node returns the node for an ID and reports whether it was found.
-func (ac Collection) Node(itemID int64) (*Node, bool) {
+// Location returns the location node for an EVE location ID
+// and reports whether it was found.
+func (ac Tree) Location(locationID int64) (*Node, bool) {
+	loc, ok := ac.locations[locationID]
+	if !ok {
+		return nil, false
+	}
+	return loc, true
+}
+
+// Node returns the node for an item ID and reports whether it was found.
+func (ac Tree) Node(itemID int64) (*Node, bool) {
 	an, found := ac.nodeLookup[itemID]
 	if !found {
 		return nil, false
@@ -382,103 +378,14 @@ func (ac Collection) Node(itemID int64) (*Node, bool) {
 	return an, true
 }
 
-// Trees returns a new slice with all root nodes.
-// Trees which do not have any filtered nodes will be excluded.
-func (ac Collection) Trees() []*Node {
-	trees := make([]*Node, 0)
-	for _, root := range ac.trees {
-		if root.ChildrenCount() > 0 {
-			trees = append(trees, root)
+// Locations returns a new slice with all location nodes.
+// Locations without any further nodes are excluded.
+func (ac Tree) Locations() []*Node {
+	locations := make([]*Node, 0)
+	for _, loc := range ac.locations {
+		if loc.ChildrenCount() > 0 {
+			locations = append(locations, loc)
 		}
 	}
-	return trees
-}
-
-// LocationTree returns the tree for a location and reports if the tree was found.
-func (ac Collection) LocationTree(locationID int64) (*Node, bool) {
-	root, ok := ac.trees[locationID]
-	if !ok {
-		return nil, false
-	}
-	return root, true
-}
-
-// Filter returns the current filter.
-func (ac Collection) Filter() Filter {
-	return ac.filter
-}
-
-// ApplyFilter applies the specified filter to the collection.
-func (ac *Collection) ApplyFilter(filter Filter) {
-	for _, root := range ac.trees {
-		for _, n := range root.children {
-			var isExcluded bool
-			switch filter {
-			case FilterCorpOther:
-				switch n.category {
-				case
-					NodeAssetSafetyCorporation,
-					NodeDeliveries,
-					NodeImpounded,
-					NodeInSpace,
-					NodeOfficeFolder:
-					isExcluded = true
-				default:
-					isExcluded = false
-				}
-			case FilterDeliveries:
-				isExcluded = n.category != NodeDeliveries
-			case FilterImpounded:
-				isExcluded = n.category != NodeImpounded
-			case FilterInSpace:
-				isExcluded = n.category != NodeInSpace
-			case FilterOffice:
-				isExcluded = n.category != NodeOfficeFolder
-
-			case FilterPersonalAssets:
-				switch n.category {
-				case NodeAssetSafetyCharacter, NodeDeliveries, NodeInSpace:
-					isExcluded = true
-				default:
-					isExcluded = false
-				}
-			case FilterSafety:
-				if ac.isCorporation {
-					isExcluded = n.category != NodeAssetSafetyCorporation
-				} else {
-					isExcluded = n.category != NodeAssetSafetyCharacter
-				}
-			}
-			n.isExcluded = isExcluded
-		}
-	}
-	ac.filter = filter
-}
-
-func (ac Collection) UpdateItemCounts() {
-	for _, location := range ac.trees {
-		for n := range location.All() {
-			n.itemCount.Clear()
-		}
-		for _, top := range location.children {
-			switch top.category {
-			case NodeOfficeFolder, NodeAssetSafetyCharacter:
-				for _, n1 := range top.children {
-					n1.itemCount = optional.FromIntegerWithZero(len(n1.children))
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
-				}
-			case NodeAssetSafetyCorporation, NodeImpounded:
-				for _, n1 := range top.children {
-					for _, n2 := range n1.children {
-						n2.itemCount = optional.FromIntegerWithZero(len(n2.children))
-						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
-					}
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
-				}
-			default:
-				top.itemCount = optional.FromIntegerWithZero(len(top.children))
-			}
-			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
-		}
-	}
+	return locations
 }

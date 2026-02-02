@@ -39,9 +39,11 @@ type assetRow struct {
 	isSingleton     bool
 	itemID          int64
 	location        *app.EveLocationShort
-	locationFlag    app.LocationFlag
 	locationDisplay []widget.RichTextSegment
+	locationFlag    app.LocationFlag
 	locationName    string
+	locationPath    []string
+	name            string
 	owner           *app.EveEntity
 	price           optional.Optional[float64]
 	priceDisplay    string
@@ -55,22 +57,20 @@ type assetRow struct {
 	totalDisplay    string
 	typeID          int32
 	typeName        string
-	typeNameDisplay string
 	variant         app.InventoryTypeVariant
-	locationPath    []string
 }
 
-func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, characterName func(int32) string) assetRow {
+func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int32) string) assetRow {
 	r := assetRow{
-		categoryName:    ca.Type.Group.Category.Name,
-		groupID:         ca.Type.Group.ID,
-		groupName:       ca.Type.Group.Name,
-		isSingleton:     ca.IsSingleton,
-		itemID:          ca.ItemID,
-		typeID:          ca.Type.ID,
-		typeName:        ca.Type.Name,
-		typeNameDisplay: ca.DisplayName2(),
-		variant:         ca.Variant(),
+		categoryName: ca.Type.Group.Category.Name,
+		groupID:      ca.Type.Group.ID,
+		groupName:    ca.Type.Group.Name,
+		isSingleton:  ca.IsSingleton,
+		itemID:       ca.ItemID,
+		typeID:       ca.Type.ID,
+		typeName:     ca.Type.Name,
+		name:         ca.DisplayName2(),
+		variant:      ca.Variant(),
 		owner: &app.EveEntity{
 			ID:       ca.CharacterID,
 			Name:     characterName(ca.CharacterID),
@@ -84,17 +84,17 @@ func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Collection, character
 	return r
 }
 
-func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corporationName string) assetRow {
+func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Tree, corporationName string) assetRow {
 	r := assetRow{
-		categoryName:    ca.Type.Group.Category.Name,
-		groupID:         ca.Type.Group.ID,
-		groupName:       ca.Type.Group.Name,
-		isSingleton:     ca.IsSingleton,
-		itemID:          ca.ItemID,
-		typeID:          ca.Type.ID,
-		typeName:        ca.Type.Name,
-		typeNameDisplay: ca.DisplayName2(),
-		variant:         ca.Variant(),
+		categoryName: ca.Type.Group.Category.Name,
+		groupID:      ca.Type.Group.ID,
+		groupName:    ca.Type.Group.Name,
+		isSingleton:  ca.IsSingleton,
+		itemID:       ca.ItemID,
+		typeID:       ca.Type.ID,
+		typeName:     ca.Type.Name,
+		name:         ca.DisplayName2(),
+		variant:      ca.Variant(),
 		owner: &app.EveEntity{
 			ID:       ca.CorporationID,
 			Name:     corporationName,
@@ -108,7 +108,7 @@ func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Collection, corpo
 	return r
 }
 
-func (r *assetRow) setLocationFlag(ac asset.Collection, itemID int64) {
+func (r *assetRow) setLocationFlag(ac asset.Tree, itemID int64) {
 	n, ok := ac.Node(itemID)
 	if !ok {
 		return
@@ -120,8 +120,8 @@ func (r *assetRow) setLocationFlag(ac asset.Collection, itemID int64) {
 	r.locationFlag = it.LocationFlag
 }
 
-func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
-	ln, ok := ac.RootLocationNode(itemID)
+func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
+	ln, ok := ac.LocationForItem(itemID)
 	if !ok {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 		return
@@ -136,10 +136,9 @@ func (r *assetRow) setLocation(ac asset.Collection, itemID int64) {
 	r.locationDisplay = el.DisplayRichText()
 	n, ok := ac.Node(itemID)
 	if ok {
-		p := n.Path()
-		if len(p) > 0 {
-			r.locationPath = xslices.Map(p[1:], func(x *asset.Node) string {
-				return x.DisplayName()
+		if p := n.Path(); len(p) > 0 {
+			r.locationPath = xslices.Map(p[:len(p)-1], func(x *asset.Node) string {
+				return x.String()
 			})
 		}
 	}
@@ -276,7 +275,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			func(col int, r assetRow) []widget.RichTextSegment {
 				switch col {
 				case assetsColItem:
-					return iwidget.RichTextSegmentsFromText(r.typeNameDisplay)
+					return iwidget.RichTextSegmentsFromText(r.name)
 				case assetsColGroup:
 					return iwidget.RichTextSegmentsFromText(r.groupName)
 				case assetsColLocation:
@@ -423,9 +422,9 @@ func (a *assetSearch) makeDataList() *iwidget.StripedList {
 			box := co.(*fyne.Container).Objects
 			var title string
 			if r.isSingleton {
-				title = r.typeNameDisplay
+				title = r.name
 			} else {
-				title = fmt.Sprintf("%s x%s", r.typeNameDisplay, r.quantityDisplay)
+				title = fmt.Sprintf("%s x%s", r.name, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
 			box[1].(*iwidget.RichText).Set(r.locationDisplay)
@@ -504,7 +503,7 @@ func (a *assetSearch) filterRows(sortCol int) {
 			})
 		}
 		// search filter
-		if search != "" {
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
@@ -515,7 +514,7 @@ func (a *assetSearch) filterRows(sortCol int) {
 				var x int
 				switch sortCol {
 				case assetsColItem:
-					x = strings.Compare(a.typeNameDisplay, b.typeNameDisplay)
+					x = strings.Compare(a.name, b.name)
 				case assetsColGroup:
 					x = strings.Compare(a.groupName, b.groupName)
 				case assetsColLocation:
@@ -662,7 +661,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, f
 		r := newCharacterAssetRow(ca, ac, func(id int32) string {
 			return characterNames[id]
 		})
-		r.searchTarget = strings.ToLower(r.typeNameDisplay)
+		r.searchTarget = strings.ToLower(r.name)
 		r.tags = tagsPerCharacter[ca.CharacterID]
 		rows = append(rows, r)
 		total += r.total.ValueOrZero()
@@ -691,7 +690,7 @@ func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 			continue // filter out office item
 		}
 		r := newCorporationAssetRow(ca, ac, corporationNameOrZero(c))
-		r.searchTarget = strings.ToLower(r.typeNameDisplay)
+		r.searchTarget = strings.ToLower(r.name)
 		rows = append(rows, r)
 		value += r.total.ValueOrZero()
 	}
@@ -730,7 +729,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		w.Show()
 		return
 	}
-	item := makeLinkLabelWithWrap(r.typeNameDisplay, func() {
+	item := makeLinkLabelWithWrap(r.typeName, func() {
 		if r.owner.IsCharacter() {
 			u.ShowTypeInfoWindowWithCharacter(r.typeID, r.owner.ID)
 		} else {
@@ -792,7 +791,6 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {
@@ -811,7 +809,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 			}
 		},
 		minSize: fyne.NewSize(500, 450),
-		title:   subTitle,
+		title:   r.name,
 		window:  w,
 	})
 	w.Show()

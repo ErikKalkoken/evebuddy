@@ -37,7 +37,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -59,10 +58,22 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
+type eveImageService interface {
+	AllianceLogo(int32, int) (fyne.Resource, error)
+	CharacterPortrait(int32, int) (fyne.Resource, error)
+	CorporationLogo(int32, int) (fyne.Resource, error)
+	FactionLogo(int32, int) (fyne.Resource, error)
+	InventoryTypeRender(int32, int) (fyne.Resource, error)
+	InventoryTypeIcon(int32, int) (fyne.Resource, error)
+	InventoryTypeBPO(int32, int) (fyne.Resource, error)
+	InventoryTypeBPC(int32, int) (fyne.Resource, error)
+	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
+}
+
 // services represents a wrapper for passing the main services to functions.
 type services struct {
 	cs  *characterservice.CharacterService
-	eis app.EveImageService
+	eis eveImageService
 	eus *eveuniverseservice.EveUniverseService
 	rs  *corporationservice.CorporationService
 	scs *statuscacheservice.StatusCacheService
@@ -176,11 +187,10 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      app.EveImageService
+	eis      eveImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EveUniverseService
 	js       *janiceservice.JaniceService
-	memcache *memcache.Cache
 	rs       *corporationservice.CorporationService
 	scs      *statuscacheservice.StatusCacheService
 	settings *settings.Settings
@@ -209,10 +219,9 @@ type BaseUIParams struct {
 	CharacterService   *characterservice.CharacterService
 	CorporationService *corporationservice.CorporationService
 	ESIStatusService   *esistatusservice.ESIStatusService
-	EveImageService    app.EveImageService
+	EveImageService    eveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
-	MemCache           *memcache.Cache
 	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
@@ -251,7 +260,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		isOffline:                   arg.IsOffline,
 		isUpdateDisabled:            arg.IsUpdateDisabled,
 		js:                          arg.JaniceService,
-		memcache:                    arg.MemCache,
 		onSectionUpdateCompleted:    func() {},
 		onSectionUpdateStarted:      func() {},
 		refreshTickerExpired:        signals.New[struct{}](),

@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -29,7 +28,7 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 }
 
 func NewFake(st *storage.Storage, args ...Params) *CorporationService {
-	scs := statuscacheservice.New(memcache.New(), st)
+	scs := statuscacheservice.New(st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		StatusCacheService: scs,
 		Storage:            st,

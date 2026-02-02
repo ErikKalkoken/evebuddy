@@ -1,17 +1,12 @@
 package asset
 
 import (
-	"fmt"
 	"iter"
 	"slices"
-	"strconv"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
-
-//go:generate go tool stringer -type=NodeCategory
 
 // NodeCategory represents the category of a node.
 // [NodeAsset] represents assets and [NodeLocation] represent eve locations.
@@ -35,7 +30,6 @@ const (
 	NodeInSpace
 	NodeItemHangar
 	NodeLocation
-	NodeOfficeFolder
 	NodeOffice1
 	NodeOffice2
 	NodeOffice3
@@ -43,6 +37,7 @@ const (
 	NodeOffice5
 	NodeOffice6
 	NodeOffice7
+	NodeOfficeFolder
 	NodeShipHangar
 )
 
@@ -50,17 +45,17 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeAsset:                  "Asset",
 	NodeAssetSafetyCharacter:   "Asset Safety",
 	NodeAssetSafetyCorporation: "Asset Safety",
-	NodeItemHangar:             "Item Hangar",
-	NodeLocation:               "Location",
-	NodeShipHangar:             "Ship Hangar",
-	NodeInSpace:                "In Space",
 	NodeCargoBay:               "Cargo Bay",
+	NodeDeliveries:             "Deliveries",
 	NodeDroneBay:               "Drone Bay",
+	NodeFighterBay:             "Fighter Bay",
 	NodeFitting:                "Fitting",
 	NodeFrigateEscapeBay:       "Frigate Escape Bay",
-	NodeFighterBay:             "Fighter Bay",
 	NodeFuelBay:                "Fuel Bay",
-	NodeOfficeFolder:           "Office",
+	NodeImpounded:              "Impounded",
+	NodeInSpace:                "In Space",
+	NodeItemHangar:             "Item Hangar",
+	NodeLocation:               "Location",
 	NodeOffice1:                "1st Division",
 	NodeOffice2:                "2nd Division",
 	NodeOffice3:                "3rd Division",
@@ -68,15 +63,15 @@ var nodeCategoryNames = map[NodeCategory]string{
 	NodeOffice5:                "5th Division",
 	NodeOffice6:                "6th Division",
 	NodeOffice7:                "7th Division",
-	NodeImpounded:              "Impounded",
-	NodeDeliveries:             "Deliveries",
+	NodeOfficeFolder:           "Office",
+	NodeShipHangar:             "Ship Hangar",
 }
 
-func (c NodeCategory) DisplayName() string {
+func (c NodeCategory) String() string {
 	if n, ok := nodeCategoryNames[c]; ok {
 		return n
 	}
-	return c.String()
+	return "?"
 }
 
 // Node is a node in an asset tree.
@@ -88,7 +83,6 @@ type Node struct {
 	isExcluded  bool
 	isShip      bool
 	item        Item
-	itemCount   optional.Optional[int]
 	location    *app.EveLocation
 	parent      *Node
 }
@@ -132,8 +126,7 @@ func newCustomNode(category NodeCategory) *Node {
 }
 
 // All returns an iterator over all nodes of a sub tree.
-// The iterator runs a depth-first search and returns the children of each node
-// in the same order as they where added.
+// The nodes are returned in depth-first order.
 func (n *Node) All() iter.Seq[*Node] {
 	return func(yield func(*Node) bool) {
 		if n == nil {
@@ -160,7 +153,7 @@ func (n *Node) All() iter.Seq[*Node] {
 	}
 }
 
-// all returns a new slices with all nodes in a breath first search order.
+// all returns a new slices with all nodes in a breath first order.
 func (n *Node) all() []*Node {
 	s := make([]*Node, 0)
 	s = append(s, n)
@@ -173,49 +166,18 @@ func (n *Node) all() []*Node {
 	return s
 }
 
-func (n *Node) ItemCount() optional.Optional[int] {
-	return n.itemCount
-}
-
-// Children returns a new slice containing the unfiltered children of a node.
-func (n *Node) Children() []*Node {
-	return xslices.Filter(n.children, func(x *Node) bool {
-		return !x.isExcluded
-	})
-}
-
-func (n *Node) ChildrenCount() int {
-	var count int
-	for _, n := range n.children {
-		if !n.isExcluded {
-			count++
-		}
+// AncestorCount returns the number of ancestors of a node.
+func (n *Node) AncestorCount() int {
+	if n.parent == nil {
+		return 0
 	}
-	return count
-}
-
-// IsContainer reports whether this node is a container
-func (n *Node) IsContainer() bool {
-	return n.isContainer
-}
-
-// IsShip reports whether this node is a ship
-func (n *Node) IsShip() bool {
-	return n.isShip
-}
-
-// ID returns the ID of the node. This is the item ID or the location ID.
-// Returns 0 when node has no ID.
-func (n *Node) ID() int64 {
-	if n.item != nil {
-		return n.item.ID()
+	if n.parent.parent == nil {
+		return 1
 	}
-	if n.location != nil {
-		return n.location.ID
-	}
-	return 0
+	return len(n.Path()) - 1
 }
 
+// Asset tries to return the asset of a node and reports whether it was successful.
 func (n *Node) Asset() (app.Asset, bool) {
 	if n.item == nil {
 		return app.Asset{}, false
@@ -223,26 +185,9 @@ func (n *Node) Asset() (app.Asset, bool) {
 	return n.item.Unwrap(), true
 }
 
+// Category returns the category of a node.
 func (n *Node) Category() NodeCategory {
 	return n.category
-}
-
-// IsRoot reports whether a node is the root in a tree.
-func (n *Node) IsRoot() bool {
-	return n.parent == nil
-}
-
-// IsRootDirectChild reports whether a node is direct child of the root.
-func (n *Node) IsRootDirectChild() bool {
-	return n.parent != nil && n.parent.parent == nil
-}
-
-// Location returns the location for a node and reports whether the node is a location.
-func (n *Node) Location() (*app.EveLocation, bool) {
-	if n.location == nil {
-		return nil, false
-	}
-	return n.location, true
 }
 
 // CharacterAsset tries to return the current item as character asset
@@ -271,7 +216,91 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	return x, true
 }
 
-func (n *Node) DisplayName() string {
+// Children returns a new slice containing the unfiltered children of a node.
+func (n *Node) Children() []*Node {
+	return xslices.Filter(n.children, func(x *Node) bool {
+		return !x.isExcluded
+	})
+}
+
+func (n *Node) ChildrenCount() int {
+	var count int
+	for _, n := range n.children {
+		if !n.isExcluded {
+			count++
+		}
+	}
+	return count
+}
+
+// ID returns the ID of the node. This is the item ID or the location ID.
+// Returns 0 when node has no ID.
+func (n *Node) ID() int64 {
+	if n.item != nil {
+		return n.item.ID()
+	}
+	if n.location != nil {
+		return n.location.ID
+	}
+	return 0
+}
+
+// IsContainer reports whether this node is a container
+func (n *Node) IsContainer() bool {
+	return n.isContainer
+}
+
+// IsShip reports whether this node is a ship
+func (n *Node) IsShip() bool {
+	return n.isShip
+}
+
+// Location returns the location for a node and reports whether the node is a location.
+func (n *Node) Location() (*app.EveLocation, bool) {
+	if n.location == nil {
+		return nil, false
+	}
+	return n.location, true
+}
+
+// Path returns the path from the root to this node.
+// The path includes the root and the node itself.
+func (n *Node) Path() []*Node {
+	nodes := make([]*Node, 0)
+	nodes = append(nodes, n)
+	current := n
+	for current.parent != nil {
+		nodes = append(nodes, current.parent)
+		current = current.parent
+	}
+	slices.Reverse(nodes)
+	return nodes
+}
+
+// AllPaths returns a slice of paths to all leafs for a subtree.
+// Nodes are expected to implement the stringer interface.
+// The nil node represents the root.
+func (n *Node) AllPaths() [][]string {
+	all := make([][]string, 0)
+	for n := range n.All() {
+		if c := n.ChildrenCount(); c == 0 {
+			p := xslices.Map(n.Path(), func(x *Node) string {
+				return x.String()
+			})
+			all = append(all, p)
+		}
+	}
+	return all
+}
+
+// Parent return the parent of a node.
+// Returns nil when the node is root.
+func (n *Node) Parent() *Node {
+	return n.parent
+}
+
+// String returns a string representation of the node which is usually it's name.
+func (n *Node) String() string {
 	switch n.category {
 	case NodeLocation:
 		el, ok := n.Location()
@@ -284,20 +313,9 @@ func (n *Node) DisplayName() string {
 		if !ok {
 			return "?"
 		}
-		return n.DisplayName2()
+		return n.DisplayName()
 	}
-	return n.category.DisplayName()
-}
-
-func (n *Node) Path() []*Node {
-	nodes := make([]*Node, 0)
-	current := n
-	for current.parent != nil {
-		nodes = append(nodes, current.parent)
-		current = current.parent
-	}
-	slices.Reverse(nodes)
-	return nodes
+	return n.category.String()
 }
 
 func (n *Node) addChild(c *Node) {
@@ -309,50 +327,4 @@ func (n *Node) addChildFromItem(it Item) *Node {
 	c := newAssetNode(it)
 	n.addChild(c)
 	return c
-}
-
-// PrintTree prints the subtree of n.
-func (n *Node) PrintTree() {
-	var printTree func(n *Node, indent string, last bool)
-	printTree = func(n *Node, indent string, last bool) {
-		var id string
-		if v := n.ID(); v != 0 {
-			id = fmt.Sprintf(" (#%d)", v)
-		}
-		var count string
-		if x := n.ChildrenCount(); x > 0 {
-			count = fmt.Sprint(x)
-		} else {
-			count = "-"
-		}
-		fmt.Printf("%s+-%s%s [%s] %s: %s\n",
-			indent,
-			n.DisplayName(),
-			id,
-			count,
-			n.Category().String(),
-			n.itemCount.StringFunc("-", func(v int) string {
-				return strconv.Itoa(v)
-			}),
-		)
-		if last {
-			indent += "   "
-		} else {
-			indent += "|  "
-		}
-		for _, c := range n.children {
-			printTree(c, indent, len(c.children) == 0)
-		}
-	}
-
-	printTree(n, "", false)
-	fmt.Println()
-}
-
-func (n *Node) String() string {
-	var id string
-	if v := n.ID(); v != 0 {
-		id = fmt.Sprintf(" (#%d)", v)
-	}
-	return fmt.Sprintf("%s%s", n.DisplayName(), id)
 }
