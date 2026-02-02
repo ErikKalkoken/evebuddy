@@ -63,7 +63,7 @@ type characterFlyableShips struct {
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
 			Col:   flyableColType,
 			Label: "Type",
@@ -72,9 +72,12 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 			Col:   flyableColGroup,
 			Label: "Class",
 		},
-	})
+	}),
+		flyableColType,
+		iwidget.SortAsc,
+	)
 	a := &characterFlyableShips{
-		columnSorter: headers.NewColumnSorter(flyableColType, iwidget.SortAsc), // FIXME should not be a method
+		columnSorter: columnSorter,
 		bottom:       widget.NewLabel(""),
 		rows:         make([]flyableShipRow, 0),
 		rowsFiltered: make([]flyableShipRow, 0),

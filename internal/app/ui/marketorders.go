@@ -147,7 +147,7 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   marketOrdersColType,
 		Label: "Type",
 		Width: columnWidthEntity,
@@ -177,7 +177,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Width: columnWidthEntity,
 	}})
 	a := &marketOrders{
-		columnSorter: headers.NewColumnSorter(marketOrdersColType, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),

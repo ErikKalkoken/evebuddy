@@ -103,7 +103,7 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
 			Col:   overviewColAlliance,
 			Label: "Alliance",
@@ -142,7 +142,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
-		columnSorter: headers.NewColumnSorter(overviewColCharacter, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, overviewColCharacter, iwidget.SortAsc),
 		info:         info,
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),

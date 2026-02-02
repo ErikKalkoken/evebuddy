@@ -84,7 +84,7 @@ const (
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   structuresColName,
 		Label: "Name",
 		Width: 250,
@@ -108,7 +108,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		NoSort: true,
 	}})
 	a := &corporationStructures{
-		columnSorter: headers.NewColumnSorter(structuresColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
 		bottom:       makeTopLabel(),

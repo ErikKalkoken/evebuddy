@@ -216,7 +216,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
 			Col:   assetsColItem,
 			Label: "Item",
@@ -249,7 +249,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		},
 	})
 	a := &assetSearch{
-		columnSorter:   headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
+		columnSorter:   iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
 		found:          widget.NewLabel(""),
 		rowsFiltered:   make([]assetRow, 0),

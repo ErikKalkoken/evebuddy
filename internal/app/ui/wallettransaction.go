@@ -126,7 +126,7 @@ const (
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
@@ -157,7 +157,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: headers.NewColumnSorter(walletTransactionColDate, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(headers, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),

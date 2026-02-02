@@ -143,7 +143,7 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 }
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
@@ -178,7 +178,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}})
 	a := &industryJobs{
 		bottom:         makeTopLabel(),
-		columnSorter:   headers.NewColumnSorter(industryJobsColEndDate, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(headers, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
 		rows:           make([]industryJobRow, 0),
 		rowsFiltered:   make([]industryJobRow, 0),

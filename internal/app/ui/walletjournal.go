@@ -111,7 +111,7 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   walletJournalColDate,
 		Label: "Date",
 		Width: 150,
@@ -135,7 +135,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		NoSort: true,
 	}})
 	a := &walletJournal{
-		columnSorter: headers.NewColumnSorter(walletJournalColDate, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(headers, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),
