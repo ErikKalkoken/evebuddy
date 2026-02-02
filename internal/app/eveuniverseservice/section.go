@@ -14,6 +14,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+// HasSection reports whether a section exists at all.
+func (s *EveUniverseService) HasSection(ctx context.Context, section app.GeneralSection) (bool, error) {
+	x, err := s.st.GetGeneralSectionStatus(ctx, section)
+	if err != nil {
+		return false, err
+	}
+	return !x.IsMissing(), nil
+}
+
 // UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
 func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
 	var zero set.Set[int32]

@@ -16,6 +16,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
+// HasSection reports whether a section exists at all for a character.
+func (s *CharacterService) HasSection(ctx context.Context, characterID int32, section app.CharacterSection) (bool, error) {
+	x, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
+	if err != nil {
+		return false, err
+	}
+	return !x.IsMissing(), nil
+}
+
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
 func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {

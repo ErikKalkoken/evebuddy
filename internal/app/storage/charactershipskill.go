@@ -9,39 +9,42 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*app.CharacterShipAbility, error) {
-	arg := queries.ListCharacterShipsAbilitiesParams{
-		CharacterID: int64(characterID),
-		Name:        search,
+func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32) ([]*app.CharacterShipAbility, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterShipsAbilities: %d: %w", characterID, err)
 	}
-	rows, err := st.qRO.ListCharacterShipsAbilities(ctx, arg)
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterShipsAbilities(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list ship abilities for character %d and search %s: %w", characterID, search, err)
+		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterShipAbility, len(rows))
-	for i, row := range rows {
-		o := &app.CharacterShipAbility{
+	oo := make([]*app.CharacterShipAbility, 0)
+	for _, row := range rows {
+		oo = append(oo, &app.CharacterShipAbility{
 			Group:  app.EntityShort[int32]{ID: int32(row.GroupID), Name: row.GroupName},
 			Type:   app.EntityShort[int32]{ID: int32(row.TypeID), Name: row.TypeName},
 			CanFly: row.CanFly,
-		}
-		oo[i] = o
+		})
 	}
 	return oo, nil
 }
 
 func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shipTypeID int32) ([]*app.CharacterShipSkill, error) {
-	arg := queries.ListCharacterShipSkillsParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterShipSkills: %d %d: %w", characterID, shipTypeID, err)
+	}
+	rows, err := st.qRO.ListCharacterShipSkills(ctx, queries.ListCharacterShipSkillsParams{
 		CharacterID: int64(characterID),
 		ShipTypeID:  int64(shipTypeID),
-	}
-	rows, err := st.qRO.ListCharacterShipSkills(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
+		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterShipSkill, len(rows))
-	for i, r := range rows {
-		oo[i] = characterShiSkillFromDBModel(r)
+	oo := make([]*app.CharacterShipSkill, 0)
+	for _, r := range rows {
+		oo = append(oo, characterShiSkillFromDBModel(r))
 	}
 	return oo, nil
 }

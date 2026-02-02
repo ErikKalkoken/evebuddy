@@ -57,11 +57,7 @@ SELECT DISTINCT
 FROM
     eve_ship_skills ss2
     JOIN eve_types et ON et.ID = ss2.ship_type_id
-    JOIN eve_groups eg ON eg.ID = et.eve_group_id
-WHERE
-    et.name LIKE ?
-ORDER BY
-    et.name;
+    JOIN eve_groups eg ON eg.ID = et.eve_group_id;
 
 -- name: ListCharacterShipSkills :many
 SELECT
