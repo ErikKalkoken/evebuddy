@@ -1218,21 +1218,24 @@ func (a *locationInfo) update() error {
 	}
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		if o.Type != nil {
+	})
+	if o.Type != nil {
+		fyne.Do(func() {
 			a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
 				a.typeImage.SetResource(r)
 			})
-		}
-	})
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
+			a.typeInfo.SetText(o.Type.Name)
+			a.typeInfo.OnTapped = func() {
+				a.iw.showEveEntity(o.Type.EveEntity())
+			}
+			a.typeImage.OnTapped = func() {
+				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
+			}
+			description := o.Type.Description
+			if description == "" {
+				description = o.Type.Name
+			}
+			a.description.SetText(description)
 		})
 	}
 	if o.Owner != nil {
@@ -1246,40 +1249,31 @@ func (a *locationInfo) update() error {
 				a.iw.showEveEntity(o.Owner)
 			}
 		})
-		return nil
-	}
-	g := new(errgroup.Group)
-	if o.Type != nil {
-		g.Go(func() error {
-			fyne.Do(func() {
-				a.typeInfo.SetText(o.Type.Name)
-				a.typeInfo.OnTapped = func() {
-					a.iw.showEveEntity(o.Type.EveEntity())
-				}
-				a.typeImage.OnTapped = func() {
-					a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
-				}
-				description := o.Type.Description
-				if description == "" {
-					description = o.Type.Name
-				}
-				a.description.SetText(description)
-			})
-			return nil
-		})
 	}
 	if o.SolarSystem != nil {
-		g.Go(func() error {
-			fyne.Do(func() {
-				a.location.set(
-					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
-					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
-					newEntityItemFromEveSolarSystem(o.SolarSystem),
-				)
-			})
-			return nil
+		fyne.Do(func() {
+			a.location.set(
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
+				newEntityItemFromEveSolarSystem(o.SolarSystem),
+			)
 		})
 	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		fyne.Do(func() {
+			a.tabs.Append(attributesTab)
+		})
+	}
+	fyne.Do(func() {
+		a.tabs.Refresh()
+	})
+	g := new(errgroup.Group)
 	g.Go(func() error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
@@ -1295,15 +1289,13 @@ func (a *locationInfo) update() error {
 		})
 		fyne.Do(func() {
 			a.services.set(items...)
+			a.tabs.Refresh()
 		})
 		return nil
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	fyne.Do(func() {
-		a.tabs.Refresh()
-	})
 	return nil
 }
 
