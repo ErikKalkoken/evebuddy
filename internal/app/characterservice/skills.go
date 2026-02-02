@@ -58,8 +58,8 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 		})
 }
 
-func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID int32, search string) ([]*app.CharacterShipAbility, error) {
-	return s.st.ListCharacterShipsAbilities(ctx, characterID, search)
+func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID int32) ([]*app.CharacterShipAbility, error) {
+	return s.st.ListCharacterShipsAbilities(ctx, characterID)
 }
 
 func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {

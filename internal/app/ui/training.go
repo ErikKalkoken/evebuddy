@@ -144,7 +144,7 @@ const (
 )
 
 func newTraining(u *baseUI) *training {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   trainingColName,
 		Label: "Name",
 		Width: columnWidthEntity,
@@ -177,7 +177,7 @@ func newTraining(u *baseUI) *training {
 	}})
 	a := &training{
 		bottom:       widget.NewLabel(""),
-		columnSorter: headers.NewColumnSorter(trainingColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, trainingColName, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),

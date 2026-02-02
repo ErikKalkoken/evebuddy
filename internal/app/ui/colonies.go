@@ -95,7 +95,7 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
@@ -127,7 +127,7 @@ func newColonies(u *baseUI) *colonies {
 		Width: columnWidthEntity,
 	}})
 	a := &colonies{
-		columnSorter: headers.NewColumnSorter(coloniesColPlanet, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),

@@ -8,19 +8,20 @@ import (
 	"image/draw"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/go-set"
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
@@ -29,105 +30,120 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
+const (
+	flyableColType = iota
+	flyableColGroup
+)
+
+type flyableShipRow struct {
+	canFly      bool
+	characterID int32
+	groupID     int32
+	groupName   string
+	searchText  string
+	typeID      int32
+	typeName    string
+}
+
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	character       atomic.Pointer[app.Character]
-	flyableSelect   *kxwidget.FilterChipSelect
-	flyableSelected string
-	grid            *widget.GridWrap
-	groupSelect     *kxwidget.FilterChipSelect
-	groupSelected   string
-	searchBox       *widget.Entry
-	ships           []*app.CharacterShipAbility
-	top             *widget.Label
-	foundText       *widget.Label
-	u               *baseUI
+	bottom        *widget.Label
+	character     atomic.Pointer[app.Character]
+	columnSorter  *iwidget.ColumnSorter
+	grid          *widget.GridWrap
+	rows          []flyableShipRow
+	rowsFiltered  []flyableShipRow
+	search        *widget.Entry
+	selectFlyable *kxwidget.FilterChipSelect
+	selectGroup   *kxwidget.FilterChipSelect
+	sortButton    *iwidget.SortButton
+	top           *widget.Label
+	u             *baseUI
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn{
+		{
+			Col:   flyableColType,
+			Label: "Type",
+		},
+		{
+			Col:   flyableColGroup,
+			Label: "Class",
+		},
+	}),
+		flyableColType,
+		iwidget.SortAsc,
+	)
 	a := &characterFlyableShips{
-		ships:     make([]*app.CharacterShipAbility, 0),
-		top:       widget.NewLabel(""),
-		foundText: widget.NewLabel(""),
-		u:         u,
+		columnSorter: columnSorter,
+		bottom:       widget.NewLabel(""),
+		rows:         make([]flyableShipRow, 0),
+		rowsFiltered: make([]flyableShipRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
-	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Search ships")
-	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchBox.SetText("")
+	a.search = widget.NewEntry()
+	a.search.SetPlaceHolder("Search type and class names")
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRows(-1)
 	})
-	a.searchBox.OnChanged = func(s string) {
-		if len(s) == 1 {
-			return
-		}
-		if err := a.updateEntries(); err != nil {
-			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
-		}
-		a.grid.Refresh()
-		a.grid.ScrollToTop()
+	a.search.OnChanged = func(s string) {
+		a.filterRows(-1)
 	}
 
-	a.groupSelect = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
-		a.groupSelected = s
-		if err := a.updateEntries(); err != nil {
-			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
-		}
-		a.grid.Refresh()
-		a.grid.ScrollToTop()
+	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
+		a.filterRows(-1)
 	}, a.u.window)
 
-	a.flyableSelect = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
-		a.flyableSelected = s
-		if err := a.updateEntries(); err != nil {
-			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
-		}
-		a.grid.Refresh()
-		a.grid.ScrollToTop()
+	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
+		a.filterRows(-1)
 	})
-
+	a.sortButton = a.columnSorter.NewSortButton(func() {
+		a.filterRows(-1)
+	}, a.u.window)
 	a.grid = a.makeShipsGrid()
 
+	// Signals
 	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
+		func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.update()
+			a.update(ctx)
 		},
 	)
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterSkills {
-			a.update()
+			a.update(ctx)
 		}
 	},
 	)
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
 		}
 		if arg.section == app.SectionEveTypes {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
 }
 
 func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewHBox(a.top, layout.NewSpacer(), a.foundText)
 	c := container.NewBorder(
 		container.NewVBox(
-			top,
-			a.searchBox,
-			container.NewHScroll(container.NewHBox(a.groupSelect, a.flyableSelect, widget.NewButton("Reset", func() {
-				a.reset()
-			}))),
+			a.top,
+			a.search,
+			container.NewHScroll(container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)),
 		),
-		nil,
+		a.bottom,
 		nil,
 		nil,
 		a.grid,
@@ -135,151 +151,245 @@ func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterFlyableShips) reset() {
-	a.searchBox.SetText("")
-	a.groupSelect.ClearSelected()
-	a.flyableSelect.ClearSelected()
-}
-
 func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
-			return len(a.ships)
+			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
 			return newShipItem(a.u.eis)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			if id >= len(a.ships) {
+			if id >= len(a.rowsFiltered) {
 				return
 			}
-			o := a.ships[id]
+			o := a.rowsFiltered[id]
 			item := co.(*shipItem)
-			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
+			item.Set(o.typeID, o.typeName, o.canFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
-		if id >= len(a.ships) {
+		if id >= len(a.rowsFiltered) {
 			return
 		}
-		o := a.ships[id]
-		a.u.ShowTypeInfoWindowWithCharacter(o.Type.ID, characterIDOrZero(a.character.Load()))
+		o := a.rowsFiltered[id]
+		a.u.ShowTypeInfoWindowWithCharacter(o.typeID, characterIDOrZero(a.character.Load()))
 	}
 	return g
 }
 
-func (a *characterFlyableShips) update() {
-	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes)
-		if !hasData {
-			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
+func (a *characterFlyableShips) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	total := len(rows)
+	group := a.selectGroup.Selected
+	flyable := a.selectFlyable.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		if group != "" {
+			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
+				return r.groupName != group
+			})
 		}
-		if err := a.updateEntries(); err != nil {
-			return "", 0, false, err
+		if flyable != "" {
+			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
+				switch flyable {
+				case flyableCan:
+					return !r.canFly
+				case flyableCanNot:
+					return r.canFly
+				}
+				return false
+			})
 		}
-		return a.makeTopText()
-	}()
-	if err != nil {
-		slog.Error("Failed to refresh ships UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	}
-	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
-		a.grid.Refresh()
-		if enabled {
-			a.searchBox.Enable()
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
+				return !strings.Contains(r.searchText, search)
+			})
+		}
+		groupOptions := xslices.Map(rows, func(r flyableShipRow) string {
+			return r.groupName
+		})
+		flyableOptions := xslices.Map(rows, func(r flyableShipRow) string {
+			if r.canFly {
+				return flyableCan
+			}
+			return flyableCanNot
+		})
+		var bottom string
+		if total > 0 {
+			bottom = fmt.Sprintf("Showing %d / %d ships", len(rows), total)
 		} else {
-			a.searchBox.Disable()
+			bottom = ""
 		}
-		a.reset()
-	})
+		if doSort {
+			slices.SortFunc(rows, func(a, b flyableShipRow) int {
+				var x int
+				switch sortCol {
+				case flyableColType:
+					x = strings.Compare(a.typeName, b.typeName)
+				case flyableColGroup:
+					x = strings.Compare(a.groupName, b.groupName)
+				}
+				if dir == iwidget.SortAsc {
+					return x
+				} else {
+					return -1 * x
+				}
+			})
+		}
+
+		fyne.Do(func() {
+			a.selectGroup.SetOptions(groupOptions)
+			a.selectFlyable.SetOptions(flyableOptions)
+			a.rowsFiltered = rows
+			a.bottom.SetText(bottom)
+			a.grid.Refresh()
+			a.grid.ScrollToTop()
+		})
+	}()
+
+	// if characterID == 0 {
+	// 	fyne.Do(func() {
+	// 		a.ships = make([]*app.CharacterShipAbility, 0)
+	// 		a.grid.Refresh()
+	// 		a.searchBox.SetText("")
+	// 		a.groupSelect.SetOptions([]string{})
+	// 		a.flyableSelect.SetOptions([]string{})
+	// 	})
+	// 	return nil
+	// }
+	// search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
+
+	// ships := make([]*app.CharacterShipAbility, 0)
+	// for _, o := range oo {
+	// 	isSelectedGroup := a.groupSelected == "" || o.Group.Name == a.groupSelected
+	// 	var isSelectedFlyable bool
+	// 	switch a.flyableSelected {
+	// 	case flyableCan:
+	// 		isSelectedFlyable = o.CanFly
+	// 	case flyableCanNot:
+	// 		isSelectedFlyable = !o.CanFly
+	// 	default:
+	// 		isSelectedFlyable = true
+	// 	}
+	// 	if isSelectedGroup && isSelectedFlyable {
+	// 		ships = append(ships, o)
+	// 	}
+	// }
+	// g := set.Of[string]()
+	// f := set.Of[string]()
+	// for _, o := range ships {
+	// 	g.Add(o.Group.Name)
+	// 	if o.CanFly {
+	// 		f.Add(flyableCan)
+	// 	} else {
+	// 		f.Add(flyableCanNot)
+	// 	}
+	// }
+	// groups := slices.Collect(g.All())
+	// slices.Sort(groups)
+	// flyable := slices.Collect(f.All())
+	// slices.Sort(flyable)
+	// fyne.Do(func() {
+	// 	a.groupSelect.SetOptions(groups)
+	// 	a.flyableSelect.SetOptions(flyable)
+	// 	a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
+	// 	a.foundText.Show()
+	// 	a.grid.Refresh()
+	// })
+	// return nil
 }
 
-func (a *characterFlyableShips) updateEntries() error {
+func (a *characterFlyableShips) update(ctx context.Context) {
+	clear := func() {
+		fyne.Do(func() {
+			a.rows = make([]flyableShipRow, 0)
+			a.search.Disable()
+			a.search.SetText("")
+			a.selectGroup.SetOptions([]string{})
+			a.selectFlyable.SetOptions([]string{})
+			a.filterRows(-1)
+		})
+	}
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text = s
+			a.top.Importance = i
+			a.top.Refresh()
+		})
+	}
+	reportError := func(err error) {
+		slog.Error("Failed to update data for flyable ships UI", "error", err)
+		setTop(a.u.humanizeError(err), widget.DangerImportance)
+	}
+
+	ok1, err := a.u.eus.HasSection(ctx, app.SectionEveTypes)
+	if err != nil {
+		clear()
+		reportError(err)
+		return
+	}
+	if !ok1 {
+		clear()
+		setTop("Waiting for universe data to be loaded...", widget.WarningImportance)
+		return
+	}
+
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
-		fyne.Do(func() {
-			a.ships = make([]*app.CharacterShipAbility, 0)
-			a.grid.Refresh()
-			a.searchBox.SetText("")
-			a.groupSelect.SetOptions([]string{})
-			a.flyableSelect.SetOptions([]string{})
-		})
-		return nil
+		clear()
+		setTop("No character", widget.LowImportance)
+		return
 	}
-	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.u.cs.ListShipsAbilities(context.Background(), characterID, search)
-	if err != nil {
-		return err
-	}
-	ships := make([]*app.CharacterShipAbility, 0)
-	for _, o := range oo {
-		isSelectedGroup := a.groupSelected == "" || o.Group.Name == a.groupSelected
-		var isSelectedFlyable bool
-		switch a.flyableSelected {
-		case flyableCan:
-			isSelectedFlyable = o.CanFly
-		case flyableCanNot:
-			isSelectedFlyable = !o.CanFly
-		default:
-			isSelectedFlyable = true
-		}
-		if isSelectedGroup && isSelectedFlyable {
-			ships = append(ships, o)
-		}
-	}
-	g := set.Of[string]()
-	f := set.Of[string]()
-	for _, o := range ships {
-		g.Add(o.Group.Name)
-		if o.CanFly {
-			f.Add(flyableCan)
-		} else {
-			f.Add(flyableCanNot)
-		}
-	}
-	groups := slices.Collect(g.All())
-	slices.Sort(groups)
-	flyable := slices.Collect(f.All())
-	slices.Sort(flyable)
-	a.ships = ships
-	fyne.Do(func() {
-		a.groupSelect.SetOptions(groups)
-		a.flyableSelect.SetOptions(flyable)
-		a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
-		a.foundText.Show()
-		a.grid.Refresh()
-	})
-	return nil
-}
 
-func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
-	if a.character.Load() == nil {
-		return "No character", widget.LowImportance, false, nil
-	}
-	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
-	if !hasData {
-		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
-	}
-	oo, err := a.u.cs.ListShipsAbilities(context.Background(), characterID, "%%")
+	exists, err := a.u.cs.HasSection(ctx, characterID, app.SectionCharacterSkills)
 	if err != nil {
-		return "", 0, false, err
+		clear()
+		reportError(err)
+		return
 	}
-	c := 0
+	if !exists {
+		clear()
+		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
+		return
+	}
+
+	oo, err := a.u.cs.ListShipsAbilities(ctx, characterID)
+	if err != nil {
+		clear()
+		reportError(err)
+		return
+	}
+	rows := make([]flyableShipRow, 0)
+	for _, o := range oo {
+		rows = append(rows, flyableShipRow{
+			canFly:      o.CanFly,
+			characterID: characterID,
+			groupID:     o.Group.ID,
+			groupName:   o.Group.Name,
+			searchText:  strings.ToLower(fmt.Sprintf("%s|%s", o.Type.Name, o.Group.Name)),
+			typeID:      o.Type.ID,
+			typeName:    o.Type.Name,
+		})
+	}
+
+	k := 0
 	for _, o := range oo {
 		if o.CanFly {
-			c++
+			k++
 		}
 	}
-	p := float32(c) / float32(len(oo)) * 100
-	text := fmt.Sprintf("Can fly %d / %d ships (%.0f%%)", c, len(oo), p)
-	return text, widget.MediumImportance, true, nil
+	p := float32(k) / float32(len(oo)) * 100
+	text := fmt.Sprintf("Can fly %d / %d ships (%.0f%%)", k, len(oo), p)
+	setTop(text, widget.MediumImportance)
+
+	fyne.Do(func() {
+		a.rows = rows
+		a.search.Enable()
+		a.filterRows(-1)
+	})
 }
 
 // assetIconCache caches the images for asset icons.

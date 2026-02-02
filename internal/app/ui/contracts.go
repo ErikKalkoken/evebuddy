@@ -95,7 +95,7 @@ func newContractsForCharacters(u *baseUI) *contracts {
 }
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   contractsColName,
 		Label: "Contract",
 		Width: 300,
@@ -126,7 +126,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	}})
 	a := &contracts{
 		forCorporation: forCorporation,
-		columnSorter:   headers.NewColumnSorter(contractsColIssuedAt, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(headers, contractsColIssuedAt, iwidget.SortDesc),
 		rows:           make([]contractRow, 0),
 		bottom:         widget.NewLabel(""),
 		u:              u,

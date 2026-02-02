@@ -7,8 +7,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/stretchr/testify/assert"
+
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type myRow struct {
@@ -19,7 +20,7 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   0,
 		Label: "ID",
 		Width: 100,
@@ -39,7 +40,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 			}
 			panic(fmt.Sprintf("invalid col: %d", col))
 		},
-		headers.NewColumnSorter(0, iwidget.SortAsc),
+		iwidget.NewColumnSorter(headers, 0, iwidget.SortAsc),
 		func(i int) {
 
 		},
@@ -54,7 +55,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 
 func TestDataTableDef_New(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
-		def := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		def := iwidget.NewDataColumns([]iwidget.DataColumn{{
 			Col:   0,
 			Label: "Alpha",
 		}})
@@ -62,14 +63,14 @@ func TestDataTableDef_New(t *testing.T) {
 	})
 	t.Run("should panic when label not defined", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+			iwidget.NewDataColumns([]iwidget.DataColumn{{
 				Col: 0,
 			}})
 		})
 	})
 	t.Run("should panic when col index too small", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+			iwidget.NewDataColumns([]iwidget.DataColumn{{
 				Col:   -1,
 				Label: "Alpha",
 			}})
@@ -77,7 +78,7 @@ func TestDataTableDef_New(t *testing.T) {
 	})
 	t.Run("should panic when col index too large", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+			iwidget.NewDataColumns([]iwidget.DataColumn{{
 				Col:   1,
 				Label: "Alpha",
 			}})
@@ -85,7 +86,7 @@ func TestDataTableDef_New(t *testing.T) {
 	})
 	t.Run("should panic when exected col index is not defined", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+			iwidget.NewDataColumns([]iwidget.DataColumn{{
 				Col:   0,
 				Label: "Alpha",
 			}, {
@@ -96,7 +97,7 @@ func TestDataTableDef_New(t *testing.T) {
 	})
 	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+			iwidget.NewDataColumns([]iwidget.DataColumn{{
 				Col:   0,
 				Label: "Alpha",
 			}, {

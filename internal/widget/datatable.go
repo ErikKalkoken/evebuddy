@@ -37,8 +37,8 @@ func (s SortDir) isSorting() bool {
 }
 
 type (
-	// ColumnDef represents the definition for a column in a data table.
-	ColumnDef struct {
+	// DataColumn represents the definition for a column in a data table.
+	DataColumn struct {
 		// Column index starting at 0. MANDATORY.
 		Col int
 		// Label of a column displayed to the user. MANDATORY.
@@ -49,15 +49,15 @@ type (
 		Width float32
 	}
 
-	// DataTableDef represents the definition for a data table.
-	DataTableDef struct {
-		cols []ColumnDef
+	// DataColumns represents the definition for a data table.
+	DataColumns struct {
+		cols []DataColumn
 	}
 
 	// ColumnSorter represents an ordered list of columns which can be sorted.
 	ColumnSorter struct {
 		cols       []SortDir
-		def        DataTableDef
+		def        DataColumns
 		initialDir SortDir
 		initialIdx int
 		isMobile   bool
@@ -73,7 +73,7 @@ type (
 	}
 )
 
-func (h ColumnDef) minWidth() float32 {
+func (h DataColumn) minWidth() float32 {
 	if h.Width > 0 {
 		return h.Width
 	}
@@ -81,8 +81,12 @@ func (h ColumnDef) minWidth() float32 {
 	return x.MinSize().Width
 }
 
-// NewDataTableDef creates and returns a [DataTableDef].
-func NewDataTableDef(cols []ColumnDef) DataTableDef {
+// NewDataColumns creates and returns a [DataColumns].
+// It panics if semantic checks fail.
+func NewDataColumns(cols []DataColumn) DataColumns {
+	if len(cols) == 0 {
+		panic("must define at least 1 column")
+	}
 	var incoming, expected set.Set[int]
 	for i := range len(cols) {
 		expected.Add(i)
@@ -100,26 +104,26 @@ func NewDataTableDef(cols []ColumnDef) DataTableDef {
 		incoming.Add(c.Col)
 	}
 	cols2 := slices.Clone(cols)
-	slices.SortFunc(cols2, func(a, b ColumnDef) int {
+	slices.SortFunc(cols2, func(a, b DataColumn) int {
 		return cmp.Compare(a.Col, b.Col)
 	})
-	d := DataTableDef{
+	d := DataColumns{
 		cols: cols2,
 	}
 	return d
 }
 
 // Column return the definition of a column.
-func (d DataTableDef) Column(n int) ColumnDef {
+func (d DataColumns) Column(n int) DataColumn {
 	return d.cols[n]
 }
 
-func (d DataTableDef) all() iter.Seq2[int, ColumnDef] {
+func (d DataColumns) all() iter.Seq2[int, DataColumn] {
 	return slices.All(d.cols)
 }
 
 // maxColumnWidth returns the maximum width of any column.
-func (d DataTableDef) maxColumnWidth() float32 {
+func (d DataColumns) maxColumnWidth() float32 {
 	var m float32
 	for _, c := range d.cols {
 		l := widget.NewLabel(c.Label)
@@ -128,17 +132,18 @@ func (d DataTableDef) maxColumnWidth() float32 {
 	return m
 }
 
-func (d DataTableDef) size() int {
+func (d DataColumns) size() int {
 	return len(d.cols)
 }
 
-func (d DataTableDef) values() iter.Seq[ColumnDef] {
+func (d DataColumns) values() iter.Seq[DataColumn] {
 	return slices.Values(d.cols)
 }
 
-// NewColumnSorter creates and returns a new [ColumSorter].
+// NewColumnSorter returns a new ColumSorter.
 // idx and dir defines the initially sorted column.
-func (d DataTableDef) NewColumnSorter(idx int, dir SortDir) *ColumnSorter {
+// It panics if semantic checks fail.
+func NewColumnSorter(d DataColumns, idx int, dir SortDir) *ColumnSorter {
 	if idx < 0 || idx >= d.size() {
 		panic(fmt.Sprintf("invalid idx. Allowed range: [0, %d]", d.size()-1))
 	}
@@ -226,7 +231,7 @@ func (cs *ColumnSorter) CalcSort(idx int) (int, SortDir, bool) {
 
 // NewSortButton returns a new sortButton.
 func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
-	sortColumns := slices.Collect(xiter.Map(cs.def.values(), func(h ColumnDef) string {
+	sortColumns := slices.Collect(xiter.Map(cs.def.values(), func(h DataColumn) string {
 		return h.Label
 	}))
 	w := &SortButton{
@@ -335,7 +340,7 @@ func (w *SortButton) set(col int, dir SortDir) {
 
 // MakeDataTable returns a data table generated from the definition.
 func MakeDataTable[S ~[]E, E any](
-	def DataTableDef,
+	def DataColumns,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	columnSorter *ColumnSorter,
@@ -425,7 +430,7 @@ func MakeDataTable[S ~[]E, E any](
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
 func MakeDataList[S ~[]E, E any](
-	def DataTableDef,
+	def DataColumns,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	onSelected func(E),

@@ -94,7 +94,7 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
 		Col:   clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
@@ -116,7 +116,7 @@ func newClones(u *baseUI) *clones {
 		Width: 100,
 	}})
 	a := &clones{
-		columnSorter: headers.NewColumnSorter(clonesColLocation, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
