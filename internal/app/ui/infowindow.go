@@ -1218,9 +1218,11 @@ func (a *locationInfo) update() error {
 	}
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
-			a.typeImage.SetResource(r)
-		})
+		if o.Type != nil {
+			a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
+				a.typeImage.SetResource(r)
+			})
+		}
 	})
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)

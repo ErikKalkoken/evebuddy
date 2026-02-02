@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/theme"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -269,7 +268,7 @@ func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 func (s *EveImageService) InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource)) {
 	if size != 64 {
 		slog.Error("eveimageservice: url", "error", ErrInvalid)
-		setter(theme.BrokenImageIcon())
+		setter(resourceBrokenimage64Png)
 		return
 	}
 	setter(resourceSkinicon64pxPng)
@@ -287,7 +286,7 @@ func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
 	url, err := arg.makeURL(arg.id, arg.size)
 	if err != nil {
 		slog.Error("eveimageservice: url", "error", err)
-		arg.setter(theme.BrokenImageIcon())
+		arg.setter(resourceBrokenimage64Png)
 		return
 	}
 	key := makeKey(url)
@@ -297,10 +296,10 @@ func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
 		return
 	}
 	if s.isOffline {
-		arg.setter(resourceQuestionmark32Png)
+		arg.setter(resourceBrokenimage64Png)
 		return
 	}
-	arg.setter(resourceBlankSvg)
+	arg.setter(resourceBlank32Png)
 	go func() {
 		x, err, _ := s.sfg.Do(key, func() (any, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
@@ -313,7 +312,7 @@ func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
 		if err != nil {
 			slog.Error("eveimageservice: request", "error", err)
 			fyne.Do(func() {
-				arg.setter(theme.BrokenImageIcon())
+				arg.setter(resourceBrokenimage64Png)
 			})
 			return
 		}
