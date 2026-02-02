@@ -8,16 +8,30 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-//go:embed resources/question_mark_32.png
+//go:embed blank_32.png
+var resourceBlank32PngData []byte
+var resourceBlank32Png = &fyne.StaticResource{
+	StaticName:    "blank_32.png",
+	StaticContent: resourceBlank32PngData,
+}
+
+//go:embed broken_image_64.png
+var resourceBrokenimage64PngData []byte
+var resourceBrokenimage64Png = &fyne.StaticResource{
+	StaticName:    "broken_image_64.png",
+	StaticContent: resourceBrokenimage64PngData,
+}
+
+//go:embed question_mark_32.png
 var resourceQuestionmark32PngData []byte
 var resourceQuestionmark32Png = &fyne.StaticResource{
-	StaticName:    "resources/question_mark_32.png",
+	StaticName:    "question_mark_32.png",
 	StaticContent: resourceQuestionmark32PngData,
 }
 
-//go:embed resources/skin_icon_64px.png
+//go:embed skin_icon_64px.png
 var resourceSkinicon64pxPngData []byte
 var resourceSkinicon64pxPng = &fyne.StaticResource{
-	StaticName:    "resources/skin_icon_64px.png",
+	StaticName:    "skin_icon_64px.png",
 	StaticContent: resourceSkinicon64pxPngData,
 }

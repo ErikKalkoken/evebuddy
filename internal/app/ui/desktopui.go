@@ -538,7 +538,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		})
 		go func() {
-			u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
+			u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					characterHeader.SetIcon(r)
 				})
@@ -608,7 +608,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		})
 		go func() {
-			u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
+			u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					corporationHeader.SetIcon(r)
 				})

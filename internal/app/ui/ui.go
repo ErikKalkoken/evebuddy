@@ -59,15 +59,24 @@ const (
 var defaultImageScaleMode canvas.ImageScale
 
 type eveImageService interface {
-	AllianceLogo(int32, int) (fyne.Resource, error)
-	CharacterPortrait(int32, int) (fyne.Resource, error)
-	CorporationLogo(int32, int) (fyne.Resource, error)
-	FactionLogo(int32, int) (fyne.Resource, error)
-	InventoryTypeRender(int32, int) (fyne.Resource, error)
-	InventoryTypeIcon(int32, int) (fyne.Resource, error)
-	InventoryTypeBPO(int32, int) (fyne.Resource, error)
-	InventoryTypeBPC(int32, int) (fyne.Resource, error)
-	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
+	AllianceLogo(id int32, size int) (fyne.Resource, error)
+	AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	CharacterPortrait(id int32, size int) (fyne.Resource, error)
+	CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource))
+	CorporationLogo(id int32, size int) (fyne.Resource, error)
+	CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	FactionLogo(id int32, size int) (fyne.Resource, error)
+	FactionLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
+	InventoryTypeRenderAsync(id int32, size int, setter func(r fyne.Resource))
+	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
+	InventoryTypeIconAsync(id int32, size int, setter func(r fyne.Resource))
+	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPOAsync(id int32, size int, setter func(r fyne.Resource))
+	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPCAsync(id int32, size int, setter func(r fyne.Resource))
+	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+	InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource))
 }
 
 // services represents a wrapper for passing the main services to functions.
@@ -720,18 +729,15 @@ func (u *baseUI) setAnyCharacter() error {
 	return nil
 }
 
-func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
-	if err != nil {
-		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
-		r = icons.Characterplaceholder64Jpeg
-	}
-	r2, err := fynetools.MakeAvatar(r)
-	if err != nil {
-		slog.Error("Failed to make avatar", "characterID", id, "err", err)
-		r2 = icons.Characterplaceholder64Jpeg
-	}
-	setIcon(r2)
+func (u *baseUI) setCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
+	u.eis.CharacterPortraitAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+		r2, err := fynetools.MakeAvatar(r)
+		if err != nil {
+			slog.Error("Failed to make avatar", "characterID", id, "err", err)
+			r2 = icons.Characterplaceholder64Jpeg
+		}
+		setIcon(r2)
+	})
 }
 
 //////////////////
@@ -821,18 +827,15 @@ func (u *baseUI) setAnyCorporation() error {
 	return nil
 }
 
-func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.eis.CorporationLogo(id, app.IconPixelSize)
-	if err != nil {
-		slog.Error("Failed to fetch corporation logo", "corporationID", id, "err", err)
-		r = icons.Corporationplaceholder64Png
-	}
-	r2, err := fynetools.MakeAvatar(r)
-	if err != nil {
-		slog.Error("Failed to make avatar", "corporationID", id, "err", err)
-		r2 = icons.Corporationplaceholder64Png
-	}
-	setIcon(r2)
+func (u *baseUI) setCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
+	u.eis.CorporationLogoAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+		r2, err := fynetools.MakeAvatar(r)
+		if err != nil {
+			slog.Error("Failed to make avatar", "corporationID", id, "err", err)
+			r2 = icons.Corporationplaceholder64Png
+		}
+		setIcon(r2)
+	})
 }
 
 //////////////////
@@ -956,7 +959,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 		} else {
 			it.Icon = fallbackIcon
 			g.Go(func() error {
-				u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
+				u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						it.Icon = r
 					})
@@ -1016,7 +1019,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		} else {
 			it.Icon = fallbackIcon
 			g.Go(func() error {
-				u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
+				u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						it.Icon = r
 					})

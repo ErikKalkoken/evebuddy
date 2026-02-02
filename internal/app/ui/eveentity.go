@@ -19,8 +19,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 const (
@@ -173,17 +173,10 @@ func (w *eveEntityEntry) update() {
 				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
-				go func() {
-					res, err := fetchEveEntityAvatar(w.eis, ee, icons.Questionmark32Png)
-					if err != nil {
-						slog.Error("fetch eve entity avatar", "error", err)
-						return
-					}
-					fyne.Do(func() {
-						nameItem.Icon = res
-						pm.Refresh()
-					})
-				}()
+				fetchEveEntityIconAsync(w.eis, ee, func(r fyne.Resource) {
+					nameItem.Icon = r
+					pm.Refresh()
+				})
 			}
 			w.main.Add(container.New(columns, label, badge))
 		}
@@ -270,17 +263,10 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 					))),
 		),
 	)
-	go func() {
-		res, err := fetchEveEntityAvatar(w.eis, w.ee, w.fallbackIcon)
-		if err != nil {
-			slog.Error("fetch eve entity avatar", "error", err)
-			res = w.fallbackIcon
-		}
-		fyne.Do(func() {
-			icon.Resource = res
-			icon.Refresh()
-		})
-	}()
+	fetchEveEntityIconAsync(w.eis, w.ee, func(r fyne.Resource) {
+		icon.Resource = r
+		icon.Refresh()
+	})
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -324,19 +310,33 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-// fetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
-func fetchEveEntityAvatar(eis eveEntityEIS, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
+var eveEntityResourceCache xsync.Map[int32, fyne.Resource]
+
+// fetchEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
+func fetchEveEntityIconAsync(eis eveEntityEIS, ee *app.EveEntity, setter func(r fyne.Resource)) {
 	if ee == nil {
-		return fallback, nil
+		setter(theme.BrokenImageIcon())
+		return
 	}
 	if ee.Category == app.EveEntityMailList {
-		return theme.MailComposeIcon(), nil
+		setter(theme.MailComposeIcon())
+		return
 	}
-	res, err := entityIcon(eis, ee, defaultIconPixelSize, fallback)
-	if err != nil {
-		return nil, err
-	}
-	return fynetools.MakeAvatar(res)
+	iwidget.LoadResourceAsyncWithCache(
+		icons.BlankSvg,
+		func() (fyne.Resource, bool) {
+			return eveEntityResourceCache.Load(ee.ID)
+		},
+		func(r fyne.Resource) {
+			setter(r)
+		},
+		func() (fyne.Resource, error) {
+			return entityIcon(eis, ee, defaultIconPixelSize, theme.NewThemedResource(icons.QuestionmarkSvg))
+		},
+		func(r fyne.Resource) {
+			eveEntityResourceCache.Store(ee.ID, r)
+		},
+	)
 }
 
 // entityIcon returns an icon form EveImageService for several entity categories.

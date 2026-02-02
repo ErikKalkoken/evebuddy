@@ -205,18 +205,20 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}()
 }
 
-func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, int) (fyne.Resource, error), w fyne.Window) {
-	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
-	r, err := load(id, zoomImagePixelSize)
-	if err != nil {
-		iw.u.showErrorDialog("Failed to load image", err, w)
-	}
-	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
-	p := theme.Padding()
+func (iw *infoWindow) showZoomWindow(title string, id int32, loaderAsync func(int32, int, func(fyne.Resource)), w fyne.Window) {
 	w2, created := iw.u.getOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
-	if created {
-		w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
+	if !created {
+		w2.Show()
+		return
 	}
+	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
+	image := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
+	loaderAsync(id, zoomImagePixelSize, func(r fyne.Resource) {
+		image.Resource = r
+		image.Refresh()
+	})
+	p := theme.Padding()
+	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), image))
 	w2.Show()
 }
 
@@ -445,6 +447,12 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *allianceInfo) update() error {
+	fyne.Do(func() {
+		a.iw.u.eis.AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+			a.logo.Resource = r
+			a.logo.Refresh()
+		})
+	})
 	ctx := context.Background()
 	g := new(errgroup.Group)
 	g.Go(func() error {
@@ -483,17 +491,6 @@ func (a *allianceInfo) update() error {
 			a.name.SetText(o.Name)
 			a.attributes.set(attributes)
 			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		r, err := a.iw.u.eis.AllianceLogo(a.id, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.logo.Resource = r
-			a.logo.Refresh()
 		})
 		return nil
 	})
@@ -541,7 +538,7 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
-	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
+	portrait := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(iw.renderIconSize())
 	title := widget.NewLabel("")
@@ -657,21 +654,22 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterInfo) update() error {
 	ctx := context.Background()
+	fyne.Do(func() {
+		a.iw.u.eis.CharacterPortraitAsync(a.id, 256, func(r fyne.Resource) {
+			a.portrait.SetResource(r)
+		})
+	})
 	o, _, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		r, err := a.iw.u.eis.CharacterPortrait(a.id, 256)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.portrait.SetResource(r)
+	fyne.Do(func() {
+		a.iw.u.eis.CorporationLogoAsync(o.Corporation.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.corporationLogo.Resource = r
+			a.corporationLogo.Refresh()
 		})
-		return nil
 	})
+	g := new(errgroup.Group)
 	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
@@ -701,9 +699,7 @@ func (a *characterInfo) update() error {
 				a.iw.showEveEntity(o.Corporation)
 			}
 			a.portrait.OnTapped = func() {
-				go fyne.Do(func() {
-					a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortrait, a.iw.w)
-				})
+				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortraitAsync, a.iw.w)
 			}
 		})
 		fyne.Do(func() {
@@ -735,17 +731,6 @@ func (a *characterInfo) update() error {
 		fyne.Do(func() {
 			a.attributes.set(attributes)
 			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		r, err := a.iw.u.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.corporationLogo.Resource = r
-			a.corporationLogo.Refresh()
 		})
 		return nil
 	})
@@ -1035,22 +1020,17 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) update() error {
 	ctx := context.Background()
+	fyne.Do(func() {
+		a.iw.u.eis.CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+			a.logo.Resource = r
+			a.logo.Refresh()
+		})
+	})
 	o, err := a.iw.u.eus.GetOrCreateCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
 	g := new(errgroup.Group)
-	g.Go(func() error {
-		r, err := a.iw.u.eis.CorporationLogo(a.id, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.logo.Resource = r
-			a.logo.Refresh()
-		})
-		return nil
-	})
 	g.Go(func() error {
 		attributes := a.makeAttributes(o)
 		fyne.Do(func() {
@@ -1068,17 +1048,10 @@ func (a *corporationInfo) update() error {
 			a.alliance.OnTapped = func() {
 				a.iw.showEveEntity(o.Alliance)
 			}
-			go func() {
-				r, err := a.iw.u.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
-				if err != nil {
-					slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
-					return
-				}
-				fyne.Do(func() {
-					a.allianceLogo.Resource = r
-					a.allianceLogo.Refresh()
-				})
-			}()
+			a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.allianceLogo.Resource = r
+				a.allianceLogo.Refresh()
+			})
 		})
 		fyne.Do(func() {
 			if o.HomeStation == nil {
@@ -1246,6 +1219,46 @@ func (a *locationInfo) update() error {
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 	})
+	if o.Type != nil {
+		fyne.Do(func() {
+			a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
+				a.typeImage.SetResource(r)
+			})
+			a.typeInfo.SetText(o.Type.Name)
+			a.typeInfo.OnTapped = func() {
+				a.iw.showEveEntity(o.Type.EveEntity())
+			}
+			a.typeImage.OnTapped = func() {
+				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
+			}
+			description := o.Type.Description
+			if description == "" {
+				description = o.Type.Name
+			}
+			a.description.SetText(description)
+		})
+	}
+	if o.Owner != nil {
+		fyne.Do(func() {
+			a.iw.u.eis.CorporationLogoAsync(o.Owner.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.ownerLogo.Resource = r
+				a.ownerLogo.Refresh()
+			})
+			a.owner.SetText(o.Owner.Name)
+			a.owner.OnTapped = func() {
+				a.iw.showEveEntity(o.Owner)
+			}
+		})
+	}
+	if o.SolarSystem != nil {
+		fyne.Do(func() {
+			a.location.set(
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
+				newEntityItemFromEveSolarSystem(o.SolarSystem),
+			)
+		})
+	}
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
@@ -1257,64 +1270,10 @@ func (a *locationInfo) update() error {
 			a.tabs.Append(attributesTab)
 		})
 	}
+	fyne.Do(func() {
+		a.tabs.Refresh()
+	})
 	g := new(errgroup.Group)
-	if o.Type != nil {
-		g.Go(func() error {
-			fyne.Do(func() {
-				a.typeInfo.SetText(o.Type.Name)
-				a.typeInfo.OnTapped = func() {
-					a.iw.showEveEntity(o.Type.EveEntity())
-				}
-				a.typeImage.OnTapped = func() {
-					a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
-				}
-				description := o.Type.Description
-				if description == "" {
-					description = o.Type.Name
-				}
-				a.description.SetText(description)
-			})
-			r, err := a.iw.u.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
-			if err != nil {
-				return err
-			}
-			fyne.Do(func() {
-				a.typeImage.SetResource(r)
-			})
-			return nil
-		})
-	}
-	if o.Owner != nil {
-		g.Go(func() error {
-			fyne.Do(func() {
-				a.owner.SetText(o.Owner.Name)
-				a.owner.OnTapped = func() {
-					a.iw.showEveEntity(o.Owner)
-				}
-			})
-			r, err := a.iw.u.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
-			if err != nil {
-				return err
-			}
-			fyne.Do(func() {
-				a.ownerLogo.Resource = r
-				a.ownerLogo.Refresh()
-			})
-			return nil
-		})
-	}
-	if o.SolarSystem != nil {
-		g.Go(func() error {
-			fyne.Do(func() {
-				a.location.set(
-					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
-					newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
-					newEntityItemFromEveSolarSystem(o.SolarSystem),
-				)
-			})
-			return nil
-		})
-	}
 	g.Go(func() error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
@@ -1330,15 +1289,13 @@ func (a *locationInfo) update() error {
 		})
 		fyne.Do(func() {
 			a.services.set(items...)
+			a.tabs.Refresh()
 		})
 		return nil
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	fyne.Do(func() {
-		a.tabs.Refresh()
-	})
 	return nil
 }
 
@@ -1386,22 +1343,15 @@ func (a *raceInfo) update() error {
 	if err != nil {
 		return err
 	}
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		factionID, found := o.FactionID()
-		if !found {
-			return nil
-		}
-		r, err := a.iw.u.eis.FactionLogo(factionID, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
+	if factionID, ok := o.FactionID(); ok {
 		fyne.Do(func() {
-			a.logo.Resource = r
-			a.logo.Refresh()
+			a.iw.u.eis.FactionLogoAsync(factionID, app.IconPixelSize, func(r fyne.Resource) {
+				a.logo.Resource = r
+				a.logo.Refresh()
+			})
 		})
-		return nil
-	})
+	}
+	g := new(errgroup.Group)
 	g.Go(func() error {
 		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
@@ -1672,13 +1622,11 @@ func (a *solarSystemInfo) update() error {
 		if err != nil {
 			return err
 		}
-		r, err := a.iw.u.eis.InventoryTypeIcon(id, app.IconPixelSize)
-		if err != nil {
-			return err
-		}
 		fyne.Do(func() {
-			a.logo.Resource = r
-			a.logo.Refresh()
+			a.iw.u.eis.InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+				a.logo.Resource = r
+				a.logo.Refresh()
+			})
 		})
 		return nil
 	})
@@ -1814,21 +1762,24 @@ func (a *inventoryTypeInfo) update() error {
 		}
 		a.description.SetText(s)
 	})
-
-	iwidget.RefreshTappableImageAsync(a.typeIcon, func() (fyne.Resource, error) {
+	fyne.Do(func() {
 		if et.IsSKIN() {
-			return a.iw.u.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+			a.iw.u.eis.InventoryTypeSKINAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.typeIcon.SetResource(r)
+			})
 		} else if et.IsBlueprint() {
-			return a.iw.u.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
+			a.iw.u.eis.InventoryTypeBPOAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.typeIcon.SetResource(r)
+			})
 		} else {
-			return a.iw.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
+			a.iw.u.eis.InventoryTypeIconAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.typeIcon.SetResource(r)
+			})
 		}
 	})
 	if et.HasRender() {
 		a.typeIcon.OnTapped = func() {
-			fyne.Do(func() {
-				a.iw.showZoomWindow(et.Name, a.typeID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
-			})
+			a.iw.showZoomWindow(et.Name, a.typeID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
 		}
 	}
 
@@ -1839,10 +1790,11 @@ func (a *inventoryTypeInfo) update() error {
 			return err
 		}
 		character = ee
-		iwidget.RefreshImageAsync(a.characterIcon, func() (fyne.Resource, error) {
-			return a.iw.u.eis.CharacterPortrait(character.ID, app.IconPixelSize)
-		})
 		fyne.Do(func() {
+			a.iw.u.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
+				a.characterIcon.Resource = r
+				a.characterIcon.Refresh()
+			})
 			a.characterIcon.Show()
 			a.characterName.OnTapped = func() {
 				a.iw.showEveEntity(character)

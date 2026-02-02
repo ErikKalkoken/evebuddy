@@ -185,10 +185,10 @@ func (a *characterSheet) update() {
 			return v.Format(app.DateTimeFormat)
 		}))
 	})
-	iwidget.RefreshTappableImageAsync(a.portrait, func() (fyne.Resource, error) {
-		return a.u.eis.CharacterPortrait(c.ID, 512)
-	})
 	fyne.Do(func() {
+		a.u.eis.CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
+			a.portrait.SetResource(r)
+		})
 		if c.Location == nil {
 			a.location.SetText("?")
 			a.location.OnTapped = nil

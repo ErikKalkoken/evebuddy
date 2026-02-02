@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -83,6 +84,17 @@ func (s *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error
 	return s.image(url, timeoutAlliance)
 }
 
+// AllianceLogoAsync loads an alliance logo asynchronously and calls setter with the result.
+func (s *EveImageService) AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: AllianceLogoURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutAlliance,
+	})
+}
+
 // CharacterPortrait returns the portrait for a character.
 func (s *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
 	url, err := CharacterPortraitURL(id, size)
@@ -93,6 +105,17 @@ func (s *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, 
 		return nil, err
 	}
 	return s.image(url, timeoutCharacter)
+}
+
+// CharacterPortraitAsync loads a character portrait asynchronously and calls setter with the result.
+func (s *EveImageService) CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: CharacterPortraitURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutCharacter,
+	})
 }
 
 // CorporationLogo returns the logo for a corporation.
@@ -107,6 +130,17 @@ func (s *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, er
 	return s.image(url, timeoutCorporation)
 }
 
+// CorporationLogoAsync loads a character portrait asynchronously and calls setter with the result.
+func (s *EveImageService) CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: CorporationLogoURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutCorporation,
+	})
+}
+
 // FactionLogo returns the logo for a faction.
 func (s *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := FactionLogoURL(id, size)
@@ -117,6 +151,17 @@ func (s *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
+}
+
+// FactionLogoAsync loads a faction logo asynchronously and calls setter with the result.
+func (s *EveImageService) FactionLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: FactionLogoURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
 }
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
@@ -131,6 +176,17 @@ func (s *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 	return s.image(url, timeoutNeverExpire)
 }
 
+// InventoryTypeRenderAsync loads a render for a type and calls setter with the result.
+func (s *EveImageService) InventoryTypeRenderAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: InventoryTypeRenderURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
+}
+
 // InventoryTypeIcon returns the icon for a type.
 func (s *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeIconURL(id, size)
@@ -141,6 +197,17 @@ func (s *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
+}
+
+// InventoryTypeIconAsync loads a render for a type and calls setter with the result.
+func (s *EveImageService) InventoryTypeIconAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: InventoryTypeIconURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
 }
 
 // InventoryTypeBPO returns the icon for a BPO type.
@@ -155,6 +222,17 @@ func (s *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 	return s.image(url, timeoutNeverExpire)
 }
 
+// InventoryTypeBPOAsync loads the icon for a BPO type and calls setter with the result.
+func (s *EveImageService) InventoryTypeBPOAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: InventoryTypeBPOURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
+}
+
 // InventoryTypeBPC returns the icon for a BPC type.
 func (s *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPCURL(id, size)
@@ -167,6 +245,17 @@ func (s *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 	return s.image(url, timeoutNeverExpire)
 }
 
+// InventoryTypeBPCAsync loads the icon for a BPC type and calls setter with the result.
+func (s *EveImageService) InventoryTypeBPCAsync(id int32, size int, setter func(r fyne.Resource)) {
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: InventoryTypeBPCURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
+}
+
 // InventoryTypeSKIN returns the icon for a SKIN type.
 func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
 	if size != 64 {
@@ -175,13 +264,70 @@ func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 	return resourceSkinicon64pxPng, nil
 }
 
+// InventoryTypeSKINAsync loads the icon for a SKIN type and calls setter with the result.
+func (s *EveImageService) InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource)) {
+	if size != 64 {
+		slog.Error("eveimageservice: url", "error", ErrInvalid)
+		setter(resourceBrokenimage64Png)
+		return
+	}
+	setter(resourceSkinicon64pxPng)
+}
+
+type loadImageAsyncParams struct {
+	id      int32
+	makeURL func(id int32, size int) (string, error)
+	setter  func(r fyne.Resource)
+	size    int
+	timeout time.Duration
+}
+
+func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
+	url, err := arg.makeURL(arg.id, arg.size)
+	if err != nil {
+		slog.Error("eveimageservice: url", "error", err)
+		arg.setter(resourceBrokenimage64Png)
+		return
+	}
+	key := makeKey(url)
+	dat, found := s.cache.Get(key)
+	if found {
+		arg.setter(fyne.NewStaticResource(key, dat))
+		return
+	}
+	if s.isOffline {
+		arg.setter(resourceBrokenimage64Png)
+		return
+	}
+	arg.setter(resourceBlank32Png)
+	go func() {
+		x, err, _ := s.sfg.Do(key, func() (any, error) {
+			byt, err := loadDataFromURL(url, s.httpClient)
+			if err != nil {
+				return nil, err
+			}
+			s.cache.Set(key, byt, arg.timeout)
+			return byt, nil
+		})
+		if err != nil {
+			slog.Error("eveimageservice: request", "error", err)
+			fyne.Do(func() {
+				arg.setter(resourceBrokenimage64Png)
+			})
+			return
+		}
+		dat = x.([]byte)
+		fyne.Do(func() {
+			arg.setter(fyne.NewStaticResource(key, dat))
+		})
+	}()
+}
+
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
-	key := "eveimage-" + makeMD5Hash(url)
-	var dat []byte
-	var found bool
-	dat, found = s.cache.Get(key)
+	key := makeKey(url)
+	dat, found := s.cache.Get(key)
 	if !found {
 		if s.isOffline {
 			return resourceQuestionmark32Png, nil
@@ -201,6 +347,11 @@ func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	}
 	r := fyne.NewStaticResource(key, dat)
 	return r, nil
+}
+
+func makeKey(url string) string {
+	key := "eveimage-" + makeMD5Hash(url)
+	return key
 }
 
 func loadDataFromURL(url string, client *http.Client) ([]byte, error) {

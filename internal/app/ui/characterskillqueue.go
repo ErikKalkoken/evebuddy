@@ -312,8 +312,8 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		imageAction: func() {
 			u.ShowTypeInfoWindowWithCharacter(r.SkillID, r.CharacterID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.InventoryTypeIcon(r.SkillID, 256)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			u.eis.InventoryTypeIconAsync(r.SkillID, 256, setter)
 		},
 		minSize: fyne.NewSize(500, 450),
 		title:   subTitle,

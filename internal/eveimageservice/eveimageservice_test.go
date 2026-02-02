@@ -5,12 +5,74 @@ import (
 	"os"
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
+
+func TestImageFetchingAsync(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	t.Run("can fetch a character portrait from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/character.jpeg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/characters/93330670/portrait?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.CharacterPortraitAsync(93330670, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+	})
+	t.Run("can assign a character portrait direcly when found in cache", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/character.jpeg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/characters/93330670/portrait?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.CharacterPortraitAsync(93330670, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		<-result
+		httpmock.Reset()
+		//when
+		var result2 fyne.Resource
+		s.CharacterPortraitAsync(93330670, 64, func(r fyne.Resource) {
+			result2 = r
+		})
+		assert.Equal(t, dat, result2.Content())
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+}
 
 func TestImageFetching(t *testing.T) {
 	httpmock.Activate()

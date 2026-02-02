@@ -21,47 +21,6 @@ func NewImageFromResource(res fyne.Resource, minSize fyne.Size) *canvas.Image {
 	return x
 }
 
-// NewImageWithLoader shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
-func NewImageWithLoader(placeholder fyne.Resource, minSize fyne.Size, loader func() (fyne.Resource, error)) *canvas.Image {
-	if loader == nil {
-		panic("Need to define loader")
-	}
-	image := NewImageFromResource(placeholder, minSize)
-	RefreshImageAsync(image, loader)
-	return image
-}
-
-// RefreshImageAsync refreshes the resource of an image asynchronously.
-// This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
-func RefreshImageAsync(image *canvas.Image, loader func() (fyne.Resource, error)) {
-	go func() {
-		r, err := loader()
-		if err != nil {
-			slog.Warn("Failed to fetch image resource", "err", err)
-			r = theme.BrokenImageIcon()
-		}
-		fyne.Do(func() {
-			image.Resource = r
-			image.Refresh()
-		})
-	}()
-}
-
-// RefreshTappableImageAsync refreshes the resource of an image asynchronously.
-// This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
-func RefreshTappableImageAsync(image *TappableImage, loader func() (fyne.Resource, error)) {
-	go func() {
-		r, err := loader()
-		if err != nil {
-			slog.Warn("Failed to fetch image resource", "err", err)
-			r = theme.BrokenImageIcon()
-		}
-		fyne.Do(func() {
-			image.SetResource(r)
-		})
-	}()
-}
-
 // LoadResourceAsyncWithCache loads a resource asynchronously with a local c
 // Updates with initial, before starting to load asynchronously.
 // getter tries to load the resource from cache

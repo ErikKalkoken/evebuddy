@@ -510,8 +510,8 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 		imageAction: func() {
 			u.ShowTypeInfoWindow(s.Type.ID)
 		},
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.InventoryTypeIcon(s.Type.ID, 512)
+		imageLoader: func(setter func(r fyne.Resource)) {
+			u.eis.InventoryTypeIconAsync(s.Type.ID, 512, setter)
 		},
 		title:  subTitle,
 		window: w,
