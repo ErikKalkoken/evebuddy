@@ -669,6 +669,49 @@ func (a *characterInfo) update() error {
 			a.corporationLogo.Refresh()
 		})
 	})
+
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+		a.corporation.SetText(o.Corporation.Name)
+		a.corporation.OnTapped = func() {
+			a.iw.showEveEntity(o.Corporation)
+		}
+		a.portrait.OnTapped = func() {
+			a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortraitAsync, a.iw.w)
+		}
+	})
+	fyne.Do(func() {
+		a.bio.SetText(o.DescriptionPlain())
+		a.description.SetText(o.RaceDescription())
+		a.tabs.Refresh()
+	})
+	fyne.Do(func() {
+		if !o.HasAlliance() {
+			a.alliance.Hide()
+			return
+		}
+		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.showEveEntity(o.Alliance)
+		}
+	})
+	fyne.Do(func() {
+		if o.Title == "" {
+			a.title.Hide()
+			return
+		}
+		a.title.SetText("Title: " + o.Title)
+	})
+	attributes, err := a.makeAttributes(o)
+	if err != nil {
+		return err
+	}
+	fyne.Do(func() {
+		a.attributes.set(attributes)
+		a.tabs.Refresh()
+	})
+
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCharacterCorporationHistory(ctx, a.id)
@@ -686,50 +729,6 @@ func (a *characterInfo) update() error {
 		fyne.Do(func() {
 			a.employeeHistory.set(items...)
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
-			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
-			a.corporation.SetText(o.Corporation.Name)
-			a.corporation.OnTapped = func() {
-				a.iw.showEveEntity(o.Corporation)
-			}
-			a.portrait.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortraitAsync, a.iw.w)
-			}
-		})
-		fyne.Do(func() {
-			a.bio.SetText(o.DescriptionPlain())
-			a.description.SetText(o.RaceDescription())
-			a.tabs.Refresh()
-		})
-		fyne.Do(func() {
-			if !o.HasAlliance() {
-				a.alliance.Hide()
-				return
-			}
-			a.alliance.SetText(o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.showEveEntity(o.Alliance)
-			}
-		})
-		fyne.Do(func() {
-			if o.Title == "" {
-				a.title.Hide()
-				return
-			}
-			a.title.SetText("Title: " + o.Title)
-		})
-		attributes, err := a.makeAttributes(o)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.attributes.set(attributes)
 			a.tabs.Refresh()
 		})
 		return nil
@@ -1030,41 +1029,38 @@ func (a *corporationInfo) update() error {
 	if err != nil {
 		return err
 	}
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		attributes := a.makeAttributes(o)
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.description.SetText(o.DescriptionPlain())
-			a.attributes.set(attributes)
-			a.tabs.Refresh()
-		})
-		fyne.Do(func() {
-			if o.Alliance == nil {
-				a.allianceBox.Hide()
-				return
-			}
-			a.alliance.SetText(o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.showEveEntity(o.Alliance)
-			}
-			a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
-				a.allianceLogo.Resource = r
-				a.allianceLogo.Refresh()
-			})
-		})
-		fyne.Do(func() {
-			if o.HomeStation == nil {
-				a.hq.Hide()
-				return
-			}
-			a.hq.SetText("Headquarters: " + o.HomeStation.Name)
-			a.hq.OnTapped = func() {
-				a.iw.showEveEntity(o.HomeStation)
-			}
-		})
-		return nil
+	attributes := a.makeAttributes(o)
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.description.SetText(o.DescriptionPlain())
+		a.attributes.set(attributes)
+		a.tabs.Refresh()
 	})
+	fyne.Do(func() {
+		if o.Alliance == nil {
+			a.allianceBox.Hide()
+			return
+		}
+		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.showEveEntity(o.Alliance)
+		}
+		a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.allianceLogo.Resource = r
+			a.allianceLogo.Refresh()
+		})
+	})
+	fyne.Do(func() {
+		if o.HomeStation == nil {
+			a.hq.Hide()
+			return
+		}
+		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+		a.hq.OnTapped = func() {
+			a.iw.showEveEntity(o.HomeStation)
+		}
+	})
+	g := new(errgroup.Group)
 	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
