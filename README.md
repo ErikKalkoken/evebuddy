@@ -34,7 +34,7 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
 - **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets.
-- **Corporation monitor**: Check current information about each of your corporations: e.g. check corporation wallets or see all current members.
+- **Corporation monitor**: Check current information about each of your corporations: e.g. check wallets and assets.
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across of your characters or see which character has manufacturing slots available.
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates, e.g. a structure was attacked or a training queue became empty.
 - **New Eden search**: Search live on the game server, similar to in-game search bar, e.g. search for characters, corporations solar systems.
@@ -87,14 +87,15 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Character monitor**: Check current information about each of your characters:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
-  - Mails: Browser through all mails
   - Communications: Browse through all communications
+  - Mails: Browser through all mails
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and market Transactions
 
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
-  - Members: List of current corporation members
+  - Assets: Browse and search corporation assets
   - Industry: See running and historic indy jobs
+  - Members: List of current corporation members
   - Structures: List of all corporation structures with current fuel status, state and potential timers
   - Wallets: Wallet, market transactions and balances for corporation wallets
 
