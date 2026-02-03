@@ -84,7 +84,7 @@ func (iw *infoWindow) showRace(id int32) {
 // infoWidget defines common functionality for all info widgets.
 type infoWidget interface {
 	fyne.CanvasObject
-	update() error
+	update(context.Context) error
 	setError(string)
 }
 
@@ -195,7 +195,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		iw.nav.Push(ab)
 	}
 	go func() {
-		err := page.update()
+		err := page.update(context.Background())
 		if err != nil {
 			slog.Error("info widget load", "variant", v, "id", entityID, "error", err)
 			fyne.Do(func() {
@@ -446,14 +446,13 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *allianceInfo) update() error {
+func (a *allianceInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
 	})
-	ctx := context.Background()
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
@@ -652,8 +651,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterInfo) update() error {
-	ctx := context.Background()
+func (a *characterInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.CharacterPortraitAsync(a.id, 256, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
@@ -896,8 +894,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *constellationInfo) update() error {
-	ctx := context.Background()
+func (a *constellationInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1017,8 +1014,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationInfo) update() error {
-	ctx := context.Background()
+func (a *corporationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
@@ -1206,8 +1202,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationInfo) update() error {
-	ctx := context.Background()
+func (a *locationInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1333,8 +1328,7 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *raceInfo) update() error {
-	ctx := context.Background()
+func (a *raceInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateRaceESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1429,8 +1423,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionInfo) update() error {
-	ctx := context.Background()
+func (a *regionInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1556,8 +1549,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemInfo) update() error {
-	ctx := context.Background()
+func (a *solarSystemInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1739,8 +1731,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *inventoryTypeInfo) update() error {
-	ctx := context.Background()
+func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	et, err := a.iw.u.eus.GetOrCreateTypeESI(ctx, a.typeID)
 	if err != nil {
 		return err
