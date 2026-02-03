@@ -41,6 +41,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // update info
@@ -729,17 +730,6 @@ func (u *baseUI) setAnyCharacter() error {
 	return nil
 }
 
-func (u *baseUI) setCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
-	u.eis.CharacterPortraitAsync(id, app.IconPixelSize, func(r fyne.Resource) {
-		r2, err := fynetools.MakeAvatar(r)
-		if err != nil {
-			slog.Error("Failed to make avatar", "characterID", id, "err", err)
-			r2 = icons.Characterplaceholder64Jpeg
-		}
-		setIcon(r2)
-	})
-}
-
 //////////////////
 // Current corporation
 
@@ -825,17 +815,6 @@ func (u *baseUI) setAnyCorporation() error {
 	}
 	u.setCorporation(c)
 	return nil
-}
-
-func (u *baseUI) setCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
-	u.eis.CorporationLogoAsync(id, app.IconPixelSize, func(r fyne.Resource) {
-		r2, err := fynetools.MakeAvatar(r)
-		if err != nil {
-			slog.Error("Failed to make avatar", "corporationID", id, "err", err)
-			r2 = icons.Corporationplaceholder64Png
-		}
-		setIcon(r2)
-	})
 }
 
 //////////////////
@@ -926,116 +905,6 @@ func (u *baseUI) updateMailIndicator() {
 	} else {
 		u.hideMailIndicator()
 	}
-}
-
-func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
-	cc := u.scs.ListCharacters()
-	items := make([]*fyne.MenuItem, 0)
-	if len(cc) == 0 {
-		it := fyne.NewMenuItem("No characters", nil)
-		it.Disabled = true
-		return append(items, it)
-	}
-	it := fyne.NewMenuItem("Switch to...", nil)
-	it.Disabled = true
-	items = append(items, it)
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
-	currentID := u.currentCharacterID()
-	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	for _, c := range cc {
-		it := fyne.NewMenuItem(c.Name, func() {
-			go func() {
-				err := u.loadCharacter(c.ID)
-				if err != nil {
-					slog.Error("make character switch menu", "error", err)
-					u.snackbar.Show("ERROR: Failed to switch character")
-				}
-			}()
-		})
-		if c.ID == currentID {
-			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
-			it.Disabled = true
-		} else {
-			it.Icon = fallbackIcon
-			g.Go(func() error {
-				u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
-					fyne.Do(func() {
-						it.Icon = r
-					})
-				})
-				return nil
-			})
-		}
-		items = append(items, it)
-	}
-	go func() {
-		g.Wait()
-		fyne.Do(func() {
-			refresh()
-		})
-	}()
-	return items
-}
-
-func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
-	items := make([]*fyne.MenuItem, 0)
-	cc, err := u.ListCorporationsForSelection()
-	if err != nil {
-		slog.Error("Failed to fetch corporations", "error", err)
-		return items
-	}
-	if len(cc) == 0 {
-		it := fyne.NewMenuItem("No corporations", nil)
-		it.Disabled = true
-		return append(items, it)
-	}
-	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
-		return x.ID
-	}))
-	currentID := u.currentCorporationID()
-	if currentID != 0 && !corporations.Contains(currentID) {
-		go u.setAnyCorporation()
-	}
-	it := fyne.NewMenuItem("Switch to...", nil)
-	it.Disabled = true
-	items = append(items, it)
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
-	fallbackIcon, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
-	for _, c := range cc {
-		it := fyne.NewMenuItem(c.Name, func() {
-			go func() {
-				err := u.loadCorporation(c.ID)
-				if err != nil {
-					slog.Error("make corporation switch menu", "error", err)
-					u.snackbar.Show("ERROR: Failed to switch corporation")
-				}
-			}()
-		})
-		if c.ID == currentID {
-			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
-			it.Disabled = true
-		} else {
-			it.Icon = fallbackIcon
-			g.Go(func() error {
-				u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
-					fyne.Do(func() {
-						it.Icon = r
-					})
-				})
-				return nil
-			})
-		}
-		items = append(items, it)
-	}
-	go func() {
-		g.Wait()
-		fyne.Do(func() {
-			refresh()
-		})
-	}()
-	return items
 }
 
 func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int32], error) {
@@ -1191,6 +1060,163 @@ func (u *baseUI) appName() string {
 	}
 	return name
 }
+
+// Avatars & switch menus
+
+var (
+	avatarCache                       xsync.Map[int32, fyne.Resource]
+	characterAvatarPlaceholder64, _   = fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
+	corporationAvatarPlaceholder64, _ = fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
+)
+
+func (u *baseUI) setCharacterAvatar(characterID int32, setIcon func(fyne.Resource)) {
+	iwidget.LoadResourceAsyncWithCache(
+		characterAvatarPlaceholder64,
+		func() (fyne.Resource, bool) {
+			return avatarCache.Load(characterID)
+		},
+		setIcon,
+		func() (fyne.Resource, error) {
+			r, err := u.eis.CharacterPortrait(characterID, app.IconPixelSize)
+			if err != nil {
+				return nil, err
+			}
+			return fynetools.MakeAvatar(r)
+		},
+		func(r fyne.Resource) {
+			avatarCache.Store(characterID, r)
+		},
+	)
+}
+
+func (u *baseUI) setCorporationAvatar(corporationID int32, setIcon func(fyne.Resource)) {
+	iwidget.LoadResourceAsyncWithCache(
+		corporationAvatarPlaceholder64,
+		func() (fyne.Resource, bool) {
+			return avatarCache.Load(corporationID)
+		},
+		setIcon,
+		func() (fyne.Resource, error) {
+			r, err := u.eis.CorporationLogo(corporationID, app.IconPixelSize)
+			if err != nil {
+				return nil, err
+			}
+			return fynetools.MakeAvatar(r)
+		},
+		func(r fyne.Resource) {
+			avatarCache.Store(corporationID, r)
+		},
+	)
+}
+
+func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
+	cc := u.scs.ListCharacters()
+	items := make([]*fyne.MenuItem, 0)
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No characters", nil)
+		it.Disabled = true
+		return append(items, it)
+	}
+	it := fyne.NewMenuItem("Switch to...", nil)
+	it.Disabled = true
+	items = append(items, it)
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
+	currentID := u.currentCharacterID()
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			go func() {
+				err := u.loadCharacter(c.ID)
+				if err != nil {
+					slog.Error("make character switch menu", "error", err)
+					u.snackbar.Show("ERROR: Failed to switch character")
+				}
+			}()
+		})
+		if c.ID == currentID {
+			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
+			it.Disabled = true
+		} else {
+			it.Icon = characterAvatarPlaceholder64
+			g.Go(func() error {
+				fyne.Do(func() {
+					u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
+						it.Icon = r
+					})
+				})
+				return nil
+			})
+		}
+		items = append(items, it)
+	}
+	go func() {
+		g.Wait()
+		fyne.Do(func() {
+			refresh()
+		})
+	}()
+	return items
+}
+
+func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
+	items := make([]*fyne.MenuItem, 0)
+	cc, err := u.ListCorporationsForSelection()
+	if err != nil {
+		slog.Error("Failed to fetch corporations", "error", err)
+		return items
+	}
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No corporations", nil)
+		it.Disabled = true
+		return append(items, it)
+	}
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
+	currentID := u.currentCorporationID()
+	if currentID != 0 && !corporations.Contains(currentID) {
+		go u.setAnyCorporation()
+	}
+	it := fyne.NewMenuItem("Switch to...", nil)
+	it.Disabled = true
+	items = append(items, it)
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			go func() {
+				err := u.loadCorporation(c.ID)
+				if err != nil {
+					slog.Error("make corporation switch menu", "error", err)
+					u.snackbar.Show("ERROR: Failed to switch corporation")
+				}
+			}()
+		})
+		if c.ID == currentID {
+			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
+			it.Disabled = true
+		} else {
+			g.Go(func() error {
+				fyne.Do(func() {
+					u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
+						it.Icon = r
+					})
+				})
+				return nil
+			})
+		}
+		items = append(items, it)
+	}
+	go func() {
+		g.Wait()
+		fyne.Do(func() {
+			refresh()
+		})
+	}()
+	return items
+}
+
+// Windows
 
 // getOrCreateWindow returns a unique window as defined by the given id string
 // and reports whether a new window was created or the window already exists.
