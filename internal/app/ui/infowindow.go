@@ -84,7 +84,7 @@ func (iw *infoWindow) showRace(id int32) {
 // infoWidget defines common functionality for all info widgets.
 type infoWidget interface {
 	fyne.CanvasObject
-	update() error
+	update(context.Context) error
 	setError(string)
 }
 
@@ -195,7 +195,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		iw.nav.Push(ab)
 	}
 	go func() {
-		err := page.update()
+		err := page.update(context.Background())
 		if err != nil {
 			slog.Error("info widget load", "variant", v, "id", entityID, "error", err)
 			fyne.Do(func() {
@@ -446,14 +446,13 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *allianceInfo) update() error {
+func (a *allianceInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
 	})
-	ctx := context.Background()
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
@@ -652,8 +651,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterInfo) update() error {
-	ctx := context.Background()
+func (a *characterInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.CharacterPortraitAsync(a.id, 256, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
@@ -669,6 +667,49 @@ func (a *characterInfo) update() error {
 			a.corporationLogo.Refresh()
 		})
 	})
+
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+		a.corporation.SetText(o.Corporation.Name)
+		a.corporation.OnTapped = func() {
+			a.iw.showEveEntity(o.Corporation)
+		}
+		a.portrait.OnTapped = func() {
+			a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortraitAsync, a.iw.w)
+		}
+	})
+	fyne.Do(func() {
+		a.bio.SetText(o.DescriptionPlain())
+		a.description.SetText(o.RaceDescription())
+		a.tabs.Refresh()
+	})
+	fyne.Do(func() {
+		if !o.HasAlliance() {
+			a.alliance.Hide()
+			return
+		}
+		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.showEveEntity(o.Alliance)
+		}
+	})
+	fyne.Do(func() {
+		if o.Title == "" {
+			a.title.Hide()
+			return
+		}
+		a.title.SetText("Title: " + o.Title)
+	})
+	attributes, err := a.makeAttributes(o)
+	if err != nil {
+		return err
+	}
+	fyne.Do(func() {
+		a.attributes.set(attributes)
+		a.tabs.Refresh()
+	})
+
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCharacterCorporationHistory(ctx, a.id)
@@ -686,50 +727,6 @@ func (a *characterInfo) update() error {
 		fyne.Do(func() {
 			a.employeeHistory.set(items...)
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
-			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
-			a.corporation.SetText(o.Corporation.Name)
-			a.corporation.OnTapped = func() {
-				a.iw.showEveEntity(o.Corporation)
-			}
-			a.portrait.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortraitAsync, a.iw.w)
-			}
-		})
-		fyne.Do(func() {
-			a.bio.SetText(o.DescriptionPlain())
-			a.description.SetText(o.RaceDescription())
-			a.tabs.Refresh()
-		})
-		fyne.Do(func() {
-			if !o.HasAlliance() {
-				a.alliance.Hide()
-				return
-			}
-			a.alliance.SetText(o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.showEveEntity(o.Alliance)
-			}
-		})
-		fyne.Do(func() {
-			if o.Title == "" {
-				a.title.Hide()
-				return
-			}
-			a.title.SetText("Title: " + o.Title)
-		})
-		attributes, err := a.makeAttributes(o)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.attributes.set(attributes)
 			a.tabs.Refresh()
 		})
 		return nil
@@ -897,8 +894,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *constellationInfo) update() error {
-	ctx := context.Background()
+func (a *constellationInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1018,8 +1014,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationInfo) update() error {
-	ctx := context.Background()
+func (a *corporationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.iw.u.eis.CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
@@ -1030,41 +1025,38 @@ func (a *corporationInfo) update() error {
 	if err != nil {
 		return err
 	}
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		attributes := a.makeAttributes(o)
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.description.SetText(o.DescriptionPlain())
-			a.attributes.set(attributes)
-			a.tabs.Refresh()
-		})
-		fyne.Do(func() {
-			if o.Alliance == nil {
-				a.allianceBox.Hide()
-				return
-			}
-			a.alliance.SetText(o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.showEveEntity(o.Alliance)
-			}
-			a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
-				a.allianceLogo.Resource = r
-				a.allianceLogo.Refresh()
-			})
-		})
-		fyne.Do(func() {
-			if o.HomeStation == nil {
-				a.hq.Hide()
-				return
-			}
-			a.hq.SetText("Headquarters: " + o.HomeStation.Name)
-			a.hq.OnTapped = func() {
-				a.iw.showEveEntity(o.HomeStation)
-			}
-		})
-		return nil
+	attributes := a.makeAttributes(o)
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.description.SetText(o.DescriptionPlain())
+		a.attributes.set(attributes)
+		a.tabs.Refresh()
 	})
+	fyne.Do(func() {
+		if o.Alliance == nil {
+			a.allianceBox.Hide()
+			return
+		}
+		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.showEveEntity(o.Alliance)
+		}
+		a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.allianceLogo.Resource = r
+			a.allianceLogo.Refresh()
+		})
+	})
+	fyne.Do(func() {
+		if o.HomeStation == nil {
+			a.hq.Hide()
+			return
+		}
+		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+		a.hq.OnTapped = func() {
+			a.iw.showEveEntity(o.HomeStation)
+		}
+	})
+	g := new(errgroup.Group)
 	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
@@ -1210,8 +1202,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationInfo) update() error {
-	ctx := context.Background()
+func (a *locationInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1337,8 +1328,7 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *raceInfo) update() error {
-	ctx := context.Background()
+func (a *raceInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateRaceESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1433,8 +1423,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionInfo) update() error {
-	ctx := context.Background()
+func (a *regionInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1560,8 +1549,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemInfo) update() error {
-	ctx := context.Background()
+func (a *solarSystemInfo) update(ctx context.Context) error {
 	o, err := a.iw.u.eus.GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
@@ -1743,8 +1731,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *inventoryTypeInfo) update() error {
-	ctx := context.Background()
+func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	et, err := a.iw.u.eus.GetOrCreateTypeESI(ctx, a.typeID)
 	if err != nil {
 		return err
