@@ -108,7 +108,7 @@ type industryJobs struct {
 
 	body            fyne.CanvasObject
 	bottom          *widget.Label
-	columnSorter    *iwidget.ColumnSorter
+	columnSorter    *iwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
@@ -143,36 +143,36 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 }
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   industryJobsColBlueprint,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
+		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
 	}, {
-		ID:   industryJobsColStatus,
+		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
 	}, {
-		ID:   industryJobsColRuns,
+		ID:    industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
 	}, {
-		ID:   industryJobsColActivity,
+		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
 	}, {
-		ID:   industryJobsColEndDate,
+		ID:    industryJobsColEndDate,
 		Label: "End date",
 		Width: columnWidthDateTime,
 	}, {
-		ID:   industryJobsColLocation,
+		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		ID:   industryJobsColOwner,
+		ID:    industryJobsColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 	}, {
-		ID:   industryJobsColInstaller,
+		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: columnWidthEntity,
 	}})

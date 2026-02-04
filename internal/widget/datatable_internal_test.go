@@ -7,7 +7,7 @@ import (
 )
 
 func TestColumnSorter_New(t *testing.T) {
-	def := NewDataColumns([]DataColumn{{
+	def := NewDataColumns([]DataColumn[struct{}]{{
 		ID:    0,
 		Label: "Alpha",
 	}, {
@@ -19,15 +19,10 @@ func TestColumnSorter_New(t *testing.T) {
 		got := sc.column(0)
 		assert.Equal(t, SortAsc, got)
 	})
-	t.Run("should panic when initialized with invalid colum index", func(t *testing.T) {
-		assert.Panics(t, func() {
-			NewColumnSorter(def, 3, SortAsc)
-		})
-	})
 }
 
 func TestColumnSorter_Column(t *testing.T) {
-	def := NewDataColumns([]DataColumn{{
+	def := NewDataColumns([]DataColumn[struct{}]{{
 		ID:    0,
 		Label: "Alpha",
 	}, {
@@ -56,7 +51,7 @@ func TestColumnSorter_Column(t *testing.T) {
 }
 
 func TestColumnSorter_Current(t *testing.T) {
-	def := NewDataColumns([]DataColumn{{
+	def := NewDataColumns([]DataColumn[struct{}]{{
 		ID:    0,
 		Label: "Alpha",
 	}, {

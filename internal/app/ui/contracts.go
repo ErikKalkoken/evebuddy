@@ -62,7 +62,7 @@ type contracts struct {
 
 	body           fyne.CanvasObject
 	bottom         *widget.Label
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
@@ -95,32 +95,32 @@ func newContractsForCharacters(u *baseUI) *contracts {
 }
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   contractsColName,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[contractRow]{{
+		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
 	}, {
-		ID:   contractsColType,
+		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
 	}, {
-		ID:   contractsColIssuer,
+		ID:    contractsColIssuer,
 		Label: "From",
 		Width: 150,
 	}, {
-		ID:   contractsColAssignee,
+		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
 	}, {
-		ID:   contractsColStatus,
+		ID:    contractsColStatus,
 		Label: "Status",
 		Width: 100,
 	}, {
-		ID:   contractsColIssuedAt,
+		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: columnWidthDateTime,
 	}, {
-		ID:   contractsColExpiresAt,
+		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
 	}})

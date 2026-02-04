@@ -60,7 +60,7 @@ type corporationStructures struct {
 	OnUpdate func(count int)
 
 	bottom            *widget.Label
-	columnSorter      *iwidget.ColumnSorter
+	columnSorter      *iwidget.ColumnSorter[corporationStructureRow]
 	corporation       atomic.Pointer[app.Corporation]
 	main              fyne.CanvasObject
 	rows              []corporationStructureRow
@@ -84,25 +84,25 @@ const (
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   structuresColName,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[corporationStructureRow]{{
+		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
 	}, {
-		ID:   structuresColType,
+		ID:    structuresColType,
 		Label: "Type",
 		Width: 150,
 	}, {
-		ID:   structuresColFuelExpires,
+		ID:    structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
 	}, {
-		ID:    structuresColState,
+		ID:     structuresColState,
 		Label:  "State",
 		Width:  150,
 		NoSort: true,
 	}, {
-		ID:    structuresColServices,
+		ID:     structuresColServices,
 		Label:  "Services",
 		Width:  200,
 		NoSort: true,

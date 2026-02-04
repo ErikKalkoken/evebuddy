@@ -179,7 +179,7 @@ type assetSearch struct {
 	onUpdate func(int, string)
 
 	body           fyne.CanvasObject
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
 	found          *widget.Label
@@ -216,7 +216,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{
 		{
 			ID:    assetsColItem,
 			Label: "Item",

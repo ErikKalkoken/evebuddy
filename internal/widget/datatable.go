@@ -36,7 +36,7 @@ func (s SortDir) isSorting() bool {
 }
 
 // DataColumn represents the definition for a column in a data table.
-type DataColumn struct {
+type DataColumn[T any] struct {
 	// Column ID. Must be unique and >= 0.
 	ID int
 	// Label of a column displayed to the user.
@@ -45,9 +45,13 @@ type DataColumn struct {
 	NoSort bool
 	// Width of a column in Fyne units. Will try to auto size when zero.
 	Width float32
+	// Create for this column. Optional.
+	Create func() fyne.CanvasObject
+	// Update for this column. Mandatory
+	Update func(T, fyne.CanvasObject)
 }
 
-func (h DataColumn) minWidth() float32 {
+func (h DataColumn[T]) minWidth() float32 {
 	if h.Width > 0 {
 		return h.Width
 	}
@@ -56,14 +60,14 @@ func (h DataColumn) minWidth() float32 {
 }
 
 // DataColumns represents the definition for a data table.
-type DataColumns struct {
-	cols      []DataColumn
+type DataColumns[T any] struct {
+	cols      []DataColumn[T]
 	idxLookup map[int]int // maps IDs to index on the cols slice
 }
 
 // NewDataColumns creates and returns a [DataColumns].
 // It panics if semantic checks fail.
-func NewDataColumns(cols []DataColumn) DataColumns {
+func NewDataColumns[T any](cols []DataColumn[T]) DataColumns[T] {
 	if len(cols) == 0 {
 		panic("must define at least 1 column")
 	}
@@ -77,14 +81,14 @@ func NewDataColumns(cols []DataColumn) DataColumns {
 		}
 		lookup[c.ID] = idx
 	}
-	d := DataColumns{
+	d := DataColumns[T]{
 		cols:      cols,
 		idxLookup: lookup,
 	}
 	return d
 }
 
-func (d DataColumns) IDLookup(idx int) (int, bool) {
+func (d DataColumns[T]) IDLookup(idx int) (int, bool) {
 	if idx < 0 || idx >= len(d.cols) {
 		return 0, false
 	}
@@ -92,19 +96,19 @@ func (d DataColumns) IDLookup(idx int) (int, bool) {
 }
 
 // ColumnByIndex return the definition of a column. n is the slice index of the column.
-func (d DataColumns) ColumnByIndex(idx int) (DataColumn, bool) {
+func (d DataColumns[T]) ColumnByIndex(idx int) (DataColumn[T], bool) {
 	if idx < 0 || idx >= len(d.cols) {
-		return DataColumn{}, false
+		return DataColumn[T]{}, false
 	}
 	return d.cols[idx], true
 }
 
-func (d DataColumns) all() iter.Seq2[int, DataColumn] {
+func (d DataColumns[T]) all() iter.Seq2[int, DataColumn[T]] {
 	return slices.All(d.cols)
 }
 
 // maxColumnWidth returns the maximum width of any column.
-func (d DataColumns) maxColumnWidth() float32 {
+func (d DataColumns[T]) maxColumnWidth() float32 {
 	var m float32
 	for _, c := range d.cols {
 		l := widget.NewLabel(c.Label)
@@ -113,19 +117,19 @@ func (d DataColumns) maxColumnWidth() float32 {
 	return m
 }
 
-func (d DataColumns) size() int {
+func (d DataColumns[T]) size() int {
 	return len(d.cols)
 }
 
-func (d DataColumns) values() iter.Seq[DataColumn] {
+func (d DataColumns[T]) values() iter.Seq[DataColumn[T]] {
 	return slices.Values(d.cols)
 }
 
 // ColumnSorter represents an ordered list of columns which can be sorted.
 type (
-	ColumnSorter struct {
+	ColumnSorter[T any] struct {
 		cols       []SortDir
-		def        DataColumns
+		def        DataColumns[T]
 		initialDir SortDir
 		initialID  int
 		isMobile   bool
@@ -144,14 +148,14 @@ type (
 // NewColumnSorter returns a new ColumSorter.
 // idx and dir defines the initially sorted column.
 // It panics if semantic checks fail.
-func NewColumnSorter(d DataColumns, id int, dir SortDir) *ColumnSorter {
+func NewColumnSorter[T any](d DataColumns[T], id int, dir SortDir) *ColumnSorter[T] {
 	if _, found := d.idxLookup[id]; !found {
 		dir = SortOff
 	}
 	if dir == SortOff {
 		id = d.cols[0].ID
 	}
-	cs := &ColumnSorter{
+	cs := &ColumnSorter[T]{
 		cols:       make([]SortDir, d.size()),
 		def:        d,
 		initialDir: dir,
@@ -164,7 +168,7 @@ func NewColumnSorter(d DataColumns, id int, dir SortDir) *ColumnSorter {
 }
 
 // column returns the sort direction of a column
-func (cs *ColumnSorter) column(idx int) SortDir {
+func (cs *ColumnSorter[T]) column(idx int) SortDir {
 	if idx < 0 || idx >= len(cs.cols) {
 		return SortOff
 	}
@@ -172,7 +176,7 @@ func (cs *ColumnSorter) column(idx int) SortDir {
 }
 
 // current returns which column is currently sorted or -1 if none are sorted.
-func (cs *ColumnSorter) current() (idx int, dir SortDir) {
+func (cs *ColumnSorter[T]) current() (idx int, dir SortDir) {
 	for i, v := range cs.cols {
 		if v.isSorting() {
 			return i, v
@@ -182,12 +186,12 @@ func (cs *ColumnSorter) current() (idx int, dir SortDir) {
 }
 
 // reset sets the columns to their initial state.
-func (cs *ColumnSorter) reset() {
+func (cs *ColumnSorter[T]) reset() {
 	cs.Set(cs.initialID, cs.initialDir)
 }
 
 // clear removes sorting from all columns.
-func (cs *ColumnSorter) clear() {
+func (cs *ColumnSorter[T]) clear() {
 	for i := range cs.cols {
 		var dir SortDir
 		if cs.def.cols[i].NoSort {
@@ -200,7 +204,7 @@ func (cs *ColumnSorter) clear() {
 }
 
 // Set sets the sort direction for a column.
-func (cs *ColumnSorter) Set(id int, dir SortDir) {
+func (cs *ColumnSorter[T]) Set(id int, dir SortDir) {
 	idx, ok := cs.def.idxLookup[id]
 	if !ok {
 		return
@@ -208,7 +212,7 @@ func (cs *ColumnSorter) Set(id int, dir SortDir) {
 	cs.setIdx(idx, dir)
 }
 
-func (cs *ColumnSorter) setIdx(idx int, dir SortDir) {
+func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
 	cs.clear()
 	cs.cols[idx] = dir
 	if cs.sortButton != nil {
@@ -216,12 +220,12 @@ func (cs *ColumnSorter) setIdx(idx int, dir SortDir) {
 	}
 }
 
-func (cs *ColumnSorter) size() int {
+func (cs *ColumnSorter[T]) size() int {
 	return len(cs.cols)
 }
 
 // CalcSort calculates how and if to apply sorting to column idx.
-func (cs *ColumnSorter) CalcSort(id int) (int, SortDir, bool) {
+func (cs *ColumnSorter[T]) CalcSort(id int) (int, SortDir, bool) {
 	idx, ok := cs.def.idxLookup[id]
 	if !ok {
 		idx = -1
@@ -249,8 +253,8 @@ func (cs *ColumnSorter) CalcSort(id int) (int, SortDir, bool) {
 }
 
 // NewSortButton returns a new sortButton.
-func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
-	sortColumns := slices.Collect(xiter.Map(cs.def.values(), func(h DataColumn) string {
+func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
+	sortColumns := slices.Collect(xiter.Map(cs.def.values(), func(h DataColumn[T]) string {
 		return h.Label
 	}))
 	w := &SortButton{
@@ -359,10 +363,10 @@ func (w *SortButton) set(idx int, dir SortDir) {
 
 // MakeDataTable returns a data table generated from the definition.
 func MakeDataTable[S ~[]E, E any](
-	def DataColumns,
+	def DataColumns[E],
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
-	columnSorter *ColumnSorter,
+	columnSorter *ColumnSorter[E],
 	filterRows func(id int),
 	onSelected func(int, E),
 ) *widget.Table {
@@ -455,10 +459,132 @@ func MakeDataTable[S ~[]E, E any](
 	return t
 }
 
+func MakeDataTable2[S ~[]E, E any](
+	def DataColumns[E],
+	data *S,
+	defaultCreate func() fyne.CanvasObject,
+	columnSorter *ColumnSorter[E],
+	filterRows func(id int),
+	onSelected func(int, E),
+) *widget.Table {
+	for _, col := range def.cols {
+		if col.Update == nil {
+			panic(fmt.Sprintf("Column missing update: %d", col.ID))
+		}
+	}
+	stackIdxLookup := make(map[int]int)
+	t := widget.NewTable(
+		func() (rows int, cols int) {
+			return len(*data), def.size()
+		},
+		func() fyne.CanvasObject {
+			c := container.NewStack()
+			c.Add(defaultCreate())
+			var stackIdx int
+			for idx, col := range def.cols {
+				if f := col.Create; f != nil {
+					c.Add(f())
+					stackIdx++
+					stackIdxLookup[idx] = stackIdx
+				} else {
+					stackIdxLookup[idx] = 0
+				}
+			}
+			return c
+		},
+		func(tci widget.TableCellID, co fyne.CanvasObject) {
+			if tci.Row >= len(*data) || tci.Row < 0 {
+				return
+			}
+			col, ok := def.ColumnByIndex(tci.Col)
+			if !ok {
+				return
+			}
+			stack := co.(*fyne.Container)
+			var co2 fyne.CanvasObject
+			for i, c := range stack.Objects {
+				if stackIdxLookup[tci.Col] == i {
+					c.Show()
+					co2 = c
+				} else {
+					c.Hide()
+				}
+			}
+			r := (*data)[tci.Row]
+			col.Update(r, co2)
+		},
+	)
+	t.ShowHeaderRow = true
+	t.StickyColumnCount = 1
+	iconNone := theme.NewThemedResource(icons.BlankSvg)
+	iconSortOff := theme.NewThemedResource(icons.SortSvg)
+	t.CreateHeader = func() fyne.CanvasObject {
+		icon := widget.NewIcon(iconSortOff)
+		actionLabel := kxwidget.NewTappableLabel("Template", nil)
+		label := widget.NewLabel("Template")
+		return container.NewBorder(nil, nil, nil, icon, container.NewStack(actionLabel, label))
+	}
+	iconMap := map[SortDir]fyne.Resource{
+		SortOff:  iconSortOff,
+		SortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
+		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
+	}
+	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+		h, ok := def.ColumnByIndex(tci.Col)
+		if !ok {
+			return
+		}
+		row := co.(*fyne.Container).Objects
+
+		actionLabel := row[0].(*fyne.Container).Objects[0].(*kxwidget.TappableLabel)
+		label := row[0].(*fyne.Container).Objects[1].(*widget.Label)
+		icon := row[1].(*widget.Icon)
+
+		dir := columnSorter.column(tci.Col)
+		if dir == sortNone {
+			label.SetText(h.Label)
+			label.Show()
+			actionLabel.Hide()
+			icon.Hide()
+			return
+		}
+		actionLabel.OnTapped = func() {
+			if id, ok := def.IDLookup(tci.Col); ok {
+				filterRows(id)
+			}
+		}
+		actionLabel.SetText(h.Label)
+		actionLabel.Show()
+		icon.Show()
+		label.Hide()
+
+		r, ok := iconMap[dir]
+		if !ok {
+			r = iconNone
+		}
+		icon.SetResource(r)
+	}
+	t.OnSelected = func(tci widget.TableCellID) {
+		defer t.UnselectAll()
+		if onSelected != nil {
+			if tci.Row >= len(*data) || tci.Row < 0 {
+				return
+			}
+			r := (*data)[tci.Row]
+			onSelected(tci.Col, r)
+		}
+	}
+	w := theme.Padding() + theme.IconInlineSize()
+	for i, h := range def.cols {
+		t.SetColumnWidth(i, h.minWidth()+w)
+	}
+	return t
+}
+
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
 func MakeDataList[S ~[]E, E any](
-	def DataColumns,
+	def DataColumns[E],
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	onSelected func(E),

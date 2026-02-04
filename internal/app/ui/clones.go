@@ -70,7 +70,7 @@ type clones struct {
 
 	body              fyne.CanvasObject
 	changeOrigin      *widget.Button
-	columnSorter      *iwidget.ColumnSorter
+	columnSorter      *iwidget.ColumnSorter[cloneRow]
 	origin            *app.EveSolarSystem
 	originLabel       *iwidget.RichText
 	routePref         app.EveRoutePreference
@@ -94,24 +94,24 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   clonesColLocation,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[cloneRow]{{
+		ID:    clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		ID:   clonesColRegion,
+		ID:    clonesColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
 	}, {
-		ID:   clonesColImplants,
+		ID:    clonesColImplants,
 		Label: "Impl.",
 		Width: 100,
 	}, {
-		ID:   clonesColCharacter,
+		ID:    clonesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 	}, {
-		ID:   clonesColJumps,
+		ID:    clonesColJumps,
 		Label: "Jumps",
 		Width: 100,
 	}})

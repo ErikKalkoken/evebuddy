@@ -22,6 +22,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -80,20 +81,6 @@ func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) str
 	})
 }
 
-func (r trainingRow) skillDisplay() []widget.RichTextSegment {
-	if r.isActive {
-		return iwidget.RichTextSegmentsFromText(r.skillName)
-	}
-	if r.isWatched {
-		return iwidget.RichTextSegmentsFromText("Expired", widget.RichTextStyle{
-			ColorName: theme.ColorNameError,
-		})
-	}
-	return iwidget.RichTextSegmentsFromText("Inactive", widget.RichTextStyle{
-		ColorName: theme.ColorNameDisabled,
-	})
-}
-
 func (r trainingRow) status() (string, widget.Importance) {
 	if r.isActive {
 		return "Active", widget.SuccessImportance
@@ -121,7 +108,7 @@ type training struct {
 	onUpdate func(expired int)
 
 	bottom       *widget.Label
-	columnSorter *iwidget.ColumnSorter
+	columnSorter *iwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
 	rows         []trainingRow
 	rowsFiltered []trainingRow
@@ -133,51 +120,124 @@ type training struct {
 }
 
 const (
-	trainingColName             = 0
-	trainingColTags             = 1
-	trainingColCurrentSkill     = 2
-	trainingColCurrentRemaining = 3
-	trainingColQueuedCount      = 4
-	trainingColQueuedRemaining  = 5
-	trainingColSkillpoints      = 6
-	trainingColUnallocatedSP    = 7
+	trainingColName = iota
+	trainingColTags
+	trainingColCurrentSkill
+	trainingColCurrentRemaining
+	trainingColQueuedCount
+	trainingColQueuedRemaining
+	trainingColSkillpoints
+	trainingColUnallocatedSP
 )
 
 func newTraining(u *baseUI) *training {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   trainingColName,
-		Label: "Name",
-		Width: columnWidthEntity,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{{
+		ID:    trainingColName,
+		Label: "Character",
+		Width: 220,
+		Create: func() fyne.CanvasObject {
+			avatar := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			avatar.CornerRadius = app.IconUnitSize / 2
+			name := widget.NewLabel("Template")
+			return container.NewHBox(avatar, name)
+		},
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			hbox := co.(*fyne.Container).Objects
+			u.eis.CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
+				x := hbox[0].(*canvas.Image)
+				x.Resource = r
+				x.Refresh()
+			})
+			hbox[1].(*widget.Label).SetText(r.characterName)
+		},
 	}, {
-		ID:    trainingColTags,
+		ID:     trainingColTags,
 		Label:  "Tags",
 		Width:  150,
 		NoSort: true,
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = strings.Join(slices.Sorted(r.tags.All()), ", ")
+			x.Alignment = fyne.TextAlignLeading
+			x.Refresh()
+
+		},
 	}, {
-		ID:   trainingColCurrentSkill,
+		ID:    trainingColCurrentSkill,
 		Label: "Current Skill",
 		Width: 250,
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			var s string
+			var i widget.Importance
+			if r.isActive {
+				s = r.skillName
+			} else if r.isWatched {
+				s = "Expired"
+				i = widget.DangerImportance
+			} else {
+				s = "Inactive"
+				i = widget.LowImportance
+			}
+			x.Text = s
+			x.Importance = i
+			x.Alignment = fyne.TextAlignLeading
+			x.Refresh()
+		},
 	}, {
-		ID:   trainingColCurrentRemaining,
+		ID:    trainingColCurrentRemaining,
 		Label: "Current Time",
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = r.currentRemainingTimeString()
+			x.Alignment = fyne.TextAlignLeading
+			x.Refresh()
+		},
 	}, {
-		ID:   trainingColQueuedCount,
+		ID:    trainingColQueuedCount,
 		Label: "Queued",
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = r.totalRemainingCountDisplay
+			x.Alignment = fyne.TextAlignLeading
+			x.Refresh()
+		},
 	}, {
-		ID:   trainingColQueuedRemaining,
+		ID:    trainingColQueuedRemaining,
 		Label: "Queue Time",
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = r.totalRemainingTimeString()
+			x.Alignment = fyne.TextAlignLeading
+			x.Refresh()
+		},
 	}, {
-		ID:   trainingColSkillpoints,
+		ID:    trainingColSkillpoints,
 		Label: "SP",
 		Width: 100,
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = r.totalSPDisplay
+			x.Alignment = fyne.TextAlignTrailing
+			x.Refresh()
+		},
 	}, {
-		ID:   trainingColUnallocatedSP,
+		ID:    trainingColUnallocatedSP,
 		Label: "Unall.",
 		Width: 100,
+		Update: func(r trainingRow, co fyne.CanvasObject) {
+			x := co.(*widget.Label)
+			x.Text = r.unallocatedSPDisplay
+			x.Alignment = fyne.TextAlignTrailing
+			x.Refresh()
+		},
 	}})
 	a := &training{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorter(headers, trainingColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, trainingColName, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),
@@ -192,45 +252,15 @@ func newTraining(u *baseUI) *training {
 		a.filterRows(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
-	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
-		switch col {
-		case trainingColName:
-			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case trainingColTags:
-			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
-			return iwidget.RichTextSegmentsFromText(s)
-		case trainingColCurrentSkill:
-			return r.skillDisplay()
-		case trainingColCurrentRemaining:
-			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
-		case trainingColQueuedCount:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
-		case trainingColQueuedRemaining:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
-		case trainingColSkillpoints:
-			return iwidget.RichTextSegmentsFromText(
-				r.totalSPDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
-			)
-		case trainingColUnallocatedSP:
-			return iwidget.RichTextSegmentsFromText(
-				r.unallocatedSPDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
-			)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if a.u.isMobile {
 		a.main = a.makeDataList()
 	} else {
-		a.main = iwidget.MakeDataTable(
-			headers,
+		a.main = iwidget.MakeDataTable2(
+			columns,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				return widget.NewLabel("Template")
+			},
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r trainingRow) {

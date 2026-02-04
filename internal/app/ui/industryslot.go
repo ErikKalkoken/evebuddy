@@ -40,7 +40,7 @@ type industrySlots struct {
 
 	body            fyne.CanvasObject
 	bottom          *widget.Label
-	columnSorter    *iwidget.ColumnSorter
+	columnSorter    *iwidget.ColumnSorter[industrySlotRow]
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
 	selectFreeSlots *kxwidget.FilterChipSelect
@@ -60,7 +60,7 @@ const (
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
@@ -210,7 +210,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industrySlots) makeDataTable(headers iwidget.DataColumns, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
+func (a *industrySlots) makeDataTable(headers iwidget.DataColumns[industrySlotRow], makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
 	w := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.rowsFiltered), 4

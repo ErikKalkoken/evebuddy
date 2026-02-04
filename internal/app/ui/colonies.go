@@ -68,7 +68,7 @@ type colonies struct {
 	OnUpdate func(total, expired int)
 
 	body              fyne.CanvasObject
-	columnSorter      *iwidget.ColumnSorter
+	columnSorter      *iwidget.ColumnSorter[colonyRow]
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
 	selectStatus      *kxwidget.FilterChipSelect
@@ -95,34 +95,34 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   coloniesColPlanet,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
+		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
 	}, {
-		ID:   coloniesColType,
+		ID:    coloniesColType,
 		Label: "Type",
 		Width: 100,
 	}, {
-		ID:    coloniesColExtracting,
+		ID:     coloniesColExtracting,
 		Label:  "Extracting",
 		Width:  200,
 		NoSort: true,
 	}, {
-		ID:   coloniesColDue,
+		ID:    coloniesColDue,
 		Label: "Due",
 		Width: columnWidthDateTime,
 	}, {
-		ID:    coloniesColProducing,
+		ID:     coloniesColProducing,
 		Label:  "Producing",
 		Width:  200,
 		NoSort: true,
 	}, {
-		ID:   coloniesColRegion,
+		ID:    coloniesColRegion,
 		Label: "Region",
 		Width: 150,
 	}, {
-		ID:   coloniesColCharacter,
+		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 	}})

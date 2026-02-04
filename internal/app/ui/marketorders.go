@@ -120,7 +120,7 @@ func (r marketOrderRow) volumeDisplay() string {
 type marketOrders struct {
 	widget.BaseWidget
 
-	columnSorter *iwidget.ColumnSorter
+	columnSorter *iwidget.ColumnSorter[marketOrderRow]
 	footer       *widget.Label
 	isBuyOrders  bool
 	issue        *widget.Label
@@ -147,32 +147,32 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   marketOrdersColType,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{{
+		ID:    marketOrdersColType,
 		Label: "Type",
 		Width: columnWidthEntity,
 	}, {
-		ID:   marketOrdersColVolume,
+		ID:    marketOrdersColVolume,
 		Label: "Quantity",
 		Width: 100,
 	}, {
-		ID:   marketOrdersColPrice,
+		ID:    marketOrdersColPrice,
 		Label: "Price",
 		Width: 100,
 	}, {
-		ID:   marketOrdersColState,
+		ID:    marketOrdersColState,
 		Label: "State",
 		Width: 100,
 	}, {
-		ID:   marketOrdersColLocation,
+		ID:    marketOrdersColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		ID:   marketOrdersColRegion,
+		ID:    marketOrdersColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
 	}, {
-		ID:   marketOrdersColOwner,
+		ID:    marketOrdersColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 	}})

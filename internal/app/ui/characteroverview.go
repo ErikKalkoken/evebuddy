@@ -73,7 +73,7 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
-	columnSorter      *iwidget.ColumnSorter
+	columnSorter      *iwidget.ColumnSorter[characterOverviewRow]
 	info              *widget.Label
 	main              fyne.CanvasObject
 	onUpdate          func(characters int)
@@ -102,7 +102,7 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{
 		{
 			ID:    overviewColAlliance,
 			Label: "Alliance",

@@ -64,7 +64,7 @@ type walletTransactions struct {
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	character      atomic.Pointer[app.Character]
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
 	division       app.Division
 	rows           []walletTransactionRow
@@ -126,32 +126,32 @@ const (
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   walletTransactionColDate,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[walletTransactionRow]{{
+		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
 	}, {
-		ID:   walletTransactionColQuantity,
+		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
 	}, {
-		ID:   walletTransactionColType,
+		ID:    walletTransactionColType,
 		Label: "Type",
 		Width: 200,
 	}, {
-		ID:   walletTransactionColPrice,
+		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
 	}, {
-		ID:   walletTransactionColTotal,
+		ID:    walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
 	}, {
-		ID:   walletTransactionColClient,
+		ID:    walletTransactionColClient,
 		Label: "Client",
 		Width: columnWidthEntity,
 	}, {
-		ID:   walletTransactionColLocation,
+		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: columnWidthLocation,
 	}})

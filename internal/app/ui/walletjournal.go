@@ -55,7 +55,7 @@ type walletJournal struct {
 
 	body         fyne.CanvasObject
 	character    atomic.Pointer[app.Character]
-	columnSorter *iwidget.ColumnSorter
+	columnSorter *iwidget.ColumnSorter[walletJournalRow]
 	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
 	rows         []walletJournalRow
@@ -111,25 +111,25 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		ID:   walletJournalColDate,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[walletJournalRow]{{
+		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
 	}, {
-		ID:   walletJournalColType,
+		ID:    walletJournalColType,
 		Label: "Type",
 		Width: 150,
 	}, {
-		ID:   walletJournalColAmount,
+		ID:    walletJournalColAmount,
 		Label: "Amount",
 		Width: 200,
 	}, {
-		ID:    walletJournalColBalance,
+		ID:     walletJournalColBalance,
 		Label:  "Balance",
 		Width:  200,
 		NoSort: true,
 	}, {
-		ID:    walletJournalColDescription,
+		ID:     walletJournalColDescription,
 		Label:  "Description",
 		Width:  450,
 		NoSort: true,

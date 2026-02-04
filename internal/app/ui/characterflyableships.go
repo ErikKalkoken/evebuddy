@@ -50,7 +50,7 @@ type characterFlyableShips struct {
 
 	bottom        *widget.Label
 	character     atomic.Pointer[app.Character]
-	columnSorter  *iwidget.ColumnSorter
+	columnSorter  *iwidget.ColumnSorter[flyableShipRow]
 	grid          *widget.GridWrap
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
@@ -63,13 +63,13 @@ type characterFlyableShips struct {
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn{
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[flyableShipRow]{
 		{
-			ID:   flyableColType,
+			ID:    flyableColType,
 			Label: "Type",
 		},
 		{
-			ID:   flyableColGroup,
+			ID:    flyableColGroup,
 			Label: "Class",
 		},
 	}),

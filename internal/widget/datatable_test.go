@@ -21,7 +21,7 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 		ID:    0,
 		Label: "ID",
 		Width: 100,
@@ -56,7 +56,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 
 func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
-		def := iwidget.NewDataColumns([]iwidget.DataColumn{{
+		def := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 			ID:    0,
 			Label: "Alpha",
 		}})
@@ -66,7 +66,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when col ID is negativ", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 				ID:    -1,
 				Label: "Alpha",
 			}})
@@ -74,7 +74,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 				ID:    0,
 				Label: "Alpha",
 			}, {
@@ -85,7 +85,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when no cols defined", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{})
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{})
 		})
 	})
 }
@@ -96,7 +96,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		id2 = 5
 		id3 = 21
 	)
-	def := iwidget.NewDataColumns([]iwidget.DataColumn{{
+	def := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 		ID:    id1,
 		Label: "Alpha",
 	}, {
