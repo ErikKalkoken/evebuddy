@@ -104,35 +104,35 @@ const (
 func newCharacterOverview(u *baseUI) *characterOverview {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
-			Col:   overviewColAlliance,
+			ID:    overviewColAlliance,
 			Label: "Alliance",
 		},
 		{
-			Col:   overviewColCharacter,
+			ID:    overviewColCharacter,
 			Label: "Character",
 		},
 		{
-			Col:   overviewColCorporation,
+			ID:    overviewColCorporation,
 			Label: "Corporation",
 		},
 		{
-			Col:   overviewColMail,
+			ID:    overviewColMail,
 			Label: "Unread",
 		},
 		{
-			Col:   overviewColRegion,
+			ID:    overviewColRegion,
 			Label: "Region",
 		},
 		{
-			Col:   overviewColSkillpoints,
+			ID:    overviewColSkillpoints,
 			Label: "Skillpoints",
 		},
 		{
-			Col:   overviewColSolarSystem,
+			ID:    overviewColSolarSystem,
 			Label: "System",
 		},
 		{
-			Col:   overviewColWallet,
+			ID:    overviewColWallet,
 			Label: "Wallet",
 		},
 	})

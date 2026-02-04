@@ -61,23 +61,23 @@ const (
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   industrySlotsColCharacter,
+		ID:    industrySlotsColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 	}, {
-		Col:   industrySlotsColBusy,
+		ID:    industrySlotsColBusy,
 		Label: "Busy",
 		Width: columnWidthNumber,
 	}, {
-		Col:   industrySlotsColReady,
+		ID:    industrySlotsColReady,
 		Label: "Ready",
 		Width: columnWidthNumber,
 	}, {
-		Col:   industrySlotsColFree,
+		ID:    industrySlotsColFree,
 		Label: "Free",
 		Width: columnWidthNumber,
 	}, {
-		Col:   industrySlotsColTotal,
+		ID:    industrySlotsColTotal,
 		Label: "Total",
 		Width: columnWidthNumber,
 	}})
@@ -232,7 +232,9 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataColumns, makeCell func
 		return widget.NewLabel("")
 	}
 	w.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		co.(*widget.Label).SetText(headers.Column(tci.Col).Label)
+		if col, ok := headers.ColumnByIndex(tci.Col); ok {
+			co.(*widget.Label).SetText(col.Label)
+		}
 	}
 	for id, width := range map[int]float32{
 		0: 175,

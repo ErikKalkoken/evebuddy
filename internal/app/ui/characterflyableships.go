@@ -65,11 +65,11 @@ type characterFlyableShips struct {
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
-			Col:   flyableColType,
+			ID:   flyableColType,
 			Label: "Type",
 		},
 		{
-			Col:   flyableColGroup,
+			ID:   flyableColGroup,
 			Label: "Class",
 		},
 	}),

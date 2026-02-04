@@ -144,35 +144,35 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   industryJobsColBlueprint,
+		ID:   industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
 	}, {
-		Col:   industryJobsColStatus,
+		ID:   industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
 	}, {
-		Col:   industryJobsColRuns,
+		ID:   industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
 	}, {
-		Col:   industryJobsColActivity,
+		ID:   industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
 	}, {
-		Col:   industryJobsColEndDate,
+		ID:   industryJobsColEndDate,
 		Label: "End date",
 		Width: columnWidthDateTime,
 	}, {
-		Col:   industryJobsColLocation,
+		ID:   industryJobsColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		Col:   industryJobsColOwner,
+		ID:   industryJobsColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 	}, {
-		Col:   industryJobsColInstaller,
+		ID:   industryJobsColInstaller,
 		Label: "Installer",
 		Width: columnWidthEntity,
 	}})

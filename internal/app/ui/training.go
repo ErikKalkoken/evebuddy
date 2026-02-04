@@ -145,33 +145,33 @@ const (
 
 func newTraining(u *baseUI) *training {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   trainingColName,
+		ID:   trainingColName,
 		Label: "Name",
 		Width: columnWidthEntity,
 	}, {
-		Col:    trainingColTags,
+		ID:    trainingColTags,
 		Label:  "Tags",
 		Width:  150,
 		NoSort: true,
 	}, {
-		Col:   trainingColCurrentSkill,
+		ID:   trainingColCurrentSkill,
 		Label: "Current Skill",
 		Width: 250,
 	}, {
-		Col:   trainingColCurrentRemaining,
+		ID:   trainingColCurrentRemaining,
 		Label: "Current Time",
 	}, {
-		Col:   trainingColQueuedCount,
+		ID:   trainingColQueuedCount,
 		Label: "Queued",
 	}, {
-		Col:   trainingColQueuedRemaining,
+		ID:   trainingColQueuedRemaining,
 		Label: "Queue Time",
 	}, {
-		Col:   trainingColSkillpoints,
+		ID:   trainingColSkillpoints,
 		Label: "SP",
 		Width: 100,
 	}, {
-		Col:   trainingColUnallocatedSP,
+		ID:   trainingColUnallocatedSP,
 		Label: "Unall.",
 		Width: 100,
 	}})

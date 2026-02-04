@@ -96,31 +96,31 @@ func newContractsForCharacters(u *baseUI) *contracts {
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   contractsColName,
+		ID:   contractsColName,
 		Label: "Contract",
 		Width: 300,
 	}, {
-		Col:   contractsColType,
+		ID:   contractsColType,
 		Label: "Type",
 		Width: 120,
 	}, {
-		Col:   contractsColIssuer,
+		ID:   contractsColIssuer,
 		Label: "From",
 		Width: 150,
 	}, {
-		Col:   contractsColAssignee,
+		ID:   contractsColAssignee,
 		Label: "To",
 		Width: 150,
 	}, {
-		Col:   contractsColStatus,
+		ID:   contractsColStatus,
 		Label: "Status",
 		Width: 100,
 	}, {
-		Col:   contractsColIssuedAt,
+		ID:   contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: columnWidthDateTime,
 	}, {
-		Col:   contractsColExpiresAt,
+		ID:   contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
 	}})

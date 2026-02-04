@@ -112,24 +112,24 @@ const (
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   walletJournalColDate,
+		ID:   walletJournalColDate,
 		Label: "Date",
 		Width: 150,
 	}, {
-		Col:   walletJournalColType,
+		ID:   walletJournalColType,
 		Label: "Type",
 		Width: 150,
 	}, {
-		Col:   walletJournalColAmount,
+		ID:   walletJournalColAmount,
 		Label: "Amount",
 		Width: 200,
 	}, {
-		Col:    walletJournalColBalance,
+		ID:    walletJournalColBalance,
 		Label:  "Balance",
 		Width:  200,
 		NoSort: true,
 	}, {
-		Col:    walletJournalColDescription,
+		ID:    walletJournalColDescription,
 		Label:  "Description",
 		Width:  450,
 		NoSort: true,

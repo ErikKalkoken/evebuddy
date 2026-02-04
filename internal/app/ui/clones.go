@@ -95,23 +95,23 @@ const (
 
 func newClones(u *baseUI) *clones {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   clonesColLocation,
+		ID:   clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		Col:   clonesColRegion,
+		ID:   clonesColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
 	}, {
-		Col:   clonesColImplants,
+		ID:   clonesColImplants,
 		Label: "Impl.",
 		Width: 100,
 	}, {
-		Col:   clonesColCharacter,
+		ID:   clonesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 	}, {
-		Col:   clonesColJumps,
+		ID:   clonesColJumps,
 		Label: "Jumps",
 		Width: 100,
 	}})

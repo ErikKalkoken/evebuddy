@@ -85,24 +85,24 @@ const (
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   structuresColName,
+		ID:   structuresColName,
 		Label: "Name",
 		Width: 250,
 	}, {
-		Col:   structuresColType,
+		ID:   structuresColType,
 		Label: "Type",
 		Width: 150,
 	}, {
-		Col:   structuresColFuelExpires,
+		ID:   structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
 	}, {
-		Col:    structuresColState,
+		ID:    structuresColState,
 		Label:  "State",
 		Width:  150,
 		NoSort: true,
 	}, {
-		Col:    structuresColServices,
+		ID:    structuresColServices,
 		Label:  "Services",
 		Width:  200,
 		NoSort: true,

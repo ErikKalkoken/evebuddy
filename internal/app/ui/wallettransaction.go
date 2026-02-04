@@ -127,31 +127,31 @@ const (
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   walletTransactionColDate,
+		ID:   walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
 	}, {
-		Col:   walletTransactionColQuantity,
+		ID:   walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
 	}, {
-		Col:   walletTransactionColType,
+		ID:   walletTransactionColType,
 		Label: "Type",
 		Width: 200,
 	}, {
-		Col:   walletTransactionColPrice,
+		ID:   walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
 	}, {
-		Col:   walletTransactionColTotal,
+		ID:   walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
 	}, {
-		Col:   walletTransactionColClient,
+		ID:   walletTransactionColClient,
 		Label: "Client",
 		Width: columnWidthEntity,
 	}, {
-		Col:   walletTransactionColLocation,
+		ID:   walletTransactionColLocation,
 		Label: "Where",
 		Width: columnWidthLocation,
 	}})

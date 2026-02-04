@@ -199,12 +199,12 @@ type assetSearch struct {
 }
 
 const (
-	assetsColItem     = 0
-	assetsColGroup    = 1
-	assetsColLocation = 2
-	assetsColQuantity = 3
-	assetsColTotal    = 4
-	assetsColOwner    = 5
+	assetsColItem = iota
+	assetsColGroup
+	assetsColLocation
+	assetsColQuantity
+	assetsColTotal
+	assetsColOwner
 )
 
 func newAssetSearchForCharacters(u *baseUI) *assetSearch {
@@ -218,32 +218,32 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
 		{
-			Col:   assetsColItem,
+			ID:    assetsColItem,
 			Label: "Item",
 			Width: 300,
 		},
 		{
-			Col:   assetsColGroup,
+			ID:    assetsColGroup,
 			Label: "Group",
 			Width: 200,
 		},
 		{
-			Col:   assetsColLocation,
+			ID:    assetsColLocation,
 			Label: "Location",
 			Width: columnWidthLocation,
 		},
 		{
-			Col:   assetsColQuantity,
+			ID:    assetsColQuantity,
 			Label: "Qty.",
 			Width: 100,
 		},
 		{
-			Col:   assetsColTotal,
+			ID:    assetsColTotal,
 			Label: "Total",
 			Width: 150,
 		},
 		{
-			Col:   assetsColOwner,
+			ID:    assetsColOwner,
 			Label: "Owner",
 			Width: columnWidthEntity,
 		},

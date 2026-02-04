@@ -96,33 +96,33 @@ const (
 
 func newColonies(u *baseUI) *colonies {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   coloniesColPlanet,
+		ID:   coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
 	}, {
-		Col:   coloniesColType,
+		ID:   coloniesColType,
 		Label: "Type",
 		Width: 100,
 	}, {
-		Col:    coloniesColExtracting,
+		ID:    coloniesColExtracting,
 		Label:  "Extracting",
 		Width:  200,
 		NoSort: true,
 	}, {
-		Col:   coloniesColDue,
+		ID:   coloniesColDue,
 		Label: "Due",
 		Width: columnWidthDateTime,
 	}, {
-		Col:    coloniesColProducing,
+		ID:    coloniesColProducing,
 		Label:  "Producing",
 		Width:  200,
 		NoSort: true,
 	}, {
-		Col:   coloniesColRegion,
+		ID:   coloniesColRegion,
 		Label: "Region",
 		Width: 150,
 	}, {
-		Col:   coloniesColCharacter,
+		ID:   coloniesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 	}})

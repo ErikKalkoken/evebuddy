@@ -1,7 +1,6 @@
 package widget
 
 import (
-	"cmp"
 	"fmt"
 	"iter"
 	"log/slog"
@@ -36,42 +35,17 @@ func (s SortDir) isSorting() bool {
 	return s == SortAsc || s == SortDesc
 }
 
-type (
-	// DataColumn represents the definition for a column in a data table.
-	DataColumn struct {
-		// Column index starting at 0. MANDATORY.
-		Col int
-		// Label of a column displayed to the user. MANDATORY.
-		Label string
-		// Whether a column is sortable.
-		NoSort bool
-		// Width of a column in Fyne units. Will try to auto size when zero.
-		Width float32
-	}
-
-	// DataColumns represents the definition for a data table.
-	DataColumns struct {
-		cols []DataColumn
-	}
-
-	// ColumnSorter represents an ordered list of columns which can be sorted.
-	ColumnSorter struct {
-		cols       []SortDir
-		def        DataColumns
-		initialDir SortDir
-		initialIdx int
-		isMobile   bool
-		sortButton *SortButton
-	}
-
-	// A SortButton represents a button for sorting a data table.
-	// It is supposed to be used in mobile views.
-	SortButton struct {
-		widget.Button
-
-		sortColumns []string
-	}
-)
+// DataColumn represents the definition for a column in a data table.
+type DataColumn struct {
+	// Column ID. Must be unique and >= 0.
+	ID int
+	// Label of a column displayed to the user.
+	Label string
+	// Whether a column is sortable.
+	NoSort bool
+	// Width of a column in Fyne units. Will try to auto size when zero.
+	Width float32
+}
 
 func (h DataColumn) minWidth() float32 {
 	if h.Width > 0 {
@@ -81,41 +55,48 @@ func (h DataColumn) minWidth() float32 {
 	return x.MinSize().Width
 }
 
+// DataColumns represents the definition for a data table.
+type DataColumns struct {
+	cols      []DataColumn
+	idxLookup map[int]int // maps IDs to index on the cols slice
+}
+
 // NewDataColumns creates and returns a [DataColumns].
 // It panics if semantic checks fail.
 func NewDataColumns(cols []DataColumn) DataColumns {
 	if len(cols) == 0 {
 		panic("must define at least 1 column")
 	}
-	var incoming, expected set.Set[int]
-	for i := range len(cols) {
-		expected.Add(i)
+	lookup := make(map[int]int)
+	for idx, c := range cols {
+		if c.ID < 0 {
+			panic("IDs must be >= 0")
+		}
+		if _, found := lookup[c.ID]; found {
+			panic(fmt.Sprintf("%s: col %d duplicate", c.Label, c.ID))
+		}
+		lookup[c.ID] = idx
 	}
-	for _, c := range cols {
-		if c.Label == "" {
-			panic("label not defined")
-		}
-		if !expected.Contains(c.Col) {
-			panic(fmt.Sprintf("%s: col must be in [%d, %d]", c.Label, 0, len(cols)-1))
-		}
-		if incoming.Contains(c.Col) {
-			panic(fmt.Sprintf("%s: col %d duplicate", c.Label, c.Col))
-		}
-		incoming.Add(c.Col)
-	}
-	cols2 := slices.Clone(cols)
-	slices.SortFunc(cols2, func(a, b DataColumn) int {
-		return cmp.Compare(a.Col, b.Col)
-	})
 	d := DataColumns{
-		cols: cols2,
+		cols:      cols,
+		idxLookup: lookup,
 	}
 	return d
 }
 
-// Column return the definition of a column.
-func (d DataColumns) Column(n int) DataColumn {
-	return d.cols[n]
+func (d DataColumns) IDLookup(idx int) (int, bool) {
+	if idx < 0 || idx >= len(d.cols) {
+		return 0, false
+	}
+	return d.cols[idx].ID, true
+}
+
+// ColumnByIndex return the definition of a column. n is the slice index of the column.
+func (d DataColumns) ColumnByIndex(idx int) (DataColumn, bool) {
+	if idx < 0 || idx >= len(d.cols) {
+		return DataColumn{}, false
+	}
+	return d.cols[idx], true
 }
 
 func (d DataColumns) all() iter.Seq2[int, DataColumn] {
@@ -140,22 +121,45 @@ func (d DataColumns) values() iter.Seq[DataColumn] {
 	return slices.Values(d.cols)
 }
 
+// ColumnSorter represents an ordered list of columns which can be sorted.
+type (
+	ColumnSorter struct {
+		cols       []SortDir
+		def        DataColumns
+		initialDir SortDir
+		initialID  int
+		isMobile   bool
+		sortButton *SortButton
+	}
+
+	// A SortButton represents a button for sorting a data table.
+	// It is supposed to be used in mobile views.
+	SortButton struct {
+		widget.Button
+
+		sortColumns []string
+	}
+)
+
 // NewColumnSorter returns a new ColumSorter.
 // idx and dir defines the initially sorted column.
 // It panics if semantic checks fail.
-func NewColumnSorter(d DataColumns, idx int, dir SortDir) *ColumnSorter {
-	if idx < 0 || idx >= d.size() {
-		panic(fmt.Sprintf("invalid idx. Allowed range: [0, %d]", d.size()-1))
+func NewColumnSorter(d DataColumns, id int, dir SortDir) *ColumnSorter {
+	if _, found := d.idxLookup[id]; !found {
+		dir = SortOff
+	}
+	if dir == SortOff {
+		id = d.cols[0].ID
 	}
 	cs := &ColumnSorter{
 		cols:       make([]SortDir, d.size()),
 		def:        d,
 		initialDir: dir,
-		initialIdx: idx,
+		initialID:  id,
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	cs.clear()
-	cs.Set(idx, dir)
+	cs.Set(id, dir)
 	return cs
 }
 
@@ -168,7 +172,7 @@ func (cs *ColumnSorter) column(idx int) SortDir {
 }
 
 // current returns which column is currently sorted or -1 if none are sorted.
-func (cs *ColumnSorter) current() (int, SortDir) {
+func (cs *ColumnSorter) current() (idx int, dir SortDir) {
 	for i, v := range cs.cols {
 		if v.isSorting() {
 			return i, v
@@ -179,14 +183,14 @@ func (cs *ColumnSorter) current() (int, SortDir) {
 
 // reset sets the columns to their initial state.
 func (cs *ColumnSorter) reset() {
-	cs.Set(cs.initialIdx, cs.initialDir)
+	cs.Set(cs.initialID, cs.initialDir)
 }
 
 // clear removes sorting from all columns.
 func (cs *ColumnSorter) clear() {
 	for i := range cs.cols {
 		var dir SortDir
-		if cs.def.Column(i).NoSort {
+		if cs.def.cols[i].NoSort {
 			dir = sortNone
 		} else {
 			dir = SortOff
@@ -196,7 +200,15 @@ func (cs *ColumnSorter) clear() {
 }
 
 // Set sets the sort direction for a column.
-func (cs *ColumnSorter) Set(idx int, dir SortDir) {
+func (cs *ColumnSorter) Set(id int, dir SortDir) {
+	idx, ok := cs.def.idxLookup[id]
+	if !ok {
+		return
+	}
+	cs.setIdx(idx, dir)
+}
+
+func (cs *ColumnSorter) setIdx(idx int, dir SortDir) {
 	cs.clear()
 	cs.cols[idx] = dir
 	if cs.sortButton != nil {
@@ -204,13 +216,16 @@ func (cs *ColumnSorter) Set(idx int, dir SortDir) {
 	}
 }
 
-// current returns which column is currently sorted or -1 if none are sorted.
 func (cs *ColumnSorter) size() int {
 	return len(cs.cols)
 }
 
 // CalcSort calculates how and if to apply sorting to column idx.
-func (cs *ColumnSorter) CalcSort(idx int) (int, SortDir, bool) {
+func (cs *ColumnSorter) CalcSort(id int) (int, SortDir, bool) {
+	idx, ok := cs.def.idxLookup[id]
+	if !ok {
+		idx = -1
+	}
 	var dir SortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
@@ -221,12 +236,16 @@ func (cs *ColumnSorter) CalcSort(idx int) (int, SortDir, bool) {
 		if dir > SortDesc {
 			dir = SortAsc
 		}
-		cs.Set(idx, dir)
+		cs.setIdx(idx, dir)
 	} else {
 		idx, dir = cs.current()
 	}
 	doSort := idx >= 0 && dir.isSorting()
-	return idx, dir, doSort
+	if doSort {
+		col := cs.def.cols[idx]
+		id = col.ID
+	}
+	return id, dir, doSort
 }
 
 // NewSortButton returns a new sortButton.
@@ -278,7 +297,7 @@ func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignore
 			case "Descending":
 				dir = SortDesc
 			}
-			cs.Set(col, dir)
+			cs.setIdx(col, dir)
 			process()
 			w.set(col, dir)
 			d.Hide()
@@ -321,7 +340,7 @@ func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignore
 	return w
 }
 
-func (w *SortButton) set(col int, dir SortDir) {
+func (w *SortButton) set(idx int, dir SortDir) {
 	switch dir {
 	case SortAsc:
 		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
@@ -330,8 +349,8 @@ func (w *SortButton) set(col int, dir SortDir) {
 	default:
 		w.Icon = theme.NewThemedResource(icons.SortSvg)
 	}
-	if col != -1 {
-		w.Text = w.sortColumns[col]
+	if idx != -1 {
+		w.Text = w.sortColumns[idx]
 	} else {
 		w.Text = "Sort"
 	}
@@ -344,7 +363,7 @@ func MakeDataTable[S ~[]E, E any](
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	columnSorter *ColumnSorter,
-	filterRows func(int),
+	filterRows func(id int),
 	onSelected func(int, E),
 ) *widget.Table {
 	t := widget.NewTable(
@@ -360,7 +379,11 @@ func MakeDataTable[S ~[]E, E any](
 				return
 			}
 			r := (*data)[tci.Row]
-			cell.Segments = makeCell(tci.Col, r)
+			id, ok := def.IDLookup(tci.Col)
+			if !ok {
+				return
+			}
+			cell.Segments = makeCell(id, r)
 			cell.Truncation = fyne.TextTruncateClip
 			cell.Refresh()
 		},
@@ -381,7 +404,10 @@ func MakeDataTable[S ~[]E, E any](
 		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h := def.Column(tci.Col)
+		h, ok := def.ColumnByIndex(tci.Col)
+		if !ok {
+			return
+		}
 		row := co.(*fyne.Container).Objects
 
 		actionLabel := row[0].(*fyne.Container).Objects[0].(*kxwidget.TappableLabel)
@@ -397,7 +423,9 @@ func MakeDataTable[S ~[]E, E any](
 			return
 		}
 		actionLabel.OnTapped = func() {
-			filterRows(tci.Col)
+			if id, ok := def.IDLookup(tci.Col); ok {
+				filterRows(id)
+			}
 		}
 		actionLabel.SetText(h.Label)
 		actionLabel.Show()
@@ -462,7 +490,11 @@ func MakeDataList[S ~[]E, E any](
 			for col := range def.size() {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
 				data := row[1].(*RichText)
-				data.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(col, r))
+				id, ok := def.IDLookup(col)
+				if !ok {
+					continue
+				}
+				data.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(id, r))
 				data.Wrapping = fyne.TextWrapWord
 				bg := f[col*2].(*fyne.Container).Objects[0]
 				if col == 0 {

@@ -148,31 +148,31 @@ const (
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   marketOrdersColType,
+		ID:   marketOrdersColType,
 		Label: "Type",
 		Width: columnWidthEntity,
 	}, {
-		Col:   marketOrdersColVolume,
+		ID:   marketOrdersColVolume,
 		Label: "Quantity",
 		Width: 100,
 	}, {
-		Col:   marketOrdersColPrice,
+		ID:   marketOrdersColPrice,
 		Label: "Price",
 		Width: 100,
 	}, {
-		Col:   marketOrdersColState,
+		ID:   marketOrdersColState,
 		Label: "State",
 		Width: 100,
 	}, {
-		Col:   marketOrdersColLocation,
+		ID:   marketOrdersColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		Col:   marketOrdersColRegion,
+		ID:   marketOrdersColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
 	}, {
-		Col:   marketOrdersColOwner,
+		ID:   marketOrdersColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 	}})
