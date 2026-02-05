@@ -137,13 +137,13 @@ type marketOrders struct {
 }
 
 const (
-	marketOrdersColType     = 0
-	marketOrdersColVolume   = 1
-	marketOrdersColPrice    = 2
-	marketOrdersColState    = 3
-	marketOrdersColLocation = 4
-	marketOrdersColRegion   = 5
-	marketOrdersColOwner    = 6
+	marketOrdersColType = iota
+	marketOrdersColVolume
+	marketOrdersColPrice
+	marketOrdersColState
+	marketOrdersColLocation
+	marketOrdersColRegion
+	marketOrdersColOwner
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
@@ -151,30 +151,51 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		ID:    marketOrdersColType,
 		Label: "Type",
 		Width: columnWidthEntity,
+		Sort: func(a, b marketOrderRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
 	}, {
 		ID:    marketOrdersColVolume,
 		Label: "Quantity",
 		Width: 100,
+		Sort: func(a, b marketOrderRow) int {
+			return cmp.Compare(a.volumeRemain, b.volumeRemain)
+		},
 	}, {
 		ID:    marketOrdersColPrice,
 		Label: "Price",
 		Width: 100,
+		Sort: func(a, b marketOrderRow) int {
+			return cmp.Compare(a.price, b.price)
+		},
 	}, {
 		ID:    marketOrdersColState,
 		Label: "State",
 		Width: 100,
+		Sort: func(a, b marketOrderRow) int {
+			return a.expires.Compare(b.expires)
+		},
 	}, {
 		ID:    marketOrdersColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
+		Sort: func(a, b marketOrderRow) int {
+			return strings.Compare(a.locationName, b.locationName)
+		},
 	}, {
 		ID:    marketOrdersColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
+		Sort: func(a, b marketOrderRow) int {
+			return strings.Compare(a.regionName, b.regionName)
+		},
 	}, {
 		ID:    marketOrdersColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
+		Sort: func(a, b marketOrderRow) int {
+			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
 	}})
 	a := &marketOrders{
 		columnSorter: iwidget.NewColumnSorter(headers, marketOrdersColType, iwidget.SortAsc),
@@ -388,33 +409,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b marketOrderRow) int {
-				var x int
-				switch sortCol {
-				case marketOrdersColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case marketOrdersColVolume:
-					x = cmp.Compare(a.volumeRemain, b.volumeRemain)
-				case marketOrdersColPrice:
-					x = cmp.Compare(a.price, b.price)
-				case marketOrdersColState:
-					x = a.expires.Compare(b.expires)
-				case marketOrdersColRegion:
-					x = strings.Compare(a.regionName, b.regionName)
-				case marketOrdersColLocation:
-					x = strings.Compare(a.locationName, b.locationName)
-				case marketOrdersColOwner:
-					x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		regionOptions := xslices.Map(rows, func(r marketOrderRow) string {
 			return r.regionName

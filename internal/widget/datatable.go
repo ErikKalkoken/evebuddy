@@ -3,7 +3,6 @@ package widget
 import (
 	"fmt"
 	"iter"
-	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -41,15 +40,15 @@ type DataColumn[T any] struct {
 	ID int
 	// Label of a column displayed to the user.
 	Label string
-	// Whether a column is sortable.
-	NoSort bool
 	// Width of a column in Fyne units. Will try to auto size when zero.
 	Width float32
 	// Create for this column. Optional.
 	Create func() fyne.CanvasObject
 	// Update for this column. Mandatory
 	Update func(T, fyne.CanvasObject)
-	Sort   func(a, b T) int
+	// Sort defines the compare function to apply for sorting this column.
+	// Not defining it will disable sort for this column.
+	Sort func(a, b T) int
 }
 
 func (h DataColumn[T]) minWidth() float32 {
@@ -162,7 +161,7 @@ func NewColumnSorter[T any](d DataColumns[T], id int, dir SortDir) *ColumnSorter
 func (cs *ColumnSorter[T]) init() {
 	for i := range cs.cols {
 		var dir SortDir
-		if cs.def.cols[i].NoSort {
+		if cs.def.cols[i].Sort == nil {
 			dir = sortNone
 		} else {
 			dir = SortOff
@@ -285,15 +284,14 @@ func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ign
 	w.Text = "???"
 	w.Icon = icons.BlankSvg
 	if cs.def.size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.def.size() {
-		slog.Warn("makeSortButton called with invalid parameters")
-		return w // early exit when called without proper data
+		panic("NewSortButton called with invalid parameters")
 	}
 	ignored := set.Of(ignoredColumns...)
 	w.OnTapped = func() {
 		col, dir := cs.current()
 		var fields []string
 		for i, h := range cs.def.all() {
-			if !h.NoSort && !ignored.Contains(i) {
+			if h.Sort != nil && !ignored.Contains(i) {
 				fields = append(fields, h.Label)
 			}
 		}

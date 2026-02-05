@@ -102,40 +102,55 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{
-		{
-			ID:    overviewColAlliance,
-			Label: "Alliance",
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{{
+		ID:    overviewColAlliance,
+		Label: "Alliance",
+		Sort: func(a, b characterOverviewRow) int {
+			return xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
 		},
-		{
-			ID:    overviewColCharacter,
-			Label: "Character",
+	}, {
+		ID:    overviewColCharacter,
+		Label: "Character",
+		Sort: func(a, b characterOverviewRow) int {
+			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
-		{
-			ID:    overviewColCorporation,
-			Label: "Corporation",
+	}, {
+		ID:    overviewColCorporation,
+		Label: "Corporation",
+		Sort: func(a, b characterOverviewRow) int {
+			return xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
 		},
-		{
-			ID:    overviewColMail,
-			Label: "Unread",
+	}, {
+		ID:    overviewColMail,
+		Label: "Unread",
+		Sort: func(a, b characterOverviewRow) int {
+			return cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
 		},
-		{
-			ID:    overviewColRegion,
-			Label: "Region",
+	}, {
+		ID:    overviewColRegion,
+		Label: "Region",
+		Sort: func(a, b characterOverviewRow) int {
+			return strings.Compare(a.regionName, b.regionName)
 		},
-		{
-			ID:    overviewColSkillpoints,
-			Label: "Skillpoints",
+	}, {
+		ID:    overviewColSkillpoints,
+		Label: "Skillpoints",
+		Sort: func(a, b characterOverviewRow) int {
+			return cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
 		},
-		{
-			ID:    overviewColSolarSystem,
-			Label: "System",
+	}, {
+		ID:    overviewColSolarSystem,
+		Label: "System",
+		Sort: func(a, b characterOverviewRow) int {
+			return strings.Compare(a.solarSystemName, b.solarSystemName)
 		},
-		{
-			ID:    overviewColWallet,
-			Label: "Wallet",
+	}, {
+		ID:    overviewColWallet,
+		Label: "Wallet",
+		Sort: func(a, b characterOverviewRow) int {
+			return cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
 		},
-	})
+	}})
 
 	info := widget.NewLabel("Loading...")
 	info.Importance = widget.LowImportance
@@ -374,35 +389,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b characterOverviewRow) int {
-				var x int
-				switch sortCol {
-				case overviewColAlliance:
-					x = xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
-				case overviewColCharacter:
-					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-				case overviewColCorporation:
-					x = xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
-				case overviewColMail:
-					x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
-				case overviewColRegion:
-					x = strings.Compare(a.regionName, b.regionName)
-				case overviewColSkillpoints:
-					x = cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
-				case overviewColSolarSystem:
-					x = strings.Compare(a.solarSystemName, b.solarSystemName)
-				case overviewColWallet:
-					x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		allianceOptions := xslices.Map(rows, func(r characterOverviewRow) string {
 			return r.allianceName()

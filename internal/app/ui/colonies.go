@@ -85,13 +85,13 @@ type colonies struct {
 }
 
 const (
-	coloniesColPlanet     = 0
-	coloniesColType       = 1
-	coloniesColExtracting = 2
-	coloniesColDue        = 3
-	coloniesColProducing  = 4
-	coloniesColRegion     = 5
-	coloniesColCharacter  = 6
+	coloniesColPlanet = iota
+	coloniesColType
+	coloniesColExtracting
+	coloniesColDue
+	coloniesColProducing
+	coloniesColRegion
+	coloniesColCharacter
 )
 
 func newColonies(u *baseUI) *colonies {
@@ -99,32 +99,45 @@ func newColonies(u *baseUI) *colonies {
 		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.name, b.name)
+		},
 	}, {
 		ID:    coloniesColType,
 		Label: "Type",
 		Width: 100,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.planetTypeName, b.planetTypeName)
+		},
 	}, {
 		ID:     coloniesColExtracting,
 		Label:  "Extracting",
 		Width:  200,
-		NoSort: true,
 	}, {
 		ID:    coloniesColDue,
 		Label: "Due",
 		Width: columnWidthDateTime,
+		Sort: func(a, b colonyRow) int {
+			return a.due.Compare(b.due)
+		},
 	}, {
 		ID:     coloniesColProducing,
 		Label:  "Producing",
 		Width:  200,
-		NoSort: true,
 	}, {
 		ID:    coloniesColRegion,
 		Label: "Region",
 		Width: 150,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.regionName, b.regionName)
+		},
 	}, {
 		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
+		Sort: func(a, b colonyRow) int {
+			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
 	}})
 	a := &colonies{
 		columnSorter: iwidget.NewColumnSorter(headers, coloniesColPlanet, iwidget.SortAsc),
@@ -304,29 +317,7 @@ func (a *colonies) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b colonyRow) int {
-				var x int
-				switch sortCol {
-				case coloniesColPlanet:
-					x = strings.Compare(a.name, b.name)
-				case coloniesColType:
-					x = strings.Compare(a.planetTypeName, b.planetTypeName)
-				case coloniesColDue:
-					x = a.due.Compare(b.due)
-				case coloniesColRegion:
-					x = strings.Compare(a.regionName, b.regionName)
-				case coloniesColCharacter:
-					x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
 			return r.tags

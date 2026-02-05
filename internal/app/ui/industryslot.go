@@ -51,11 +51,11 @@ type industrySlots struct {
 }
 
 const (
-	industrySlotsColCharacter = 0
-	industrySlotsColBusy      = 1
-	industrySlotsColReady     = 2
-	industrySlotsColFree      = 3
-	industrySlotsColTotal     = 4
+	industrySlotsColCharacter = iota
+	industrySlotsColBusy
+	industrySlotsColReady
+	industrySlotsColFree
+	industrySlotsColTotal
 )
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
@@ -64,22 +64,37 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		ID:    industrySlotsColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
+		Sort: func(a, b industrySlotRow) int {
+			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+		},
 	}, {
 		ID:    industrySlotsColBusy,
 		Label: "Busy",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.busy, b.busy)
+		},
 	}, {
 		ID:    industrySlotsColReady,
 		Label: "Ready",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.ready, b.ready)
+		},
 	}, {
 		ID:    industrySlotsColFree,
 		Label: "Free",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.free, b.free)
+		},
 	}, {
 		ID:    industrySlotsColTotal,
 		Label: "Total",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.total, b.total)
+		},
 	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
@@ -272,29 +287,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b industrySlotRow) int {
-				var x int
-				switch sortCol {
-				case industrySlotsColCharacter:
-					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-				case industrySlotsColBusy:
-					x = cmp.Compare(a.busy, b.busy)
-				case industrySlotsColReady:
-					x = cmp.Compare(a.ready, b.ready)
-				case industrySlotsColFree:
-					x = cmp.Compare(a.free, b.free)
-				case industrySlotsColTotal:
-					x = cmp.Compare(a.total, b.total)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// add totals
 		var active, ready, free, total int
 		for _, r := range rows {

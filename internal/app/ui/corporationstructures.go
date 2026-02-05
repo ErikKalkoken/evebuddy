@@ -76,11 +76,11 @@ type corporationStructures struct {
 }
 
 const (
-	structuresColName        = 0
-	structuresColType        = 1
-	structuresColFuelExpires = 2
-	structuresColState       = 3
-	structuresColServices    = 4
+	structuresColName = iota
+	structuresColType
+	structuresColFuelExpires
+	structuresColState
+	structuresColServices
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
@@ -88,24 +88,31 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
+		Sort: func(a, b corporationStructureRow) int {
+			return xstrings.CompareIgnoreCase(a.structureName, b.structureName)
+		},
 	}, {
 		ID:    structuresColType,
 		Label: "Type",
 		Width: 150,
+		Sort: func(a, b corporationStructureRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
 	}, {
 		ID:    structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
+		Sort: func(a, b corporationStructureRow) int {
+			return a.fuelSort.Compare(b.fuelSort)
+		},
 	}, {
 		ID:     structuresColState,
 		Label:  "State",
 		Width:  150,
-		NoSort: true,
 	}, {
 		ID:     structuresColServices,
 		Label:  "Services",
 		Width:  200,
-		NoSort: true,
 	}})
 	a := &corporationStructures{
 		columnSorter: iwidget.NewColumnSorter(headers, structuresColName, iwidget.SortAsc),
@@ -261,25 +268,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 				return true
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b corporationStructureRow) int {
-				var x int
-				switch sortCol {
-				case structuresColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case structuresColName:
-					x = xstrings.CompareIgnoreCase(a.structureName, b.structureName)
-				case structuresColFuelExpires:
-					x = a.fuelSort.Compare(b.fuelSort)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		selectOptions := xslices.Map(rows, func(r corporationStructureRow) string {
 			return r.regionName

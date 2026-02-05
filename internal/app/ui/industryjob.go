@@ -124,14 +124,14 @@ type industryJobs struct {
 }
 
 const (
-	industryJobsColBlueprint = 0
-	industryJobsColStatus    = 1
-	industryJobsColRuns      = 2
-	industryJobsColActivity  = 3
-	industryJobsColEndDate   = 4
-	industryJobsColLocation  = 5
-	industryJobsColOwner     = 6
-	industryJobsColInstaller = 7
+	industryJobsColBlueprint = iota
+	industryJobsColStatus
+	industryJobsColRuns
+	industryJobsColActivity
+	industryJobsColEndDate
+	industryJobsColLocation
+	industryJobsColOwner
+	industryJobsColInstaller
 )
 
 func newIndustryJobsForOverview(u *baseUI) *industryJobs {
@@ -147,34 +147,58 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
+		},
 	}, {
 		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
+		Sort: func(a, b industryJobRow) int {
+			return cmp.Compare(a.remaining(), b.remaining())
+		},
 	}, {
 		ID:    industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
+		Sort: func(a, b industryJobRow) int {
+			return cmp.Compare(a.runs, b.runs)
+		},
 	}, {
 		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.activity.String(), b.activity.String())
+		},
 	}, {
 		ID:    industryJobsColEndDate,
 		Label: "End date",
 		Width: columnWidthDateTime,
+		Sort: func(a, b industryJobRow) int {
+			return a.endDate.Compare(b.endDate)
+		},
 	}, {
 		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
+		},
 	}, {
 		ID:    industryJobsColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.owner.Name, b.owner.Name)
+		},
 	}, {
 		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: columnWidthEntity,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.installer.Name, b.installer.Name)
+		},
 	}})
 	a := &industryJobs{
 		bottom:         makeTopLabel(),
@@ -419,35 +443,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b industryJobRow) int {
-				var c int
-				switch sortCol {
-				case industryJobsColBlueprint:
-					c = strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
-				case industryJobsColStatus:
-					c = cmp.Compare(a.remaining(), b.remaining())
-				case industryJobsColRuns:
-					c = cmp.Compare(a.runs, b.runs)
-				case industryJobsColActivity:
-					c = strings.Compare(a.activity.String(), b.activity.String())
-				case industryJobsColEndDate:
-					c = a.endDate.Compare(b.endDate)
-				case industryJobsColLocation:
-					c = strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
-				case industryJobsColOwner:
-					c = strings.Compare(a.owner.Name, b.owner.Name)
-				case industryJobsColInstaller:
-					c = strings.Compare(a.installer.Name, b.installer.Name)
-				}
-				if dir == iwidget.SortAsc {
-					return c
-				} else {
-					return -1 * c
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
 			return r.tags

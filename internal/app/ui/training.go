@@ -160,7 +160,6 @@ func newTraining(u *baseUI) *training {
 		ID:     trainingColTags,
 		Label:  "Tags",
 		Width:  150,
-		NoSort: true,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
 			x := co.(*widget.Label)
 			x.Text = strings.Join(slices.Sorted(r.tags.All()), ", ")
@@ -467,7 +466,6 @@ func (a *training) filterRows(sortCol int) {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		// sort
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {

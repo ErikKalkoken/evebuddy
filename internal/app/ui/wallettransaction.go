@@ -116,13 +116,13 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 }
 
 const (
-	walletTransactionColDate     = 0
-	walletTransactionColQuantity = 1
-	walletTransactionColType     = 2
-	walletTransactionColPrice    = 3
-	walletTransactionColTotal    = 4
-	walletTransactionColClient   = 5
-	walletTransactionColLocation = 6
+	walletTransactionColDate = iota
+	walletTransactionColQuantity
+	walletTransactionColType
+	walletTransactionColPrice
+	walletTransactionColTotal
+	walletTransactionColClient
+	walletTransactionColLocation
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
@@ -130,30 +130,51 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
+		Sort: func(a, b walletTransactionRow) int {
+			return a.date.Compare(b.date)
+		},
 	}, {
 		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.quantity, b.quantity)
+		},
 	}, {
 		ID:    walletTransactionColType,
 		Label: "Type",
 		Width: 200,
+		Sort: func(a, b walletTransactionRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
 	}, {
 		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.unitPrice, b.unitPrice)
+		},
 	}, {
 		ID:    walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.total, b.total)
+		},
 	}, {
 		ID:    walletTransactionColClient,
 		Label: "Client",
 		Width: columnWidthEntity,
+		Sort: func(a, b walletTransactionRow) int {
+			return xstrings.CompareIgnoreCase(a.clientName, b.clientName)
+		},
 	}, {
 		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: columnWidthLocation,
+		Sort: func(a, b walletTransactionRow) int {
+			return strings.Compare(a.locationName, b.locationName)
+		},
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
@@ -381,33 +402,7 @@ func (a *walletTransactions) filterRows(sortCol int) {
 				return r.typeName != type_
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b walletTransactionRow) int {
-				var x int
-				switch sortCol {
-				case walletTransactionColDate:
-					x = a.date.Compare(b.date)
-				case walletTransactionColQuantity:
-					x = cmp.Compare(a.quantity, b.quantity)
-				case walletTransactionColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case walletTransactionColPrice:
-					x = cmp.Compare(a.unitPrice, b.unitPrice)
-				case walletTransactionColTotal:
-					x = cmp.Compare(a.total, b.total)
-				case walletTransactionColClient:
-					x = xstrings.CompareIgnoreCase(a.clientName, b.clientName)
-				case walletTransactionColLocation:
-					x = strings.Compare(a.locationName, b.locationName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// update filters
 		categoryOptions := xslices.Map(rows, func(r walletTransactionRow) string {
 			return r.categoryName

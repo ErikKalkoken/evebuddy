@@ -25,10 +25,12 @@ func TestDataTable_CreateBasic(t *testing.T) {
 		ID:    0,
 		Label: "ID",
 		Width: 100,
+		Sort:  func(a, b myRow) int { return 0 },
 	}, {
 		ID:    1,
 		Label: "Planet",
 		Width: 100,
+		Sort:  func(a, b myRow) int { return 0 },
 	}})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
 	x := iwidget.MakeDataTable(
@@ -99,13 +101,18 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 	def := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 		ID:    id1,
 		Label: "Alpha",
+		Sort: func(a, b myRow) int {
+			return 0
+		},
 	}, {
 		ID:    id2,
 		Label: "Bravo",
+		Sort: func(a, b myRow) int {
+			return 0
+		},
 	}, {
-		ID:     id3,
-		Label:  "Charlie",
-		NoSort: true,
+		ID:    id3,
+		Label: "Charlie",
 	}})
 	cases := []struct {
 		name       string

@@ -86,11 +86,11 @@ type clones struct {
 }
 
 const (
-	clonesColLocation  = 0
-	clonesColRegion    = 1
-	clonesColImplants  = 2
-	clonesColCharacter = 3
-	clonesColJumps     = 4
+	clonesColLocation = iota
+	clonesColRegion
+	clonesColImplants
+	clonesColCharacter
+	clonesColJumps
 )
 
 func newClones(u *baseUI) *clones {
@@ -98,22 +98,37 @@ func newClones(u *baseUI) *clones {
 		ID:    clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
+		Sort: func(a, b cloneRow) int {
+			return cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
+		},
 	}, {
 		ID:    clonesColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
+		Sort: func(a, b cloneRow) int {
+			return cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
+		},
 	}, {
 		ID:    clonesColImplants,
 		Label: "Impl.",
 		Width: 100,
+		Sort: func(a, b cloneRow) int {
+			return cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
+		},
 	}, {
 		ID:    clonesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
+		Sort: func(a, b cloneRow) int {
+			return cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
+		},
 	}, {
 		ID:    clonesColJumps,
 		Label: "Jumps",
 		Width: 100,
+		Sort: func(a, b cloneRow) int {
+			return a.compare(b)
+		},
 	}})
 	a := &clones{
 		columnSorter: iwidget.NewColumnSorter(headers, clonesColLocation, iwidget.SortAsc),
@@ -272,29 +287,7 @@ func (a *clones) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b cloneRow) int {
-				var x int
-				switch sortCol {
-				case clonesColLocation:
-					x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
-				case clonesColRegion:
-					x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
-				case clonesColImplants:
-					x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
-				case clonesColCharacter:
-					x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
-				case clonesColJumps:
-					x = a.compare(b)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
 			return r.tags

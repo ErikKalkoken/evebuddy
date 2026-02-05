@@ -216,38 +216,49 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{
-		{
-			ID:    assetsColItem,
-			Label: "Item",
-			Width: 300,
+	headers := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{{
+		ID:    assetsColItem,
+		Label: "Item",
+		Width: 300,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.name, b.name)
 		},
-		{
-			ID:    assetsColGroup,
-			Label: "Group",
-			Width: 200,
+	}, {
+		ID:    assetsColGroup,
+		Label: "Group",
+		Width: 200,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.groupName, b.groupName)
 		},
-		{
-			ID:    assetsColLocation,
-			Label: "Location",
-			Width: columnWidthLocation,
+	}, {
+		ID:    assetsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.locationName, b.locationName)
 		},
-		{
-			ID:    assetsColQuantity,
-			Label: "Qty.",
-			Width: 100,
+	}, {
+		ID:    assetsColQuantity,
+		Label: "Qty.",
+		Width: 100,
+		Sort: func(a, b assetRow) int {
+			return cmp.Compare(a.quantity, b.quantity)
 		},
-		{
-			ID:    assetsColTotal,
-			Label: "Total",
-			Width: 150,
+	}, {
+		ID:    assetsColTotal,
+		Label: "Total",
+		Width: 150,
+		Sort: func(a, b assetRow) int {
+			return cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
 		},
-		{
-			ID:    assetsColOwner,
-			Label: "Owner",
-			Width: columnWidthEntity,
+	}, {
+		ID:    assetsColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+		Sort: func(a, b assetRow) int {
+			return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
 		},
-	})
+	}})
 	a := &assetSearch{
 		columnSorter:   iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
@@ -508,31 +519,7 @@ func (a *assetSearch) filterRows(sortCol int) {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b assetRow) int {
-				var x int
-				switch sortCol {
-				case assetsColItem:
-					x = strings.Compare(a.name, b.name)
-				case assetsColGroup:
-					x = strings.Compare(a.groupName, b.groupName)
-				case assetsColLocation:
-					x = strings.Compare(a.locationName, b.locationName)
-				case assetsColOwner:
-					x = xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
-				case assetsColQuantity:
-					x = cmp.Compare(a.quantity, b.quantity)
-				case assetsColTotal:
-					x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
 			return r.tags

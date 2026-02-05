@@ -103,11 +103,11 @@ func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 }
 
 const (
-	walletJournalColDate        = 0
-	walletJournalColType        = 1
-	walletJournalColAmount      = 2
-	walletJournalColBalance     = 3
-	walletJournalColDescription = 4
+	walletJournalColDate = iota
+	walletJournalColType
+	walletJournalColAmount
+	walletJournalColBalance
+	walletJournalColDescription
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
@@ -115,24 +115,31 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
+		Sort: func(a, b walletJournalRow) int {
+			return a.date.Compare(b.date)
+		},
 	}, {
 		ID:    walletJournalColType,
 		Label: "Type",
 		Width: 150,
+		Sort: func(a, b walletJournalRow) int {
+			return strings.Compare(a.refType, b.refType)
+		},
 	}, {
 		ID:    walletJournalColAmount,
 		Label: "Amount",
 		Width: 200,
+		Sort: func(a, b walletJournalRow) int {
+			return cmp.Compare(a.amount, b.amount)
+		},
 	}, {
 		ID:     walletJournalColBalance,
 		Label:  "Balance",
 		Width:  200,
-		NoSort: true,
 	}, {
 		ID:     walletJournalColDescription,
 		Label:  "Description",
 		Width:  450,
-		NoSort: true,
 	}})
 	a := &walletJournal{
 		columnSorter: iwidget.NewColumnSorter(headers, walletJournalColDate, iwidget.SortDesc),
@@ -272,25 +279,7 @@ func (a *walletJournal) filterRows(sortCol int) {
 				return r.refTypeDisplay != type_
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b walletJournalRow) int {
-				var x int
-				switch sortCol {
-				case walletJournalColDate:
-					x = a.date.Compare(b.date)
-				case walletJournalColType:
-					x = strings.Compare(a.refType, b.refType)
-				case walletJournalColAmount:
-					x = cmp.Compare(a.amount, b.amount)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// update filters
 		typeOptions := xslices.Map(rows, func(r walletJournalRow) string {
 			return r.refTypeDisplay

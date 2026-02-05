@@ -77,13 +77,13 @@ type contracts struct {
 }
 
 const (
-	contractsColName      = 0
-	contractsColType      = 1
-	contractsColIssuer    = 2
-	contractsColAssignee  = 3
-	contractsColStatus    = 4
-	contractsColIssuedAt  = 5
-	contractsColExpiresAt = 6
+	contractsColName = iota
+	contractsColType
+	contractsColIssuer
+	contractsColAssignee
+	contractsColStatus
+	contractsColIssuedAt
+	contractsColExpiresAt
 )
 
 func newContractsForCorporation(u *baseUI) *contracts {
@@ -99,30 +99,51 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.name, b.name)
+		},
 	}, {
 		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
 	}, {
 		ID:    contractsColIssuer,
 		Label: "From",
 		Width: 150,
+		Sort: func(a, b contractRow) int {
+			return xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
+		},
 	}, {
 		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
+		Sort: func(a, b contractRow) int {
+			return xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
+		},
 	}, {
 		ID:    contractsColStatus,
 		Label: "Status",
 		Width: 100,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.statusText, b.statusText)
+		},
 	}, {
 		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: columnWidthDateTime,
+		Sort: func(a, b contractRow) int {
+			return a.dateIssued.Compare(b.dateIssued)
+		},
 	}, {
 		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
+		Sort: func(a, b contractRow) int {
+			return a.dateExpired.Compare(b.dateExpired)
+		},
 	}})
 	a := &contracts{
 		forCorporation: forCorporation,
@@ -356,33 +377,7 @@ func (a *contracts) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b contractRow) int {
-				var x int
-				switch sortCol {
-				case contractsColName:
-					x = strings.Compare(a.name, b.name)
-				case contractsColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case contractsColIssuer:
-					x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
-				case contractsColAssignee:
-					x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
-				case contractsColStatus:
-					x = strings.Compare(a.statusText, b.statusText)
-				case contractsColIssuedAt:
-					x = a.dateIssued.Compare(b.dateIssued)
-				case contractsColExpiresAt:
-					x = a.dateExpired.Compare(b.dateExpired)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r contractRow) set.Set[string] {
 			return r.tags

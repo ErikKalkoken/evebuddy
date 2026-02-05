@@ -54,13 +54,18 @@ func TestColumnSorter_Current(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
 		ID:    0,
 		Label: "Alpha",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}, {
-		ID:     1,
-		Label:  "Bravo",
-		NoSort: true,
+		ID:    1,
+		Label: "Bravo",
 	}, {
 		ID:    2,
 		Label: "Charlie",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}})
 	t.Run("return currently sorted column", func(t *testing.T) {
 		sc := NewColumnSorter(def, 0, SortOff)
