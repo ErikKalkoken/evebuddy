@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -17,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -116,8 +118,22 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Sort: func(a, b corporationStructureRow) int {
 			return strings.Compare(a.typeName, b.typeName)
 		},
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.BlankSvg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("Template")
+			return container.NewBorder(nil, nil, container.NewCenter(icon), nil, name)
+		},
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.typeName)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.typeName)
+			x := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
+			u.eis.InventoryTypeIconAsync(r.typeID, app.IconPixelSize, func(r fyne.Resource) {
+				x.Resource = r
+				x.Refresh()
+			})
 		},
 	}, {
 		ID:    structuresColFuelExpires,
@@ -434,7 +450,6 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 	corporationName := u.scs.CorporationName(corporationID)
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
-		"Corporation Structure",
 		s.Name,
 	)
 	if !created {
@@ -521,7 +536,6 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Corporation Structure: %s", s.Name)
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {
@@ -530,7 +544,7 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 		imageLoader: func(setter func(r fyne.Resource)) {
 			u.eis.InventoryTypeIconAsync(s.Type.ID, 512, setter)
 		},
-		title:  subTitle,
+		title:  s.Name,
 		window: w,
 	})
 	w.Show()
