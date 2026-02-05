@@ -49,6 +49,7 @@ type DataColumn[T any] struct {
 	Create func() fyne.CanvasObject
 	// Update for this column. Mandatory
 	Update func(T, fyne.CanvasObject)
+	Sort   func(a, b T) int
 }
 
 func (h DataColumn[T]) minWidth() float32 {
@@ -126,24 +127,14 @@ func (d DataColumns[T]) values() iter.Seq[DataColumn[T]] {
 }
 
 // ColumnSorter represents an ordered list of columns which can be sorted.
-type (
-	ColumnSorter[T any] struct {
-		cols       []SortDir
-		def        DataColumns[T]
-		initialDir SortDir
-		initialID  int
-		isMobile   bool
-		sortButton *SortButton
-	}
-
-	// A SortButton represents a button for sorting a data table.
-	// It is supposed to be used in mobile views.
-	SortButton struct {
-		widget.Button
-
-		sortColumns []string
-	}
-)
+type ColumnSorter[T any] struct {
+	cols       []SortDir
+	def        DataColumns[T]
+	initialDir SortDir
+	initialID  int
+	isMobile   bool
+	sortButton *SortButton
+}
 
 // NewColumnSorter returns a new ColumSorter.
 // idx and dir defines the initially sorted column.
@@ -162,9 +153,22 @@ func NewColumnSorter[T any](d DataColumns[T], id int, dir SortDir) *ColumnSorter
 		initialID:  id,
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
-	cs.clear()
+	cs.init()
 	cs.Set(id, dir)
 	return cs
+}
+
+// init resets sorting for all columns.
+func (cs *ColumnSorter[T]) init() {
+	for i := range cs.cols {
+		var dir SortDir
+		if cs.def.cols[i].NoSort {
+			dir = sortNone
+		} else {
+			dir = SortOff
+		}
+		cs.cols[i] = dir
+	}
 }
 
 // column returns the sort direction of a column
@@ -190,19 +194,6 @@ func (cs *ColumnSorter[T]) reset() {
 	cs.Set(cs.initialID, cs.initialDir)
 }
 
-// clear removes sorting from all columns.
-func (cs *ColumnSorter[T]) clear() {
-	for i := range cs.cols {
-		var dir SortDir
-		if cs.def.cols[i].NoSort {
-			dir = sortNone
-		} else {
-			dir = SortOff
-		}
-		cs.cols[i] = dir
-	}
-}
-
 // Set sets the sort direction for a column.
 func (cs *ColumnSorter[T]) Set(id int, dir SortDir) {
 	idx, ok := cs.def.idxLookup[id]
@@ -213,7 +204,7 @@ func (cs *ColumnSorter[T]) Set(id int, dir SortDir) {
 }
 
 func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
-	cs.clear()
+	cs.init()
 	cs.cols[idx] = dir
 	if cs.sortButton != nil {
 		cs.sortButton.set(idx, dir)
@@ -250,6 +241,36 @@ func (cs *ColumnSorter[T]) CalcSort(id int) (int, SortDir, bool) {
 		id = col.ID
 	}
 	return id, dir, doSort
+}
+
+func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort bool) {
+	if !doSort {
+		return
+	}
+	idx, ok := cs.def.idxLookup[sortCol]
+	if !ok {
+		return
+	}
+	f := cs.def.cols[idx].Sort
+	if f == nil {
+		return
+	}
+	slices.SortFunc(rows, func(a, b T) int {
+		x := f(a, b)
+		if dir == SortAsc {
+			return x
+		} else {
+			return -1 * x
+		}
+	})
+}
+
+// A SortButton represents a button for sorting a data table.
+// It is supposed to be used in mobile views.
+type SortButton struct {
+	widget.Button
+
+	sortColumns []string
 }
 
 // NewSortButton returns a new sortButton.

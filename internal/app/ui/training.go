@@ -153,6 +153,9 @@ func newTraining(u *baseUI) *training {
 			})
 			hbox[1].(*widget.Label).SetText(r.characterName)
 		},
+		Sort: func(a, b trainingRow) int {
+			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+		},
 	}, {
 		ID:     trainingColTags,
 		Label:  "Tags",
@@ -187,6 +190,9 @@ func newTraining(u *baseUI) *training {
 			x.Alignment = fyne.TextAlignLeading
 			x.Refresh()
 		},
+		Sort: func(a, b trainingRow) int {
+			return strings.Compare(a.skillName, b.skillName)
+		},
 	}, {
 		ID:    trainingColCurrentRemaining,
 		Label: "Current Time",
@@ -195,6 +201,9 @@ func newTraining(u *baseUI) *training {
 			x.Text = r.currentRemainingTimeString()
 			x.Alignment = fyne.TextAlignLeading
 			x.Refresh()
+		},
+		Sort: func(a, b trainingRow) int {
+			return cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
 		},
 	}, {
 		ID:    trainingColQueuedCount,
@@ -205,6 +214,9 @@ func newTraining(u *baseUI) *training {
 			x.Alignment = fyne.TextAlignLeading
 			x.Refresh()
 		},
+		Sort: func(a, b trainingRow) int {
+			return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
+		},
 	}, {
 		ID:    trainingColQueuedRemaining,
 		Label: "Queue Time",
@@ -213,6 +225,9 @@ func newTraining(u *baseUI) *training {
 			x.Text = r.totalRemainingTimeString()
 			x.Alignment = fyne.TextAlignLeading
 			x.Refresh()
+		},
+		Sort: func(a, b trainingRow) int {
+			return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
 		},
 	}, {
 		ID:    trainingColSkillpoints,
@@ -224,6 +239,9 @@ func newTraining(u *baseUI) *training {
 			x.Alignment = fyne.TextAlignTrailing
 			x.Refresh()
 		},
+		Sort: func(a, b trainingRow) int {
+			return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
+		},
 	}, {
 		ID:    trainingColUnallocatedSP,
 		Label: "Unall.",
@@ -233,6 +251,9 @@ func newTraining(u *baseUI) *training {
 			x.Text = r.unallocatedSPDisplay
 			x.Alignment = fyne.TextAlignTrailing
 			x.Refresh()
+		},
+		Sort: func(a, b trainingRow) int {
+			return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
 		},
 	}})
 	a := &training{
@@ -447,33 +468,7 @@ func (a *training) filterRows(sortCol int) {
 			})
 		}
 		// sort
-
-		if doSort {
-			slices.SortFunc(rows, func(a, b trainingRow) int {
-				var x int
-				switch sortCol {
-				case trainingColName:
-					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-				case trainingColCurrentRemaining:
-					x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
-				case trainingColCurrentSkill:
-					x = strings.Compare(a.skillName, b.skillName)
-				case trainingColQueuedCount:
-					x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-				case trainingColQueuedRemaining:
-					x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-				case trainingColSkillpoints:
-					x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-				case trainingColUnallocatedSP:
-					x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {
 			return r.tags
