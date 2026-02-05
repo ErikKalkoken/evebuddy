@@ -118,12 +118,18 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Sort: func(a, b walletJournalRow) int {
 			return a.date.Compare(b.date)
 		},
+		Update: func(r walletJournalRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.dateFormatted)
+		},
 	}, {
 		ID:    walletJournalColType,
 		Label: "Type",
 		Width: 150,
 		Sort: func(a, b walletJournalRow) int {
 			return strings.Compare(a.refType, b.refType)
+		},
+		Update: func(r walletJournalRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.refTypeDisplay)
 		},
 	}, {
 		ID:    walletJournalColAmount,
@@ -132,14 +138,28 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Sort: func(a, b walletJournalRow) int {
 			return cmp.Compare(a.amount, b.amount)
 		},
+		Update: func(r walletJournalRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.amountDisplay)
+		},
 	}, {
-		ID:     walletJournalColBalance,
-		Label:  "Balance",
-		Width:  200,
+		ID:    walletJournalColBalance,
+		Label: "Balance",
+		Width: 200,
+		Update: func(r walletJournalRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(
+				humanize.FormatFloat(app.FloatFormat, r.balance),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
+		},
 	}, {
-		ID:     walletJournalColDescription,
-		Label:  "Description",
-		Width:  450,
+		ID:    walletJournalColDescription,
+		Label: "Description",
+		Width: 450,
+		Update: func(r walletJournalRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.descriptionWithReason())
+		},
 	}})
 	a := &walletJournal{
 		columnSorter: iwidget.NewColumnSorter(headers, walletJournalColDate, iwidget.SortDesc),
@@ -149,36 +169,26 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
-		switch col {
-		case walletJournalColDate:
-			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case walletJournalColType:
-			return iwidget.RichTextSegmentsFromText(r.refTypeDisplay)
-		case walletJournalColAmount:
-			return r.amountDisplay
-		case walletJournalColBalance:
-			return iwidget.RichTextSegmentsFromText(
-				humanize.FormatFloat(app.FloatFormat, r.balance),
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
-			)
-		case walletJournalColDescription:
-			return iwidget.RichTextSegmentsFromText(r.descriptionWithReason())
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
-	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
-			if a.isCorporation() {
-				showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
-			} else {
-				showCharacterWalletJournalEntryWindow(a.u, r.characterID, r.refID)
-			}
-		})
-	} else {
+
+	if a.u.isMobile {
 		a.body = a.makeDataList()
+	} else {
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
+			a.columnSorter,
+			a.filterRows,
+			func(_ int, r walletJournalRow) {
+				if a.isCorporation() {
+					showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
+				} else {
+					showCharacterWalletJournalEntryWindow(a.u, r.characterID, r.refID)
+				}
+			},
+		)
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)

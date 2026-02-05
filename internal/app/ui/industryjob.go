@@ -150,12 +150,18 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
 		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.blueprintType.Name)
+		},
 	}, {
 		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b industryJobRow) int {
 			return cmp.Compare(a.remaining(), b.remaining())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
 		ID:    industryJobsColRuns,
@@ -164,12 +170,21 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Sort: func(a, b industryJobRow) int {
 			return cmp.Compare(a.runs, b.runs)
 		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(
+				ihumanize.Comma(r.runs),
+				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
+			)
+		},
 	}, {
 		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.activity.String(), b.activity.String())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.activity.Display())
 		},
 	}, {
 		ID:    industryJobsColEndDate,
@@ -178,12 +193,18 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Sort: func(a, b industryJobRow) int {
 			return a.endDate.Compare(b.endDate)
 		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
+		},
 	}, {
 		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
 		},
 	}, {
 		ID:    industryJobsColOwner,
@@ -192,12 +213,18 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.owner.Name, b.owner.Name)
 		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.owner.Name)
+		},
 	}, {
 		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: columnWidthEntity,
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.installer.Name, b.installer.Name)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.installer.Name)
 		},
 	}})
 	a := &industryJobs{
@@ -209,37 +236,20 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
-		switch col {
-		case industryJobsColBlueprint:
-			return iwidget.RichTextSegmentsFromText(j.blueprintType.Name)
-		case industryJobsColStatus:
-			return j.statusDisplay()
-		case industryJobsColRuns:
-			return iwidget.RichTextSegmentsFromText(
-				ihumanize.Comma(j.runs),
-				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
-			)
-		case industryJobsColActivity:
-			return iwidget.RichTextSegmentsFromText(j.activity.Display())
-		case industryJobsColEndDate:
-			return iwidget.RichTextSegmentsFromText(j.endDate.Format(app.DateTimeFormat))
-		case industryJobsColLocation:
-			return iwidget.RichTextSegmentsFromText(j.location.Name.ValueOrZero())
-		case industryJobsColOwner:
-			return iwidget.RichTextSegmentsFromText(j.owner.Name)
-		case industryJobsColInstaller:
-			return iwidget.RichTextSegmentsFromText(j.installer.Name)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
-			a.showIndustryJobWindow(j)
-		})
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
+			a.columnSorter,
+			a.filterRows, func(_ int, r industryJobRow) {
+				a.showIndustryJobWindow(r)
+			})
 	}
 
 	a.search = widget.NewEntry()

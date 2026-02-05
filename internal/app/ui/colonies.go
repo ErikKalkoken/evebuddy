@@ -102,6 +102,9 @@ func newColonies(u *baseUI) *colonies {
 		Sort: func(a, b colonyRow) int {
 			return strings.Compare(a.name, b.name)
 		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.nameDisplay)
+		},
 	}, {
 		ID:    coloniesColType,
 		Label: "Type",
@@ -109,10 +112,16 @@ func newColonies(u *baseUI) *colonies {
 		Sort: func(a, b colonyRow) int {
 			return strings.Compare(a.planetTypeName, b.planetTypeName)
 		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.planetTypeName)
+		},
 	}, {
-		ID:     coloniesColExtracting,
-		Label:  "Extracting",
-		Width:  200,
+		ID:    coloniesColExtracting,
+		Label: "Extracting",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.extractingText)
+		},
 	}, {
 		ID:    coloniesColDue,
 		Label: "Due",
@@ -120,10 +129,16 @@ func newColonies(u *baseUI) *colonies {
 		Sort: func(a, b colonyRow) int {
 			return a.due.Compare(b.due)
 		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.DueRichText())
+		},
 	}, {
-		ID:     coloniesColProducing,
-		Label:  "Producing",
-		Width:  200,
+		ID:    coloniesColProducing,
+		Label: "Producing",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.producingText)
+		},
 	}, {
 		ID:    coloniesColRegion,
 		Label: "Region",
@@ -131,12 +146,18 @@ func newColonies(u *baseUI) *colonies {
 		Sort: func(a, b colonyRow) int {
 			return strings.Compare(a.regionName, b.regionName)
 		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.regionName)
+		},
 	}, {
 		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
 		Sort: func(a, b colonyRow) int {
 			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.ownerName)
 		},
 	}})
 	a := &colonies{
@@ -148,31 +169,42 @@ func newColonies(u *baseUI) *colonies {
 	}
 	a.ExtendBaseWidget(a)
 
-	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
-		switch col {
-		case coloniesColPlanet:
-			return r.nameDisplay
-		case coloniesColType:
-			return iwidget.RichTextSegmentsFromText(r.planetTypeName)
-		case coloniesColExtracting:
-			return iwidget.RichTextSegmentsFromText(r.extractingText)
-		case coloniesColDue:
-			return r.DueRichText()
-		case coloniesColProducing:
-			return iwidget.RichTextSegmentsFromText(r.producingText)
-		case coloniesColRegion:
-			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case coloniesColCharacter:
-			return iwidget.RichTextSegmentsFromText(r.ownerName)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
-			a.showColonyWindow(r)
-		})
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
+			a.columnSorter,
+			a.filterRows, func(_ int, r colonyRow) {
+				a.showColonyWindow(r)
+			})
 	} else {
-		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, a.showColonyWindow)
+		a.body = iwidget.MakeDataList(
+			headers,
+			&a.rowsFiltered,
+			func(col int, r colonyRow) []widget.RichTextSegment {
+				switch col {
+				case coloniesColPlanet:
+					return r.nameDisplay
+				case coloniesColType:
+					return iwidget.RichTextSegmentsFromText(r.planetTypeName)
+				case coloniesColExtracting:
+					return iwidget.RichTextSegmentsFromText(r.extractingText)
+				case coloniesColDue:
+					return r.DueRichText()
+				case coloniesColProducing:
+					return iwidget.RichTextSegmentsFromText(r.producingText)
+				case coloniesColRegion:
+					return iwidget.RichTextSegmentsFromText(r.regionName)
+				case coloniesColCharacter:
+					return iwidget.RichTextSegmentsFromText(r.ownerName)
+				}
+				return iwidget.RichTextSegmentsFromText("?")
+			},
+			a.showColonyWindow,
+		)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {

@@ -223,12 +223,18 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		Sort: func(a, b assetRow) int {
 			return strings.Compare(a.name, b.name)
 		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.name)
+		},
 	}, {
 		ID:    assetsColGroup,
 		Label: "Group",
 		Width: 200,
 		Sort: func(a, b assetRow) int {
 			return strings.Compare(a.groupName, b.groupName)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.groupName)
 		},
 	}, {
 		ID:    assetsColLocation,
@@ -237,12 +243,20 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		Sort: func(a, b assetRow) int {
 			return strings.Compare(a.locationName, b.locationName)
 		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.locationDisplay)
+		},
 	}, {
 		ID:    assetsColQuantity,
 		Label: "Qty.",
 		Width: 100,
 		Sort: func(a, b assetRow) int {
 			return cmp.Compare(a.quantity, b.quantity)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}, {
 		ID:    assetsColTotal,
@@ -251,12 +265,20 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		Sort: func(a, b assetRow) int {
 			return cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
 		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
 	}, {
 		ID:    assetsColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 		Sort: func(a, b assetRow) int {
 			return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.owner.Name)
 		},
 	}})
 	a := &assetSearch{
@@ -282,27 +304,11 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
-			func(col int, r assetRow) []widget.RichTextSegment {
-				switch col {
-				case assetsColItem:
-					return iwidget.RichTextSegmentsFromText(r.name)
-				case assetsColGroup:
-					return iwidget.RichTextSegmentsFromText(r.groupName)
-				case assetsColLocation:
-					return r.locationDisplay
-				case assetsColOwner:
-					return iwidget.RichTextSegmentsFromText(r.owner.Name)
-				case assetsColQuantity:
-					return iwidget.RichTextSegmentsFromText(r.quantityDisplay, widget.RichTextStyle{
-						Alignment: fyne.TextAlignTrailing,
-					})
-				case assetsColTotal:
-					return iwidget.RichTextSegmentsFromText(r.totalDisplay, widget.RichTextStyle{
-						Alignment: fyne.TextAlignTrailing,
-					})
-				}
-				return iwidget.RichTextSegmentsFromText("?")
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
 				showAssetDetailWindow(u, r)

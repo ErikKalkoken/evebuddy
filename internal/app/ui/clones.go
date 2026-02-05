@@ -101,12 +101,18 @@ func newClones(u *baseUI) *clones {
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
 		},
+		Update: func(r cloneRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.jc.Location.DisplayRichText())
+		},
 	}, {
 		ID:    clonesColRegion,
 		Label: "Region",
 		Width: columnWidthRegion,
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
+		},
+		Update: func(r cloneRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.jc.Location.RegionName())
 		},
 	}, {
 		ID:    clonesColImplants,
@@ -115,6 +121,9 @@ func newClones(u *baseUI) *clones {
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
 		},
+		Update: func(r cloneRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount))
+		},
 	}, {
 		ID:    clonesColCharacter,
 		Label: "Character",
@@ -122,12 +131,18 @@ func newClones(u *baseUI) *clones {
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
 		},
+		Update: func(r cloneRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.jc.Character.Name)
+		},
 	}, {
 		ID:    clonesColJumps,
 		Label: "Jumps",
 		Width: 100,
 		Sort: func(a, b cloneRow) int {
 			return a.compare(b)
+		},
+		Update: func(r cloneRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.jumps())
 		},
 	}})
 	a := &clones{
@@ -143,52 +158,65 @@ func newClones(u *baseUI) *clones {
 	a.changeOrigin = widget.NewButton("Route from", func() {
 		a.setOrigin(a.u.MainWindow())
 	})
-	makeCell := func(col int, r cloneRow) []widget.RichTextSegment {
-		var s []widget.RichTextSegment
-		switch col {
-		case clonesColLocation:
-			s = r.jc.Location.DisplayRichText()
-		case clonesColRegion:
-			s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-		case clonesColImplants:
-			s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-		case clonesColCharacter:
-			s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-		case clonesColJumps:
-			s = iwidget.RichTextSegmentsFromText(r.jumps())
-		}
-		return s
-	}
 	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
-			switch c {
-			case 0:
-				a.u.ShowLocationInfoWindow(r.jc.Location.ID)
-			case 1:
-				if r.jc.Location.SolarSystem != nil {
-					a.u.ShowInfoWindow(app.EveEntityRegion, r.jc.Location.SolarSystem.Constellation.Region.ID)
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
+			a.columnSorter,
+			a.filterRows,
+			func(c int, r cloneRow) {
+				switch c {
+				case 0:
+					a.u.ShowLocationInfoWindow(r.jc.Location.ID)
+				case 1:
+					if r.jc.Location.SolarSystem != nil {
+						a.u.ShowInfoWindow(app.EveEntityRegion, r.jc.Location.SolarSystem.Constellation.Region.ID)
+					}
+				case 2:
+					if r.jc == nil || r.jc.ImplantsCount == 0 {
+						return
+					}
+					a.showCloneWindow(r.jc)
+				case 3:
+					a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
+				case 4:
+					if len(r.route) == 0 {
+						return
+					}
+					a.showRouteWindow(r)
 				}
-			case 2:
-				if r.jc == nil || r.jc.ImplantsCount == 0 {
-					return
+			},
+		)
+	} else {
+		a.body = iwidget.MakeDataList(
+			headers,
+			&a.rowsFiltered,
+			func(col int, r cloneRow) []widget.RichTextSegment {
+				var s []widget.RichTextSegment
+				switch col {
+				case clonesColLocation:
+					s = r.jc.Location.DisplayRichText()
+				case clonesColRegion:
+					s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
+				case clonesColImplants:
+					s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
+				case clonesColCharacter:
+					s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
+				case clonesColJumps:
+					s = iwidget.RichTextSegmentsFromText(r.jumps())
 				}
-				a.showCloneWindow(r.jc)
-			case 3:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
-			case 4:
+				return s
+			},
+			func(r cloneRow) {
 				if len(r.route) == 0 {
 					return
 				}
 				a.showRouteWindow(r)
-			}
-		})
-	} else {
-		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
-			if len(r.route) == 0 {
-				return
-			}
-			a.showRouteWindow(r)
-		})
+			},
+		)
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {

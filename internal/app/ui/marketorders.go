@@ -154,12 +154,20 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Sort: func(a, b marketOrderRow) int {
 			return strings.Compare(a.typeName, b.typeName)
 		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
+		},
 	}, {
 		ID:    marketOrdersColVolume,
 		Label: "Quantity",
 		Width: 100,
 		Sort: func(a, b marketOrderRow) int {
 			return cmp.Compare(a.volumeRemain, b.volumeRemain)
+		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.volumeDisplay(), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}, {
 		ID:    marketOrdersColPrice,
@@ -168,12 +176,22 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Sort: func(a, b marketOrderRow) int {
 			return cmp.Compare(a.price, b.price)
 		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
 	}, {
 		ID:    marketOrdersColState,
 		Label: "State",
 		Width: 100,
 		Sort: func(a, b marketOrderRow) int {
 			return a.expires.Compare(b.expires)
+		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.stateDisplay(), widget.RichTextStyle{
+				ColorName: r.stateColor(),
+			})
 		},
 	}, {
 		ID:    marketOrdersColLocation,
@@ -182,6 +200,9 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Sort: func(a, b marketOrderRow) int {
 			return strings.Compare(a.locationName, b.locationName)
 		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.locationName)
+		},
 	}, {
 		ID:    marketOrdersColRegion,
 		Label: "Region",
@@ -189,12 +210,18 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Sort: func(a, b marketOrderRow) int {
 			return strings.Compare(a.regionName, b.regionName)
 		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.regionName)
+		},
 	}, {
 		ID:    marketOrdersColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
 		Sort: func(a, b marketOrderRow) int {
 			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
+		Update: func(r marketOrderRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.ownerName)
 		},
 	}})
 	a := &marketOrders{
@@ -207,36 +234,14 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r marketOrderRow) []widget.RichTextSegment {
-		switch col {
-		case marketOrdersColType:
-			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case marketOrdersColVolume:
-			return iwidget.RichTextSegmentsFromText(r.volumeDisplay(), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		case marketOrdersColPrice:
-			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		case marketOrdersColState:
-			return iwidget.RichTextSegmentsFromText(r.stateDisplay(), widget.RichTextStyle{
-				ColorName: r.stateColor(),
-			})
-		case marketOrdersColLocation:
-			return iwidget.RichTextSegmentsFromText(r.locationName)
-		case marketOrdersColRegion:
-			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case marketOrdersColOwner:
-			return iwidget.RichTextSegmentsFromText(r.ownerName)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
+
 	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
 			a.columnSorter,
 			a.filterRows, func(_ int, r marketOrderRow) {
 				showMarketOrderWindow(a.u, r)
@@ -269,6 +274,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	// Signals
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case app.SectionCharacterMarketOrders:

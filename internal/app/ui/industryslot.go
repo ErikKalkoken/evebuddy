@@ -35,6 +35,54 @@ type industrySlotRow struct {
 	tags          set.Set[string]
 }
 
+func (r industrySlotRow) characterDisplay() []widget.RichTextSegment {
+	if r.isSummary {
+		return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
+			TextStyle: fyne.TextStyle{Bold: true},
+		})
+	}
+	return iwidget.RichTextSegmentsFromText(r.characterName)
+}
+
+func (r industrySlotRow) busyColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch r.busy {
+	case 0:
+		c = theme.ColorNameSuccess
+	case r.total:
+		c = theme.ColorNameError
+	default:
+		c = theme.ColorNameWarning
+	}
+	return c
+}
+
+func (r industrySlotRow) readyColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch {
+	case r.ready > 0:
+		c = theme.ColorNameWarning
+	case r.ready == 0:
+		c = theme.ColorNameSuccess
+	default:
+		c = theme.ColorNameForeground
+	}
+	return c
+}
+
+func (r industrySlotRow) freeColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch {
+	case r.free == r.total:
+		c = theme.ColorNameSuccess
+	case r.free > 0:
+		c = theme.ColorNameWarning
+	case r.free == 0:
+		c = theme.ColorNameError
+	}
+	return c
+}
+
 type industrySlots struct {
 	widget.BaseWidget
 
@@ -67,12 +115,22 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		Sort: func(a, b industrySlotRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.characterDisplay())
+		},
 	}, {
 		ID:    industrySlotsColBusy,
 		Label: "Busy",
 		Width: columnWidthNumber,
 		Sort: func(a, b industrySlotRow) int {
 			return cmp.Compare(a.busy, b.busy)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.busy), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.busyColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
 		},
 	}, {
 		ID:    industrySlotsColReady,
@@ -81,6 +139,13 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		Sort: func(a, b industrySlotRow) int {
 			return cmp.Compare(a.ready, b.ready)
 		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.ready), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.readyColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}, {
 		ID:    industrySlotsColFree,
 		Label: "Free",
@@ -88,12 +153,25 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		Sort: func(a, b industrySlotRow) int {
 			return cmp.Compare(a.free, b.free)
 		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.free), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.freeColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}, {
 		ID:    industrySlotsColTotal,
 		Label: "Total",
 		Width: columnWidthNumber,
 		Sort: func(a, b industrySlotRow) int {
 			return cmp.Compare(a.total, b.total)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.total), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
 		},
 	}})
 	a := &industrySlots{
@@ -105,79 +183,51 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r industrySlotRow) []widget.RichTextSegment {
-		switch col {
-		case industrySlotsColCharacter:
-			if r.isSummary {
-				return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
-					TextStyle: fyne.TextStyle{Bold: true},
-				})
-			}
-			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case industrySlotsColBusy:
-			var c fyne.ThemeColorName
-			switch r.busy {
-			case 0:
-				c = theme.ColorNameSuccess
-			case r.total:
-				c = theme.ColorNameError
-			default:
-				c = theme.ColorNameWarning
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColReady:
-			var c fyne.ThemeColorName
-			switch {
-			case r.ready > 0:
-				c = theme.ColorNameWarning
-			case r.ready == 0:
-				c = theme.ColorNameSuccess
-			default:
-				c = theme.ColorNameForeground
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColFree:
-			var c fyne.ThemeColorName
-			switch {
-			case r.free == r.total:
-				c = theme.ColorNameSuccess
-			case r.free > 0:
-				c = theme.ColorNameWarning
-			case r.free == 0:
-				c = theme.ColorNameError
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColTotal:
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
 			a.columnSorter,
 			a.filterRows,
 			nil,
 		)
 	} else {
-		a.body = a.makeDataTable(headers, makeCell)
+		a.body = a.makeDataTable(
+			headers,
+			func(col int, r industrySlotRow) []widget.RichTextSegment {
+				switch col {
+				case industrySlotsColCharacter:
+					return r.characterDisplay()
+				case industrySlotsColBusy:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.busyColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColReady:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.readyColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColFree:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.freeColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColTotal:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				}
+				return iwidget.RichTextSegmentsFromText("?")
+			},
+		)
 	}
 
 	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{

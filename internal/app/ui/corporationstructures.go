@@ -54,6 +54,21 @@ type corporationStructureRow struct {
 	typeName           string
 }
 
+func (r corporationStructureRow) fuelExpiresDisplay() []widget.RichTextSegment {
+	var text string
+	var color fyne.ThemeColorName
+	if r.fuelExpires.IsEmpty() {
+		color = theme.ColorNameWarning
+		text = "Low Power"
+	} else {
+		color = theme.ColorNameForeground
+		text = ihumanize.Duration(time.Until(r.fuelExpires.ValueOrZero()))
+	}
+	return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		ColorName: color,
+	})
+}
+
 type corporationStructures struct {
 	widget.BaseWidget
 
@@ -91,12 +106,18 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Sort: func(a, b corporationStructureRow) int {
 			return xstrings.CompareIgnoreCase(a.structureName, b.structureName)
 		},
+		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.structureName)
+		},
 	}, {
 		ID:    structuresColType,
 		Label: "Type",
 		Width: 150,
 		Sort: func(a, b corporationStructureRow) int {
 			return strings.Compare(a.typeName, b.typeName)
+		},
+		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
 		ID:    structuresColFuelExpires,
@@ -105,14 +126,25 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Sort: func(a, b corporationStructureRow) int {
 			return a.fuelSort.Compare(b.fuelSort)
 		},
+		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.fuelExpiresDisplay())
+		},
 	}, {
-		ID:     structuresColState,
-		Label:  "State",
-		Width:  150,
+		ID:    structuresColState,
+		Label: "State",
+		Width: 150,
+		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.stateText, widget.RichTextStyle{
+				ColorName: r.stateColor,
+			})
+		},
 	}, {
-		ID:     structuresColServices,
-		Label:  "Services",
-		Width:  200,
+		ID:    structuresColServices,
+		Label: "Services",
+		Width: 200,
+		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.servicesText)
+		},
 	}})
 	a := &corporationStructures{
 		columnSorter: iwidget.NewColumnSorter(headers, structuresColName, iwidget.SortAsc),
@@ -122,47 +154,43 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r corporationStructureRow) []widget.RichTextSegment {
-		switch col {
-		case structuresColType:
-			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case structuresColName:
-			return iwidget.RichTextSegmentsFromText(r.structureName)
-		case structuresColFuelExpires:
-			var text string
-			var color fyne.ThemeColorName
-			if r.fuelExpires.IsEmpty() {
-				color = theme.ColorNameWarning
-				text = "Low Power"
-			} else {
-				color = theme.ColorNameForeground
-				text = ihumanize.Duration(time.Until(r.fuelExpires.ValueOrZero()))
-			}
-			return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-				ColorName: color,
-			})
-		case structuresColState:
-			return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
-				ColorName: r.stateColor,
-			})
-		case structuresColServices:
-			return iwidget.RichTextSegmentsFromText(r.servicesText)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
 			a.columnSorter,
 			a.filterRows, func(_ int, r corporationStructureRow) {
 				showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
-			})
+			},
+		)
 	} else {
-		a.main = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r corporationStructureRow) {
-			showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
-		})
+		a.main = iwidget.MakeDataList(
+			headers,
+			&a.rowsFiltered,
+			func(col int, r corporationStructureRow) []widget.RichTextSegment {
+				switch col {
+				case structuresColType:
+					return iwidget.RichTextSegmentsFromText(r.typeName)
+				case structuresColName:
+					return iwidget.RichTextSegmentsFromText(r.structureName)
+				case structuresColFuelExpires:
+					return r.fuelExpiresDisplay()
+				case structuresColState:
+					return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
+						ColorName: r.stateColor,
+					})
+				case structuresColServices:
+					return iwidget.RichTextSegmentsFromText(r.servicesText)
+				}
+				return iwidget.RichTextSegmentsFromText("?")
+			},
+			func(r corporationStructureRow) {
+				showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
+			},
+		)
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {

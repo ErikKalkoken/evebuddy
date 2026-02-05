@@ -275,7 +275,7 @@ func newTraining(u *baseUI) *training {
 	if a.u.isMobile {
 		a.main = a.makeDataList()
 	} else {
-		a.main = iwidget.MakeDataTable2(
+		a.main = iwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {

@@ -102,12 +102,18 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		Sort: func(a, b contractRow) int {
 			return strings.Compare(a.name, b.name)
 		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.name)
+		},
 	}, {
 		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
 		Sort: func(a, b contractRow) int {
 			return strings.Compare(a.typeName, b.typeName)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
 		ID:    contractsColIssuer,
@@ -116,12 +122,18 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		Sort: func(a, b contractRow) int {
 			return xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
 		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.issuerName)
+		},
 	}, {
 		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
 		Sort: func(a, b contractRow) int {
 			return xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.assigneeName)
 		},
 	}, {
 		ID:    contractsColStatus,
@@ -130,6 +142,9 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		Sort: func(a, b contractRow) int {
 			return strings.Compare(a.statusText, b.statusText)
 		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.status.DisplayRichText())
+		},
 	}, {
 		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
@@ -137,12 +152,18 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		Sort: func(a, b contractRow) int {
 			return a.dateIssued.Compare(b.dateIssued)
 		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
+		},
 	}, {
 		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
 			return a.dateExpired.Compare(b.dateExpired)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.dateExpiredDisplay)
 		},
 	}})
 	a := &contracts{
@@ -153,29 +174,19 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
-			func(col int, r contractRow) []widget.RichTextSegment {
-				switch col {
-				case contractsColName:
-					return iwidget.RichTextSegmentsFromText(r.name)
-				case contractsColType:
-					return iwidget.RichTextSegmentsFromText(r.typeName)
-				case contractsColIssuer:
-					return iwidget.RichTextSegmentsFromText(r.issuerName)
-				case contractsColAssignee:
-					return iwidget.RichTextSegmentsFromText(r.assigneeName)
-				case contractsColStatus:
-					return r.status.DisplayRichText()
-				case contractsColIssuedAt:
-					return iwidget.RichTextSegmentsFromText(r.dateIssued.Format(app.DateTimeFormat))
-				case contractsColExpiresAt:
-					return r.dateExpiredDisplay
-				}
-				return iwidget.RichTextSegmentsFromText("?")
-			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
+			a.columnSorter,
+			a.filterRows,
+			func(column int, r contractRow) {
 				if a.forCorporation {
 					showCorporationContractWindow(a.u, r.corporationID, r.contractID)
 				} else {

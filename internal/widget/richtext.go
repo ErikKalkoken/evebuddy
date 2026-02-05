@@ -68,8 +68,8 @@ func NewRichText(segments ...widget.RichTextSegment) *RichText {
 	return w
 }
 
-func NewRichTextWithText(text string) *RichText {
-	return NewRichText(RichTextSegmentsFromText(text)...)
+func NewRichTextWithText(text string, style ...widget.RichTextStyle) *RichText {
+	return NewRichText(RichTextSegmentsFromText(text, style...)...)
 }
 
 func (w *RichText) Set(segments []widget.RichTextSegment) {
@@ -77,6 +77,6 @@ func (w *RichText) Set(segments []widget.RichTextSegment) {
 	w.Refresh()
 }
 
-func (w *RichText) SetWithText(text string) {
-	w.Set(RichTextSegmentsFromText(text))
+func (w *RichText) SetWithText(text string, style ...widget.RichTextStyle) {
+	w.Set(RichTextSegmentsFromText(text, style...))
 }

@@ -26,27 +26,27 @@ func TestDataTable_CreateBasic(t *testing.T) {
 		Label: "ID",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
+		Update: func(r myRow, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(fmt.Sprint(r.id))
+		},
 	}, {
 		ID:    1,
 		Label: "Planet",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
+		Update: func(r myRow, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(r.planet)
+		},
 	}})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
 	x := iwidget.MakeDataTable(
-		headers, &data, func(col int, r myRow) []widget.RichTextSegment {
-			switch col {
-			case 0:
-				return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.id))
-			case 1:
-				return iwidget.RichTextSegmentsFromText(r.planet)
-			}
-			panic(fmt.Sprintf("invalid col: %d", col))
+		headers,
+		&data,
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Template")
 		},
 		iwidget.NewColumnSorter(headers, 0, iwidget.SortAsc),
-		func(i int) {
-
-		},
+		func(i int) {},
 		nil,
 	)
 	w := test.NewWindow(x)

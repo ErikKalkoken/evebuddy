@@ -38,16 +38,21 @@ func (s SortDir) isSorting() bool {
 type DataColumn[T any] struct {
 	// Column ID. Must be unique and >= 0.
 	ID int
+
 	// Label of a column displayed to the user.
 	Label string
-	// Width of a column in Fyne units. Will try to auto size when zero.
+
+	// Width of a column in Fyne units. Will auto size to header width when omitted.
 	Width float32
-	// Create for this column. Optional.
+
+	// Create for this column. Will use defaultCreate if not defined.
 	Create func() fyne.CanvasObject
-	// Update for this column. Mandatory
-	Update func(T, fyne.CanvasObject)
+
+	// Update for this column. Must be defined.
+	Update func(r T, co fyne.CanvasObject)
+
 	// Sort defines the compare function to apply for sorting this column.
-	// Not defining it will disable sort for this column.
+	// Omit to disable sort for this column.
 	Sort func(a, b T) int
 }
 
@@ -380,159 +385,86 @@ func (w *SortButton) set(idx int, dir SortDir) {
 	w.Refresh()
 }
 
-// MakeDataTable returns a data table generated from the definition.
 func MakeDataTable[S ~[]E, E any](
-	def DataColumns[E],
-	data *S,
-	makeCell func(int, E) []widget.RichTextSegment,
-	columnSorter *ColumnSorter[E],
-	filterRows func(id int),
-	onSelected func(int, E),
-) *widget.Table {
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(*data), def.size()
-		},
-		func() fyne.CanvasObject {
-			return NewRichText()
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cell := co.(*RichText)
-			if tci.Row >= len(*data) || tci.Row < 0 {
-				return
-			}
-			r := (*data)[tci.Row]
-			id, ok := def.IDLookup(tci.Col)
-			if !ok {
-				return
-			}
-			cell.Segments = makeCell(id, r)
-			cell.Truncation = fyne.TextTruncateClip
-			cell.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
-	iconNone := theme.NewThemedResource(icons.BlankSvg)
-	iconSortOff := theme.NewThemedResource(icons.SortSvg)
-	t.CreateHeader = func() fyne.CanvasObject {
-		icon := widget.NewIcon(iconSortOff)
-		actionLabel := kxwidget.NewTappableLabel("Template", nil)
-		label := widget.NewLabel("Template")
-		return container.NewBorder(nil, nil, nil, icon, container.NewStack(actionLabel, label))
-	}
-	iconMap := map[SortDir]fyne.Resource{
-		SortOff:  iconSortOff,
-		SortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
-		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h, ok := def.ColumnByIndex(tci.Col)
-		if !ok {
-			return
-		}
-		row := co.(*fyne.Container).Objects
-
-		actionLabel := row[0].(*fyne.Container).Objects[0].(*kxwidget.TappableLabel)
-		label := row[0].(*fyne.Container).Objects[1].(*widget.Label)
-		icon := row[1].(*widget.Icon)
-
-		dir := columnSorter.column(tci.Col)
-		if dir == sortNone {
-			label.SetText(h.Label)
-			label.Show()
-			actionLabel.Hide()
-			icon.Hide()
-			return
-		}
-		actionLabel.OnTapped = func() {
-			if id, ok := def.IDLookup(tci.Col); ok {
-				filterRows(id)
-			}
-		}
-		actionLabel.SetText(h.Label)
-		actionLabel.Show()
-		icon.Show()
-		label.Hide()
-
-		r, ok := iconMap[dir]
-		if !ok {
-			r = iconNone
-		}
-		icon.SetResource(r)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-		if onSelected != nil {
-			if tci.Row >= len(*data) || tci.Row < 0 {
-				return
-			}
-			r := (*data)[tci.Row]
-			onSelected(tci.Col, r)
-		}
-	}
-	w := theme.Padding() + theme.IconInlineSize()
-	for i, h := range def.cols {
-		t.SetColumnWidth(i, h.minWidth()+w)
-	}
-	return t
-}
-
-func MakeDataTable2[S ~[]E, E any](
-	def DataColumns[E],
+	columns DataColumns[E],
 	data *S,
 	defaultCreate func() fyne.CanvasObject,
 	columnSorter *ColumnSorter[E],
 	filterRows func(id int),
 	onSelected func(int, E),
 ) *widget.Table {
-	for _, col := range def.cols {
+	if defaultCreate == nil {
+		panic("Must define default create")
+	}
+	for _, col := range columns.cols {
 		if col.Update == nil {
 			panic(fmt.Sprintf("Column missing update: %d", col.ID))
 		}
 	}
-	stackIdxLookup := make(map[int]int)
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(*data), def.size()
-		},
-		func() fyne.CanvasObject {
-			c := container.NewStack()
-			c.Add(defaultCreate())
-			var stackIdx int
-			for idx, col := range def.cols {
-				if f := col.Create; f != nil {
-					c.Add(f())
-					stackIdx++
-					stackIdxLookup[idx] = stackIdx
-				} else {
-					stackIdxLookup[idx] = 0
+	var t *widget.Table
+	var isCustom bool
+	for _, col := range columns.cols {
+		if col.Create != nil {
+			isCustom = true
+			break
+		}
+	}
+	if isCustom {
+		stackIdxLookup := make(map[int]int)
+		t = widget.NewTable(
+			func() (rows int, cols int) {
+				return len(*data), columns.size()
+			},
+			func() fyne.CanvasObject {
+				c := container.NewStack()
+				c.Add(defaultCreate())
+				var stackIdx int
+				for idx, col := range columns.cols {
+					if f := col.Create; f != nil {
+						c.Add(f())
+						stackIdx++
+						stackIdxLookup[idx] = stackIdx
+					} else {
+						stackIdxLookup[idx] = 0
+					}
 				}
-			}
-			return c
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			if tci.Row >= len(*data) || tci.Row < 0 {
-				return
-			}
-			col, ok := def.ColumnByIndex(tci.Col)
-			if !ok {
-				return
-			}
-			stack := co.(*fyne.Container)
-			var co2 fyne.CanvasObject
-			for i, c := range stack.Objects {
-				if stackIdxLookup[tci.Col] == i {
-					c.Show()
-					co2 = c
-				} else {
-					c.Hide()
+				return c
+			},
+			func(tci widget.TableCellID, co fyne.CanvasObject) {
+				if tci.Row >= len(*data) || tci.Row < 0 {
+					return
 				}
-			}
-			r := (*data)[tci.Row]
-			col.Update(r, co2)
-		},
-	)
+				stack := co.(*fyne.Container)
+				var co2 fyne.CanvasObject
+				for i, c := range stack.Objects {
+					if stackIdxLookup[tci.Col] == i {
+						c.Show()
+						co2 = c
+					} else {
+						c.Hide()
+					}
+				}
+				r := (*data)[tci.Row]
+				columns.cols[tci.Col].Update(r, co2)
+			},
+		)
+	} else {
+		t = widget.NewTable(
+			func() (rows int, cols int) {
+				return len(*data), columns.size()
+			},
+			func() fyne.CanvasObject {
+				return defaultCreate()
+			},
+			func(tci widget.TableCellID, co fyne.CanvasObject) {
+				if tci.Row >= len(*data) || tci.Row < 0 {
+					return
+				}
+				r := (*data)[tci.Row]
+				columns.cols[tci.Col].Update(r, co)
+			},
+		)
+	}
 	t.ShowHeaderRow = true
 	t.StickyColumnCount = 1
 	iconNone := theme.NewThemedResource(icons.BlankSvg)
@@ -549,7 +481,7 @@ func MakeDataTable2[S ~[]E, E any](
 		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h, ok := def.ColumnByIndex(tci.Col)
+		h, ok := columns.ColumnByIndex(tci.Col)
 		if !ok {
 			return
 		}
@@ -568,7 +500,7 @@ func MakeDataTable2[S ~[]E, E any](
 			return
 		}
 		actionLabel.OnTapped = func() {
-			if id, ok := def.IDLookup(tci.Col); ok {
+			if id, ok := columns.IDLookup(tci.Col); ok {
 				filterRows(id)
 			}
 		}
@@ -594,7 +526,7 @@ func MakeDataTable2[S ~[]E, E any](
 		}
 	}
 	w := theme.Padding() + theme.IconInlineSize()
-	for i, h := range def.cols {
+	for i, h := range columns.cols {
 		t.SetColumnWidth(i, h.minWidth()+w)
 	}
 	return t

@@ -133,12 +133,20 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		Sort: func(a, b walletTransactionRow) int {
 			return a.date.Compare(b.date)
 		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.dateFormatted)
+		},
 	}, {
 		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
 		Sort: func(a, b walletTransactionRow) int {
 			return cmp.Compare(a.quantity, b.quantity)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}, {
 		ID:    walletTransactionColType,
@@ -147,12 +155,20 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		Sort: func(a, b walletTransactionRow) int {
 			return strings.Compare(a.typeName, b.typeName)
 		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
+		},
 	}, {
 		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
 		Sort: func(a, b walletTransactionRow) int {
 			return cmp.Compare(a.unitPrice, b.unitPrice)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.unitPriceDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}, {
 		ID:    walletTransactionColTotal,
@@ -161,6 +177,11 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		Sort: func(a, b walletTransactionRow) int {
 			return cmp.Compare(a.total, b.total)
 		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.totalFormatted, widget.RichTextStyle{
+				ColorName: r.totalColor,
+			})
+		},
 	}, {
 		ID:    walletTransactionColClient,
 		Label: "Client",
@@ -168,12 +189,18 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		Sort: func(a, b walletTransactionRow) int {
 			return xstrings.CompareIgnoreCase(a.clientName, b.clientName)
 		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.clientName)
+		},
 	}, {
 		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: columnWidthLocation,
 		Sort: func(a, b walletTransactionRow) int {
 			return strings.Compare(a.locationName, b.locationName)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.locationDisplay)
 		},
 	}})
 	a := &walletTransactions{
@@ -185,39 +212,14 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
-		switch col {
-		case walletTransactionColDate:
-			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case walletTransactionColQuantity:
-			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				})
-		case walletTransactionColType:
-			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case walletTransactionColPrice:
-			return iwidget.RichTextSegmentsFromText(
-				r.unitPriceDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				})
-		case walletTransactionColTotal:
-			return iwidget.RichTextSegmentsFromText(r.totalFormatted, widget.RichTextStyle{
-				ColorName: r.totalColor,
-			})
-		case walletTransactionColClient:
-			return iwidget.RichTextSegmentsFromText(r.clientName)
-		case walletTransactionColLocation:
-			return r.locationDisplay
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
+
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				return iwidget.NewRichText()
+			},
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r walletTransactionRow) {
