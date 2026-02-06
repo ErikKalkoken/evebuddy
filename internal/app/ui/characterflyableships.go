@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	flyableColType = iota
+	flyableColType = iota + 1
 	flyableColGroup
 )
 

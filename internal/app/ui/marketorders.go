@@ -137,7 +137,7 @@ type marketOrders struct {
 }
 
 const (
-	marketOrdersColType = iota
+	marketOrdersColType = iota + 1
 	marketOrdersColVolume
 	marketOrdersColPrice
 	marketOrdersColState
@@ -147,7 +147,7 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{{
 		ID:    marketOrdersColType,
 		Label: "Type",
 		Width: columnWidthEntity,
@@ -225,7 +225,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		},
 	}})
 	a := &marketOrders{
-		columnSorter: iwidget.NewColumnSorter(headers, marketOrdersColType, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),
@@ -237,7 +237,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 
 	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

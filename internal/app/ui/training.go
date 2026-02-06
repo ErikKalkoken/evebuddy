@@ -120,7 +120,7 @@ type training struct {
 }
 
 const (
-	trainingColName = iota
+	trainingColName = iota + 1
 	trainingColTags
 	trainingColCurrentSkill
 	trainingColCurrentRemaining
@@ -157,9 +157,9 @@ func newTraining(u *baseUI) *training {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
 	}, {
-		ID:     trainingColTags,
-		Label:  "Tags",
-		Width:  150,
+		ID:    trainingColTags,
+		Label: "Tags",
+		Width: 150,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
 			x := co.(*widget.Label)
 			x.Text = strings.Join(slices.Sorted(r.tags.All()), ", ")

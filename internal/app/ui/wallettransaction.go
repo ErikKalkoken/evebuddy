@@ -116,7 +116,7 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 }
 
 const (
-	walletTransactionColDate = iota
+	walletTransactionColDate = iota + 1
 	walletTransactionColQuantity
 	walletTransactionColType
 	walletTransactionColPrice
@@ -126,7 +126,7 @@ const (
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[walletTransactionRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[walletTransactionRow]{{
 		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
@@ -205,7 +205,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorter(headers, walletTransactionColDate, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),
@@ -215,7 +215,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

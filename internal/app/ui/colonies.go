@@ -85,7 +85,7 @@ type colonies struct {
 }
 
 const (
-	coloniesColPlanet = iota
+	coloniesColPlanet = iota + 1
 	coloniesColType
 	coloniesColExtracting
 	coloniesColDue
@@ -95,7 +95,7 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
@@ -161,7 +161,7 @@ func newColonies(u *baseUI) *colonies {
 		},
 	}})
 	a := &colonies{
-		columnSorter: iwidget.NewColumnSorter(headers, coloniesColPlanet, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),
@@ -171,7 +171,7 @@ func newColonies(u *baseUI) *colonies {
 
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()
@@ -182,7 +182,7 @@ func newColonies(u *baseUI) *colonies {
 			})
 	} else {
 		a.body = iwidget.MakeDataList(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func(col int, r colonyRow) []widget.RichTextSegment {
 				switch col {

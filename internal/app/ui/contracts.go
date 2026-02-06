@@ -77,7 +77,7 @@ type contracts struct {
 }
 
 const (
-	contractsColName = iota
+	contractsColName = iota + 1
 	contractsColType
 	contractsColIssuer
 	contractsColAssignee
@@ -95,7 +95,7 @@ func newContractsForCharacters(u *baseUI) *contracts {
 }
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[contractRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[contractRow]{{
 		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
@@ -168,7 +168,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	}})
 	a := &contracts{
 		forCorporation: forCorporation,
-		columnSorter:   iwidget.NewColumnSorter(headers, contractsColIssuedAt, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
 		rows:           make([]contractRow, 0),
 		bottom:         widget.NewLabel(""),
 		u:              u,
@@ -179,7 +179,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

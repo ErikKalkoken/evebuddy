@@ -199,7 +199,7 @@ type assetSearch struct {
 }
 
 const (
-	assetsColItem = iota
+	assetsColItem = iota + 1
 	assetsColGroup
 	assetsColLocation
 	assetsColQuantity
@@ -216,7 +216,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
 		Label: "Item",
 		Width: 300,
@@ -282,7 +282,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		},
 	}})
 	a := &assetSearch{
-		columnSorter:   iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
+		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
 		found:          widget.NewLabel(""),
 		rowsFiltered:   make([]assetRow, 0),
@@ -305,7 +305,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

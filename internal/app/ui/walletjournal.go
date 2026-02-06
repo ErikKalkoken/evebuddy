@@ -103,7 +103,7 @@ func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 }
 
 const (
-	walletJournalColDate = iota
+	walletJournalColDate = iota + 1
 	walletJournalColType
 	walletJournalColAmount
 	walletJournalColBalance
@@ -111,7 +111,7 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[walletJournalRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[walletJournalRow]{{
 		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
@@ -162,7 +162,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		},
 	}})
 	a := &walletJournal{
-		columnSorter: iwidget.NewColumnSorter(headers, walletJournalColDate, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(columns, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),
@@ -174,7 +174,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

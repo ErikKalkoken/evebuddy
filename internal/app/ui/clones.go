@@ -86,7 +86,7 @@ type clones struct {
 }
 
 const (
-	clonesColLocation = iota
+	clonesColLocation = iota + 1
 	clonesColRegion
 	clonesColImplants
 	clonesColCharacter
@@ -94,7 +94,7 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[cloneRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
@@ -146,7 +146,7 @@ func newClones(u *baseUI) *clones {
 		},
 	}})
 	a := &clones{
-		columnSorter: iwidget.NewColumnSorter(headers, clonesColLocation, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
@@ -160,7 +160,7 @@ func newClones(u *baseUI) *clones {
 	})
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()
@@ -192,7 +192,7 @@ func newClones(u *baseUI) *clones {
 		)
 	} else {
 		a.body = iwidget.MakeDataList(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func(col int, r cloneRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment

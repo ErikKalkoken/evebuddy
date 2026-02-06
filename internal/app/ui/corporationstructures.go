@@ -33,11 +33,10 @@ const (
 )
 
 type corporationStructureRow struct {
-	corporationID   int32
-	corporationName string
-	fuelExpires     optional.Optional[time.Time]
-	fuelSort        time.Time
-	// fuelText           string
+	corporationID      int32
+	corporationName    string
+	fuelExpires        optional.Optional[time.Time]
+	fuelSort           time.Time
 	isFullPower        bool
 	isReinforced       bool
 	regionID           int32
@@ -93,7 +92,7 @@ type corporationStructures struct {
 }
 
 const (
-	structuresColName = iota
+	structuresColName = iota + 1
 	structuresColType
 	structuresColFuelExpires
 	structuresColState
@@ -101,7 +100,7 @@ const (
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[corporationStructureRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[corporationStructureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
@@ -163,7 +162,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		},
 	}})
 	a := &corporationStructures{
-		columnSorter: iwidget.NewColumnSorter(headers, structuresColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
 		bottom:       makeTopLabel(),
@@ -172,7 +171,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	a.ExtendBaseWidget(a)
 	if !a.u.isMobile {
 		a.main = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()
@@ -184,7 +183,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		)
 	} else {
 		a.main = iwidget.MakeDataList(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func(col int, r corporationStructureRow) []widget.RichTextSegment {
 				switch col {

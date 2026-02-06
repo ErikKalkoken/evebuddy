@@ -124,7 +124,7 @@ type industryJobs struct {
 }
 
 const (
-	industryJobsColBlueprint = iota
+	industryJobsColBlueprint = iota + 1
 	industryJobsColStatus
 	industryJobsColRuns
 	industryJobsColActivity
@@ -143,7 +143,7 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 }
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
@@ -229,7 +229,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}})
 	a := &industryJobs{
 		bottom:         makeTopLabel(),
-		columnSorter:   iwidget.NewColumnSorter(headers, industryJobsColEndDate, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
 		rows:           make([]industryJobRow, 0),
 		rowsFiltered:   make([]industryJobRow, 0),
@@ -241,7 +241,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		a.body = a.makeDataList()
 	} else {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()

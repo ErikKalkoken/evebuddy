@@ -91,7 +91,7 @@ type characterOverview struct {
 }
 
 const (
-	overviewColAlliance = iota
+	overviewColAlliance = iota + 1
 	overviewColCharacter
 	overviewColCorporation
 	overviewColMail
@@ -102,7 +102,7 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",
 		Sort: func(a, b characterOverviewRow) int {
@@ -156,7 +156,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
-		columnSorter: iwidget.NewColumnSorter(headers, overviewColCharacter, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
 		info:         info,
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),

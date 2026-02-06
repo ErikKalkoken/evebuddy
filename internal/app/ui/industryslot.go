@@ -99,7 +99,7 @@ type industrySlots struct {
 }
 
 const (
-	industrySlotsColCharacter = iota
+	industrySlotsColCharacter = iota + 1
 	industrySlotsColBusy
 	industrySlotsColReady
 	industrySlotsColFree
@@ -108,7 +108,7 @@ const (
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[industrySlotRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
@@ -176,7 +176,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
-		columnSorter: iwidget.NewColumnSorter(headers, industrySlotsColCharacter, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, industrySlotsColCharacter, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
 		slotType:     slotType,
@@ -185,7 +185,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	a.ExtendBaseWidget(a)
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
 				return iwidget.NewRichText()
@@ -196,7 +196,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		)
 	} else {
 		a.body = a.makeDataTable(
-			headers,
+			columns,
 			func(col int, r industrySlotRow) []widget.RichTextSegment {
 				switch col {
 				case industrySlotsColCharacter:

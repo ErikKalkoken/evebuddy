@@ -21,7 +21,7 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 		ID:    0,
 		Label: "ID",
 		Width: 100,
@@ -40,12 +40,12 @@ func TestDataTable_CreateBasic(t *testing.T) {
 	}})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
 	x := iwidget.MakeDataTable(
-		headers,
+		columns,
 		&data,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
-		iwidget.NewColumnSorter(headers, 0, iwidget.SortAsc),
+		iwidget.NewColumnSorter(columns, 0, iwidget.SortAsc),
 		func(i int) {},
 		nil,
 	)
@@ -58,11 +58,11 @@ func TestDataTable_CreateBasic(t *testing.T) {
 
 func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
-		def := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+		columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 			ID:    0,
 			Label: "Alpha",
 		}})
-		col, ok := def.ColumnByIndex(0)
+		col, ok := columns.ColumnByIndex(0)
 		require.True(t, ok)
 		assert.Equal(t, "Alpha", col.Label)
 	})
@@ -98,7 +98,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		id2 = 5
 		id3 = 21
 	)
-	def := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
 		ID:    id1,
 		Label: "Alpha",
 		Sort: func(a, b myRow) int {
@@ -185,7 +185,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			sc := iwidget.NewColumnSorter(def, tc.initialID, tc.initialDir)
+			sc := iwidget.NewColumnSorter(columns, tc.initialID, tc.initialDir)
 			gotID, gotDir, gotSort := sc.CalcSort(tc.sortID)
 			assert.Equal(t, tc.wantSort, gotSort)
 			if tc.wantSort {
