@@ -258,21 +258,23 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 }
 
 func TestMakeOrFindWindow(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
 	t.Run("should create new window when it does not yet exist", func(t *testing.T) {
-		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		w, ok := ui.getOrCreateWindow("abc", "title")
 		assert.True(t, ok)
 		assert.Contains(t, w.Title(), "title")
 	})
 	t.Run("should return existing window", func(t *testing.T) {
-		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.getOrCreateWindow("abc", "title-old")
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
 		assert.Contains(t, w.Title(), "title-old")
 	})
 	t.Run("should create new window when previous one was closed", func(t *testing.T) {
-		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		w, _ := ui.getOrCreateWindow("abc", "title-old")
 		w.Close()
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
@@ -280,7 +282,7 @@ func TestMakeOrFindWindow(t *testing.T) {
 		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should create new window when previous one was reshown and then closed", func(t *testing.T) {
-		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.getOrCreateWindow("abc", "title-old")
 		w, ok := ui.getOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
@@ -291,7 +293,7 @@ func TestMakeOrFindWindow(t *testing.T) {
 		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should allow setting onClose calback by caller", func(t *testing.T) {
-		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		w, _, onClosed := ui.getOrCreateWindowWithOnClosed("abc", "title-old")
 		var called bool
 		w.SetOnClosed(func() {

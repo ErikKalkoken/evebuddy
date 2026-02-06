@@ -74,6 +74,18 @@ func getEveType(ctx context.Context, q *queries.Queries, id int32) (*app.EveType
 	return eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory), nil
 }
 
+func (st *Storage) ListEveTypes(ctx context.Context) ([]*app.EveType, error) {
+	rows, err := st.qRO.ListEveTypes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListEveTypes: %w", err)
+	}
+	oo := make([]*app.EveType, 0)
+	for _, r := range rows {
+		oo = append(oo, eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory))
+	}
+	return oo, nil
+}
+
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {
 	return &app.EveType{
 		ID:             int32(t.ID),

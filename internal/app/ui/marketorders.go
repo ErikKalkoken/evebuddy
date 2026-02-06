@@ -455,7 +455,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 func (a *marketOrders) update() {
 	rows := make([]marketOrderRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchData(a.u.services(), a.isBuyOrders)
+		cc, err := a.fetchRows(a.u.services(), a.isBuyOrders)
 		if err != nil {
 			return "", 0, err
 		}
@@ -486,7 +486,7 @@ func (a *marketOrders) update() {
 	})
 }
 
-func (*marketOrders) fetchData(s services, isBuyOrders bool) ([]marketOrderRow, error) {
+func (*marketOrders) fetchRows(s services, isBuyOrders bool) ([]marketOrderRow, error) {
 	ctx := context.Background()
 	orders, err := s.cs.ListAllMarketOrder(ctx, isBuyOrders)
 	if err != nil {

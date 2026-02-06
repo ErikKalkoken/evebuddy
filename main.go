@@ -76,23 +76,20 @@ const (
 
 // define flags
 var (
-	clearCacheFlag          = flag.Bool("clear-cache", false, "Clear the cache")
-	deleteDataFlag          = flag.Bool("delete-data", false, "Delete user data")
-	deleteDataNoConfirmFlag = flag.Bool(
-		"delete-data-no-confirm",
-		false,
-		"Delete user data without asking for confirmation",
-	)
-	developFlag        = flag.Bool("dev", false, "Enable developer features")
-	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
-	filesFlag          = flag.Bool("files", false, "Show paths to data files")
-	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
-	mobileFlag         = flag.Bool("mobile", false, "Run the app in forced mobile mode")
-	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
-	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
-	resetUIFlag        = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
-	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
-	versionFlag        = flag.Bool("v", false, "Show version")
+	clearCacheFlag                = flag.Bool("clear-cache", false, "Clear the cache")
+	deleteDataFlag                = flag.Bool("delete-data", false, "Delete user data")
+	deleteDataNoConfirmFlag       = flag.Bool("delete-data-no-confirm", false, "Delete user data without asking for confirmation")
+	deleteCharactersNoConfirmFlag = flag.Bool("delete-characters-no-confirm", false, "Delete characters without asking for confirmation")
+	developFlag                   = flag.Bool("dev", false, "Enable developer features")
+	disableUpdatesFlag            = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	filesFlag                     = flag.Bool("files", false, "Show paths to data files")
+	logLevelFlag                  = flag.String("log-level", "", "Set log level for this session")
+	mobileFlag                    = flag.Bool("mobile", false, "Run the app in forced mobile mode")
+	offlineFlag                   = flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag                     = flag.Bool("pprof", false, "Enable pprof web server")
+	resetUIFlag                   = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
+	ssoDemoFlag                   = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
+	versionFlag                   = flag.Bool("v", false, "Show version")
 )
 
 func main() {
@@ -363,6 +360,22 @@ func main() {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+
+	if *deleteCharactersNoConfirmFlag {
+		ctx := context.Background()
+		ids, err := cs.ListCharacterIDs(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for id := range ids.All() {
+			_, err := cs.DeleteCharacter(ctx, id)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		fmt.Printf("Deleted %d characters\n", ids.Size())
+		return
+	}
 
 	// Init UI
 	os.Setenv("FYNE_SCALE", fmt.Sprint(appSettings.FyneScale()))

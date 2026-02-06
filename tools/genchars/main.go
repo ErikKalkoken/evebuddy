@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"math/rand/v2"
 
+	"github.com/antihax/goesi"
+	"github.com/hashicorp/go-retryablehttp"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
@@ -32,18 +37,31 @@ func main() {
 	st := storage.New(dbRW, dbRO)
 	f := testutil.NewFactory(st, dbRO)
 
-	// build character
+	rhc1 := retryablehttp.NewClient()
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:   st,
+		ESIClient: goesi.NewAPIClient(rhc1.StandardClient(), "EVE Buddy generate"),
+	})
 	fmt.Println()
+
+	// build character
+	var factor int
+	if *randomFlag {
+		factor = min(1, int(rand.Float32()*float32(*factorFlag)))
+	} else {
+		factor = *factorFlag
+	}
+	b := NewCharacterBuilder(&f, st, eus, 98388312)
+	b.Factor = factor
+	ctx := context.Background()
+	if err := b.Init(ctx); err != nil {
+		log.Fatal(err)
+	}
 	for i := range *numberFlag {
-		var factor int
-		if *randomFlag {
-			factor = min(1, int(rand.Float32()*float32(*factorFlag)))
-		} else {
-			factor = *factorFlag
+		err := b.Create(ctx)
+		if err != nil {
+			log.Fatal(err)
 		}
-		b := NewCharacterBuilder(&f, st)
-		b.Factor = factor
-		b.Create()
 		fmt.Printf("Completed character %d / %d\n\n", i+1, *numberFlag)
 	}
 }
