@@ -126,17 +126,18 @@ func newClones(u *baseUI) *clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, makeIconColumn(makeIconColumnParams[cloneRow]{
+	}, makeEveEntityColumn(makeIconColumnParams[cloneRow]{
 		columnID: clonesColCharacter,
-		getID: func(r cloneRow) int32 {
-			return r.jc.Character.ID
+		eis:      u.eis,
+		getEntity: func(r cloneRow) *app.EveEntity {
+			return &app.EveEntity{
+				ID:       r.jc.Character.ID,
+				Name:     r.jc.Character.Name,
+				Category: app.EveEntityCharacter,
+			}
 		},
-		getName: func(r cloneRow) string {
-			return r.jc.Character.Name
-		},
-		isAvatar:  true,
-		label:     "Character",
-		loadImage: u.eis.CharacterPortraitAsync,
+		isAvatar: true,
+		label:    "Character",
 	}), {
 		ID:    clonesColJumps,
 		Label: "Jumps",

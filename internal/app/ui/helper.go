@@ -11,14 +11,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -214,60 +211,4 @@ func entityNameOrFallback(o *app.EveEntity, fallback string) string {
 		return fallback
 	}
 	return o.Name
-}
-
-type makeIconColumnParams[T any] struct {
-	columnID  int
-	getID     func(r T) int32
-	getName   func(r T) string
-	isAvatar  bool
-	label     string
-	loadImage func(int32, int, func(fyne.Resource))
-	width     int
-}
-
-func makeIconColumn[T any](arg makeIconColumnParams[T]) iwidget.DataColumn[T] {
-	// set defaults
-	if arg.width == 0 {
-		arg.width = 220
-	}
-	if arg.loadImage == nil {
-		panic("must define image loader")
-	}
-	if arg.getID == nil {
-		panic("must define ID getter")
-	}
-	if arg.getName == nil {
-		panic("must define name getter")
-	}
-	c := iwidget.DataColumn[T]{
-		ID:    arg.columnID,
-		Label: arg.label,
-		Width: float32(arg.width),
-		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			if arg.isAvatar {
-				icon.CornerRadius = app.IconUnitSize / 2
-			}
-			name := widget.NewLabel(arg.label)
-			name.Truncation = fyne.TextTruncateClip
-			return container.NewBorder(nil, nil, icon, nil, name)
-		},
-		Update: func(r T, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(arg.getName(r))
-			x := border[1].(*canvas.Image)
-			arg.loadImage(arg.getID(r), app.IconPixelSize, func(r fyne.Resource) {
-				x.Resource = r
-				x.Refresh()
-			})
-		},
-		Sort: func(a, b T) int {
-			return xstrings.CompareIgnoreCase(arg.getName(a), arg.getName(b))
-		},
-	}
-	return c
 }

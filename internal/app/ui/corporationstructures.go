@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -18,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -110,31 +108,18 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.structureName)
 		},
-	}, {
-		ID:    structuresColType,
-		Label: "Type",
-		Width: 150,
-		Sort: func(a, b corporationStructureRow) int {
-			return strings.Compare(a.typeName, b.typeName)
+	}, makeEveEntityColumn(makeIconColumnParams[corporationStructureRow]{
+		columnID: structuresColType,
+		eis:      u.eis,
+		label:    "Type",
+		getEntity: func(r corporationStructureRow) *app.EveEntity {
+			return &app.EveEntity{
+				Category: app.EveEntityInventoryType,
+				ID:       r.typeID,
+				Name:     r.typeName,
+			}
 		},
-		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
-				icons.BlankSvg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			name := widget.NewLabel("Template")
-			return container.NewBorder(nil, nil, container.NewCenter(icon), nil, name)
-		},
-		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(r.typeName)
-			x := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
-			u.eis.InventoryTypeIconAsync(r.typeID, app.IconPixelSize, func(r fyne.Resource) {
-				x.Resource = r
-				x.Refresh()
-			})
-		},
-	}, {
+	}), {
 		ID:    structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,

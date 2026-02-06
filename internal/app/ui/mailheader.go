@@ -54,7 +54,7 @@ func (w *mailHeaderItem) Set(characterID int32, from *app.EveEntity, subject str
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	fetchEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	loadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
@@ -130,7 +130,7 @@ func (w *mailHeader) Set(characterID int32, from *app.EveEntity, timestamp time.
 		w.showInfo(from)
 	}
 	w.to.Show()
-	fetchEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	loadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()

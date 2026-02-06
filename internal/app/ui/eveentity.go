@@ -20,11 +20,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
-)
-
-const (
-	defaultIconPixelSize = 64
 )
 
 type eveEntityEIS interface {
@@ -173,7 +170,7 @@ func (w *eveEntityEntry) update() {
 				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
-				fetchEveEntityIconAsync(w.eis, ee, func(r fyne.Resource) {
+				loadEveEntityIconAsync(w.eis, ee, func(r fyne.Resource) {
 					nameItem.Icon = r
 					pm.Refresh()
 				})
@@ -263,7 +260,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 					))),
 		),
 	)
-	fetchEveEntityIconAsync(w.eis, w.ee, func(r fyne.Resource) {
+	loadEveEntityIconAsync(w.eis, w.ee, func(r fyne.Resource) {
 		icon.Resource = r
 		icon.Refresh()
 	})
@@ -312,8 +309,8 @@ func (w *eveEntityBadge) MouseOut() {
 
 var eveEntityResourceCache xsync.Map[int32, fyne.Resource]
 
-// fetchEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
-func fetchEveEntityIconAsync(eis eveEntityEIS, ee *app.EveEntity, setter func(r fyne.Resource)) {
+// loadEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
+func loadEveEntityIconAsync(eis eveEntityEIS, ee *app.EveEntity, setter func(r fyne.Resource)) {
 	if ee == nil {
 		setter(theme.BrokenImageIcon())
 		return
@@ -331,7 +328,7 @@ func fetchEveEntityIconAsync(eis eveEntityEIS, ee *app.EveEntity, setter func(r 
 			setter(r)
 		},
 		func() (fyne.Resource, error) {
-			return entityIcon(eis, ee, defaultIconPixelSize, theme.NewThemedResource(icons.QuestionmarkSvg))
+			return entityIcon(eis, ee, app.IconPixelSize, theme.NewThemedResource(icons.QuestionmarkSvg))
 		},
 		func(r fyne.Resource) {
 			eveEntityResourceCache.Store(ee.ID, r)
@@ -366,4 +363,58 @@ func entityIcon(eis eveEntityEIS, ee *app.EveEntity, size int, fallback fyne.Res
 		return nil, fmt.Errorf("entity icon %v %d: %w", ee, size, err)
 	}
 	return r, nil
+}
+
+type makeIconColumnParams[T any] struct {
+	columnID  int
+	isAvatar  bool
+	label     string
+	width     int
+	eis       eveEntityEIS
+	getEntity func(r T) *app.EveEntity
+}
+
+// makeEveEntityColumn returns a new data column for showing an entity.
+func makeEveEntityColumn[T any](arg makeIconColumnParams[T]) iwidget.DataColumn[T] {
+	// set defaults
+	if arg.width == 0 {
+		arg.width = 220
+	}
+	if arg.getEntity == nil {
+		panic("must define entity getter")
+	}
+	if arg.eis == nil {
+		panic("must define eis")
+	}
+	c := iwidget.DataColumn[T]{
+		ID:    arg.columnID,
+		Label: arg.label,
+		Width: float32(arg.width),
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			if arg.isAvatar {
+				icon.CornerRadius = app.IconUnitSize / 2
+			}
+			name := widget.NewLabel(arg.label)
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
+		},
+		Update: func(r T, co fyne.CanvasObject) {
+			ee := arg.getEntity(r)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(ee.Name)
+			x := border[1].(*canvas.Image)
+			loadEveEntityIconAsync(arg.eis, ee, func(r fyne.Resource) {
+				x.Resource = r
+				x.Refresh()
+			})
+		},
+		Sort: func(a, b T) int {
+			return xstrings.CompareIgnoreCase(arg.getEntity(a).Name, arg.getEntity(b).Name)
+		},
+	}
+	return c
 }

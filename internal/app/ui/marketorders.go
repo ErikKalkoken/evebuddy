@@ -148,17 +148,18 @@ const (
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{
-		makeIconColumn(makeIconColumnParams[marketOrderRow]{
+		makeEveEntityColumn(makeIconColumnParams[marketOrderRow]{
 			columnID: marketOrdersColType,
-			getID: func(r marketOrderRow) int32 {
-				return r.typeID
+			eis:      u.eis,
+			getEntity: func(r marketOrderRow) *app.EveEntity {
+				return &app.EveEntity{
+					ID:       r.typeID,
+					Name:     r.typeName,
+					Category: app.EveEntityInventoryType,
+				}
 			},
-			getName: func(r marketOrderRow) string {
-				return r.typeName
-			},
-			isAvatar:  false,
-			label:     "Type",
-			loadImage: u.eis.InventoryTypeIconAsync,
+			isAvatar: false,
+			label:    "Type",
 		}), {
 			ID:    marketOrdersColVolume,
 			Label: "Quantity",

@@ -138,17 +138,18 @@ const (
 
 func newTraining(u *baseUI) *training {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{
-		makeIconColumn(makeIconColumnParams[trainingRow]{
+		makeEveEntityColumn(makeIconColumnParams[trainingRow]{
 			columnID: trainingColCharacter,
-			getID: func(r trainingRow) int32 {
-				return r.characterID
+			eis:      u.eis,
+			getEntity: func(r trainingRow) *app.EveEntity {
+				return &app.EveEntity{
+					ID:       r.characterID,
+					Name:     r.characterName,
+					Category: app.EveEntityCharacter,
+				}
 			},
-			getName: func(r trainingRow) string {
-				return r.characterName
-			},
-			isAvatar:  true,
-			label:     "Character",
-			loadImage: u.eis.CharacterPortraitAsync,
+			isAvatar: true,
+			label:    "Character",
 		}), {
 			ID:    trainingColTags,
 			Label: "Tags",
