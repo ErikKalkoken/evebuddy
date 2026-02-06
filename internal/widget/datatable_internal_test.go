@@ -8,14 +8,14 @@ import (
 
 func TestColumnSorter_New(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
-		ID:    0,
+		ID:    1,
 		Label: "Alpha",
 	}, {
-		ID:    1,
+		ID:    2,
 		Label: "Bravo",
 	}})
 	t.Run("should create normally", func(t *testing.T) {
-		sc := NewColumnSorter(def, 0, SortAsc)
+		sc := NewColumnSorter(def, 1, SortAsc)
 		got := sc.column(0)
 		assert.Equal(t, SortAsc, got)
 	})
@@ -23,18 +23,18 @@ func TestColumnSorter_New(t *testing.T) {
 
 func TestColumnSorter_Column(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
-		ID:    0,
+		ID:    1,
 		Label: "Alpha",
 	}, {
-		ID:    1,
+		ID:    2,
 		Label: "Bravo",
 	}, {
-		ID:    2,
+		ID:    3,
 		Label: "Charlie",
 	}})
 	t.Run("return value", func(t *testing.T) {
 		sc := NewColumnSorter(def, 0, SortOff)
-		sc.Set(1, SortDesc)
+		sc.Set(2, SortDesc)
 		got := sc.column(1)
 		assert.Equal(t, SortDesc, got)
 	})
@@ -52,16 +52,16 @@ func TestColumnSorter_Column(t *testing.T) {
 
 func TestColumnSorter_Current(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
-		ID:    0,
+		ID:    1,
 		Label: "Alpha",
 		Sort: func(a, b struct{}) int {
 			return 0
 		},
 	}, {
-		ID:    1,
+		ID:    2,
 		Label: "Bravo",
 	}, {
-		ID:    2,
+		ID:    3,
 		Label: "Charlie",
 		Sort: func(a, b struct{}) int {
 			return 0
@@ -69,14 +69,14 @@ func TestColumnSorter_Current(t *testing.T) {
 	}})
 	t.Run("return currently sorted column", func(t *testing.T) {
 		sc := NewColumnSorter(def, 0, SortOff)
-		sc.Set(0, SortDesc)
+		sc.Set(1, SortDesc)
 		x, y := sc.current()
 		assert.Equal(t, 0, x)
 		assert.Equal(t, SortDesc, y)
 	})
 	t.Run("return currently sorted column 2", func(t *testing.T) {
 		sc := NewColumnSorter(def, 0, SortOff)
-		sc.Set(2, SortDesc)
+		sc.Set(3, SortDesc)
 		x, y := sc.current()
 		assert.Equal(t, 2, x)
 		assert.Equal(t, SortDesc, y)

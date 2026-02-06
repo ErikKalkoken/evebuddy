@@ -22,7 +22,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
-		ID:    0,
+		ID:    1,
 		Label: "ID",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
@@ -30,7 +30,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 			co.(*widget.Label).SetText(fmt.Sprint(r.id))
 		},
 	}, {
-		ID:    1,
+		ID:    2,
 		Label: "Planet",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
@@ -45,7 +45,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
-		iwidget.NewColumnSorter(columns, 0, iwidget.SortAsc),
+		iwidget.NewColumnSorter(columns, 1, iwidget.SortAsc),
 		func(i int) {},
 		nil,
 	)
@@ -59,7 +59,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
 		columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
-			ID:    0,
+			ID:    1,
 			Label: "Alpha",
 		}})
 		col, ok := columns.ColumnByIndex(0)
@@ -69,7 +69,7 @@ func TestNewDataColumns(t *testing.T) {
 	t.Run("should panic when col ID is negativ", func(t *testing.T) {
 		assert.Panics(t, func() {
 			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
-				ID:    -1,
+				ID:    0,
 				Label: "Alpha",
 			}})
 		})
@@ -77,10 +77,10 @@ func TestNewDataColumns(t *testing.T) {
 	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
 		assert.Panics(t, func() {
 			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
-				ID:    0,
+				ID:    1,
 				Label: "Alpha",
 			}, {
-				ID:    0,
+				ID:    1,
 				Label: "Bravo",
 			}})
 		})
