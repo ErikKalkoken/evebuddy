@@ -22,12 +22,10 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -54,6 +52,14 @@ type trainingRow struct {
 	totalSPDisplay             string
 	unallocatedSP              optional.Optional[int]
 	unallocatedSPDisplay       string
+}
+
+func (r trainingRow) CharacterID() int32 {
+	return r.characterID
+}
+
+func (r trainingRow) CharacterName() string {
+	return r.characterName
 }
 
 func (r trainingRow) currentRemainingTime() optional.Optional[time.Duration] {
@@ -120,7 +126,7 @@ type training struct {
 }
 
 const (
-	trainingColName = iota + 1
+	trainingColCharacter = iota + 1
 	trainingColTags
 	trainingColCurrentSkill
 	trainingColCurrentRemaining
@@ -131,122 +137,108 @@ const (
 )
 
 func newTraining(u *baseUI) *training {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{{
-		ID:    trainingColName,
-		Label: "Character",
-		Width: 220,
-		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			icon.CornerRadius = app.IconUnitSize / 2
-			name := widget.NewLabel("Template")
-			name.Truncation = fyne.TextTruncateClip
-			return container.NewBorder(nil, nil, icon, nil, name)
-		},
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(r.characterName)
-			x := border[1].(*canvas.Image)
-			u.eis.CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
-				x.Resource = r
-				x.Refresh()
-			})
-		},
-		Sort: func(a, b trainingRow) int {
-			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-		},
-	}, {
-		ID:    trainingColTags,
-		Label: "Tags",
-		Width: 150,
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
-			co.(*iwidget.RichText).SetWithText(s)
-		},
-	}, {
-		ID:    trainingColCurrentSkill,
-		Label: "Current Skill",
-		Width: 250,
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			var s string
-			var c fyne.ThemeColorName
-			if r.isActive {
-				s = r.skillName
-				c = theme.ColorNameForeground
-			} else if r.isWatched {
-				s = "Expired"
-				c = theme.ColorNameError
-			} else {
-				s = "Inactive"
-				c = theme.ColorNameDisabled
-			}
-			co.(*iwidget.RichText).SetWithText(s, widget.RichTextStyle{
-				ColorName: c,
-			})
-		},
-		Sort: func(a, b trainingRow) int {
-			return strings.Compare(a.skillName, b.skillName)
-		},
-	}, {
-		ID:    trainingColCurrentRemaining,
-		Label: "Current Time",
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.currentRemainingTimeString())
-		},
-		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(
-				a.currentRemainingTime().ValueOrZero(),
-				b.currentRemainingTime().ValueOrZero(),
-			)
-		},
-	}, {
-		ID:    trainingColQueuedCount,
-		Label: "Queued",
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
-		},
-		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-		},
-	}, {
-		ID:    trainingColQueuedRemaining,
-		Label: "Queue Time",
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.totalRemainingTimeString())
-		},
-		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-		},
-	}, {
-		ID:    trainingColSkillpoints,
-		Label: "SP",
-		Width: 100,
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		},
-		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-		},
-	}, {
-		ID:    trainingColUnallocatedSP,
-		Label: "Unall.",
-		Width: 100,
-		Update: func(r trainingRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.unallocatedSPDisplay, widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		},
-		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
-		},
-	}})
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{
+		makeIconColumn(makeIconColumnParams[trainingRow]{
+			columnID: trainingColCharacter,
+			getID: func(r trainingRow) int32 {
+				return r.characterID
+			},
+			getName: func(r trainingRow) string {
+				return r.characterName
+			},
+			isAvatar:  true,
+			label:     "Character",
+			loadImage: u.eis.CharacterPortraitAsync,
+		}), {
+			ID:    trainingColTags,
+			Label: "Tags",
+			Width: 150,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				s := strings.Join(slices.Sorted(r.tags.All()), ", ")
+				co.(*iwidget.RichText).SetWithText(s)
+			},
+		}, {
+			ID:    trainingColCurrentSkill,
+			Label: "Current Skill",
+			Width: 250,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				var s string
+				var c fyne.ThemeColorName
+				if r.isActive {
+					s = r.skillName
+					c = theme.ColorNameForeground
+				} else if r.isWatched {
+					s = "Expired"
+					c = theme.ColorNameError
+				} else {
+					s = "Inactive"
+					c = theme.ColorNameDisabled
+				}
+				co.(*iwidget.RichText).SetWithText(s, widget.RichTextStyle{
+					ColorName: c,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return strings.Compare(a.skillName, b.skillName)
+			},
+		}, {
+			ID:    trainingColCurrentRemaining,
+			Label: "Current Time",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.currentRemainingTimeString())
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(
+					a.currentRemainingTime().ValueOrZero(),
+					b.currentRemainingTime().ValueOrZero(),
+				)
+			},
+		}, {
+			ID:    trainingColQueuedCount,
+			Label: "Queued",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
+			},
+		}, {
+			ID:    trainingColQueuedRemaining,
+			Label: "Queue Time",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalRemainingTimeString())
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
+			},
+		}, {
+			ID:    trainingColSkillpoints,
+			Label: "SP",
+			Width: 100,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
+			},
+		}, {
+			ID:    trainingColUnallocatedSP,
+			Label: "Unall.",
+			Width: 100,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.unallocatedSPDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
+			},
+		}})
 	a := &training{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorter(columns, trainingColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, trainingColCharacter, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),

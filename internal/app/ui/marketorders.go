@@ -147,83 +147,85 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{{
-		ID:    marketOrdersColType,
-		Label: "Type",
-		Width: columnWidthEntity,
-		Sort: func(a, b marketOrderRow) int {
-			return strings.Compare(a.typeName, b.typeName)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.typeName)
-		},
-	}, {
-		ID:    marketOrdersColVolume,
-		Label: "Quantity",
-		Width: 100,
-		Sort: func(a, b marketOrderRow) int {
-			return cmp.Compare(a.volumeRemain, b.volumeRemain)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.volumeDisplay(), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		},
-	}, {
-		ID:    marketOrdersColPrice,
-		Label: "Price",
-		Width: 100,
-		Sort: func(a, b marketOrderRow) int {
-			return cmp.Compare(a.price, b.price)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-			})
-		},
-	}, {
-		ID:    marketOrdersColState,
-		Label: "State",
-		Width: 100,
-		Sort: func(a, b marketOrderRow) int {
-			return a.expires.Compare(b.expires)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.stateDisplay(), widget.RichTextStyle{
-				ColorName: r.stateColor(),
-			})
-		},
-	}, {
-		ID:    marketOrdersColLocation,
-		Label: "Location",
-		Width: columnWidthLocation,
-		Sort: func(a, b marketOrderRow) int {
-			return strings.Compare(a.locationName, b.locationName)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.locationName)
-		},
-	}, {
-		ID:    marketOrdersColRegion,
-		Label: "Region",
-		Width: columnWidthRegion,
-		Sort: func(a, b marketOrderRow) int {
-			return strings.Compare(a.regionName, b.regionName)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.regionName)
-		},
-	}, {
-		ID:    marketOrdersColOwner,
-		Label: "Owner",
-		Width: columnWidthEntity,
-		Sort: func(a, b marketOrderRow) int {
-			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-		},
-		Update: func(r marketOrderRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.ownerName)
-		},
-	}})
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{
+		makeIconColumn(makeIconColumnParams[marketOrderRow]{
+			columnID: marketOrdersColType,
+			getID: func(r marketOrderRow) int32 {
+				return r.typeID
+			},
+			getName: func(r marketOrderRow) string {
+				return r.typeName
+			},
+			isAvatar:  false,
+			label:     "Type",
+			loadImage: u.eis.InventoryTypeIconAsync,
+		}), {
+			ID:    marketOrdersColVolume,
+			Label: "Quantity",
+			Width: 100,
+			Sort: func(a, b marketOrderRow) int {
+				return cmp.Compare(a.volumeRemain, b.volumeRemain)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.volumeDisplay(), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+		}, {
+			ID:    marketOrdersColPrice,
+			Label: "Price",
+			Width: 100,
+			Sort: func(a, b marketOrderRow) int {
+				return cmp.Compare(a.price, b.price)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+		}, {
+			ID:    marketOrdersColState,
+			Label: "State",
+			Width: 100,
+			Sort: func(a, b marketOrderRow) int {
+				return a.expires.Compare(b.expires)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.stateDisplay(), widget.RichTextStyle{
+					ColorName: r.stateColor(),
+				})
+			},
+		}, {
+			ID:    marketOrdersColLocation,
+			Label: "Location",
+			Width: columnWidthLocation,
+			Sort: func(a, b marketOrderRow) int {
+				return strings.Compare(a.locationName, b.locationName)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.locationName)
+			},
+		}, {
+			ID:    marketOrdersColRegion,
+			Label: "Region",
+			Width: columnWidthRegion,
+			Sort: func(a, b marketOrderRow) int {
+				return strings.Compare(a.regionName, b.regionName)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.regionName)
+			},
+		}, {
+			ID:    marketOrdersColOwner,
+			Label: "Owner",
+			Width: columnWidthEntity,
+			Sort: func(a, b marketOrderRow) int {
+				return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+			},
+			Update: func(r marketOrderRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.ownerName)
+			},
+		}})
 	a := &marketOrders{
 		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),

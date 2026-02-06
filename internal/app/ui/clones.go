@@ -126,17 +126,18 @@ func newClones(u *baseUI) *clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, {
-		ID:    clonesColCharacter,
-		Label: "Character",
-		Width: columnWidthEntity,
-		Sort: func(a, b cloneRow) int {
-			return cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
+	}, makeIconColumn(makeIconColumnParams[cloneRow]{
+		columnID: clonesColCharacter,
+		getID: func(r cloneRow) int32 {
+			return r.jc.Character.ID
 		},
-		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.jc.Character.Name)
+		getName: func(r cloneRow) string {
+			return r.jc.Character.Name
 		},
-	}, {
+		isAvatar:  true,
+		label:     "Character",
+		loadImage: u.eis.CharacterPortraitAsync,
+	}), {
 		ID:    clonesColJumps,
 		Label: "Jumps",
 		Width: 100,
