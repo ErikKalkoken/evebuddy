@@ -188,7 +188,9 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				return iwidget.NewRichText()
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter,
 			a.filterRows,

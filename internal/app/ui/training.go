@@ -136,22 +136,23 @@ func newTraining(u *baseUI) *training {
 		Label: "Character",
 		Width: 220,
 		Create: func() fyne.CanvasObject {
-			avatar := iwidget.NewImageFromResource(
+			icon := iwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
-			avatar.CornerRadius = app.IconUnitSize / 2
+			icon.CornerRadius = app.IconUnitSize / 2
 			name := widget.NewLabel("Template")
-			return container.NewHBox(avatar, name)
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
 		},
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container).Objects
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.characterName)
+			x := border[1].(*canvas.Image)
 			u.eis.CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
-				x := hbox[0].(*canvas.Image)
 				x.Resource = r
 				x.Refresh()
 			})
-			hbox[1].(*widget.Label).SetText(r.characterName)
 		},
 		Sort: func(a, b trainingRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
@@ -161,33 +162,29 @@ func newTraining(u *baseUI) *training {
 		Label: "Tags",
 		Width: 150,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = strings.Join(slices.Sorted(r.tags.All()), ", ")
-			x.Alignment = fyne.TextAlignLeading
-			x.Refresh()
-
+			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
+			co.(*iwidget.RichText).SetWithText(s)
 		},
 	}, {
 		ID:    trainingColCurrentSkill,
 		Label: "Current Skill",
 		Width: 250,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
 			var s string
-			var i widget.Importance
+			var c fyne.ThemeColorName
 			if r.isActive {
 				s = r.skillName
+				c = theme.ColorNameForeground
 			} else if r.isWatched {
 				s = "Expired"
-				i = widget.DangerImportance
+				c = theme.ColorNameError
 			} else {
 				s = "Inactive"
-				i = widget.LowImportance
+				c = theme.ColorNameDisabled
 			}
-			x.Text = s
-			x.Importance = i
-			x.Alignment = fyne.TextAlignLeading
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(s, widget.RichTextStyle{
+				ColorName: c,
+			})
 		},
 		Sort: func(a, b trainingRow) int {
 			return strings.Compare(a.skillName, b.skillName)
@@ -196,22 +193,19 @@ func newTraining(u *baseUI) *training {
 		ID:    trainingColCurrentRemaining,
 		Label: "Current Time",
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = r.currentRemainingTimeString()
-			x.Alignment = fyne.TextAlignLeading
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(r.currentRemainingTimeString())
 		},
 		Sort: func(a, b trainingRow) int {
-			return cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
+			return cmp.Compare(
+				a.currentRemainingTime().ValueOrZero(),
+				b.currentRemainingTime().ValueOrZero(),
+			)
 		},
 	}, {
 		ID:    trainingColQueuedCount,
 		Label: "Queued",
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = r.totalRemainingCountDisplay
-			x.Alignment = fyne.TextAlignLeading
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
 		},
 		Sort: func(a, b trainingRow) int {
 			return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
@@ -220,10 +214,7 @@ func newTraining(u *baseUI) *training {
 		ID:    trainingColQueuedRemaining,
 		Label: "Queue Time",
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = r.totalRemainingTimeString()
-			x.Alignment = fyne.TextAlignLeading
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(r.totalRemainingTimeString())
 		},
 		Sort: func(a, b trainingRow) int {
 			return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
@@ -233,10 +224,9 @@ func newTraining(u *baseUI) *training {
 		Label: "SP",
 		Width: 100,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = r.totalSPDisplay
-			x.Alignment = fyne.TextAlignTrailing
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 		Sort: func(a, b trainingRow) int {
 			return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
@@ -246,10 +236,9 @@ func newTraining(u *baseUI) *training {
 		Label: "Unall.",
 		Width: 100,
 		Update: func(r trainingRow, co fyne.CanvasObject) {
-			x := co.(*widget.Label)
-			x.Text = r.unallocatedSPDisplay
-			x.Alignment = fyne.TextAlignTrailing
-			x.Refresh()
+			co.(*iwidget.RichText).SetWithText(r.unallocatedSPDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 		Sort: func(a, b trainingRow) int {
 			return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
@@ -279,7 +268,9 @@ func newTraining(u *baseUI) *training {
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				return widget.NewLabel("Template")
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter,
 			a.filterRows,

@@ -182,7 +182,9 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				return iwidget.NewRichText()
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter,
 			a.filterRows,

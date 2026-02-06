@@ -122,7 +122,9 @@ func newClones(u *baseUI) *clones {
 			return cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount))
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}, {
 		ID:    clonesColCharacter,
@@ -142,7 +144,9 @@ func newClones(u *baseUI) *clones {
 			return a.compare(b)
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.jumps())
+			co.(*iwidget.RichText).SetWithText(r.jumps(), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		},
 	}})
 	a := &clones{
@@ -163,7 +167,9 @@ func newClones(u *baseUI) *clones {
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				return iwidget.NewRichText()
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter,
 			a.filterRows,
