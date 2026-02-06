@@ -17,6 +17,9 @@ import (
 // HasSection reports whether a section exists at all.
 func (s *EveUniverseService) HasSection(ctx context.Context, section app.GeneralSection) (bool, error) {
 	x, err := s.st.GetGeneralSectionStatus(ctx, section)
+	if errors.Is(err, app.ErrNotFound) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}

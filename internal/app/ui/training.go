@@ -26,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -55,6 +54,14 @@ type trainingRow struct {
 	unallocatedSPDisplay       string
 }
 
+func (r trainingRow) CharacterID() int32 {
+	return r.characterID
+}
+
+func (r trainingRow) CharacterName() string {
+	return r.characterName
+}
+
 func (r trainingRow) currentRemainingTime() optional.Optional[time.Duration] {
 	return timeUntil(r.skillFinishDate)
 }
@@ -77,20 +84,6 @@ func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) str
 	}
 	return d.StringFunc("?", func(v time.Duration) string {
 		return ihumanize.Duration(v)
-	})
-}
-
-func (r trainingRow) skillDisplay() []widget.RichTextSegment {
-	if r.isActive {
-		return iwidget.RichTextSegmentsFromText(r.skillName)
-	}
-	if r.isWatched {
-		return iwidget.RichTextSegmentsFromText("Expired", widget.RichTextStyle{
-			ColorName: theme.ColorNameError,
-		})
-	}
-	return iwidget.RichTextSegmentsFromText("Inactive", widget.RichTextStyle{
-		ColorName: theme.ColorNameDisabled,
 	})
 }
 
@@ -121,7 +114,7 @@ type training struct {
 	onUpdate func(expired int)
 
 	bottom       *widget.Label
-	columnSorter *iwidget.ColumnSorter
+	columnSorter *iwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
 	rows         []trainingRow
 	rowsFiltered []trainingRow
@@ -133,51 +126,120 @@ type training struct {
 }
 
 const (
-	trainingColName             = 0
-	trainingColTags             = 1
-	trainingColCurrentSkill     = 2
-	trainingColCurrentRemaining = 3
-	trainingColQueuedCount      = 4
-	trainingColQueuedRemaining  = 5
-	trainingColSkillpoints      = 6
-	trainingColUnallocatedSP    = 7
+	trainingColCharacter = iota + 1
+	trainingColTags
+	trainingColCurrentSkill
+	trainingColCurrentRemaining
+	trainingColQueuedCount
+	trainingColQueuedRemaining
+	trainingColSkillpoints
+	trainingColUnallocatedSP
 )
 
 func newTraining(u *baseUI) *training {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   trainingColName,
-		Label: "Name",
-		Width: columnWidthEntity,
-	}, {
-		Col:    trainingColTags,
-		Label:  "Tags",
-		Width:  150,
-		NoSort: true,
-	}, {
-		Col:   trainingColCurrentSkill,
-		Label: "Current Skill",
-		Width: 250,
-	}, {
-		Col:   trainingColCurrentRemaining,
-		Label: "Current Time",
-	}, {
-		Col:   trainingColQueuedCount,
-		Label: "Queued",
-	}, {
-		Col:   trainingColQueuedRemaining,
-		Label: "Queue Time",
-	}, {
-		Col:   trainingColSkillpoints,
-		Label: "SP",
-		Width: 100,
-	}, {
-		Col:   trainingColUnallocatedSP,
-		Label: "Unall.",
-		Width: 100,
-	}})
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{
+		makeEveEntityColumn(makeIconColumnParams[trainingRow]{
+			columnID: trainingColCharacter,
+			eis:      u.eis,
+			getEntity: func(r trainingRow) *app.EveEntity {
+				return &app.EveEntity{
+					ID:       r.characterID,
+					Name:     r.characterName,
+					Category: app.EveEntityCharacter,
+				}
+			},
+			isAvatar: true,
+			label:    "Character",
+		}), {
+			ID:    trainingColTags,
+			Label: "Tags",
+			Width: 150,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				s := strings.Join(slices.Sorted(r.tags.All()), ", ")
+				co.(*iwidget.RichText).SetWithText(s)
+			},
+		}, {
+			ID:    trainingColCurrentSkill,
+			Label: "Current Skill",
+			Width: 250,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				var s string
+				var c fyne.ThemeColorName
+				if r.isActive {
+					s = r.skillName
+					c = theme.ColorNameForeground
+				} else if r.isWatched {
+					s = "Expired"
+					c = theme.ColorNameError
+				} else {
+					s = "Inactive"
+					c = theme.ColorNameDisabled
+				}
+				co.(*iwidget.RichText).SetWithText(s, widget.RichTextStyle{
+					ColorName: c,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return strings.Compare(a.skillName, b.skillName)
+			},
+		}, {
+			ID:    trainingColCurrentRemaining,
+			Label: "Current Time",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.currentRemainingTimeString())
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(
+					a.currentRemainingTime().ValueOrZero(),
+					b.currentRemainingTime().ValueOrZero(),
+				)
+			},
+		}, {
+			ID:    trainingColQueuedCount,
+			Label: "Queued",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
+			},
+		}, {
+			ID:    trainingColQueuedRemaining,
+			Label: "Queue Time",
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalRemainingTimeString())
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
+			},
+		}, {
+			ID:    trainingColSkillpoints,
+			Label: "SP",
+			Width: 100,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
+			},
+		}, {
+			ID:    trainingColUnallocatedSP,
+			Label: "Unall.",
+			Width: 100,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.unallocatedSPDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
+			},
+		}})
 	a := &training{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorter(headers, trainingColName, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, trainingColCharacter, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),
@@ -192,45 +254,17 @@ func newTraining(u *baseUI) *training {
 		a.filterRows(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
-	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
-		switch col {
-		case trainingColName:
-			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case trainingColTags:
-			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
-			return iwidget.RichTextSegmentsFromText(s)
-		case trainingColCurrentSkill:
-			return r.skillDisplay()
-		case trainingColCurrentRemaining:
-			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
-		case trainingColQueuedCount:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
-		case trainingColQueuedRemaining:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
-		case trainingColSkillpoints:
-			return iwidget.RichTextSegmentsFromText(
-				r.totalSPDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
-			)
-		case trainingColUnallocatedSP:
-			return iwidget.RichTextSegmentsFromText(
-				r.unallocatedSPDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
-			)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if a.u.isMobile {
 		a.main = a.makeDataList()
 	} else {
 		a.main = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r trainingRow) {
@@ -416,34 +450,7 @@ func (a *training) filterRows(sortCol int) {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		// sort
-
-		if doSort {
-			slices.SortFunc(rows, func(a, b trainingRow) int {
-				var x int
-				switch sortCol {
-				case trainingColName:
-					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-				case trainingColCurrentRemaining:
-					x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
-				case trainingColCurrentSkill:
-					x = strings.Compare(a.skillName, b.skillName)
-				case trainingColQueuedCount:
-					x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-				case trainingColQueuedRemaining:
-					x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-				case trainingColSkillpoints:
-					x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-				case trainingColUnallocatedSP:
-					x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {
 			return r.tags

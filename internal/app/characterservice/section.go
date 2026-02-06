@@ -19,6 +19,9 @@ import (
 // HasSection reports whether a section exists at all for a character.
 func (s *CharacterService) HasSection(ctx context.Context, characterID int32, section app.CharacterSection) (bool, error) {
 	x, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
+	if errors.Is(err, app.ErrNotFound) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}

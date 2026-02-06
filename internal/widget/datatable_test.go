@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -20,30 +21,32 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   0,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+		ID:    1,
 		Label: "ID",
 		Width: 100,
+		Sort:  func(a, b myRow) int { return 0 },
+		Update: func(r myRow, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(fmt.Sprint(r.id))
+		},
 	}, {
-		Col:   1,
+		ID:    2,
 		Label: "Planet",
 		Width: 100,
+		Sort:  func(a, b myRow) int { return 0 },
+		Update: func(r myRow, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(r.planet)
+		},
 	}})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
 	x := iwidget.MakeDataTable(
-		headers, &data, func(col int, r myRow) []widget.RichTextSegment {
-			switch col {
-			case 0:
-				return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.id))
-			case 1:
-				return iwidget.RichTextSegmentsFromText(r.planet)
-			}
-			panic(fmt.Sprintf("invalid col: %d", col))
+		columns,
+		&data,
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Template")
 		},
-		iwidget.NewColumnSorter(headers, 0, iwidget.SortAsc),
-		func(i int) {
-
-		},
+		iwidget.NewColumnSorter(columns, 1, iwidget.SortAsc),
+		func(i int) {},
 		nil,
 	)
 	w := test.NewWindow(x)
@@ -53,57 +56,142 @@ func TestDataTable_CreateBasic(t *testing.T) {
 	test.AssertImageMatches(t, "datatable/basic.png", w.Canvas().Capture())
 }
 
-func TestDataTableDef_New(t *testing.T) {
+func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
-		def := iwidget.NewDataColumns([]iwidget.DataColumn{{
-			Col:   0,
+		columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+			ID:    1,
 			Label: "Alpha",
 		}})
-		assert.Equal(t, "Alpha", def.Column(0).Label)
+		col, ok := columns.ColumnByIndex(0)
+		require.True(t, ok)
+		assert.Equal(t, "Alpha", col.Label)
 	})
-	t.Run("should panic when label not defined", func(t *testing.T) {
+	t.Run("should panic when col ID is negativ", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
-				Col: 0,
-			}})
-		})
-	})
-	t.Run("should panic when col index too small", func(t *testing.T) {
-		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
-				Col:   -1,
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+				ID:    0,
 				Label: "Alpha",
-			}})
-		})
-	})
-	t.Run("should panic when col index too large", func(t *testing.T) {
-		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
-				Col:   1,
-				Label: "Alpha",
-			}})
-		})
-	})
-	t.Run("should panic when exected col index is not defined", func(t *testing.T) {
-		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
-				Col:   0,
-				Label: "Alpha",
-			}, {
-				Col:   2,
-				Label: "Bravo",
 			}})
 		})
 	})
 	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn{{
-				Col:   0,
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+				ID:    1,
 				Label: "Alpha",
 			}, {
-				Col:   0,
+				ID:    1,
 				Label: "Bravo",
 			}})
 		})
 	})
+	t.Run("should panic when no cols defined", func(t *testing.T) {
+		assert.Panics(t, func() {
+			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{})
+		})
+	})
+}
+
+func TestColumsSorter_CalcSortIdx(t *testing.T) {
+	const (
+		id1 = 99
+		id2 = 5
+		id3 = 21
+	)
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+		ID:    id1,
+		Label: "Alpha",
+		Sort: func(a, b myRow) int {
+			return 0
+		},
+	}, {
+		ID:    id2,
+		Label: "Bravo",
+		Sort: func(a, b myRow) int {
+			return 0
+		},
+	}, {
+		ID:    id3,
+		Label: "Charlie",
+	}})
+	cases := []struct {
+		name       string
+		initialID  int
+		initialDir iwidget.SortDir
+		sortID     int
+		wantID     int
+		wantDir    iwidget.SortDir
+		wantSort   bool
+	}{
+		{
+			name:       "initial sort, asc->desc",
+			initialID:  id1,
+			initialDir: iwidget.SortAsc,
+			sortID:     id1,
+			wantID:     id1,
+			wantDir:    iwidget.SortDesc,
+			wantSort:   true,
+		},
+		{
+			name:       "initial sort, desc->asc",
+			initialID:  id1,
+			initialDir: iwidget.SortDesc,
+			sortID:     id1,
+			wantID:     id1,
+			wantDir:    iwidget.SortAsc,
+			wantSort:   true,
+		},
+		{
+			name:       "initial sort, none->asc",
+			initialID:  id1,
+			initialDir: iwidget.SortOff,
+			sortID:     id1,
+			wantID:     id1,
+			wantDir:    iwidget.SortAsc,
+			wantSort:   true,
+		},
+		{
+			name:       "initial sort, don't sort",
+			initialID:  id1,
+			initialDir: iwidget.SortOff,
+			sortID:     -1,
+			wantSort:   false,
+		},
+		{
+			name:       "initial sort, sort diabled",
+			initialID:  id1,
+			initialDir: iwidget.SortOff,
+			sortID:     id3,
+			wantSort:   false,
+		},
+		{
+			name:       "initial sort 2, asc->desc",
+			initialID:  id2,
+			initialDir: iwidget.SortAsc,
+			sortID:     id2,
+			wantID:     id2,
+			wantDir:    iwidget.SortDesc,
+			wantSort:   true,
+		},
+		{
+			name:       "initial no sort, asc->desc",
+			initialID:  0,
+			initialDir: iwidget.SortOff,
+			sortID:     id2,
+			wantID:     id2,
+			wantDir:    iwidget.SortAsc,
+			wantSort:   true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			sc := iwidget.NewColumnSorter(columns, tc.initialID, tc.initialDir)
+			gotID, gotDir, gotSort := sc.CalcSort(tc.sortID)
+			assert.Equal(t, tc.wantSort, gotSort)
+			if tc.wantSort {
+				assert.Equal(t, tc.wantID, gotID)
+				assert.Equal(t, tc.wantDir, gotDir)
+			}
+		})
+	}
 }

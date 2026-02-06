@@ -64,7 +64,7 @@ type walletTransactions struct {
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	character      atomic.Pointer[app.Character]
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
 	division       app.Division
 	rows           []walletTransactionRow
@@ -116,87 +116,112 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 }
 
 const (
-	walletTransactionColDate     = 0
-	walletTransactionColQuantity = 1
-	walletTransactionColType     = 2
-	walletTransactionColPrice    = 3
-	walletTransactionColTotal    = 4
-	walletTransactionColClient   = 5
-	walletTransactionColLocation = 6
+	walletTransactionColDate = iota + 1
+	walletTransactionColQuantity
+	walletTransactionColType
+	walletTransactionColPrice
+	walletTransactionColTotal
+	walletTransactionColClient
+	walletTransactionColLocation
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   walletTransactionColDate,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[walletTransactionRow]{{
+		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
+		Sort: func(a, b walletTransactionRow) int {
+			return a.date.Compare(b.date)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.dateFormatted)
+		},
 	}, {
-		Col:   walletTransactionColQuantity,
+		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.quantity, b.quantity)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
 	}, {
-		Col:   walletTransactionColType,
+		ID:    walletTransactionColType,
 		Label: "Type",
 		Width: 200,
+		Sort: func(a, b walletTransactionRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
+		},
 	}, {
-		Col:   walletTransactionColPrice,
+		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.unitPrice, b.unitPrice)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.unitPriceDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
 	}, {
-		Col:   walletTransactionColTotal,
+		ID:    walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
+		Sort: func(a, b walletTransactionRow) int {
+			return cmp.Compare(a.total, b.total)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.totalFormatted, widget.RichTextStyle{
+				ColorName: r.totalColor,
+			})
+		},
 	}, {
-		Col:   walletTransactionColClient,
+		ID:    walletTransactionColClient,
 		Label: "Client",
 		Width: columnWidthEntity,
+		Sort: func(a, b walletTransactionRow) int {
+			return xstrings.CompareIgnoreCase(a.clientName, b.clientName)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.clientName)
+		},
 	}, {
-		Col:   walletTransactionColLocation,
+		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: columnWidthLocation,
+		Sort: func(a, b walletTransactionRow) int {
+			return strings.Compare(a.locationName, b.locationName)
+		},
+		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.locationDisplay)
+		},
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorter(headers, walletTransactionColDate, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
-		switch col {
-		case walletTransactionColDate:
-			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case walletTransactionColQuantity:
-			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				})
-		case walletTransactionColType:
-			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case walletTransactionColPrice:
-			return iwidget.RichTextSegmentsFromText(
-				r.unitPriceDisplay,
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				})
-		case walletTransactionColTotal:
-			return iwidget.RichTextSegmentsFromText(r.totalFormatted, widget.RichTextStyle{
-				ColorName: r.totalColor,
-			})
-		case walletTransactionColClient:
-			return iwidget.RichTextSegmentsFromText(r.clientName)
-		case walletTransactionColLocation:
-			return r.locationDisplay
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
+
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r walletTransactionRow) {
@@ -381,33 +406,7 @@ func (a *walletTransactions) filterRows(sortCol int) {
 				return r.typeName != type_
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b walletTransactionRow) int {
-				var x int
-				switch sortCol {
-				case walletTransactionColDate:
-					x = a.date.Compare(b.date)
-				case walletTransactionColQuantity:
-					x = cmp.Compare(a.quantity, b.quantity)
-				case walletTransactionColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case walletTransactionColPrice:
-					x = cmp.Compare(a.unitPrice, b.unitPrice)
-				case walletTransactionColTotal:
-					x = cmp.Compare(a.total, b.total)
-				case walletTransactionColClient:
-					x = xstrings.CompareIgnoreCase(a.clientName, b.clientName)
-				case walletTransactionColLocation:
-					x = strings.Compare(a.locationName, b.locationName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// update filters
 		categoryOptions := xslices.Map(rows, func(r walletTransactionRow) string {
 			return r.categoryName

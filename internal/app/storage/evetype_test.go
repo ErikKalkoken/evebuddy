@@ -6,7 +6,9 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -38,24 +40,22 @@ func TestEveType(t *testing.T) {
 		// when
 		err := st.CreateEveType(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetEveType(ctx, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), x.ID)
-				assert.Equal(t, float32(3), x.Capacity)
-				assert.Equal(t, "description", x.Description)
-				assert.Equal(t, int32(4), x.GraphicID)
-				assert.Equal(t, int32(5), x.IconID)
-				assert.Equal(t, true, x.IsPublished)
-				assert.Equal(t, int32(6), x.MarketGroupID)
-				assert.Equal(t, float32(7), x.Mass)
-				assert.Equal(t, "name", x.Name)
-				assert.Equal(t, float32(8), x.PackagedVolume)
-				assert.Equal(t, float32(9), x.Radius)
-				assert.Equal(t, float32(10), x.Volume)
-				assert.Equal(t, g, x.Group)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetEveType(ctx, 42)
+		require.NoError(t, err)
+		assert.Equal(t, int32(42), x.ID)
+		assert.Equal(t, float32(3), x.Capacity)
+		assert.Equal(t, "description", x.Description)
+		assert.Equal(t, int32(4), x.GraphicID)
+		assert.Equal(t, int32(5), x.IconID)
+		assert.Equal(t, true, x.IsPublished)
+		assert.Equal(t, int32(6), x.MarketGroupID)
+		assert.Equal(t, float32(7), x.Mass)
+		assert.Equal(t, "name", x.Name)
+		assert.Equal(t, float32(8), x.PackagedVolume)
+		assert.Equal(t, float32(9), x.Radius)
+		assert.Equal(t, float32(10), x.Volume)
+		assert.Equal(t, g, x.Group)
 	})
 	t.Run("can get existing", func(t *testing.T) {
 		// given
@@ -66,9 +66,8 @@ func TestEveType(t *testing.T) {
 			ID: want.ID,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
 	})
 	t.Run("can create new", func(t *testing.T) {
 		// given
@@ -92,25 +91,23 @@ func TestEveType(t *testing.T) {
 		// when
 		x, err := st.GetOrCreateEveType(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, int32(42), x.ID)
-			assert.Equal(t, float32(3), x.Capacity)
-			assert.Equal(t, "description", x.Description)
-			assert.Equal(t, int32(4), x.GraphicID)
-			assert.Equal(t, int32(5), x.IconID)
-			assert.Equal(t, true, x.IsPublished)
-			assert.Equal(t, int32(6), x.MarketGroupID)
-			assert.Equal(t, float32(7), x.Mass)
-			assert.Equal(t, "name", x.Name)
-			assert.Equal(t, float32(8), x.PackagedVolume)
-			assert.Equal(t, float32(9), x.Radius)
-			assert.Equal(t, float32(10), x.Volume)
-			assert.Equal(t, g, x.Group)
-			x2, err := st.GetEveType(ctx, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, x, x2)
-			}
-		}
+		require.NoError(t, err)
+		assert.Equal(t, int32(42), x.ID)
+		assert.Equal(t, float32(3), x.Capacity)
+		assert.Equal(t, "description", x.Description)
+		assert.Equal(t, int32(4), x.GraphicID)
+		assert.Equal(t, int32(5), x.IconID)
+		assert.Equal(t, true, x.IsPublished)
+		assert.Equal(t, int32(6), x.MarketGroupID)
+		assert.Equal(t, float32(7), x.Mass)
+		assert.Equal(t, "name", x.Name)
+		assert.Equal(t, float32(8), x.PackagedVolume)
+		assert.Equal(t, float32(9), x.Radius)
+		assert.Equal(t, float32(10), x.Volume)
+		assert.Equal(t, g, x.Group)
+		x2, err := st.GetEveType(ctx, 42)
+		require.NoError(t, err)
+		assert.Equal(t, x, x2)
 	})
 	t.Run("can list IDs", func(t *testing.T) {
 		// given
@@ -120,10 +117,20 @@ func TestEveType(t *testing.T) {
 		// when
 		got, err := st.ListEveTypeIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(x1.ID, x2.ID)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(x1.ID, x2.ID)
+		xassert.EqualSet(t, want, got)
+	})
+	t.Run("can list types", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		x1 := factory.CreateEveType()
+		x2 := factory.CreateEveType()
+		// when
+		got, err := st.ListEveTypes(ctx)
+		// then
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []*app.EveType{x1, x2}, got)
 	})
 	t.Run("can identify missing", func(t *testing.T) {
 		// given
@@ -133,8 +140,7 @@ func TestEveType(t *testing.T) {
 		// when
 		x, err := st.MissingEveTypes(ctx, set.Of[int32](7, 9))
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, set.Of[int32](9).Equal(x))
-		}
+		require.NoError(t, err)
+		assert.True(t, set.Of[int32](9).Equal(x))
 	})
 }

@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	flyableColType = iota
+	flyableColType = iota + 1
 	flyableColGroup
 )
 
@@ -50,7 +50,7 @@ type characterFlyableShips struct {
 
 	bottom        *widget.Label
 	character     atomic.Pointer[app.Character]
-	columnSorter  *iwidget.ColumnSorter
+	columnSorter  *iwidget.ColumnSorter[flyableShipRow]
 	grid          *widget.GridWrap
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
@@ -63,16 +63,19 @@ type characterFlyableShips struct {
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn{
-		{
-			Col:   flyableColType,
-			Label: "Type",
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[flyableShipRow]{{
+		ID:    flyableColType,
+		Label: "Type",
+		Sort: func(a, b flyableShipRow) int {
+			return strings.Compare(a.typeName, b.typeName)
 		},
-		{
-			Col:   flyableColGroup,
-			Label: "Class",
+	}, {
+		ID:    flyableColGroup,
+		Label: "Class",
+		Sort: func(a, b flyableShipRow) int {
+			return strings.Compare(a.groupName, b.groupName)
 		},
-	}),
+	}}),
 		flyableColType,
 		iwidget.SortAsc,
 	)
@@ -223,22 +226,7 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 		} else {
 			bottom = ""
 		}
-		if doSort {
-			slices.SortFunc(rows, func(a, b flyableShipRow) int {
-				var x int
-				switch sortCol {
-				case flyableColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case flyableColGroup:
-					x = strings.Compare(a.groupName, b.groupName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {
 			a.selectGroup.SetOptions(groupOptions)
@@ -249,57 +237,6 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 			a.grid.ScrollToTop()
 		})
 	}()
-
-	// if characterID == 0 {
-	// 	fyne.Do(func() {
-	// 		a.ships = make([]*app.CharacterShipAbility, 0)
-	// 		a.grid.Refresh()
-	// 		a.searchBox.SetText("")
-	// 		a.groupSelect.SetOptions([]string{})
-	// 		a.flyableSelect.SetOptions([]string{})
-	// 	})
-	// 	return nil
-	// }
-	// search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-
-	// ships := make([]*app.CharacterShipAbility, 0)
-	// for _, o := range oo {
-	// 	isSelectedGroup := a.groupSelected == "" || o.Group.Name == a.groupSelected
-	// 	var isSelectedFlyable bool
-	// 	switch a.flyableSelected {
-	// 	case flyableCan:
-	// 		isSelectedFlyable = o.CanFly
-	// 	case flyableCanNot:
-	// 		isSelectedFlyable = !o.CanFly
-	// 	default:
-	// 		isSelectedFlyable = true
-	// 	}
-	// 	if isSelectedGroup && isSelectedFlyable {
-	// 		ships = append(ships, o)
-	// 	}
-	// }
-	// g := set.Of[string]()
-	// f := set.Of[string]()
-	// for _, o := range ships {
-	// 	g.Add(o.Group.Name)
-	// 	if o.CanFly {
-	// 		f.Add(flyableCan)
-	// 	} else {
-	// 		f.Add(flyableCanNot)
-	// 	}
-	// }
-	// groups := slices.Collect(g.All())
-	// slices.Sort(groups)
-	// flyable := slices.Collect(f.All())
-	// slices.Sort(flyable)
-	// fyne.Do(func() {
-	// 	a.groupSelect.SetOptions(groups)
-	// 	a.flyableSelect.SetOptions(flyable)
-	// 	a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
-	// 	a.foundText.Show()
-	// 	a.grid.Refresh()
-	// })
-	// return nil
 }
 
 func (a *characterFlyableShips) update(ctx context.Context) {

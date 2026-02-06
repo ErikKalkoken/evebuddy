@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -20,11 +21,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 const (
@@ -179,7 +182,7 @@ type assetSearch struct {
 	onUpdate func(int, string)
 
 	body           fyne.CanvasObject
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
 	found          *widget.Label
@@ -199,12 +202,12 @@ type assetSearch struct {
 }
 
 const (
-	assetsColItem     = 0
-	assetsColGroup    = 1
-	assetsColLocation = 2
-	assetsColQuantity = 3
-	assetsColTotal    = 4
-	assetsColOwner    = 5
+	assetsColItem = iota + 1
+	assetsColGroup
+	assetsColLocation
+	assetsColQuantity
+	assetsColTotal
+	assetsColOwner
 )
 
 func newAssetSearchForCharacters(u *baseUI) *assetSearch {
@@ -216,40 +219,85 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{
-		{
-			Col:   assetsColItem,
-			Label: "Item",
-			Width: 300,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{{
+		ID:    assetsColItem,
+		Label: "Item",
+		Width: 300,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.name, b.name)
 		},
-		{
-			Col:   assetsColGroup,
-			Label: "Group",
-			Width: 200,
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.BlankSvg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
 		},
-		{
-			Col:   assetsColLocation,
-			Label: "Location",
-			Width: columnWidthLocation,
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.typeName)
+			x := border[1].(*canvas.Image)
+			loadAssetIconAsync(u.eis, x, r.typeID, r.variant)
 		},
-		{
-			Col:   assetsColQuantity,
-			Label: "Qty.",
-			Width: 100,
+	}, {
+		ID:    assetsColGroup,
+		Label: "Group",
+		Width: 200,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.groupName, b.groupName)
 		},
-		{
-			Col:   assetsColTotal,
-			Label: "Total",
-			Width: 150,
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.groupName)
 		},
-		{
-			Col:   assetsColOwner,
-			Label: "Owner",
-			Width: columnWidthEntity,
+	}, {
+		ID:    assetsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.locationName, b.locationName)
 		},
-	})
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.locationDisplay)
+		},
+	}, {
+		ID:    assetsColQuantity,
+		Label: "Qty.",
+		Width: 100,
+		Sort: func(a, b assetRow) int {
+			return cmp.Compare(a.quantity, b.quantity)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
+	}, {
+		ID:    assetsColTotal,
+		Label: "Total",
+		Width: 150,
+		Sort: func(a, b assetRow) int {
+			return cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
+	}, {
+		ID:    assetsColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+		Sort: func(a, b assetRow) int {
+			return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.owner.Name)
+		},
+	}})
 	a := &assetSearch{
-		columnSorter:   iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
+		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
 		found:          widget.NewLabel(""),
 		rowsFiltered:   make([]assetRow, 0),
@@ -271,27 +319,13 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
-			func(col int, r assetRow) []widget.RichTextSegment {
-				switch col {
-				case assetsColItem:
-					return iwidget.RichTextSegmentsFromText(r.name)
-				case assetsColGroup:
-					return iwidget.RichTextSegmentsFromText(r.groupName)
-				case assetsColLocation:
-					return r.locationDisplay
-				case assetsColOwner:
-					return iwidget.RichTextSegmentsFromText(r.owner.Name)
-				case assetsColQuantity:
-					return iwidget.RichTextSegmentsFromText(r.quantityDisplay, widget.RichTextStyle{
-						Alignment: fyne.TextAlignTrailing,
-					})
-				case assetsColTotal:
-					return iwidget.RichTextSegmentsFromText(r.totalDisplay, widget.RichTextStyle{
-						Alignment: fyne.TextAlignTrailing,
-					})
-				}
-				return iwidget.RichTextSegmentsFromText("?")
+		a.body = iwidget.MakeDataTable(
+			columns,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
 				showAssetDetailWindow(u, r)
@@ -508,31 +542,7 @@ func (a *assetSearch) filterRows(sortCol int) {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b assetRow) int {
-				var x int
-				switch sortCol {
-				case assetsColItem:
-					x = strings.Compare(a.name, b.name)
-				case assetsColGroup:
-					x = strings.Compare(a.groupName, b.groupName)
-				case assetsColLocation:
-					x = strings.Compare(a.locationName, b.locationName)
-				case assetsColOwner:
-					x = xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
-				case assetsColQuantity:
-					x = cmp.Compare(a.quantity, b.quantity)
-				case assetsColTotal:
-					x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
 			return r.tags
@@ -716,6 +726,45 @@ func (a *assetSearch) characterCount() int {
 		}
 	}
 	return validCount
+}
+
+type assetIconEIS interface {
+	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
+	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
+	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+}
+
+// assetIconCache caches the images for asset icons.
+var assetIconCache xsync.Map[string, fyne.Resource]
+
+func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int32, variant app.InventoryTypeVariant) {
+	key := fmt.Sprintf("%d-%d", typeID, variant)
+	iwidget.LoadResourceAsyncWithCache(
+		icons.BlankSvg,
+		func() (fyne.Resource, bool) {
+			return assetIconCache.Load(key)
+		},
+		func(r fyne.Resource) {
+			icon.Resource = r
+			icon.Refresh()
+		},
+		func() (fyne.Resource, error) {
+			switch variant {
+			case app.VariantBPO:
+				return eis.InventoryTypeBPO(typeID, app.IconPixelSize)
+			case app.VariantBPC:
+				return eis.InventoryTypeBPC(typeID, app.IconPixelSize)
+			case app.VariantSKIN:
+				return eis.InventoryTypeSKIN(typeID, app.IconPixelSize)
+			default:
+				return eis.InventoryTypeIcon(typeID, app.IconPixelSize)
+			}
+		},
+		func(r fyne.Resource) {
+			assetIconCache.Store(key, r)
+		},
+	)
 }
 
 // showAssetDetailWindow shows the details for a character assets in a new window.

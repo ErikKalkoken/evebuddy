@@ -10,25 +10,25 @@ import (
 )
 
 const createEveType = `-- name: CreateEveType :exec
-INSERT INTO eve_types (
-    id,
-    eve_group_id,
-    capacity,
-    description,
-    graphic_id,
-    icon_id,
-    is_published,
-    market_group_id,
-    mass,
-    name,
-    packaged_volume,
-    portion_size,
-    radius,
-    volume
-)
-VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-)
+INSERT INTO
+    eve_types (
+        id,
+        eve_group_id,
+        capacity,
+        description,
+        graphic_id,
+        icon_id,
+        is_published,
+        market_group_id,
+        mass,
+        name,
+        packaged_volume,
+        portion_size,
+        radius,
+        volume
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateEveTypeParams struct {
@@ -69,14 +69,10 @@ func (q *Queries) CreateEveType(ctx context.Context, arg CreateEveTypeParams) er
 }
 
 const createEveTypeDogmaAttribute = `-- name: CreateEveTypeDogmaAttribute :exec
-INSERT INTO eve_type_dogma_attributes (
-    dogma_attribute_id,
-    eve_type_id,
-    value
-)
-VALUES (
-    ?, ?, ?
-)
+INSERT INTO
+    eve_type_dogma_attributes (dogma_attribute_id, eve_type_id, value)
+VALUES
+    (?, ?, ?)
 `
 
 type CreateEveTypeDogmaAttributeParams struct {
@@ -91,14 +87,10 @@ func (q *Queries) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 }
 
 const createEveTypeDogmaEffect = `-- name: CreateEveTypeDogmaEffect :exec
-INSERT INTO eve_type_dogma_effects (
-    dogma_effect_id,
-    eve_type_id,
-    is_default
-)
-VALUES (
-    ?, ?, ?
-)
+INSERT INTO
+    eve_type_dogma_effects (dogma_effect_id, eve_type_id, is_default)
+VALUES
+    (?, ?, ?)
 `
 
 type CreateEveTypeDogmaEffectParams struct {
@@ -113,11 +105,16 @@ func (q *Queries) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTyp
 }
 
 const getEveType = `-- name: GetEveType :one
-SELECT et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume, eg.id, eg.eve_category_id, eg.name, eg.is_published, ec.id, ec.name, ec.is_published
-FROM eve_types et
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE et.id = ?
+SELECT
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    eve_types et
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    et.id = ?
 `
 
 type GetEveTypeRow struct {
@@ -156,10 +153,13 @@ func (q *Queries) GetEveType(ctx context.Context, id int64) (GetEveTypeRow, erro
 }
 
 const getEveTypeDogmaAttribute = `-- name: GetEveTypeDogmaAttribute :one
-SELECT id, dogma_attribute_id, eve_type_id, value
-FROM eve_type_dogma_attributes
-WHERE dogma_attribute_id = ?
-AND eve_type_id = ?
+SELECT
+    id, dogma_attribute_id, eve_type_id, value
+FROM
+    eve_type_dogma_attributes
+WHERE
+    dogma_attribute_id = ?
+    AND eve_type_id = ?
 `
 
 type GetEveTypeDogmaAttributeParams struct {
@@ -180,10 +180,13 @@ func (q *Queries) GetEveTypeDogmaAttribute(ctx context.Context, arg GetEveTypeDo
 }
 
 const getEveTypeDogmaEffect = `-- name: GetEveTypeDogmaEffect :one
-SELECT id, dogma_effect_id, eve_type_id, is_default
-FROM eve_type_dogma_effects
-WHERE dogma_effect_id = ?
-AND eve_type_id = ?
+SELECT
+    id, dogma_effect_id, eve_type_id, is_default
+FROM
+    eve_type_dogma_effects
+WHERE
+    dogma_effect_id = ?
+    AND eve_type_id = ?
 `
 
 type GetEveTypeDogmaEffectParams struct {
@@ -204,13 +207,20 @@ func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogma
 }
 
 const listEveTypeDogmaAttributesForType = `-- name: ListEveTypeDogmaAttributesForType :many
-SELECT eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id, et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume, eg.id, eg.eve_category_id, eg.name, eg.is_published, ec.id, ec.name, ec.is_published, etda.value
-FROM eve_dogma_attributes eda
-JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
-join eve_types et ON et.id = etda.eve_type_id
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE etda.eve_type_id = ?
+SELECT
+    eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
+    etda.value
+FROM
+    eve_dogma_attributes eda
+    JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
+    join eve_types et ON et.id = etda.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    etda.eve_type_id = ?
 `
 
 type ListEveTypeDogmaAttributesForTypeRow struct {
@@ -278,8 +288,10 @@ func (q *Queries) ListEveTypeDogmaAttributesForType(ctx context.Context, eveType
 }
 
 const listEveTypeIDs = `-- name: ListEveTypeIDs :many
-SELECT id
-FROM eve_types
+SELECT
+    id
+FROM
+    eve_types
 `
 
 func (q *Queries) ListEveTypeIDs(ctx context.Context) ([]int64, error) {
@@ -295,6 +307,68 @@ func (q *Queries) ListEveTypeIDs(ctx context.Context) ([]int64, error) {
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveTypes = `-- name: ListEveTypes :many
+SELECT
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    eve_types et
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+`
+
+type ListEveTypesRow struct {
+	EveType     EveType
+	EveGroup    EveGroup
+	EveCategory EveCategory
+}
+
+func (q *Queries) ListEveTypes(ctx context.Context) ([]ListEveTypesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveTypesRow
+	for rows.Next() {
+		var i ListEveTypesRow
+		if err := rows.Scan(
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

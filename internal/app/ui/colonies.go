@@ -68,7 +68,7 @@ type colonies struct {
 	OnUpdate func(total, expired int)
 
 	body              fyne.CanvasObject
-	columnSorter      *iwidget.ColumnSorter
+	columnSorter      *iwidget.ColumnSorter[colonyRow]
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
 	selectStatus      *kxwidget.FilterChipSelect
@@ -85,49 +85,83 @@ type colonies struct {
 }
 
 const (
-	coloniesColPlanet     = 0
-	coloniesColType       = 1
-	coloniesColExtracting = 2
-	coloniesColDue        = 3
-	coloniesColProducing  = 4
-	coloniesColRegion     = 5
-	coloniesColCharacter  = 6
+	coloniesColPlanet = iota + 1
+	coloniesColType
+	coloniesColExtracting
+	coloniesColDue
+	coloniesColProducing
+	coloniesColRegion
+	coloniesColCharacter
 )
 
 func newColonies(u *baseUI) *colonies {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   coloniesColPlanet,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
+		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.name, b.name)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.nameDisplay)
+		},
 	}, {
-		Col:   coloniesColType,
+		ID:    coloniesColType,
 		Label: "Type",
 		Width: 100,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.planetTypeName, b.planetTypeName)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.planetTypeName)
+		},
 	}, {
-		Col:    coloniesColExtracting,
-		Label:  "Extracting",
-		Width:  200,
-		NoSort: true,
+		ID:    coloniesColExtracting,
+		Label: "Extracting",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.extractingText)
+		},
 	}, {
-		Col:   coloniesColDue,
+		ID:    coloniesColDue,
 		Label: "Due",
 		Width: columnWidthDateTime,
+		Sort: func(a, b colonyRow) int {
+			return a.due.Compare(b.due)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.DueRichText())
+		},
 	}, {
-		Col:    coloniesColProducing,
-		Label:  "Producing",
-		Width:  200,
-		NoSort: true,
+		ID:    coloniesColProducing,
+		Label: "Producing",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.producingText)
+		},
 	}, {
-		Col:   coloniesColRegion,
+		ID:    coloniesColRegion,
 		Label: "Region",
 		Width: 150,
+		Sort: func(a, b colonyRow) int {
+			return strings.Compare(a.regionName, b.regionName)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.regionName)
+		},
 	}, {
-		Col:   coloniesColCharacter,
+		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
+		Sort: func(a, b colonyRow) int {
+			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.ownerName)
+		},
 	}})
 	a := &colonies{
-		columnSorter: iwidget.NewColumnSorter(headers, coloniesColPlanet, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),
@@ -135,31 +169,44 @@ func newColonies(u *baseUI) *colonies {
 	}
 	a.ExtendBaseWidget(a)
 
-	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
-		switch col {
-		case coloniesColPlanet:
-			return r.nameDisplay
-		case coloniesColType:
-			return iwidget.RichTextSegmentsFromText(r.planetTypeName)
-		case coloniesColExtracting:
-			return iwidget.RichTextSegmentsFromText(r.extractingText)
-		case coloniesColDue:
-			return r.DueRichText()
-		case coloniesColProducing:
-			return iwidget.RichTextSegmentsFromText(r.producingText)
-		case coloniesColRegion:
-			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case coloniesColCharacter:
-			return iwidget.RichTextSegmentsFromText(r.ownerName)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
-			a.showColonyWindow(r)
-		})
+		a.body = iwidget.MakeDataTable(
+			columns,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
+			a.columnSorter,
+			a.filterRows, func(_ int, r colonyRow) {
+				a.showColonyWindow(r)
+			})
 	} else {
-		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, a.showColonyWindow)
+		a.body = iwidget.MakeDataList(
+			columns,
+			&a.rowsFiltered,
+			func(col int, r colonyRow) []widget.RichTextSegment {
+				switch col {
+				case coloniesColPlanet:
+					return r.nameDisplay
+				case coloniesColType:
+					return iwidget.RichTextSegmentsFromText(r.planetTypeName)
+				case coloniesColExtracting:
+					return iwidget.RichTextSegmentsFromText(r.extractingText)
+				case coloniesColDue:
+					return r.DueRichText()
+				case coloniesColProducing:
+					return iwidget.RichTextSegmentsFromText(r.producingText)
+				case coloniesColRegion:
+					return iwidget.RichTextSegmentsFromText(r.regionName)
+				case coloniesColCharacter:
+					return iwidget.RichTextSegmentsFromText(r.ownerName)
+				}
+				return iwidget.RichTextSegmentsFromText("?")
+			},
+			a.showColonyWindow,
+		)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
@@ -304,29 +351,7 @@ func (a *colonies) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b colonyRow) int {
-				var x int
-				switch sortCol {
-				case coloniesColPlanet:
-					x = strings.Compare(a.name, b.name)
-				case coloniesColType:
-					x = strings.Compare(a.planetTypeName, b.planetTypeName)
-				case coloniesColDue:
-					x = a.due.Compare(b.due)
-				case coloniesColRegion:
-					x = strings.Compare(a.regionName, b.regionName)
-				case coloniesColCharacter:
-					x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
 			return r.tags

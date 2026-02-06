@@ -62,7 +62,7 @@ type contracts struct {
 
 	body           fyne.CanvasObject
 	bottom         *widget.Label
-	columnSorter   *iwidget.ColumnSorter
+	columnSorter   *iwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
@@ -77,13 +77,13 @@ type contracts struct {
 }
 
 const (
-	contractsColName      = 0
-	contractsColType      = 1
-	contractsColIssuer    = 2
-	contractsColAssignee  = 3
-	contractsColStatus    = 4
-	contractsColIssuedAt  = 5
-	contractsColExpiresAt = 6
+	contractsColName = iota + 1
+	contractsColType
+	contractsColIssuer
+	contractsColAssignee
+	contractsColStatus
+	contractsColIssuedAt
+	contractsColExpiresAt
 )
 
 func newContractsForCorporation(u *baseUI) *contracts {
@@ -95,66 +95,100 @@ func newContractsForCharacters(u *baseUI) *contracts {
 }
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   contractsColName,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[contractRow]{{
+		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.name, b.name)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.name)
+		},
 	}, {
-		Col:   contractsColType,
+		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.typeName, b.typeName)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.typeName)
+		},
 	}, {
-		Col:   contractsColIssuer,
+		ID:    contractsColIssuer,
 		Label: "From",
 		Width: 150,
+		Sort: func(a, b contractRow) int {
+			return xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.issuerName)
+		},
 	}, {
-		Col:   contractsColAssignee,
+		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
+		Sort: func(a, b contractRow) int {
+			return xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.assigneeName)
+		},
 	}, {
-		Col:   contractsColStatus,
+		ID:    contractsColStatus,
 		Label: "Status",
 		Width: 100,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.statusText, b.statusText)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.status.DisplayRichText())
+		},
 	}, {
-		Col:   contractsColIssuedAt,
+		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: columnWidthDateTime,
+		Sort: func(a, b contractRow) int {
+			return a.dateIssued.Compare(b.dateIssued)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
+		},
 	}, {
-		Col:   contractsColExpiresAt,
+		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
+		Sort: func(a, b contractRow) int {
+			return a.dateExpired.Compare(b.dateExpired)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.dateExpiredDisplay)
+		},
 	}})
 	a := &contracts{
 		forCorporation: forCorporation,
-		columnSorter:   iwidget.NewColumnSorter(headers, contractsColIssuedAt, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
 		rows:           make([]contractRow, 0),
 		bottom:         widget.NewLabel(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
-			func(col int, r contractRow) []widget.RichTextSegment {
-				switch col {
-				case contractsColName:
-					return iwidget.RichTextSegmentsFromText(r.name)
-				case contractsColType:
-					return iwidget.RichTextSegmentsFromText(r.typeName)
-				case contractsColIssuer:
-					return iwidget.RichTextSegmentsFromText(r.issuerName)
-				case contractsColAssignee:
-					return iwidget.RichTextSegmentsFromText(r.assigneeName)
-				case contractsColStatus:
-					return r.status.DisplayRichText()
-				case contractsColIssuedAt:
-					return iwidget.RichTextSegmentsFromText(r.dateIssued.Format(app.DateTimeFormat))
-				case contractsColExpiresAt:
-					return r.dateExpiredDisplay
-				}
-				return iwidget.RichTextSegmentsFromText("?")
-			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
+		a.body = iwidget.MakeDataTable(
+			columns,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
+			a.columnSorter,
+			a.filterRows,
+			func(column int, r contractRow) {
 				if a.forCorporation {
 					showCorporationContractWindow(a.u, r.corporationID, r.contractID)
 				} else {
@@ -356,33 +390,7 @@ func (a *contracts) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b contractRow) int {
-				var x int
-				switch sortCol {
-				case contractsColName:
-					x = strings.Compare(a.name, b.name)
-				case contractsColType:
-					x = strings.Compare(a.typeName, b.typeName)
-				case contractsColIssuer:
-					x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
-				case contractsColAssignee:
-					x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
-				case contractsColStatus:
-					x = strings.Compare(a.statusText, b.statusText)
-				case contractsColIssuedAt:
-					x = a.dateIssued.Compare(b.dateIssued)
-				case contractsColExpiresAt:
-					x = a.dateExpired.Compare(b.dateExpired)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r contractRow) set.Set[string] {
 			return r.tags

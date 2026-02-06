@@ -26,7 +26,6 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type assetFilter uint
@@ -857,16 +856,6 @@ const (
 	typeIconSize                      = 55
 )
 
-type assetIconEIS interface {
-	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
-	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
-	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
-}
-
-// assetIconCache caches the images for asset icons.
-var assetIconCache xsync.Map[string, fyne.Resource]
-
 // assetItem represents an asset shown with an icon and label.
 type assetItem struct {
 	widget.BaseWidget
@@ -931,32 +920,7 @@ func (w *assetItem) Set(n *asset.Node) {
 		w.badge.Hide()
 	}
 
-	key := fmt.Sprint(as.ItemID)
-	iwidget.LoadResourceAsyncWithCache(
-		icons.BlankSvg,
-		func() (fyne.Resource, bool) {
-			return assetIconCache.Load(key)
-		},
-		func(r fyne.Resource) {
-			w.icon.Resource = r
-			w.icon.Refresh()
-		},
-		func() (fyne.Resource, error) {
-			switch as.Variant() {
-			case app.VariantBPO:
-				return w.eis.InventoryTypeBPO(as.Type.ID, app.IconPixelSize)
-			case app.VariantBPC:
-				return w.eis.InventoryTypeBPC(as.Type.ID, app.IconPixelSize)
-			case app.VariantSKIN:
-				return w.eis.InventoryTypeSKIN(as.Type.ID, app.IconPixelSize)
-			default:
-				return w.eis.InventoryTypeIcon(as.Type.ID, app.IconPixelSize)
-			}
-		},
-		func(r fyne.Resource) {
-			assetIconCache.Store(key, r)
-		},
-	)
+	loadAssetIconAsync(w.eis, w.icon, as.Type.ID, as.Variant())
 }
 
 type assetLabel struct {

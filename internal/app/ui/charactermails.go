@@ -755,7 +755,7 @@ func (a *characterMails) loadMail(mailID int32) {
 		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
 		return
 	}
-	if !a.u.IsOffline() {
+	if !a.u.IsOffline() && !a.u.isUpdateDisabled {
 		if a.mail.Body.IsEmpty() {
 			go func() {
 				a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {

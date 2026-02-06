@@ -56,6 +56,20 @@ func AlignRichTextSegments(align fyne.TextAlign, segments ...[]widget.RichTextSe
 	return segs2
 }
 
+func ModifyRichTextSegments(modify func(x *widget.TextSegment), segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
+	segs2 := make([]widget.RichTextSegment, 0)
+	segs := slices.Concat(segments...)
+	for _, x := range segs {
+		t, ok := x.(*widget.TextSegment)
+		if !ok {
+			continue
+		}
+		modify(t)
+		segs2 = append(segs2, t)
+	}
+	return segs2
+}
+
 type RichText struct {
 	widget.RichText
 }
@@ -68,8 +82,8 @@ func NewRichText(segments ...widget.RichTextSegment) *RichText {
 	return w
 }
 
-func NewRichTextWithText(text string) *RichText {
-	return NewRichText(RichTextSegmentsFromText(text)...)
+func NewRichTextWithText(text string, style ...widget.RichTextStyle) *RichText {
+	return NewRichText(RichTextSegmentsFromText(text, style...)...)
 }
 
 func (w *RichText) Set(segments []widget.RichTextSegment) {
@@ -77,6 +91,6 @@ func (w *RichText) Set(segments []widget.RichTextSegment) {
 	w.Refresh()
 }
 
-func (w *RichText) SetWithText(text string) {
-	w.Set(RichTextSegmentsFromText(text))
+func (w *RichText) SetWithText(text string, style ...widget.RichTextStyle) {
+	w.Set(RichTextSegmentsFromText(text, style...))
 }

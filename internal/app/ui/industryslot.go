@@ -35,12 +35,60 @@ type industrySlotRow struct {
 	tags          set.Set[string]
 }
 
+func (r industrySlotRow) characterDisplay() []widget.RichTextSegment {
+	if r.isSummary {
+		return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
+			TextStyle: fyne.TextStyle{Bold: true},
+		})
+	}
+	return iwidget.RichTextSegmentsFromText(r.characterName)
+}
+
+func (r industrySlotRow) busyColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch r.busy {
+	case 0:
+		c = theme.ColorNameSuccess
+	case r.total:
+		c = theme.ColorNameError
+	default:
+		c = theme.ColorNameWarning
+	}
+	return c
+}
+
+func (r industrySlotRow) readyColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch {
+	case r.ready > 0:
+		c = theme.ColorNameWarning
+	case r.ready == 0:
+		c = theme.ColorNameSuccess
+	default:
+		c = theme.ColorNameForeground
+	}
+	return c
+}
+
+func (r industrySlotRow) freeColor() fyne.ThemeColorName {
+	var c fyne.ThemeColorName
+	switch {
+	case r.free == r.total:
+		c = theme.ColorNameSuccess
+	case r.free > 0:
+		c = theme.ColorNameWarning
+	case r.free == 0:
+		c = theme.ColorNameError
+	}
+	return c
+}
+
 type industrySlots struct {
 	widget.BaseWidget
 
 	body            fyne.CanvasObject
 	bottom          *widget.Label
-	columnSorter    *iwidget.ColumnSorter
+	columnSorter    *iwidget.ColumnSorter[industrySlotRow]
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
 	selectFreeSlots *kxwidget.FilterChipSelect
@@ -51,118 +99,137 @@ type industrySlots struct {
 }
 
 const (
-	industrySlotsColCharacter = 0
-	industrySlotsColBusy      = 1
-	industrySlotsColReady     = 2
-	industrySlotsColFree      = 3
-	industrySlotsColTotal     = 4
+	industrySlotsColCharacter = iota + 1
+	industrySlotsColBusy
+	industrySlotsColReady
+	industrySlotsColFree
+	industrySlotsColTotal
 )
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   industrySlotsColCharacter,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industrySlotRow]{{
+		ID:    industrySlotsColCharacter,
 		Label: "Character",
 		Width: columnWidthEntity,
+		Sort: func(a, b industrySlotRow) int {
+			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.characterDisplay())
+		},
 	}, {
-		Col:   industrySlotsColBusy,
+		ID:    industrySlotsColBusy,
 		Label: "Busy",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.busy, b.busy)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.busy), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.busyColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}, {
-		Col:   industrySlotsColReady,
+		ID:    industrySlotsColReady,
 		Label: "Ready",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.ready, b.ready)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.ready), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.readyColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}, {
-		Col:   industrySlotsColFree,
+		ID:    industrySlotsColFree,
 		Label: "Free",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.free, b.free)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.free), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: r.freeColor(),
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}, {
-		Col:   industrySlotsColTotal,
+		ID:    industrySlotsColTotal,
 		Label: "Total",
 		Width: columnWidthNumber,
+		Sort: func(a, b industrySlotRow) int {
+			return cmp.Compare(a.total, b.total)
+		},
+		Update: func(r industrySlotRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.total), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+			})
+		},
 	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
-		columnSorter: iwidget.NewColumnSorter(headers, industrySlotsColCharacter, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, industrySlotsColCharacter, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
 		slotType:     slotType,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r industrySlotRow) []widget.RichTextSegment {
-		switch col {
-		case industrySlotsColCharacter:
-			if r.isSummary {
-				return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
-					TextStyle: fyne.TextStyle{Bold: true},
-				})
-			}
-			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case industrySlotsColBusy:
-			var c fyne.ThemeColorName
-			switch r.busy {
-			case 0:
-				c = theme.ColorNameSuccess
-			case r.total:
-				c = theme.ColorNameError
-			default:
-				c = theme.ColorNameWarning
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColReady:
-			var c fyne.ThemeColorName
-			switch {
-			case r.ready > 0:
-				c = theme.ColorNameWarning
-			case r.ready == 0:
-				c = theme.ColorNameSuccess
-			default:
-				c = theme.ColorNameForeground
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColFree:
-			var c fyne.ThemeColorName
-			switch {
-			case r.free == r.total:
-				c = theme.ColorNameSuccess
-			case r.free > 0:
-				c = theme.ColorNameWarning
-			case r.free == 0:
-				c = theme.ColorNameError
-			}
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: c,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		case industrySlotsColTotal:
-			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 	if !a.u.isMobile {
 		a.body = iwidget.MakeDataTable(
-			headers,
+			columns,
 			&a.rowsFiltered,
-			makeCell,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
 			a.columnSorter,
 			a.filterRows,
 			nil,
 		)
 	} else {
-		a.body = a.makeDataTable(headers, makeCell)
+		a.body = a.makeDataTable(
+			columns,
+			func(col int, r industrySlotRow) []widget.RichTextSegment {
+				switch col {
+				case industrySlotsColCharacter:
+					return r.characterDisplay()
+				case industrySlotsColBusy:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.busyColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColReady:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.readyColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColFree:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						ColorName: r.freeColor(),
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				case industrySlotsColTotal:
+					return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+					})
+				}
+				return iwidget.RichTextSegmentsFromText("?")
+			},
+		)
 	}
 
 	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
@@ -210,7 +277,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industrySlots) makeDataTable(headers iwidget.DataColumns, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
+func (a *industrySlots) makeDataTable(headers iwidget.DataColumns[industrySlotRow], makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
 	w := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.rowsFiltered), 4
@@ -232,7 +299,9 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataColumns, makeCell func
 		return widget.NewLabel("")
 	}
 	w.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		co.(*widget.Label).SetText(headers.Column(tci.Col).Label)
+		if col, ok := headers.ColumnByIndex(tci.Col); ok {
+			co.(*widget.Label).SetText(col.Label)
+		}
 	}
 	for id, width := range map[int]float32{
 		0: 175,
@@ -270,29 +339,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b industrySlotRow) int {
-				var x int
-				switch sortCol {
-				case industrySlotsColCharacter:
-					x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-				case industrySlotsColBusy:
-					x = cmp.Compare(a.busy, b.busy)
-				case industrySlotsColReady:
-					x = cmp.Compare(a.ready, b.ready)
-				case industrySlotsColFree:
-					x = cmp.Compare(a.free, b.free)
-				case industrySlotsColTotal:
-					x = cmp.Compare(a.total, b.total)
-				}
-				if dir == iwidget.SortAsc {
-					return x
-				} else {
-					return -1 * x
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// add totals
 		var active, ready, free, total int
 		for _, r := range rows {

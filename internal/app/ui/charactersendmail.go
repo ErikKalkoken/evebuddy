@@ -172,7 +172,7 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			fetchEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
+			loadEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
 				image.Resource = r
 				image.Refresh()
 			})

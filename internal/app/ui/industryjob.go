@@ -108,7 +108,7 @@ type industryJobs struct {
 
 	body            fyne.CanvasObject
 	bottom          *widget.Label
-	columnSorter    *iwidget.ColumnSorter
+	columnSorter    *iwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
@@ -124,14 +124,14 @@ type industryJobs struct {
 }
 
 const (
-	industryJobsColBlueprint = 0
-	industryJobsColStatus    = 1
-	industryJobsColRuns      = 2
-	industryJobsColActivity  = 3
-	industryJobsColEndDate   = 4
-	industryJobsColLocation  = 5
-	industryJobsColOwner     = 6
-	industryJobsColInstaller = 7
+	industryJobsColBlueprint = iota + 1
+	industryJobsColStatus
+	industryJobsColRuns
+	industryJobsColActivity
+	industryJobsColEndDate
+	industryJobsColLocation
+	industryJobsColOwner
+	industryJobsColInstaller
 )
 
 func newIndustryJobsForOverview(u *baseUI) *industryJobs {
@@ -143,79 +143,115 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 }
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
-	headers := iwidget.NewDataColumns([]iwidget.DataColumn{{
-		Col:   industryJobsColBlueprint,
+	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
+		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.blueprintType.Name)
+		},
 	}, {
-		Col:   industryJobsColStatus,
+		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
+		Sort: func(a, b industryJobRow) int {
+			return cmp.Compare(a.remaining(), b.remaining())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.statusDisplay())
+		},
 	}, {
-		Col:   industryJobsColRuns,
+		ID:    industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
+		Sort: func(a, b industryJobRow) int {
+			return cmp.Compare(a.runs, b.runs)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(
+				ihumanize.Comma(r.runs),
+				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
+			)
+		},
 	}, {
-		Col:   industryJobsColActivity,
+		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.activity.String(), b.activity.String())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.activity.Display())
+		},
 	}, {
-		Col:   industryJobsColEndDate,
+		ID:    industryJobsColEndDate,
 		Label: "End date",
 		Width: columnWidthDateTime,
+		Sort: func(a, b industryJobRow) int {
+			return a.endDate.Compare(b.endDate)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
+		},
 	}, {
-		Col:   industryJobsColLocation,
+		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
+		},
 	}, {
-		Col:   industryJobsColOwner,
+		ID:    industryJobsColOwner,
 		Label: "Owner",
 		Width: columnWidthEntity,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.owner.Name, b.owner.Name)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.owner.Name)
+		},
 	}, {
-		Col:   industryJobsColInstaller,
+		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: columnWidthEntity,
+		Sort: func(a, b industryJobRow) int {
+			return strings.Compare(a.installer.Name, b.installer.Name)
+		},
+		Update: func(r industryJobRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.installer.Name)
+		},
 	}})
 	a := &industryJobs{
 		bottom:         makeTopLabel(),
-		columnSorter:   iwidget.NewColumnSorter(headers, industryJobsColEndDate, iwidget.SortDesc),
+		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
 		rows:           make([]industryJobRow, 0),
 		rowsFiltered:   make([]industryJobRow, 0),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
-		switch col {
-		case industryJobsColBlueprint:
-			return iwidget.RichTextSegmentsFromText(j.blueprintType.Name)
-		case industryJobsColStatus:
-			return j.statusDisplay()
-		case industryJobsColRuns:
-			return iwidget.RichTextSegmentsFromText(
-				ihumanize.Comma(j.runs),
-				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
-			)
-		case industryJobsColActivity:
-			return iwidget.RichTextSegmentsFromText(j.activity.Display())
-		case industryJobsColEndDate:
-			return iwidget.RichTextSegmentsFromText(j.endDate.Format(app.DateTimeFormat))
-		case industryJobsColLocation:
-			return iwidget.RichTextSegmentsFromText(j.location.Name.ValueOrZero())
-		case industryJobsColOwner:
-			return iwidget.RichTextSegmentsFromText(j.owner.Name)
-		case industryJobsColInstaller:
-			return iwidget.RichTextSegmentsFromText(j.installer.Name)
-		}
-		return iwidget.RichTextSegmentsFromText("?")
-	}
 
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
-			a.showIndustryJobWindow(j)
-		})
+		a.body = iwidget.MakeDataTable(
+			columns,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
+			a.columnSorter,
+			a.filterRows, func(_ int, r industryJobRow) {
+				a.showIndustryJobWindow(r)
+			})
 	}
 
 	a.search = widget.NewEntry()
@@ -419,35 +455,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
 			})
 		}
-		// sort
-		if doSort {
-			slices.SortFunc(rows, func(a, b industryJobRow) int {
-				var c int
-				switch sortCol {
-				case industryJobsColBlueprint:
-					c = strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
-				case industryJobsColStatus:
-					c = cmp.Compare(a.remaining(), b.remaining())
-				case industryJobsColRuns:
-					c = cmp.Compare(a.runs, b.runs)
-				case industryJobsColActivity:
-					c = strings.Compare(a.activity.String(), b.activity.String())
-				case industryJobsColEndDate:
-					c = a.endDate.Compare(b.endDate)
-				case industryJobsColLocation:
-					c = strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
-				case industryJobsColOwner:
-					c = strings.Compare(a.owner.Name, b.owner.Name)
-				case industryJobsColInstaller:
-					c = strings.Compare(a.installer.Name, b.installer.Name)
-				}
-				if dir == iwidget.SortAsc {
-					return c
-				} else {
-					return -1 * c
-				}
-			})
-		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
 			return r.tags
