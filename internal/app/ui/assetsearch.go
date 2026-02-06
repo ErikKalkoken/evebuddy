@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -20,11 +21,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 const (
@@ -223,8 +226,20 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		Sort: func(a, b assetRow) int {
 			return strings.Compare(a.name, b.name)
 		},
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.BlankSvg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
+		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.name)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.typeName)
+			x := border[1].(*canvas.Image)
+			loadAssetIconAsync(u.eis, x, r.typeID, r.variant)
 		},
 	}, {
 		ID:    assetsColGroup,
@@ -308,7 +323,9 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				return iwidget.NewRichText()
+				x := iwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
 				showAssetDetailWindow(u, r)
@@ -709,6 +726,45 @@ func (a *assetSearch) characterCount() int {
 		}
 	}
 	return validCount
+}
+
+type assetIconEIS interface {
+	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
+	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
+	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+}
+
+// assetIconCache caches the images for asset icons.
+var assetIconCache xsync.Map[string, fyne.Resource]
+
+func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int32, variant app.InventoryTypeVariant) {
+	key := fmt.Sprintf("%d-%d", typeID, variant)
+	iwidget.LoadResourceAsyncWithCache(
+		icons.BlankSvg,
+		func() (fyne.Resource, bool) {
+			return assetIconCache.Load(key)
+		},
+		func(r fyne.Resource) {
+			icon.Resource = r
+			icon.Refresh()
+		},
+		func() (fyne.Resource, error) {
+			switch variant {
+			case app.VariantBPO:
+				return eis.InventoryTypeBPO(typeID, app.IconPixelSize)
+			case app.VariantBPC:
+				return eis.InventoryTypeBPC(typeID, app.IconPixelSize)
+			case app.VariantSKIN:
+				return eis.InventoryTypeSKIN(typeID, app.IconPixelSize)
+			default:
+				return eis.InventoryTypeIcon(typeID, app.IconPixelSize)
+			}
+		},
+		func(r fyne.Resource) {
+			assetIconCache.Store(key, r)
+		},
+	)
 }
 
 // showAssetDetailWindow shows the details for a character assets in a new window.
