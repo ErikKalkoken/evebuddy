@@ -471,7 +471,7 @@ func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
 			corporationID: c.CorporationID,
 			contractID:    c.ContractID,
 			isActive:      c.Status.IsActive(),
-			isHistory:     c.Status.IsCompleted(),
+			isHistory:     c.Status.IsHistory(),
 			hasIssue:      c.HasIssue(),
 		}
 		var text string
@@ -526,7 +526,7 @@ func (a *contracts) fetchRowsOverview() ([]contractRow, int, error) {
 			characterID:  c.CharacterID,
 			contractID:   c.ContractID,
 			isActive:     c.Status.IsActive(),
-			isHistory:    c.Status.IsCompleted(),
+			isHistory:    c.Status.IsHistory(),
 			hasIssue:     c.HasIssue(),
 		}
 		var text string

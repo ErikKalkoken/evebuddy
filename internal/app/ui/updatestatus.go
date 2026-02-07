@@ -23,10 +23,6 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-const (
-	updateStatusTicker = 3 * time.Second
-)
-
 type sectionCategory uint
 
 const (
@@ -69,7 +65,7 @@ type updateStatus struct {
 }
 
 func showUpdateStatusWindow(u *baseUI) {
-	w, ok, onClosed := u.getOrCreateWindowWithOnClosed("update-status", "Update Status")
+	w, ok := u.getOrCreateWindow("update-status", "Update Status")
 	if !ok {
 		w.Show()
 		return
@@ -78,12 +74,6 @@ func showUpdateStatusWindow(u *baseUI) {
 	a.update()
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	ctx, cancel := context.WithCancel(context.Background())
-	a.startTicker(ctx)
-	w.SetOnClosed(func() {
-		cancel()
-		onClosed()
-	})
 	w.Show()
 }
 
@@ -137,6 +127,24 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 			a.nav.Push(iwidget.NewAppBar("Section Detail", details, menu))
 		}
 	}
+
+	// Signals
+	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		a.update()
+	})
+
+	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		a.update()
+	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		a.update()
+	})
 	return a
 }
 
@@ -463,21 +471,6 @@ func (a *updateStatus) makeUpdateSectionAction(entityID int32, sectionID string)
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
 	}
-}
-
-func (a *updateStatus) startTicker(ctx context.Context) {
-	ticker := time.NewTicker(updateStatusTicker)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				a.update()
-				<-ticker.C
-			}
-		}
-	}()
 }
 
 type updateStatusDetail struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -132,6 +133,27 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 	return id, nil
 }
 
+func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID int32, contractIDs set.Set[int32]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationContracts for character %d and contract IDs: %s: %w", corporationID, contractIDs, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if contractIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCorporationContracts(ctx, queries.DeleteCorporationContractsParams{
+		CorporationID: int64(corporationID),
+		ContractIds:   convertNumericSet[int64](contractIDs),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Contracts deleted for corporation", "corporationID", corporationID, "contractIDs", contractIDs)
+	return nil
+}
+
 func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, contractID int32) (*app.CorporationContract, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationContract for corporation %d: %w", corporationID, err)
@@ -165,12 +187,12 @@ func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, co
 	return o, nil
 }
 
-func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID int32) ([]int32, error) {
+func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID int32) (set.Set[int32], error) {
 	ids, err := st.qRO.ListCorporationContractIDs(ctx, int64(corporationID))
 	if err != nil {
-		return nil, fmt.Errorf("list contract ids for corporation %d: %w", corporationID, err)
+		return set.Set[int32]{}, fmt.Errorf("list contract ids for corporation %d: %w", corporationID, err)
 	}
-	return convertNumericSlice[int32](ids), nil
+	return set.Of(convertNumericSlice[int32](ids)...), nil
 }
 
 func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID int32) ([]*app.CorporationContract, error) {

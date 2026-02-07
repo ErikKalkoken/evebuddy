@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -212,6 +213,33 @@ func (q *Queries) CreateCorporationContractItem(ctx context.Context, arg CreateC
 		arg.RecordID,
 		arg.TypeID,
 	)
+	return err
+}
+
+const deleteCorporationContracts = `-- name: DeleteCorporationContracts :exec
+DELETE FROM corporation_contracts
+WHERE corporation_id = ?
+AND contract_id IN (/*SLICE:contract_ids*/?)
+`
+
+type DeleteCorporationContractsParams struct {
+	CorporationID int64
+	ContractIds   []int64
+}
+
+func (q *Queries) DeleteCorporationContracts(ctx context.Context, arg DeleteCorporationContractsParams) error {
+	query := deleteCorporationContracts
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.ContractIds) > 0 {
+		for _, v := range arg.ContractIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:contract_ids*/?", strings.Repeat(",?", len(arg.ContractIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:contract_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 

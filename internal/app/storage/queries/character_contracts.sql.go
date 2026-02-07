@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -67,7 +68,9 @@ VALUES
         ?,
         ?,
         ?
-    ) RETURNING id
+    )
+RETURNING
+    id
 `
 
 type CreateCharacterContractParams struct {
@@ -133,21 +136,9 @@ func (q *Queries) CreateCharacterContract(ctx context.Context, arg CreateCharact
 
 const createCharacterContractBid = `-- name: CreateCharacterContractBid :exec
 INSERT INTO
-    character_contract_bids (
-        contract_id,
-        amount,
-        bid_id,
-        bidder_id,
-        date_bid
-    )
+    character_contract_bids (contract_id, amount, bid_id, bidder_id, date_bid)
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    )
+    (?, ?, ?, ?, ?)
 `
 
 type CreateCharacterContractBidParams struct {
@@ -181,15 +172,7 @@ INSERT INTO
         type_id
     )
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    )
+    (?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCharacterContractItemParams struct {
@@ -212,6 +195,33 @@ func (q *Queries) CreateCharacterContractItem(ctx context.Context, arg CreateCha
 		arg.RecordID,
 		arg.TypeID,
 	)
+	return err
+}
+
+const deleteCharacterContracts = `-- name: DeleteCharacterContracts :exec
+DELETE FROM character_contracts
+WHERE character_id = ?
+AND contract_id IN (/*SLICE:contract_ids*/?)
+`
+
+type DeleteCharacterContractsParams struct {
+	CharacterID int64
+	ContractIds []int64
+}
+
+func (q *Queries) DeleteCharacterContracts(ctx context.Context, arg DeleteCharacterContractsParams) error {
+	query := deleteCharacterContracts
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.ContractIds) > 0 {
+		for _, v := range arg.ContractIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:contract_ids*/?", strings.Repeat(",?", len(arg.ContractIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:contract_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
@@ -474,7 +484,8 @@ FROM
     LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 GROUP BY
-    character_id, contract_id
+    character_id,
+    contract_id
 ORDER BY
     date_issued DESC
 `
@@ -755,7 +766,7 @@ func (q *Queries) ListCharacterContractItems(ctx context.Context, contractID int
 	return items, nil
 }
 
-const listCharacterContractsForNotify = `-- name: ListCharacterContractsForNotify :many
+const listCharacterContracts = `-- name: ListCharacterContracts :many
 SELECT
     cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
     issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
@@ -793,16 +804,9 @@ FROM
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     character_id = ?
-    AND status <> "deleted"
-    AND cc.updated_at > ?
 `
 
-type ListCharacterContractsForNotifyParams struct {
-	CharacterID int64
-	UpdatedAt   time.Time
-}
-
-type ListCharacterContractsForNotifyRow struct {
+type ListCharacterContractsRow struct {
 	CharacterContract              CharacterContract
 	EveEntity                      EveEntity
 	EveEntity_2                    EveEntity
@@ -821,15 +825,15 @@ type ListCharacterContractsForNotifyRow struct {
 	Items                          interface{}
 }
 
-func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListCharacterContractsForNotifyParams) ([]ListCharacterContractsForNotifyRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterContractsForNotify, arg.CharacterID, arg.UpdatedAt)
+func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64) ([]ListCharacterContractsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContracts, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCharacterContractsForNotifyRow
+	var items []ListCharacterContractsRow
 	for rows.Next() {
-		var i ListCharacterContractsForNotifyRow
+		var i ListCharacterContractsRow
 		if err := rows.Scan(
 			&i.CharacterContract.ID,
 			&i.CharacterContract.AcceptorID,
@@ -891,8 +895,7 @@ func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListC
 }
 
 const updateCharacterContract = `-- name: UpdateCharacterContract :exec
-UPDATE
-    character_contracts
+UPDATE character_contracts
 SET
     acceptor_id = ?,
     date_accepted = ?,
@@ -928,8 +931,7 @@ func (q *Queries) UpdateCharacterContract(ctx context.Context, arg UpdateCharact
 }
 
 const updateCharacterContractNotified = `-- name: UpdateCharacterContractNotified :exec
-UPDATE
-    character_contracts
+UPDATE character_contracts
 SET
     status_notified = ?,
     updated_at = ?

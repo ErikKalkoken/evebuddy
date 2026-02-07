@@ -98,8 +98,19 @@ func (cs ContractStatus) IsActive() bool {
 	return false
 }
 
-func (cs ContractStatus) IsCompleted() bool {
+func (cs ContractStatus) IsHistory() bool {
 	return cs.consolidated() == contractConsolidatedHistory
+}
+
+func (cs ContractStatus) IsFinished() bool {
+	switch cs {
+	case
+		ContractStatusFinished,
+		ContractStatusFinishedContractor,
+		ContractStatusFinishedIssuer:
+		return true
+	}
+	return false
 }
 
 func (cs ContractStatus) Display() string {

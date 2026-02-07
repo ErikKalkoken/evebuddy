@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -132,6 +133,27 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 	return id, nil
 }
 
+func (st *Storage) DeleteCharacterContracts(ctx context.Context, characterID int32, contractIDs set.Set[int32]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterContracts for character %d and contract IDs: %s: %w", characterID, contractIDs, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if contractIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCharacterContracts(ctx, queries.DeleteCharacterContractsParams{
+		CharacterID: int64(characterID),
+		ContractIds: convertNumericSet[int64](contractIDs),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Contracts deleted for character", "characterID", characterID, "contractIDs", contractIDs)
+	return nil
+}
+
 func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contractID int32) (*app.CharacterContract, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterContract for character %d: %w", characterID, err)
@@ -165,12 +187,18 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	return o, nil
 }
 
-func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int32) ([]int32, error) {
+func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterContractIDs: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return set.Set[int32]{}, wrapErr(app.ErrInvalid)
+	}
 	ids, err := st.qRO.ListCharacterContractIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list contract ids for character %d: %w", characterID, err)
+		return set.Set[int32]{}, wrapErr(err)
 	}
-	return convertNumericSlice[int32](ids), nil
+	return set.Of(convertNumericSlice[int32](ids)...), nil
 }
 
 func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.CharacterContract, error) {
@@ -203,13 +231,16 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterContractsForNotify(ctx context.Context, characterID int32, earliest time.Time) ([]*app.CharacterContract, error) {
-	rows, err := st.qRO.ListCharacterContractsForNotify(ctx, queries.ListCharacterContractsForNotifyParams{
-		CharacterID: int64(characterID),
-		UpdatedAt:   earliest,
-	})
+func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterContracts: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterContracts(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list contracts to notify for character %d: %w", characterID, err)
+		return nil, wrapErr(err)
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {

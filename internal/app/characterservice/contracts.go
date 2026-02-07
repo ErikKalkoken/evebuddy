@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -14,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -50,10 +52,13 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 
 func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyUpdatedContracts-%d", characterID), func() (any, error) {
-		cc, err := s.st.ListCharacterContractsForNotify(ctx, characterID, earliest)
+		cc, err := s.st.ListCharacterContracts(ctx, characterID)
 		if err != nil {
 			return nil, err
 		}
+		cc = slices.DeleteFunc(cc, func(x *app.CharacterContract) bool {
+			return x.UpdatedAt.Before(earliest)
+		})
 		characterName, err := s.getCharacterName(ctx, characterID)
 		if err != nil {
 			return nil, err
@@ -168,6 +173,10 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			contracts := data.([]esi.GetCharactersCharacterIdContracts200Ok)
+			// filter out unwanted contracts
+			contracts = slices.DeleteFunc(contracts, func(x esi.GetCharactersCharacterIdContracts200Ok) bool {
+				return x.Status == "deleted"
+			})
 			// fetch missing eve entities
 			var entityIDs set.Set[int32]
 			var locationIDs set.Set[int64]
@@ -180,20 +189,22 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 				return err
 			}
 			// identify new contracts
-			ii, err := s.st.ListCharacterContractIDs(ctx, characterID)
+			current, err := s.st.ListCharacterContracts(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			existingIDs := set.Of(ii...)
+			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CharacterContract) int32 {
+				return x.ContractID
+			}))
 			var existingContracts, newContracts []esi.GetCharactersCharacterIdContracts200Ok
 			for _, c := range contracts {
-				if existingIDs.Contains(c.ContractId) {
+				if currentIDs.Contains(c.ContractId) {
 					existingContracts = append(existingContracts, c)
 				} else {
 					newContracts = append(newContracts, c)
 				}
 			}
-			slog.Debug("contracts", "existing", existingIDs, "entries", contracts)
+			slog.Debug("contracts", "current", currentIDs, "entries", contracts)
 			// create new entries
 			if len(newContracts) > 0 {
 				var count int
@@ -229,6 +240,20 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 					slog.Error("update contract bids", "contract", c, "error", err)
 					continue
 				}
+			}
+			// delete stale local contracts
+			var unfinishedIDs set.Set[int32]
+			for _, o := range current {
+				if !o.Status.IsFinished() {
+					unfinishedIDs.Add(o.ContractID)
+				}
+			}
+			incomingIDs := set.Collect(xiter.MapSlice(contracts, func(x esi.GetCharactersCharacterIdContracts200Ok) int32 {
+				return x.ContractId
+			}))
+			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
+			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
+				return err
 			}
 			return nil
 		})
