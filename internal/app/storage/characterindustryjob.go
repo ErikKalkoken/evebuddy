@@ -35,7 +35,7 @@ func init() {
 
 func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characterID int32, jobIDs set.Set[int32]) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterIndustryJobs for character %d and job IDs: %v: %w", characterID, jobIDs, err)
+		return fmt.Errorf("DeleteCharacterIndustryJobs for character %d and job IDs: %s: %w", characterID, jobIDs, err)
 	}
 	if characterID == 0 {
 		return wrapErr(app.ErrInvalid)

@@ -54,7 +54,14 @@ VALUES
         ?,
         ?,
         ?
-    ) RETURNING id;
+    )
+RETURNING
+    id;
+
+-- name: DeleteCharacterContracts :exec
+DELETE FROM character_contracts
+WHERE character_id = ?
+AND contract_id IN (sqlc.slice('contract_ids'));
 
 -- name: GetCharacterContract :one
 SELECT
@@ -133,11 +140,12 @@ FROM
     LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 GROUP BY
-    character_id, contract_id
+    character_id,
+    contract_id
 ORDER BY
     date_issued DESC;
 
--- name: ListCharacterContractsForNotify :many
+-- name: ListCharacterContracts :many
 SELECT
     sqlc.embed(cc),
     sqlc.embed(issuer_corporation),
@@ -174,9 +182,7 @@ FROM
     LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
-    character_id = ?
-    AND status <> "deleted"
-    AND cc.updated_at > ?;
+    character_id = ?;
 
 -- name: ListCharacterContractIDs :many
 SELECT
@@ -187,8 +193,7 @@ WHERE
     character_id = ?;
 
 -- name: UpdateCharacterContract :exec
-UPDATE
-    character_contracts
+UPDATE character_contracts
 SET
     acceptor_id = ?,
     date_accepted = ?,
@@ -200,8 +205,7 @@ WHERE
     AND contract_id = ?;
 
 -- name: UpdateCharacterContractNotified :exec
-UPDATE
-    character_contracts
+UPDATE character_contracts
 SET
     status_notified = ?,
     updated_at = ?
@@ -210,21 +214,9 @@ WHERE
 
 -- name: CreateCharacterContractBid :exec
 INSERT INTO
-    character_contract_bids (
-        contract_id,
-        amount,
-        bid_id,
-        bidder_id,
-        date_bid
-    )
+    character_contract_bids (contract_id, amount, bid_id, bidder_id, date_bid)
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    );
+    (?, ?, ?, ?, ?);
 
 -- name: GetCharacterContractBid :one
 SELECT
@@ -267,15 +259,7 @@ INSERT INTO
         type_id
     )
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    );
+    (?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetCharacterContractItem :one
 SELECT

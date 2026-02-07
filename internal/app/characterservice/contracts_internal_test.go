@@ -10,9 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateContractESI(t *testing.T) {
@@ -351,5 +354,121 @@ func TestUpdateContractESI(t *testing.T) {
 		o2, err := st.GetCharacterContract(ctx, c.ID, o1.ContractID)
 		require.NoError(t, err)
 		assert.Equal(t, o1.UpdatedAt, o2.UpdatedAt)
+	})
+	t.Run("should not create deleted contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		contractID := int32(42)
+		volume := 0.01
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"availability":          "public",
+				"contract_id":           contractID,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"days_to_complete":      3,
+				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
+				"issuer_id":             c.ID,
+				"price":                 1000000.01,
+				"status":                "deleted",
+				"type":                  "item_exchange",
+				"volume":                volume,
+			}}),
+		)
+		recordID := int64(123456)
+		quantity := 7
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/items/", c.ID, contractID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_included":  true,
+				"is_singleton": false,
+				"quantity":     quantity,
+				"record_id":    recordID,
+				"type_id":      et.ID,
+			}}),
+		)
+		// when
+		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContracts,
+		})
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, ids.Size())
+	})
+	t.Run("should remove unfinished contracts missing in ESI response", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusOutstanding,
+			Type:         app.ContractTypeCourier,
+		})
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusFinished,
+			Type:         app.ContractTypeCourier,
+		})
+		o2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusFinishedContractor,
+			Type:         app.ContractTypeCourier,
+		})
+		o3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusFinishedIssuer,
+			Type:         app.ContractTypeCourier,
+		})
+		o4 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusOutstanding,
+			Type:         app.ContractTypeCourier,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"availability":          "public",
+				"contract_id":           o4.ContractID,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"days_to_complete":      3,
+				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
+				"issuer_id":             c.ID,
+				"price":                 1000000.01,
+				"status":                "deleted",
+				"type":                  "courier",
+				"volume":                3,
+			}}),
+		)
+		// when
+		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContracts,
+		})
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualSet(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
 	})
 }
