@@ -56,6 +56,11 @@ VALUES
         ?
     ) RETURNING id;
 
+-- name: DeleteCorporationContracts :exec
+DELETE FROM corporation_contracts
+WHERE corporation_id = ?
+AND contract_id IN (sqlc.slice('contract_ids'));
+
 -- name: GetCorporationContract :one
 SELECT
     sqlc.embed(cc),

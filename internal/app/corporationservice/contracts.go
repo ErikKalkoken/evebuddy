@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
@@ -13,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -109,6 +111,10 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			contracts := data.([]esi.GetCorporationsCorporationIdContracts200Ok)
+			// filter out unwanted contracts
+			contracts = slices.DeleteFunc(contracts, func(x esi.GetCorporationsCorporationIdContracts200Ok) bool {
+				return x.Status == "deleted"
+			})
 			// fetch missing eve entities
 			var entityIDs set.Set[int32]
 			var locationIDs set.Set[int64]
@@ -121,20 +127,22 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 				return err
 			}
 			// identify new contracts
-			ii, err := s.st.ListCorporationContractIDs(ctx, arg.CorporationID)
+			current, err := s.st.ListCorporationContracts(ctx, arg.CorporationID)
 			if err != nil {
 				return err
 			}
-			existingIDs := set.Of(ii...)
+			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CorporationContract) int32 {
+				return x.ContractID
+			}))
 			var existingContracts, newContracts []esi.GetCorporationsCorporationIdContracts200Ok
 			for _, c := range contracts {
-				if existingIDs.Contains(c.ContractId) {
+				if currentIDs.Contains(c.ContractId) {
 					existingContracts = append(existingContracts, c)
 				} else {
 					newContracts = append(newContracts, c)
 				}
 			}
-			slog.Debug("contracts", "existing", existingIDs, "entries", contracts)
+			slog.Debug("contracts", "existing", currentIDs, "entries", contracts)
 			// create new entries
 			if len(newContracts) > 0 {
 				var count int
@@ -170,6 +178,20 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 					slog.Error("update contract bids", "contract", c, "error", err)
 					continue
 				}
+			}
+			// delete stale local contracts
+			var unfinishedIDs set.Set[int32]
+			for _, o := range current {
+				if !o.Status.IsFinished() {
+					unfinishedIDs.Add(o.ContractID)
+				}
+			}
+			incomingIDs := set.Collect(xiter.MapSlice(contracts, func(x esi.GetCorporationsCorporationIdContracts200Ok) int32 {
+				return x.ContractId
+			}))
+			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
+			if err := s.st.DeleteCorporationContracts(ctx, arg.CorporationID, staleIDs); err != nil {
+				return err
 			}
 			return nil
 		})

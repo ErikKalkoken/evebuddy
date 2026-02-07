@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -43,18 +44,16 @@ func TestCorporationContract(t *testing.T) {
 		// when
 		id, err := st.CreateCorporationContract(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationContract(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, o.ID)
-				assert.Equal(t, issuer, o.Issuer)
-				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
-				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-				assert.Equal(t, app.ContractTypeCourier, o.Type)
-				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.Equal(t, id, o.ID)
+		assert.Equal(t, issuer, o.Issuer)
+		assert.Equal(t, dateExpired, o.DateExpired)
+		assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
+		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		assert.Equal(t, app.ContractTypeCourier, o.Type)
+		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -82,24 +81,22 @@ func TestCorporationContract(t *testing.T) {
 		// when
 		id, err := st.CreateCorporationContract(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationContract(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, o.ID)
-				assert.Equal(t, issuer, o.Issuer)
-				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
-				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-				assert.Equal(t, app.ContractTypeCourier, o.Type)
-				assert.Equal(t, endLocation.ToShort(), o.EndLocation)
-				assert.Equal(t, startLocation.ToShort(), o.StartLocation)
-				assert.Equal(t, endLocation.SolarSystem.ID, o.EndSolarSystem.ID)
-				assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
-				assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
-				assert.Equal(t, startLocation.SolarSystem.Name, o.StartSolarSystem.Name)
-				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.Equal(t, id, o.ID)
+		assert.Equal(t, issuer, o.Issuer)
+		assert.Equal(t, dateExpired, o.DateExpired)
+		assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
+		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		assert.Equal(t, app.ContractTypeCourier, o.Type)
+		assert.Equal(t, endLocation.ToShort(), o.EndLocation)
+		assert.Equal(t, startLocation.ToShort(), o.StartLocation)
+		assert.Equal(t, endLocation.SolarSystem.ID, o.EndSolarSystem.ID)
+		assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
+		assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
+		assert.Equal(t, startLocation.SolarSystem.Name, o.StartSolarSystem.Name)
+		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
 	t.Run("can update contract", func(t *testing.T) {
 		// given
@@ -119,15 +116,13 @@ func TestCorporationContract(t *testing.T) {
 		// when
 		err := st.UpdateCorporationContract(ctx, arg2)
 		// then
-		if assert.NoError(t, err) {
-			o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, app.ContractStatusFinished, o2.Status)
-				assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
-				assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
-				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
-			}
-		}
+		require.NoError(t, err)
+		o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
+		require.NoError(t, err)
+		assert.Equal(t, app.ContractStatusFinished, o2.Status)
+		assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
+		assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
+		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
 	t.Run("can update notified", func(t *testing.T) {
 		// given
@@ -138,13 +133,11 @@ func TestCorporationContract(t *testing.T) {
 		// when
 		err := st.UpdateCorporationContractNotified(ctx, o1.ID, app.ContractStatusInProgress)
 		// then
-		if assert.NoError(t, err) {
-			o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
-				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
-			}
-		}
+		require.NoError(t, err)
+		o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
+		require.NoError(t, err)
+		assert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
+		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
@@ -154,13 +147,11 @@ func TestCorporationContract(t *testing.T) {
 		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		e3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		// when
-		ids, err := st.ListCorporationContractIDs(ctx, c.ID)
+		got, err := st.ListCorporationContractIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Of(ids...)
-			want := set.Of([]int32{e1.ContractID, e2.ContractID, e3.ContractID}...)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(e1.ContractID, e2.ContractID, e3.ContractID)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list contracts for a corporation", func(t *testing.T) {
 		// given
@@ -172,13 +163,28 @@ func TestCorporationContract(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationContracts(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(o1.ID, o2.ID)
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationContract) int64 {
-				return x.ID
-			})...)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(o1.ID, o2.ID)
+		got := set.Of(xslices.Map(oo, func(x *app.CorporationContract) int64 {
+			return x.ID
+		})...)
+		xassert.EqualSet(t, want, got)
+	})
+	t.Run("can delete contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		e1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		// when
+		err := st.DeleteCorporationContracts(ctx, c.ID, set.Of(e1.ContractID))
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCorporationContractIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e2.ContractID, e3.ContractID)
+		xassert.EqualSet(t, want, got)
 	})
 }
 
@@ -206,14 +212,12 @@ func TestCorporationContractBid(t *testing.T) {
 		// when
 		err := st.CreateCorporationContractBid(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationContractBid(ctx, c.ID, bidID)
-			if assert.NoError(t, err) {
-				assert.InDelta(t, amount, o.Amount, 0.1)
-				assert.Equal(t, bidder, o.Bidder)
-				assert.Equal(t, dateBid, o.DateBid)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationContractBid(ctx, c.ID, bidID)
+		require.NoError(t, err)
+		assert.InDelta(t, amount, o.Amount, 0.1)
+		assert.Equal(t, bidder, o.Bidder)
+		assert.Equal(t, dateBid, o.DateBid)
 	})
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
@@ -224,13 +228,12 @@ func TestCorporationContractBid(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationContractBids(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractBid) int32 {
-				return x.BidID
-			}))
-			want := set.Of(b1.BidID, b2.BidID)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractBid) int32 {
+			return x.BidID
+		}))
+		want := set.Of(b1.BidID, b2.BidID)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
@@ -241,10 +244,9 @@ func TestCorporationContractBid(t *testing.T) {
 		// when
 		got, err := st.ListCorporationContractBidIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(b1.BidID, b2.BidID)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(b1.BidID, b2.BidID)
+		xassert.EqualSet(t, want, got)
 	})
 }
 
@@ -269,16 +271,14 @@ func TestCorporationContractItem(t *testing.T) {
 		// when
 		err := st.CreateCorporationContractItem(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationContractItem(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				assert.True(t, o.IsIncluded)
-				assert.True(t, o.IsSingleton)
-				assert.Equal(t, 7, o.Quantity)
-				assert.Equal(t, -5, o.RawQuantity)
-				assert.Equal(t, et, o.Type)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationContractItem(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.True(t, o.IsIncluded)
+		assert.True(t, o.IsSingleton)
+		assert.Equal(t, 7, o.Quantity)
+		assert.Equal(t, -5, o.RawQuantity)
+		assert.Equal(t, et, o.Type)
 	})
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
@@ -289,12 +289,11 @@ func TestCorporationContractItem(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationContractItems(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractItem) int64 {
-				return x.RecordID
-			}))
-			want := set.Of(i1.RecordID, i2.RecordID)
-			xassert.EqualSet(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractItem) int64 {
+			return x.RecordID
+		}))
+		want := set.Of(i1.RecordID, i2.RecordID)
+		xassert.EqualSet(t, want, got)
 	})
 }
