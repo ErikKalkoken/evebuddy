@@ -1,6 +1,7 @@
 package optional_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestOptional_New(t *testing.T) {
@@ -49,6 +51,19 @@ func TestOptional_Set(t *testing.T) {
 	})
 }
 
+func TestOptional_SetWhenEmpty(t *testing.T) {
+	t.Run("sets an empty optional", func(t *testing.T) {
+		x := optional.Optional[int]{}
+		x.SetWhenEmpty(45)
+		assert.Equal(t, 45, x.ValueOrZero())
+	})
+	t.Run("does not set a non-empty optional", func(t *testing.T) {
+		x := optional.New(12)
+		x.SetWhenEmpty(45)
+		assert.Equal(t, 12, x.ValueOrZero())
+	})
+}
+
 func TestOptional_Print(t *testing.T) {
 	t.Run("can print a value", func(t *testing.T) {
 		x := optional.New(12)
@@ -59,6 +74,19 @@ func TestOptional_Print(t *testing.T) {
 		x := optional.Optional[int]{}
 		s := fmt.Sprint(x)
 		assert.Equal(t, "<empty>", s)
+	})
+}
+
+func TestOptional_Ptr(t *testing.T) {
+	t.Run("can convert a non-empty value", func(t *testing.T) {
+		o := optional.New(12)
+		x := o.Ptr()
+		xassert.Equal(t, *x, 12)
+	})
+	t.Run("can convert an empty value", func(t *testing.T) {
+		o := optional.Optional[int]{}
+		x := o.Ptr()
+		assert.Nil(t, x)
 	})
 }
 
@@ -138,6 +166,27 @@ func TestOptional_ValueOrZero(t *testing.T) {
 	})
 }
 
+func TestOptional_JSON(t *testing.T) {
+	t.Run("should marshal and unmarshal a non-empty value", func(t *testing.T) {
+		o1 := optional.New(12)
+		b, err := json.Marshal(o1)
+		require.NoError(t, err)
+		var o2 optional.Optional[int]
+		err = json.Unmarshal(b, &o2)
+		require.NoError(t, err)
+		assert.True(t, optional.Equal(o1, o2))
+	})
+	t.Run("should marshal and unmarshal an empty value", func(t *testing.T) {
+		var o1 optional.Optional[int]
+		b, err := json.Marshal(o1)
+		require.NoError(t, err)
+		var o2 optional.Optional[int]
+		err = json.Unmarshal(b, &o2)
+		require.NoError(t, err)
+		assert.True(t, optional.Equal(o1, o2))
+	})
+}
+
 func TestConvertNumeric(t *testing.T) {
 	assert.Equal(
 		t,
@@ -156,15 +205,17 @@ func TestConvertNumeric(t *testing.T) {
 	)
 }
 
-func TestFromIntegerWithZero(t *testing.T) {
-	assert.Equal(t, optional.New(5), optional.FromIntegerWithZero(5))
-	assert.Equal(t, optional.Optional[int]{}, optional.FromIntegerWithZero(0))
-}
+func TestFromZeroValue(t *testing.T) {
+	assert.Equal(t, optional.New(5), optional.FromZeroValue(5))
+	assert.Equal(t, optional.Optional[int]{}, optional.FromZeroValue(0))
 
-func TestFromIntegerWithTime(t *testing.T) {
+	assert.Equal(t, optional.New(0.5), optional.FromZeroValue(0.5))
+	assert.Equal(t, optional.Optional[float64]{}, optional.FromZeroValue(float64(0)))
+
 	x := time.Now()
-	assert.Equal(t, optional.New(x), optional.FromTimeWithZero(x))
-	assert.Equal(t, optional.Optional[time.Time]{}, optional.FromTimeWithZero(time.Time{}))
+	assert.Equal(t, optional.New(x), optional.FromZeroValue(x))
+	assert.Equal(t, optional.Optional[time.Time]{}, optional.FromZeroValue(time.Time{}))
+
 }
 
 func TestSum(t *testing.T) {
@@ -179,5 +230,49 @@ func TestSum(t *testing.T) {
 	for _, tc := range cases {
 		got := optional.Sum(tc.a, tc.b)
 		assert.Equal(t, tc.want, got)
+	}
+}
+
+func TestFromPointerOptional(t *testing.T) {
+	var x *int
+
+	a := 5
+	x = &a
+	xassert.Equal(t, optional.New(5), optional.FromPtr(x))
+
+	x = nil
+	xassert.Equal(t, optional.Optional[int]{}, optional.FromPtr(x))
+}
+
+func TestEqual(t *testing.T) {
+	cases := []struct {
+		a, b optional.Optional[int]
+		want bool
+	}{
+		{optional.New(5), optional.New(5), true},
+		{optional.New(5), optional.New(3), false},
+		{optional.New(5), optional.Optional[int]{}, false},
+		{optional.Optional[int]{}, optional.Optional[int]{}, true},
+	}
+	for _, tc := range cases {
+		got := optional.Equal(tc.a, tc.b)
+		xassert.Equal(t, tc.want, got)
+	}
+}
+
+func TestEqual2(t *testing.T) {
+	v := time.Now()
+	cases := []struct {
+		a, b optional.Optional[time.Time]
+		want bool
+	}{
+		{optional.New(v), optional.New(v), true},
+		{optional.New(v), optional.New(v.Add(1 * time.Hour)), false},
+		{optional.New(v), optional.Optional[time.Time]{}, false},
+		{optional.Optional[time.Time]{}, optional.Optional[time.Time]{}, true},
+	}
+	for _, tc := range cases {
+		got := optional.Equal2(tc.a, tc.b)
+		xassert.Equal(t, tc.want, got)
 	}
 }

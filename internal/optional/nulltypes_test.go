@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestNullTypeConversion(t *testing.T) {
