@@ -15,10 +15,10 @@ require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/anthonynsimon/bild v0.14.0
-	github.com/antihax/goesi v0.0.0-20251103030832-a87832eae7ca
 	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/dweymouth/fyne-tooltip v0.4.0
+	github.com/fnt-eve/goesi-openapi v0.0.19
 	github.com/goccy/go-yaml v1.18.0
 	github.com/gohugoio/httpcache v0.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
@@ -33,6 +33,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
+	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/text v0.31.0
 	golang.org/x/time v0.14.0
@@ -53,7 +54,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
-	github.com/fnt-eve/goesi-openapi v0.0.19 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -68,7 +68,6 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.2.0 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
@@ -78,7 +77,6 @@ require (
 	github.com/jackmordaunt/icns/v2 v2.2.6 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/josephspurrier/goversioninfo v1.4.0 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
 	github.com/juju/errors v1.0.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
@@ -88,7 +86,6 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.1.6 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/lucor/goinfo v0.9.0 // indirect
-	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
@@ -106,7 +103,6 @@ require (
 	golang.org/x/image v0.33.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/oauth2 v0.33.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect

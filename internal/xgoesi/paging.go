@@ -36,8 +36,8 @@ func FetchPagesWithStop[T any](fetch func(page int32) ([]T, *http.Response, erro
 	if pages < 2 || exit(items) {
 		return items, nil
 	}
-	for p := 2; p <= pages; p++ {
-		it, _, err := fetch(int32(p))
+	for p := int32(2); p <= pages; p++ {
+		it, _, err := fetch(p)
 		if err != nil {
 			return nil, err
 		}
@@ -68,10 +68,10 @@ func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int32) 
 	results[0] = result
 	g := new(errgroup.Group)
 	g.SetLimit(concurrencyLimit)
-	for p := 2; p <= pages; p++ {
+	for p := int32(2); p <= pages; p++ {
 		p := p
 		g.Go(func() error {
-			result, _, err := fetch(int32(p))
+			result, _, err := fetch(p)
 			if err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int32) 
 	return combined, nil
 }
 
-func extractPageCount(r *http.Response) (int, error) {
+func extractPageCount(r *http.Response) (int32, error) {
 	x := r.Header.Get("X-Pages")
 	if x == "" {
 		return 1, nil
@@ -98,5 +98,5 @@ func extractPageCount(r *http.Response) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pages, nil
+	return int32(pages), nil
 }
