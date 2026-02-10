@@ -46,10 +46,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
-			responder,
-		)
+		httpmock.RegisterResponder("POST", "https://esi.evetech.net/universe/names", responder)
 		e1 := factory.CreateEveEntityCharacter()
 		// when
 		ids, err := s.AddMissingEntities(ctx, set.Of(e1.ID))
@@ -63,10 +60,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
-			responder,
-		)
+		httpmock.RegisterResponder("POST", "https://esi.evetech.net/universe/names", responder)
 		// when
 		ids, err := s.AddMissingEntities(ctx, set.Of[int64](47))
 		// then
@@ -86,7 +80,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
@@ -100,7 +94,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		e1 := factory.CreateEveEntityAlliance()
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -130,7 +124,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
@@ -151,7 +145,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -173,7 +167,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -195,7 +189,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -218,7 +212,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -244,7 +238,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -269,7 +263,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			responder,
 		)
 		// when
@@ -314,7 +308,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),
@@ -377,7 +371,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),
@@ -404,7 +398,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi.evetech.net/universe/names`,
+			"https://esi.evetech.net/universe/names",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),

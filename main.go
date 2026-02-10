@@ -160,8 +160,6 @@ func main() {
 		return
 	}
 
-	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
-
 	appSettings := settings.New(fyneApp.Preferences())
 	if *resetUIFlag {
 		appSettings.ResetUI()
@@ -192,6 +190,8 @@ func main() {
 		logWriter = io.MultiWriter(os.Stderr, logger)
 	}
 	log.SetOutput(logWriter)
+
+	log.Printf("INFO EVE Buddy started version=%s", fyneApp.Metadata().Version)
 
 	if *ssoDemoFlag {
 		client, err := eveauth.NewClient(eveauth.Config{

@@ -5,13 +5,13 @@ type MercenaryDenAttacked struct {
 	AggressorAllianceName    string  `json:"aggressorAllianceName"`
 	AggressorCharacterID     int64   `json:"aggressorCharacterID"`
 	AggressorCorporationName string  `json:"aggressorCorporationName"`
-	ArmorPercentage          float32 `json:"armorPercentage"`
-	HullPercentage           float32 `json:"hullPercentage"`
+	ArmorPercentage          float64 `json:"armorPercentage"`
+	HullPercentage           float64 `json:"hullPercentage"`
 	ItemID                   int64   `json:"itemID"`
 	MercenaryDenShowInfoData []any   `json:"mercenaryDenShowInfoData"`
 	PlanetID                 int64   `json:"planetID"`
 	PlanetShowInfoData       []any   `json:"planetShowInfoData"`
-	ShieldPercentage         float32 `json:"shieldPercentage"`
+	ShieldPercentage         float64 `json:"shieldPercentage"`
 	SolarsystemID            int64   `json:"solarsystemID"`
 	TypeID                   int64   `json:"typeID"`
 }

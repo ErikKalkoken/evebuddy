@@ -128,7 +128,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					newNotifs = append(newNotifs, n)
 				}
 			}
-			if err := s.loadEntitiesForNotifications(ctx, existingNotifs); err != nil {
+			if err := s.loadEntitiesForNotifications(ctx, characterID, existingNotifs); err != nil {
 				return err
 			}
 			var updatedCount int
@@ -174,7 +174,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				slog.Info("No new notifications", "characterID", characterID)
 				return nil
 			}
-			if err := s.loadEntitiesForNotifications(ctx, newNotifs); err != nil {
+			if err := s.loadEntitiesForNotifications(ctx, characterID, newNotifs); err != nil {
 				return err
 			}
 			character, err := s.st.GetCharacter(ctx, characterID)
@@ -245,15 +245,25 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 		})
 }
 
-func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, notifications []esi.CharactersCharacterIdNotificationsGetInner) error {
+func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, characterID int64, notifications []esi.CharactersCharacterIdNotificationsGetInner) error {
 	if len(notifications) == 0 {
 		return nil
 	}
+	// resolve senders (mandatory)
 	var ids set.Set[int64]
 	for _, n := range notifications {
 		if n.SenderId != 0 {
 			ids.Add(n.SenderId)
 		}
+	}
+	_, err := s.eus.AddMissingEntities(ctx, ids)
+	if err != nil {
+		return err
+	}
+
+	// resolve IDs in text field (optional)
+	ids.Clear()
+	for _, n := range notifications {
 		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found {
 			continue
@@ -263,14 +273,15 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, not
 			continue
 		}
 		if err != nil {
-			return err
+			slog.Warn("Failed to extract entity IDs from notifications", "characterID", characterID, "error", err)
+			continue
 		}
 		ids.AddSeq(ids2.All())
 	}
 	if ids.Size() > 0 {
 		_, err := s.eus.AddMissingEntities(ctx, ids)
 		if err != nil {
-			return err
+			slog.Warn("Failed to resolve entity IDs from notifications", "characterID", characterID, "error", err)
 		}
 	}
 	return nil

@@ -9,6 +9,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -26,11 +27,12 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		Storage:            st,
 	})
 	arg := Params{
-		Cache:              testutil.NewCacheFake2(),
-		ESIClient:          client,
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
+		Cache:                  testutil.NewCacheFake2(),
+		ESIClient:              client,
+		EveNotificationService: evenotification.New(eus),
+		EveUniverseService:     eus,
+		StatusCacheService:     scs,
+		Storage:                st,
 	}
 	if len(args) > 0 {
 		a := args[0]
