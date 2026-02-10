@@ -884,7 +884,7 @@ func eveEntityFromHTMLLink(html string) (*app.EveEntity, error) {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	o := &app.EveEntity{
-		ID:       int64(id),
+		ID:       int64(int32(id)),
 		Category: c,
 		Name:     a.Text(),
 	}

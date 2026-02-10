@@ -84,6 +84,15 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int64])
 //
 // ID 0 will be ignored
 func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("AddMissingEntities: %w", err)
+	}
+	for id := range ids.All() {
+		if id != int64(int32(id)) {
+			return set.Set[int64]{}, wrapErr(fmt.Errorf("ID %d: %w", id, app.ErrInvalid))
+		}
+	}
+
 	var bad set.Set[int64]
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore zero ID
@@ -97,9 +106,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			ids2.Delete(id)
 		}
 	}
-	wrapErr := func(err error) error {
-		return fmt.Errorf("AddMissingEntities: %w", err)
-	}
+
 	var missing set.Set[int64]
 	if ids2.Size() > 0 {
 		// Identify missing IDs
