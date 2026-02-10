@@ -38,14 +38,14 @@ type EveCharacter struct {
 	Alliance       *EveEntity // optional
 	Birthday       time.Time
 	Corporation    *EveEntity
-	Description    string     // FIXME: Should be null type
+	Description    optional.Optional[string]
 	Faction        *EveEntity // optional
 	Gender         string
 	ID             int64
 	Name           string
 	Race           *EveRace
-	SecurityStatus float64 // FIXME: Should be null type
-	Title          string
+	SecurityStatus optional.Optional[float64]
+	Title          optional.Optional[string]
 }
 
 func (ec EveCharacter) AllianceID() int64 {
@@ -63,7 +63,7 @@ func (ec EveCharacter) AllianceName() string {
 }
 
 func (ec EveCharacter) DescriptionPlain() string {
-	return evehtml.ToPlain(ec.Description)
+	return evehtml.ToPlain(ec.Description.ValueOrZero())
 }
 
 // EntityIDs returns the IDs of all entities for a character.
@@ -128,7 +128,7 @@ func (ec EveCharacter) Hash() string {
 		ec.ID,
 		ec.Name,
 		raceID,
-		math.Round(ec.SecurityStatus * 100),
+		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
 		ec.Title,
 	}
 	s := make([]string, 0)

@@ -68,7 +68,7 @@ func (st *Storage) GetEveType(ctx context.Context, id int64) (*app.EveType, erro
 }
 
 func getEveType(ctx context.Context, q *queries.Queries, id int64) (*app.EveType, error) {
-	r, err := q.GetEveType(ctx,id)
+	r, err := q.GetEveType(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("getEveType for id %d: %w", id, convertGetError(err))
 	}
@@ -143,7 +143,7 @@ func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveTypeIDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int64](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 
@@ -152,7 +152,7 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int64]) (set
 	if err != nil {
 		return set.Set[int64]{}, err
 	}
-	current := set.Of(convertNumericSlice[int64](currentIDs)...)
+	current := set.Of(currentIDs...)
 	missing := set.Difference(ids, current)
 	return missing, nil
 }

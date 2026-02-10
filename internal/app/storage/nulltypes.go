@@ -41,10 +41,3 @@ func NewTimeFromNullTime(v sql.NullTime) time.Time {
 	}
 	return v.Time
 }
-
-func NewIntegerFromNullInt64[T constraints.Integer](v sql.NullInt64) T {
-	if !v.Valid {
-		return T(0)
-	}
-	return T(v.Int64)
-}

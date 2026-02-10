@@ -80,8 +80,8 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 				t.Fatal()
 			}
 		xassert.Equal(t, tc.category, o.Category)
-			assert.EqualValues(t, tc.id, o.ID)
-			assert.EqualValues(t, tc.name, o.Name)
+			xassert.Equal(t, tc.id, o.ID)
+			xassert.Equal(t, tc.name, o.Name)
 		} else {
 			assert.Error(t, err)
 		}

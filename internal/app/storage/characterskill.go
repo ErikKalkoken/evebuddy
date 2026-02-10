@@ -53,12 +53,11 @@ func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeI
 }
 
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
-	ids1, err := st.qRO.ListCharacterSkillIDs(ctx, characterID)
+	ids, err := st.qRO.ListCharacterSkillIDs(ctx, characterID)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
-	ids2 := set.Of(convertNumericSlice[int64](ids1)...)
-	return ids2, nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {

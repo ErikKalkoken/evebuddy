@@ -27,8 +27,8 @@ func (st *Storage) CreateCorporationMember(ctx context.Context, arg CorporationM
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationMember(ctx, queries.CreateCorporationMemberParams{
-		CharacterID:  arg.CharacterID,
-		CorporationID:arg.CorporationID,
+		CharacterID:   arg.CharacterID,
+		CorporationID: arg.CorporationID,
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -44,8 +44,8 @@ func (st *Storage) GetCorporationMember(ctx context.Context, arg CorporationMemb
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationMembers(ctx, queries.GetCorporationMembersParams{
-		CorporationID:arg.CorporationID,
-		CharacterID:  arg.CharacterID,
+		CorporationID: arg.CorporationID,
+		CharacterID:   arg.CharacterID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -64,7 +64,7 @@ func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID i
 		return nil
 	}
 	err := st.qRW.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
-		CorporationID:corporationID,
+		CorporationID: corporationID,
 		CharacterIds:  convertNumericSet[int64](characterIDs),
 	})
 	if err != nil {
@@ -80,7 +80,7 @@ func (st *Storage) ListCorporationMembers(ctx context.Context, corporationID int
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationMembers(ctx,corporationID)
+	rows, err := st.qRO.ListCorporationMembers(ctx, corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -98,16 +98,16 @@ func (st *Storage) ListCorporationMemberIDs(ctx context.Context, corporationID i
 	if corporationID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	characterIDs, err := st.qRO.ListCorporationMemberIDs(ctx,corporationID)
+	ids, err := st.qRO.ListCorporationMemberIDs(ctx, corporationID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(convertNumericSlice[int64](characterIDs)...), nil
+	return set.Of(ids...), nil
 }
 
 func corporationMemberFromDBModel(o queries.CorporationMember, ee queries.EveEntity) *app.CorporationMember {
 	o2 := &app.CorporationMember{
-		CorporationID:o.CorporationID,
+		CorporationID: o.CorporationID,
 		Character:     eveEntityFromDBModel(ee),
 	}
 	return o2

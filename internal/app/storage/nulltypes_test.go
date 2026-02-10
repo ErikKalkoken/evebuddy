@@ -60,9 +60,3 @@ func TestTimeFromNullTime(t *testing.T) {
 		assert.True(t, x.IsZero())
 	})
 }
-
-func TestIntegerFromNullInt64(t *testing.T) {
-	xassert.Equal(t, 42, storage.NewIntegerFromNullInt64[int](sql.NullInt64{Int64: 42, Valid: true}))
-	xassert.Equal(t, 0, storage.NewIntegerFromNullInt64[int](sql.NullInt64{}))
-	xassert.Equal(t, int64(42), storage.NewIntegerFromNullInt64[int64](sql.NullInt64{Int64: 42, Valid: true}))
-}

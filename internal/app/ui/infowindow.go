@@ -671,7 +671,9 @@ func (a *characterInfo) update(ctx context.Context) error {
 
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+		a.security.SetText(fmt.Sprintf("Security Status: %s", o.SecurityStatus.StringFunc("?", func(v float64) string {
+			return fmt.Sprintf("%.1f", v)
+		})))
 		a.corporation.SetText(o.Corporation.Name)
 		a.corporation.OnTapped = func() {
 			a.iw.showEveEntity(o.Corporation)
@@ -696,11 +698,11 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 	})
 	fyne.Do(func() {
-		if o.Title == "" {
+		if o.Title.IsEmpty() {
 			a.title.Hide()
 			return
 		}
-		a.title.SetText("Title: " + o.Title)
+		a.title.SetText("Title: " + o.Title.ValueOrZero())
 	})
 	attributes, err := a.makeAttributes(o)
 	if err != nil {
@@ -767,7 +769,9 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
-		newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
+		newAttributeItem("Security Status", o.SecurityStatus.StringFunc("?", func(v float64) string {
+			return fmt.Sprintf("%.1f", v)
+		})),
 		newAttributeItem("Corporation", o.Corporation),
 	}
 	if o.Alliance != nil {

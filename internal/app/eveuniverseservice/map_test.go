@@ -584,13 +584,13 @@ func TestMembershipHistory(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
-			assert.EqualValues(t, app.MembershipHistoryItem{
+			xassert.Equal(t, app.MembershipHistoryItem{
 				Days:         4,
 				Organization: c2,
 				RecordID:     501,
 				StartDate:    time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
 			}, x[0])
-			assert.EqualValues(t, app.MembershipHistoryItem{
+			xassert.Equal(t, app.MembershipHistoryItem{
 				EndDate:      time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
 				Days:         30,
 				IsDeleted:    optional.New(true),
@@ -627,14 +627,14 @@ func TestMembershipHistory(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
-			assert.EqualValues(t, app.MembershipHistoryItem{
+			xassert.Equal(t, app.MembershipHistoryItem{
 				Days:         5,
 				IsDeleted:    optional.New(true),
 				Organization: c1,
 				RecordID:     23,
 				StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
 			}, x[0])
-			assert.EqualValues(t, app.MembershipHistoryItem{
+			xassert.Equal(t, app.MembershipHistoryItem{
 				EndDate:   time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
 				Days:      476,
 				IsOldest:  true,
@@ -673,7 +673,7 @@ func TestGetStarTypeID(t *testing.T) {
 	got, err := s.GetStarTypeID(ctx, 40000046)
 	// then
 	if assert.NoError(t, err) {
-		assert.EqualValues(t, 45033, got)
+		xassert.Equal(t, 45033, got)
 	}
 }
 

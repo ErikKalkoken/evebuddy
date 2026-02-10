@@ -140,7 +140,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int64], error)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int64](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 
@@ -164,7 +164,7 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 		return []*app.EveEntity{}, nil
 	}
 	rows := make([]queries.EveEntity, 0)
-	for idsChunk := range slices.Chunk(convertNumericSlice[int64](ids), st.MaxListEveEntitiesForIDs) {
+	for idsChunk := range slices.Chunk(ids, st.MaxListEveEntitiesForIDs) {
 		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)

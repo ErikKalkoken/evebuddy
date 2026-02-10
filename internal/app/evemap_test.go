@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -13,9 +11,9 @@ import (
 func TestEveConstellationEveEntity(t *testing.T) {
 	x1 := &app.EveConstellation{ID: 42, Name: "name"}
 	x2 := x1.EveEntity()
-	assert.EqualValues(t, 42, x2.ID)
-	assert.EqualValues(t, "name", x2.Name)
-	assert.EqualValues(t, app.EveEntityConstellation, x2.Category)
+	xassert.Equal(t, 42, x2.ID)
+	xassert.Equal(t, "name", x2.Name)
+	xassert.Equal(t, app.EveEntityConstellation, x2.Category)
 }
 
 func TestEvePlanetTypeDisplay(t *testing.T) {

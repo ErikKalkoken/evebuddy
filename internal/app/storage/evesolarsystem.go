@@ -35,7 +35,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 }
 
 func (st *Storage) GetEveSolarSystem(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
-	row, err := st.qRO.GetEveSolarSystem(ctx,id)
+	row, err := st.qRO.GetEveSolarSystem(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get EveSolarSystem for id %d: %w", id, convertGetError(err))
 	}
@@ -46,7 +46,7 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int64) (*app.EveSol
 func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *app.EveSolarSystem {
 	return &app.EveSolarSystem{
 		Constellation:  eveConstellationFromDBModel(c, r),
-		ID:            s.ID,
+		ID:             s.ID,
 		Name:           s.Name,
 		SecurityStatus: float32(s.SecurityStatus),
 	}
@@ -57,7 +57,7 @@ func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int64], e
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
@@ -65,7 +65,7 @@ func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64
 	if err != nil {
 		return set.Set[int64]{}, err
 	}
-	current := set.Of(convertNumericSlice[int64](currentIDs)...)
+	current := set.Of(currentIDs...)
 	missing := set.Difference(ids, current)
 	return missing, nil
 }

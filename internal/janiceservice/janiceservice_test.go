@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestService(t *testing.T) {
@@ -73,14 +74,14 @@ func TestPricer(t *testing.T) {
 		x, err := s.FetchPrices(context.Background(), 34)
 		if assert.NoError(t, err) {
 			assert.Equal(t, time.Date(2025, 4, 25, 1, 2, 3, 0, time.UTC), x.Date)
-			assert.EqualValues(t, 2, x.Market.ID)
-			assert.EqualValues(t, "Jita 4-4", x.Market.Name)
-			assert.EqualValues(t, 11113209302, x.BuyVolume)
-			assert.EqualValues(t, 11504901017, x.SellVolume)
+			xassert.Equal(t, 2, x.Market.ID)
+			xassert.Equal(t, "Jita 4-4", x.Market.Name)
+			xassert.Equal(t, 11113209302, x.BuyVolume)
+			xassert.Equal(t, 11504901017, x.SellVolume)
 			assert.InDelta(t, 4.04, x.ImmediatePrices.BuyPrice, 0.005)
 			assert.InDelta(t, 3.97, x.Top5AveragePrices.BuyPrice, 0.005)
-			assert.EqualValues(t, 34, x.ItemType.EID)
-			assert.EqualValues(t, "Tritanium", x.ItemType.Name)
+			xassert.Equal(t, 34, x.ItemType.EID)
+			xassert.Equal(t, "Tritanium", x.ItemType.Name)
 			assert.InDelta(t, 0.01, x.ItemType.Volume, 0.005)
 			assert.InDelta(t, 0.02, x.ItemType.PackagedVolume, 0.005)
 		}

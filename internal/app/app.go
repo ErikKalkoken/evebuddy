@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"github.com/mattn/go-sqlite3"
 )
 
@@ -70,32 +71,17 @@ func ErrorDisplay(err error) string {
 	if errors.Is(err, ErrTokenError) {
 		return "token error"
 	}
-	switch t := err.(type) {
+	switch x := err.(type) {
 	case sqlite3.Error:
 		return "database error"
-	// case esi.GenericSwaggerError: // FIXME: Restore this feature
-	// 	var detail string
-	// 	switch t2 := t.Model().(type) {
-	// 	case esi.BadRequest:
-	// 		detail = t2.Error_
-	// 	case esi.ErrorLimited:
-	// 		detail = t2.Error_
-	// 	case esi.GatewayTimeout:
-	// 		detail = t2.Error_
-	// 	case esi.Forbidden:
-	// 		detail = t2.Error_
-	// 	case esi.InternalServerError:
-	// 		detail = t2.Error_
-	// 	case esi.ServiceUnavailable:
-	// 		detail = t2.Error_
-	// 	case esi.Unauthorized:
-	// 		detail = t2.Error_
-	// 	default:
-	// 		detail = "General swagger error"
-	// 	}
-	// 	return fmt.Sprintf("%s: %s", err.Error(), detail)
+	case *esi.GenericOpenAPIError:
+		msg := x.Error()
+		if x, ok := x.Model().(esi.Error); ok {
+			msg += ": " + x.Error
+		}
+		return msg
 	case *net.OpError:
-		switch t.Op {
+		switch x.Op {
 		case "dial":
 			return "unknown host"
 		case "read":
@@ -103,13 +89,13 @@ func ErrorDisplay(err error) string {
 		}
 		return "network error"
 	case syscall.Errno:
-		if t == syscall.ECONNREFUSED {
+		if x == syscall.ECONNREFUSED {
 			return "connection refused"
 		}
 	case *url.Error:
 		return "network error"
 	case net.Error:
-		if t.Timeout() {
+		if x.Timeout() {
 			return "timeout"
 		}
 		return "network error"

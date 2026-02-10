@@ -170,7 +170,7 @@ func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int64) 
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterID int64) (set.Set[int64], error) {
@@ -178,7 +178,7 @@ func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterI
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int64) ([]*app.EveEntity, error) {

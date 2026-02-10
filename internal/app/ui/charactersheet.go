@@ -179,7 +179,9 @@ func (a *characterSheet) update() {
 		}
 
 		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
-		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
+		a.security.SetText(c.EveCharacter.SecurityStatus.StringFunc("?", func(v float64) string {
+			return fmt.Sprintf("%.1f", v)
+		}))
 
 		a.lastLoginAt.SetText(c.LastLoginAt.StringFunc("?", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)

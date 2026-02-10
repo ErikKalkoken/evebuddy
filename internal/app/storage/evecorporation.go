@@ -53,7 +53,7 @@ func (st *Storage) ListEveCorporationIDs(ctx context.Context) (set.Set[int64], e
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveCorporationIDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int64](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 

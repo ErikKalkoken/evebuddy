@@ -324,7 +324,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 		// then
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 42, x.ID)
+			xassert.Equal(t, 42, x.ID)
 			xassert.Equal(t, "Erik", x.Name)
 			xassert.Equal(t, app.EveEntityCharacter, x.Category)
 		}
@@ -359,8 +359,8 @@ func TestToEveEntities(t *testing.T) {
 		oo, err := s.ToEntities(ctx, set.Of[int64](0, 1))
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, &app.EveEntity{ID: 0}, oo[0])
-			assert.EqualValues(t, &app.EveEntity{ID: 1, Name: "?", Category: app.EveEntityUnknown}, oo[1])
+			xassert.Equal(t, &app.EveEntity{ID: 0}, oo[0])
+			xassert.Equal(t, &app.EveEntity{ID: 1, Name: "?", Category: app.EveEntityUnknown}, oo[1])
 		}
 	})
 }
@@ -390,7 +390,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 			xassert.Equal2(t, want, got)
 			o2, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 42, o2.ID)
+				xassert.Equal(t, 42, o2.ID)
 				xassert.Equal(t, "Erik", o2.Name)
 				xassert.Equal(t, app.EveEntityCharacter, o2.Category)
 			}

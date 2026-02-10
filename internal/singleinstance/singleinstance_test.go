@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGroup(t *testing.T) {
@@ -26,5 +26,5 @@ func TestGroup(t *testing.T) {
 	wg.Go(f)
 	wg.Go(f)
 	wg.Wait()
-	assert.EqualValues(t, 1, c.Load())
+	xassert.Equal(t, 1, c.Load())
 }

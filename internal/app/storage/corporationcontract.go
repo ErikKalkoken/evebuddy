@@ -192,7 +192,7 @@ func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list contract ids for corporation %d: %w", corporationID, err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID int64) ([]*app.CorporationContract, error) {
@@ -421,7 +421,7 @@ func (st *Storage) ListCorporationContractBidIDs(ctx context.Context, contractID
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), err
+	return set.Of(ids...), err
 }
 
 func corporationContractBidFromDBModel(o queries.CorporationContractBid, e queries.EveEntity) *app.CorporationContractBid {

@@ -199,7 +199,7 @@ func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
 	}
-	return set.Of(convertNumericSlice[int64](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int64], error) {
@@ -211,7 +211,7 @@ func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (se
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int64](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 

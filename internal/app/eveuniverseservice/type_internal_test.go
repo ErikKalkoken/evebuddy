@@ -159,8 +159,8 @@ func TestFormatDogmaValue(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			s, v := formatDogmaValue(context.Background(), tc.args)
-			assert.EqualValues(t, tc.s, s)
-			assert.EqualValues(t, tc.v, v)
+			xassert.Equal(t, tc.s, s)
+			xassert.Equal(t, tc.v, v)
 		})
 	}
 }

@@ -61,9 +61,9 @@ func TestEveCharacter(t *testing.T) {
 			xassert.Equal(t, alliance2, c2.Alliance)
 			xassert.Equal(t, faction2, c2.Faction)
 			xassert.Equal(t, "Erik", c2.Name)
-			xassert.Equal(t, "new description", c2.Description)
-			xassert.Equal(t, "new title", c2.Title)
-			xassert.Equal(t, -9.9, c2.SecurityStatus)
+			xassert.Equal(t, "new description", c2.Description.ValueOrZero())
+			xassert.Equal(t, "new title", c2.Title.ValueOrZero())
+			xassert.Equal(t, -9.9, c2.SecurityStatus.ValueOrZero())
 		}
 	})
 	t.Run("can update existing 2", func(t *testing.T) {
