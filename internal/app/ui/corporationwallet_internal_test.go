@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCorporationWallet_CanRenderWithData(t *testing.T) {
@@ -39,8 +40,8 @@ func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 	})
 	factory.SetCharacterRoles(ec.ID, set.Of(app.RoleAccountant))
 	factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
-		Amount:        2_345_67.89,
-		Balance:       balance,
+		Amount:        optional.New(2_345_67.89),
+		Balance:       optional.New(balance),
 		CorporationID: c.ID,
 		Description:   "Test entry",
 		Date:          time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC),

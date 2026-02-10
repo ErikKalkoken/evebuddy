@@ -37,11 +37,11 @@ func TestToken(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterToken(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, arg.AccessToken, x.AccessToken)
-				assert.Equal(t, c.ID, x.CharacterID)
-				assert.Equal(t, arg.ExpiresAt.UTC(), x.ExpiresAt.UTC())
+				xassert.Equal(t, arg.AccessToken, x.AccessToken)
+				xassert.Equal(t, c.ID, x.CharacterID)
+				xassert.Equal(t, arg.ExpiresAt.UTC(), x.ExpiresAt.UTC())
 				assert.True(t, x.Scopes.Equal(arg.Scopes), "got %q, wanted %q", x.Scopes, arg.Scopes)
-				assert.Equal(t, arg.TokenType, x.TokenType)
+				xassert.Equal(t, arg.TokenType, x.TokenType)
 			}
 		}
 	})
@@ -53,11 +53,11 @@ func TestToken(t *testing.T) {
 		r, err := st.GetCharacterToken(ctx, c.CharacterID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.AccessToken, r.AccessToken)
-			assert.Equal(t, c.CharacterID, r.CharacterID)
-			assert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
-			assert.Equal(t, c.RefreshToken, r.RefreshToken)
-			assert.Equal(t, c.TokenType, r.TokenType)
+			xassert.Equal(t, c.AccessToken, r.AccessToken)
+			xassert.Equal(t, c.CharacterID, r.CharacterID)
+			xassert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
+			xassert.Equal(t, c.RefreshToken, r.RefreshToken)
+			xassert.Equal(t, c.TokenType, r.TokenType)
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -74,11 +74,11 @@ func TestToken(t *testing.T) {
 		assert.NoError(t, err)
 		o2, err := st.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "changed", o2.AccessToken)
-			assert.Equal(t, c.ID, o2.CharacterID)
-			assert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			xassert.EqualSet(t, set.Of("alpha", "bravo"), o2.Scopes)
-			assert.Equal(t, o1.TokenType, o2.TokenType)
+			xassert.Equal(t, "changed", o2.AccessToken)
+			xassert.Equal(t, c.ID, o2.CharacterID)
+			xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
+			xassert.Equal2(t, set.Of("alpha", "bravo"), o2.Scopes)
+			xassert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})
 
@@ -145,7 +145,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, r, 1)
-			assert.Equal(t, c1.ID, r[0].CharacterID)
+			xassert.Equal(t, c1.ID, r[0].CharacterID)
 		}
 	})
 	t.Run("matches any when no roles", func(t *testing.T) {

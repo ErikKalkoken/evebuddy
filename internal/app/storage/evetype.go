@@ -9,23 +9,24 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateEveTypeParams struct {
-	ID             int32
-	Capacity       float32
+	ID             int64
+	Capacity       optional.Optional[float64]
 	Description    string
-	GraphicID      int32
-	GroupID        int32
-	IconID         int32
+	GraphicID      optional.Optional[int64]
+	GroupID        int64
+	IconID         optional.Optional[int64]
 	IsPublished    bool
-	MarketGroupID  int32
-	Mass           float32
+	MarketGroupID  optional.Optional[int64]
+	Mass           optional.Optional[float64]
 	Name           string
-	PackagedVolume float32
-	PortionSize    int
-	Radius         float32
-	Volume         float32
+	PackagedVolume optional.Optional[float64]
+	PortionSize    optional.Optional[int64]
+	Radius         optional.Optional[float64]
+	Volume         optional.Optional[float64]
 }
 
 func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
@@ -40,20 +41,20 @@ func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypePar
 		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeParams{
-		ID:             int64(arg.ID),
-		EveGroupID:     int64(arg.GroupID),
-		Capacity:       float64(arg.Capacity),
+		ID:             arg.ID,
+		EveGroupID:     arg.GroupID,
+		Capacity:       arg.Capacity.ValueOrZero(),
 		Description:    arg.Description,
-		GraphicID:      int64(arg.GraphicID),
-		IconID:         int64(arg.IconID),
+		GraphicID:      arg.GraphicID.ValueOrZero(),
+		IconID:         arg.IconID.ValueOrZero(),
 		IsPublished:    arg.IsPublished,
-		MarketGroupID:  int64(arg.MarketGroupID),
-		Mass:           float64(arg.Mass),
+		MarketGroupID:  arg.MarketGroupID.ValueOrZero(),
+		Mass:           arg.Mass.ValueOrZero(),
 		Name:           arg.Name,
-		PackagedVolume: float64(arg.PackagedVolume),
-		PortionSize:    int64(arg.PortionSize),
-		Radius:         float64(arg.Radius),
-		Volume:         float64(arg.Volume),
+		PackagedVolume: arg.PackagedVolume.ValueOrZero(),
+		PortionSize:    arg.PortionSize.ValueOrZero(),
+		Radius:         arg.Radius.ValueOrZero(),
+		Volume:         arg.Volume.ValueOrZero(),
 	}
 	err := q.CreateEveType(ctx, arg2)
 	if err != nil {
@@ -62,12 +63,12 @@ func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypePar
 	return nil
 }
 
-func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
+func (st *Storage) GetEveType(ctx context.Context, id int64) (*app.EveType, error) {
 	return getEveType(ctx, st.qRO, id)
 }
 
-func getEveType(ctx context.Context, q *queries.Queries, id int32) (*app.EveType, error) {
-	r, err := q.GetEveType(ctx, int64(id))
+func getEveType(ctx context.Context, q *queries.Queries, id int64) (*app.EveType, error) {
+	r, err := q.GetEveType(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("getEveType for id %d: %w", id, convertGetError(err))
 	}
@@ -88,20 +89,20 @@ func (st *Storage) ListEveTypes(ctx context.Context) ([]*app.EveType, error) {
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {
 	return &app.EveType{
-		ID:             int32(t.ID),
+		ID:             t.ID,
 		Group:          eveGroupFromDBModel(g, c),
-		Capacity:       float32(t.Capacity),
+		Capacity:       optional.FromZeroValue(t.Capacity),
 		Description:    t.Description,
-		GraphicID:      int32(t.GraphicID),
-		IconID:         int32(t.IconID),
+		GraphicID:      optional.FromZeroValue(t.GraphicID),
+		IconID:         optional.FromZeroValue(t.IconID),
 		IsPublished:    t.IsPublished,
-		MarketGroupID:  int32(t.MarketGroupID),
-		Mass:           float32(t.Mass),
+		MarketGroupID:  optional.FromZeroValue(t.MarketGroupID),
+		Mass:           optional.FromZeroValue(t.Mass),
 		Name:           t.Name,
-		PackagedVolume: float32(t.PackagedVolume),
-		PortionSize:    int(t.PortionSize),
-		Radius:         float32(t.Radius),
-		Volume:         float32(t.Volume),
+		PackagedVolume: optional.FromZeroValue(t.PackagedVolume),
+		PortionSize:    optional.FromZeroValue(t.PortionSize),
+		Radius:         optional.FromZeroValue(t.Radius),
+		Volume:         optional.FromZeroValue(t.Volume),
 	}
 }
 
@@ -137,21 +138,21 @@ func (st *Storage) GetOrCreateEveType(ctx context.Context, arg CreateEveTypePara
 	return o, nil
 }
 
-func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
 	ids, err := st.qRO.ListEveTypeIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("ListEveTypeIDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("ListEveTypeIDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	ids2 := set.Of(convertNumericSlice[int64](ids)...)
 	return ids2, nil
 }
 
-func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, err
+		return set.Set[int64]{}, err
 	}
-	current := set.Of(convertNumericSlice[int32](currentIDs)...)
+	current := set.Of(convertNumericSlice[int64](currentIDs)...)
 	missing := set.Difference(ids, current)
 	return missing, nil
 }

@@ -2,6 +2,7 @@ package corporationservice
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"net/http"
 	"testing"
@@ -39,7 +40,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -72,23 +73,23 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.Manufacturing, x.Activity)
-				assert.EqualValues(t, 1015116533326, x.BlueprintID)
-				assert.EqualValues(t, 2047, x.BlueprintType.ID)
-				assert.EqualValues(t, 11, x.BlueprintLocationID)
-				assert.EqualValues(t, 118.01, x.Cost.MustValue())
-				assert.EqualValues(t, 548, x.Duration)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				assert.EqualValues(t, 12, x.FacilityID)
-				assert.EqualValues(t, 498338451, x.Installer.ID)
-				assert.EqualValues(t, 229136101, x.JobID)
-				assert.EqualValues(t, 200, x.LicensedRuns.MustValue())
-				assert.EqualValues(t, 13, x.OutputLocationID)
-				assert.EqualValues(t, 2046, x.ProductType.MustValue().ID)
-				assert.EqualValues(t, 1, x.Runs)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
-				assert.EqualValues(t, 60006382, x.Location.ID)
-				assert.Equal(t, app.JobReady, x.Status)
+				xassert.Equal(t, app.Manufacturing, x.Activity)
+				xassert.Equal(t, 1015116533326, x.BlueprintID)
+				xassert.Equal(t, 2047, x.BlueprintType.ID)
+				xassert.Equal(t, 11, x.BlueprintLocationID)
+				xassert.Equal(t, 118.01, x.Cost.MustValue())
+				xassert.Equal(t, 548, x.Duration)
+				xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+				xassert.Equal(t, 12, x.FacilityID)
+				xassert.Equal(t, 498338451, x.Installer.ID)
+				xassert.Equal(t, 229136101, x.JobID)
+				xassert.Equal(t, 200, x.LicensedRuns.MustValue())
+				xassert.Equal(t, 13, x.OutputLocationID)
+				xassert.Equal(t, 2046, x.ProductType.MustValue().ID)
+				xassert.Equal(t, 1, x.Runs)
+				xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
+				xassert.Equal(t, 60006382, x.Location.ID)
+				xassert.Equal(t, app.JobReady, x.Status)
 			}
 		}
 	})
@@ -109,7 +110,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		completer := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":            j1.Activity,
@@ -146,12 +147,12 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 1)
 				j2 := xx[0]
-				assert.Equal(t, c.ID, j2.CorporationID)
-				assert.Equal(t, app.JobDelivered, j2.Status)
-				assert.EqualValues(t, 42, j2.SuccessfulRuns.MustValue())
+				xassert.Equal(t, c.ID, j2.CorporationID)
+				xassert.Equal(t, app.JobDelivered, j2.Status)
+				xassert.Equal(t, 42, j2.SuccessfulRuns.MustValue())
 				assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
 				assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
-				assert.EqualValues(t, completer, j2.CompletedCharacter.MustValue())
+				xassert.Equal(t, completer, j2.CompletedCharacter.MustValue())
 			}
 		}
 	})
@@ -169,7 +170,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -202,7 +203,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.JobReady, x.Status)
+				xassert.Equal(t, app.JobReady, x.Status)
 			}
 		}
 	})
@@ -221,7 +222,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           j1.Activity,
@@ -255,8 +256,8 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 1)
 				j2 := xx[0]
-				assert.Equal(t, c.ID, j2.CorporationID)
-				assert.Equal(t, app.JobReady, j2.Status)
+				xassert.Equal(t, c.ID, j2.CorporationID)
+				xassert.Equal(t, app.JobReady, j2.Status)
 			}
 		}
 	})
@@ -276,7 +277,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		endDate := time.Now().Add(+3 * time.Hour)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -309,7 +310,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.JobActive, x.Status)
+				xassert.Equal(t, app.JobActive, x.Status)
 			}
 		}
 	})
@@ -328,7 +329,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		startDate := time.Now().Add(-24 * time.Hour)
 		endDate := time.Now().Add(+3 * time.Hour)
 
-		makeObj := func(jobID, activityID int32) map[string]any {
+		makeObj := func(jobID, activityID int64) map[string]any {
 			template := map[string]any{
 				"activity_id":           activityID,
 				"blueprint_id":          1015116533326,
@@ -351,22 +352,22 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			return maps.Clone(template)
 		}
 		objs := make([]map[string]any, 0)
-		activities := []int32{
-			int32(app.Manufacturing),
-			int32(app.Copying),
-			int32(app.Invention),
-			int32(app.MaterialEfficiencyResearch),
-			int32(app.TimeEfficiencyResearch),
-			int32(app.Reactions1),
-			int32(app.Reactions2),
+		activities := []int64{
+			int64(app.Manufacturing),
+			int64(app.Copying),
+			int64(app.Invention),
+			int64(app.MaterialEfficiencyResearch),
+			int64(app.TimeEfficiencyResearch),
+			int64(app.Reactions1),
+			int64(app.Reactions2),
 		}
 		for jobID, activityID := range activities {
-			objs = append(objs, makeObj(int32(jobID), activityID))
+			objs = append(objs, makeObj(int64(jobID), activityID))
 		}
 
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, objs))
 
 		// when
@@ -377,9 +378,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			for jobID, activityID := range activities {
-				j, err := st.GetCorporationIndustryJob(ctx, c.ID, int32(jobID))
+				j, err := st.GetCorporationIndustryJob(ctx, c.ID, int64(jobID))
 				if assert.NoError(t, err) {
-					assert.Equal(t, activityID, int32(j.Activity))
+					xassert.Equal(t, activityID, int64(j.Activity))
 				}
 			}
 		}
@@ -399,7 +400,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true&page=1`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -424,7 +425,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true&page=2`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=2", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -456,11 +457,11 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			jobs, err := st.ListAllCorporationIndustryJobs(ctx)
 			if assert.NoError(t, err) {
-				got := set.Of(xslices.Map(jobs, func(x *app.CorporationIndustryJob) int32 {
+				got := set.Of(xslices.Map(jobs, func(x *app.CorporationIndustryJob) int64 {
 					return x.JobID
 				})...)
-				want := set.Of[int32](229136101, 229136102)
-				xassert.EqualSet(t, want, got)
+				want := set.Of[int64](229136101, 229136102)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})
@@ -494,7 +495,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -527,16 +528,16 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			assert.True(t, changed)
 			oo, err := st.ListAllCorporationIndustryJobs(ctx)
 			if assert.NoError(t, err) {
-				got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int32, app.IndustryJobStatus) {
+				got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
 					return x.JobID, x.Status
 				}))
-				want := map[int32]app.IndustryJobStatus{
+				want := map[int64]app.IndustryJobStatus{
 					j1.JobID: app.JobDelivered,
 					j2.JobID: app.JobCancelled,
 					j3.JobID: app.JobReady,
 					j4.JobID: app.JobUnknown,
 				}
-				assert.Equal(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

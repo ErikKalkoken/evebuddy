@@ -22,7 +22,7 @@ import (
 type attribute struct {
 	icon   fyne.Resource
 	name   string
-	points int
+	points int64
 }
 
 func (a attribute) isText() bool {
@@ -34,7 +34,7 @@ type characterAttributes struct {
 	widget.BaseWidget
 
 	attributes []attribute
-	character      atomic.Pointer[app.Character]
+	character  atomic.Pointer[app.Character]
 	list       *widget.List
 	top        *widget.Label
 	u          *baseUI
@@ -114,7 +114,7 @@ func (a *characterAttributes) makeAttributeList() *widget.List {
 
 func (a *characterAttributes) update() {
 	var err error
-	var total int
+	var total int64
 	attributes := make([]attribute, 0)
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
@@ -141,7 +141,7 @@ func (a *characterAttributes) update() {
 	})
 }
 
-func (*characterAttributes) fetchData(characterID int32, s services) (int, []attribute, error) {
+func (*characterAttributes) fetchData(characterID int64, s services) (int64, []attribute, error) {
 	attributes := make([]attribute, 0, 6)
 	if characterID == 0 {
 		return 0, attributes, nil
@@ -184,7 +184,7 @@ func (*characterAttributes) fetchData(characterID int32, s services) (int, []att
 		points: ca.Charisma,
 	}
 	attributes[5] = attribute{
-		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps),
+		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps.ValueOrZero()),
 	}
 	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
 	return total, attributes, nil

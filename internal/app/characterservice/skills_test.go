@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestIsTrainingActive(t *testing.T) {
@@ -25,14 +26,14 @@ func TestIsTrainingActive(t *testing.T) {
 		now := time.Now().UTC()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: character.ID,
-			StartDate:   now.Add(-1 * time.Hour),
-			FinishDate:  now.Add(3 * time.Hour),
+			StartDate:   optional.New(now.Add(-1 * time.Hour)),
+			FinishDate:  optional.New(now.Add(3 * time.Hour)),
 		})
 		// when
 		got, err := cs.IsTrainingActive(ctx, character.ID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, true, got)
+		 xassert.Equal(t, true, got)
 	})
 	t.Run("should return false when training is inactive", func(t *testing.T) {
 		// given
@@ -42,7 +43,7 @@ func TestIsTrainingActive(t *testing.T) {
 		got, err := cs.IsTrainingActive(ctx, character.ID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, false, got)
+		 xassert.Equal(t, false, got)
 	})
 }
 
@@ -62,7 +63,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, sendCount, 1)
+		 xassert.Equal(t, sendCount, 1)
 	})
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
@@ -76,7 +77,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, sendCount, 0)
+		 xassert.Equal(t, sendCount, 0)
 	})
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
@@ -91,7 +92,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, sendCount, 0)
+		 xassert.Equal(t, sendCount, 0)
 	})
 	t.Run("should only send one notification", func(t *testing.T) {
 		// given
@@ -109,6 +110,6 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, sendCount, 1)
+		 xassert.Equal(t, sendCount, 1)
 	})
 }

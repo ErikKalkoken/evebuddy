@@ -5,12 +5,12 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -32,14 +32,14 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 	// then
 	require.NoError(t, err)
 	require.Len(t, x, 2)
-	got := maps.Collect(xiter.MapSlice2(x, func(v *app.CharacterShipAbility) (int32, bool) {
+	got := maps.Collect(xiter.MapSlice2(x, func(v *app.CharacterShipAbility) (int64, bool) {
 		return v.Type.ID, v.CanFly
 	}))
-	want := map[int32]bool{
+	want := map[int64]bool{
 		s1.ShipTypeID: true,
 		s2.ShipTypeID: false,
 	}
-	assert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 }
 
 func TestListCharacterShipsSkills(t *testing.T) {
@@ -66,9 +66,9 @@ func TestListCharacterShipsSkills(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, x, 1)
 	got := x[0]
-	assert.EqualValues(t, 1, got.SkillLevel)
-	assert.EqualValues(t, ss.SkillName, got.SkillName)
-	assert.EqualValues(t, 2, got.Rank)
-	assert.EqualValues(t, ss.SkillTypeID, got.SkillTypeID)
+	xassert.Equal(t, 1, got.SkillLevel)
+	xassert.Equal(t, ss.SkillName, got.SkillName)
+	xassert.Equal(t, 2, got.Rank)
+	xassert.Equal(t, ss.SkillTypeID, got.SkillTypeID)
 
 }

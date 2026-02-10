@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCorporationSectionStatus(t *testing.T) {
@@ -47,14 +48,14 @@ func TestCorporationSectionStatus(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
-				assert.Equal(t, "", x1.ContentHash)
-				assert.Equal(t, "error", x1.ErrorMessage)
+				xassert.Equal(t, "", x1.ContentHash)
+				xassert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
 			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -76,14 +77,14 @@ func TestCorporationSectionStatus(t *testing.T) {
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x.ContentHash, x1.ContentHash)
-			assert.Equal(t, "error", x1.ErrorMessage)
-			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			assert.Equal(t, x.StartedAt, x1.StartedAt)
+			xassert.Equal(t, x.ContentHash, x1.ContentHash)
+			xassert.Equal(t, "error", x1.ErrorMessage)
+			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+			xassert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
 			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -113,15 +114,15 @@ func TestCorporationSectionStatus(t *testing.T) {
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, comment, x1.Comment)
-			assert.Equal(t, hash, x1.ContentHash)
-			assert.Equal(t, e, x1.ErrorMessage)
+			xassert.Equal(t, comment, x1.Comment)
+			xassert.Equal(t, hash, x1.ContentHash)
+			xassert.Equal(t, e, x1.ErrorMessage)
 			assert.True(t, x1.CompletedAt.Equal(completedAt.Time))
 			assert.True(t, x1.StartedAt.Equal(startedAt.ValueOrZero()))
 			assert.False(t, x1.UpdatedAt.IsZero())
 			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})

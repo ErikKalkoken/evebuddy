@@ -253,7 +253,7 @@ func newClones(u *baseUI) *clones {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -436,7 +436,7 @@ func (a *clones) updateRoutes() {
 		})
 		return
 	}
-	m := make(map[int32][]*app.EveSolarSystem)
+	m := make(map[int64][]*app.EveSolarSystem)
 	for h, route := range routes {
 		m[h.Destination.ID] = route
 	}
@@ -465,7 +465,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 			return a.String()
 		}), nil,
 	)
-	routePref.Selected = app.RouteShortest.String()
+	routePref.Selected = app.RouteShorter.String()
 	list := widget.NewList(
 		func() int {
 			return len(results)

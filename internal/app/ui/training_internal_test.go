@@ -44,8 +44,8 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 		CharacterID:   character.ID,
-		StartDate:     now.Add(-1 * time.Hour),
-		FinishDate:    now.Add(3 * time.Hour),
+		StartDate:     optional.New(now.Add(-1 * time.Hour)),
+		FinishDate:    optional.New(now.Add(3 * time.Hour)),
 		EveTypeID:     et.ID,
 		FinishedLevel: 3,
 	})
@@ -141,8 +141,8 @@ func TestTraining_Filter(t *testing.T) {
 	})
 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 		CharacterID: character1.ID,
-		StartDate:   now.Add(-1 * time.Hour),
-		FinishDate:  now.Add(3 * time.Hour),
+		StartDate:   optional.New(now.Add(-1 * time.Hour)),
+		FinishDate:  optional.New(now.Add(3 * time.Hour)),
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character1.ID,

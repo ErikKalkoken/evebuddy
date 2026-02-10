@@ -9,7 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
+	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
 )
 
@@ -25,15 +26,18 @@ func (c contextKey) String() string {
 }
 
 // NewContextWithAuth returns a new context with a characterID and an access token.
-func NewContextWithAuth(ctx context.Context, characterID int32, accessToken string) context.Context {
+func NewContextWithAuth(ctx context.Context, characterID int64, accessToken string) context.Context {
 	ctx = context.WithValue(ctx, contextCharacterID, characterID)
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{
+		AccessToken: accessToken,
+	})
+	ctx = context.WithValue(ctx, goesi.ContextOAuth2, tokenSource)
 	return ctx
 }
 
 // ContextHasAccessToken reports whether the context contains an access token.
 func ContextHasAccessToken(ctx context.Context) bool {
-	return ctx.Value(goesi.ContextAccessToken) != nil
+	return ctx.Value(goesi.ContextOAuth2) != nil
 }
 
 // NewContextWithOperationID returns a new context with a operationID.
@@ -272,7 +276,7 @@ func determineRateLimit(ctx context.Context) (string, rateLimitGroup, bool, erro
 	if !found {
 		return "", zero, false, nil
 	}
-	characterID, found := ctx.Value(contextCharacterID).(int32)
+	characterID, found := ctx.Value(contextCharacterID).(int64)
 	if isAuth && !found {
 		return "", zero, false, fmt.Errorf("ratelimiter: %s: missing character ID for authed request", operationID)
 	}

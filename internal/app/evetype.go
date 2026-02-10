@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 const (
@@ -26,7 +27,7 @@ const (
 
 // EveCategory is a category in Eve Online.
 type EveCategory struct {
-	ID          int32
+	ID          int64
 	IsPublished bool
 	Name        string
 }
@@ -52,7 +53,7 @@ const (
 
 // EveGroup is a group in Eve Online.
 type EveGroup struct {
-	ID          int32
+	ID          int64
 	Category    *EveCategory
 	IsPublished bool
 	Name        string
@@ -81,20 +82,20 @@ const (
 
 // EveType is a type in Eve Online.
 type EveType struct {
-	ID             int32
+	ID             int64
 	Group          *EveGroup
-	Capacity       float32
+	Capacity       optional.Optional[float64]
 	Description    string
-	GraphicID      int32
-	IconID         int32
+	GraphicID      optional.Optional[int64]
+	IconID         optional.Optional[int64]
 	IsPublished    bool
-	MarketGroupID  int32
-	Mass           float32
+	MarketGroupID  optional.Optional[int64]
+	Mass           optional.Optional[float64]
 	Name           string
-	PackagedVolume float32
-	PortionSize    int
-	Radius         float32
-	Volume         float32
+	PackagedVolume optional.Optional[float64]
+	PortionSize    optional.Optional[int64]
+	Radius         optional.Optional[float64]
+	Volume         optional.Optional[float64]
 }
 
 func (et EveType) DescriptionPlain() string {
@@ -114,7 +115,7 @@ func (et EveType) IsSKIN() bool {
 }
 
 func (et EveType) IsTradeable() bool {
-	return et.MarketGroupID != 0
+	return !et.MarketGroupID.IsEmpty()
 }
 
 func (et EveType) HasFuelBay() bool {
@@ -153,10 +154,10 @@ func (et EveType) HasRender() bool {
 // Icon returns the icon for a type from the eveicon package
 // and whether and icon exists for this type.
 func (et EveType) Icon() (fyne.Resource, bool) {
-	if et.IconID == 0 {
+	if et.IconID.IsEmpty() {
 		return nil, false
 	}
-	res, ok := eveicon.FromID(et.IconID)
+	res, ok := eveicon.FromID(et.IconID.ValueOrZero())
 	if !ok {
 		return nil, false
 	}
@@ -170,7 +171,7 @@ func (et EveType) EveEntity() *EveEntity {
 type EveTypeDogmaAttribute struct {
 	EveType        *EveType
 	DogmaAttribute *EveDogmaAttribute
-	Value          float32
+	Value          float64
 }
 
 const (
@@ -347,27 +348,27 @@ const (
 )
 
 type EveDogmaAttribute struct {
-	ID           int32
-	DefaultValue float32
-	Description  string
-	DisplayName  string
-	IconID       int32
-	Name         string
-	IsHighGood   bool
-	IsPublished  bool
-	IsStackable  bool
+	ID           int64
+	DefaultValue optional.Optional[float64]
+	Description  optional.Optional[string]
+	DisplayName  optional.Optional[string]
+	IconID       optional.Optional[int64]
+	Name         optional.Optional[string]
+	IsHighGood   optional.Optional[bool]
+	IsPublished  optional.Optional[bool]
+	IsStackable  optional.Optional[bool]
 	Unit         EveUnitID
 }
 
 type EveMarketPrice struct {
-	TypeID        int32
-	AdjustedPrice float64
-	AveragePrice  float64
+	TypeID        int64
+	AdjustedPrice optional.Optional[float64]
+	AveragePrice  optional.Optional[float64]
 }
 
 // Equal reports whether two objects are equal.
 func (x EveMarketPrice) Equal(other EveMarketPrice) bool {
 	return x.TypeID == other.TypeID &&
-		math.Abs(float64(x.AdjustedPrice-other.AdjustedPrice)) < 0.001 &&
-		math.Abs(float64(x.AveragePrice-other.AveragePrice)) < 0.001
+		math.Abs(float64(x.AdjustedPrice.ValueOrZero()-other.AdjustedPrice.ValueOrZero())) < 0.001 &&
+		math.Abs(float64(x.AveragePrice.ValueOrZero()-other.AveragePrice.ValueOrZero())) < 0.001
 }

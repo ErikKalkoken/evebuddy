@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveTypeDogmaAttribute(t *testing.T) {
@@ -31,7 +32,7 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 		if assert.NoError(t, err) {
 			v, err := st.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, float32(123.45), v)
+				xassert.Equal(t, 123.45, v)
 			}
 		}
 	})

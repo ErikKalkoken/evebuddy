@@ -54,7 +54,7 @@ const (
 type industryJobRow struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
-	blueprintType      *app.EntityShort[int32]
+	blueprintType      *app.EntityShort[int64]
 	completedCharacter optional.Optional[*app.EveEntity]
 	completedDate      optional.Optional[time.Time]
 	cost               optional.Optional[float64]
@@ -63,17 +63,17 @@ type industryJobRow struct {
 	installer          *app.EveEntity
 	isInstallerMe      bool
 	isOwnerMe          bool
-	jobID              int32
+	jobID              int64
 	licensedRuns       optional.Optional[int]
 	location           *app.EveLocationShort
 	owner              *app.EveEntity
 	pauseDate          optional.Optional[time.Time]
 	probability        optional.Optional[float32]
-	productType        optional.Optional[*app.EntityShort[int32]]
+	productType        optional.Optional[*app.EntityShort[int64]]
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
-	successfulRuns     optional.Optional[int32]
+	successfulRuns     optional.Optional[int64]
 	tags               set.Set[string]
 }
 
@@ -334,7 +334,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			a.update()
 		})
-		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 			a.update()
 		})
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -616,10 +616,10 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	ids1 := set.Collect(xiter.MapSlice(cj, func(x *app.CharacterIndustryJob) int32 {
+	ids1 := set.Collect(xiter.MapSlice(cj, func(x *app.CharacterIndustryJob) int64 {
 		return x.CharacterID
 	}))
-	ids2 := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int32 {
+	ids2 := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int64 {
 		return x.CorporationID
 	}))
 	ids := set.Union(ids1, ids2)
@@ -631,7 +631,7 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	tagsPerCharacter := make(map[int32]set.Set[string])
+	tagsPerCharacter := make(map[int64]set.Set[string])
 	for _, c := range cc {
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
@@ -639,7 +639,7 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 		}
 		tagsPerCharacter[c.ID] = tags
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int64]) int64 {
 		return c.ID
 	})...)
 	characterJobs := make([]industryJobRow, 0)
@@ -716,7 +716,7 @@ func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	ids := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int32 {
+	ids := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int64 {
 		return x.CorporationID
 	}))
 	eeMap, err := a.u.eus.ToEntities(ctx, ids)
@@ -727,7 +727,7 @@ func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int64]) int64 {
 		return c.ID
 	})...)
 	jobs := make([]industryJobRow, 0)

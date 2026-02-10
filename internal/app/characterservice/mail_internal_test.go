@@ -6,12 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fnt-eve/goesi-openapi/esi"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/antihax/goesi/esi"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCanFetchMailHeadersWithPaging(t *testing.T) {
@@ -22,30 +25,32 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)
-	var objs []esi.GetCharactersCharacterIdMail200Ok
-	var mailIDs []int32
+	var objs []esi.CharactersCharacterIdMailGetInner
+	var mailIDs []int64
 	for i := range 55 {
-		id := int32(1000 - i)
+		id := int64(1000 - i)
 		mailIDs = append(mailIDs, id)
-		o := esi.GetCharactersCharacterIdMail200Ok{
-			From:       90000001,
-			IsRead:     true,
-			Labels:     []int32{3},
-			MailId:     id,
-			Recipients: []esi.GetCharactersCharacterIdMailRecipient{{RecipientId: 90000002, RecipientType: "character"}},
-			Subject:    fmt.Sprintf("Test Mail %d", id),
-			Timestamp:  time.Now(),
-		}
-		objs = append(objs, o)
+		objs = append(objs, esi.CharactersCharacterIdMailGetInner{
+			From:   testutil.Ptr(int64(90000001)),
+			IsRead: testutil.Ptr(true),
+			Labels: []int64{3},
+			MailId: testutil.Ptr(id),
+			Recipients: []esi.PostCharactersCharacterIdMailRequestRecipientsInner{{
+				RecipientId:   90000002,
+				RecipientType: "character",
+			}},
+			Subject:   testutil.Ptr(fmt.Sprintf("Test Mail %d", id)),
+			Timestamp: testutil.Ptr(time.Now()),
+		})
 	}
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/v1/characters/1/mail/",
+		"https://esi.evetech.net/characters/1/mail",
 		httpmock.NewJsonResponderOrPanic(200, objs[:50]),
 	)
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/v1/characters/1/mail/?last_mail_id=951",
+		"https://esi.evetech.net/characters/1/mail?last_mail_id=951",
 		httpmock.NewJsonResponderOrPanic(200, objs[50:]),
 	)
 	// when
@@ -53,14 +58,14 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 
 	// then
 	if assert.NoError(t, err) {
-		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 		assert.Len(t, mails, 55)
 
-		newIDs := make([]int32, 0, 55)
+		newIDs := make([]int64, 0, 55)
 		for _, m := range mails {
-			newIDs = append(newIDs, m.MailId)
+			newIDs = append(newIDs, m.MailID)
 		}
-		assert.Equal(t, mailIDs, newIDs)
+		xassert.Equal(t, mailIDs, newIDs)
 	}
 }
 
@@ -80,7 +85,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/labels", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"labels": []map[string]any{
 					{
@@ -121,28 +126,25 @@ func TestUpdateMailLabel(t *testing.T) {
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
 			LabelID:     16,
-			Name:        "BLACK",
-			Color:       "#000000",
-			UnreadCount: 99,
+			Name:        optional.New("BLACK"),
+			Color:       optional.New("#000000"),
+			UnreadCount: optional.New[int64](99),
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/labels", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"labels": []map[string]any{
-					{
-						"color":        "#660066",
-						"label_id":     16,
-						"name":         "PINK",
-						"unread_count": 4,
-					},
-					{
-						"color":        "#FFFFFF",
-						"label_id":     32,
-						"name":         "WHITE",
-						"unread_count": 0,
-					},
-				},
+				"labels": []map[string]any{{
+					"color":        "#660066",
+					"label_id":     16,
+					"name":         "PINK",
+					"unread_count": 4,
+				}, {
+					"color":        "#FFFFFF",
+					"label_id":     32,
+					"name":         "WHITE",
+					"unread_count": 0,
+				}},
 				"total_unread_count": 4,
 			}),
 		)
@@ -155,9 +157,9 @@ func TestUpdateMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l2, err := st.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "PINK", l2.Name)
-				assert.Equal(t, "#660066", l2.Color)
-				assert.Equal(t, 4, l2.UnreadCount)
+				xassert.Equal(t, "PINK", l2.Name.ValueOrZero())
+				xassert.Equal(t, "#660066", l2.Color.ValueOrZero())
+				xassert.Equal(t, 4, l2.UnreadCount.ValueOrZero())
 			}
 		}
 	})

@@ -14,15 +14,15 @@ import (
 )
 
 type CreateCharacterWalletTransactionParams struct {
-	ClientID      int32
+	ClientID      int64
 	Date          time.Time
-	EveTypeID     int32
+	EveTypeID     int64
 	IsBuy         bool
 	IsPersonal    bool
 	JournalRefID  int64
 	LocationID    int64
-	CharacterID   int32
-	Quantity      int32
+	CharacterID   int64
+	Quantity      int64
 	TransactionID int64
 	UnitPrice     float64
 }
@@ -35,15 +35,15 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCharacterWalletTransaction(ctx, queries.CreateCharacterWalletTransactionParams{
-		ClientID:      int64(arg.ClientID),
+		ClientID:     arg.ClientID,
 		Date:          arg.Date,
-		EveTypeID:     int64(arg.EveTypeID),
+		EveTypeID:    arg.EveTypeID,
 		IsBuy:         arg.IsBuy,
 		IsPersonal:    arg.IsPersonal,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
-		CharacterID:   int64(arg.CharacterID),
-		Quantity:      int64(arg.Quantity),
+		CharacterID:  arg.CharacterID,
+		Quantity:     arg.Quantity,
 		TransactionID: arg.TransactionID,
 		UnitPrice:     arg.UnitPrice,
 	})
@@ -54,7 +54,7 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 }
 
 type GetCharacterWalletTransactionParams struct {
-	CharacterID   int32
+	CharacterID   int64
 	TransactionID int64
 }
 
@@ -66,7 +66,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, arg GetCha
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCharacterWalletTransaction(ctx, queries.GetCharacterWalletTransactionParams{
-		CharacterID:   int64(arg.CharacterID),
+		CharacterID:  arg.CharacterID,
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {
@@ -86,28 +86,28 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, arg GetCha
 	return o, err
 }
 
-func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
+func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterWalletTransactionIDs for character %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx,characterID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
+func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int64) ([]*app.CharacterWalletTransaction, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterWalletTransactions for character %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterWalletTransactions(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterWalletTransactions(ctx,characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -151,14 +151,14 @@ func characterWalletTransactionFromDBModel(
 			ID:             o.LocationID,
 			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
-		CharacterID:   int32(o.CharacterID),
-		Quantity:      int32(o.Quantity),
+		CharacterID:  o.CharacterID,
+		Quantity:     o.Quantity,
 		TransactionID: o.TransactionID,
 		UnitPrice:     o.UnitPrice,
 	}
 	if regionID.Valid && regionName.Valid {
-		o2.Region = &app.EntityShort[int32]{
-			ID:   int32(regionID.Int64),
+		o2.Region = &app.EntityShort[int64]{
+			ID:  regionID.Int64,
 			Name: regionName.String,
 		}
 	}

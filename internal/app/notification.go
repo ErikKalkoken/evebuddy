@@ -853,13 +853,13 @@ func EveNotificationTypeFromString(s string) (EveNotificationType, bool) {
 type CharacterNotification struct {
 	ID             int64
 	Body           optional.Optional[string] // generated body text in markdown
-	CharacterID    int32
+	CharacterID    int64
 	IsProcessed    bool
-	IsRead         bool
+	IsRead         optional.Optional[bool]
 	NotificationID int64
 	Recipient      *EveEntity // optional
 	Sender         *EveEntity
-	Text           string
+	Text           optional.Optional[string]
 	Timestamp      time.Time
 	Title          optional.Optional[string] // generated title text in markdown
 	Type           EveNotificationType

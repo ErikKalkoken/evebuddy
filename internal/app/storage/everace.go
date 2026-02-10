@@ -9,7 +9,7 @@ import (
 )
 
 type CreateEveRaceParams struct {
-	ID          int32
+	ID          int64
 	Name        string
 	Description string
 }
@@ -19,7 +19,7 @@ func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (
 		return nil, fmt.Errorf("CreateEveRace: %+v, %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveRaceParams{
-		ID:          int64(arg.ID),
+		ID:          arg.ID,
 		Description: arg.Description,
 		Name:        arg.Name,
 	}
@@ -30,8 +30,8 @@ func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (
 	return eveRaceFromDBModel(o), nil
 }
 
-func (st *Storage) GetEveRace(ctx context.Context, id int32) (*app.EveRace, error) {
-	o, err := st.qRO.GetEveRace(ctx, int64(id))
+func (st *Storage) GetEveRace(ctx context.Context, id int64) (*app.EveRace, error) {
+	o, err := st.qRO.GetEveRace(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("get Race for id %d: %w", id, convertGetError(err))
 	}
@@ -44,7 +44,7 @@ func eveRaceFromDBModel(er queries.EveRace) *app.EveRace {
 	}
 	return &app.EveRace{
 		Description: er.Description,
-		ID:          int32(er.ID),
+		ID:          er.ID,
 		Name:        er.Name,
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCharacterBiography_CanRenderWithData(t *testing.T) {
@@ -17,7 +18,7 @@ func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		Description: "This is a description",
+		Description: optional.New("This is a description"),
 	})
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 	test.ApplyTheme(t, test.Theme())

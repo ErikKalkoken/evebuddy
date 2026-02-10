@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -29,25 +29,25 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	const openState = "open"
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
-			open, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
+			open, _, err := s.esiClient.MarketAPI.GetCharactersCharacterIdOrders(ctx, characterID).Execute()
 			if err != nil {
 				return nil, err
 			}
 			slog.Debug("Received open orders from ESI", "count", len(open), "characterID", characterID)
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrdersHistory")
-			history, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrdersHistory(ctx, characterID, nil)
+			history, _, err := s.esiClient.MarketAPI.GetCharactersCharacterIdOrdersHistory(ctx, characterID).Execute()
 			if err != nil {
 				return nil, err
 			}
 			slog.Debug("Received history orders from ESI", "count", len(history), "characterID", characterID)
-			orders := make(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
+			orders := make(map[int64]esi.CharactersCharacterIdOrdersHistoryGetInner)
 			for _, o := range open {
 				if o.Duration == 0 {
 					continue
 				}
-				orders[o.OrderId] = esi.GetCharactersCharacterIdOrdersHistory200Ok{
+				orders[o.OrderId] = esi.CharactersCharacterIdOrdersHistoryGetInner{
 					Duration:      o.Duration,
 					Escrow:        o.Escrow,
 					IsBuyOrder:    o.IsBuyOrder,
@@ -57,7 +57,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 					MinVolume:     o.MinVolume,
 					OrderId:       o.OrderId,
 					Price:         o.Price,
-					Range_:        o.Range_,
+					Range:         o.Range,
 					RegionId:      o.RegionId,
 					State:         openState,
 					TypeId:        o.TypeId,
@@ -73,10 +73,10 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			}
 			return orders, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			orders := data.(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
+		func(ctx context.Context, characterID int64, data any) error {
+			orders := data.(map[int64]esi.CharactersCharacterIdOrdersHistoryGetInner)
 			var locationIDs set.Set[int64]
-			var regionIDs, typeIDs set.Set[int32]
+			var regionIDs, typeIDs set.Set[int64]
 			for _, o := range orders {
 				locationIDs.Add(o.LocationId)
 				regionIDs.Add(o.RegionId)
@@ -115,7 +115,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				default:
 					state = app.OrderUndefined
 				}
-				var ownerID int32
+				var ownerID int64
 				if o.IsCorporation {
 					ownerID = ec.Corporation.ID
 				} else {
@@ -123,26 +123,22 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				}
 				arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 					CharacterID:   characterID,
-					Duration:      int(o.Duration),
-					IsBuyOrder:    o.IsBuyOrder,
+					Duration:      o.Duration,
+					IsBuyOrder:    optional.FromPtr(o.IsBuyOrder),
 					IsCorporation: o.IsCorporation,
 					Issued:        o.Issued,
 					LocationID:    o.LocationId,
 					OrderID:       o.OrderId,
 					OwnerID:       ownerID,
 					Price:         o.Price,
-					Range:         o.Range_,
+					Range:         o.Range,
 					RegionID:      o.RegionId,
 					State:         state,
 					TypeID:        o.TypeId,
-					VolumeRemains: int(o.VolumeRemain),
-					VolumeTotal:   int(o.VolumeTotal),
-				}
-				if o.Escrow != 0 {
-					arg.Escrow = optional.New(o.Escrow)
-				}
-				if o.MinVolume != 0 {
-					arg.MinVolume = optional.New(int(o.MinVolume))
+					VolumeRemains: o.VolumeRemain,
+					VolumeTotal:   o.VolumeTotal,
+					Escrow:        optional.FromPtr(o.Escrow),
+					MinVolume:     optional.FromPtr(o.MinVolume),
 				}
 				if err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, arg); err != nil {
 					return err

@@ -9,9 +9,9 @@ import (
 )
 
 type CreateEveConstellationParams struct {
-	ID       int32
+	ID       int64
 	Name     string
-	RegionID int32
+	RegionID int64
 }
 
 func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConstellationParams) error {
@@ -19,8 +19,8 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 		return fmt.Errorf("CreateEveConstellation: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveConstellationParams{
-		ID:          int64(arg.ID),
-		EveRegionID: int64(arg.RegionID),
+		ID:         arg.ID,
+		EveRegionID:arg.RegionID,
 		Name:        arg.Name,
 	}
 	err := st.qRW.CreateEveConstellation(ctx, arg2)
@@ -30,8 +30,8 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 	return nil
 }
 
-func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	row, err := st.qRO.GetEveConstellation(ctx, int64(id))
+func (st *Storage) GetEveConstellation(ctx context.Context, id int64) (*app.EveConstellation, error) {
+	row, err := st.qRO.GetEveConstellation(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("get EveConstellation for id %d: %w", id, convertGetError(err))
 	}
@@ -41,7 +41,7 @@ func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*app.EveC
 
 func eveConstellationFromDBModel(c queries.EveConstellation, r queries.EveRegion) *app.EveConstellation {
 	return &app.EveConstellation{
-		ID:     int32(c.ID),
+		ID:    c.ID,
 		Name:   c.Name,
 		Region: eveRegionFromDBModel(r),
 	}

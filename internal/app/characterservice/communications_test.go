@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestNotifyCommunications(t *testing.T) {
@@ -54,7 +55,7 @@ func TestNotifyCommunications(t *testing.T) {
 			})
 			// then
 			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
+				 xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
 	}
@@ -78,7 +79,7 @@ func TestCountNotifications(t *testing.T) {
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
 		Type:        "MoonminingExtractionStarted",
-		IsRead:      true,
+		IsRead:      optional.New(true),
 	})
 	factory.CreateCharacterNotification()
 	// when
@@ -88,6 +89,6 @@ func TestCountNotifications(t *testing.T) {
 			app.GroupStructure:  {1, 1},
 			app.GroupMoonMining: {2, 1},
 		}
-		assert.Equal(t, want, got)
+		 xassert.Equal(t, want, got)
 	}
 }

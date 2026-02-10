@@ -17,13 +17,13 @@ import (
 
 type CreateCharacterParams struct {
 	AssetValue        optional.Optional[float64]
-	ID                int32
+	ID                int64
 	IsTrainingWatched bool
 	HomeID            optional.Optional[int64]
 	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	LocationID        optional.Optional[int64]
-	ShipID            optional.Optional[int32]
+	ShipID            optional.Optional[int64]
 	TotalSP           optional.Optional[int]
 	UnallocatedSP     optional.Optional[int]
 	WalletBalance     optional.Optional[float64]
@@ -31,7 +31,7 @@ type CreateCharacterParams struct {
 
 func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
 	err := st.qRW.CreateCharacter(ctx, queries.CreateCharacterParams{
-		ID:                int64(arg.ID),
+		ID:                arg.ID,
 		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
 		IsTrainingWatched: arg.IsTrainingWatched,
 		HomeID:            optional.ToNullInt64(arg.HomeID),
@@ -54,8 +54,8 @@ func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParam
 	return nil
 }
 
-func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
-	err := st.qRW.DeleteCharacter(ctx, int64(characterID))
+func (st *Storage) DeleteCharacter(ctx context.Context, characterID int64) error {
+	err := st.qRW.DeleteCharacter(ctx, characterID)
 	if err != nil {
 		return fmt.Errorf("delete character %d: %w", characterID, err)
 	}
@@ -69,14 +69,14 @@ func (st *Storage) DisableAllTrainingWatchers(ctx context.Context) error {
 	return nil
 }
 
-func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
+func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Character, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacter %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	r, err := st.qRO.GetCharacter(ctx, int64(characterID))
+	r, err := st.qRO.GetCharacter(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
@@ -119,7 +119,7 @@ func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) 
 	if ids.Size() == 0 {
 		return nil, wrapErr(app.ErrNotFound)
 	}
-	var id int32
+	var id int64
 	for v := range ids.All() {
 		id = v
 		break
@@ -169,55 +169,55 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 }
 
 // ListCharactersShort returns all characters in short form and ordered by name.
-func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	rows, err := st.qRO.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list short characters: %w", err)
 
 	}
-	cc := make([]*app.EntityShort[int32], len(rows))
+	cc := make([]*app.EntityShort[int64], len(rows))
 	for i, row := range rows {
-		cc[i] = &app.EntityShort[int32]{ID: int32(row.ID), Name: row.Name}
+		cc[i] = &app.EntityShort[int64]{ID: row.ID, Name: row.Name}
 	}
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	rows, err := st.qRO.ListCharacterCorporations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterCorporations: %w", err)
 	}
-	cc := make([]*app.EntityShort[int32], len(rows))
+	cc := make([]*app.EntityShort[int64], len(rows))
 	for i, row := range rows {
-		cc[i] = &app.EntityShort[int32]{ID: int32(row.ID), Name: row.Name}
+		cc[i] = &app.EntityShort[int64]{ID: row.ID, Name: row.Name}
 	}
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterCorporationIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(convertNumericSlice[int64](ids)...), nil
 }
 
-func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int64], error) {
 	return st.listCharacterIDs(ctx, st.qRO)
 }
 
-func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (set.Set[int32], error) {
+func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (set.Set[int64], error) {
 	ids, err := q.ListCharacterIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list character IDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	ids2 := set.Of(convertNumericSlice[int64](ids)...)
 	return ids2, nil
 }
 
-func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, homeID optional.Optional[int64]) error {
+func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int64, homeID optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterHomeIdParams{
-		ID:     int64(characterID),
+		ID:     characterID,
 		HomeID: optional.ToNullInt64(homeID),
 	}
 	if err := st.qRW.UpdateCharacterHomeId(ctx, arg); err != nil {
@@ -226,9 +226,9 @@ func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, h
 	return nil
 }
 
-func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, characterID int32, isWatched bool) error {
+func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, characterID int64, isWatched bool) error {
 	arg := queries.UpdateCharacterIsTrainingWatchedParams{
-		ID:                int64(characterID),
+		ID:                characterID,
 		IsTrainingWatched: isWatched,
 	}
 	if err := st.qRW.UpdateCharacterIsTrainingWatched(ctx, arg); err != nil {
@@ -237,9 +237,9 @@ func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, charact
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
+func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int64, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastCloneJumpParams{
-		ID:              int64(characterID),
+		ID:              characterID,
 		LastCloneJumpAt: optional.ToNullTime(v),
 	}
 	if err := st.qRW.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
@@ -248,9 +248,9 @@ func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
+func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int64, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
-		ID:          int64(characterID),
+		ID:          characterID,
 		LastLoginAt: optional.ToNullTime(v),
 	}
 	if err := st.qRW.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
@@ -259,9 +259,9 @@ func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID i
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int32, locationID optional.Optional[int64]) error {
+func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int64, locationID optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterLocationIDParams{
-		ID:         int64(characterID),
+		ID:         characterID,
 		LocationID: optional.ToNullInt64(locationID),
 	}
 	if err := st.qRW.UpdateCharacterLocationID(ctx, arg); err != nil {
@@ -270,9 +270,9 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int3
 	return nil
 }
 
-func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, shipID optional.Optional[int32]) error {
+func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int64, shipID optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterShipIDParams{
-		ID:     int64(characterID),
+		ID:     characterID,
 		ShipID: optional.ToNullInt64(shipID),
 	}
 	if err := st.qRW.UpdateCharacterShipID(ctx, arg); err != nil {
@@ -281,9 +281,9 @@ func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, s
 	return nil
 }
 
-func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID int32, totalSP, unallocatedSP optional.Optional[int]) error {
+func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID int64, totalSP, unallocatedSP optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterSPParams{
-		ID:            int64(characterID),
+		ID:            characterID,
 		TotalSp:       optional.ToNullInt64(totalSP),
 		UnallocatedSp: optional.ToNullInt64(unallocatedSP),
 	}
@@ -293,9 +293,9 @@ func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID i
 	return nil
 }
 
-func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID int32, v optional.Optional[float64]) error {
+func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
 	arg := queries.UpdateCharacterWalletBalanceParams{
-		ID:            int64(characterID),
+		ID:            characterID,
 		WalletBalance: optional.ToNullFloat64(v),
 	}
 	if err := st.qRW.UpdateCharacterWalletBalance(ctx, arg); err != nil {
@@ -304,9 +304,9 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID int32, v optional.Optional[float64]) error {
+func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
 	arg := queries.UpdateCharacterAssetValueParams{
-		ID:         int64(characterID),
+		ID:         characterID,
 		AssetValue: optional.ToNullFloat64(v),
 	}
 	if err := st.qRW.UpdateCharacterAssetValue(ctx, arg); err != nil {
@@ -330,12 +330,12 @@ func (st *Storage) characterFromDBModel(
 	o := app.Character{
 		AssetValue:        optional.FromNullFloat64(character.AssetValue),
 		EveCharacter:      eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
-		ID:                int32(character.ID),
+		ID:                character.ID,
 		IsTrainingWatched: character.IsTrainingWatched,
 		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
-		TotalSP:           optional.FromNullInt64ToInteger[int](character.TotalSp),
-		UnallocatedSP:     optional.FromNullInt64ToInteger[int](character.UnallocatedSp),
+		TotalSP:           optional.FromNullInt64(character.TotalSp),
+		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
 	}
 	if homeID.Valid {
@@ -353,7 +353,7 @@ func (st *Storage) characterFromDBModel(
 		o.Location = x
 	}
 	if shipID.Valid {
-		x, err := st.GetEveType(ctx, int32(shipID.Int64))
+		x, err := st.GetEveType(ctx, shipID.Int64)
 		if err != nil {
 			return nil, err
 		}
@@ -362,8 +362,8 @@ func (st *Storage) characterFromDBModel(
 	return &o, nil
 }
 
-func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int32) (optional.Optional[float64], error) {
-	v, err := st.qRO.GetCharacterAssetValue(ctx, int64(id))
+func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (optional.Optional[float64], error) {
+	v, err := st.qRO.GetCharacterAssetValue(ctx, id)
 	if err != nil {
 		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, convertGetError(err))
 	}

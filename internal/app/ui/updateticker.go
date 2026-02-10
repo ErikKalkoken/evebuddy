@@ -156,7 +156,7 @@ func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32) {
+func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int64) {
 	earliest := u.settings.NotifyCommunicationsEarliest()
 	xx := u.settings.NotificationTypesEnabled()
 	var typesEnabled set.Set[app.EveNotificationType]
@@ -181,7 +181,7 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32)
 
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool) {
 	if u.isOffline {
 		return
 	}
@@ -215,7 +215,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
-	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int64]) {
 		if c != nil && c.ID == characterID {
 			cancel() // abort updates when the character is removed
 		}
@@ -277,7 +277,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, section app.CharacterSection, forceUpdate bool) {
+func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to process update for character section",
 			"characterID", characterID,
@@ -307,7 +307,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
-			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int64]) {
 				if c != nil && c.ID == characterID {
 					cancel() // abort updates when the character is removed
 				}
@@ -409,7 +409,7 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 
 // updateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
 // and refreshes the UI accordingly.
-func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int32, forceUpdate bool) {
+func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
 	if u.isOffline {
 		return
 	}
@@ -434,7 +434,7 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, section app.CorporationSection, forceUpdate bool) {
+func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
 		ctx, app.CorporationSectionUpdateParams{
 			CorporationID:         corporationID,

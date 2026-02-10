@@ -35,8 +35,8 @@ func TestCorporationMember(t *testing.T) {
 				CharacterID:   member.ID,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, c.ID, x.CorporationID)
-				assert.EqualValues(t, member, x.Character)
+				xassert.Equal(t, c.ID, x.CorporationID)
+				xassert.Equal(t, member, x.Character)
 			}
 		}
 	})
@@ -55,11 +55,11 @@ func TestCorporationMember(t *testing.T) {
 		oo, err := st.ListCorporationMembers(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int32 {
+			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int64 {
 				return x.Character.ID
 			})...)
 			want := set.Of(e1.Character.ID, e2.Character.ID)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list member IDs", func(t *testing.T) {
@@ -78,7 +78,7 @@ func TestCorporationMember(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.Character.ID, e2.Character.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can delete members", func(t *testing.T) {
@@ -95,11 +95,11 @@ func TestCorporationMember(t *testing.T) {
 		oo, err := st.ListCorporationMembers(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int32 {
+			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int64 {
 				return x.Character.ID
 			})...)
 			want := set.Of(e1.Character.ID, e2.Character.ID)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

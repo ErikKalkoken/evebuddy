@@ -25,7 +25,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
 	responder := func(req *http.Request) (*http.Response, error) {
-		var ids []int32
+		var ids []int64
 		if err := json.NewDecoder(req.Body).Decode(&ids); err != nil {
 			return httpmock.NewJsonResponse(400, map[string]any{"error": "invalid request"})
 		}
@@ -47,16 +47,16 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		e1 := factory.CreateEveEntityCharacter()
 		// when
 		ids, err := s.AddMissingEntities(ctx, set.Of(e1.ID))
 		// then
-		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, ids.Size())
+			xassert.Equal(t, 0, ids.Size())
 		}
 	})
 	t.Run("can resolve missing entities", func(t *testing.T) {
@@ -64,21 +64,21 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, set.Of[int32](47))
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64](47))
 		// then
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.True(t, set.Of[int32](47).Equal(ids))
+			assert.True(t, set.Of[int64](47).Equal(ids))
 			e, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, "Erik", e.Name)
-			assert.Equal(t, app.EveEntityCharacter, e.Category)
+			xassert.Equal(t, "Erik", e.Name)
+			xassert.Equal(t, app.EveEntityCharacter, e.Category)
 		}
 	})
 	t.Run("can report normal error correctly", func(t *testing.T) {
@@ -86,11 +86,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
-		_, err := s.AddMissingEntities(ctx, set.Of[int32](47))
+		_, err := s.AddMissingEntities(ctx, set.Of[int64](47))
 		// then
 		assert.Error(t, err)
 	})
@@ -100,25 +100,25 @@ func TestAddMissingEveEntities(t *testing.T) {
 		e1 := factory.CreateEveEntityAlliance()
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, set.Of(47, e1.ID))
 		// then
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.True(t, set.Of[int32](47).Equal(ids))
+			assert.True(t, set.Of[int64](47).Equal(ids))
 		}
 	})
 	t.Run("can resolve more then 1000 IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		const count = 1001
-		ids := make([]int32, count)
+		ids := make([]int64, count)
 		data := make([]map[string]any, count)
 		for i := range count {
-			id := int32(i) + 1000
+			id := int64(i) + 1000
 			ids[i] = id
 			obj := map[string]any{
 				"id":       id,
@@ -130,20 +130,20 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
 		missing, err := s.AddMissingEntities(ctx, set.Of(ids...))
 		// then
-		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, count, missing.Size())
+			xassert.Equal(t, count, missing.Size())
 			ids2, err := st.ListEveEntityIDs(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
-			xassert.EqualSet(t, set.Of(ids...), ids2)
+			xassert.Equal2(t, set.Of(ids...), ids2)
 		}
 	})
 	t.Run("should store unresolvable IDs accordingly", func(t *testing.T) {
@@ -151,21 +151,21 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, set.Of[int32](666))
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64](666))
 		// then
 		assert.GreaterOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.True(t, set.Of[int32](666).Equal(ids))
+			assert.True(t, set.Of[int64](666).Equal(ids))
 			e, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, "?", e.Name)
-			assert.Equal(t, app.EveEntityUnknown, e.Category)
+			xassert.Equal(t, "?", e.Name)
+			xassert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should not call API with known invalid IDs", func(t *testing.T) {
@@ -173,21 +173,21 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, set.Of[int32](1))
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64](1))
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, 1, ids.Size())
+			xassert.Equal(t, 1, ids.Size())
 			e, err := st.GetEveEntity(ctx, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, "?", e.Name)
-			assert.Equal(t, app.EveEntityUnknown, e.Category)
+			xassert.Equal(t, "?", e.Name)
+			xassert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should do nothing with ID 0", func(t *testing.T) {
@@ -195,21 +195,21 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, set.Of[int32](0))
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64](0))
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, ids.Size())
+			xassert.Equal(t, 0, ids.Size())
 			r := db.QueryRow("SELECT count(*) FROM eve_entities;")
 			var c int
 			if err := r.Scan(&c); err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, 0, c)
+			xassert.Equal(t, 0, c)
 		}
 	})
 	t.Run("can deal with a mix of resolveable and unresolveable IDs", func(t *testing.T) {
@@ -218,24 +218,24 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		_, err := s.AddMissingEntities(ctx, set.Of[int32](47, 666))
+		_, err := s.AddMissingEntities(ctx, set.Of[int64](47, 666))
 		// then
 		if assert.NoError(t, err) {
 			e1, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, "Erik", e1.Name)
-			assert.Equal(t, app.EveEntityCharacter, e1.Category)
+			xassert.Equal(t, "Erik", e1.Name)
+			xassert.Equal(t, app.EveEntityCharacter, e1.Category)
 			e2, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, app.EveEntityUnknown, e2.Category)
+			xassert.Equal(t, app.EveEntityUnknown, e2.Category)
 		}
 	})
 	t.Run("can deal with a mix of resolveable and invalid IDs", func(t *testing.T) {
@@ -244,24 +244,24 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		_, err := s.AddMissingEntities(ctx, set.Of[int32](47, 1))
+		_, err := s.AddMissingEntities(ctx, set.Of[int64](47, 1))
 		// then
 		if assert.NoError(t, err) {
 			e1, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, "Erik", e1.Name)
-			assert.Equal(t, app.EveEntityCharacter, e1.Category)
+			xassert.Equal(t, "Erik", e1.Name)
+			xassert.Equal(t, app.EveEntityCharacter, e1.Category)
 			e2, err := st.GetEveEntity(ctx, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, app.EveEntityUnknown, e2.Category)
+			xassert.Equal(t, app.EveEntityUnknown, e2.Category)
 		}
 	})
 	t.Run("should do nothing when no ids passed", func(t *testing.T) {
@@ -269,21 +269,21 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			responder,
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, set.Of[int32]())
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64]())
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-			assert.Equal(t, 0, ids.Size())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, ids.Size())
 			r := db.QueryRow("SELECT count(*) FROM eve_entities;")
 			var c int
 			if err := r.Scan(&c); err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, 0, c)
+			xassert.Equal(t, 0, c)
 		}
 	})
 }
@@ -303,9 +303,9 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 		// when
 		x2, err := s.GetOrCreateEntityESI(ctx, x1.ID)
 		// then
-		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, x2, x1)
+			xassert.Equal(t, x2, x1)
 		}
 	})
 	t.Run("create entity from ESI", func(t *testing.T) {
@@ -314,7 +314,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),
@@ -322,11 +322,11 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 		// when
 		x, err := s.GetOrCreateEntityESI(ctx, 42)
 		// then
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, 42, x.ID)
-			assert.Equal(t, "Erik", x.Name)
-			assert.Equal(t, app.EveEntityCharacter, x.Category)
+			xassert.Equal(t, "Erik", x.Name)
+			xassert.Equal(t, app.EveEntityCharacter, x.Category)
 		}
 	})
 }
@@ -348,7 +348,7 @@ func TestToEveEntities(t *testing.T) {
 		oo, err := s.ToEntities(ctx, set.Of(e1.ID, e2.ID))
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1, e2.ID: e2}, oo)
+			xassert.Equal(t, map[int64]*app.EveEntity{e1.ID: e1, e2.ID: e2}, oo)
 		}
 	})
 	t.Run("should map unknown IDs to empty objects", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestToEveEntities(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		// when
-		oo, err := s.ToEntities(ctx, set.Of[int32](0, 1))
+		oo, err := s.ToEntities(ctx, set.Of[int64](0, 1))
 		// then
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, &app.EveEntity{ID: 0}, oo[0])
@@ -377,7 +377,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),
@@ -386,13 +386,13 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		got, err := s.UpdateAllEntitiesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of[int32](42)
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64](42)
+			xassert.Equal2(t, want, got)
 			o2, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.EqualValues(t, 42, o2.ID)
-				assert.Equal(t, "Erik", o2.Name)
-				assert.Equal(t, app.EveEntityCharacter, o2.Category)
+				xassert.Equal(t, "Erik", o2.Name)
+				xassert.Equal(t, app.EveEntityCharacter, o2.Category)
 			}
 		}
 	})
@@ -404,7 +404,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			`=~^https://esi.evetech.net/universe/names`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{"id": 42, "name": "Erik", "category": "character"},
 			}),
@@ -413,8 +413,8 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		got, err := s.UpdateAllEntitiesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of[int32]()
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64]()
+			xassert.Equal2(t, want, got)
 		}
 	})
 }

@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -30,7 +31,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/roles/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/roles", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string][]string{
 				"roles": {
 					"Director",
@@ -49,7 +50,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(app.RoleDirector, app.RoleStationManager)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})

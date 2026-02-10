@@ -27,8 +27,8 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/ErikKalkoken/eveauth"
-	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/gohugoio/httpcache"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/juju/mutex/v2"
@@ -290,7 +290,9 @@ func main() {
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse
 	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
-	esiClient := goesi.NewAPIClient(rhc1.StandardClient(), userAgent)
+	esiClient := goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
+		UserAgent: userAgent,
+	})
 	slog.Info("user agent", "str", userAgent)
 
 	// HTTP client for SSO and EVE image server with HTTP caching and response logging.
@@ -354,7 +356,7 @@ func main() {
 		Cache:              newServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
-		EsiClient:          esiClient,
+		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		HTTPClient:         rhc1.StandardClient(),
 		StatusCacheService: scs,

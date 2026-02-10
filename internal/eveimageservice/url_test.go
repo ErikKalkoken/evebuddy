@@ -12,7 +12,7 @@ import (
 )
 
 var testCases = []struct {
-	id    int32
+	id    int64
 	size  int
 	valid bool
 }{
@@ -115,7 +115,7 @@ func TestInventoryTypeIconURL(t *testing.T) {
 func TestInventoryTypeXURL_ReplaceInvalids(t *testing.T) {
 	cases := []struct {
 		name string
-		id   int32
+		id   int64
 		want string
 	}{
 		{"corporation", 2, "https://images.evetech.net/corporations/1/logo?size=64"},
@@ -143,7 +143,7 @@ func TestInventoryTypeXURL_ReplaceInvalids(t *testing.T) {
 }
 
 func TestInventoryTypeXURL_InvalidIDs(t *testing.T) {
-	for _, id := range []int32{0, 1, 3, 4, 5} {
+	for _, id := range []int64{0, 1, 3, 4, 5} {
 		t.Run(fmt.Sprintf("invalid inventory id %d", id), func(t *testing.T) {
 			_, err := eveimageservice.InventoryTypeIconURL(id, 64)
 			assert.ErrorIs(t, err, eveimageservice.ErrInvalid)

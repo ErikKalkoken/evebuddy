@@ -15,7 +15,7 @@ import (
 )
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
-func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (bool, error) {
+func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (bool, error) {
 	missing, err := s.MissingScopes(ctx, characterID, scopes)
 	if err != nil {
 		return false, err
@@ -24,8 +24,8 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 }
 
 // CharactersWithMissingScopes returns a list of characters which are missing scopes (if any),
-func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*app.EntityShort[int32], error) {
-	var characters []*app.EntityShort[int32]
+func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*app.EntityShort[int64], error) {
+	var characters []*app.EntityShort[int64]
 	cc, err := s.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*
 	return characters, nil
 }
 
-func (s *CharacterService) MissingScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (set.Set[string], error) {
+func (s *CharacterService) MissingScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (set.Set[string], error) {
 	var missing set.Set[string]
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
@@ -58,7 +58,7 @@ func (s *CharacterService) MissingScopes(ctx context.Context, characterID int32,
 // Will be valid when any of the given roles and scopes match.
 // It can optionally ensure the token is valid by with checkToken.
 // It returns [app.ErrNotFound] if no such token exists.
-func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
+func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
 	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, cor
 
 // GetValidCharacterToken returns a valid token for a character.
 // Will automatically try to refresh a token if needed.
-func (s *CharacterService) GetValidCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
+func (s *CharacterService) GetValidCharacterToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *CharacterService) GetValidCharacterToken(ctx context.Context, character
 	return token, nil
 }
 
-func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (*app.CharacterToken, error) {
+func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (*app.CharacterToken, error) {
 	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token 
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 	token2 := &eveauth.Token{
 		AccessToken:  token.AccessToken,
-		CharacterID:  token.CharacterID,
+		CharacterID:  int32(token.CharacterID),
 		ExpiresAt:    token.ExpiresAt,
 		RefreshToken: token.RefreshToken,
 		Scopes:       slices.Collect(token.Scopes.All()),

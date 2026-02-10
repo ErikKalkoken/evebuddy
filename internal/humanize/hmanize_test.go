@@ -169,7 +169,7 @@ func TestOptional(t *testing.T) {
 	})
 	t.Run("number", func(t *testing.T) {
 		assert.Equal(t, "42", humanize.Optional(optional.New(int(42)), ""))
-		assert.Equal(t, "42", humanize.Optional(optional.New(int32(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.New(int64(42)), ""))
 		assert.Equal(t, "42", humanize.Optional(optional.New(int64(42)), ""))
 	})
 	t.Run("bool", func(t *testing.T) {
@@ -195,7 +195,7 @@ func TestOptionalWithDecemals(t *testing.T) {
 
 func TestComma(t *testing.T) {
 	assert.Equal(t, "1,234", humanize.Comma(int(1234)))
-	assert.Equal(t, "1,234", humanize.Comma(int32(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(int64(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(int64(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(uint(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(uint32(1234)))

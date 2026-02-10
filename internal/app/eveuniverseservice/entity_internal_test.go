@@ -4,9 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetValidEntity(t *testing.T) {
@@ -20,7 +22,7 @@ func TestGetValidEntity(t *testing.T) {
 	t.Run("should return entity when id is valid", func(t *testing.T) {
 		x, err := s.getValidEntity(ctx, entity.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, entity, x)
+			xassert.Equal(t, entity, x)
 		}
 	})
 	t.Run("should return nil when id is not valid 1", func(t *testing.T) {

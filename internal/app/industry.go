@@ -48,7 +48,7 @@ func (jt IndustryJobType) Display() string {
 // CharacterIndustrySlots represents counts of industry slots for a character.
 type CharacterIndustrySlots struct {
 	Busy          int
-	CharacterID   int32
+	CharacterID   int64
 	CharacterName string
 	Free          int
 	Ready         int
@@ -58,7 +58,7 @@ type CharacterIndustrySlots struct {
 
 // IndustryActivity represents the activity type of an industry job.
 // See also: https://github.com/esi/esi-issues/issues/894
-type IndustryActivity int32
+type IndustryActivity int64
 
 const (
 	None                       IndustryActivity = 0
@@ -164,8 +164,8 @@ type CharacterIndustryJob struct {
 	Activity           IndustryActivity
 	BlueprintID        int64
 	BlueprintLocation  *EveLocationShort
-	BlueprintType      *EntityShort[int32]
-	CharacterID        int32
+	BlueprintType      *EntityShort[int64]
+	CharacterID        int64
 	CompletedCharacter optional.Optional[*EveEntity]
 	CompletedDate      optional.Optional[time.Time]
 	Cost               optional.Optional[float64]
@@ -174,21 +174,21 @@ type CharacterIndustryJob struct {
 	Facility           *EveLocationShort
 	ID                 int64
 	Installer          *EveEntity
-	JobID              int32
+	JobID              int64
 	LicensedRuns       optional.Optional[int]
 	OutputLocation     *EveLocationShort
 	PauseDate          optional.Optional[time.Time]
 	Probability        optional.Optional[float32]
-	ProductType        optional.Optional[*EntityShort[int32]]
+	ProductType        optional.Optional[*EntityShort[int64]]
 	Runs               int
 	StartDate          time.Time
 	Station            *EveLocationShort
 	Status             IndustryJobStatus
-	SuccessfulRuns     optional.Optional[int32]
+	SuccessfulRuns     optional.Optional[int64]
 }
 
 type IndustryJobActivityCount struct {
-	InstallerID int32
+	InstallerID int64
 	Activity    IndustryActivity
 	Status      IndustryJobStatus
 	Count       int
@@ -198,8 +198,8 @@ type CorporationIndustryJob struct {
 	Activity            IndustryActivity
 	BlueprintID         int64
 	BlueprintLocationID int64 // can be a corp hanger or container. not supported.
-	BlueprintType       *EntityShort[int32]
-	CorporationID       int32
+	BlueprintType       *EntityShort[int64]
+	CorporationID       int64
 	CompletedCharacter  optional.Optional[*EveEntity]
 	CompletedDate       optional.Optional[time.Time]
 	Cost                optional.Optional[float64]
@@ -208,15 +208,15 @@ type CorporationIndustryJob struct {
 	FacilityID          int64 // can be a corp hanger or container. not supported.
 	Installer           *EveEntity
 	ID                  int64
-	JobID               int32
+	JobID               int64
 	LicensedRuns        optional.Optional[int]
 	OutputLocationID    int64 // can be a corp hanger or container. not supported.
 	PauseDate           optional.Optional[time.Time]
 	Probability         optional.Optional[float32]
-	ProductType         optional.Optional[*EntityShort[int32]]
+	ProductType         optional.Optional[*EntityShort[int64]]
 	Runs                int
 	StartDate           time.Time
 	Location            *EveLocationShort
 	Status              IndustryJobStatus
-	SuccessfulRuns      optional.Optional[int32]
+	SuccessfulRuns      optional.Optional[int64]
 }

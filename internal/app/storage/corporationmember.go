@@ -11,8 +11,8 @@ import (
 )
 
 type CorporationMemberParams struct {
-	CharacterID   int32
-	CorporationID int32
+	CharacterID   int64
+	CorporationID int64
 }
 
 func (x CorporationMemberParams) isValid() bool {
@@ -27,8 +27,8 @@ func (st *Storage) CreateCorporationMember(ctx context.Context, arg CorporationM
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationMember(ctx, queries.CreateCorporationMemberParams{
-		CharacterID:   int64(arg.CharacterID),
-		CorporationID: int64(arg.CorporationID),
+		CharacterID:  arg.CharacterID,
+		CorporationID:arg.CorporationID,
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -44,8 +44,8 @@ func (st *Storage) GetCorporationMember(ctx context.Context, arg CorporationMemb
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationMembers(ctx, queries.GetCorporationMembersParams{
-		CorporationID: int64(arg.CorporationID),
-		CharacterID:   int64(arg.CharacterID),
+		CorporationID:arg.CorporationID,
+		CharacterID:  arg.CharacterID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -53,7 +53,7 @@ func (st *Storage) GetCorporationMember(ctx context.Context, arg CorporationMemb
 	return corporationMemberFromDBModel(r.CorporationMember, r.EveEntity), nil
 }
 
-func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID int32, characterIDs set.Set[int32]) error {
+func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID int64, characterIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationMembers %d: %w", corporationID, err)
 	}
@@ -64,7 +64,7 @@ func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID i
 		return nil
 	}
 	err := st.qRW.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
-		CorporationID: int64(corporationID),
+		CorporationID:corporationID,
 		CharacterIds:  convertNumericSet[int64](characterIDs),
 	})
 	if err != nil {
@@ -73,14 +73,14 @@ func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID i
 	return nil
 }
 
-func (st *Storage) ListCorporationMembers(ctx context.Context, corporationID int32) ([]*app.CorporationMember, error) {
+func (st *Storage) ListCorporationMembers(ctx context.Context, corporationID int64) ([]*app.CorporationMember, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationMembers for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationMembers(ctx, int64(corporationID))
+	rows, err := st.qRO.ListCorporationMembers(ctx,corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -91,23 +91,23 @@ func (st *Storage) ListCorporationMembers(ctx context.Context, corporationID int
 	return oo, nil
 }
 
-func (st *Storage) ListCorporationMemberIDs(ctx context.Context, corporationID int32) (set.Set[int32], error) {
+func (st *Storage) ListCorporationMemberIDs(ctx context.Context, corporationID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationMemberIDs for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
-		return set.Set[int32]{}, wrapErr(app.ErrInvalid)
+		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	characterIDs, err := st.qRO.ListCorporationMemberIDs(ctx, int64(corporationID))
+	characterIDs, err := st.qRO.ListCorporationMemberIDs(ctx,corporationID)
 	if err != nil {
-		return set.Set[int32]{}, wrapErr(err)
+		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(convertNumericSlice[int32](characterIDs)...), nil
+	return set.Of(convertNumericSlice[int64](characterIDs)...), nil
 }
 
 func corporationMemberFromDBModel(o queries.CorporationMember, ee queries.EveEntity) *app.CorporationMember {
 	o2 := &app.CorporationMember{
-		CorporationID: int32(o.CorporationID),
+		CorporationID:o.CorporationID,
 		Character:     eveEntityFromDBModel(ee),
 	}
 	return o2

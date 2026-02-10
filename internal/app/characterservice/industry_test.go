@@ -49,22 +49,22 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobReady,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
@@ -101,22 +101,22 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.TimeEfficiencyResearch),
+			ActivityID:  int64(app.TimeEfficiencyResearch),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.MaterialEfficiencyResearch),
+			ActivityID:  int64(app.MaterialEfficiencyResearch),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Copying),
+			ActivityID:  int64(app.Copying),
 			Status:      app.JobReady,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Copying),
+			ActivityID:  int64(app.Copying),
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ScienceJob)
@@ -152,22 +152,22 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions1),
+			ActivityID:  int64(app.Reactions1),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
+			ActivityID:  int64(app.Reactions2),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
+			ActivityID:  int64(app.Reactions2),
 			Status:      app.JobReady,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
+			ActivityID:  int64(app.Reactions2),
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionJob)

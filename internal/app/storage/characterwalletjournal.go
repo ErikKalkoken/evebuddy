@@ -9,25 +9,26 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // FIXME: Wrong unique clause and missing index for ref_id
 
 type CreateCharacterWalletJournalEntryParams struct {
-	Amount        float64
-	Balance       float64
-	ContextID     int64
-	ContextIDType string
+	Amount        optional.Optional[float64]
+	Balance       optional.Optional[float64]
+	ContextID     optional.Optional[int64]
+	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	FirstPartyID  int32
+	FirstPartyID  optional.Optional[int64]
 	RefID         int64
-	CharacterID   int32
-	Reason        string
+	CharacterID   int64
+	Reason        optional.Optional[string]
 	RefType       string
-	SecondPartyID int32
-	Tax           float64
-	TaxReceiverID int32
+	SecondPartyID optional.Optional[int64]
+	Tax           optional.Optional[float64]
+	TaxReceiverID optional.Optional[int64]
 }
 
 func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
@@ -37,32 +38,22 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 	if arg.CharacterID == 0 || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.CreateCharacterWalletJournalEntryParams{
-		Amount:        arg.Amount,
-		Balance:       arg.Balance,
-		ContextID:     arg.ContextID,
-		ContextIDType: arg.ContextIDType,
+	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, queries.CreateCharacterWalletJournalEntryParams{
+		Amount:        arg.Amount.ValueOrZero(),
+		Balance:       arg.Balance.ValueOrZero(),
+		CharacterID:  arg.CharacterID,
+		ContextID:     arg.ContextID.ValueOrZero(),
+		ContextIDType: arg.ContextIDType.ValueOrZero(),
 		Date:          arg.Date,
 		Description:   arg.Description,
+		FirstPartyID:  optional.ToNullInt64(arg.FirstPartyID),
+		Reason:        arg.Reason.ValueOrZero(),
 		RefID:         arg.RefID,
-		CharacterID:   int64(arg.CharacterID),
 		RefType:       arg.RefType,
-		Reason:        arg.Reason,
-		Tax:           arg.Tax,
-	}
-	if arg.FirstPartyID != 0 {
-		arg2.FirstPartyID.Int64 = int64(arg.FirstPartyID)
-		arg2.FirstPartyID.Valid = true
-	}
-	if arg.SecondPartyID != 0 {
-		arg2.SecondPartyID.Int64 = int64(arg.SecondPartyID)
-		arg2.SecondPartyID.Valid = true
-	}
-	if arg.TaxReceiverID != 0 {
-		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
-		arg2.TaxReceiverID.Valid = true
-	}
-	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, arg2)
+		SecondPartyID: optional.ToNullInt64(arg.SecondPartyID),
+		Tax:           arg.Tax.ValueOrZero(),
+		TaxReceiverID: optional.ToNullInt64(arg.TaxReceiverID),
+	})
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -70,7 +61,7 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 }
 
 type GetCharacterWalletJournalEntryParams struct {
-	CharacterID int32
+	CharacterID int64
 	RefID       int64
 }
 
@@ -82,7 +73,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, queries.GetCharacterWalletJournalEntryParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID:arg.CharacterID,
 		RefID:       arg.RefID,
 	})
 	if err != nil {
@@ -95,28 +86,28 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
-func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
+func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx,characterID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
+func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int64) ([]*app.CharacterWalletJournalEntry, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("list wallet journal entries for character %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx,characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -136,20 +127,20 @@ func characterWalletJournalEntryFromDBModel(
 	firstParty, secondParty, taxReceiver nullEveEntry,
 ) *app.CharacterWalletJournalEntry {
 	o2 := &app.CharacterWalletJournalEntry{
-		Amount:        o.Amount,
-		Balance:       o.Balance,
-		ContextID:     o.ContextID,
-		ContextIDType: o.ContextIDType,
+		Amount:        optional.FromZeroValue(o.Amount),
+		Balance:       optional.FromZeroValue(o.Balance),
+		ContextID:     optional.FromZeroValue(o.ContextID),
+		ContextIDType: optional.FromZeroValue(o.ContextIDType),
 		Date:          o.Date,
 		Description:   o.Description,
 		FirstParty:    eveEntityFromNullableDBModel(firstParty),
 		ID:            o.ID,
 		RefID:         o.RefID,
-		CharacterID:   int32(o.CharacterID),
-		Reason:        o.Reason,
+		CharacterID:  o.CharacterID,
+		Reason:        optional.FromZeroValue(o.Reason),
 		RefType:       o.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(secondParty),
-		Tax:           o.Tax,
+		Tax:           optional.FromZeroValue(o.Tax),
 		TaxReceiver:   eveEntityFromNullableDBModel(taxReceiver),
 	}
 	return o2

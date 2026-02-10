@@ -129,16 +129,16 @@ func init() {
 }
 
 type CreateCharacterAssetParams struct {
-	CharacterID     int32
-	EveTypeID       int32
-	IsBlueprintCopy bool
+	CharacterID     int64
+	EveTypeID       int64
+	IsBlueprintCopy optional.Optional[bool]
 	IsSingleton     bool
 	ItemID          int64
 	LocationFlag    app.LocationFlag
 	LocationID      int64
 	LocationType    app.LocationType
 	Name            string
-	Quantity        int32
+	Quantity        int64
 }
 
 func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterAssetParams) error {
@@ -150,32 +150,32 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.CreateCharacterAsset(ctx, queries.CreateCharacterAssetParams{
-		CharacterID:     int64(arg.CharacterID),
-		EveTypeID:       int64(arg.EveTypeID),
-		IsBlueprintCopy: arg.IsBlueprintCopy,
+		CharacterID:     arg.CharacterID,
+		EveTypeID:       arg.EveTypeID,
+		IsBlueprintCopy: arg.IsBlueprintCopy.ValueOrZero(),
 		IsSingleton:     arg.IsSingleton,
 		ItemID:          arg.ItemID,
 		LocationFlag:    locationFlagToDBValue[arg.LocationFlag],
 		LocationID:      arg.LocationID,
 		LocationType:    locationTypeToDBValue[arg.LocationType],
 		Name:            arg.Name,
-		Quantity:        int64(arg.Quantity),
+		Quantity:        arg.Quantity,
 	}); err != nil {
 		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int32, itemIDs set.Set[int64]) error {
+func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int64, itemIDs set.Set[int64]) error {
 	return st.qRW.DeleteCharacterAssets(ctx, queries.DeleteCharacterAssetsParams{
-		CharacterID: int64(characterID),
+		CharacterID: characterID,
 		ItemIds:     slices.Collect(itemIDs.All()),
 	})
 }
 
-func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*app.CharacterAsset, error) {
+func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int64, itemID int64) (*app.CharacterAsset, error) {
 	r, err := st.qRO.GetCharacterAsset(ctx, queries.GetCharacterAssetParams{
-		CharacterID: int64(characterID),
+		CharacterID: characterID,
 		ItemID:      itemID,
 	})
 	if err != nil {
@@ -185,16 +185,16 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 	return o, nil
 }
 
-func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
-	v, err := st.qRO.CalculateCharacterAssetTotalValue(ctx, int64(characterID))
+func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
+	v, err := st.qRO.CalculateCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
 		return 0, fmt.Errorf("calculate character asset for character %d: %w", characterID, err)
 	}
 	return v.Float64, nil
 }
 
-func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.qRO.ListCharacterAssetIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCharacterAssetIDs(ctx, characterID)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character asset IDs: %w", err)
 	}
@@ -213,8 +213,8 @@ func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.Character
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
-	rows, err := st.qRO.ListCharacterAssets(ctx, int64(characterID))
+func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int64) ([]*app.CharacterAsset, error) {
+	rows, err := st.qRO.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("list assets for character ID %d: %w", characterID, err)
 	}
@@ -238,9 +238,9 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		locationType = app.TypeUnknown
 	}
 	o := &app.CharacterAsset{
-		CharacterID: int32(ca.CharacterID),
+		CharacterID: ca.CharacterID,
 		Asset: app.Asset{
-			IsBlueprintCopy: ca.IsBlueprintCopy,
+			IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
 			IsSingleton:     ca.IsSingleton,
 			ItemID:          ca.ItemID,
 			LocationFlag:    locationFlag,
@@ -256,12 +256,12 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 }
 
 type UpdateCharacterAssetParams struct {
-	CharacterID  int32
+	CharacterID  int64
 	ItemID       int64
 	LocationFlag app.LocationFlag
 	LocationID   int64
 	LocationType app.LocationType
-	Quantity     int32
+	Quantity     int64
 }
 
 func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
@@ -273,12 +273,12 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCharacterAsset(ctx, queries.UpdateCharacterAssetParams{
-		CharacterID:  int64(arg.CharacterID),
+		CharacterID:  arg.CharacterID,
 		ItemID:       arg.ItemID,
 		LocationFlag: locationFlagToDBValue[arg.LocationFlag],
 		LocationID:   arg.LocationID,
 		LocationType: locationTypeToDBValue[arg.LocationType],
-		Quantity:     int64(arg.Quantity),
+		Quantity:     arg.Quantity,
 	}); err != nil {
 		return wrapErr(err)
 	}
@@ -286,7 +286,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 }
 
 type UpdateCharacterAssetNameParams struct {
-	CharacterID int32
+	CharacterID int64
 	ItemID      int64
 	Name        string
 }
@@ -300,7 +300,7 @@ func (st *Storage) UpdateCharacterAssetName(ctx context.Context, arg UpdateChara
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCharacterAssetName(ctx, queries.UpdateCharacterAssetNameParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID: arg.CharacterID,
 		ItemID:      arg.ItemID,
 		Name:        arg.Name,
 	}); err != nil {

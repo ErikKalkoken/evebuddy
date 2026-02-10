@@ -123,7 +123,7 @@ func (g *ErrGroupDebug) Wait() error {
 
 type EveUniverseServiceFake struct{}
 
-func (s *EveUniverseServiceFake) GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
+func (s *EveUniverseServiceFake) GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error) {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     fmt.Sprintf("Entity%d", id),
@@ -157,7 +157,7 @@ func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id 
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
+func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
 	ss, nil := s.GetOrCreateSolarSystemESI(ctx, 30002537)
 	o := &app.EveMoon{
 		ID:          id,
@@ -167,7 +167,7 @@ func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int3
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
+func (s *EveUniverseServiceFake) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
 	ss, _ := s.GetOrCreateSolarSystemESI(ctx, 30002537)
 	et, _ := s.GetOrCreateTypeESI(ctx, 5)
 	o := &app.EvePlanet{
@@ -179,7 +179,7 @@ func (s *EveUniverseServiceFake) GetOrCreatePlanetESI(ctx context.Context, id in
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
+func (s *EveUniverseServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
 	o := &app.EveSolarSystem{
 		ID:   id,
 		Name: fmt.Sprintf("System%d", id),
@@ -195,7 +195,7 @@ func (s *EveUniverseServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, 
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
+func (s *EveUniverseServiceFake) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
 	o := &app.EveType{
 		ID:   id,
 		Name: fmt.Sprintf("Type%d", id),
@@ -211,8 +211,8 @@ func (s *EveUniverseServiceFake) GetOrCreateTypeESI(ctx context.Context, id int3
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int32]) (map[int32]*app.EveEntity, error) {
-	m := make(map[int32]*app.EveEntity)
+func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error) {
+	m := make(map[int64]*app.EveEntity)
 	for id := range ids.All() {
 		o, _ := s.GetOrCreateEntityESI(ctx, id)
 		m[id] = o
@@ -273,4 +273,9 @@ func (c CacheFake2) SetInt64(k string, v int64, d time.Duration) {
 
 func (c CacheFake2) SetString(k string, v string, d time.Duration) {
 	c[k] = v
+}
+
+// Ptr returns a pointer to any value including literals.
+func Ptr[T any](v T) *T {
+	return &v
 }

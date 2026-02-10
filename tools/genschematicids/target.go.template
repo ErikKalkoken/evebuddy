@@ -2,7 +2,7 @@
 
 package {{.Package}}
 
-var {{.Variable}} = map[int32]int32{
+var {{.Variable}} = map[int64]int64{
     {{range .Values}}{{.SchematicID}}:{{.IconID}},
     {{end}}
 }

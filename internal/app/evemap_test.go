@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveConstellationEveEntity(t *testing.T) {
@@ -30,12 +32,12 @@ func TestEvePlanetTypeDisplay(t *testing.T) {
 			typ := app.EveType{Name: tc.in}
 			ep := app.EvePlanet{Type: &typ}
 			x := ep.TypeDisplay()
-			assert.Equal(t, tc.want, x)
+		xassert.Equal(t, tc.want, x)
 		})
 	}
 }
 
 func TestEvePlanetTypeDisplay2(t *testing.T) {
 	ep := app.EvePlanet{}
-	assert.Equal(t, "", ep.TypeDisplay())
+xassert.Equal(t, "", ep.TypeDisplay())
 }

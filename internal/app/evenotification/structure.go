@@ -13,7 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/antihax/goesi/notification"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -34,7 +34,7 @@ type structureInfo struct {
 	solarSystem eveObj
 }
 
-func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string, eus EveUniverseService) (structureInfo, error) {
+func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structureID int64, structureName string, eus EveUniverseService) (structureInfo, error) {
 	var eveType *app.EveType
 	var err error
 	if typeID != 0 {
@@ -110,31 +110,31 @@ type ownershipTransferred struct {
 	baseRenderer
 }
 
-func (n ownershipTransferred) entityIDs(text string) (setInt32, error) {
+func (n ownershipTransferred) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n ownershipTransferred) unmarshal(text string) (notification.OwnershipTransferredV2, setInt32, error) {
-	var data notification.OwnershipTransferredV2
+func (n ownershipTransferred) unmarshal(text string) (goesi.OwnershipTransferredV2, setInt64, error) {
+	var data goesi.OwnershipTransferredV2
 	if strings.Contains(text, "newOwnerCorpID") {
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return data, setInt32{}, err
+			return data, setInt64{}, err
 		}
 	} else {
-		var data2 notification.OwnershipTransferred
+		var data2 goesi.OwnershipTransferred
 		if err := yaml.Unmarshal([]byte(text), &data2); err != nil {
-			return data, setInt32{}, err
+			return data, setInt64{}, err
 		}
-		data.CharID = int32(data2.CharacterLinkData[2].(uint64))
-		data.NewOwnerCorpID = int32(data2.ToCorporationLinkData[2].(uint64))
-		data.OldOwnerCorpID = int32(data2.FromCorporationLinkData[2].(uint64))
-		data.SolarSystemID = int32(data2.SolarSystemLinkData[2].(uint64))
+		data.CharID = int64(data2.CharacterLinkData[2].(uint64))
+		data.NewOwnerCorpID = int64(data2.ToCorporationLinkData[2].(uint64))
+		data.OldOwnerCorpID = int64(data2.FromCorporationLinkData[2].(uint64))
+		data.SolarSystemID = int64(data2.SolarSystemLinkData[2].(uint64))
 		data.StructureID = int64(data2.StructureLinkData[2].(uint64))
-		data.StructureTypeID = int32(data2.StructureLinkData[1].(uint64))
+		data.StructureTypeID = int64(data2.StructureLinkData[1].(uint64))
 		data.StructureName = data2.StructureName
 	}
 	ids := set.Of(data.OldOwnerCorpID, data.NewOwnerCorpID, data.CharID)
@@ -176,7 +176,7 @@ type structureAnchoring struct {
 
 func (n structureAnchoring) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureAnchoring
+	var data goesi.StructureAnchoring
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -199,7 +199,7 @@ type structureDestroyed struct {
 
 func (n structureDestroyed) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureDestroyed
+	var data goesi.StructureDestroyed
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -225,7 +225,7 @@ type structureFuelAlert struct {
 
 func (n structureFuelAlert) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureFuelAlert
+	var data goesi.StructureFuelAlert
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -248,7 +248,7 @@ type structureImpendingAbandonmentAssetsAtRisk struct {
 
 func (n structureImpendingAbandonmentAssetsAtRisk) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureImpendingAbandonmentAssetsAtRisk
+	var data goesi.StructureImpendingAbandonmentAssetsAtRisk
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -273,18 +273,18 @@ type structureItemsDelivered struct {
 	baseRenderer
 }
 
-func (n structureItemsDelivered) entityIDs(text string) (setInt32, error) {
+func (n structureItemsDelivered) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n structureItemsDelivered) unmarshal(text string) (notification.StructureItemsDelivered, setInt32, error) {
-	var data notification.StructureItemsDelivered
+func (n structureItemsDelivered) unmarshal(text string) (goesi.StructureItemsDelivered, setInt64, error) {
+	var data goesi.StructureItemsDelivered
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CharID, data.StructureTypeID)
 	for _, r := range data.ListOfTypesAndQty {
@@ -336,18 +336,18 @@ type structureItemsMovedToSafety struct {
 	baseRenderer
 }
 
-func (n structureItemsMovedToSafety) entityIDs(text string) (setInt32, error) {
+func (n structureItemsMovedToSafety) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n structureItemsMovedToSafety) unmarshal(text string) (notification.StructureItemsMovedToSafety, setInt32, error) {
-	var data notification.StructureItemsMovedToSafety
+func (n structureItemsMovedToSafety) unmarshal(text string) (goesi.StructureItemsMovedToSafety, setInt64, error) {
+	var data goesi.StructureItemsMovedToSafety
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.NewStationID)
 	return data, ids, nil
@@ -388,7 +388,7 @@ type structureLostArmor struct {
 
 func (n structureLostArmor) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureLostArmor
+	var data goesi.StructureLostArmor
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -415,7 +415,7 @@ type structureLostShields struct {
 
 func (n structureLostShields) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureLostShields
+	var data goesi.StructureLostShields
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -443,7 +443,7 @@ type structureOnline struct {
 
 func (n structureOnline) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureOnline
+	var data goesi.StructureOnline
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -464,22 +464,22 @@ type structuresReinforcementChanged struct {
 	baseRenderer
 }
 
-func (n structuresReinforcementChanged) entityIDs(text string) (setInt32, error) {
+func (n structuresReinforcementChanged) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n structuresReinforcementChanged) unmarshal(text string) (notification.StructuresReinforcementChanged, setInt32, error) {
-	var data notification.StructuresReinforcementChanged
+func (n structuresReinforcementChanged) unmarshal(text string) (goesi.StructuresReinforcementChanged, setInt64, error) {
+	var data goesi.StructuresReinforcementChanged
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
-	var ids setInt32
+	var ids setInt64
 	for _, r := range data.AllStructureInfo {
-		ids.Add(int32(r[2].(uint64)))
+		ids.Add(int64(r[2].(uint64)))
 	}
 	return data, ids, nil
 }
@@ -487,7 +487,7 @@ func (n structuresReinforcementChanged) unmarshal(text string) (notification.Str
 type structureReinforcementInfo struct {
 	structureID int64
 	name        string
-	typeID      int32
+	typeID      int64
 }
 
 func (n structuresReinforcementChanged) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
@@ -498,7 +498,7 @@ func (n structuresReinforcementChanged) render(ctx context.Context, text string,
 	}
 	structures := make([]structureReinforcementInfo, 0)
 	for _, r := range data.AllStructureInfo {
-		typeID := int32(r[2].(uint64))
+		typeID := int64(r[2].(uint64))
 		s := structureReinforcementInfo{
 			structureID: int64(r[0].(uint64)),
 			name:        r[1].(string),
@@ -532,18 +532,18 @@ type structureServicesOffline struct {
 	baseRenderer
 }
 
-func (n structureServicesOffline) entityIDs(text string) (setInt32, error) {
+func (n structureServicesOffline) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n structureServicesOffline) unmarshal(text string) (notification.StructureServicesOffline, setInt32, error) {
-	var data notification.StructureServicesOffline
+func (n structureServicesOffline) unmarshal(text string) (goesi.StructureServicesOffline, setInt64, error) {
+	var data goesi.StructureServicesOffline
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.ListOfServiceModuleIDs...)
 	return data, ids, nil
@@ -587,7 +587,7 @@ type structureUnanchoring struct {
 
 func (n structureUnanchoring) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureUnanchoring
+	var data goesi.StructureUnanchoring
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -613,18 +613,18 @@ type structureUnderAttack struct {
 	baseRenderer
 }
 
-func (n structureUnderAttack) entityIDs(text string) (setInt32, error) {
+func (n structureUnderAttack) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n structureUnderAttack) unmarshal(text string) (notification.StructureUnderAttack, setInt32, error) {
-	var data notification.StructureUnderAttack
+func (n structureUnderAttack) unmarshal(text string) (goesi.StructureUnderAttack, setInt64, error) {
+	var data goesi.StructureUnderAttack
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CharID)
 	return data, ids, nil
@@ -672,7 +672,7 @@ type structureWentHighPower struct {
 
 func (n structureWentHighPower) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureWentHighPower
+	var data goesi.StructureWentHighPower
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -691,7 +691,7 @@ type structureWentLowPower struct {
 
 func (n structureWentLowPower) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.StructureWentLowPower
+	var data goesi.StructureWentLowPower
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -708,18 +708,18 @@ type mercenaryDenAttacked struct {
 	baseRenderer
 }
 
-func (n mercenaryDenAttacked) entityIDs(text string) (setInt32, error) {
+func (n mercenaryDenAttacked) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n mercenaryDenAttacked) unmarshal(text string) (notification2.MercenaryDenAttacked, setInt32, error) {
+func (n mercenaryDenAttacked) unmarshal(text string) (notification2.MercenaryDenAttacked, setInt64, error) {
 	var data notification2.MercenaryDenAttacked
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AggressorCharacterID)
 	return data, ids, nil
@@ -779,18 +779,18 @@ type mercenaryDenReinforced struct {
 	baseRenderer
 }
 
-func (n mercenaryDenReinforced) entityIDs(text string) (setInt32, error) {
+func (n mercenaryDenReinforced) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n mercenaryDenReinforced) unmarshal(text string) (notification2.MercenaryDenReinforced, setInt32, error) {
+func (n mercenaryDenReinforced) unmarshal(text string) (notification2.MercenaryDenReinforced, setInt64, error) {
 	var data notification2.MercenaryDenReinforced
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AggressorCharacterID)
 	return data, ids, nil
@@ -884,7 +884,7 @@ func eveEntityFromHTMLLink(html string) (*app.EveEntity, error) {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	o := &app.EveEntity{
-		ID:       int32(id),
+		ID:       int64(id),
 		Category: c,
 		Name:     a.Text(),
 	}

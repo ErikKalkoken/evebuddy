@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetWalletBalance(t *testing.T) {
@@ -27,7 +29,7 @@ func TestGetWalletBalance(t *testing.T) {
 		got, err := s.GetWalletBalance(ctx, b.CorporationID, app.Division(b.DivisionID))
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, b.Balance, got)
+			xassert.Equal(t, b.Balance, got)
 		}
 	})
 	t.Run("return not found error", func(t *testing.T) {
@@ -65,7 +67,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 		got, err := s.GetWalletBalancesTotal(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 36, got.ValueOrZero())
+			xassert.Equal(t, 36, got.ValueOrZero())
 		}
 	})
 	t.Run("return empty when no balances found", func(t *testing.T) {

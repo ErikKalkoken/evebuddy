@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID int32, orderIDs set.Set[int64]) error {
+func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID int64, orderIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterMarketOrdersByID for character %d and job IDs: %v: %w", characterID, orderIDs, err)
 	}
@@ -42,7 +42,7 @@ func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID 
 		return nil
 	}
 	err := st.qRW.DeleteCharacterMarketOrders(ctx, queries.DeleteCharacterMarketOrdersParams{
-		CharacterID: int64(characterID),
+		CharacterID: characterID,
 		OrderIds:    slices.Collect(orderIDs.All()),
 	})
 	if err != nil {
@@ -52,9 +52,9 @@ func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID 
 	return nil
 }
 
-func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int32, orderID int64) (*app.CharacterMarketOrder, error) {
+func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int64, orderID int64) (*app.CharacterMarketOrder, error) {
 	arg := queries.GetCharacterMarketOrderParams{
-		CharacterID: int64(characterID),
+		CharacterID: characterID,
 		OrderID:     orderID,
 	}
 	r, err := st.qRO.GetCharacterMarketOrder(ctx, arg)
@@ -91,16 +91,16 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterMarketOrderIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.qRO.ListCharacterMarketOrderIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterMarketOrderIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCharacterMarketOrderIDs(ctx, characterID)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListCharacterMarketOrderIDs for character %d: %w", characterID, err)
 	}
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID int32) ([]*app.CharacterMarketOrder, error) {
-	rows, err := st.qRO.ListCharacterMarketOrders(ctx, int64(characterID))
+func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID int64) ([]*app.CharacterMarketOrder, error) {
+	rows, err := st.qRO.ListCharacterMarketOrders(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterMarketOrder for character %d: %w", characterID, err)
 	}
@@ -129,10 +129,10 @@ type characterMarketOrderFromDBModelParams struct {
 
 func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) *app.CharacterMarketOrder {
 	o2 := &app.CharacterMarketOrder{
-		CharacterID:   int32(arg.cmo.CharacterID),
-		Duration:      int(arg.cmo.Duration),
+		CharacterID:   arg.cmo.CharacterID,
+		Duration:      arg.cmo.Duration,
 		Escrow:        optional.FromNullFloat64(arg.cmo.Escrow),
-		IsBuyOrder:    arg.cmo.IsBuyOrder,
+		IsBuyOrder:    optional.FromZeroValue(arg.cmo.IsBuyOrder),
 		IsCorporation: arg.cmo.IsCorporation,
 		Issued:        arg.cmo.Issued,
 		Location: &app.EveLocationShort{
@@ -140,28 +140,28 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 			Name:           optional.New(arg.locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
 		},
-		MinVolume: optional.FromNullInt64ToInteger[int](arg.cmo.MinVolume),
+		MinVolume: optional.FromNullInt64(arg.cmo.MinVolume),
 		OrderID:   arg.cmo.OrderID,
 		Owner:     eveEntityFromDBModel(arg.owner),
 		Price:     arg.cmo.Price,
 		Range:     arg.cmo.Range,
-		Region: &app.EntityShort[int32]{
-			ID:   int32(arg.cmo.RegionID),
+		Region: &app.EntityShort[int64]{
+			ID:   arg.cmo.RegionID,
 			Name: arg.regionName,
 		},
 		State: orderStatusFromDBValue[arg.cmo.State],
-		Type: &app.EntityShort[int32]{
-			ID:   int32(arg.cmo.TypeID),
+		Type: &app.EntityShort[int64]{
+			ID:   arg.cmo.TypeID,
 			Name: arg.typeName,
 		},
-		VolumeRemains: int(arg.cmo.VolumeRemains),
-		VolumeTotal:   int(arg.cmo.VolumeTotal),
+		VolumeRemains: arg.cmo.VolumeRemains,
+		VolumeTotal:   arg.cmo.VolumeTotal,
 	}
 	return o2
 }
 
 type UpdateCharacterMarketOrderStateParams struct {
-	CharacterID int32
+	CharacterID int64
 	OrderIDs    set.Set[int64]
 	State       app.MarketOrderState
 }
@@ -177,7 +177,7 @@ func (st *Storage) UpdateCharacterMarketOrderState(ctx context.Context, arg Upda
 		return nil
 	}
 	err := st.qRW.UpdateCharacterMarketOrderState(ctx, queries.UpdateCharacterMarketOrderStateParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID: arg.CharacterID,
 		OrderIds:    slices.Collect(arg.OrderIDs.All()),
 		State:       orderStatusToDBValue[arg.State],
 	})
@@ -188,23 +188,23 @@ func (st *Storage) UpdateCharacterMarketOrderState(ctx context.Context, arg Upda
 }
 
 type UpdateOrCreateCharacterMarketOrderParams struct {
-	CharacterID   int32
-	Duration      int
+	CharacterID   int64
+	Duration      int64
 	Escrow        optional.Optional[float64]
-	IsBuyOrder    bool
+	IsBuyOrder    optional.Optional[bool]
 	IsCorporation bool
 	Issued        time.Time
 	LocationID    int64
-	MinVolume     optional.Optional[int]
+	MinVolume     optional.Optional[int64]
 	OrderID       int64
-	OwnerID       int32
+	OwnerID       int64
 	Price         float64
 	Range         string
-	RegionID      int32
+	RegionID      int64
 	State         app.MarketOrderState
-	TypeID        int32
-	VolumeRemains int
-	VolumeTotal   int
+	TypeID        int64
+	VolumeRemains int64
+	VolumeTotal   int64
 }
 
 func (st *Storage) UpdateOrCreateCharacterMarketOrder(ctx context.Context, arg UpdateOrCreateCharacterMarketOrderParams) error {
@@ -222,23 +222,23 @@ func (st *Storage) UpdateOrCreateCharacterMarketOrder(ctx context.Context, arg U
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCharacterMarketOrder(ctx, queries.UpdateOrCreateCharacterMarketOrderParams{
-		CharacterID:   int64(arg.CharacterID),
-		Duration:      int64(arg.Duration),
+		CharacterID:   arg.CharacterID,
+		Duration:      arg.Duration,
 		Escrow:        optional.ToNullFloat64(arg.Escrow),
-		IsBuyOrder:    arg.IsBuyOrder,
+		IsBuyOrder:    arg.IsBuyOrder.ValueOrZero(),
 		IsCorporation: arg.IsCorporation,
 		Issued:        arg.Issued,
 		LocationID:    arg.LocationID,
 		MinVolume:     optional.ToNullInt64(arg.MinVolume),
 		OrderID:       arg.OrderID,
-		OwnerID:       int64(arg.OwnerID),
+		OwnerID:       arg.OwnerID,
 		Price:         arg.Price,
 		Range:         arg.Range,
-		RegionID:      int64(arg.RegionID),
+		RegionID:      arg.RegionID,
 		State:         orderStatusToDBValue[arg.State],
-		TypeID:        int64(arg.TypeID),
-		VolumeRemains: int64(arg.VolumeRemains),
-		VolumeTotal:   int64(arg.VolumeTotal),
+		TypeID:        arg.TypeID,
+		VolumeRemains: arg.VolumeRemains,
+		VolumeTotal:   arg.VolumeTotal,
 	})
 	if err != nil {
 		return wrapErr(err)

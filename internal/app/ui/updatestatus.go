@@ -34,7 +34,7 @@ const (
 
 // An entity which has update sections, e.g. a character
 type sectionEntity struct {
-	id       int32
+	id       int64
 	name     string
 	category sectionCategory
 	ss       app.StatusSummary
@@ -139,7 +139,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
@@ -450,7 +450,7 @@ func (a *updateStatus) refreshDetails() {
 	a.details.Show()
 }
 
-func (a *updateStatus) makeUpdateSectionAction(entityID int32, sectionID string) func() {
+func (a *updateStatus) makeUpdateSectionAction(entityID int64, sectionID string) func() {
 	return func() {
 		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]

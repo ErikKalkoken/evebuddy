@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -19,7 +19,7 @@ type towerInfo struct {
 	intro string
 }
 
-func makeTowerBaseText(ctx context.Context, moonID, typeID int32, eus EveUniverseService) (towerInfo, error) {
+func makeTowerBaseText(ctx context.Context, moonID, typeID int64, eus EveUniverseService) (towerInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err
@@ -41,18 +41,18 @@ type towerAlertMsg struct {
 	baseRenderer
 }
 
-func (n towerAlertMsg) entityIDs(text string) (setInt32, error) {
+func (n towerAlertMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n towerAlertMsg) unmarshal(text string) (notification.TowerAlertMsg, setInt32, error) {
-	var data notification.TowerAlertMsg
+func (n towerAlertMsg) unmarshal(text string) (goesi.TowerAlertMsg, setInt64, error) {
+	var data goesi.TowerAlertMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil
@@ -97,7 +97,7 @@ type towerResourceAlertMsg struct {
 
 func (n towerResourceAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.TowerResourceAlertMsg
+	var data goesi.TowerResourceAlertMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}

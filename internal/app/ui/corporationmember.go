@@ -22,7 +22,7 @@ import (
 )
 
 type corporationMemberRow struct {
-	id           int32
+	id           int64
 	name         string
 	isCEO        bool
 	isOwned      bool
@@ -168,7 +168,7 @@ func (a *corporationMember) filterRows() {
 }
 
 func (a *corporationMember) update() {
-	var corporationID, ceoID int32
+	var corporationID, ceoID int64
 	if c := a.corporation.Load(); c != nil {
 		corporationID = c.ID
 		ceoID = c.EveCorporation.Ceo.ID
@@ -198,13 +198,13 @@ func (a *corporationMember) update() {
 	})
 }
 
-func (a *corporationMember) fetchRows(corporationID, ceoID int32) ([]corporationMemberRow, error) {
+func (a *corporationMember) fetchRows(corporationID, ceoID int64) ([]corporationMemberRow, error) {
 	ctx := context.Background()
 	cc, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var owned set.Set[int32]
+	var owned set.Set[int64]
 	for _, c := range cc {
 		if c.EveCharacter.Corporation.ID == corporationID {
 			owned.Add(c.ID)

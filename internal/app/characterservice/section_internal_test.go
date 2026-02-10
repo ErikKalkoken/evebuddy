@@ -5,12 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 // TODO: Add tests for UpdateSectionIfNeeded()
@@ -26,22 +29,24 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterImplants
 		var hasUpdated bool
-		accessToken := ""
+		var tokenSource oauth2.TokenSource
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
-				accessToken = ctx.Value(goesi.ContextAccessToken).(string)
+			func(ctx context.Context, characterID int64) (any, error) {
+				tokenSource = ctx.Value(goesi.ContextOAuth2).(oauth2.TokenSource)
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int32, data any) error {
+			func(ctx context.Context, characterID int64, data any) error {
 				hasUpdated = true
 				return nil
 			})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			assert.Equal(t, accessToken, token.AccessToken)
+			tok, err := tokenSource.Token()
+			require.NoError(t, err)
+			xassert.Equal(t, tok.AccessToken, token.AccessToken)
 			assert.True(t, hasUpdated)
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
@@ -66,10 +71,10 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
+			func(ctx context.Context, characterID int64) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int32, data any) error {
+			func(ctx context.Context, characterID int64, data any) error {
 				hasUpdated = true
 				return nil
 			})
@@ -100,10 +105,10 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
+			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int32, data any) error {
+			func(ctx context.Context, characterID int64, data any) error {
 				hasUpdated = true
 				return nil
 			})
@@ -134,10 +139,10 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
+			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int32, data any) error {
+			func(ctx context.Context, characterID int64, data any) error {
 				hasUpdated = true
 				return nil
 			})

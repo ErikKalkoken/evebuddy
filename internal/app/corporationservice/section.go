@@ -20,7 +20,7 @@ import (
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
 // This can happen after a character has lost a role or a character was deleted.
-func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int32) error {
+func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("RemoveSectionDataWhenNoPermission: CorporationID %d: %w", corporationID, err)
 	}
@@ -78,7 +78,7 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
-func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int32) (set.Set[app.CorporationSection], error) {
+func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
 	var enabled set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
 		return fmt.Errorf("PermittedSections %d: %w", corporationID, err)
@@ -100,7 +100,7 @@ func (s *CorporationService) PermittedSections(ctx context.Context, corporationI
 }
 
 // PermittedSection reports whether the user has permission to access a section.
-func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int32, section app.CorporationSection) (bool, error) {
+func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
 	sections, err := s.PermittedSections(ctx, corporationID)
 	if err != nil {
 		return false, err

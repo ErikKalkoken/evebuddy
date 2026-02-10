@@ -49,11 +49,11 @@ const (
 // A mailFolderNode in the folder tree, e.g. the inbox
 type mailFolderNode struct {
 	Category    folderNodeCategory
-	CharacterID int32
+	CharacterID int64
 	IsLeaf      bool
 	Type        folderNodeType
 	Name        string
-	ObjID       int32
+	ObjID       int64
 	UnreadCount int
 }
 
@@ -98,13 +98,13 @@ type characterMails struct {
 	lastFolder       *mailFolderNode
 	lastSelected     widget.ListItemID
 	mail             *app.CharacterMail
-	missingPercent   atomic.Int32
+	missingPercent   atomic.Int64
 	onSelected       func()
 	onSendMessage    func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 	onUpdate         func(unread, missing int)
 	toolbar          *widget.Toolbar
 	u                *baseUI
-	unreadCount      atomic.Int32
+	unreadCount      atomic.Int64
 }
 
 func newCharacterMails(u *baseUI) *characterMails {
@@ -290,7 +290,7 @@ func (a *characterMails) updateAsync() {
 		a.folders.SelectNode(folderAll)
 		a.setCurrentFolder(folderAll)
 	})
-	a.unreadCount.Store(int32(folderAll.UnreadCount))
+	a.unreadCount.Store(int64(folderAll.UnreadCount))
 	a.updateDownloadedAsync()
 	a.callOnUpdate()
 }
@@ -326,7 +326,7 @@ func (a *characterMails) updateDownloadedAsync() {
 		downloaded = fmt.Sprintf("%d%% downloaded", 100-missingPercent)
 		hint = p.Sprintf("%d missing", missing)
 	}()
-	a.missingPercent.Store(int32(missingPercent))
+	a.missingPercent.Store(int64(missingPercent))
 	fyne.Do(func() {
 		a.folderTotal.SetText(total2)
 		if downloaded == "" {
@@ -340,7 +340,7 @@ func (a *characterMails) updateDownloadedAsync() {
 	a.callOnUpdate()
 }
 
-func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
+func (*characterMails) fetchFoldersAsync(s services, characterID int64) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
 	var td iwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return td, nil, nil
@@ -361,7 +361,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 	// Add default folders
 	defaultFolders := []struct {
 		nodeType folderNodeType
-		labelID  int32
+		labelID  int64
 		name     string
 	}{
 		{folderNodeInbox, app.MailLabelInbox, "Inbox"},
@@ -403,7 +403,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int32) (iwidget
 			err := td.Add(n, &mailFolderNode{
 				Category:    nodeCategoryLabel,
 				CharacterID: characterID,
-				Name:        l.Name,
+				Name:        l.Name.ValueOrZero(),
 				ObjID:       l.LabelID,
 				Type:        folderNodeLabel,
 			}, false)
@@ -465,14 +465,14 @@ func (a *characterMails) updateUnreadCounts() {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
 	}
-	a.unreadCount.Store(int32(unread))
+	a.unreadCount.Store(int64(unread))
 	fyne.Do(func() {
 		a.folders.Set(td)
 	})
 	a.callOnUpdate()
 }
 
-func (*characterMails) updateCountsInTreeAsync(s services, characterID int32, td iwidget.TreeData[mailFolderNode]) (int, error) {
+func (*characterMails) updateCountsInTreeAsync(s services, characterID int64, td iwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}
@@ -745,7 +745,7 @@ func (a *characterMails) clearMail() {
 	a.toolbar.Hide()
 }
 
-func (a *characterMails) loadMail(mailID int32) {
+func (a *characterMails) loadMail(mailID int64) {
 	ctx := context.TODO()
 	characterID := characterIDOrZero(a.character.Load())
 	var err error
@@ -778,13 +778,13 @@ func (a *characterMails) loadMail(mailID int32) {
 				})
 			}()
 		}
-		if !a.mail.IsRead {
+		if !a.mail.IsRead.ValueOrZero() {
 			go func() {
 				a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
 					err := a.u.cs.UpdateMailRead(ctx, characterID, a.mail.MailID, true)
 					if err != nil {
 						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + a.mail.Subject)
+						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + a.mail.Subject.ValueOrZero())
 						return nil, nil
 					}
 					a.updateUnreadCounts()
@@ -795,7 +795,7 @@ func (a *characterMails) loadMail(mailID int32) {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
-						a.mail.IsRead = true
+						a.mail.IsRead.Set(true)
 					})
 					return nil, nil
 				})
@@ -847,7 +847,7 @@ func (w *mailDetail) clear() {
 }
 
 func (w *mailDetail) SetMail(m *app.CharacterMail) {
-	w.subject.SetText(m.Subject)
+	w.subject.SetText(m.Subject.ValueOrZero())
 	w.SetBody(m.BodyPlain())
 	w.header.Set(m.CharacterID, m.From, m.Timestamp, m.Recipients...)
 }

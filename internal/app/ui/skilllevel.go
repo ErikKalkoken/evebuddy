@@ -44,8 +44,8 @@ func newSkillLevel() *skillLevel {
 
 // Set updates the widget to show a skill level.
 // requiredLevel is optional and will be ignored when zero valued
-func (w *skillLevel) Set(activeLevel, trainedLevel, requiredLevel int) {
-	for i := range 5 {
+func (w *skillLevel) Set(activeLevel, trainedLevel, requiredLevel int64) {
+	for i := range int64(5) {
 		y := w.dots[i]
 		if activeLevel > i {
 			y.Resource = w.levelTrained

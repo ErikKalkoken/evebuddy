@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestMakeStructureBaseText(t *testing.T) {
@@ -30,10 +31,10 @@ func TestMakeStructureBaseText(t *testing.T) {
 		x, err := makeStructureBaseText(ctx, o.Type.ID, o.SolarSystem.ID, o.ID, o.Name, eus)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, o.Name, x.name)
-			assert.Equal(t, o.SolarSystem.Name, x.solarSystem.Name)
-			assert.Equal(t, o.Type.Name, x.eveType.Name)
-			assert.Equal(t, o.Owner.Name, x.owner.Name)
+		xassert.Equal(t, o.Name, x.name)
+		xassert.Equal(t, o.SolarSystem.Name, x.solarSystem.Name)
+		xassert.Equal(t, o.Type.Name, x.eveType.Name)
+		xassert.Equal(t, o.Owner.Name, x.owner.Name)
 			assert.NotEmpty(t, x.intro)
 		}
 	})
@@ -46,8 +47,8 @@ func TestMakeStructureBaseText(t *testing.T) {
 		x, err := makeStructureBaseText(ctx, 0, es.ID, 1_000_000_000_000, "", eus)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "???", x.name)
-			assert.Equal(t, es.Name, x.solarSystem.Name)
+		xassert.Equal(t, "???", x.name)
+		xassert.Equal(t, es.Name, x.solarSystem.Name)
 			assert.Empty(t, x.eveType)
 			assert.Empty(t, x.owner)
 			assert.NotEmpty(t, x.intro)
@@ -59,7 +60,7 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 	cases := []struct {
 		url      string
 		category app.EveEntityCategory
-		id       int32
+		id       int64
 		name     string
 		isValid  bool
 	}{
@@ -78,7 +79,7 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 			if !assert.NoError(t, err) {
 				t.Fatal()
 			}
-			assert.Equal(t, tc.category, o.Category)
+		xassert.Equal(t, tc.category, o.Category)
 			assert.EqualValues(t, tc.id, o.ID)
 			assert.EqualValues(t, tc.name, o.Name)
 		} else {

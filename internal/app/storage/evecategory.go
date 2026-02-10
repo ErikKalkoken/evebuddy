@@ -10,7 +10,7 @@ import (
 )
 
 type CreateEveCategoryParams struct {
-	ID          int32
+	ID          int64
 	IsPublished bool
 	Name        string
 }
@@ -27,7 +27,7 @@ func createEveCategory(ctx context.Context, q *queries.Queries, arg CreateEveCat
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	e, err := q.CreateEveCategory(ctx, queries.CreateEveCategoryParams{
-		ID:          int64(arg.ID),
+		ID:         arg.ID,
 		IsPublished: arg.IsPublished,
 		Name:        arg.Name,
 	})
@@ -37,12 +37,12 @@ func createEveCategory(ctx context.Context, q *queries.Queries, arg CreateEveCat
 	return eveCategoryFromDBModel(e), nil
 }
 
-func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*app.EveCategory, error) {
+func (st *Storage) GetEveCategory(ctx context.Context, id int64) (*app.EveCategory, error) {
 	return getEveCategory(ctx, st.qRO, id)
 }
 
-func getEveCategory(ctx context.Context, q *queries.Queries, id int32) (*app.EveCategory, error) {
-	c, err := q.GetEveCategory(ctx, int64(id))
+func getEveCategory(ctx context.Context, q *queries.Queries, id int64) (*app.EveCategory, error) {
+	c, err := q.GetEveCategory(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("getEveCategory: %+v: %w", id, convertGetError(err))
 	}
@@ -78,7 +78,7 @@ func (st *Storage) GetOrCreateEveCategory(ctx context.Context, arg CreateEveCate
 
 func eveCategoryFromDBModel(c queries.EveCategory) *app.EveCategory {
 	return &app.EveCategory{
-		ID:          int32(c.ID),
+		ID:         c.ID,
 		IsPublished: c.IsPublished,
 		Name:        c.Name,
 	}

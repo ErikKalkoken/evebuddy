@@ -32,31 +32,31 @@ const (
 )
 
 type marketOrderRow struct {
-	characterID   int32
+	characterID   int64
 	characterName string
 	escrow        optional.Optional[float64]
 	expires       time.Time
-	IsBuyOrder    bool
+	IsBuyOrder    optional.Optional[bool]
 	isCorporation bool
 	issued        time.Time
 	location      *app.EveLocationShort
 	locationID    int64
 	locationName  string
-	minVolume     optional.Optional[int]
+	minVolume     optional.Optional[int64]
 	orderID       int64
-	ownerID       int32
+	ownerID       int64
 	owner         *app.EveEntity
 	ownerName     string
 	price         float64
 	range_        string
-	regionID      int32
+	regionID      int64
 	regionName    string
 	state         app.MarketOrderState
 	tags          set.Set[string]
-	typeID        int32
+	typeID        int64
 	typeName      string
-	volumeRemain  int
-	volumeTotal   int
+	volumeRemain  int64
+	volumeTotal   int64
 }
 
 func (r marketOrderRow) isExpired() bool {
@@ -289,7 +289,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -550,7 +550,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
 	})
 	var buySell string
-	if r.IsBuyOrder {
+	if r.IsBuyOrder.ValueOrZero() {
 		buySell = "buy"
 	} else {
 		buySell = "sell"
@@ -581,10 +581,10 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		widget.NewFormItem("Location", makeLocationLabel(r.location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Region", region),
 	}
-	if r.IsBuyOrder {
+	if r.IsBuyOrder.ValueOrZero() {
 		items = append(items, widget.NewFormItem(
 			"Volume Min",
-			widget.NewLabel(r.minVolume.StringFunc("?", func(v int) string {
+			widget.NewLabel(r.minVolume.StringFunc("?", func(v int64) string {
 				return ihumanize.Comma(v)
 			})),
 		))

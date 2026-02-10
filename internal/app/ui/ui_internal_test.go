@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -129,88 +130,90 @@ type EveImageServiceFake struct {
 	Type        fyne.Resource
 }
 
-func (s *EveImageServiceFake) AllianceLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) AllianceLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Alliance, s.Err
 }
 
-func (s *EveImageServiceFake) AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Alliance)
 }
 
-func (s *EveImageServiceFake) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
 	return s.Character, s.Err
 }
 
-func (s *EveImageServiceFake) CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Character)
 }
 
-func (s *EveImageServiceFake) CorporationLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) CorporationLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Corporation, s.Err
 }
 
-func (s *EveImageServiceFake) CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Corporation)
 }
-func (s *EveImageServiceFake) FactionLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) FactionLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Faction, s.Err
 }
 
-func (s *EveImageServiceFake) FactionLogoAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) FactionLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Faction)
 }
 
-func (s *EveImageServiceFake) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) InventoryTypeRender(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeRenderAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) InventoryTypeIcon(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeIconAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) InventoryTypeBPO(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPOAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) InventoryTypeBPC(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPCAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
-func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageServiceFake) InventoryTypeSKIN(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceFake) InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
-	CorporationIDs set.Set[int32]
+	CorporationIDs set.Set[int64]
 	Error          error
 }
 
-func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
+func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
 	return s.Token, s.Error
 }
 
 func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
-	esiClient := goesi.NewAPIClient(nil, "dummy")
+	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+	})
 	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		panic(err)
@@ -222,6 +225,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	})
 	cs := characterservice.New(characterservice.Params{
 		Cache:              testutil.NewCacheFake2(),
+		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -231,7 +235,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}},
-		EsiClient:          esiClient,
+		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,

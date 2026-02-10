@@ -14,14 +14,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int32) error {
+func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationIndustryJobs: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationIndustryJobs(ctx, int64(corporationID))
+	err := st.qRW.DeleteCorporationIndustryJobs(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -29,7 +29,7 @@ func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporatio
 	return nil
 }
 
-func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corporationID int32, jobIDs set.Set[int32]) error {
+func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corporationID int64, jobIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationIndustryJobsByID: corporation %d jobIDs %v: %w", corporationID, jobIDs, err)
 	}
@@ -40,7 +40,7 @@ func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corpor
 		return nil
 	}
 	err := st.qRW.DeleteCorporationIndustryJobsByID(ctx, queries.DeleteCorporationIndustryJobsByIDParams{
-		CorporationID: int64(corporationID),
+		CorporationID: corporationID,
 		JobIds:        convertNumericSet[int64](jobIDs),
 	})
 	if err != nil {
@@ -49,10 +49,10 @@ func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corpor
 	slog.Info("Industry jobs deleted for corporation", "corporationID", corporationID, "jobIDs", jobIDs)
 	return nil
 }
-func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
+func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int64) (*app.CorporationIndustryJob, error) {
 	arg := queries.GetCorporationIndustryJobParams{
-		CorporationID: int64(corporationID),
-		JobID:         int64(jobID),
+		CorporationID: corporationID,
+		JobID:         jobID,
 	}
 	r, err := st.qRO.GetCorporationIndustryJob(ctx, arg)
 	if err != nil {
@@ -70,14 +70,14 @@ func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID,
 	return o, err
 }
 
-func (st *Storage) ListCorporationIndustryJobs(ctx context.Context, corporationID int32) ([]*app.CorporationIndustryJob, error) {
+func (st *Storage) ListCorporationIndustryJobs(ctx context.Context, corporationID int64) ([]*app.CorporationIndustryJob, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationIndustryJobs: corporationID: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationIndustryJobs(ctx, int64(corporationID))
+	rows, err := st.qRO.ListCorporationIndustryJobs(ctx, corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -131,11 +131,11 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		Activity:            app.IndustryActivity(arg.cij.ActivityID),
 		BlueprintID:         arg.cij.BlueprintID,
 		BlueprintLocationID: arg.cij.BlueprintLocationID,
-		BlueprintType: &app.EntityShort[int32]{
-			ID:   int32(arg.cij.BlueprintTypeID),
+		BlueprintType: &app.EntityShort[int64]{
+			ID:   arg.cij.BlueprintTypeID,
 			Name: arg.blueprintTypeName,
 		},
-		CorporationID: int32(arg.cij.CorporationID),
+		CorporationID: arg.cij.CorporationID,
 		CompletedDate: optional.FromNullTime(arg.cij.CompletedDate),
 		Cost:          optional.FromNullFloat64(arg.cij.Cost),
 		Duration:      int(arg.cij.Duration),
@@ -143,7 +143,7 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		FacilityID:    arg.cij.FacilityID,
 		ID:            arg.cij.ID,
 		Installer:     eveEntityFromDBModel(arg.installer),
-		JobID:         int32(arg.cij.JobID),
+		JobID:         arg.cij.JobID,
 		LicensedRuns:  optional.FromNullInt64ToInteger[int](arg.cij.LicensedRuns),
 		PauseDate:     optional.FromNullTime(arg.cij.PauseDate),
 		Probability:   optional.FromNullFloat64ToFloat32(arg.cij.Probability),
@@ -156,18 +156,18 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		OutputLocationID: arg.cij.OutputLocationID,
 		StartDate:        arg.cij.StartDate,
 		Status:           jobStatusFromDBValue[arg.cij.Status],
-		SuccessfulRuns:   optional.FromNullInt64ToInteger[int32](arg.cij.SuccessfulRuns),
+		SuccessfulRuns:   optional.FromNullInt64ToInteger[int64](arg.cij.SuccessfulRuns),
 	}
 	if arg.cij.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       int32(arg.cij.CompletedCharacterID.Int64),
+			ID:       arg.cij.CompletedCharacterID.Int64,
 			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
 	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
-		o2.ProductType = optional.New(&app.EntityShort[int32]{
-			ID:   int32(arg.cij.ProductTypeID.Int64),
+		o2.ProductType = optional.New(&app.EntityShort[int64]{
+			ID:   arg.cij.ProductTypeID.Int64,
 			Name: arg.productTypeName.String,
 		})
 	}
@@ -175,8 +175,8 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 }
 
 type UpdateCorporationIndustryJobStatusParams struct {
-	CorporationID int32
-	JobIDs        set.Set[int32]
+	CorporationID int64
+	JobIDs        set.Set[int64]
 	Status        app.IndustryJobStatus
 }
 
@@ -191,7 +191,7 @@ func (st *Storage) UpdateCorporationIndustryJobStatus(ctx context.Context, arg U
 		return nil
 	}
 	err := st.qRW.UpdateCorporationIndustryJobStatus(ctx, queries.UpdateCorporationIndustryJobStatusParams{
-		CorporationID: int64(arg.CorporationID),
+		CorporationID: arg.CorporationID,
 		JobIds:        convertNumericSet[int64](arg.JobIDs),
 		Status:        jobStatusToDBValue[arg.Status],
 	})
@@ -202,29 +202,29 @@ func (st *Storage) UpdateCorporationIndustryJobStatus(ctx context.Context, arg U
 }
 
 type UpdateOrCreateCorporationIndustryJobParams struct {
-	ActivityID           int32
+	ActivityID           int64
 	BlueprintID          int64
 	BlueprintLocationID  int64
-	BlueprintTypeID      int32
-	CompletedCharacterID int32     // optional
-	CompletedDate        time.Time // optional
-	CorporationID        int32
-	Cost                 float64 // optional
-	Duration             int32
+	BlueprintTypeID      int64
+	CompletedCharacterID optional.Optional[int64]
+	CompletedDate        optional.Optional[time.Time]
+	CorporationID        int64
+	Cost                 optional.Optional[float64]
+	Duration             int64
 	EndDate              time.Time
 	FacilityID           int64
-	InstallerID          int32
-	JobID                int32
-	LicensedRuns         int32 // optional
+	InstallerID          int64
+	JobID                int64
+	LicensedRuns         optional.Optional[int64]
 	LocationID           int64
 	OutputLocationID     int64
-	PauseDate            time.Time // optional
-	Probability          float32   // optional
-	ProductTypeID        int32     // optional
-	Runs                 int32
+	PauseDate            optional.Optional[time.Time]
+	Probability          optional.Optional[float64]
+	ProductTypeID        optional.Optional[int64]
+	Runs                 int64
 	StartDate            time.Time
 	Status               app.IndustryJobStatus
-	SuccessfulRuns       int32 // optional
+	SuccessfulRuns       optional.Optional[int64]
 }
 
 func (st *Storage) UpdateOrCreateCorporationIndustryJob(ctx context.Context, arg UpdateOrCreateCorporationIndustryJobParams) error {
@@ -240,29 +240,29 @@ func (st *Storage) UpdateOrCreateCorporationIndustryJob(ctx context.Context, arg
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationIndustryJobs(ctx, queries.UpdateOrCreateCorporationIndustryJobsParams{
-		ActivityID:           int64(arg.ActivityID),
+		ActivityID:           arg.ActivityID,
 		BlueprintID:          arg.BlueprintID,
 		BlueprintLocationID:  arg.BlueprintLocationID,
-		BlueprintTypeID:      int64(arg.BlueprintTypeID),
-		CorporationID:        int64(arg.CorporationID),
-		CompletedCharacterID: NewNullInt64(int64(arg.CompletedCharacterID)),
-		CompletedDate:        NewNullTimeFromTime(arg.CompletedDate),
-		Cost:                 NewNullFloat64(arg.Cost),
-		Duration:             int64(arg.Duration),
+		BlueprintTypeID:      arg.BlueprintTypeID,
+		CorporationID:        arg.CorporationID,
+		CompletedCharacterID: optional.ToNullInt64(arg.CompletedCharacterID),
+		CompletedDate:        optional.ToNullTime(arg.CompletedDate),
+		Cost:                 optional.ToNullFloat64(arg.Cost),
+		Duration:             arg.Duration,
 		EndDate:              arg.EndDate,
 		FacilityID:           arg.FacilityID,
-		InstallerID:          int64(arg.InstallerID),
-		JobID:                int64(arg.JobID),
-		LicensedRuns:         NewNullInt64(int64(arg.LicensedRuns)),
+		InstallerID:          arg.InstallerID,
+		JobID:                arg.JobID,
+		LicensedRuns:         optional.ToNullInt64(arg.LicensedRuns),
 		OutputLocationID:     arg.OutputLocationID,
-		PauseDate:            NewNullTimeFromTime(arg.PauseDate),
-		Probability:          NewNullFloat64(float64(arg.Probability)),
-		ProductTypeID:        NewNullInt64(int64(arg.ProductTypeID)),
-		Runs:                 int64(arg.Runs),
+		PauseDate:            optional.ToNullTime(arg.PauseDate),
+		Probability:          optional.ToNullFloat64(arg.Probability),
+		ProductTypeID:        optional.ToNullInt64(arg.ProductTypeID),
+		Runs:                 arg.Runs,
 		StartDate:            arg.StartDate,
 		LocationID:           arg.LocationID,
 		Status:               jobStatusToDBValue[arg.Status],
-		SuccessfulRuns:       NewNullInt64(int64(arg.SuccessfulRuns)),
+		SuccessfulRuns:       optional.ToNullInt64(arg.SuccessfulRuns),
 	})
 	if err != nil {
 		return wrapErr(err)

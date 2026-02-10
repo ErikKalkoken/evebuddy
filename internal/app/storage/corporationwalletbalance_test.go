@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -34,9 +35,9 @@ func TestCorporationWalletBalance(t *testing.T) {
 				DivisionID:    3,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, c.ID, x.CorporationID)
-				assert.EqualValues(t, 3, x.DivisionID)
-				assert.EqualValues(t, 12.34, x.Balance)
+				xassert.Equal(t, c.ID, x.CorporationID)
+				xassert.Equal(t, 3, x.DivisionID)
+				xassert.Equal(t, 12.34, x.Balance)
 			}
 		}
 	})
@@ -57,7 +58,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 				DivisionID:    x1.DivisionID,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 12.34, x.Balance)
+				xassert.Equal(t, 12.34, x.Balance)
 			}
 		}
 	})
@@ -78,14 +79,14 @@ func TestCorporationWalletBalance(t *testing.T) {
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
+			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
 				return x.DivisionID, x.Balance
 			}))
-			want := map[int32]float64{
+			want := map[int64]float64{
 				e1.DivisionID: e1.Balance,
 				e2.DivisionID: e2.Balance,
 			}
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can delete entries", func(t *testing.T) {
@@ -99,7 +100,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 		if assert.NoError(t, err) {
 			x1, err := st.ListCorporationWalletBalances(ctx, e1.CorporationID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 0, len(x1))
+				xassert.Equal(t, 0, len(x1))
 			}
 			x2, err := st.ListCorporationWalletBalances(ctx, e2.CorporationID)
 			if assert.NoError(t, err) {

@@ -34,32 +34,32 @@ const (
 	imageVariantBPC      imageVariant = "bpc"
 )
 
-var typeIDSubstitution = map[int32]int32{
+var typeIDSubstitution = map[int64]int64{
 	typeIDBoobook: typeIDCaldariShuttle,
 }
 
 // AllianceLogoURL returns an image URL for an alliance logo
-func AllianceLogoURL(id int32, size int) (string, error) {
+func AllianceLogoURL(id int64, size int) (string, error) {
 	return imageURL(alliance, imageVariantLogo, id, size)
 }
 
 // CharacterPortraitURL returns an image URL for a character portrait
-func CharacterPortraitURL(id int32, size int) (string, error) {
+func CharacterPortraitURL(id int64, size int) (string, error) {
 	return imageURL(character, imageVariantPortrait, id, size)
 }
 
 // CorporationLogoURL returns an image URL for a corporation logo
-func CorporationLogoURL(id int32, size int) (string, error) {
+func CorporationLogoURL(id int64, size int) (string, error) {
 	return imageURL(corporation, imageVariantLogo, id, size)
 }
 
 // FactionLogoURL returns an image URL for a faction logo
-func FactionLogoURL(id int32, size int) (string, error) {
+func FactionLogoURL(id int64, size int) (string, error) {
 	return imageURL(corporation, imageVariantLogo, id, size)
 }
 
 // InventoryTypeRenderURL returns an image URL for inventory type render
-func InventoryTypeRenderURL(id int32, size int) (string, error) {
+func InventoryTypeRenderURL(id int64, size int) (string, error) {
 	newID, ok := typeIDSubstitution[id]
 	if ok {
 		id = newID
@@ -68,21 +68,21 @@ func InventoryTypeRenderURL(id int32, size int) (string, error) {
 }
 
 // InventoryTypeIconURL returns an image URL for inventory type icon
-func InventoryTypeIconURL(id int32, size int) (string, error) {
+func InventoryTypeIconURL(id int64, size int) (string, error) {
 	return imageURL(inventoryType, imageVariantIcon, id, size)
 }
 
 // InventoryTypeBPOURL returns an image URL for inventory type bpo
-func InventoryTypeBPOURL(id int32, size int) (string, error) {
+func InventoryTypeBPOURL(id int64, size int) (string, error) {
 	return imageURL(inventoryType, imageVariantBPO, id, size)
 }
 
 // InventoryTypeBPCURL returns an image URL for inventory type bpc
-func InventoryTypeBPCURL(id int32, size int) (string, error) {
+func InventoryTypeBPCURL(id int64, size int) (string, error) {
 	return imageURL(inventoryType, imageVariantBPC, id, size)
 }
 
-func imageURL(c category, v imageVariant, id int32, size int) (string, error) {
+func imageURL(c category, v imageVariant, id int64, size int) (string, error) {
 	switch size {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size

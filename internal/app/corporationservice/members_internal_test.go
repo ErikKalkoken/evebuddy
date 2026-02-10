@@ -2,6 +2,7 @@ package corporationservice
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
@@ -31,10 +32,10 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 		factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,
 		})
-		data := []int32{m1.ID, m2.ID}
+		data := []int64{m1.ID, m2.ID}
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/members/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/members", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
@@ -48,7 +49,7 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(data...)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})

@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCharacterNotificationsESI(t *testing.T) {
@@ -31,7 +32,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_read":         true,
 				"notification_id": 42,
@@ -52,17 +53,17 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				assert.True(t, o.IsRead)
-				assert.Equal(t, int64(42), o.NotificationID)
-				assert.Equal(t, sender, o.Sender)
-				assert.Equal(t, app.InsurancePayoutMsg, o.Type)
-				assert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
-				assert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
-				assert.Equal(t, c.ID, o.Recipient.ID)
+				assert.True(t, o.IsRead.ValueOrZero())
+				xassert.Equal(t, int64(42), o.NotificationID)
+				xassert.Equal(t, sender, o.Sender)
+				xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
+				xassert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text.ValueOrZero())
+				xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+				xassert.Equal(t, c.ID, o.Recipient.ID)
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 1, ids.Size())
+				xassert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -77,7 +78,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 	sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 	// 	httpmock.RegisterResponder(
 	// 		"GET",
-	// 		fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
+	// 		fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 	// 		httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 	// 			"is_read":         true,
 	// 			"notification_id": 42,
@@ -99,15 +100,15 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 	// 		if assert.NoError(t, err) {
 	// 			assert.True(t, o.IsRead)
-	// 			assert.Equal(t, int64(42), o.NotificationID)
-	// 			assert.Equal(t, sender, o.Sender)
-	// 			assert.Equal(t, app.CharAppAcceptMsg, o.Type)
-	// 			assert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
-	// 			assert.Equal(t, sender.ID, o.Recipient.ID)
+	// 			 xassert.Equal(t, int64(42), o.NotificationID)
+	// 			 xassert.Equal(t, sender, o.Sender)
+	// 			 xassert.Equal(t, app.CharAppAcceptMsg, o.Type)
+	// 			 xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+	// 			 xassert.Equal(t, sender.ID, o.Recipient.ID)
 	// 		}
 	// 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 	// 		if assert.NoError(t, err) {
-	// 			assert.Equal(t, 1, ids.Size())
+	// 			 xassert.Equal(t, 1, ids.Size())
 	// 		}
 	// 	}
 	// })
@@ -131,7 +132,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
@@ -143,16 +144,16 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				assert.True(t, o.IsRead)
-				assert.Equal(t, int64(42), o.NotificationID)
-				assert.Equal(t, sender, o.Sender)
-				assert.Equal(t, app.InsurancePayoutMsg, o.Type)
-				assert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
-				assert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+				assert.True(t, o.IsRead.ValueOrZero())
+				xassert.Equal(t, int64(42), o.NotificationID)
+				xassert.Equal(t, sender, o.Sender)
+				xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
+				xassert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text.ValueOrZero())
+				xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 2, ids.Size())
+				xassert.Equal(t, 2, ids.Size())
 			}
 		}
 	})
@@ -179,7 +180,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
@@ -191,11 +192,11 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				assert.True(t, o.IsRead)
+				assert.True(t, o.IsRead.ValueOrZero())
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 1, ids.Size())
+				xassert.Equal(t, 1, ids.Size())
 			}
 		}
 	})

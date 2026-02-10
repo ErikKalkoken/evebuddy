@@ -30,7 +30,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 	//			panic(err)
 	//		}
 	//		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
-	//			LabelIDs:    []int32{app.MailLabelInbox},
+	//			LabelIDs:    []int64{app.MailLabelInbox},
 	//			CharacterID: c.ID,
 	//			IsRead:      false,
 	//		})
@@ -38,13 +38,13 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 	//		x, err := ui.characterMails.updateCountsInTree(ui.services(), c.ID, td)
 	//		// then
 	//		if assert.NoError(t, err) {
-	//			assert.Equal(t, 1, x)
+	//		xassert.Equal(t, 1, x)
 	//			inbox, _ := td.Node(makeMailNodeUID(c.ID, folderNodeInbox, app.MailLabelInbox))
-	//			assert.Equal(t, 1, inbox.UnreadCount)
+	//		xassert.Equal(t, 1, inbox.UnreadCount)
 	//			unread, _ := td.Node(makeMailNodeUID(c.ID, folderNodeUnread, app.MailLabelUnread))
-	//			assert.Equal(t, 1, unread.UnreadCount)
+	//		xassert.Equal(t, 1, unread.UnreadCount)
 	//			all, _ := td.Node(makeMailNodeUID(c.ID, folderNodeAll, app.MailLabelAll))
-	//			assert.Equal(t, 1, all.UnreadCount)
+	//		xassert.Equal(t, 1, all.UnreadCount)
 	//		}
 	//	})
 	//
@@ -72,9 +72,9 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 	//		// then
 	//		if assert.NoError(t, err) {
 	//			// td.Print("")
-	//			assert.Equal(t, 0, x)
+	//		xassert.Equal(t, 0, x)
 	//			inbox, _ = td.Node(makeMailNodeUID(c.ID, folderNodeInbox, app.MailLabelInbox))
-	//			assert.Equal(t, 0, inbox.UnreadCount)
+	//		xassert.Equal(t, 0, inbox.UnreadCount)
 	//		}
 	//	})
 }

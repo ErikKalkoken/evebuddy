@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterUpdateStatusIsExpired(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCharacterUpdateStatusIsExpired(t *testing.T) {
 				},
 			}
 			// when/then
-			assert.Equal(t, tc.want, o.IsExpired())
+		xassert.Equal(t, tc.want, o.IsExpired())
 		})
 	}
 }
@@ -51,7 +51,7 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 				},
 			}
 			// when/then
-			assert.Equal(t, tc.want, o.HasError())
+		xassert.Equal(t, tc.want, o.HasError())
 		})
 	}
 }
@@ -74,7 +74,7 @@ func TestCharacterUpdateStatusIsMissing(t *testing.T) {
 				},
 			}
 			// when/then
-			assert.Equal(t, tc.want, o.IsMissing())
+		xassert.Equal(t, tc.want, o.IsMissing())
 		})
 	}
 }

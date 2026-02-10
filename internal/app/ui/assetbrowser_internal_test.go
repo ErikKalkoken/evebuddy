@@ -34,8 +34,8 @@ func TestSplitLines(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got1, got2 := splitLines(tc.in, maxLine)
-			assert.Equal(t, tc.want1, got1)
-			assert.Equal(t, tc.want2, got2)
+			xassert.Equal(t, tc.want1, got1)
+			xassert.Equal(t, tc.want2, got2)
 		})
 	}
 }
@@ -233,7 +233,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -247,7 +247,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -262,7 +262,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -276,7 +276,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -290,7 +290,7 @@ func TestGenerateTreeData_Character(t *testing.T) {
 		xassert.Equal(t, []int{5, 2}, makeCountsPath(ac, td, deliveryItem1))
 		xassert.Equal(t, []int{2, 2}, makeCountsPath(ac, td, spaceItem1))
 		xassert.Equal(t, []int{1, 1, 1}, makeCountsPath(ac, td, safetyItem1))
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 }
@@ -484,7 +484,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 	t.Run("deliveries filter", func(t *testing.T) {
@@ -497,7 +497,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -517,7 +517,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -537,7 +537,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -551,7 +551,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -565,7 +565,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -579,7 +579,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		}
 		assert.ElementsMatch(t, want, got)
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 
@@ -595,7 +595,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		xassert.Equal(t, []int{1, 1}, makeCountsPath(ac, td, structureCargoItem))
 		xassert.Equal(t, []int{2, 2, 2, 2}, makeCountsPath(ac, td, safetyItem2))
 
-		printTree(td)
+		// printTree(td)
 		// assert.Fail(t, "STOP")
 	})
 }
@@ -740,11 +740,11 @@ func createAsset(arg assetParams) app.Asset {
 	}
 }
 
-func printTree(td iwidget.TreeData[assetContainerNode]) {
-	td.Print(nil, func(n *assetContainerNode) string {
-		return n.String()
-	})
-}
+// func printTree(td iwidget.TreeData[assetContainerNode]) {
+// 	td.Print(nil, func(n *assetContainerNode) string {
+// 		return n.String()
+// 	})
+// }
 
 func allPaths(td iwidget.TreeData[assetContainerNode]) [][]string {
 	return td.AllPaths(nil, func(n *assetContainerNode) string {

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -21,7 +21,7 @@ import (
 
 const cacheKeyTrainingNotified = "expired-training-notified"
 
-func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
+func (s *CharacterService) GetAttributes(ctx context.Context, characterID int64) (*app.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
@@ -31,43 +31,43 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAttributes")
-			attributes, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
+			attributes, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdAttributes(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return attributes, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			attributes := data.(esi.GetCharactersCharacterIdAttributesOk)
-			arg := storage.UpdateOrCreateCharacterAttributesParams{
+		func(ctx context.Context, characterID int64, data any) error {
+			attributes := data.(*esi.CharactersCharacterIdAttributesGet)
+			err := s.st.UpdateOrCreateCharacterAttributes(ctx, storage.UpdateOrCreateCharacterAttributesParams{
 				CharacterID:   characterID,
-				BonusRemaps:   int(attributes.BonusRemaps),
-				Charisma:      int(attributes.Charisma),
-				Intelligence:  int(attributes.Intelligence),
-				LastRemapDate: attributes.LastRemapDate,
-				Memory:        int(attributes.Memory),
-				Perception:    int(attributes.Perception),
-				Willpower:     int(attributes.Willpower),
-			}
-			if err := s.st.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
+				BonusRemaps:   optional.FromPtr(attributes.BonusRemaps),
+				Charisma:      attributes.Charisma,
+				Intelligence:  attributes.Intelligence,
+				LastRemapDate: optional.FromPtr(attributes.LastRemapDate),
+				Memory:        attributes.Memory,
+				Perception:    attributes.Perception,
+				Willpower:     attributes.Willpower,
+			})
+			if err != nil {
 				return err
 			}
 			return nil
 		})
 }
 
-func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID int32) ([]*app.CharacterShipAbility, error) {
+func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID int64) ([]*app.CharacterShipAbility, error) {
 	return s.st.ListCharacterShipsAbilities(ctx, characterID)
 }
 
-func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
+func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int64) (*app.CharacterSkill, error) {
 	return s.st.GetCharacterSkill(ctx, characterID, typeID)
 }
 
 func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, typ app.IndustryJobType) ([]app.CharacterIndustrySlots, error) {
-	total := make(map[int32]int)
+	total := make(map[int64]int)
 	switch typ {
 	case app.ManufacturingJob:
 		industry1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeIndustry)
@@ -128,7 +128,7 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	if err != nil {
 		return nil, err
 	}
-	results := make(map[int32]app.CharacterIndustrySlots)
+	results := make(map[int64]app.CharacterIndustrySlots)
 	for _, c := range characters {
 		results[c.ID] = app.CharacterIndustrySlots{
 			CharacterID:   c.ID,
@@ -164,11 +164,11 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	return rows, nil
 }
 
-func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListSkillProgress, error) {
+func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {
 	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
-func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
+func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characterID int64) ([]app.ListCharacterSkillGroupProgress, error) {
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }
 
@@ -178,19 +178,19 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
-			skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
+			skills, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkills(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received character skills from ESI", "characterID", characterID, "items", len(skills.Skills))
 			return skills, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
-			total := optional.New(int(skills.TotalSp))
-			unallocated := optional.New(int(skills.UnallocatedSp))
+		func(ctx context.Context, characterID int64, data any) error {
+			skills := data.(*esi.CharactersSkills)
+			total := optional.New(skills.TotalSp)
+			unallocated := optional.FromPtr(skills.UnallocatedSp)
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}
@@ -198,7 +198,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			if err != nil {
 				return err
 			}
-			incomingSkillIDs := set.Of[int32]()
+			incomingSkillIDs := set.Of[int64]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)
 				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
@@ -208,9 +208,9 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				arg := storage.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
 					EveTypeID:          o.SkillId,
-					ActiveSkillLevel:   int(o.ActiveSkillLevel),
-					TrainedSkillLevel:  int(o.TrainedSkillLevel),
-					SkillPointsInSkill: int(o.SkillpointsInSkill),
+					ActiveSkillLevel:   o.ActiveSkillLevel,
+					TrainedSkillLevel:  o.TrainedSkillLevel,
+					SkillPointsInSkill: o.SkillpointsInSkill,
 				}
 				err = s.st.UpdateOrCreateCharacterSkill(ctx, arg)
 				if err != nil {
@@ -231,7 +231,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 // TotalTrainingTime returns the total training time for a character when available.
 // A training time of 0 means that training is not active.
 // An empty training time means that the training status could not be determined.
-func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
+func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int64) (optional.Optional[time.Duration], error) {
 	var z optional.Optional[time.Duration]
 	v, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionCharacterSkillqueue)
 	if errors.Is(err, app.ErrNotFound) {
@@ -259,7 +259,7 @@ func isValidSkillQueueStatus(v *app.CharacterSectionStatus) bool {
 }
 
 // IsTrainingActive reports whether training is active.
-func (s *CharacterService) IsTrainingActive(ctx context.Context, characterID int32) (bool, error) {
+func (s *CharacterService) IsTrainingActive(ctx context.Context, characterID int64) (bool, error) {
 	queue := app.NewCharacterSkillqueue()
 	if err := queue.Update(ctx, s, characterID); err != nil {
 		return false, err
@@ -267,12 +267,12 @@ func (s *CharacterService) IsTrainingActive(ctx context.Context, characterID int
 	return queue.IsActive(), nil
 }
 
-func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, characterID int32, v bool) error {
+func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, characterID int64, v bool) error {
 	s.cache.Delete(makeKeyTrainingNotified(characterID))
 	return s.st.UpdateCharacterIsTrainingWatched(ctx, characterID, v)
 }
 
-func (s *CharacterService) NotifyExpiredTrainingForWatched(ctx context.Context, characterID int32, notify func(title, content string)) error {
+func (s *CharacterService) NotifyExpiredTrainingForWatched(ctx context.Context, characterID int64, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredTraining-%d", characterID), func() (any, error) {
 		c, err := s.GetCharacter(ctx, characterID)
 		if err != nil {
@@ -308,12 +308,12 @@ func (s *CharacterService) NotifyExpiredTrainingForWatched(ctx context.Context, 
 	return nil
 }
 
-func makeKeyTrainingNotified(characterID int32) string {
+func makeKeyTrainingNotified(characterID int64) string {
 	return fmt.Sprintf("%s-%d", cacheKeyTrainingNotified, characterID)
 }
 
 // ListSkillqueueItems returns the list of skillqueue items.
-func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int64) ([]*app.CharacterSkillqueueItem, error) {
 	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 
@@ -325,18 +325,18 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
-			items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
+			items, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkillqueue(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received skillqueue from ESI", "characterID", characterID, "items", len(items))
 			return items, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
+		func(ctx context.Context, characterID int64, data any) error {
 			items := make([]storage.SkillqueueItemParams, 0)
-			for _, o := range data.([]esi.GetCharactersCharacterIdSkillqueue200Ok) {
+			for _, o := range data.([]esi.CharactersSkillqueueSkill) {
 				if o.SkillId == 0 || o.FinishedLevel == 0 {
 					continue
 				}
@@ -346,14 +346,14 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 				}
 				items = append(items, storage.SkillqueueItemParams{
 					EveTypeID:       o.SkillId,
-					FinishDate:      o.FinishDate,
-					FinishedLevel:   int(o.FinishedLevel),
-					LevelEndSP:      int(o.LevelEndSp),
-					LevelStartSP:    int(o.LevelStartSp),
+					FinishDate:      optional.FromPtr(o.FinishDate),
+					FinishedLevel:   o.FinishedLevel,
+					LevelEndSP:      optional.FromPtr(o.LevelEndSp),
+					LevelStartSP:    optional.FromPtr(o.LevelStartSp),
 					CharacterID:     characterID,
-					QueuePosition:   int(o.QueuePosition),
-					StartDate:       o.StartDate,
-					TrainingStartSP: int(o.TrainingStartSp),
+					QueuePosition:   o.QueuePosition,
+					StartDate:       optional.FromPtr(o.StartDate),
+					TrainingStartSP: optional.FromPtr(o.TrainingStartSp),
 				})
 			}
 			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, items); err != nil {

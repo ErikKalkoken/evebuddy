@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/notification"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -16,18 +16,18 @@ type allWarSurrenderMsg struct {
 	baseRenderer
 }
 
-func (n allWarSurrenderMsg) entityIDs(text string) (setInt32, error) {
+func (n allWarSurrenderMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n allWarSurrenderMsg) unmarshal(text string) (notification.AllWarSurrenderMsg, setInt32, error) {
-	var data notification.AllWarSurrenderMsg
+func (n allWarSurrenderMsg) unmarshal(text string) (goesi.AllWarSurrenderMsg, setInt64, error) {
+	var data goesi.AllWarSurrenderMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil
@@ -61,18 +61,18 @@ type corpWarSurrenderMsg struct {
 	baseRenderer
 }
 
-func (n corpWarSurrenderMsg) entityIDs(text string) (setInt32, error) {
+func (n corpWarSurrenderMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n corpWarSurrenderMsg) unmarshal(text string) (notification.CorpWarSurrenderMsg, setInt32, error) {
-	var data notification.CorpWarSurrenderMsg
+func (n corpWarSurrenderMsg) unmarshal(text string) (goesi.CorpWarSurrenderMsg, setInt64, error) {
+	var data goesi.CorpWarSurrenderMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil
@@ -103,18 +103,18 @@ type declareWar struct {
 	baseRenderer
 }
 
-func (n declareWar) entityIDs(text string) (setInt32, error) {
+func (n declareWar) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n declareWar) unmarshal(text string) (notification.DeclareWar, setInt32, error) {
-	var data notification.DeclareWar
+func (n declareWar) unmarshal(text string) (goesi.DeclareWar, setInt64, error) {
+	var data goesi.DeclareWar
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CharID, data.DefenderID, data.EntityID)
 	return data, ids, nil
@@ -145,18 +145,18 @@ type warAdopted struct {
 	baseRenderer
 }
 
-func (n warAdopted) entityIDs(text string) (setInt32, error) {
+func (n warAdopted) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warAdopted) unmarshal(text string) (notification.WarAdopted, setInt32, error) {
-	var data notification.WarAdopted
+func (n warAdopted) unmarshal(text string) (goesi.WarAdopted, setInt64, error) {
+	var data goesi.WarAdopted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID, data.AllianceID)
 	return data, ids, nil
@@ -199,18 +199,18 @@ type warDeclared struct {
 	baseRenderer
 }
 
-func (n warDeclared) entityIDs(text string) (setInt32, error) {
+func (n warDeclared) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warDeclared) unmarshal(text string) (notification.WarDeclared, setInt32, error) {
-	var data notification.WarDeclared
+func (n warDeclared) unmarshal(text string) (goesi.WarDeclared, setInt64, error) {
+	var data goesi.WarDeclared
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil
@@ -248,18 +248,18 @@ type warHQRemovedFromSpace struct {
 	baseRenderer
 }
 
-func (n warHQRemovedFromSpace) entityIDs(text string) (setInt32, error) {
+func (n warHQRemovedFromSpace) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warHQRemovedFromSpace) unmarshal(text string) (notification.WarHQRemovedFromSpace, setInt32, error) {
-	var data notification.WarHQRemovedFromSpace
+func (n warHQRemovedFromSpace) unmarshal(text string) (goesi.WarHQRemovedFromSpace, setInt64, error) {
+	var data goesi.WarHQRemovedFromSpace
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil
@@ -293,18 +293,18 @@ type warInherited struct {
 	baseRenderer
 }
 
-func (n warInherited) entityIDs(text string) (setInt32, error) {
+func (n warInherited) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warInherited) unmarshal(text string) (notification.WarInherited, setInt32, error) {
-	var data notification.WarInherited
+func (n warInherited) unmarshal(text string) (goesi.WarInherited, setInt64, error) {
+	var data goesi.WarInherited
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(
 		data.AgainstID,
@@ -352,18 +352,18 @@ type warInvalid struct {
 	baseRenderer
 }
 
-func (n warInvalid) entityIDs(text string) (setInt32, error) {
+func (n warInvalid) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warInvalid) unmarshal(text string) (notification.WarInvalid, setInt32, error) {
-	var data notification.WarInvalid
+func (n warInvalid) unmarshal(text string) (goesi.WarInvalid, setInt64, error) {
+	var data goesi.WarInvalid
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil
@@ -398,18 +398,18 @@ type warRetractedByConcord struct {
 	baseRenderer
 }
 
-func (n warRetractedByConcord) entityIDs(text string) (setInt32, error) {
+func (n warRetractedByConcord) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n warRetractedByConcord) unmarshal(text string) (notification.WarRetractedByConcord, setInt32, error) {
-	var data notification.WarRetractedByConcord
+func (n warRetractedByConcord) unmarshal(text string) (goesi.WarRetractedByConcord, setInt64, error) {
+	var data goesi.WarRetractedByConcord
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.AgainstID, data.DeclaredByID)
 	return data, ids, nil

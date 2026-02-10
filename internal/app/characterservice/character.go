@@ -15,7 +15,7 @@ import (
 
 // DeleteCharacter deletes a character and corporations which have become orphaned as a result.
 // It reports whether the related corporation was also deleted.
-func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) (bool, error) {
+func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool, error) {
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return false, err
 	}
@@ -44,7 +44,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) (bool,
 }
 
 // GetCharacter returns a character from storage and updates calculated fields.
-func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
+func (s *CharacterService) GetCharacter(ctx context.Context, id int64) (*app.Character, error) {
 	c, err := s.st.GetCharacter(ctx, id)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character,
 	return s.st.GetAnyCharacter(ctx)
 }
 
-func (s *CharacterService) getCharacterName(ctx context.Context, characterID int32) (string, error) {
+func (s *CharacterService) getCharacterName(ctx context.Context, characterID int64) (string, error) {
 	character, err := s.GetCharacter(ctx, characterID)
 	if err != nil {
 		return "", err
@@ -77,27 +77,27 @@ func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character
 	return s.st.ListCharacters(ctx)
 }
 
-func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
+func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListCharacterIDs(ctx)
 }
 
 // ListCharactersShort returns all characters in short form and ordered by name.
-func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	return s.st.ListCharactersShort(ctx)
 }
 
 // ListCharacterCorporationIDs returns the corporation IDs of the characters.
-func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListCharacterCorporationIDs(ctx)
 }
 
 // ListCharacterCorporations returns the corporations of the characters.
-func (s *CharacterService) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (s *CharacterService) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	return s.st.ListCharacterCorporations(ctx)
 }
 
 // HasCharacter reports whether a character exists.
-func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, error) {
+func (s *CharacterService) HasCharacter(ctx context.Context, id int64) (bool, error) {
 	_, err := s.GetCharacter(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
@@ -118,7 +118,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	setInfo("Fetching character from game server...")
-	characterID := ssoToken.CharacterID
+	characterID := int64(ssoToken.CharacterID)
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  characterID,

@@ -33,7 +33,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID:   c.ID,
 			Duration:      3,
-			IsBuyOrder:    true,
+			IsBuyOrder:    optional.New(true),
 			IsCorporation: true,
 			Issued:        issued,
 			LocationID:    location.ID,
@@ -53,23 +53,23 @@ func TestCharacterMarketOrder(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 3, o.Duration)
+				xassert.Equal(t, 3, o.Duration)
 				assert.True(t, o.Escrow.IsEmpty())
-				assert.EqualValues(t, true, o.IsBuyOrder)
-				assert.EqualValues(t, true, o.IsCorporation)
+				xassert.Equal(t, true, o.IsBuyOrder.ValueOrZero())
+				xassert.Equal(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
-				assert.EqualValues(t, location.ID, o.Location.ID)
-				assert.EqualValues(t, location.Name, o.Location.Name.ValueOrZero())
+				xassert.Equal(t, location.ID, o.Location.ID)
+				xassert.Equal(t, location.Name, o.Location.Name.ValueOrZero())
 				assert.True(t, o.MinVolume.IsEmpty())
-				assert.EqualValues(t, 123.45, o.Price)
-				assert.EqualValues(t, "station", o.Range)
-				assert.EqualValues(t, region.ID, o.Region.ID)
-				assert.EqualValues(t, region.Name, o.Region.Name)
-				assert.EqualValues(t, app.OrderOpen, o.State)
-				assert.EqualValues(t, itemType.ID, o.Type.ID)
-				assert.EqualValues(t, itemType.Name, o.Type.Name)
-				assert.EqualValues(t, 5, o.VolumeRemains)
-				assert.EqualValues(t, 10, o.VolumeTotal)
+				xassert.Equal(t, 123.45, o.Price)
+				xassert.Equal(t, "station", o.Range)
+				xassert.Equal(t, region.ID, o.Region.ID)
+				xassert.Equal(t, region.Name, o.Region.Name)
+				xassert.Equal(t, app.OrderOpen, o.State)
+				xassert.Equal(t, itemType.ID, o.Type.ID)
+				xassert.Equal(t, itemType.Name, o.Type.Name)
+				xassert.Equal(t, 5, o.VolumeRemains)
+				xassert.Equal(t, 10, o.VolumeTotal)
 			}
 		}
 	})
@@ -86,11 +86,11 @@ func TestCharacterMarketOrder(t *testing.T) {
 			CharacterID:   c.ID,
 			Duration:      3,
 			Escrow:        optional.New(234.56),
-			IsBuyOrder:    true,
+			IsBuyOrder:    optional.New(true),
 			IsCorporation: true,
 			Issued:        issued,
 			LocationID:    location.ID,
-			MinVolume:     optional.New(3),
+			MinVolume:     optional.New[int64](3),
 			OrderID:       42,
 			OwnerID:       owner.ID,
 			Price:         123.45,
@@ -107,8 +107,8 @@ func TestCharacterMarketOrder(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 234.56, o.Escrow.MustValue())
-				assert.EqualValues(t, 3, o.MinVolume.MustValue())
+				xassert.Equal(t, 234.56, o.Escrow.MustValue())
+				xassert.Equal(t, 3, o.MinVolume.MustValue())
 			}
 		}
 	})
@@ -116,7 +116,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		cmo := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: true,
+			IsBuyOrder: optional.New(true),
 		})
 		remains := cmo.VolumeRemains - 1
 		escrow := 1_000_000.12
@@ -146,10 +146,10 @@ func TestCharacterMarketOrder(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, escrow, o.Escrow.ValueOrZero())
-				assert.EqualValues(t, price, o.Price)
-				assert.EqualValues(t, remains, o.VolumeRemains)
-				assert.EqualValues(t, app.OrderExpired, o.State)
+				xassert.Equal(t, escrow, o.Escrow.ValueOrZero())
+				xassert.Equal(t, price, o.Price)
+				xassert.Equal(t, remains, o.VolumeRemains)
+				xassert.Equal(t, app.OrderExpired, o.State)
 			}
 		}
 	})
@@ -172,7 +172,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list order IDs for a character", func(t *testing.T) {
@@ -191,21 +191,19 @@ func TestCharacterMarketOrder(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.OrderID, o2.OrderID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list all buy orders", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: true,
+			IsBuyOrder: optional.New(true),
 		})
 		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: true,
+			IsBuyOrder: optional.New(true),
 		})
-		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: false,
-		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{})
 		// when
 		s, err := st.ListAllCharacterMarketOrders(ctx, true)
 		// then
@@ -214,20 +212,16 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list all sell orders", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: false,
-		})
-		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: false,
-		})
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{})
 		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			IsBuyOrder: true,
+			IsBuyOrder: optional.New(true),
 		})
 		// when
 		s, err := st.ListAllCharacterMarketOrders(ctx, false)
@@ -237,7 +231,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can delete orders for a character by ID", func(t *testing.T) {
@@ -257,7 +251,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			want := set.Of(o1.OrderID)
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})
@@ -279,7 +273,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		failOnError(t, err)
 		o2, err := st.GetCharacterMarketOrder(ctx, c.ID, o1.OrderID)
 		failOnError(t, err)
-		assert.Equal(t, app.OrderUnknown, o2.State)
+		xassert.Equal(t, app.OrderUnknown, o2.State)
 	})
 }
 

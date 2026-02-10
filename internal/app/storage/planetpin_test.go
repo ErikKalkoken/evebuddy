@@ -34,7 +34,7 @@ func TestPlanetPin(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, input, c2.Type)
+				xassert.Equal(t, input, c2.Type)
 			}
 		}
 	})
@@ -49,30 +49,29 @@ func TestPlanetPin(t *testing.T) {
 		lastCycleStart := time.Now().UTC()
 		schematic := factory.CreateEveSchematic()
 		factorySchematic := factory.CreateEveSchematic()
-		arg := storage.CreatePlanetPinParams{
+		// when
+		err := st.CreatePlanetPin(ctx, storage.CreatePlanetPinParams{
 			CharacterPlanetID:      planet.ID,
-			ExpiryTime:             expiryTime,
+			ExpiryTime:             optional.New(expiryTime),
 			ExtractorProductTypeID: optional.New(productType.ID),
 			FactorySchemaID:        optional.New(factorySchematic.ID),
-			InstallTime:            installTime,
-			LastCycleStart:         lastCycleStart,
+			InstallTime:            optional.New(installTime),
+			LastCycleStart:         optional.New(lastCycleStart),
 			PinID:                  42,
 			SchematicID:            optional.New(schematic.ID),
 			TypeID:                 pinType.ID,
-		}
-		// when
-		err := st.CreatePlanetPin(ctx, arg)
+		})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, pinType, c2.Type)
-				assert.Equal(t, productType, c2.ExtractorProductType)
-				assert.Equal(t, optional.New(expiryTime), c2.ExpiryTime)
-				assert.Equal(t, optional.New(installTime), c2.InstallTime)
-				assert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
-				assert.Equal(t, schematic, c2.Schematic)
-				assert.Equal(t, factorySchematic, c2.FactorySchematic)
+				xassert.Equal(t, pinType, c2.Type)
+				xassert.Equal(t, productType, c2.ExtractorProductType)
+				xassert.Equal(t, optional.New(expiryTime), c2.ExpiryTime)
+				xassert.Equal(t, optional.New(installTime), c2.InstallTime)
+				xassert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
+				xassert.Equal(t, schematic, c2.Schematic)
+				xassert.Equal(t, factorySchematic, c2.FactorySchematic)
 			}
 		}
 	})
@@ -91,7 +90,7 @@ func TestPlanetPin(t *testing.T) {
 				got.Add(o.ID)
 			}
 			want := set.Of(x1.ID, x2.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can delete pins", func(t *testing.T) {

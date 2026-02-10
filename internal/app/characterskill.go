@@ -14,36 +14,36 @@ import (
 )
 
 type CharacterSkill struct {
-	ActiveSkillLevel   int
-	CharacterID        int32
+	ActiveSkillLevel   int64
+	CharacterID        int64
 	EveType            *EveType
 	ID                 int64
-	SkillPointsInSkill int
-	TrainedSkillLevel  int
+	SkillPointsInSkill int64
+	TrainedSkillLevel  int64
 }
 
-func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
+func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }
 
 // CharacterActiveSkillLevel represents the active level of a character's skill.
 type CharacterActiveSkillLevel struct {
-	CharacterID int32
+	CharacterID int64
 	Level       int
-	TypeID      int32
+	TypeID      int64
 }
 
 type ListCharacterSkillGroupProgress struct {
-	GroupID   int32
+	GroupID   int64
 	GroupName string
 	Total     float64
 	Trained   float64
 }
 
 type ListSkillProgress struct {
-	ActiveSkillLevel  int
-	TrainedSkillLevel int
-	TypeID            int32
+	ActiveSkillLevel  int64
+	TrainedSkillLevel int64
+	TypeID            int64
 	TypeDescription   string
 	TypeName          string
 }
@@ -51,17 +51,17 @@ type ListSkillProgress struct {
 type CharacterShipSkill struct {
 	ActiveSkillLevel  optional.Optional[int]
 	ID                int64
-	CharacterID       int32
+	CharacterID       int64
 	Rank              uint
-	ShipTypeID        int32
-	SkillTypeID       int32
+	ShipTypeID        int64
+	SkillTypeID       int64
 	SkillName         string
 	SkillLevel        uint
 	TrainedSkillLevel optional.Optional[int]
 }
 
 type CharacterServiceSkillqueue interface {
-	ListSkillqueueItems(context.Context, int32) ([]*CharacterSkillqueueItem, error)
+	ListSkillqueueItems(context.Context, int64) ([]*CharacterSkillqueueItem, error)
 }
 
 // TODO: Is the mutex still needed with Fyne 2.6 ??
@@ -70,7 +70,7 @@ type CharacterServiceSkillqueue interface {
 // This type is safe to use concurrently.
 type CharacterSkillqueue struct {
 	mu          sync.RWMutex
-	characterID int32
+	characterID int64
 	items       []*CharacterSkillqueueItem
 }
 
@@ -81,7 +81,7 @@ func NewCharacterSkillqueue() *CharacterSkillqueue {
 }
 
 // CharacterID returns the character ID related to a queue.
-func (sq *CharacterSkillqueue) CharacterID() int32 {
+func (sq *CharacterSkillqueue) CharacterID() int64 {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	return sq.characterID
@@ -125,7 +125,7 @@ func (sq *CharacterSkillqueue) IsActive() bool {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	for _, qi := range sq.items {
-		if qi.FinishDate.After(time.Now().UTC()) {
+		if qi.FinishDate.ValueOrZero().After(time.Now().UTC()) {
 			return true
 		}
 	}
@@ -182,15 +182,14 @@ func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] 
 
 // FinishDate returns the finish date of last skill in the queue.
 func (sq *CharacterSkillqueue) FinishDate() optional.Optional[time.Time] {
-	last := sq.Last()
-	if last == nil || last.FinishDate.IsZero() {
-		return optional.Optional[time.Time]{}
+	if last := sq.Last(); last != nil {
+		return last.FinishDate
 	}
-	return optional.New(last.FinishDate)
+	return optional.Optional[time.Time]{}
 }
 
 // Update replaces the content of the queue with a new version from the service.
-func (sq *CharacterSkillqueue) Update(ctx context.Context, cs CharacterServiceSkillqueue, characterID int32) error {
+func (sq *CharacterSkillqueue) Update(ctx context.Context, cs CharacterServiceSkillqueue, characterID int64) error {
 	items, err := sq.fetchItems(ctx, cs, characterID)
 	if err != nil {
 		return err
@@ -202,7 +201,7 @@ func (sq *CharacterSkillqueue) Update(ctx context.Context, cs CharacterServiceSk
 	return nil
 }
 
-func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServiceSkillqueue, characterID int32) ([]*CharacterSkillqueueItem, error) {
+func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServiceSkillqueue, characterID int64) ([]*CharacterSkillqueueItem, error) {
 	if characterID == 0 {
 		items := make([]*CharacterSkillqueueItem, 0)
 		return items, nil
@@ -218,19 +217,19 @@ func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServi
 }
 
 type CharacterSkillqueueItem struct {
-	CharacterID      int32
+	CharacterID      int64
 	GroupName        string
-	FinishDate       time.Time
-	FinishedLevel    int
-	LevelEndSP       int
-	LevelStartSP     int
+	FinishDate       optional.Optional[time.Time]
+	FinishedLevel    int64
+	LevelEndSP       optional.Optional[int64]
+	LevelStartSP     optional.Optional[int64]
 	ID               int64
-	QueuePosition    int
-	StartDate        time.Time
-	SkillID          int32
+	QueuePosition    int64
+	StartDate        optional.Optional[time.Time]
+	SkillID          int64
 	SkillName        string
 	SkillDescription string
-	TrainingStartSP  int
+	TrainingStartSP  optional.Optional[int64]
 }
 
 func (qi CharacterSkillqueueItem) String() string {
@@ -246,10 +245,10 @@ func (qi CharacterSkillqueueItem) StringShortened() string {
 // IsActive reports whether a skill is active.
 func (qi CharacterSkillqueueItem) IsActive() bool {
 	now := time.Now()
-	return !qi.StartDate.IsZero() &&
-		!qi.FinishDate.IsZero() &&
-		qi.StartDate.Before(now) &&
-		qi.FinishDate.After(now)
+	return !qi.StartDate.IsEmpty() &&
+		!qi.FinishDate.IsEmpty() &&
+		qi.StartDate.ValueOrZero().Before(now) &&
+		qi.FinishDate.ValueOrZero().After(now)
 }
 
 func (qi CharacterSkillqueueItem) IsCompleted() bool {
@@ -257,32 +256,37 @@ func (qi CharacterSkillqueueItem) IsCompleted() bool {
 }
 
 func (qi CharacterSkillqueueItem) CompletionP() float64 {
+	if qi.StartDate.IsEmpty() || qi.FinishDate.IsEmpty() {
+		return 0
+	}
 	d := qi.Duration()
 	if d.IsEmpty() {
 		return 0
 	}
 	duration := d.ValueOrZero()
 	now := time.Now()
-	if qi.FinishDate.Before(now) {
+	finishDate := qi.FinishDate.ValueOrZero()
+	if finishDate.Before(now) {
 		return 1
 	}
-	if qi.StartDate.After(now) {
+	if qi.StartDate.ValueOrZero().After(now) {
 		return 0
 	}
 	if duration == 0 {
 		return 0
 	}
-	remaining := qi.FinishDate.Sub(now)
+	remaining := finishDate.Sub(now)
 	c := remaining.Seconds() / duration.Seconds()
-	base := float64(qi.LevelEndSP-qi.TrainingStartSP) / float64(qi.LevelEndSP-qi.LevelStartSP)
+	levelEndSP := qi.LevelEndSP.ValueOrZero()
+	base := float64(levelEndSP-qi.TrainingStartSP.ValueOrZero()) / float64(levelEndSP-qi.LevelStartSP.ValueOrZero())
 	return 1 - (c * base)
 }
 
 func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
-	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
+	if qi.StartDate.IsEmpty() || qi.FinishDate.IsEmpty() {
 		return optional.Optional[time.Duration]{}
 	}
-	return optional.New(qi.FinishDate.Sub(qi.StartDate))
+	return optional.New(qi.FinishDate.ValueOrZero().Sub(qi.StartDate.ValueOrZero()))
 }
 
 func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
@@ -291,7 +295,7 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 		return optional.New(time.Duration(0)) // completed
 	}
 	if qi.IsActive() {
-		return optional.New(time.Until(qi.FinishDate))
+		return optional.New(time.Until(qi.FinishDate.ValueOrZero()))
 	}
 	return qi.Duration()
 }

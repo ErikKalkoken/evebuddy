@@ -10,24 +10,25 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateCorporationWalletJournalEntryParams struct {
-	Amount        float64
-	Balance       float64
-	ContextID     int64
-	ContextIDType string
+	Amount        optional.Optional[float64]
+	Balance       optional.Optional[float64]
+	ContextID     optional.Optional[int64]
+	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	DivisionID    int32
-	FirstPartyID  int32
+	DivisionID    int64
+	FirstPartyID  optional.Optional[int64]
 	RefID         int64
-	CorporationID int32
-	Reason        string
+	CorporationID int64
+	Reason        optional.Optional[string]
 	RefType       string
-	SecondPartyID int32
-	Tax           float64
-	TaxReceiverID int32
+	SecondPartyID optional.Optional[int64]
+	Tax           optional.Optional[float64]
+	TaxReceiverID optional.Optional[int64]
 }
 
 func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg CreateCorporationWalletJournalEntryParams) error {
@@ -37,40 +38,30 @@ func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg 
 	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.CreateCorporationWalletJournalEntryParams{
-		Amount:        arg.Amount,
-		Balance:       arg.Balance,
-		ContextID:     arg.ContextID,
-		ContextIDType: arg.ContextIDType,
+	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, queries.CreateCorporationWalletJournalEntryParams{
+		Amount:        arg.Amount.ValueOrZero(),
+		Balance:       arg.Balance.ValueOrZero(),
+		ContextID:     arg.ContextID.ValueOrZero(),
+		ContextIDType: arg.ContextIDType.ValueOrZero(),
 		Date:          arg.Date,
 		Description:   arg.Description,
-		DivisionID:    int64(arg.DivisionID),
+		DivisionID:    arg.DivisionID,
 		RefID:         arg.RefID,
-		CorporationID: int64(arg.CorporationID),
+		CorporationID: arg.CorporationID,
 		RefType:       arg.RefType,
-		Reason:        arg.Reason,
-		Tax:           arg.Tax,
-	}
-	if arg.FirstPartyID != 0 {
-		arg2.FirstPartyID.Int64 = int64(arg.FirstPartyID)
-		arg2.FirstPartyID.Valid = true
-	}
-	if arg.SecondPartyID != 0 {
-		arg2.SecondPartyID.Int64 = int64(arg.SecondPartyID)
-		arg2.SecondPartyID.Valid = true
-	}
-	if arg.TaxReceiverID != 0 {
-		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
-		arg2.TaxReceiverID.Valid = true
-	}
-	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, arg2)
+		Reason:        arg.Reason.ValueOrZero(),
+		Tax:           arg.Tax.ValueOrZero(),
+		FirstPartyID:  optional.ToNullInt64(arg.FirstPartyID),
+		SecondPartyID: optional.ToNullInt64(arg.SecondPartyID),
+		TaxReceiverID: optional.ToNullInt64(arg.TaxReceiverID),
+	})
 	if err != nil {
 		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporationID int32, d app.Division) error {
+func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporationID int64, d app.Division) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationWalletJournalEntries: %d %d: %w", corporationID, d, err)
 	}
@@ -78,8 +69,8 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{
-		CorporationID: int64(corporationID),
-		DivisionID:    int64(d.ID()),
+		CorporationID: corporationID,
+		DivisionID:    d.ID(),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -89,8 +80,8 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 }
 
 type GetCorporationWalletJournalEntryParams struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	RefID         int64
 }
 
@@ -102,8 +93,8 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletJournalEntry(ctx, queries.GetCorporationWalletJournalEntryParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 		RefID:         arg.RefID,
 	})
 	if err != nil {
@@ -117,8 +108,8 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 }
 
 type CorporationDivision struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 }
 
 func (cd CorporationDivision) IsInvalid() bool {
@@ -133,8 +124,8 @@ func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
 	ids, err := st.qRO.ListCorporationWalletJournalEntryRefIDs(ctx, queries.ListCorporationWalletJournalEntryRefIDsParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -150,8 +141,8 @@ func (st *Storage) ListCorporationWalletJournalEntries(ctx context.Context, arg 
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	rows, err := st.qRO.ListCorporationWalletJournalEntries(ctx, queries.ListCorporationWalletJournalEntriesParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -172,21 +163,21 @@ func corporationWalletJournalEntryFromDBModel(
 	firstParty, secondParty, taxReceiver nullEveEntry,
 ) *app.CorporationWalletJournalEntry {
 	o2 := &app.CorporationWalletJournalEntry{
-		Amount:        o.Amount,
-		Balance:       o.Balance,
-		ContextID:     o.ContextID,
-		ContextIDType: o.ContextIDType,
+		Amount:        optional.FromZeroValue(o.Amount),
+		Balance:       optional.FromZeroValue(o.Balance),
+		ContextID:     optional.FromZeroValue(o.ContextID),
+		ContextIDType: optional.FromZeroValue(o.ContextIDType),
 		Date:          o.Date,
 		Description:   o.Description,
-		DivisionID:    int32(o.DivisionID),
+		DivisionID:    o.DivisionID,
 		FirstParty:    eveEntityFromNullableDBModel(firstParty),
 		ID:            o.ID,
 		RefID:         o.RefID,
-		CorporationID: int32(o.CorporationID),
-		Reason:        o.Reason,
+		CorporationID: o.CorporationID,
+		Reason:        optional.FromZeroValue(o.Reason),
 		RefType:       o.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(secondParty),
-		Tax:           o.Tax,
+		Tax:           optional.FromZeroValue(o.Tax),
 		TaxReceiver:   eveEntityFromNullableDBModel(taxReceiver),
 	}
 	return o2

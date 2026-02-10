@@ -32,7 +32,7 @@ import (
 
 type characterOverviewRow struct {
 	alliance        *app.EveEntity
-	characterID     int32
+	characterID     int64
 	characterName   string
 	corporation     *app.EveEntity
 	faction         *app.EveEntity
@@ -41,7 +41,7 @@ type characterOverviewRow struct {
 	regionName      string
 	searchTarget    string
 	ship            *app.EveType
-	skillpoints     optional.Optional[int]
+	skillpoints     optional.Optional[int64]
 	solarSystemName string
 	tags            set.Set[string]
 	trainingActive  optional.Optional[bool]
@@ -203,7 +203,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		switch arg.section {
 		case app.SectionEveCharacters:
-			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int64 {
 				return r.characterID
 			}))
 			for characterID := range set.Intersection(characters, arg.changed).All() {
@@ -214,7 +214,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -237,7 +237,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			a.updateItem(ctx, arg.characterID)
 		}
 	})
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
 	return a
@@ -453,7 +453,7 @@ func (a *characterOverview) update() {
 	})
 }
 
-func (a *characterOverview) updateItem(ctx context.Context, characterID int32) {
+func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
@@ -542,9 +542,9 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 }
 
 type characterCardEIS interface {
-	AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource))
-	CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource))
-	CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
 // characterCard is a widget that shows a card for a character.
@@ -566,14 +566,14 @@ type characterCard struct {
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
-	showInfoWindow           func(c app.EveEntityCategory, id int32)
+	showInfoWindow           func(c app.EveEntityCategory, id int64)
 	skillpoints              *widget.Label
 	solarSystem              *iwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
 }
 
-func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCard {
+func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int64)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -835,7 +835,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	}))
 
-	w.skillpoints.SetText(c.skillpoints.StringFunc("?", func(v int) string {
+	w.skillpoints.SetText(c.skillpoints.StringFunc("?", func(v int64) string {
 		return humanize.Comma(int64(v))
 	}))
 

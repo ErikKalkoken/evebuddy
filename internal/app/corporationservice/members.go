@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CorporationService) ListMembers(ctx context.Context, corporationID int32) ([]*app.CorporationMember, error) {
+func (s *CorporationService) ListMembers(ctx context.Context, corporationID int64) ([]*app.CorporationMember, error) {
 	return s.st.ListCorporationMembers(ctx, corporationID)
 }
 
@@ -24,14 +24,14 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdMembers")
-			members, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID, nil)
+			members, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return members, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			incoming := set.Of(data.([]int32)...)
+			incoming := set.Of(data.([]int64)...)
 			current, err := s.st.ListCorporationMemberIDs(ctx, arg.CorporationID)
 			if err != nil {
 				return err

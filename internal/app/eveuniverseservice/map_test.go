@@ -6,13 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
@@ -31,7 +33,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		x1, err := s.GetOrCreateRegionESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(6), x1.ID)
+			xassert.Equal(t, int64(6), x1.ID)
 		}
 	})
 	t.Run("should fetch region from ESI and create it", func(t *testing.T) {
@@ -40,7 +42,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/regions/\d+/`,
+			`=~^https://esi.evetech.net/universe/regions/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellations": []int{20000302, 20000303},
 				"description":    "It has long been an established fact of civilization...",
@@ -52,11 +54,11 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		x1, err := s.GetOrCreateRegionESI(ctx, 10000042)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(10000042), x1.ID)
-			assert.Equal(t, "Metropolis", x1.Name)
+			xassert.Equal(t, int64(10000042), x1.ID)
+			xassert.Equal(t, "Metropolis", x1.Name)
 			x2, err := st.GetEveRegion(ctx, 10000042)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -78,7 +80,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		x1, err := s.GetOrCreateConstellationESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(25), x1.ID)
+			xassert.Equal(t, int64(25), x1.ID)
 		}
 	})
 	t.Run("should fetch constellation from ESI and create it", func(t *testing.T) {
@@ -88,7 +90,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 10000001})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/constellations/\d+/`,
+			`=~^https://esi.evetech.net/universe/constellations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellation_id": 20000009,
 				"name":             "Mekashtad",
@@ -105,12 +107,12 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		x1, err := s.GetOrCreateConstellationESI(ctx, 20000009)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(20000009), x1.ID)
-			assert.Equal(t, "Mekashtad", x1.Name)
-			assert.Equal(t, int32(10000001), x1.Region.ID)
+			xassert.Equal(t, int64(20000009), x1.ID)
+			xassert.Equal(t, "Mekashtad", x1.Name)
+			xassert.Equal(t, int64(10000001), x1.Region.ID)
 			x2, err := st.GetEveConstellation(ctx, 20000009)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -132,7 +134,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(587), x1.ID)
+			xassert.Equal(t, int64(587), x1.ID)
 		}
 	})
 	t.Run("should fetch solar system from ESI and create it", func(t *testing.T) {
@@ -142,7 +144,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/systems/\d+/`,
+			`=~^https://esi.evetech.net/universe/systems/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellation_id": 20000001,
 				"name":             "Akpivem",
@@ -171,12 +173,12 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(30000003), x1.ID)
-			assert.Equal(t, "Akpivem", x1.Name)
-			assert.Equal(t, int32(20000001), x1.Constellation.ID)
+			xassert.Equal(t, int64(30000003), x1.ID)
+			xassert.Equal(t, "Akpivem", x1.Name)
+			xassert.Equal(t, int64(20000001), x1.Constellation.ID)
 			x2, err := st.GetEveSolarSystem(ctx, 30000003)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -186,7 +188,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/regions/\d+/`,
+			`=~^https://esi.evetech.net/universe/regions/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellations": []int{
 					20000001,
@@ -213,7 +215,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/constellations/\d+/`,
+			`=~^https://esi.evetech.net/universe/constellations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellation_id": 20000001,
 				"name":             "San Matar",
@@ -237,7 +239,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/systems/\d+/`,
+			`=~^https://esi.evetech.net/universe/systems/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"constellation_id": 20000001,
 				"name":             "Akpivem",
@@ -268,12 +270,12 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(30000003), x1.ID)
-			assert.Equal(t, "Akpivem", x1.Name)
-			assert.Equal(t, int32(20000001), x1.Constellation.ID)
+			xassert.Equal(t, int64(30000003), x1.ID)
+			xassert.Equal(t, "Akpivem", x1.Name)
+			xassert.Equal(t, int64(20000001), x1.Constellation.ID)
 			x2, err := st.GetEveSolarSystem(ctx, 30000003)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -295,7 +297,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		x1, err := s.GetOrCreatePlanetESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(25), x1.ID)
+			xassert.Equal(t, int64(25), x1.ID)
 		}
 	})
 	t.Run("should fetch planet from ESI and create it", func(t *testing.T) {
@@ -317,16 +319,16 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/planets/\d+/`,
+			`=~^https://esi.evetech.net/universe/planets/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		x1, err := s.GetOrCreatePlanetESI(ctx, 40000046)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(40000046), x1.ID)
-			assert.Equal(t, "Akpivem III", x1.Name)
-			assert.Equal(t, solarSystem, x1.SolarSystem)
-			assert.Equal(t, type_, x1.Type)
+			xassert.Equal(t, int64(40000046), x1.ID)
+			xassert.Equal(t, "Akpivem III", x1.Name)
+			xassert.Equal(t, solarSystem, x1.SolarSystem)
+			xassert.Equal(t, type_, x1.Type)
 		}
 	})
 }
@@ -347,7 +349,7 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 		x1, err := s.GetOrCreateMoonESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(25), x1.ID)
+			xassert.Equal(t, int64(25), x1.ID)
 		}
 	})
 	t.Run("should fetch moon from ESI and create it", func(t *testing.T) {
@@ -367,15 +369,15 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/moons/\d+/`,
+			`=~^https://esi.evetech.net/universe/moons/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		x1, err := s.GetOrCreateMoonESI(ctx, 40000042)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(40000042), x1.ID)
-			assert.Equal(t, "Akpivem I - Moon 1", x1.Name)
-			assert.Equal(t, solarSystem, x1.SolarSystem)
+			xassert.Equal(t, int64(40000042), x1.ID)
+			xassert.Equal(t, "Akpivem I - Moon 1", x1.Name)
+			xassert.Equal(t, solarSystem, x1.SolarSystem)
 		}
 	})
 }
@@ -395,19 +397,19 @@ func TestFetchRoute(t *testing.T) {
 		s3 := factory.CreateEveSolarSystem()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
-			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/route/\d+/\d+/`,
-			httpmock.NewJsonResponderOrPanic(200, []int32{s1.ID, s2.ID, s3.ID}),
+			"POST",
+			`=~^https://esi.evetech.net/route/\d+/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string][]int64{"route": {s1.ID, s2.ID, s3.ID}}),
 		)
 		// when
 		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: s3,
 			Origin:      s1,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
+			xassert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
 		}
 	})
 	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
@@ -419,12 +421,12 @@ func TestFetchRoute(t *testing.T) {
 		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: o,
 			Origin:      o,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		})
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 	t.Run("should return invalid route when origin in WH space", func(t *testing.T) {
@@ -437,7 +439,7 @@ func TestFetchRoute(t *testing.T) {
 		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: dest,
 			Origin:      orig,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -450,11 +452,11 @@ func TestFetchRoute(t *testing.T) {
 		httpmock.Reset()
 		// when
 		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
-			Preference: app.RouteShortest,
+			Preference: app.RouteShorter,
 		})
 		// then
 		if assert.ErrorIs(t, err, app.ErrInvalid) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 	t.Run("should return error when called with invalid systems", func(t *testing.T) {
@@ -465,11 +467,11 @@ func TestFetchRoute(t *testing.T) {
 		// when
 		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Origin:     x,
-			Preference: app.RouteShortest,
+			Preference: app.RouteShorter,
 		})
 		// then
 		if assert.ErrorIs(t, err, app.ErrInvalid) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 	t.Run("return empty slice when no route found", func(t *testing.T) {
@@ -479,19 +481,19 @@ func TestFetchRoute(t *testing.T) {
 		s2 := factory.CreateEveSolarSystem()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
-			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/route/\d+/\d+/`,
+			"POST",
+			`=~^https://esi.evetech.net/route/\d+/\d+`,
 			httpmock.NewJsonResponderOrPanic(404, map[string]string{"error": "no route found"}),
 		)
 		// when
 		got, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: s2,
 			Origin:      s1,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, []*app.EveSolarSystem{}, got)
+			xassert.Equal(t, []*app.EveSolarSystem{}, got)
 		}
 	})
 }
@@ -513,32 +515,36 @@ func TestFetchRoutes(t *testing.T) {
 		b1 := factory.CreateEveSolarSystem()
 		b2 := factory.CreateEveSolarSystem()
 		b3 := factory.CreateEveSolarSystem()
+		path1 := fmt.Sprintf("https://esi.evetech.net/route/%d/%d", a1.ID, a3.ID)
+		fmt.Println(path1)
 		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", a1.ID, a3.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{a1.ID, a2.ID, a3.ID}),
+			"POST",
+			path1,
+			httpmock.NewJsonResponderOrPanic(200, map[string][]int64{"route": {a1.ID, a2.ID, a3.ID}}),
 		)
+		path2 := fmt.Sprintf("https://esi.evetech.net/route/%d/%d", b1.ID, b3.ID)
+		fmt.Println(path2)
 		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", b1.ID, b3.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{b1.ID, b2.ID, b3.ID}),
+			"POST",
+			path2,
+			httpmock.NewJsonResponderOrPanic(200, map[string][]int64{"route": {b1.ID, b2.ID, b3.ID}}),
 		)
 		// when
 		r1 := app.EveRouteHeader{
 			Destination: a3,
 			Origin:      a1,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		}
 		r2 := app.EveRouteHeader{
 			Destination: b3,
 			Origin:      b1,
-			Preference:  app.RouteShortest,
+			Preference:  app.RouteShorter,
 		}
 		got, err := s.FetchRoutes(ctx, []app.EveRouteHeader{r1, r2})
 		// then
 		if assert.NoError(t, err) && assert.Len(t, got, 2) {
-			assert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
-			assert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
+			xassert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
+			xassert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
 		}
 	})
 }
@@ -559,7 +565,7 @@ func TestMembershipHistory(t *testing.T) {
 		c2 := factory.CreateEveEntityCorporation(app.EveEntity{ID: 90000002})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/corporationhistory/`,
+			`=~^https://esi.evetech.net/characters/\d+/corporationhistory`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"corporation_id": 90000001,
@@ -580,7 +586,6 @@ func TestMembershipHistory(t *testing.T) {
 			assert.Len(t, x, 2)
 			assert.EqualValues(t, app.MembershipHistoryItem{
 				Days:         4,
-				IsDeleted:    false,
 				Organization: c2,
 				RecordID:     501,
 				StartDate:    time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
@@ -588,7 +593,7 @@ func TestMembershipHistory(t *testing.T) {
 			assert.EqualValues(t, app.MembershipHistoryItem{
 				EndDate:      time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
 				Days:         30,
-				IsDeleted:    true,
+				IsDeleted:    optional.New(true),
 				IsOldest:     true,
 				Organization: c1,
 				RecordID:     500,
@@ -604,7 +609,7 @@ func TestMembershipHistory(t *testing.T) {
 		c1 := factory.CreateEveEntityAlliance(app.EveEntity{ID: 99000006})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/alliancehistory/`,
+			`=~^https://esi.evetech.net/corporations/\d+/alliancehistory`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"alliance_id": 99000006,
@@ -624,7 +629,7 @@ func TestMembershipHistory(t *testing.T) {
 			assert.Len(t, x, 2)
 			assert.EqualValues(t, app.MembershipHistoryItem{
 				Days:         5,
-				IsDeleted:    true,
+				IsDeleted:    optional.New(true),
 				Organization: c1,
 				RecordID:     23,
 				StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
@@ -652,7 +657,7 @@ func TestGetStarTypeID(t *testing.T) {
 	httpmock.Reset()
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/stars/\d+/`,
+		`=~^https://esi.evetech.net/universe/stars/\d+`,
 		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"age":             9398686722,
 			"luminosity":      0.06615000218153,
@@ -689,7 +694,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	})
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/systems/\d+/`,
+		`=~^https://esi.evetech.net/universe/systems/\d+`,
 		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"constellation_id": constellation.ID,
 			"name":             "Akpivem",
@@ -720,20 +725,20 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	starID, planets, stargateIDs, stations, structures, err := s.GetSolarSystemInfoESI(ctx, system.ID)
 	// then
 	if assert.NoError(t, err) {
-		assert.EqualValues(t, 40000040, starID)
+		xassert.Equal(t, 40000040, starID.ValueOrZero())
 		assert.ElementsMatch(t, []app.EveSolarSystemPlanet{
 			{
-				PlanetID: int32(40000041),
-				MoonIDs:  []int32{40000042},
+				PlanetID: int64(40000041),
+				MoonIDs:  []int64{40000042},
 			},
 			{
-				PlanetID:        int32(40000043),
-				AsteroidBeltIDs: []int32{40000051},
+				PlanetID:        int64(40000043),
+				AsteroidBeltIDs: []int64{40000051},
 			},
 		},
 			planets,
 		)
-		assert.ElementsMatch(t, []int32{50000342}, stargateIDs)
+		assert.ElementsMatch(t, []int64{50000342}, stargateIDs)
 		assert.ElementsMatch(t, []*app.EveEntity{station}, stations)
 		assert.ElementsMatch(t, []*app.EveLocation{structure}, structures)
 	}
@@ -757,7 +762,7 @@ func TestGetRegionConstellationsESI(t *testing.T) {
 	})
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/regions/\d+/`,
+		`=~^https://esi.evetech.net/universe/regions/\d+`,
 		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"constellations": []int{20000302, 20000303},
 			"description":    "It has long been an established fact of civilization...",
@@ -786,7 +791,7 @@ func TestGetConstellationSolarSystemsESI(t *testing.T) {
 	s2 := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 20000303})
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/constellations/\d+/`,
+		`=~^https://esi.evetech.net/universe/constellations/\d+`,
 		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"constellation_id": 20000009,
 			"name":             "Mekashtad",
@@ -819,7 +824,7 @@ func TestGetStargateSolarSystemsESI(t *testing.T) {
 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000001})
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/stargates/\d+/`,
+		`=~^https://esi.evetech.net/universe/stargates/\d+`,
 		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"destination": map[string]int{
 				"stargate_id": 50000056,
@@ -837,7 +842,7 @@ func TestGetStargateSolarSystemsESI(t *testing.T) {
 		}),
 	)
 	// when
-	got, err := s.GetStargatesSolarSystemsESI(ctx, []int32{20000009})
+	got, err := s.GetStargatesSolarSystemsESI(ctx, []int64{20000009})
 	// then
 	if assert.NoError(t, err) {
 		want := []*app.EveSolarSystem{system}

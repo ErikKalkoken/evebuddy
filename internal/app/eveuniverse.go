@@ -22,7 +22,7 @@ type EveAlliance struct {
 	DateFounded         time.Time
 	ExecutorCorporation *EveEntity
 	Faction             *EveEntity
-	ID                  int32
+	ID                  int64
 	Name                string
 	Ticker              string
 }
@@ -35,20 +35,20 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 
 // EveCharacter is a character in Eve Online.
 type EveCharacter struct {
-	Alliance       *EveEntity
+	Alliance       *EveEntity // optional
 	Birthday       time.Time
 	Corporation    *EveEntity
-	Description    string
-	Faction        *EveEntity
+	Description    string     // FIXME: Should be null type
+	Faction        *EveEntity // optional
 	Gender         string
-	ID             int32
+	ID             int64
 	Name           string
 	Race           *EveRace
-	SecurityStatus float64
+	SecurityStatus float64 // FIXME: Should be null type
 	Title          string
 }
 
-func (ec EveCharacter) AllianceID() int32 {
+func (ec EveCharacter) AllianceID() int64 {
 	if !ec.HasAlliance() {
 		return 0
 	}
@@ -67,7 +67,7 @@ func (ec EveCharacter) DescriptionPlain() string {
 }
 
 // EntityIDs returns the IDs of all entities for a character.
-func (ec EveCharacter) EntityIDs() set.Set[int32] {
+func (ec EveCharacter) EntityIDs() set.Set[int64] {
 	s := set.Of(ec.ID, ec.Corporation.ID)
 	if ec.HasAlliance() {
 		s.Add(ec.Alliance.ID)
@@ -78,7 +78,7 @@ func (ec EveCharacter) EntityIDs() set.Set[int32] {
 	return s
 }
 
-func (ec EveCharacter) FactionID() int32 {
+func (ec EveCharacter) FactionID() int64 {
 	if !ec.HasFaction() {
 		return 0
 	}
@@ -111,7 +111,7 @@ func (ec EveCharacter) Equal(other *EveCharacter) bool {
 // Hash returns the hash for this character.
 // It can be used to detect changes between instances.
 func (ec EveCharacter) Hash() string {
-	var corporationID, raceID int32
+	var corporationID, raceID int64
 	if ec.Corporation != nil {
 		corporationID = ec.Corporation.ID
 	}
@@ -153,46 +153,46 @@ func (ec EveCharacter) EveEntity() *EveEntity {
 
 // EveCorporation is a corporation in Eve Online.
 type EveCorporation struct {
-	Alliance    *EveEntity
-	Ceo         *EveEntity
-	Creator     *EveEntity
+	Alliance    *EveEntity // optional
+	Ceo         *EveEntity // optional
+	Creator     *EveEntity // optional
 	DateFounded optional.Optional[time.Time]
 	Description string
-	Faction     *EveEntity
-	HomeStation *EveEntity
-	ID          int32
-	MemberCount int
+	Faction     *EveEntity // optional
+	HomeStation *EveEntity // optional
+	ID          int64
+	MemberCount int64
 	Name        string
-	Shares      optional.Optional[int]
-	TaxRate     float32
+	Shares      optional.Optional[int64]
+	TaxRate     float64
 	Ticker      string
-	URL         string
-	WarEligible bool
+	URL         optional.Optional[string]
+	WarEligible optional.Optional[bool]
 	Timestamp   time.Time
 }
 
-func (ec EveCorporation) AllianceID() int32 {
+func (ec EveCorporation) AllianceID() int64 {
 	if !ec.HasAlliance() {
 		return 0
 	}
 	return ec.Alliance.ID
 }
 
-func (ec EveCorporation) CeoID() int32 {
+func (ec EveCorporation) CeoID() int64 {
 	if ec.Ceo == nil {
 		return 0
 	}
 	return ec.Ceo.ID
 }
 
-func (ec EveCorporation) CreatorID() int32 {
+func (ec EveCorporation) CreatorID() int64 {
 	if ec.Creator == nil {
 		return 0
 	}
 	return ec.Creator.ID
 }
 
-func (ec EveCorporation) FactionID() int32 {
+func (ec EveCorporation) FactionID() int64 {
 	if !ec.HasFaction() {
 		return 0
 	}
@@ -207,7 +207,7 @@ func (ec EveCorporation) HasFaction() bool {
 	return ec.Faction != nil
 }
 
-func (ec EveCorporation) HomeStationID() int32 {
+func (ec EveCorporation) HomeStationID() int64 {
 	if ec.HomeStation == nil {
 		return 0
 	}
@@ -260,12 +260,12 @@ func (ec EveCorporation) Hash() string {
 type EveRace struct {
 	Description string
 	Name        string
-	ID          int32
+	ID          int64
 }
 
 // FactionID returns the faction ID of a race.
-func (er EveRace) FactionID() (int32, bool) {
-	m := map[int32]int32{
+func (er EveRace) FactionID() (int64, bool) {
+	m := map[int64]int64{
 		1:   500001,
 		2:   500002,
 		4:   500003,
@@ -279,7 +279,7 @@ func (er EveRace) FactionID() (int32, bool) {
 
 // EveSchematic is a schematic for planetary industry in Eve Online.
 type EveSchematic struct {
-	ID        int32
+	ID        int64
 	CycleTime int
 	Name      string
 }
@@ -291,8 +291,8 @@ func (es EveSchematic) Icon() (fyne.Resource, bool) {
 type EveShipSkill struct {
 	ID          int64
 	Rank        uint
-	ShipTypeID  int32
-	SkillTypeID int32
+	ShipTypeID  int64
+	SkillTypeID int64
 	SkillName   string
 	SkillLevel  uint
 }
@@ -300,10 +300,10 @@ type EveShipSkill struct {
 type MembershipHistoryItem struct {
 	EndDate      time.Time
 	Days         int
-	IsDeleted    bool
+	IsDeleted    optional.Optional[bool]
 	IsOldest     bool
 	Organization *EveEntity
-	RecordID     int
+	RecordID     int64
 	StartDate    time.Time
 }
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -16,7 +16,7 @@ import (
 )
 
 type CharacterService interface {
-	CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error)
+	CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error)
 }
 
 // Cache defines a cache.
@@ -30,7 +30,7 @@ type CorporationService struct {
 	cache            Cache
 	concurrencyLimit int
 	cs               CharacterService
-	esiClient        *goesi.APIClient
+	esiClient        *esi.APIClient
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
@@ -42,35 +42,34 @@ type Params struct {
 	Cache              Cache
 	CharacterService   CharacterService
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
+	ESIClient          *esi.APIClient
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 	// optional
 	HTTPClient *http.Client
-	EsiClient  *goesi.APIClient
 }
 
 // New creates a new corporation service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CorporationService {
+	if arg.ESIClient == nil {
+		panic("must provide esi client")
+	}
 	s := &CorporationService{
 		cache:            arg.Cache,
 		concurrencyLimit: -1, // Default is no limit
 		cs:               arg.CharacterService,
+		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
-		st:               arg.Storage,
 		sfg:              new(singleflight.Group),
+		st:               arg.Storage,
 	}
 	if arg.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
 	} else {
 		s.httpClient = arg.HTTPClient
-	}
-	if arg.EsiClient == nil {
-		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
-	} else {
-		s.esiClient = arg.EsiClient
 	}
 	if arg.ConcurrencyLimit > 0 {
 		s.concurrencyLimit = arg.ConcurrencyLimit

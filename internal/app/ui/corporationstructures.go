@@ -31,25 +31,25 @@ const (
 )
 
 type corporationStructureRow struct {
-	corporationID      int32
+	corporationID      int64
 	corporationName    string
 	fuelExpires        optional.Optional[time.Time]
 	fuelSort           time.Time
 	isFullPower        bool
 	isReinforced       bool
-	regionID           int32
+	regionID           int64
 	regionName         string
 	services           set.Set[string]
 	servicesText       string
 	solarSystemDisplay []widget.RichTextSegment
-	solarSystemID      int32
+	solarSystemID      int64
 	solarSystemName    string
 	stateColor         fyne.ThemeColorName
 	stateDisplay       string
 	stateText          string
 	structureID        int64
 	structureName      string
-	typeID             int32
+	typeID             int64
 	typeName           string
 }
 
@@ -371,7 +371,7 @@ func (a *corporationStructures) update() {
 	})
 }
 
-func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStructureRow, error) {
+func (a *corporationStructures) fetchData(corporationID int64) ([]corporationStructureRow, error) {
 	if corporationID == 0 {
 		return []corporationStructureRow{}, nil
 	}
@@ -419,7 +419,7 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 			stateDisplay:       s.State.Display(),
 			stateText:          stateText,
 			structureID:        s.StructureID,
-			structureName:      s.Name,
+			structureName:      s.DisplayName(),
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
 		})
@@ -427,7 +427,7 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 	return rows, nil
 }
 
-func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID int64) {
+func showCorporationStructureWindow(u *baseUI, corporationID int64, structureID int64) {
 	s, err := u.rs.GetStructure(context.Background(), corporationID, structureID)
 	if err != nil {
 		u.showErrorDialog("Failed to fetch structure", err, u.MainWindow())
@@ -436,7 +436,7 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 	corporationName := u.scs.CorporationName(corporationID)
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
-		s.Name,
+		s.DisplayName(),
 	)
 	if !created {
 		w.Show()
@@ -530,7 +530,7 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 		imageLoader: func(setter func(r fyne.Resource)) {
 			u.eis.InventoryTypeIconAsync(s.Type.ID, 512, setter)
 		},
-		title:  s.Name,
+		title:  s.DisplayName(),
 		window: w,
 	})
 	w.Show()

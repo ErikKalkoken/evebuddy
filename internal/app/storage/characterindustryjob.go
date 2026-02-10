@@ -33,7 +33,7 @@ func init() {
 	}
 }
 
-func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characterID int32, jobIDs set.Set[int32]) error {
+func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characterID int64, jobIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterIndustryJobs for character %d and job IDs: %s: %w", characterID, jobIDs, err)
 	}
@@ -44,7 +44,7 @@ func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characte
 		return nil
 	}
 	err := st.qRW.DeleteCharacterIndustryJobs(ctx, queries.DeleteCharacterIndustryJobsParams{
-		CharacterID: int64(characterID),
+		CharacterID: characterID,
 		JobIds:      convertNumericSet[int64](jobIDs),
 	})
 	if err != nil {
@@ -54,10 +54,10 @@ func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characte
 	return nil
 }
 
-func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int32) (*app.CharacterIndustryJob, error) {
+func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int64) (*app.CharacterIndustryJob, error) {
 	arg := queries.GetCharacterIndustryJobParams{
-		CharacterID: int64(characterID),
-		JobID:       int64(jobID),
+		CharacterID: characterID,
+		JobID:       jobID,
 	}
 	r, err := st.qRO.GetCharacterIndustryJob(ctx, arg)
 	if err != nil {
@@ -107,8 +107,8 @@ func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.Char
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterIndustryJobs(ctx context.Context, characterID int32) ([]*app.CharacterIndustryJob, error) {
-	rows, err := st.qRO.ListCharacterIndustryJobs(ctx, int64(characterID))
+func (st *Storage) ListCharacterIndustryJobs(ctx context.Context, characterID int64) ([]*app.CharacterIndustryJob, error) {
+	rows, err := st.qRO.ListCharacterIndustryJobs(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterIndustryJob for character %d: %w", characterID, err)
 	}
@@ -143,7 +143,7 @@ func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) 
 		result = append(result, app.IndustryJobActivityCount{
 			Activity:    app.IndustryActivity(r.ActivityID),
 			Count:       int(r.Number),
-			InstallerID: int32(r.InstallerID),
+			InstallerID: r.InstallerID,
 			Status:      jobStatusFromDBValue[r.Status],
 		})
 	}
@@ -175,11 +175,11 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 			Name:           optional.New(arg.blueprintLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.blueprintLocationSecurity),
 		},
-		BlueprintType: &app.EntityShort[int32]{
-			ID:   int32(arg.cij.BlueprintTypeID),
+		BlueprintType: &app.EntityShort[int64]{
+			ID:   arg.cij.BlueprintTypeID,
 			Name: arg.blueprintTypeName,
 		},
-		CharacterID:   int32(arg.cij.CharacterID),
+		CharacterID:   arg.cij.CharacterID,
 		CompletedDate: optional.FromNullTime(arg.cij.CompletedDate),
 		Cost:          optional.FromNullFloat64(arg.cij.Cost),
 		Duration:      int(arg.cij.Duration),
@@ -191,7 +191,7 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 		},
 		ID:           arg.cij.ID,
 		Installer:    eveEntityFromDBModel(arg.installer),
-		JobID:        int32(arg.cij.JobID),
+		JobID:        arg.cij.JobID,
 		LicensedRuns: optional.FromNullInt64ToInteger[int](arg.cij.LicensedRuns),
 		OutputLocation: &app.EveLocationShort{
 			ID:             arg.cij.OutputLocationID,
@@ -208,18 +208,18 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 		},
 		StartDate:      arg.cij.StartDate,
 		Status:         jobStatusFromDBValue[arg.cij.Status],
-		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](arg.cij.SuccessfulRuns),
+		SuccessfulRuns: optional.FromNullInt64ToInteger[int64](arg.cij.SuccessfulRuns),
 	}
 	if arg.cij.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       int32(arg.cij.CompletedCharacterID.Int64),
+			ID:       arg.cij.CompletedCharacterID.Int64,
 			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
 	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
-		o2.ProductType = optional.New(&app.EntityShort[int32]{
-			ID:   int32(arg.cij.ProductTypeID.Int64),
+		o2.ProductType = optional.New(&app.EntityShort[int64]{
+			ID:   arg.cij.ProductTypeID.Int64,
 			Name: arg.productTypeName.String,
 		})
 	}
@@ -227,8 +227,8 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 }
 
 type UpdateCharacterIndustryJobStatusParams struct {
-	CharacterID int32
-	JobIDs      set.Set[int32]
+	CharacterID int64
+	JobIDs      set.Set[int64]
 	Status      app.IndustryJobStatus
 }
 
@@ -243,7 +243,7 @@ func (st *Storage) UpdateCharacterIndustryJobStatus(ctx context.Context, arg Upd
 		return nil
 	}
 	err := st.qRW.UpdateCharacterIndustryJobStatus(ctx, queries.UpdateCharacterIndustryJobStatusParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID: arg.CharacterID,
 		JobIds:      convertNumericSet[int64](arg.JobIDs),
 		Status:      jobStatusToDBValue[arg.Status],
 	})
@@ -254,29 +254,29 @@ func (st *Storage) UpdateCharacterIndustryJobStatus(ctx context.Context, arg Upd
 }
 
 type UpdateOrCreateCharacterIndustryJobParams struct {
-	ActivityID           int32
+	ActivityID           int64
 	BlueprintID          int64
 	BlueprintLocationID  int64
-	BlueprintTypeID      int32
-	CharacterID          int32
-	CompletedCharacterID int32     // optional
-	CompletedDate        time.Time // optional
-	Cost                 float64   // optional
-	Duration             int32
+	BlueprintTypeID      int64
+	CharacterID          int64
+	CompletedCharacterID optional.Optional[int64]
+	CompletedDate        optional.Optional[time.Time]
+	Cost                 optional.Optional[float64]
+	Duration             int64
 	EndDate              time.Time
 	FacilityID           int64
-	InstallerID          int32
-	JobID                int32
-	LicensedRuns         int32 // optional
+	InstallerID          int64
+	JobID                int64
+	LicensedRuns         optional.Optional[int64]
 	OutputLocationID     int64
-	PauseDate            time.Time // optional
-	Probability          float32   // optional
-	ProductTypeID        int32     // optional
-	Runs                 int32
+	PauseDate            optional.Optional[time.Time]
+	Probability          optional.Optional[float64]
+	ProductTypeID        optional.Optional[int64]
+	Runs                 int64
 	StartDate            time.Time
 	StationID            int64
 	Status               app.IndustryJobStatus
-	SuccessfulRuns       int32 // optional
+	SuccessfulRuns       optional.Optional[int64]
 }
 
 func (st *Storage) UpdateOrCreateCharacterIndustryJob(ctx context.Context, arg UpdateOrCreateCharacterIndustryJobParams) error {
@@ -287,29 +287,29 @@ func (st *Storage) UpdateOrCreateCharacterIndustryJob(ctx context.Context, arg U
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCharacterIndustryJobs(ctx, queries.UpdateOrCreateCharacterIndustryJobsParams{
-		ActivityID:           int64(arg.ActivityID),
+		ActivityID:           arg.ActivityID,
 		BlueprintID:          arg.BlueprintID,
 		BlueprintLocationID:  arg.BlueprintLocationID,
-		BlueprintTypeID:      int64(arg.BlueprintTypeID),
-		CharacterID:          int64(arg.CharacterID),
-		CompletedCharacterID: NewNullInt64(int64(arg.CompletedCharacterID)),
-		CompletedDate:        NewNullTimeFromTime(arg.CompletedDate),
-		Cost:                 NewNullFloat64(arg.Cost),
-		Duration:             int64(arg.Duration),
+		BlueprintTypeID:      arg.BlueprintTypeID,
+		CharacterID:          arg.CharacterID,
+		CompletedCharacterID: optional.ToNullInt64(arg.CompletedCharacterID),
+		CompletedDate:        optional.ToNullTime(arg.CompletedDate),
+		Cost:                 optional.ToNullFloat64(arg.Cost),
+		Duration:             arg.Duration,
 		EndDate:              arg.EndDate,
 		FacilityID:           arg.FacilityID,
-		InstallerID:          int64(arg.InstallerID),
-		JobID:                int64(arg.JobID),
-		LicensedRuns:         NewNullInt64(int64(arg.LicensedRuns)),
+		InstallerID:          arg.InstallerID,
+		JobID:                arg.JobID,
+		LicensedRuns:         optional.ToNullInt64(arg.LicensedRuns),
 		OutputLocationID:     arg.OutputLocationID,
-		PauseDate:            NewNullTimeFromTime(arg.PauseDate),
-		Probability:          NewNullFloat64(float64(arg.Probability)),
-		ProductTypeID:        NewNullInt64(int64(arg.ProductTypeID)),
-		Runs:                 int64(arg.Runs),
+		PauseDate:            optional.ToNullTime(arg.PauseDate),
+		Probability:          optional.ToNullFloat64(arg.Probability),
+		ProductTypeID:        optional.ToNullInt64(arg.ProductTypeID),
+		Runs:                 arg.Runs,
 		StartDate:            arg.StartDate,
 		StationID:            arg.StationID,
 		Status:               jobStatusToDBValue[arg.Status],
-		SuccessfulRuns:       NewNullInt64(int64(arg.SuccessfulRuns)),
+		SuccessfulRuns:       optional.ToNullInt64(arg.SuccessfulRuns),
 	})
 	if err != nil {
 		return wrapErr(err)

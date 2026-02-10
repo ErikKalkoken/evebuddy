@@ -43,22 +43,22 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID: character1.ID,
-		ActivityID:  int32(app.Manufacturing),
+		ActivityID:  int64(app.Manufacturing),
 		Status:      app.JobActive,
 	})
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID: character1.ID,
-		ActivityID:  int32(app.Manufacturing),
+		ActivityID:  int64(app.Manufacturing),
 		Status:      app.JobActive,
 	})
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID: character1.ID,
-		ActivityID:  int32(app.Manufacturing),
+		ActivityID:  int64(app.Manufacturing),
 		Status:      app.JobReady,
 	})
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID: character1.ID,
-		ActivityID:  int32(app.Manufacturing),
+		ActivityID:  int64(app.Manufacturing),
 		Status:      app.JobDelivered,
 	})
 	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{

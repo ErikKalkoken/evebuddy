@@ -193,31 +193,31 @@ type CharacterContract struct {
 	Acceptor          *EveEntity
 	Assignee          *EveEntity
 	Availability      ContractAvailability
-	Buyout            float64
-	CharacterID       int32
-	Collateral        float64
-	ContractID        int32
+	Buyout            optional.Optional[float64]
+	CharacterID       int64
+	Collateral        optional.Optional[float64]
+	ContractID        int64
 	DateAccepted      optional.Optional[time.Time]
 	DateCompleted     optional.Optional[time.Time]
 	DateExpired       time.Time
 	DateIssued        time.Time
-	DaysToComplete    int32
+	DaysToComplete    optional.Optional[int64]
 	EndLocation       *EveLocationShort
-	EndSolarSystem    *EntityShort[int32]
+	EndSolarSystem    *EntityShort[int64]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
 	Items             []string
-	Price             float64
-	Reward            float64
+	Price             optional.Optional[float64]
+	Reward            optional.Optional[float64]
 	StartLocation     *EveLocationShort
-	StartSolarSystem  *EntityShort[int32]
+	StartSolarSystem  *EntityShort[int64]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
-	Title             string
+	Title             optional.Optional[string]
 	Type              ContractType
 	UpdatedAt         time.Time
-	Volume            float64
+	Volume            optional.Optional[float64]
 }
 
 func (cs CharacterContract) HasIssue() bool {
@@ -242,7 +242,7 @@ func (cs CharacterContract) NameDisplay() string {
 type CharacterContractBid struct {
 	ContractID int64
 	Amount     float32
-	BidID      int32
+	BidID      int64
 	Bidder     *EveEntity
 	DateBid    time.Time
 }
@@ -251,8 +251,8 @@ type CharacterContractItem struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
-	Quantity    int
-	RawQuantity int
+	Quantity    int64
+	RawQuantity optional.Optional[int64]
 	RecordID    int64
 	Type        *EveType
 }
@@ -262,31 +262,31 @@ type CorporationContract struct {
 	Acceptor          *EveEntity
 	Assignee          *EveEntity
 	Availability      ContractAvailability
-	Buyout            float64
-	CorporationID     int32
-	Collateral        float64
-	ContractID        int32
+	Buyout            optional.Optional[float64]
+	CorporationID     int64
+	Collateral        optional.Optional[float64]
+	ContractID        int64
 	DateAccepted      optional.Optional[time.Time]
 	DateCompleted     optional.Optional[time.Time]
 	DateExpired       time.Time
 	DateIssued        time.Time
-	DaysToComplete    int32
-	EndLocation       *EveLocationShort
-	EndSolarSystem    *EntityShort[int32]
+	DaysToComplete    optional.Optional[int64]
+	EndLocation       *EveLocationShort // optional
+	EndSolarSystem    *EntityShort[int64]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
 	Items             []string
-	Price             float64
-	Reward            float64
-	StartLocation     *EveLocationShort
-	StartSolarSystem  *EntityShort[int32]
+	Price             optional.Optional[float64]
+	Reward            optional.Optional[float64]
+	StartLocation     *EveLocationShort // optional
+	StartSolarSystem  *EntityShort[int64]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
-	Title             string
+	Title             optional.Optional[string]
 	Type              ContractType
 	UpdatedAt         time.Time
-	Volume            float64
+	Volume            optional.Optional[float64]
 }
 
 func (cs CorporationContract) HasIssue() bool {
@@ -310,8 +310,8 @@ func (cs CorporationContract) NameDisplay() string {
 
 type CorporationContractBid struct {
 	ContractID int64
-	Amount     float32
-	BidID      int32
+	Amount     float64
+	BidID      int64
 	Bidder     *EveEntity
 	DateBid    time.Time
 }
@@ -320,8 +320,8 @@ type CorporationContractItem struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
-	Quantity    int
-	RawQuantity int
+	Quantity    int64
+	RawQuantity optional.Optional[int64]
 	RecordID    int64
 	Type        *EveType
 }
@@ -335,7 +335,7 @@ func contractHasIssue(status ContractStatus, expired time.Time) bool {
 func contractIsExpired(expired time.Time) bool {
 	return expired.Before(time.Now())
 }
-func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int32], volume float64, items []string) string {
+func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int64], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {
 		var startName, endName string
 		if start1 != nil {
@@ -348,12 +348,15 @@ func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int32], volu
 		} else {
 			endName = "?"
 		}
-		return fmt.Sprintf(
-			"%s >> %s (%.0f m3)",
+		s := fmt.Sprintf(
+			"%s >> %s",
 			startName,
 			endName,
-			volume,
 		)
+		if !volume.IsEmpty() {
+			s += fmt.Sprintf(" (%.0f m3)", volume.ValueOrZero())
+		}
+		return s
 	}
 	if len(items) > 1 {
 		return "[Multiple Items]"

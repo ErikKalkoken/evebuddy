@@ -9,8 +9,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -19,11 +18,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
+func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int64) (optional.Optional[float64], error) {
 	return s.st.GetCharacterAssetValue(ctx, characterID)
 }
 
-func (s *CharacterService) ListAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAssets(ctx context.Context, characterID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssets(ctx, characterID)
 }
 
@@ -137,14 +136,11 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
 			assets, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-					arg := &esi.GetCharactersCharacterIdAssetsOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
-					}
-					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+				func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+					return s.esiClient.AssetsAPI.GetCharactersCharacterIdAssets(ctx, characterID).Page(page).Execute()
 				})
 			if err != nil {
 				return false, err
@@ -152,13 +148,13 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			slog.Debug("Received assets from ESI", "count", len(assets), "characterID", characterID)
 			return assets, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			assets := data.([]esi.GetCharactersCharacterIdAssets200Ok)
+		func(ctx context.Context, characterID int64, data any) error {
+			assets := data.([]esi.CharactersCharacterIdAssetsGetInner)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
 				incomingIDs.Add(ca.ItemId)
 			}
-			typeIDs := set.Of[int32]()
+			typeIDs := set.Of[int64]()
 			locationIDs := set.Of[int64]()
 			for _, ca := range assets {
 				typeIDs.Add(ca.TypeId)
@@ -209,7 +205,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					arg := storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,
 						EveTypeID:       a.TypeId,
-						IsBlueprintCopy: a.IsBlueprintCopy,
+						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
 						IsSingleton:     a.IsSingleton,
 						ItemID:          a.ItemId,
 						LocationFlag:    locationFlag,
@@ -274,13 +270,13 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	)
 }
 
-func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, 0)
+	results := make([][]esi.CharactersCharacterIdAssetsNamesPostInner, 0)
 	if len(ids) > 0 {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
+			names, _, err := s.esiClient.AssetsAPI.PostCharactersCharacterIdAssetsNames(ctx, characterID).RequestBody(chunk).Execute()
 			if err != nil {
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
@@ -300,7 +296,7 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 	return m, nil
 }
 
-func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
+func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
 	v, err := s.st.CalculateCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
 		return 0, err

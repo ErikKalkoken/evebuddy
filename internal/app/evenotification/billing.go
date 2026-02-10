@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -19,7 +19,7 @@ const (
 	billTypeInfrastructureHub = 7
 )
 
-func billTypeName(id int32) string {
+func billTypeName(id int64) string {
 	switch id {
 	case billTypeLease:
 		return "lease"
@@ -37,7 +37,7 @@ type billOutOfMoneyMsg struct {
 
 func (n billOutOfMoneyMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.CorpAllBillMsgV2
+	var data goesi.CorpAllBillMsgV2
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -62,7 +62,7 @@ type billPaidCorpAllMsg struct {
 func (n billPaidCorpAllMsg) render(_ context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
 	title = "Bill payed"
-	var data notification.BillPaidCorpAllMsg
+	var data goesi.BillPaidCorpAllMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -79,25 +79,25 @@ type corpAllBillMsg struct {
 	baseRenderer
 }
 
-func (n corpAllBillMsg) entityIDs(text string) (setInt32, error) {
+func (n corpAllBillMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n corpAllBillMsg) unmarshal(text string) (notification.CorpAllBillMsgV2, setInt32, error) {
-	var data notification.CorpAllBillMsgV2
+func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, setInt64, error) {
+	var data goesi.CorpAllBillMsgV2
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CreditorID, data.DebtorID)
-	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
-		ids.Add(int32(data.ExternalID))
+	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int64(data.ExternalID)) {
+		ids.Add(int64(data.ExternalID))
 	}
-	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
-		ids.Add(int32(data.ExternalID2))
+	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int64(data.ExternalID2)) {
+		ids.Add(int64(data.ExternalID2))
 	}
 	return data, ids, nil
 }
@@ -113,13 +113,13 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.
 		return title, body, err
 	}
 	var external1 string
-	if x, ok := entities[int32(data.ExternalID)]; ok && x.Name != "" {
+	if x, ok := entities[int64(data.ExternalID)]; ok && x.Name != "" {
 		external1 = x.Name
 	} else {
 		external1 = "?"
 	}
 	var external2 string
-	if x, ok := entities[int32(data.ExternalID2)]; ok && x.Name != "" {
+	if x, ok := entities[int64(data.ExternalID2)]; ok && x.Name != "" {
 		external2 = x.Name
 	} else {
 		external2 = "?"
@@ -155,7 +155,7 @@ type infrastructureHubBillAboutToExpire struct {
 func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
 	title = "IHub Bill About to Expire"
-	var data notification.InfrastructureHubBillAboutToExpire
+	var data goesi.InfrastructureHubBillAboutToExpire
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -178,7 +178,7 @@ type iHubDestroyedByBillFailure struct {
 
 func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.IHubDestroyedByBillFailure
+	var data goesi.IHubDestroyedByBillFailure
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -186,7 +186,7 @@ func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, tim
 	if err != nil {
 		return title, body, err
 	}
-	structureType, err := n.eus.GetOrCreateTypeESI(ctx, int32(data.StructureTypeID))
+	structureType, err := n.eus.GetOrCreateTypeESI(ctx, int64(data.StructureTypeID))
 	if err != nil {
 		return title, body, err
 	}

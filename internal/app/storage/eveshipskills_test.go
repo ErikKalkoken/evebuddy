@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveShipSkills(t *testing.T) {
@@ -39,8 +40,8 @@ func TestEveShipSkills(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetEveShipSkill(ctx, ship.ID, 2)
 			if assert.NoError(t, err) {
-				assert.Equal(t, skill.ID, x.SkillTypeID)
-				assert.Equal(t, uint(3), x.SkillLevel)
+				xassert.Equal(t, skill.ID, x.SkillTypeID)
+				xassert.Equal(t, uint(3), x.SkillLevel)
 			}
 		}
 	})
@@ -65,12 +66,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship1.ID,
 			DogmaAttributeID: primarySkillID.ID,
-			Value:            float32(skill11.ID),
+			Value:            float64(skill11.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship1.ID,
 			DogmaAttributeID: primarySkillLevel.ID,
-			Value:            float32(1),
+			Value:            float64(1),
 		})
 		ship2 := factory.CreateEveType(storage.CreateEveTypeParams{
 			GroupID:     group.ID,
@@ -80,12 +81,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: primarySkillID.ID,
-			Value:            float32(skill21.ID),
+			Value:            float64(skill21.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: primarySkillLevel.ID,
-			Value:            float32(1),
+			Value:            float64(1),
 		})
 		skill22 := factory.CreateEveType()
 		secondarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
@@ -97,12 +98,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: secondarySkillID.ID,
-			Value:            float32(skill22.ID),
+			Value:            float64(skill22.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: secondarySkillLevel.ID,
-			Value:            float32(2),
+			Value:            float64(2),
 		})
 		skill23 := factory.CreateEveType()
 		tertiarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
@@ -114,12 +115,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: tertiarySkillID.ID,
-			Value:            float32(skill23.ID),
+			Value:            float64(skill23.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: tertiarySkillLevel.ID,
-			Value:            float32(3),
+			Value:            float64(3),
 		})
 		skill24 := factory.CreateEveType()
 		quaternarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
@@ -131,12 +132,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: quaternarySkillID.ID,
-			Value:            float32(skill24.ID),
+			Value:            float64(skill24.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: quaternarySkillLevel.ID,
-			Value:            float32(4),
+			Value:            float64(4),
 		})
 		skill25 := factory.CreateEveType()
 		quinarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
@@ -148,12 +149,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: quinarySkillID.ID,
-			Value:            float32(skill25.ID),
+			Value:            float64(skill25.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: quinarySkillLevel.ID,
-			Value:            float32(5),
+			Value:            float64(5),
 		})
 		skill26 := factory.CreateEveType()
 		senarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
@@ -165,12 +166,12 @@ func TestEveShipSkills(t *testing.T) {
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: senarySkillID.ID,
-			Value:            float32(skill26.ID),
+			Value:            float64(skill26.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship2.ID,
 			DogmaAttributeID: senarySkillLevel.ID,
-			Value:            float32(3),
+			Value:            float64(3),
 		})
 		// when
 		err := st.UpdateEveShipSkills(ctx)
@@ -180,38 +181,38 @@ func TestEveShipSkills(t *testing.T) {
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 1) {
 					x := xx[0]
-					assert.Equal(t, skill11.ID, x.SkillTypeID)
-					assert.Equal(t, uint(1), x.Rank)
-					assert.Equal(t, uint(1), x.SkillLevel)
+					xassert.Equal(t, skill11.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(1), x.Rank)
+					xassert.Equal(t, uint(1), x.SkillLevel)
 				}
 			}
 			xx, err = st.ListEveShipSkills(ctx, ship2.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 6) {
 					x := xx[0]
-					assert.Equal(t, skill21.ID, x.SkillTypeID)
-					assert.Equal(t, uint(1), x.Rank)
-					assert.Equal(t, uint(1), x.SkillLevel)
+					xassert.Equal(t, skill21.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(1), x.Rank)
+					xassert.Equal(t, uint(1), x.SkillLevel)
 					x = xx[1]
-					assert.Equal(t, skill22.ID, x.SkillTypeID)
-					assert.Equal(t, uint(2), x.Rank)
-					assert.Equal(t, uint(2), x.SkillLevel)
+					xassert.Equal(t, skill22.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(2), x.Rank)
+					xassert.Equal(t, uint(2), x.SkillLevel)
 					x = xx[2]
-					assert.Equal(t, skill23.ID, x.SkillTypeID)
-					assert.Equal(t, uint(3), x.Rank)
-					assert.Equal(t, uint(3), x.SkillLevel)
+					xassert.Equal(t, skill23.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(3), x.Rank)
+					xassert.Equal(t, uint(3), x.SkillLevel)
 					x = xx[3]
-					assert.Equal(t, skill24.ID, x.SkillTypeID)
-					assert.Equal(t, uint(4), x.Rank)
-					assert.Equal(t, uint(4), x.SkillLevel)
+					xassert.Equal(t, skill24.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(4), x.Rank)
+					xassert.Equal(t, uint(4), x.SkillLevel)
 					x = xx[4]
-					assert.Equal(t, skill25.ID, x.SkillTypeID)
-					assert.Equal(t, uint(5), x.Rank)
-					assert.Equal(t, uint(5), x.SkillLevel)
+					xassert.Equal(t, skill25.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(5), x.Rank)
+					xassert.Equal(t, uint(5), x.SkillLevel)
 					x = xx[5]
-					assert.Equal(t, skill26.ID, x.SkillTypeID)
-					assert.Equal(t, uint(6), x.Rank)
-					assert.Equal(t, uint(3), x.SkillLevel)
+					xassert.Equal(t, skill26.ID, x.SkillTypeID)
+					xassert.Equal(t, uint(6), x.Rank)
+					xassert.Equal(t, uint(3), x.SkillLevel)
 				}
 			}
 		}

@@ -6,10 +6,10 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveLocationVariantFromID(t *testing.T) {
@@ -25,7 +25,7 @@ func TestEveLocationVariantFromID(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("id: %d", tc.in), func(t *testing.T) {
-			assert.Equal(t, tc.out, app.LocationVariantFromID(tc.in))
+		xassert.Equal(t, tc.out, app.LocationVariantFromID(tc.in))
 		})
 	}
 }
@@ -45,7 +45,7 @@ func TestEveLocation_DisplayName2(t *testing.T) {
 				ID:   1_000_000_000_001,
 				Name: tc.in,
 			}
-			assert.Equal(t, tc.out, x.DisplayName2())
+		xassert.Equal(t, tc.out, x.DisplayName2())
 		})
 	}
 }
@@ -73,7 +73,7 @@ func TestEveLocation_DisplayName(t *testing.T) {
 				Name:        tc.name,
 				SolarSystem: tc.ess,
 			}
-			assert.Equal(t, tc.want, x.DisplayName())
+		xassert.Equal(t, tc.want, x.DisplayName())
 		})
 	}
 }
@@ -94,7 +94,7 @@ func TestEveLocation_DisplayRichText(t *testing.T) {
 				Text: "  location_name",
 			},
 		}
-		assert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 	})
 	t.Run("can handle missing solar system", func(t *testing.T) {
 		l := &app.EveLocation{Name: "location_name"}
@@ -104,7 +104,7 @@ func TestEveLocation_DisplayRichText(t *testing.T) {
 				Text: "location_name",
 			},
 		}
-		assert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 	})
 }
 
@@ -118,8 +118,8 @@ func TestEveLocation_RegionName(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, "region", o1.RegionName())
-	assert.Equal(t, "", app.EveLocation{}.RegionName())
+xassert.Equal(t, "region", o1.RegionName())
+xassert.Equal(t, "", app.EveLocation{}.RegionName())
 }
 
 func TestEveLocation_SolarSystemName(t *testing.T) {
@@ -128,8 +128,8 @@ func TestEveLocation_SolarSystemName(t *testing.T) {
 			Name: "system",
 		},
 	}
-	assert.Equal(t, "system", o1.SolarSystemName())
-	assert.Equal(t, "", app.EveLocation{}.SolarSystemName())
+xassert.Equal(t, "system", o1.SolarSystemName())
+xassert.Equal(t, "", app.EveLocation{}.SolarSystemName())
 }
 
 func TestEveLocation_EveEntity(t *testing.T) {
@@ -175,7 +175,7 @@ func TestEveLocation_EveEntity(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.in.EveEntity())
+		xassert.Equal(t, tc.want, tc.in.EveEntity())
 		})
 	}
 }
@@ -236,7 +236,7 @@ func TestEveLocation_ToShort(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.in.ToShort())
+		xassert.Equal(t, tc.want, tc.in.ToShort())
 		})
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -34,9 +35,9 @@ func TestCorporationHangarName(t *testing.T) {
 				DivisionID:    3,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, c.ID, x.CorporationID)
-				assert.EqualValues(t, 3, x.DivisionID)
-				assert.EqualValues(t, "Alpha", x.Name)
+				xassert.Equal(t, c.ID, x.CorporationID)
+				xassert.Equal(t, 3, x.DivisionID)
+				xassert.Equal(t, "Alpha", x.Name)
 			}
 		}
 	})
@@ -57,7 +58,7 @@ func TestCorporationHangarName(t *testing.T) {
 				DivisionID:    x1.DivisionID,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, "Alpha", x.Name)
+				xassert.Equal(t, "Alpha", x.Name)
 			}
 		}
 	})
@@ -78,14 +79,14 @@ func TestCorporationHangarName(t *testing.T) {
 		oo, err := st.ListCorporationHangarNames(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (int32, string) {
+			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (int64, string) {
 				return x.DivisionID, x.Name
 			}))
-			want := map[int32]string{
+			want := map[int64]string{
 				e1.DivisionID: e1.Name,
 				e2.DivisionID: e2.Name,
 			}
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

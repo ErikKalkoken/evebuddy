@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveAlliance(t *testing.T) {
@@ -26,17 +28,17 @@ func TestEveCharacter_Alliance(t *testing.T) {
 			Name: "alliance",
 		},
 	}
-	assert.Equal(t, "alliance", x1.AllianceName())
+xassert.Equal(t, "alliance", x1.AllianceName())
 	assert.True(t, x1.HasAlliance())
 
 	x2 := &app.EveCharacter{}
-	assert.Equal(t, "", x2.AllianceName())
+xassert.Equal(t, "", x2.AllianceName())
 	assert.False(t, x2.HasAlliance())
 }
 
 func TestEveCharacter_Description(t *testing.T) {
 	x := &app.EveCharacter{Description: "alpha<br>bravo"}
-	assert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
+xassert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
 }
 
 func TestEveCharacter_Faction(t *testing.T) {
@@ -45,20 +47,20 @@ func TestEveCharacter_Faction(t *testing.T) {
 			Name: "faction",
 		},
 	}
-	assert.Equal(t, "faction", x1.FactionName())
+xassert.Equal(t, "faction", x1.FactionName())
 	assert.True(t, x1.HasFaction())
 
 	x2 := &app.EveCharacter{}
-	assert.Equal(t, "", x2.FactionName())
+xassert.Equal(t, "", x2.FactionName())
 	assert.False(t, x2.HasFaction())
 }
 
 func TestEveCharacter_Race(t *testing.T) {
 	x1 := &app.EveCharacter{Race: &app.EveRace{Description: "description"}}
-	assert.Equal(t, "description", x1.RaceDescription())
+xassert.Equal(t, "description", x1.RaceDescription())
 
 	x2 := &app.EveCharacter{}
-	assert.Equal(t, "", x2.RaceDescription())
+xassert.Equal(t, "", x2.RaceDescription())
 }
 
 func TestEveCharacter_EveEntity(t *testing.T) {
@@ -145,11 +147,11 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 			ID:          6,
 			MemberCount: 7,
 			Name:        "def",
-			Shares:      optional.New(8),
+			Shares:      optional.New[int64](8),
 			TaxRate:     9.1,
 			Ticker:      "ghi",
-			URL:         "jkl",
-			WarEligible: true,
+			URL:         optional.New("jkl"),
+			WarEligible: optional.New(true),
 			Timestamp:   time.Now(),
 		}
 		x2 := x1
@@ -167,11 +169,11 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 			ID:          6,
 			MemberCount: 7,
 			Name:        "def",
-			Shares:      optional.New(8),
+			Shares:      optional.New[int64](8),
 			TaxRate:     9.1,
 			Ticker:      "ghi",
-			URL:         "jkl",
-			WarEligible: true,
+			URL:         optional.New("jkl"),
+			WarEligible: optional.New(true),
 			Timestamp:   time.Now(),
 		}
 		x2 := &app.EveCorporation{

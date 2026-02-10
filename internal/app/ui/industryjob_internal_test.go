@@ -44,7 +44,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID:     character1.ID,
 		BlueprintTypeID: bp1.ID,
-		ActivityID:      int32(app.Manufacturing),
+		ActivityID:      int64(app.Manufacturing),
 		StationID:       location.ID,
 		Status:          app.JobReady,
 		Runs:            3,
@@ -60,7 +60,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 		CharacterID:     character2.ID,
 		BlueprintTypeID: bp2.ID,
-		ActivityID:      int32(app.Copying),
+		ActivityID:      int64(app.Copying),
 		StationID:       location.ID,
 		Status:          app.JobReady,
 		Runs:            100,
@@ -125,19 +125,19 @@ func TestIndustryJob_Filter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int32(app.Manufacturing),
+		ActivityID: int64(app.Manufacturing),
 		Status:     app.JobReady,
 	})
 	j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int32(app.Copying),
+		ActivityID: int64(app.Copying),
 		Status:     app.JobReady,
 	})
 	j3 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int32(app.Reactions1),
+		ActivityID: int64(app.Reactions1),
 		Status:     app.JobReady,
 	})
 	j4 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int32(app.Reactions2),
+		ActivityID: int64(app.Reactions2),
 		Status:     app.JobReady,
 	})
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
@@ -146,28 +146,28 @@ func TestIndustryJob_Filter(t *testing.T) {
 	t.Run("no filter", func(t *testing.T) {
 		ui.industryJobs.selectActivity.SetSelected("")
 
-		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int64 {
 			return r.jobID
 		})
-		want := []int32{j1.JobID, j2.JobID, j3.JobID, j4.JobID}
+		want := []int64{j1.JobID, j2.JobID, j3.JobID, j4.JobID}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can filter manufacturing", func(t *testing.T) {
 		ui.industryJobs.selectActivity.SetSelected("Manufacturing")
 
-		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int64 {
 			return r.jobID
 		})
-		want := []int32{j1.JobID}
+		want := []int64{j1.JobID}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can filter reactions", func(t *testing.T) {
 		ui.industryJobs.selectActivity.SetSelected("Reactions")
 
-		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int64 {
 			return r.jobID
 		})
-		want := []int32{j3.JobID, j4.JobID}
+		want := []int64{j3.JobID, j4.JobID}
 		assert.ElementsMatch(t, want, got)
 	})
 }
@@ -179,13 +179,13 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 	corporation := factory.CreateCorporation(ec.Corporation.ID)
 	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID:  int32(app.Manufacturing),
+		ActivityID:  int64(app.Manufacturing),
 		CharacterID: character.ID,
 		JobID:       1,
 		Status:      app.JobReady,
 	})
 	j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
-		ActivityID:    int32(app.Copying),
+		ActivityID:    int64(app.Copying),
 		CorporationID: ec.Corporation.ID,
 		JobID:         2,
 		Status:        app.JobDelivered,
@@ -193,7 +193,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 	})
 	c2 := factory.CreateEveEntityCharacter()
 	j3 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
-		ActivityID:    int32(app.Copying),
+		ActivityID:    int64(app.Copying),
 		CorporationID: ec.Corporation.ID,
 		JobID:         3,
 		Status:        app.JobDelivered,
@@ -208,10 +208,10 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of(j1.JobID, j2.JobID)
-		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
+		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID
 		}))
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 
 	t.Run("can return all jobs for current corporation", func(t *testing.T) {
@@ -221,9 +221,9 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of(j2.JobID, j3.JobID)
-		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
+		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID
 		}))
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }

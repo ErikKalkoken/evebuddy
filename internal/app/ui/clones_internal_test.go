@@ -114,7 +114,7 @@ func TestClones_CanRenderFull(t *testing.T) {
 	factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 		CharacterID: character2.ID,
 		LocationID:  location.ID,
-		Implants:    []int32{i1.ID, i2.ID},
+		Implants:    []int64{i1.ID, i2.ID},
 	})
 
 	cases := []struct {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -21,7 +22,7 @@ func TestEveRegion(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		arg := storage.CreateEveRegionParams{
 			ID:          42,
-			Description: "description",
+			Description: optional.New("description"),
 			Name:        "name",
 		}
 		// when
@@ -30,7 +31,7 @@ func TestEveRegion(t *testing.T) {
 		if assert.NoError(t, err) {
 			x2, err := st.GetEveRegion(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -43,7 +44,7 @@ func TestEveRegion(t *testing.T) {
 		got, err := st.ListEveRegionIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(r1.ID, r2.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
@@ -53,8 +54,8 @@ func TestEveRegion(t *testing.T) {
 		// when
 		got, err := st.MissingEveRegions(ctx, set.Of(r1.ID, 99))
 		if assert.NoError(t, err) {
-			want := set.Of[int32](99)
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64](99)
+			xassert.Equal2(t, want, got)
 		}
 	})
 }

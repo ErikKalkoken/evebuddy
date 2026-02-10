@@ -52,7 +52,7 @@ func init() {
 	}
 }
 
-func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int32, structureIDs set.Set[int64]) error {
+func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64, structureIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationStructuresByID for corporation %d and structures IDs: %v: %w", corporationID, structureIDs, err)
 	}
@@ -63,7 +63,7 @@ func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationI
 		return nil
 	}
 	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
-		CorporationID: int64(corporationID),
+		CorporationID:corporationID,
 		StructureIds:  slices.Collect(structureIDs.All()),
 	})
 	if err != nil {
@@ -73,7 +73,7 @@ func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationI
 	return nil
 }
 
-func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID int32, structureID int64) (*app.CorporationStructure, error) {
+func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID int64, structureID int64) (*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationStructure %d %d: %w", corporationID, structureID, err)
 	}
@@ -81,7 +81,7 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationStructure(ctx, queries.GetCorporationStructureParams{
-		CorporationID: int64(corporationID),
+		CorporationID:corporationID,
 		StructureID:   structureID,
 	})
 	if err != nil {
@@ -103,14 +103,14 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	}), nil
 }
 
-func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID int32) ([]*app.CorporationStructure, error) {
+func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID int64) ([]*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationStructures for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationStructures(ctx, int64(corporationID))
+	rows, err := st.qRO.ListCorporationStructures(ctx,corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -134,14 +134,14 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 	return oo, nil
 }
 
-func (st *Storage) ListCorporationStructureIDs(ctx context.Context, corporationID int32) (set.Set[int64], error) {
+func (st *Storage) ListCorporationStructureIDs(ctx context.Context, corporationID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationStructureIDs for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCorporationStructureIDs(ctx, int64(corporationID))
+	ids, err := st.qRO.ListCorporationStructureIDs(ctx,corporationID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
@@ -161,10 +161,10 @@ type corporationStructureFromDBModelParams struct {
 
 func corporationStructureFromDBModel(arg corporationStructureFromDBModelParams) *app.CorporationStructure {
 	o2 := &app.CorporationStructure{
-		CorporationID:      int32(arg.corporationStructure.CorporationID),
+		CorporationID:     arg.corporationStructure.CorporationID,
 		FuelExpires:        optional.FromNullTime(arg.corporationStructure.FuelExpires),
 		ID:                 arg.corporationStructure.ID,
-		Name:               arg.corporationStructure.Name,
+		Name:               optional.FromZeroValue(arg.corporationStructure.Name),
 		NextReinforceApply: optional.FromNullTime(arg.corporationStructure.NextReinforceApply),
 		NextReinforceHour:  optional.FromNullInt64(arg.corporationStructure.NextReinforceHour),
 		ProfileID:          arg.corporationStructure.ProfileID,
@@ -187,21 +187,21 @@ type StructureServiceParams struct {
 }
 
 type UpdateOrCreateCorporationStructureParams struct {
-	CorporationID      int32
+	CorporationID      int64
 	FuelExpires        optional.Optional[time.Time]
-	Name               string
+	Name               optional.Optional[string]
 	NextReinforceApply optional.Optional[time.Time]
 	NextReinforceHour  optional.Optional[int64]
 	ProfileID          int64
 	ReinforceHour      optional.Optional[int64]
+	Services           []StructureServiceParams
 	State              app.StructureState
 	StateTimerEnd      optional.Optional[time.Time]
 	StateTimerStart    optional.Optional[time.Time]
 	StructureID        int64
-	SystemID           int32
-	TypeID             int32
+	SystemID           int64
+	TypeID             int64
 	UnanchorsAt        optional.Optional[time.Time]
-	Services           []StructureServiceParams
 }
 
 func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
@@ -220,9 +220,9 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 		return wrapErr(app.ErrInvalid)
 	}
 	id, err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
-		CorporationID:      int64(arg.CorporationID),
+		CorporationID:     arg.CorporationID,
 		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
-		Name:               arg.Name,
+		Name:               arg.Name.ValueOrZero(),
 		NextReinforceApply: optional.ToNullTime(arg.NextReinforceApply),
 		NextReinforceHour:  optional.ToNullInt64(arg.NextReinforceHour),
 		ProfileID:          arg.ProfileID,
@@ -231,8 +231,8 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 		StateTimerEnd:      optional.ToNullTime(arg.StateTimerEnd),
 		StateTimerStart:    optional.ToNullTime(arg.StateTimerStart),
 		StructureID:        arg.StructureID,
-		SystemID:           int64(arg.SystemID),
-		TypeID:             int64(arg.TypeID),
+		SystemID:          arg.SystemID,
+		TypeID:            arg.TypeID,
 		UnanchorsAt:        optional.ToNullTime(arg.UnanchorsAt),
 	})
 	if err != nil {

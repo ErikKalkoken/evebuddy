@@ -63,31 +63,31 @@ func init() {
 }
 
 type CreateCorporationContractParams struct {
-	AcceptorID          int32
-	AssigneeID          int32
+	AcceptorID          int64
+	AssigneeID          int64
 	Availability        app.ContractAvailability
-	Buyout              float64
-	CorporationID       int32
-	Collateral          float64
-	ContractID          int32
-	DateAccepted        time.Time
-	DateCompleted       time.Time
+	Buyout              optional.Optional[float64]
+	CorporationID       int64
+	Collateral          optional.Optional[float64]
+	ContractID          int64
+	DateAccepted        optional.Optional[time.Time]
+	DateCompleted       optional.Optional[time.Time]
 	DateExpired         time.Time
 	DateIssued          time.Time
-	DaysToComplete      int32
-	EndLocationID       int64
+	DaysToComplete      optional.Optional[int64]
+	EndLocationID       optional.Optional[int64]
 	ForCorporation      bool
-	IssuerCorporationID int32
-	IssuerID            int32
-	Price               float64
-	Reward              float64
-	StartLocationID     int64
+	IssuerCorporationID int64
+	IssuerID            int64
+	Price               optional.Optional[float64]
+	Reward              optional.Optional[float64]
+	StartLocationID     optional.Optional[int64]
 	Status              app.ContractStatus
 	StatusNotified      app.ContractStatus
-	Title               string
+	Title               optional.Optional[string]
 	Type                app.ContractType
 	UpdatedAt           time.Time
-	Volume              float64
+	Volume              optional.Optional[float64]
 }
 
 func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorporationContractParams) (int64, error) {
@@ -101,31 +101,31 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 		arg.UpdatedAt = time.Now().UTC()
 	}
 	id, err := st.qRW.CreateCorporationContract(ctx, queries.CreateCorporationContractParams{
-		AcceptorID:          NewNullInt64(int64(arg.AcceptorID)),
-		AssigneeID:          NewNullInt64(int64(arg.AssigneeID)),
+		AcceptorID:          NewNullInt64(arg.AcceptorID),
+		AssigneeID:          NewNullInt64(arg.AssigneeID),
 		Availability:        corporationContractAvailabilityToDBValue[arg.Availability],
-		Buyout:              arg.Buyout,
-		CorporationID:       int64(arg.CorporationID),
-		Collateral:          arg.Collateral,
-		ContractID:          int64(arg.ContractID),
-		DateAccepted:        NewNullTimeFromTime(arg.DateAccepted),
-		DateCompleted:       NewNullTimeFromTime(arg.DateCompleted),
+		Buyout:              arg.Buyout.ValueOrZero(),
+		CorporationID:       arg.CorporationID,
+		Collateral:          arg.Collateral.ValueOrZero(),
+		ContractID:          arg.ContractID,
+		DateAccepted:        optional.ToNullTime(arg.DateAccepted),
+		DateCompleted:       optional.ToNullTime(arg.DateCompleted),
 		DateExpired:         arg.DateExpired,
 		DateIssued:          arg.DateIssued,
-		DaysToComplete:      int64(arg.DaysToComplete),
-		EndLocationID:       NewNullInt64(arg.EndLocationID),
+		DaysToComplete:      arg.DaysToComplete.ValueOrZero(),
+		EndLocationID:       optional.ToNullInt64(arg.EndLocationID),
 		ForCorporation:      arg.ForCorporation,
-		IssuerCorporationID: int64(arg.IssuerCorporationID),
-		IssuerID:            int64(arg.IssuerID),
-		Price:               arg.Price,
-		Reward:              arg.Reward,
-		StartLocationID:     NewNullInt64(arg.StartLocationID),
+		IssuerCorporationID: arg.IssuerCorporationID,
+		IssuerID:            arg.IssuerID,
+		Price:               arg.Price.ValueOrZero(),
+		Reward:              arg.Reward.ValueOrZero(),
+		StartLocationID:     optional.ToNullInt64(arg.StartLocationID),
 		Status:              corporationContractStatusToDBValue[arg.Status],
 		StatusNotified:      corporationContractStatusToDBValue[arg.StatusNotified],
-		Title:               arg.Title,
+		Title:               arg.Title.ValueOrZero(),
 		Type:                corporationContractTypeToDBValue[arg.Type],
 		UpdatedAt:           arg.UpdatedAt,
-		Volume:              arg.Volume,
+		Volume:              arg.Volume.ValueOrZero(),
 	})
 	if err != nil {
 		return 0, wrapErr(err)
@@ -133,7 +133,7 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 	return id, nil
 }
 
-func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID int32, contractIDs set.Set[int32]) error {
+func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID int64, contractIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationContracts for character %d and contract IDs: %s: %w", corporationID, contractIDs, err)
 	}
@@ -144,7 +144,7 @@ func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID
 		return nil
 	}
 	err := st.qRW.DeleteCorporationContracts(ctx, queries.DeleteCorporationContractsParams{
-		CorporationID: int64(corporationID),
+		CorporationID: corporationID,
 		ContractIds:   convertNumericSet[int64](contractIDs),
 	})
 	if err != nil {
@@ -154,13 +154,13 @@ func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID
 	return nil
 }
 
-func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, contractID int32) (*app.CorporationContract, error) {
+func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, contractID int64) (*app.CorporationContract, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationContract for corporation %d: %w", corporationID, err)
 	}
 	r, err := st.qRO.GetCorporationContract(ctx, queries.GetCorporationContractParams{
-		CorporationID: int64(corporationID),
-		ContractID:    int64(contractID),
+		CorporationID: corporationID,
+		ContractID:    contractID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -187,16 +187,16 @@ func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, co
 	return o, nil
 }
 
-func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID int32) (set.Set[int32], error) {
-	ids, err := st.qRO.ListCorporationContractIDs(ctx, int64(corporationID))
+func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCorporationContractIDs(ctx, corporationID)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list contract ids for corporation %d: %w", corporationID, err)
+		return set.Set[int64]{}, fmt.Errorf("list contract ids for corporation %d: %w", corporationID, err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(convertNumericSlice[int64](ids)...), nil
 }
 
-func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID int32) ([]*app.CorporationContract, error) {
-	rows, err := st.qRO.ListCorporationContracts(ctx, int64(corporationID))
+func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID int64) ([]*app.CorporationContract, error) {
+	rows, err := st.qRO.ListCorporationContracts(ctx, corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("ListCorporationContracts: %w", err)
 	}
@@ -226,11 +226,11 @@ func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID i
 }
 
 type UpdateCorporationContractParams struct {
-	AcceptorID    int32
-	DateAccepted  time.Time
-	DateCompleted time.Time
-	CorporationID int32
-	ContractID    int32
+	AcceptorID    int64
+	DateAccepted  optional.Optional[time.Time]
+	DateCompleted optional.Optional[time.Time]
+	CorporationID int64
+	ContractID    int64
 	Status        app.ContractStatus
 }
 
@@ -242,10 +242,10 @@ func (st *Storage) UpdateCorporationContract(ctx context.Context, arg UpdateCorp
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateCorporationContract(ctx, queries.UpdateCorporationContractParams{
-		CorporationID: int64(arg.CorporationID),
-		ContractID:    int64(arg.ContractID),
-		DateAccepted:  NewNullTimeFromTime(arg.DateAccepted),
-		DateCompleted: NewNullTimeFromTime(arg.DateCompleted),
+		CorporationID: arg.CorporationID,
+		ContractID:    arg.ContractID,
+		DateAccepted:  optional.ToNullTime(arg.DateAccepted),
+		DateCompleted: optional.ToNullTime(arg.DateCompleted),
 		Status:        corporationContractStatusToDBValue[arg.Status],
 		UpdatedAt:     time.Now().UTC(),
 		AcceptorID:    NewNullInt64(arg.AcceptorID),
@@ -307,28 +307,28 @@ func corporationContractFromDBModel(arg corporationContractFromDBModelParams) *a
 		Acceptor:          eveEntityFromNullableDBModel(arg.acceptor),
 		Assignee:          eveEntityFromNullableDBModel(arg.assignee),
 		Availability:      corporationContractAvailabilityFromDBValue[arg.contract.Availability],
-		Buyout:            arg.contract.Buyout,
-		CorporationID:     int32(arg.contract.CorporationID),
-		Collateral:        arg.contract.Collateral,
-		ContractID:        int32(arg.contract.ContractID),
+		Buyout:            optional.FromZeroValue(arg.contract.Buyout),
+		CorporationID:     arg.contract.CorporationID,
+		Collateral:        optional.FromZeroValue(arg.contract.Collateral),
+		ContractID:        arg.contract.ContractID,
 		DateAccepted:      optional.FromNullTime(arg.contract.DateAccepted),
 		DateCompleted:     optional.FromNullTime(arg.contract.DateCompleted),
 		DateExpired:       arg.contract.DateExpired,
 		DateIssued:        arg.contract.DateIssued,
-		DaysToComplete:    int32(arg.contract.DaysToComplete),
+		DaysToComplete:    optional.FromZeroValue(arg.contract.DaysToComplete),
 		ForCorporation:    arg.contract.ForCorporation,
 		ID:                arg.contract.ID,
 		Issuer:            eveEntityFromDBModel(arg.issuer),
 		IssuerCorporation: eveEntityFromDBModel(arg.issuerCorporation),
 		Items:             strings.Split(i2, ","),
-		Price:             arg.contract.Price,
-		Reward:            arg.contract.Reward,
+		Price:             optional.FromZeroValue(arg.contract.Price),
+		Reward:            optional.FromZeroValue(arg.contract.Reward),
 		Status:            corporationContractStatusFromDBValue[arg.contract.Status],
 		StatusNotified:    corporationContractStatusFromDBValue[arg.contract.StatusNotified],
-		Title:             arg.contract.Title,
+		Title:             optional.FromZeroValue(arg.contract.Title),
 		Type:              corporationContractTypeFromDBValue[arg.contract.Type],
 		UpdatedAt:         arg.contract.UpdatedAt,
-		Volume:            arg.contract.Volume,
+		Volume:            optional.FromZeroValue(arg.contract.Volume),
 	}
 	if arg.contract.EndLocationID.Valid {
 		o2.EndLocation = &app.EveLocationShort{
@@ -345,14 +345,14 @@ func corporationContractFromDBModel(arg corporationContractFromDBModelParams) *a
 		}
 	}
 	if arg.endSolarSystemID.Valid && arg.endSolarSystemName.Valid {
-		o2.EndSolarSystem = &app.EntityShort[int32]{
-			ID:   int32(arg.endSolarSystemID.Int64),
+		o2.EndSolarSystem = &app.EntityShort[int64]{
+			ID:   arg.endSolarSystemID.Int64,
 			Name: arg.endSolarSystemName.String,
 		}
 	}
 	if arg.startSolarSystemID.Valid && arg.startSolarSystemName.Valid {
-		o2.StartSolarSystem = &app.EntityShort[int32]{
-			ID:   int32(arg.startSolarSystemID.Int64),
+		o2.StartSolarSystem = &app.EntityShort[int64]{
+			ID:   arg.startSolarSystemID.Int64,
 			Name: arg.startSolarSystemName.String,
 		}
 	}
@@ -360,9 +360,9 @@ func corporationContractFromDBModel(arg corporationContractFromDBModelParams) *a
 }
 
 type CreateCorporationContractBidParams struct {
-	Amount     float32
-	BidderID   int32
-	BidID      int32
+	Amount     float64
+	BidderID   int64
+	BidID      int64
 	ContractID int64
 	DateBid    time.Time
 }
@@ -376,8 +376,8 @@ func (st *Storage) CreateCorporationContractBid(ctx context.Context, arg CreateC
 	}
 	if err := st.qRW.CreateCorporationContractBid(ctx, queries.CreateCorporationContractBidParams{
 		Amount:     float64(arg.Amount),
-		BidderID:   int64(arg.BidderID),
-		BidID:      int64(arg.BidID),
+		BidderID:   arg.BidderID,
+		BidID:      arg.BidID,
 		ContractID: arg.ContractID,
 		DateBid:    arg.DateBid,
 	}); err != nil {
@@ -386,7 +386,7 @@ func (st *Storage) CreateCorporationContractBid(ctx context.Context, arg CreateC
 	return nil
 }
 
-func (st *Storage) GetCorporationContractBid(ctx context.Context, contractID int64, bidID int32) (*app.CorporationContractBid, error) {
+func (st *Storage) GetCorporationContractBid(ctx context.Context, contractID int64, bidID int64) (*app.CorporationContractBid, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationContractBid %d %d: %w", contractID, bidID, err)
 	}
@@ -395,7 +395,7 @@ func (st *Storage) GetCorporationContractBid(ctx context.Context, contractID int
 	}
 	r, err := st.qRO.GetCorporationContractBid(ctx, queries.GetCorporationContractBidParams{
 		ContractID: contractID,
-		BidID:      int64(bidID),
+		BidID:      bidID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -416,19 +416,19 @@ func (st *Storage) ListCorporationContractBids(ctx context.Context, contractID i
 	return oo, nil
 }
 
-func (st *Storage) ListCorporationContractBidIDs(ctx context.Context, contractID int64) (set.Set[int32], error) {
+func (st *Storage) ListCorporationContractBidIDs(ctx context.Context, contractID int64) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCorporationContractBidIDs(ctx, contractID)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
+		return set.Set[int64]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), err
+	return set.Of(convertNumericSlice[int64](ids)...), err
 }
 
 func corporationContractBidFromDBModel(o queries.CorporationContractBid, e queries.EveEntity) *app.CorporationContractBid {
 	o2 := &app.CorporationContractBid{
 		ContractID: o.ContractID,
-		Amount:     float32(o.Amount),
-		BidID:      int32(o.BidID),
+		Amount:     o.Amount,
+		BidID:      o.BidID,
 		Bidder:     eveEntityFromDBModel(e),
 		DateBid:    o.DateBid,
 	}
@@ -439,10 +439,10 @@ type CreateCorporationContractItemParams struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
-	Quantity    int32
-	RawQuantity int32
+	Quantity    int64
+	RawQuantity optional.Optional[int64]
 	RecordID    int64
-	TypeID      int32
+	TypeID      int64
 }
 
 func (st *Storage) CreateCorporationContractItem(ctx context.Context, arg CreateCorporationContractItemParams) error {
@@ -456,10 +456,10 @@ func (st *Storage) CreateCorporationContractItem(ctx context.Context, arg Create
 		ContractID:  arg.ContractID,
 		IsIncluded:  arg.IsIncluded,
 		IsSingleton: arg.IsSingleton,
-		Quantity:    int64(arg.Quantity),
-		RawQuantity: int64(arg.RawQuantity),
+		Quantity:    arg.Quantity,
+		RawQuantity: arg.RawQuantity.ValueOrZero(),
 		RecordID:    arg.RecordID,
-		TypeID:      int64(arg.TypeID),
+		TypeID:      arg.TypeID,
 	}); err != nil {
 		return wrapErr(err)
 	}
@@ -501,8 +501,8 @@ func corporationContractItemFromDBModel(o queries.CorporationContractItem, t que
 		ContractID:  o.ContractID,
 		IsIncluded:  o.IsIncluded,
 		IsSingleton: o.IsSingleton,
-		Quantity:    int(o.Quantity),
-		RawQuantity: int(o.RawQuantity),
+		Quantity:    o.Quantity,
+		RawQuantity: optional.FromZeroValue(o.RawQuantity),
 		RecordID:    o.RecordID,
 		Type:        eveTypeFromDBModel(t, g, c),
 	}

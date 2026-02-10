@@ -9,7 +9,7 @@ import (
 // CharacterToken is a SSO token belonging to a character in Eve Online.
 type CharacterToken struct {
 	AccessToken  string
-	CharacterID  int32
+	CharacterID  int64
 	ExpiresAt    time.Time
 	ID           int64
 	RefreshToken string

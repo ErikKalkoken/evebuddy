@@ -9,14 +9,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) DeleteCorporationWalletBalance(ctx context.Context, corporationID int32) error {
+func (st *Storage) DeleteCorporationWalletBalance(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationWalletBalance: CorporationID %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationWalletBalances(ctx, int64(corporationID))
+	err := st.qRW.DeleteCorporationWalletBalances(ctx,corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -32,8 +32,8 @@ func (st *Storage) GetCorporationWalletBalance(ctx context.Context, arg Corporat
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	o, err := st.qRO.GetCorporationWalletBalance(ctx, queries.GetCorporationWalletBalanceParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID:arg.CorporationID,
+		DivisionID:   arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -41,14 +41,14 @@ func (st *Storage) GetCorporationWalletBalance(ctx context.Context, arg Corporat
 	return corporationWalletBalanceFromDBModel(o), nil
 }
 
-func (st *Storage) ListCorporationWalletBalances(ctx context.Context, corporationID int32) ([]*app.CorporationWalletBalance, error) {
+func (st *Storage) ListCorporationWalletBalances(ctx context.Context, corporationID int64) ([]*app.CorporationWalletBalance, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationWalletBalances for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationWalletBalances(ctx, int64(corporationID))
+	rows, err := st.qRO.ListCorporationWalletBalances(ctx,corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -60,8 +60,8 @@ func (st *Storage) ListCorporationWalletBalances(ctx context.Context, corporatio
 }
 
 type UpdateOrCreateCorporationWalletBalanceParams struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	Balance       float64
 }
 
@@ -73,8 +73,8 @@ func (st *Storage) UpdateOrCreateCorporationWalletBalance(ctx context.Context, a
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationWalletBalance(ctx, queries.UpdateOrCreateCorporationWalletBalanceParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID:arg.CorporationID,
+		DivisionID:   arg.DivisionID,
 		Balance:       arg.Balance,
 	})
 	if err != nil {
@@ -85,8 +85,8 @@ func (st *Storage) UpdateOrCreateCorporationWalletBalance(ctx context.Context, a
 
 func corporationWalletBalanceFromDBModel(o queries.CorporationWalletBalance) *app.CorporationWalletBalance {
 	o2 := &app.CorporationWalletBalance{
-		CorporationID: int32(o.CorporationID),
-		DivisionID:    int32(o.DivisionID),
+		CorporationID:o.CorporationID,
+		DivisionID:   o.DivisionID,
 		Balance:       o.Balance,
 	}
 	return o2

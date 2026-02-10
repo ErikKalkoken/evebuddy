@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCharacterJumpClonesESI(t *testing.T) {
@@ -48,7 +49,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/clones/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/clones", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -61,12 +62,12 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(12345), o.CloneID)
-				assert.Equal(t, "Alpha", o.Name)
-				assert.Equal(t, int64(60003463), o.Location.ID)
+				xassert.Equal(t, 12345, o.CloneID)
+				xassert.Equal(t, "Alpha", o.Name.ValueOrZero())
+				xassert.Equal(t, 60003463, o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {
 					x := o.Implants[0]
-					assert.Equal(t, int32(22118), x.EveType.ID)
+					xassert.Equal(t, 22118, x.EveType.ID)
 				}
 			}
 		}
@@ -84,13 +85,13 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 			JumpCloneID: 12345,
-			Implants:    []int32{implant2.ID},
+			Implants:    []int64{implant2.ID},
 			LocationID:  station.ID,
-			Name:        "Bravo",
+			Name:        optional.New("Bravo"),
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/clones/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/clones", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -103,12 +104,12 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(12345), o.CloneID)
-				assert.Equal(t, "Alpha", o.Name)
-				assert.Equal(t, station.ID, o.Location.ID)
+				xassert.Equal(t, 12345, o.CloneID)
+				xassert.Equal(t, "Alpha", o.Name.ValueOrZero())
+				xassert.Equal(t, station.ID, o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {
 					x := o.Implants[0]
-					assert.Equal(t, int32(implant1.ID), x.EveType.ID)
+					xassert.Equal(t, implant1.ID, x.EveType.ID)
 				}
 			}
 		}
@@ -158,7 +159,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.Equal(t, time.Time{}, x.MustValue())
+			xassert.Equal(t, time.Time{}, x.MustValue())
 		}
 	})
 	t.Run("should return zero time when next jump available now", func(t *testing.T) {
@@ -176,7 +177,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.Equal(t, time.Time{}, x.MustValue())
+			xassert.Equal(t, time.Time{}, x.MustValue())
 		}
 	})
 	t.Run("should return empty time when last jump not found", func(t *testing.T) {

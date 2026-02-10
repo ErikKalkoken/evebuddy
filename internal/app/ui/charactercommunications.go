@@ -179,7 +179,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*mailHeaderItem)
-			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()

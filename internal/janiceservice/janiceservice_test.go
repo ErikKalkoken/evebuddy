@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
 func TestService(t *testing.T) {
@@ -93,7 +94,7 @@ func TestPricer(t *testing.T) {
 		)
 		s := janiceservice.New(http.DefaultClient, "api-key")
 		_, err := s.FetchPrices(context.Background(), 34)
-		assert.ErrorIs(t, err, janiceservice.ErrHttpError)
+		assert.ErrorIs(t, err, janiceservice.ErrHTTPError)
 	})
 	t.Run("should return error when called with invalid type ID", func(t *testing.T) {
 		s := janiceservice.New(http.DefaultClient, "api-key")

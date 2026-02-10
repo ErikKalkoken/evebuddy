@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type notification struct {
@@ -71,7 +72,7 @@ func printNotification(nt notification) error {
 		return app.ErrNotFound
 	}
 	en := evenotification.New(&testutil.EveUniverseServiceFake{})
-	title, body, err := en.RenderESI(context.Background(), nt2, nt.Text, time.Now())
+	title, body, err := en.RenderESI(context.Background(), nt2, optional.New(nt.Text), time.Now())
 	if err != nil {
 		return err
 	}

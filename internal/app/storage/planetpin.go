@@ -12,14 +12,14 @@ import (
 
 type CreatePlanetPinParams struct {
 	CharacterPlanetID      int64
-	ExtractorProductTypeID optional.Optional[int32]
-	FactorySchemaID        optional.Optional[int32]
-	ExpiryTime             time.Time
-	InstallTime            time.Time
-	LastCycleStart         time.Time
+	ExtractorProductTypeID optional.Optional[int64]
+	FactorySchemaID        optional.Optional[int64]
+	ExpiryTime             optional.Optional[time.Time]
+	InstallTime            optional.Optional[time.Time]
+	LastCycleStart         optional.Optional[time.Time]
 	PinID                  int64
-	SchematicID            optional.Optional[int32]
-	TypeID                 int32
+	SchematicID            optional.Optional[int64]
+	TypeID                 int64
 }
 
 func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) error {
@@ -31,10 +31,10 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		ExtractorProductTypeID: optional.ToNullInt64(arg.ExtractorProductTypeID),
 		FactorySchemaID:        optional.ToNullInt64(arg.FactorySchemaID),
 		SchematicID:            optional.ToNullInt64(arg.SchematicID),
-		TypeID:                 int64(arg.TypeID),
-		ExpiryTime:             NewNullTimeFromTime(arg.ExpiryTime),
-		InstallTime:            NewNullTimeFromTime(arg.InstallTime),
-		LastCycleStart:         NewNullTimeFromTime(arg.LastCycleStart),
+		TypeID:                arg.TypeID,
+		ExpiryTime:             optional.ToNullTime(arg.ExpiryTime),
+		InstallTime:            optional.ToNullTime(arg.InstallTime),
+		LastCycleStart:         optional.ToNullTime(arg.LastCycleStart),
 		PinID:                  arg.PinID,
 	}
 	if err := st.qRW.CreatePlanetPin(ctx, arg2); err != nil {
@@ -101,7 +101,7 @@ func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanet
 		})
 	}
 	if r.PlanetPin.ExtractorProductTypeID.Valid {
-		et, err := st.GetEveType(ctx, int32(r.PlanetPin.ExtractorProductTypeID.Int64))
+		et, err := st.GetEveType(ctx,r.PlanetPin.ExtractorProductTypeID.Int64)
 		if err != nil {
 			return nil, err
 		}

@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
+
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
@@ -82,10 +83,10 @@ func (ss StructureState) Color() fyne.ThemeColorName {
 }
 
 type CorporationStructure struct {
-	CorporationID      int32
+	CorporationID      int64
 	FuelExpires        optional.Optional[time.Time]
 	ID                 int64
-	Name               string
+	Name               optional.Optional[string]
 	NextReinforceApply optional.Optional[time.Time]
 	NextReinforceHour  optional.Optional[int64]
 	ProfileID          int64
@@ -100,11 +101,15 @@ type CorporationStructure struct {
 	UnanchorsAt        optional.Optional[time.Time]
 }
 
+func (cs CorporationStructure) DisplayName() string {
+	return cs.Name.ValueOrFallback(fmt.Sprintf("%s - Structure #%d", cs.System.Name, cs.ID))
+}
+
 func (cs CorporationStructure) NameShort() string {
 	if cs.System == nil {
-		return cs.Name
+		return cs.Name.ValueOrZero()
 	}
-	return strings.TrimPrefix(cs.Name, fmt.Sprintf("%s -", cs.System.Name))
+	return strings.TrimPrefix(cs.Name.ValueOrZero(), fmt.Sprintf("%s -", cs.System.Name))
 }
 
 type StructureServiceState uint

@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]app.CharacterRole, error) {
+func (s *CharacterService) ListRoles(ctx context.Context, characterID int64) ([]app.CharacterRole, error) {
 	granted, err := s.st.ListCharacterRoles(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -105,16 +105,16 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdRoles")
-			roles, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
+			roles, _, err := s.esiClient.CharacterAPI.GetCharactersCharacterIdRoles(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return roles, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			r := data.(esi.GetCharactersCharacterIdRolesOk)
+		func(ctx context.Context, characterID int64, data any) error {
+			r := data.(*esi.CharactersCharacterIdRolesGet)
 			var roles set.Set[app.Role]
 			for _, n := range r.Roles {
 				r, ok := roleMap[n]

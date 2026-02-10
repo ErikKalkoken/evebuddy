@@ -9,9 +9,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*app.EveShipSkill, error) {
+func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int64, rank uint) (*app.EveShipSkill, error) {
 	arg := queries.GetShipSkillParams{
-		ShipTypeID: int64(shipTypeID),
+		ShipTypeID: shipTypeID,
 		Rank:       int64(rank),
 	}
 	row, err := st.qRO.GetShipSkill(ctx, arg)
@@ -21,8 +21,8 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }
 
-func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*app.EveShipSkill, error) {
-	rows, err := st.qRO.ListShipSkills(ctx, int64(shipTypeID))
+func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int64) ([]*app.EveShipSkill, error) {
+	rows, err := st.qRO.ListShipSkills(ctx, shipTypeID)
 	if err != nil {
 		return nil, fmt.Errorf("list ship skills for ID %d: %w", shipTypeID, err)
 	}
@@ -49,7 +49,7 @@ func (st *Storage) UpdateEveShipSkills(ctx context.Context) error {
 	}
 	for _, row := range rows {
 		if row.PrimarySkillID.Valid && row.PrimarySkillLevel.Valid {
-			for rank := int64(1); rank <= 6; rank++ {
+			for rank := 1; rank <= 6; rank++ {
 				var skillID, skillLevel sql.NullInt64
 				switch rank {
 				case 1:
@@ -71,7 +71,7 @@ func (st *Storage) UpdateEveShipSkills(ctx context.Context) error {
 					skillID = row.SenarySkillID
 					skillLevel = row.SenarySkillLevel
 				}
-				if err := st.createShipSkillIfExists(ctx, qtx, rank, row.ShipTypeID, skillID, skillLevel); err != nil {
+				if err := st.createShipSkillIfExists(ctx, qtx, int64(rank), row.ShipTypeID, skillID, skillLevel); err != nil {
 					return err
 				}
 			}
@@ -100,8 +100,8 @@ func (st *Storage) createShipSkillIfExists(ctx context.Context, q *queries.Queri
 
 type CreateShipSkillParams struct {
 	Rank        uint
-	ShipTypeID  int32
-	SkillTypeID int32
+	ShipTypeID  int64
+	SkillTypeID int64
 	SkillLevel  uint
 }
 
@@ -114,8 +114,8 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 	}
 	arg2 := queries.CreateShipSkillParams{
 		Rank:        int64(arg.Rank),
-		ShipTypeID:  int64(arg.ShipTypeID),
-		SkillTypeID: int64(arg.SkillTypeID),
+		ShipTypeID:  arg.ShipTypeID,
+		SkillTypeID: arg.SkillTypeID,
 		SkillLevel:  int64(arg.SkillLevel),
 	}
 	if err := st.qRW.CreateShipSkill(ctx, arg2); err != nil {
@@ -127,8 +127,8 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 func eveShipSkillFromDBModel(rank, shipTypeID, skillTypeID int64, skillName string, skillLevel int64) *app.EveShipSkill {
 	return &app.EveShipSkill{
 		Rank:        uint(rank),
-		ShipTypeID:  int32(shipTypeID),
-		SkillTypeID: int32(skillTypeID),
+		ShipTypeID:  shipTypeID,
+		SkillTypeID: skillTypeID,
 		SkillName:   skillName,
 		SkillLevel:  uint(skillLevel),
 	}

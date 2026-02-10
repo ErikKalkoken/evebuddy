@@ -35,7 +35,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 		TypeID:       et.ID,
-		AveragePrice: 120000.0,
+		AveragePrice: optional.New(120000.0),
 	})
 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
 		ID:             1001,

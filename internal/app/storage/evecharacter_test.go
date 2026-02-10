@@ -9,6 +9,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveCharacter(t *testing.T) {
@@ -27,7 +29,7 @@ func TestEveCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			r, err := st.GetEveCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, arg.Name, r.Name)
+				xassert.Equal(t, arg.Name, r.Name)
 			}
 		}
 	})
@@ -40,15 +42,15 @@ func TestEveCharacter(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateEveCharacter(ctx, storage.CreateEveCharacterParams{
 			ID:             c1.ID,
-			AllianceID:     alliance2.ID,
+			AllianceID:     optional.New(alliance2.ID),
 			CorporationID:  c1.Corporation.ID,
-			Description:    "new description",
-			FactionID:      faction2.ID,
+			Description:    optional.New("new description"),
+			FactionID:      optional.New(faction2.ID),
 			Gender:         c1.Gender,
 			Name:           "Erik",
 			RaceID:         c1.Race.ID,
-			SecurityStatus: -9.9,
-			Title:          "new title",
+			SecurityStatus: optional.New(-9.9),
+			Title:          optional.New("new title"),
 		})
 		// then
 		if !assert.NoError(t, err) {
@@ -56,12 +58,12 @@ func TestEveCharacter(t *testing.T) {
 		}
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance2, c2.Alliance)
-			assert.Equal(t, faction2, c2.Faction)
-			assert.Equal(t, "Erik", c2.Name)
-			assert.Equal(t, "new description", c2.Description)
-			assert.Equal(t, "new title", c2.Title)
-			assert.EqualValues(t, -9.9, c2.SecurityStatus)
+			xassert.Equal(t, alliance2, c2.Alliance)
+			xassert.Equal(t, faction2, c2.Faction)
+			xassert.Equal(t, "Erik", c2.Name)
+			xassert.Equal(t, "new description", c2.Description)
+			xassert.Equal(t, "new title", c2.Title)
+			xassert.Equal(t, -9.9, c2.SecurityStatus)
 		}
 	})
 	t.Run("can update existing 2", func(t *testing.T) {
@@ -75,7 +77,7 @@ func TestEveCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetEveCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "Erik", c2.Name)
+				xassert.Equal(t, "Erik", c2.Name)
 			}
 		}
 	})
@@ -107,15 +109,15 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
-			assert.Equal(t, c1.Corporation, c2.Corporation)
-			assert.Equal(t, c1.Description, c2.Description)
-			assert.Equal(t, c1.Gender, c2.Gender)
-			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.Name, c2.Name)
-			assert.Equal(t, c1.Race, c2.Race)
-			assert.Equal(t, c1.SecurityStatus, c2.SecurityStatus)
-			assert.Equal(t, c1.Title, c2.Title)
+			xassert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
+			xassert.Equal(t, c1.Corporation, c2.Corporation)
+			xassert.Equal(t, c1.Description, c2.Description)
+			xassert.Equal(t, c1.Gender, c2.Gender)
+			xassert.Equal(t, c1.ID, c2.ID)
+			xassert.Equal(t, c1.Name, c2.Name)
+			xassert.Equal(t, c1.Race, c2.Race)
+			xassert.Equal(t, c1.SecurityStatus, c2.SecurityStatus)
+			xassert.Equal(t, c1.Title, c2.Title)
 			assert.False(t, c2.HasAlliance())
 			assert.False(t, c2.HasFaction())
 		}
@@ -126,19 +128,22 @@ func TestEveCharacter(t *testing.T) {
 		factory.CreateEveCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
-		arg := storage.CreateEveCharacterParams{AllianceID: alliance.ID, FactionID: faction.ID}
+		arg := storage.CreateEveCharacterParams{
+			AllianceID: optional.New(alliance.ID),
+			FactionID:  optional.New(faction.ID),
+		}
 		c1 := factory.CreateEveCharacter(arg)
 		// when
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, c2.Alliance)
-			assert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
-			assert.Equal(t, c1.Corporation, c2.Corporation)
-			assert.Equal(t, c1.Description, c2.Description)
-			assert.Equal(t, faction, c2.Faction)
-			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.Name, c2.Name)
+			xassert.Equal(t, alliance, c2.Alliance)
+			xassert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
+			xassert.Equal(t, c1.Corporation, c2.Corporation)
+			xassert.Equal(t, c1.Description, c2.Description)
+			xassert.Equal(t, faction, c2.Faction)
+			xassert.Equal(t, c1.ID, c2.ID)
+			xassert.Equal(t, c1.Name, c2.Name)
 		}
 	})
 	t.Run("can update name", func(t *testing.T) {
@@ -151,7 +156,7 @@ func TestEveCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetEveCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "Erik", c2.Name)
+				xassert.Equal(t, "Erik", c2.Name)
 			}
 		}
 	})

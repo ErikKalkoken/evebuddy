@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -25,10 +24,7 @@ func TestFetchAlliance(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:   st,
-		ESIClient: goesi.NewAPIClient(nil, ""),
-	})
+	s := eveuniverseservice.NewTestService(st)
 	const allianceID = 434243723
 	factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
 	creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
@@ -41,7 +37,7 @@ func TestFetchAlliance(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/alliances/%d/", allianceID),
+			fmt.Sprintf("https://esi.evetech.net/alliances/%d", allianceID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"creator_corporation_id":  45678,
 				"creator_id":              12345,
@@ -56,13 +52,13 @@ func TestFetchAlliance(t *testing.T) {
 		x, err := s.FetchAlliance(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "C C P Alliance", x.Name)
-			assert.Equal(t, "<C C P>", x.Ticker)
-			assert.Equal(t, creator, x.Creator)
-			assert.Equal(t, creatorCorp, x.CreatorCorporation)
-			assert.Equal(t, executor, x.ExecutorCorporation)
-			assert.Equal(t, faction, x.Faction)
-			assert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
+			xassert.Equal(t, "C C P Alliance", x.Name)
+			xassert.Equal(t, "<C C P>", x.Ticker)
+			xassert.Equal(t, creator, x.Creator)
+			xassert.Equal(t, creatorCorp, x.CreatorCorporation)
+			xassert.Equal(t, executor, x.ExecutorCorporation)
+			xassert.Equal(t, faction, x.Faction)
+			xassert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
 		}
 	})
 	t.Run("should return nil for undefined entities", func(t *testing.T) {
@@ -70,7 +66,7 @@ func TestFetchAlliance(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/alliances/%d/", allianceID),
+			fmt.Sprintf("https://esi.evetech.net/alliances/%d", allianceID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"creator_corporation_id":  45678,
 				"creator_id":              12345,
@@ -84,7 +80,7 @@ func TestFetchAlliance(t *testing.T) {
 		x, err := s.FetchAlliance(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "C C P Alliance", x.Name)
+			xassert.Equal(t, "C C P Alliance", x.Name)
 			assert.Nil(t, x.Faction)
 		}
 	})
@@ -95,10 +91,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:   st,
-		ESIClient: goesi.NewAPIClient(nil, ""),
-	})
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return corporations", func(t *testing.T) {
 		// given
@@ -111,18 +104,18 @@ func TestFetchAllianceCorporations(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/alliances/%d/corporations/", allianceID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{102, 103}),
+			fmt.Sprintf("https://esi.evetech.net/alliances/%d/corporations", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{102, 103}),
 		)
 		// when
 		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
-			got := xslices.Map(oo, func(a *app.EveEntity) int32 {
+			got := xslices.Map(oo, func(a *app.EveEntity) int64 {
 				return a.ID
 			})
-			want := []int32{103, 102}
-			assert.Equal(t, want, got)
+			want := []int64{103, 102}
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return empty list when there are no corporations", func(t *testing.T) {
@@ -133,8 +126,8 @@ func TestFetchAllianceCorporations(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/alliances/%d/corporations/", allianceID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{}),
+			fmt.Sprintf("https://esi.evetech.net/alliances/%d/corporations", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{}),
 		)
 		// when
 		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
@@ -163,7 +156,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"alliance_id":     434243723,
 				"ceo_id":          180548812,
@@ -183,18 +176,18 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.GetOrCreateCorporationESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, o.Alliance)
-			assert.Equal(t, creator, o.Creator)
-			assert.Equal(t, ceo, o.Ceo)
-			assert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			assert.Equal(t, faction, o.Faction)
-			assert.Equal(t, station, o.HomeStation)
-			assert.Equal(t, 656, o.MemberCount)
-			assert.Equal(t, "C C P", o.Name)
-			assert.Equal(t, float32(0.256), o.TaxRate)
-			assert.Equal(t, "-CCP-", o.Ticker)
-			assert.Equal(t, "http://www.eveonline.com", o.URL)
+			xassert.Equal(t, alliance, o.Alliance)
+			xassert.Equal(t, creator, o.Creator)
+			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+			xassert.Equal(t, faction, o.Faction)
+			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, 656, o.MemberCount)
+			xassert.Equal(t, "C C P", o.Name)
+			xassert.Equal(t, 0.256, o.TaxRate)
+			xassert.Equal(t, "-CCP-", o.Ticker)
+			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 		}
 	})
 	t.Run("can handle no CEO and no creator", func(t *testing.T) {
@@ -205,7 +198,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"ceo_id":       1,
 				"creator_id":   1,
@@ -221,12 +214,12 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.GetOrCreateCorporationESI(ctx, corporationID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			assert.Equal(t, 656, o.MemberCount)
-			assert.Equal(t, "C C P", o.Name)
-			assert.Equal(t, float32(0.256), o.TaxRate)
-			assert.Equal(t, "-CCP-", o.Ticker)
+			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+			xassert.Equal(t, 656, o.MemberCount)
+			xassert.Equal(t, "C C P", o.Name)
+			xassert.Equal(t, 0.256, o.TaxRate)
+			xassert.Equal(t, "-CCP-", o.Ticker)
 			assert.Nil(t, o.Ceo)
 			assert.Nil(t, o.Creator)
 			assert.Nil(t, o.Alliance)
@@ -254,7 +247,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"alliance_id":     434243723,
 				"ceo_id":          180548812,
@@ -274,18 +267,18 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, o.Alliance)
-			assert.Equal(t, creator, o.Creator)
-			assert.Equal(t, ceo, o.Ceo)
-			assert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			assert.Equal(t, faction, o.Faction)
-			assert.Equal(t, station, o.HomeStation)
-			assert.Equal(t, 656, o.MemberCount)
-			assert.Equal(t, "C C P", o.Name)
-			assert.Equal(t, float32(0.256), o.TaxRate)
-			assert.Equal(t, "-CCP-", o.Ticker)
-			assert.Equal(t, "http://www.eveonline.com", o.URL)
+			xassert.Equal(t, alliance, o.Alliance)
+			xassert.Equal(t, creator, o.Creator)
+			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+			xassert.Equal(t, faction, o.Faction)
+			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, 656, o.MemberCount)
+			xassert.Equal(t, "C C P", o.Name)
+			xassert.Equal(t, 0.256, o.TaxRate)
+			xassert.Equal(t, "-CCP-", o.Ticker)
+			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 		}
 	})
 	t.Run("should update existing", func(t *testing.T) {
@@ -301,7 +294,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"alliance_id":     434243723,
 				"ceo_id":          180548812,
@@ -321,18 +314,18 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, o.Alliance)
-			assert.Equal(t, orig.Creator, o.Creator)
-			assert.Equal(t, ceo, o.Ceo)
-			assert.Equal(t, orig.DateFounded.MustValue(), o.DateFounded.MustValue())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			assert.Equal(t, faction, o.Faction)
-			assert.Equal(t, station, o.HomeStation)
-			assert.Equal(t, 656, o.MemberCount)
-			assert.Equal(t, "C C P", o.Name)
-			assert.Equal(t, float32(0.256), o.TaxRate)
-			assert.Equal(t, "-CCP-", o.Ticker)
-			assert.Equal(t, "http://www.eveonline.com", o.URL)
+			xassert.Equal(t, alliance, o.Alliance)
+			xassert.Equal(t, orig.Creator, o.Creator)
+			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, orig.DateFounded.MustValue(), o.DateFounded.MustValue())
+			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+			xassert.Equal(t, faction, o.Faction)
+			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, 656, o.MemberCount)
+			xassert.Equal(t, "C C P", o.Name)
+			xassert.Equal(t, 0.256, o.TaxRate)
+			xassert.Equal(t, "-CCP-", o.Ticker)
+			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 		}
 	})
 }
@@ -356,7 +349,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"alliance_id":     434243723,
 				"ceo_id":          180548812,
@@ -376,27 +369,27 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		got, err := s.UpdateAllCorporationsESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of[int32](109299958)
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64](109299958)
+			xassert.Equal2(t, want, got)
 			ec, err := st.GetEveCorporation(ctx, 109299958)
 			if assert.NoError(t, err) {
-				assert.Equal(t, alliance, ec.Alliance)
-				assert.Equal(t, orig.Creator, ec.Creator)
-				assert.Equal(t, ceo, ec.Ceo)
-				assert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
-				assert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
-				assert.Equal(t, faction, ec.Faction)
-				assert.Equal(t, station, ec.HomeStation)
-				assert.Equal(t, 656, ec.MemberCount)
-				assert.Equal(t, "C C P", ec.Name)
-				assert.Equal(t, float32(0.256), ec.TaxRate)
-				assert.Equal(t, "-CCP-", ec.Ticker)
-				assert.Equal(t, "http://www.eveonline.com", ec.URL)
+				xassert.Equal(t, alliance, ec.Alliance)
+				xassert.Equal(t, orig.Creator, ec.Creator)
+				xassert.Equal(t, ceo, ec.Ceo)
+				xassert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
+				xassert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
+				xassert.Equal(t, faction, ec.Faction)
+				xassert.Equal(t, station, ec.HomeStation)
+				xassert.Equal(t, 656, ec.MemberCount)
+				xassert.Equal(t, "C C P", ec.Name)
+				xassert.Equal(t, 0.256, ec.TaxRate)
+				xassert.Equal(t, "-CCP-", ec.Ticker)
+				xassert.Equal(t, "http://www.eveonline.com", ec.URL.ValueOrZero())
 			}
 			ee, err := st.GetEveEntity(ctx, 109299958)
 			if assert.NoError(t, err) {
-				assert.Equal(t, ec.Name, ee.Name)
-				assert.Equal(t, app.EveEntityCorporation, ee.Category)
+				xassert.Equal(t, ec.Name, ee.Name)
+				xassert.Equal(t, app.EveEntityCorporation, ee.Category)
 			}
 		}
 	})
@@ -414,20 +407,20 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 			CeoID:         optional.New(ceo.ID),
 			CreatorID:     optional.New(creator.ID),
 			DateFounded:   optional.New(time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC)),
-			Description:   "This is a corporation description, it's basically just a string",
+			Description:   optional.New("This is a corporation description, it's basically just a string"),
 			FactionID:     optional.New(faction.ID),
 			HomeStationID: optional.New(station.ID),
 			MemberCount:   656,
 			Name:          "C C P",
 			TaxRate:       0.256,
 			Ticker:        "-CCP-",
-			URL:           "http://www.eveonline.com",
-			WarEligible:   false,
+			URL:           optional.New("http://www.eveonline.com"),
+			WarEligible:   optional.New(false),
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			`=~^https://esi.evetech.net/corporations/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"alliance_id":     434243723,
 				"ceo_id":          180548812,
@@ -447,8 +440,8 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		got, err := s.UpdateAllCorporationsESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of[int32]()
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64]()
+			xassert.Equal2(t, want, got)
 		}
 	})
 }

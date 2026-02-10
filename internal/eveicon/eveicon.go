@@ -63,7 +63,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 
 // FromID returns an Eve Online icon by icon ID and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
-func FromID(id int32) (*fyne.StaticResource, bool) {
+func FromID(id int64) (*fyne.StaticResource, bool) {
 	r, ok := id2fileMap[id]
 	if !ok {
 		return namedIcons[Undefined], false
@@ -79,7 +79,7 @@ func FromName(name Name) *fyne.StaticResource {
 
 // FromSchematicID returns an Eve Online icon by icon ID and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
-func FromSchematicID(id int32) (*fyne.StaticResource, bool) {
+func FromSchematicID(id int64) (*fyne.StaticResource, bool) {
 	iconID, ok := schematicToIconIDs[id]
 	if !ok {
 		return namedIcons[Undefined], false

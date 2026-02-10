@@ -141,8 +141,6 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 		return x
 	case int:
 		return NumberF(float64(x), 0)
-	case int32:
-		return NumberF(float64(x), 0)
 	case int64:
 		return NumberF(float64(x), 0)
 	case bool:

@@ -28,7 +28,7 @@ func TestCorporationStructure(t *testing.T) {
 		// when
 		arg := storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
-			Name:          "Alpha",
+			Name:          optional.New("Alpha"),
 			ProfileID:     42,
 			State:         app.StructureStateShieldVulnerable,
 			StructureID:   1234,
@@ -42,13 +42,13 @@ func TestCorporationStructure(t *testing.T) {
 		}
 		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, c.ID, got.CorporationID)
-			assert.EqualValues(t, arg.Name, got.Name)
-			assert.EqualValues(t, arg.ProfileID, got.ProfileID)
-			assert.EqualValues(t, arg.State, got.State)
-			assert.EqualValues(t, arg.StructureID, got.StructureID)
-			assert.EqualValues(t, arg.SystemID, got.System.ID)
-			assert.EqualValues(t, arg.TypeID, got.Type.ID)
+			xassert.Equal(t, c.ID, got.CorporationID)
+			xassert.Equal(t, arg.Name, got.Name)
+			xassert.Equal(t, arg.ProfileID, got.ProfileID)
+			xassert.Equal(t, arg.State, got.State)
+			xassert.Equal(t, arg.StructureID, got.StructureID)
+			xassert.Equal(t, arg.SystemID, got.System.ID)
+			xassert.Equal(t, arg.TypeID, got.Type.ID)
 			assert.Empty(t, got.Services)
 		}
 	})
@@ -62,7 +62,7 @@ func TestCorporationStructure(t *testing.T) {
 		arg := storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID:      c.ID,
 			FuelExpires:        optional.New(factory.RandomTime()),
-			Name:               "Alpha",
+			Name:               optional.New("Alpha"),
 			NextReinforceApply: optional.New(factory.RandomTime()),
 			NextReinforceHour:  optional.New(int64(8)),
 			ProfileID:          42,
@@ -88,21 +88,21 @@ func TestCorporationStructure(t *testing.T) {
 		}
 		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, c.ID, got.CorporationID)
-			assert.EqualValues(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
-			assert.EqualValues(t, arg.Name, got.Name)
-			assert.EqualValues(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply.ValueOrZero())
-			assert.EqualValues(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour.ValueOrZero())
-			assert.EqualValues(t, arg.ProfileID, got.ProfileID)
-			assert.EqualValues(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour.ValueOrZero())
-			assert.EqualValues(t, arg.State, got.State)
-			assert.EqualValues(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd.ValueOrZero())
-			assert.EqualValues(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart.ValueOrZero())
-			assert.EqualValues(t, arg.StructureID, got.StructureID)
-			assert.EqualValues(t, arg.SystemID, got.System.ID)
-			assert.EqualValues(t, arg.TypeID, got.Type.ID)
-			assert.EqualValues(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt.ValueOrZero())
-			assert.EqualValues(t, "Jupiter", got.Services[0].Name)
+			xassert.Equal(t, c.ID, got.CorporationID)
+			xassert.Equal(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
+			xassert.Equal(t, arg.Name, got.Name)
+			xassert.Equal(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply.ValueOrZero())
+			xassert.Equal(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour.ValueOrZero())
+			xassert.Equal(t, arg.ProfileID, got.ProfileID)
+			xassert.Equal(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour.ValueOrZero())
+			xassert.Equal(t, arg.State, got.State)
+			xassert.Equal(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd.ValueOrZero())
+			xassert.Equal(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart.ValueOrZero())
+			xassert.Equal(t, arg.StructureID, got.StructureID)
+			xassert.Equal(t, arg.SystemID, got.System.ID)
+			xassert.Equal(t, arg.TypeID, got.Type.ID)
+			xassert.Equal(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt.ValueOrZero())
+			xassert.Equal(t, "Jupiter", got.Services[0].Name)
 			assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
 		}
 	})
@@ -124,7 +124,7 @@ func TestCorporationStructure(t *testing.T) {
 		arg := storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID:      c.ID,
 			FuelExpires:        optional.New(factory.RandomTime()),
-			Name:               "Alpha",
+			Name:               optional.New("Alpha"),
 			NextReinforceApply: optional.New(factory.RandomTime()),
 			NextReinforceHour:  optional.New(int64(8)),
 			ProfileID:          x1.ProfileID,
@@ -150,17 +150,17 @@ func TestCorporationStructure(t *testing.T) {
 		}
 		got, err := st.GetCorporationStructure(ctx, x1.CorporationID, x1.StructureID)
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, c.ID, got.CorporationID)
-			assert.EqualValues(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
-			assert.EqualValues(t, arg.Name, got.Name)
-			assert.EqualValues(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply.ValueOrZero())
-			assert.EqualValues(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour.ValueOrZero())
-			assert.EqualValues(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour.ValueOrZero())
-			assert.EqualValues(t, arg.State, got.State)
-			assert.EqualValues(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd.ValueOrZero())
-			assert.EqualValues(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart.ValueOrZero())
-			assert.EqualValues(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt.ValueOrZero())
-			assert.EqualValues(t, "Jupiter", got.Services[0].Name)
+			xassert.Equal(t, c.ID, got.CorporationID)
+			xassert.Equal(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
+			xassert.Equal(t, arg.Name, got.Name)
+			xassert.Equal(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply.ValueOrZero())
+			xassert.Equal(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour.ValueOrZero())
+			xassert.Equal(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour.ValueOrZero())
+			xassert.Equal(t, arg.State, got.State)
+			xassert.Equal(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd.ValueOrZero())
+			xassert.Equal(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart.ValueOrZero())
+			xassert.Equal(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt.ValueOrZero())
+			xassert.Equal(t, "Jupiter", got.Services[0].Name)
 			assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
 		}
 	})
@@ -180,7 +180,7 @@ func TestCorporationStructure(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.StructureID, o2.StructureID)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list structures for corporation", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestCorporationStructure(t *testing.T) {
 				return x.StructureID
 			}))
 			want := set.Of(o1.StructureID, o2.StructureID)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can delete structures for a corporation", func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestCorporationStructure(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of(o2.StructureID)
-		assert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -253,8 +253,8 @@ func TestStructureService(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.Equal(t, "Alpha", got.Name)
-		assert.Equal(t, app.StructureServiceStateOnline, got.State)
+		xassert.Equal(t, "Alpha", got.Name)
+		xassert.Equal(t, app.StructureServiceStateOnline, got.State)
 	})
 	t.Run("can list services", func(t *testing.T) {
 		// given
@@ -272,7 +272,7 @@ func TestStructureService(t *testing.T) {
 			return x.Name
 		}))
 		want := set.Of(x1.Name, x2.Name)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can delete services", func(t *testing.T) {
 		// given

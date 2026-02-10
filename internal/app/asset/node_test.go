@@ -121,8 +121,8 @@ func TestNode_CharacterAsset(t *testing.T) {
 
 			got, ok := n.CharacterAsset()
 
-			assert.Equal(t, tt.wantOk, ok)
-			assert.Equal(t, tt.wantAsset, got)
+		xassert.Equal(t, tt.wantOk, ok)
+		xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }
@@ -166,8 +166,8 @@ func TestNode_CorporationAsset(t *testing.T) {
 
 			got, ok := n.CorporationAsset()
 
-			assert.Equal(t, tt.wantOk, ok)
-			assert.Equal(t, tt.wantAsset, got)
+		xassert.Equal(t, tt.wantOk, ok)
+		xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }

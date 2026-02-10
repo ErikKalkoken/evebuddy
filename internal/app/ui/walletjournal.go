@@ -19,31 +19,32 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type walletJournalRow struct {
-	amount           float64
+	amount           optional.Optional[float64]
 	amountDisplay    []widget.RichTextSegment
 	amountFormatted  string
-	balance          float64
+	balance          optional.Optional[float64]
 	balanceFormatted string
-	characterID      int32
-	corporationID    int32
+	characterID      int64
+	corporationID    int64
 	date             time.Time
 	dateFormatted    string
 	description      string
 	division         app.Division
-	reason           string
+	reason           optional.Optional[string]
 	refID            int64
 	refType          string
 	refTypeDisplay   string
 }
 
 func (r walletJournalRow) descriptionWithReason() string {
-	if r.reason == "" {
+	if r.reason.IsEmpty() {
 		return r.description
 	}
 	return fmt.Sprintf("[r] %s", r.description)
@@ -136,7 +137,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Label: "Amount",
 		Width: 200,
 		Sort: func(a, b walletJournalRow) int {
-			return cmp.Compare(a.amount, b.amount)
+			return cmp.Compare(a.amount.ValueOrZero(), b.amount.ValueOrZero())
 		},
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).Set(r.amountDisplay)
@@ -146,11 +147,11 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(
-				humanize.FormatFloat(app.FloatFormat, r.balance),
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-				},
+			co.(*iwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			}), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			},
 			)
 		},
 	}, {
@@ -369,7 +370,7 @@ func (a *walletJournal) updateCorporation() {
 	})
 }
 
-func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walletJournalRow, error) {
+func (*walletJournal) fetchCharacterRows(characterID int64, s services) ([]walletJournalRow, error) {
 	entries, err := s.cs.ListWalletJournalEntries(context.Background(), characterID)
 	if err != nil {
 		return nil, err
@@ -377,24 +378,30 @@ func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walle
 	rows := make([]walletJournalRow, 0)
 	for _, o := range entries {
 		r := walletJournalRow{
-			amount:           o.Amount,
-			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
-			balance:          o.Balance,
-			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
-			characterID:      characterID,
-			date:             o.Date,
-			dateFormatted:    o.Date.Format(app.DateTimeFormat),
-			description:      o.Description,
-			reason:           o.Reason,
-			refID:            o.RefID,
-			refType:          o.RefType,
-			refTypeDisplay:   o.RefTypeDisplay(),
+			amount: o.Amount,
+			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			}),
+			balance: o.Balance,
+			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			}),
+			characterID:    characterID,
+			date:           o.Date,
+			dateFormatted:  o.Date.Format(app.DateTimeFormat),
+			description:    o.Description,
+			reason:         o.Reason,
+			refID:          o.RefID,
+			refType:        o.RefType,
+			refTypeDisplay: o.RefTypeDisplay(),
 		}
 		var color fyne.ThemeColorName
 		switch {
-		case o.Amount < 0:
+		case o.Amount.IsEmpty():
+			color = theme.ColorNameDisabled
+		case o.Amount.ValueOrZero() < 0:
 			color = theme.ColorNameError
-		case o.Amount > 0:
+		case o.Amount.ValueOrZero() > 0:
 			color = theme.ColorNameSuccess
 		default:
 			color = theme.ColorNameForeground
@@ -411,7 +418,7 @@ func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walle
 	return rows, nil
 }
 
-func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Division, s services) ([]walletJournalRow, error) {
+func (*walletJournal) fetchCorporationRows(corporationID int64, division app.Division, s services) ([]walletJournalRow, error) {
 	ctx := context.Background()
 	entries, err := s.rs.ListWalletJournalEntries(ctx, corporationID, division)
 	if err != nil {
@@ -420,25 +427,31 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 	rows := make([]walletJournalRow, 0)
 	for _, o := range entries {
 		r := walletJournalRow{
-			amount:           o.Amount,
-			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
-			balance:          o.Balance,
-			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
-			corporationID:    corporationID,
-			division:         division,
-			date:             o.Date,
-			dateFormatted:    o.Date.Format(app.DateTimeFormat),
-			description:      o.Description,
-			reason:           o.Reason,
-			refID:            o.RefID,
-			refType:          o.RefType,
-			refTypeDisplay:   o.RefTypeDisplay(),
+			amount: o.Amount,
+			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			}),
+			balance: o.Balance,
+			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			}),
+			corporationID:  corporationID,
+			division:       division,
+			date:           o.Date,
+			dateFormatted:  o.Date.Format(app.DateTimeFormat),
+			description:    o.Description,
+			reason:         o.Reason,
+			refID:          o.RefID,
+			refType:        o.RefType,
+			refTypeDisplay: o.RefTypeDisplay(),
 		}
 		var color fyne.ThemeColorName
 		switch {
-		case o.Amount < 0:
+		case o.Amount.IsEmpty():
+			color = theme.ColorNameDisabled
+		case o.Amount.ValueOrZero() < 0:
 			color = theme.ColorNameError
-		case o.Amount > 0:
+		case o.Amount.ValueOrZero() > 0:
 			color = theme.ColorNameSuccess
 		default:
 			color = theme.ColorNameForeground
@@ -456,7 +469,7 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 }
 
 // showCharacterWalletJournalEntryWindow shows a wallet journal entry for a character in a new window.
-func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID int64) {
+func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int64, refID int64) {
 	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 	if err != nil {
 		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
@@ -475,12 +488,9 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 	f := widget.NewForm()
 	f.Orientation = widget.Adaptive
 
-	amount := widget.NewLabel(formatISKAmount(o.Amount))
+	amount := widget.NewLabel(o.Amount.StringFunc("?", formatISKAmount))
 	amount.Importance = importanceISKAmount(o.Amount)
-	reason := o.Reason
-	if reason == "" {
-		reason = "-"
-	}
+	reason := o.Reason.ValueOrFallback("-")
 
 	contextDefaultWidget := widget.NewLabel("?")
 	contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
@@ -490,50 +500,52 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
 	}
 	// TODO: Add support for industry jobs
-	switch o.ContextIDType {
-	case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
-		go func() {
-			ee, err := u.eus.GetOrCreateEntityESI(ctx, int32(o.ContextID))
+	if x, ok := o.ContextIDType.Value(); ok {
+		switch x {
+		case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
+			go func() {
+				ee, err := u.eus.GetOrCreateEntityESI(ctx, o.ContextID.ValueOrZero())
+				if err != nil {
+					reportError(o, err)
+					return
+				}
+				contextItem.Text = "Related " + ee.CategoryDisplay()
+				contextItem.Widget = makeEveEntityActionLabel(ee, u.ShowEveEntityInfoWindow)
+				f.Refresh()
+			}()
+		case "contract_id":
+			c, err := u.cs.GetContract(ctx, characterID, o.ContextID.ValueOrZero())
 			if err != nil {
 				reportError(o, err)
-				return
+				break
 			}
-			contextItem.Text = "Related " + ee.CategoryDisplay()
-			contextItem.Widget = makeEveEntityActionLabel(ee, u.ShowEveEntityInfoWindow)
-			f.Refresh()
-		}()
-	case "contract_id":
-		c, err := u.cs.GetContract(ctx, characterID, int32(o.ContextID))
-		if err != nil {
-			reportError(o, err)
-			break
+			contextItem.Text = "Related contract"
+			contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
+				showCharacterContractWindow(u, c.CharacterID, c.ContractID)
+			})
+		case "market_transaction_id":
+			contextItem.Text = "Related market transaction"
+			contextItem.Widget = makeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID.ValueOrZero()), func() {
+				showCharacterWalletTransactionWindow(u, o.CharacterID, o.ContextID.ValueOrZero())
+			})
+		case "station_id", "structure_id":
+			contextItem.Text = "Related location"
+			go func() {
+				token, err := u.cs.GetValidCharacterToken(ctx, characterID)
+				if err != nil {
+					reportError(o, err)
+					return
+				}
+				ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+				el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
+				if err != nil {
+					reportError(o, err)
+					return
+				}
+				contextItem.Widget = makeLocationLabel(el.ToShort(), u.ShowLocationInfoWindow)
+				f.Refresh()
+			}()
 		}
-		contextItem.Text = "Related contract"
-		contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
-			showCharacterContractWindow(u, c.CharacterID, c.ContractID)
-		})
-	case "market_transaction_id":
-		contextItem.Text = "Related market transaction"
-		contextItem.Widget = makeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
-			showCharacterWalletTransactionWindow(u, o.CharacterID, o.ContextID)
-		})
-	case "station_id", "structure_id":
-		contextItem.Text = "Related location"
-		go func() {
-			token, err := u.cs.GetValidCharacterToken(ctx, characterID)
-			if err != nil {
-				reportError(o, err)
-				return
-			}
-			ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-			el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
-			if err != nil {
-				reportError(o, err)
-				return
-			}
-			contextItem.Widget = makeLocationLabel(el.ToShort(), u.ShowLocationInfoWindow)
-			f.Refresh()
-		}()
 	}
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
@@ -544,7 +556,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 		widget.NewFormItem("Amount", amount),
-		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(o.Balance))),
+		widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", formatISKAmount))),
 		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
@@ -563,14 +575,14 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 	if o.TaxReceiver != nil {
 		items = append(items, widget.NewFormItem(
 			"Tax",
-			widget.NewLabel(formatISKAmount(o.Tax))),
-		)
+			widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
+		))
 		items = append(items, widget.NewFormItem(
 			"Tax Receiver",
 			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
 		)
 	}
-	if o.ContextIDType != "" {
+	if !o.ContextIDType.IsEmpty() {
 		items = append(items, contextItem)
 	}
 	if u.IsDeveloperMode() {
@@ -589,7 +601,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 }
 
 // showCorporationWalletJournalEntryWindow shows a wallet journal entry for a corporation in a new window.
-func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, division app.Division, refID int64) {
+func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int64, division app.Division, refID int64) {
 	o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 	if err != nil {
 		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
@@ -609,12 +621,9 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	f := widget.NewForm()
 	f.Orientation = widget.Adaptive
 
-	amount := widget.NewLabel(formatISKAmount(o.Amount))
+	amount := widget.NewLabel(o.Amount.StringFunc("?", formatISKAmount))
 	amount.Importance = importanceISKAmount(o.Amount)
-	reason := o.Reason
-	if reason == "" {
-		reason = "-"
-	}
+	reason := o.Reason.ValueOrFallback("-")
 
 	contextDefaultWidget := widget.NewLabel("?")
 	contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
@@ -627,7 +636,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	// switch o.ContextIDType {
 	// case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
 	// 	go func() {
-	// 		ee, err := u.eus.GetOrCreateEntityESI(ctx, int32(o.ContextID))
+	// 		ee, err := u.eus.GetOrCreateEntityESI(ctx, int64(o.ContextID))
 	// 		if err != nil {
 	// 			reportError(o, err)
 	// 			return
@@ -637,7 +646,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	// 		f.Refresh()
 	// 	}()
 	// case "contract_id":
-	// 	c, err := u.cs.GetContract(ctx, corporationID, int32(o.ContextID))
+	// 	c, err := u.cs.GetContract(ctx, corporationID, int64(o.ContextID))
 	// 	if err != nil {
 	// 		reportError(o, err)
 	// 		break
@@ -678,7 +687,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 		widget.NewFormItem("Amount", amount),
-		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(o.Balance))),
+		widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", formatISKAmount))),
 		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
@@ -697,8 +706,8 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	if o.TaxReceiver != nil {
 		items = append(items, widget.NewFormItem(
 			"Tax",
-			widget.NewLabel(formatISKAmount(o.Tax))),
-		)
+			widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
+		))
 		items = append(items, widget.NewFormItem(
 			"Tax Receiver",
 			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),

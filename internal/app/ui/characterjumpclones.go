@@ -25,16 +25,16 @@ import (
 )
 
 type hasCharacterSection interface {
-	HasCharacterSection(characterID int32, section app.CharacterSection) bool
+	HasCharacterSection(characterID int64, section app.CharacterSection) bool
 }
 
 type jumpCloneNode struct {
 	implantCount           int
-	implantTypeID          int32
+	implantTypeID          int64
 	implantTypeName        string
 	implantTypeDescription string
 	isUnknown              bool
-	jumpCloneID            int32
+	jumpCloneID            int64
 	jumpCloneName          string
 	locationID             int64
 	locationName           string
@@ -216,7 +216,7 @@ func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode],
 		clone := &jumpCloneNode{
 			implantCount:  len(c.Implants),
 			jumpCloneID:   c.CloneID,
-			jumpCloneName: c.Name,
+			jumpCloneName: c.Name.ValueOrZero(),
 			locationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases

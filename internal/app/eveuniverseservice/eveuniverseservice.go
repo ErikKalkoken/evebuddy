@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
@@ -24,7 +24,7 @@ type EveUniverseService struct {
 	Now func() time.Time
 
 	concurrencyLimit int
-	esiClient        *goesi.APIClient
+	esiClient        *esi.APIClient
 	scs              *statuscacheservice.StatusCacheService
 	sfg              *singleflight.Group
 	st               *storage.Storage
@@ -32,7 +32,7 @@ type EveUniverseService struct {
 
 type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
-	ESIClient          *goesi.APIClient
+	ESIClient          *esi.APIClient
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 }
@@ -57,7 +57,7 @@ func New(arg Params) *EveUniverseService {
 	}
 	return s
 }
-func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
+func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (any, error) {
 		o, err := s.st.GetEveRace(ctx, id)
 		if err == nil {
@@ -65,7 +65,7 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		races, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
+		races, _, err := s.esiClient.UniverseAPI.GetUniverseRaces(ctx).Execute()
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (
 	return x.(*app.EveRace), nil
 }
 
-func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
+func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int64) (*app.EveSchematic, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (any, error) {
 		o, err := s.st.GetEveSchematic(ctx, id)
 		if err == nil {
@@ -100,16 +100,15 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		d, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
+		d, _, err := s.esiClient.PlanetaryInteractionAPI.GetUniverseSchematicsSchematicId(ctx, id).Execute()
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveSchematicParams{
+		o2, err := s.st.CreateEveSchematic(ctx, storage.CreateEveSchematicParams{
 			ID:        id,
-			CycleTime: int(d.CycleTime),
+			CycleTime: d.CycleTime,
 			Name:      d.SchematicName,
-		}
-		o2, err := s.st.CreateEveSchematic(ctx, arg)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +121,7 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 	return x.(*app.EveSchematic), nil
 }
 
-func (s *EveUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int32], locationIDs set.Set[int64]) error {
+func (s *EveUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
 	g := new(errgroup.Group)
 	if entityIDs.Size() > 0 {
 		g.Go(func() error {

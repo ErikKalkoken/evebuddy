@@ -17,7 +17,7 @@ const (
 // An EveEntity in EveOnline.
 type EveEntity struct {
 	Category EveEntityCategory
-	ID       int32
+	ID       int64
 	Name     string
 }
 
@@ -107,7 +107,7 @@ func (eec EveEntityCategory) String() string {
 }
 
 // IsNPCCharacter reports whether an entity ID represents a NPC character.
-func IsNPCCharacter(id int32) bool {
+func IsNPCCharacter(id int64) bool {
 	if id >= npcCharacterIDBegin && id < npcCharacterIDEnd {
 		return true
 	}
@@ -115,7 +115,7 @@ func IsNPCCharacter(id int32) bool {
 }
 
 // IsNPCCorporation reports whether an entity ID represents a NPC corporation.
-func IsNPCCorporation(id int32) bool {
+func IsNPCCorporation(id int64) bool {
 	if id >= npcCorporationIDBegin && id < npcCorporationIDEnd {
 		return true
 	}

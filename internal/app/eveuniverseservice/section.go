@@ -27,8 +27,8 @@ func (s *EveUniverseService) HasSection(ctx context.Context, section app.General
 }
 
 // UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
-func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int32], error) {
-	var zero set.Set[int32]
+func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int64], error) {
+	var zero set.Set[int64]
 	if !arg.ForceUpdate {
 		status, err := s.st.GetGeneralSectionStatus(ctx, arg.Section)
 		if err != nil {
@@ -44,7 +44,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			}
 		}
 	}
-	var f func(context.Context) (set.Set[int32], error)
+	var f func(context.Context) (set.Set[int64], error)
 	switch arg.Section {
 	case app.SectionEveTypes:
 		f = s.updateTypes
@@ -93,7 +93,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		s.scs.SetGeneralSection(o)
 		return zero, err
 	}
-	changed := x.(set.Set[int32])
+	changed := x.(set.Set[int64])
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}

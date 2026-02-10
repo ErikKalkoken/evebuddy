@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterToken_RemainsValid(t *testing.T) {
@@ -38,7 +39,7 @@ func TestCharacterToken_HasScopes(t *testing.T) {
 				Scopes: tc.currentScopes,
 			}
 			got := o.HasScopes(tc.requestedScopes)
-			assert.Equal(t, tc.want, got)
+		xassert.Equal(t, tc.want, got)
 		})
 	}
 }

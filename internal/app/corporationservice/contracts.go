@@ -8,18 +8,18 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // GetContract fetches and returns a contract from the database.
-func (s *CorporationService) GetContract(ctx context.Context, corporationID, contractID int32) (*app.CorporationContract, error) {
+func (s *CorporationService) GetContract(ctx context.Context, corporationID, contractID int64) (*app.CorporationContract, error) {
 	return s.st.GetCorporationContract(ctx, corporationID, contractID)
 }
 
@@ -39,7 +39,7 @@ func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID i
 	if len(bids) == 0 {
 		return nil, app.ErrNotFound
 	}
-	var max float32
+	var max float64
 	var top *app.CorporationContractBid
 	for _, b := range bids {
 		if top == nil || b.Amount > max {
@@ -49,7 +49,7 @@ func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID i
 	return top, nil
 }
 
-func (s *CorporationService) ListCorporationContracts(ctx context.Context, corporationID int32) ([]*app.CorporationContract, error) {
+func (s *CorporationService) ListCorporationContracts(ctx context.Context, corporationID int64) ([]*app.CorporationContract, error) {
 	return s.st.ListCorporationContracts(ctx, corporationID)
 }
 
@@ -95,12 +95,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContracts")
 			contracts, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCorporationsCorporationIdContracts200Ok, *http.Response, error) {
-					return s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContracts(
-						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdContractsOpts{
-							Page: esioptional.NewInt32(int32(pageNum)),
-						},
-					)
+				func(page int32) ([]esi.CorporationsCorporationIdContractsGetInner, *http.Response, error) {
+					return s.esiClient.ContractsAPI.GetCorporationsCorporationIdContracts(ctx, arg.CorporationID).Page(page).Execute()
 				},
 			)
 			if err != nil {
@@ -110,17 +106,19 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			return contracts, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			contracts := data.([]esi.GetCorporationsCorporationIdContracts200Ok)
+			contracts := data.([]esi.CorporationsCorporationIdContractsGetInner)
 			// filter out unwanted contracts
-			contracts = slices.DeleteFunc(contracts, func(x esi.GetCorporationsCorporationIdContracts200Ok) bool {
+			contracts = slices.DeleteFunc(contracts, func(x esi.CorporationsCorporationIdContractsGetInner) bool {
 				return x.Status == "deleted"
 			})
 			// fetch missing eve entities
-			var entityIDs set.Set[int32]
+			var entityIDs set.Set[int64]
 			var locationIDs set.Set[int64]
 			for _, c := range contracts {
 				entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-				locationIDs.Add(c.StartLocationId, c.EndLocationId)
+				if c.StartLocationId != nil && c.EndLocationId != nil {
+					locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+				}
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
@@ -131,10 +129,10 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			if err != nil {
 				return err
 			}
-			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CorporationContract) int32 {
+			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CorporationContract) int64 {
 				return x.ContractID
 			}))
-			var existingContracts, newContracts []esi.GetCorporationsCorporationIdContracts200Ok
+			var existingContracts, newContracts []esi.CorporationsCorporationIdContractsGetInner
 			for _, c := range contracts {
 				if currentIDs.Contains(c.ContractId) {
 					existingContracts = append(existingContracts, c)
@@ -170,7 +168,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			}
 			// add new bids for auctions
 			for _, c := range contracts {
-				if c.Type_ != "auction" {
+				if c.Type != "auction" {
 					continue
 				}
 				err := s.updateContractBids(ctx, arg.CorporationID, c.ContractId)
@@ -180,13 +178,13 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 				}
 			}
 			// delete stale local contracts
-			var unfinishedIDs set.Set[int32]
+			var unfinishedIDs set.Set[int64]
 			for _, o := range current {
 				if !o.Status.IsFinished() {
 					unfinishedIDs.Add(o.ContractID)
 				}
 			}
-			incomingIDs := set.Collect(xiter.MapSlice(contracts, func(x esi.GetCorporationsCorporationIdContracts200Ok) int32 {
+			incomingIDs := set.Collect(xiter.MapSlice(contracts, func(x esi.CorporationsCorporationIdContractsGetInner) int64 {
 				return x.ContractId
 			}))
 			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
@@ -197,10 +195,13 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 		})
 }
 
-func (s *CorporationService) createNewContract(ctx context.Context, corporationID int32, c esi.GetCorporationsCorporationIdContracts200Ok) error {
+func (s *CorporationService) createNewContract(ctx context.Context, corporationID int64, c esi.CorporationsCorporationIdContractsGetInner) error {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-	locationIDs := set.Of(c.StartLocationId, c.EndLocationId)
+	var locationIDs set.Set[int64]
+	if c.StartLocationId != nil && c.EndLocationId != nil {
+		locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+	}
 	err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 	if err != nil {
 		return err
@@ -213,45 +214,44 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	if !ok {
 		return fmt.Errorf("unknown status: %s", c.Status)
 	}
-	typ, ok := contractTypeFromESIValue[c.Type_]
+	typ, ok := contractTypeFromESIValue[c.Type]
 	if !ok {
-		return fmt.Errorf("unknown type: %s", c.Type_)
+		return fmt.Errorf("unknown type: %s", c.Type)
 	}
-	arg := storage.CreateCorporationContractParams{
+	id, err := s.st.CreateCorporationContract(ctx, storage.CreateCorporationContractParams{
 		AcceptorID:          c.AcceptorId,
 		AssigneeID:          c.AssigneeId,
 		Availability:        availability,
-		Buyout:              c.Buyout,
+		Buyout:              optional.FromPtr(c.Buyout),
 		CorporationID:       corporationID,
-		Collateral:          c.Collateral,
+		Collateral:          optional.FromPtr(c.Collateral),
 		ContractID:          c.ContractId,
-		DateAccepted:        c.DateAccepted,
-		DateCompleted:       c.DateCompleted,
+		DateAccepted:        optional.FromPtr(c.DateAccepted),
+		DateCompleted:       optional.FromPtr(c.DateCompleted),
 		DateExpired:         c.DateExpired,
 		DateIssued:          c.DateIssued,
-		DaysToComplete:      c.DaysToComplete,
-		EndLocationID:       c.EndLocationId,
+		DaysToComplete:      optional.FromPtr(c.DaysToComplete),
+		EndLocationID:       optional.FromPtr(c.EndLocationId),
 		ForCorporation:      c.ForCorporation,
 		IssuerCorporationID: c.IssuerCorporationId,
 		IssuerID:            c.IssuerId,
-		Price:               c.Price,
-		Reward:              c.Reward,
-		StartLocationID:     c.StartLocationId,
+		Price:               optional.FromPtr(c.Price),
+		Reward:              optional.FromPtr(c.Reward),
+		StartLocationID:     optional.FromPtr(c.StartLocationId),
 		Status:              status,
-		Title:               c.Title,
+		Title:               optional.FromPtr(c.Title),
 		Type:                typ,
-		Volume:              c.Volume,
-	}
-	id, err := s.st.CreateCorporationContract(ctx, arg)
+		Volume:              optional.FromPtr(c.Volume),
+	})
 	if err != nil {
 		return err
 	}
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdItems")
-	items, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID, nil)
+	items, _, err := s.esiClient.ContractsAPI.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID).Execute()
 	if err != nil {
 		return err
 	}
-	typeIDs := set.Of(xslices.Map(items, func(x esi.GetCorporationsCorporationIdContractsContractIdItems200Ok) int32 {
+	typeIDs := set.Of(xslices.Map(items, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) int64 {
 		return x.TypeId
 
 	})...)
@@ -264,7 +264,7 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
 			Quantity:    it.Quantity,
-			RawQuantity: it.RawQuantity,
+			RawQuantity: optional.FromPtr(it.RawQuantity),
 			RecordID:    it.RecordId,
 			TypeID:      it.TypeId,
 		}
@@ -275,7 +275,7 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	return nil
 }
 
-func (s *CorporationService) updateContract(ctx context.Context, corporationID int32, c esi.GetCorporationsCorporationIdContracts200Ok) error {
+func (s *CorporationService) updateContract(ctx context.Context, corporationID int64, c esi.CorporationsCorporationIdContractsGetInner) error {
 	status, ok := contractStatusFromESIValue[c.Status]
 	if !ok {
 		return fmt.Errorf("unknown status: %s", c.Status)
@@ -284,31 +284,31 @@ func (s *CorporationService) updateContract(ctx context.Context, corporationID i
 	if err != nil {
 		return err
 	}
-	var acceptorID int32
+	var acceptorID int64
 	if o.Acceptor != nil {
 		acceptorID = o.Acceptor.ID
 	}
 	if c.AcceptorId == acceptorID &&
-		c.DateAccepted.Equal(o.DateAccepted.ValueOrZero()) &&
-		c.DateCompleted.Equal(o.DateCompleted.ValueOrZero()) &&
+		optional.Equal2(optional.FromPtr(c.DateAccepted), o.DateAccepted) &&
+		optional.Equal2(optional.FromPtr(c.DateCompleted), o.DateCompleted) &&
 		o.Status == contractStatusFromESIValue[c.Status] {
 		return nil
 	}
-	arg := storage.UpdateCorporationContractParams{
+	err = s.st.UpdateCorporationContract(ctx, storage.UpdateCorporationContractParams{
 		AcceptorID:    c.AcceptorId,
-		DateAccepted:  c.DateAccepted,
-		DateCompleted: c.DateCompleted,
+		DateAccepted:  optional.FromPtr(c.DateAccepted),
+		DateCompleted: optional.FromPtr(c.DateCompleted),
 		CorporationID: corporationID,
 		ContractID:    c.ContractId,
 		Status:        status,
-	}
-	if err := s.st.UpdateCorporationContract(ctx, arg); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *CorporationService) updateContractBids(ctx context.Context, corporationID, contractID int32) error {
+func (s *CorporationService) updateContractBids(ctx context.Context, corporationID, contractID int64) error {
 	c, err := s.st.GetCorporationContract(ctx, corporationID, contractID)
 	if err != nil {
 		return err
@@ -318,11 +318,11 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 		return err
 	}
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdBids")
-	bids, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdBids(ctx, contractID, corporationID, nil)
+	bids, _, err := s.esiClient.ContractsAPI.GetCorporationsCorporationIdContractsContractIdBids(ctx, contractID, corporationID).Execute()
 	if err != nil {
 		return err
 	}
-	newBids := make([]esi.GetCorporationsCorporationIdContractsContractIdBids200Ok, 0)
+	newBids := make([]esi.CharactersCharacterIdContractsContractIdBidsGetInner, 0)
 	for _, b := range bids {
 		if !existingBidIDs.Contains(b.BidId) {
 			newBids = append(newBids, b)
@@ -331,7 +331,7 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 	if len(newBids) == 0 {
 		return nil
 	}
-	var eeIDs set.Set[int32]
+	var eeIDs set.Set[int64]
 	for _, b := range newBids {
 		if b.BidderId != 0 {
 			eeIDs.Add(b.BidderId)

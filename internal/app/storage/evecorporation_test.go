@@ -23,14 +23,14 @@ func TestEveCorporation(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		arg := storage.UpdateOrCreateEveCorporationParams{
-			Description: "description",
+			Description: optional.New("description"),
 			ID:          42,
 			MemberCount: 888,
 			Name:        "name",
 			TaxRate:     0.12,
 			Ticker:      "ticker",
-			URL:         "url",
-			WarEligible: false,
+			URL:         optional.New("url"),
+			WarEligible: optional.New(false),
 		}
 		// when
 		err := st.UpdateOrCreateEveCorporation(ctx, arg)
@@ -43,14 +43,14 @@ func TestEveCorporation(t *testing.T) {
 				assert.Nil(t, got.Ceo)
 				assert.Nil(t, got.Creator)
 				assert.Nil(t, got.HomeStation)
-				assert.EqualValues(t, arg.Description, got.Description)
-				assert.EqualValues(t, arg.ID, got.ID)
-				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
-				assert.EqualValues(t, arg.Name, got.Name)
-				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
-				assert.EqualValues(t, arg.Ticker, got.Ticker)
-				assert.EqualValues(t, arg.URL, got.URL)
-				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
+				xassert.Equal(t, arg.Description.ValueOrZero(), got.Description)
+				xassert.Equal(t, arg.ID, got.ID)
+				xassert.Equal(t, arg.MemberCount, got.MemberCount)
+				xassert.Equal(t, arg.Name, got.Name)
+				xassert.Equal(t, arg.TaxRate, got.TaxRate)
+				xassert.Equal(t, arg.Ticker, got.Ticker)
+				xassert.Equal(t, arg.URL.ValueOrZero(), got.URL.ValueOrZero())
+				xassert.Equal(t, arg.WarEligible.ValueOrZero(), got.WarEligible.ValueOrZero())
 			}
 		}
 	})
@@ -68,7 +68,7 @@ func TestEveCorporation(t *testing.T) {
 			CeoID:         optional.New(ceo.ID),
 			CreatorID:     optional.New(creator.ID),
 			DateFounded:   optional.New(dateFounded),
-			Description:   "description",
+			Description:   optional.New("description"),
 			FactionID:     optional.New(faction.ID),
 			HomeStationID: optional.New(station.ID),
 			ID:            42,
@@ -77,8 +77,8 @@ func TestEveCorporation(t *testing.T) {
 			Shares:        optional.New(int64(987)),
 			TaxRate:       0.12,
 			Ticker:        "ticker",
-			URL:           "url",
-			WarEligible:   false,
+			URL:           optional.New("url"),
+			WarEligible:   optional.New(false),
 		}
 		// when
 		err := st.UpdateOrCreateEveCorporation(ctx, arg)
@@ -86,21 +86,21 @@ func TestEveCorporation(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, alliance, got.Alliance)
-				assert.Equal(t, ceo, got.Ceo)
-				assert.Equal(t, creator, got.Creator)
-				assert.EqualValues(t, dateFounded, got.DateFounded.ValueOrZero())
-				assert.EqualValues(t, arg.Description, got.Description)
-				assert.Equal(t, faction, got.Faction)
-				assert.Equal(t, station, got.HomeStation)
-				assert.EqualValues(t, arg.ID, got.ID)
-				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
-				assert.EqualValues(t, arg.Name, got.Name)
-				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
-				assert.EqualValues(t, arg.Ticker, got.Ticker)
-				assert.EqualValues(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
-				assert.EqualValues(t, arg.URL, got.URL)
-				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
+				xassert.Equal(t, alliance, got.Alliance)
+				xassert.Equal(t, ceo, got.Ceo)
+				xassert.Equal(t, creator, got.Creator)
+				xassert.Equal(t, dateFounded, got.DateFounded.ValueOrZero())
+				xassert.Equal(t, arg.Description.ValueOrZero(), got.Description)
+				xassert.Equal(t, faction, got.Faction)
+				xassert.Equal(t, station, got.HomeStation)
+				xassert.Equal(t, arg.ID, got.ID)
+				xassert.Equal(t, arg.MemberCount, got.MemberCount)
+				xassert.Equal(t, arg.Name, got.Name)
+				xassert.Equal(t, arg.TaxRate, got.TaxRate)
+				xassert.Equal(t, arg.Ticker, got.Ticker)
+				xassert.Equal(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
+				xassert.Equal(t, arg.URL.ValueOrZero(), got.URL.ValueOrZero())
+				xassert.Equal(t, arg.WarEligible.ValueOrZero(), got.WarEligible.ValueOrZero())
 			}
 		}
 	})
@@ -119,7 +119,7 @@ func TestEveCorporation(t *testing.T) {
 			AllianceID:    optional.New(alliance.ID),
 			CeoID:         optional.New(ceo.ID),
 			CreatorID:     optional.New(creator.ID),
-			Description:   "description",
+			Description:   optional.New("description"),
 			FactionID:     optional.New(faction.ID),
 			HomeStationID: optional.New(station.ID),
 			ID:            42,
@@ -128,8 +128,8 @@ func TestEveCorporation(t *testing.T) {
 			Shares:        optional.New(int64(987)),
 			TaxRate:       0.12,
 			Ticker:        "ticker",
-			URL:           "url",
-			WarEligible:   false,
+			URL:           optional.New("url"),
+			WarEligible:   optional.New(false),
 		}
 		// when
 		err := st.UpdateOrCreateEveCorporation(ctx, arg)
@@ -137,19 +137,19 @@ func TestEveCorporation(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, alliance, got.Alliance)
-				assert.Equal(t, ceo, got.Ceo)
-				assert.EqualValues(t, arg.Description, got.Description)
-				assert.Equal(t, faction, got.Faction)
-				assert.Equal(t, station, got.HomeStation)
-				assert.EqualValues(t, arg.ID, got.ID)
-				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
-				assert.EqualValues(t, arg.Name, got.Name)
-				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
-				assert.EqualValues(t, arg.Ticker, got.Ticker)
-				assert.EqualValues(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
-				assert.EqualValues(t, arg.URL, got.URL)
-				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
+				xassert.Equal(t, alliance, got.Alliance)
+				xassert.Equal(t, ceo, got.Ceo)
+				xassert.Equal(t, arg.Description.ValueOrZero(), got.Description)
+				xassert.Equal(t, faction, got.Faction)
+				xassert.Equal(t, station, got.HomeStation)
+				xassert.Equal(t, arg.ID, got.ID)
+				xassert.Equal(t, arg.MemberCount, got.MemberCount)
+				xassert.Equal(t, arg.Name, got.Name)
+				xassert.Equal(t, arg.TaxRate, got.TaxRate)
+				xassert.Equal(t, arg.Ticker, got.Ticker)
+				xassert.Equal(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
+				xassert.Equal(t, arg.URL.ValueOrZero(), got.URL.ValueOrZero())
+				xassert.Equal(t, arg.WarEligible.ValueOrZero(), got.WarEligible.ValueOrZero())
 			}
 		}
 	})
@@ -161,7 +161,7 @@ func TestEveCorporation(t *testing.T) {
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c1.Name, c2.Name)
+			xassert.Equal(t, c1.Name, c2.Name)
 		}
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
@@ -179,7 +179,7 @@ func TestEveCorporation(t *testing.T) {
 			CeoID:         optional.New(ceo.ID),
 			CreatorID:     optional.New(creator.ID),
 			DateFounded:   optional.New(founded),
-			Description:   "description",
+			Description:   optional.New("description"),
 			FactionID:     optional.New(faction.ID),
 			HomeStationID: optional.New(station.ID),
 			MemberCount:   42,
@@ -187,28 +187,28 @@ func TestEveCorporation(t *testing.T) {
 			Shares:        optional.New[int64](888),
 			TaxRate:       0.1,
 			Ticker:        "ticker",
-			URL:           "url",
-			WarEligible:   true,
+			URL:           optional.New("url"),
+			WarEligible:   optional.New(true),
 		})
 		// when
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, c2.Alliance)
-			assert.Equal(t, ceo, c2.Ceo)
-			assert.Equal(t, creator, c2.Creator)
+			xassert.Equal(t, alliance, c2.Alliance)
+			xassert.Equal(t, ceo, c2.Ceo)
+			xassert.Equal(t, creator, c2.Creator)
 			assert.True(t, c2.DateFounded.MustValue().Equal(founded))
-			assert.Equal(t, "description", c2.Description)
-			assert.Equal(t, faction, c2.Faction)
-			assert.Equal(t, station, c2.HomeStation)
-			assert.EqualValues(t, 42, c2.MemberCount)
-			assert.Equal(t, "name", c2.Name)
-			assert.EqualValues(t, 888, c2.Shares.MustValue())
+			xassert.Equal(t, "description", c2.Description)
+			xassert.Equal(t, faction, c2.Faction)
+			xassert.Equal(t, station, c2.HomeStation)
+			xassert.Equal(t, 42, c2.MemberCount)
+			xassert.Equal(t, "name", c2.Name)
+			xassert.Equal(t, 888, c2.Shares.MustValue())
 			assert.InDelta(t, 0.1, c2.TaxRate, 0.01)
-			assert.Equal(t, "ticker", c2.Ticker)
-			assert.Equal(t, "url", c2.URL)
-			assert.Equal(t, c1.Name, c2.Name)
-			assert.True(t, c2.WarEligible)
+			xassert.Equal(t, "ticker", c2.Ticker)
+			xassert.Equal(t, "url", c2.URL.ValueOrZero())
+			xassert.Equal(t, c1.Name, c2.Name)
+			assert.True(t, c2.WarEligible.ValueOrZero())
 		}
 	})
 	t.Run("list corporation IDs", func(t *testing.T) {
@@ -221,7 +221,7 @@ func TestEveCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can update name", func(t *testing.T) {
@@ -235,7 +235,7 @@ func TestEveCorporation(t *testing.T) {
 			// assert.False(t, created)
 			r, err := st.GetEveCorporation(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "Alpha", r.Name)
+				xassert.Equal(t, "Alpha", r.Name)
 			}
 		}
 	})

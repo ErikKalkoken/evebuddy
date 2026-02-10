@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveMoon(t *testing.T) {
@@ -29,9 +30,9 @@ func TestEveMoon(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetEveMoon(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), o.ID)
-				assert.Equal(t, "name", o.Name)
-				assert.Equal(t, system, o.SolarSystem)
+				xassert.Equal(t, int64(42), o.ID)
+				xassert.Equal(t, "name", o.Name)
+				xassert.Equal(t, system, o.SolarSystem)
 			}
 		}
 	})

@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -52,25 +53,25 @@ type CharacterBuilder struct {
 
 	character     *app.Character
 	corporations  []*app.EveEntity
-	characterIDs  []int32
-	corporationID int32
+	characterIDs  []int64
+	corporationID int64
 	eus           *eveuniverseservice.EveUniverseService
 	f             *testutil.Factory
 	locations     map[int64]*app.EveLocation
 	st            *storage.Storage
-	types         map[int32]*app.EveType
+	types         map[int64]*app.EveType
 }
 
-func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EveUniverseService, corporationID int32) *CharacterBuilder {
+func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EveUniverseService, corporationID int64) *CharacterBuilder {
 	b := &CharacterBuilder{
-		characterIDs:  make([]int32, 0),
+		characterIDs:  make([]int64, 0),
 		corporationID: corporationID,
 		eus:           eus,
 		f:             f,
 		Factor:        1,
 		locations:     make(map[int64]*app.EveLocation),
 		st:            st,
-		types:         make(map[int32]*app.EveType),
+		types:         make(map[int64]*app.EveType),
 		corporations:  make([]*app.EveEntity, 0),
 	}
 	return b
@@ -137,7 +138,7 @@ func (b *CharacterBuilder) loadCharacterIDs(ctx context.Context) error {
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
-	ids := make([]int32, 0)
+	ids := make([]int64, 0)
 	for _, c := range v.Characters {
 		ids = append(ids, c.CharacterID)
 	}
@@ -189,7 +190,7 @@ func (b *CharacterBuilder) loadTypes(ctx context.Context) error {
 	}
 	for _, et := range types {
 		// ignore types that may not have a price
-		if !et.IsPublished || et.MarketGroupID == 0 || et.Group.ID == 15 {
+		if !et.IsPublished || et.MarketGroupID.IsEmpty() || et.Group.ID == 15 {
 			continue
 		}
 		b.types[et.ID] = et
@@ -197,7 +198,7 @@ func (b *CharacterBuilder) loadTypes(ctx context.Context) error {
 	return nil
 }
 
-func (b *CharacterBuilder) randomCharacterID() int32 {
+func (b *CharacterBuilder) randomCharacterID() int64 {
 	return sliceRandomElement(b.characterIDs)
 }
 
@@ -212,7 +213,7 @@ func (b *CharacterBuilder) randomType() *app.EveType {
 
 func (b *CharacterBuilder) loadLocations(ctx context.Context) error {
 	// select itemID from mapDenormalize where groupID = 15 ORDER BY RANDOM() LIMIT 20;
-	stationIDs := []int32{
+	stationIDs := []int64{
 		60011797,
 		60001999,
 		60008899,
@@ -291,7 +292,7 @@ func (b *CharacterBuilder) loadRandomCharacter(ctx context.Context) error {
 }
 
 type eveWhoCorpMembersCharacter struct {
-	CharacterID int32  `json:"character_id"`
+	CharacterID int64  `json:"character_id"`
 	Name        string `json:"name"`
 }
 
@@ -305,7 +306,7 @@ func (b *CharacterBuilder) createContracts() {
 		o := b.f.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: b.character.ID,
 			Type:        app.ContractTypeItemExchange,
-			Price:       float64(rand.IntN(10_000_000*100)) / 100,
+			Price:       optional.New(float64(rand.IntN(10_000_000*100)) / 100),
 		})
 		for range contractItems {
 			b.f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
@@ -325,8 +326,8 @@ func (b *CharacterBuilder) createMarketOrders() error {
 	ctx := context.Background()
 	for i := range marketOrders * b.Factor {
 		el := b.randomLocation()
-		volumeTotal := rand.IntN(1000) + 10
-		volumeRemain := rand.IntN(volumeTotal)
+		volumeTotal := rand.Int64N(1000) + 10
+		volumeRemain := rand.Int64N(volumeTotal)
 		typeID := b.randomType().ID
 		price, err := b.eus.MarketPrice(ctx, typeID)
 		if err != nil {
@@ -335,8 +336,8 @@ func (b *CharacterBuilder) createMarketOrders() error {
 		b.f.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID:   b.character.ID,
 			Price:         price.ValueOrFallback(makeRandomPrice()),
-			Duration:      rand.IntN(12) + 2,
-			IsBuyOrder:    true,
+			Duration:      rand.Int64N(12) + 2,
+			IsBuyOrder:    optional.New(true),
 			IsCorporation: false,
 			Issued:        issued,
 			LocationID:    el.ID,
@@ -363,7 +364,7 @@ func (b *CharacterBuilder) createImplants() {
 
 func (b *CharacterBuilder) createJumpClones() {
 	// jump clones
-	ii := make([]int32, 0)
+	ii := make([]int64, 0)
 	for range implants * b.Factor {
 		i := b.f.CreateEveType()
 		ii = append(ii, i.ID)
@@ -378,7 +379,7 @@ func (b *CharacterBuilder) createJumpClones() {
 }
 
 func (b *CharacterBuilder) createMail() {
-	labelIDs := []int32{app.MailLabelInbox, app.MailLabelSent, app.MailLabelCorp, app.MailLabelAlliance}
+	labelIDs := []int64{app.MailLabelInbox, app.MailLabelSent, app.MailLabelCorp, app.MailLabelAlliance}
 	for _, l := range labelIDs {
 		b.f.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: b.character.ID,
@@ -391,13 +392,13 @@ func (b *CharacterBuilder) createMail() {
 		})
 		labelIDs = append(labelIDs, ml.LabelID)
 	}
-	randomLabelID := func() int32 {
+	randomLabelID := func() int64 {
 		return labelIDs[rand.IntN(len(labelIDs))]
 	}
 	for i := range mails * b.Factor {
 		var mail storage.CreateCharacterMailParams
 		isList := spin(0.2)
-		var recipientIDs set.Set[int32]
+		var recipientIDs set.Set[int64]
 		for range rand.IntN(mailMaxRecipients * b.Factor) {
 			recipientIDs.Add(b.randomCharacterID())
 		}
@@ -406,11 +407,11 @@ func (b *CharacterBuilder) createMail() {
 				CharacterID:  b.character.ID,
 				FromID:       b.randomCharacterID(),
 				RecipientIDs: slices.Collect(recipientIDs.All()),
-				IsRead:       spin(0.2),
+				IsRead:       optional.FromZeroValue(spin(0.2)),
 			}
 		} else {
 			labelID := randomLabelID()
-			var fromID int32
+			var fromID int64
 			var isRead bool
 			switch labelID {
 			case app.MailLabelCorp:
@@ -436,8 +437,8 @@ func (b *CharacterBuilder) createMail() {
 				CharacterID:  b.character.ID,
 				FromID:       fromID,
 				RecipientIDs: slices.Collect(recipientIDs.All()),
-				LabelIDs:     []int32{labelID},
-				IsRead:       isRead,
+				LabelIDs:     []int64{labelID},
+				IsRead:       optional.FromZeroValue(isRead),
 			}
 		}
 		b.f.CreateCharacterMailWithBody(mail)
@@ -458,7 +459,7 @@ func (b *CharacterBuilder) createNotifications() {
 }
 
 func (b *CharacterBuilder) createSkills() {
-	groupIDs := make([]int32, 0)
+	groupIDs := make([]int64, 0)
 	for range skillGroups * b.Factor {
 		eg := b.f.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID:  app.EveCategorySkill,
@@ -466,7 +467,7 @@ func (b *CharacterBuilder) createSkills() {
 		})
 		groupIDs = append(groupIDs, eg.ID)
 	}
-	randomGroupIDs := func() int32 {
+	randomGroupIDs := func() int64 {
 		return groupIDs[rand.IntN(len(groupIDs))]
 	}
 	for i := range skills * b.Factor {
@@ -498,9 +499,9 @@ func (b *CharacterBuilder) createWalletJournal() {
 	for i := range walletJournalEntries * b.Factor {
 		b.f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID:   b.character.ID,
-			FirstPartyID:  b.randomCharacterID(),
-			SecondPartyID: b.randomCharacterID(),
-			TaxReceiverID: b.randomCharacterID(),
+			FirstPartyID:  optional.FromZeroValue(b.randomCharacterID()),
+			SecondPartyID: optional.FromZeroValue(b.randomCharacterID()),
+			TaxReceiverID: optional.FromZeroValue(b.randomCharacterID()),
 		})
 		printProgress("wallet journal", walletJournalEntries*b.Factor, i)
 	}

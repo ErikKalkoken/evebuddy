@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.EveNotificationGroup][]int, error) {
+func (s *CharacterService) CountNotifications(ctx context.Context, characterID int64) (map[app.EveNotificationGroup][]int, error) {
 	types, err := s.st.CountCharacterNotifications(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (s *CharacterService) CountNotifications(ctx context.Context, characterID i
 	return values, nil
 }
 
-func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[app.EveNotificationType], notify func(title, content string)) error {
+func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType], notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
 		if err != nil {
@@ -86,15 +86,15 @@ func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotificatio
 	return
 }
 
-func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int32, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int64, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsForTypes(ctx, characterID, app.NotificationGroupTypes(ng))
 }
 
-func (s *CharacterService) ListNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsAll(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsAll(ctx, characterID)
 }
 
-func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
@@ -104,23 +104,23 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdNotifications")
-			notifications, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdNotifications(ctx, characterID, nil)
+			notifications, _, err := s.esiClient.CharacterAPI.GetCharactersCharacterIdNotifications(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received notifications from ESI", "characterID", characterID, "count", len(notifications))
 			return notifications, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			notifications := data.([]esi.GetCharactersCharacterIdNotifications200Ok)
+		func(ctx context.Context, characterID int64, data any) error {
+			notifications := data.([]esi.CharactersCharacterIdNotificationsGetInner)
 			existingIDs, err := s.st.ListCharacterNotificationIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			var newNotifs []esi.GetCharactersCharacterIdNotifications200Ok
-			var existingNotifs []esi.GetCharactersCharacterIdNotifications200Ok
+			var newNotifs []esi.CharactersCharacterIdNotificationsGetInner
+			var existingNotifs []esi.CharactersCharacterIdNotificationsGetInner
 			for _, n := range notifications {
 				if existingIDs.Contains(n.NotificationId) {
 					existingNotifs = append(existingNotifs, n)
@@ -135,7 +135,10 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			for _, n := range existingNotifs {
 				o, err := s.st.GetCharacterNotification(ctx, characterID, n.NotificationId)
 				if err != nil {
-					slog.Error("Failed to get existing character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+					slog.Error("Failed to get existing character notification",
+						slog.Any("characterID", characterID),
+						slog.Any("NotificationID", n.NotificationId),
+						slog.Any("error", err))
 					continue
 				}
 				arg1 := storage.UpdateCharacterNotificationParams{
@@ -146,7 +149,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				}
 				arg2 := storage.UpdateCharacterNotificationParams{
 					ID:     o.ID,
-					IsRead: n.IsRead,
+					IsRead: optional.FromPtr(n.IsRead),
 				}
 				title, body, err := s.ens.RenderESI(ctx, o.Type, o.Text, o.Timestamp)
 				if errors.Is(err, app.ErrNotFound) {
@@ -188,19 +191,19 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				g.Go(func() error {
 					arg := storage.CreateCharacterNotificationParams{
 						CharacterID:    characterID,
-						IsRead:         n.IsRead,
+						IsRead:         optional.FromPtr(n.IsRead),
 						NotificationID: n.NotificationId,
 						SenderID:       n.SenderId,
-						Text:           n.Text,
+						Text:           optional.FromPtr(n.Text),
 						Timestamp:      n.Timestamp,
-						Type:           n.Type_,
+						Type:           n.Type,
 					}
 
-					nt, found := storage.EveNotificationTypeFromESIString(n.Type_)
+					nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 					if !found {
 						nt = app.UnknownNotification
 					}
-					var recipientID int32
+					var recipientID int64
 					switch nt.Category() {
 					case app.EveEntityCorporation:
 						recipientID = character.EveCharacter.Corporation.ID
@@ -215,7 +218,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					}
 					arg.RecipientID = optional.New(recipientID)
 
-					title, body, err := s.ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
+					title, body, err := s.ens.RenderESI(ctx, nt, optional.FromPtr(n.Text), n.Timestamp)
 					if errors.Is(err, app.ErrNotFound) {
 						// do nothing
 					} else if err != nil {
@@ -242,20 +245,20 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 		})
 }
 
-func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, notifications []esi.GetCharactersCharacterIdNotifications200Ok) error {
+func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, notifications []esi.CharactersCharacterIdNotificationsGetInner) error {
 	if len(notifications) == 0 {
 		return nil
 	}
-	var ids set.Set[int32]
+	var ids set.Set[int64]
 	for _, n := range notifications {
 		if n.SenderId != 0 {
 			ids.Add(n.SenderId)
 		}
-		nt, found := storage.EveNotificationTypeFromESIString(n.Type_)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found {
 			continue
 		}
-		ids2, err := s.ens.EntityIDs(nt, n.Text)
+		ids2, err := s.ens.EntityIDs(nt, optional.FromPtr(n.Text))
 		if errors.Is(err, app.ErrNotFound) {
 			continue
 		}

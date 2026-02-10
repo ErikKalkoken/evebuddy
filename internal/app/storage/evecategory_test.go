@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveCategory(t *testing.T) {
@@ -26,8 +27,8 @@ func TestEveCategory(t *testing.T) {
 		c, err := st.CreateEveCategory(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 42, c.ID)
-			assert.EqualValues(t, "Alpha", c.Name)
+			xassert.Equal(t, 42, c.ID)
+			xassert.Equal(t, "Alpha", c.Name)
 			assert.True(t, c.IsPublished)
 		}
 	})
@@ -39,7 +40,7 @@ func TestEveCategory(t *testing.T) {
 		c2, err := st.GetEveCategory(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c2, c2)
+			xassert.Equal(t, c2, c2)
 		}
 	})
 	t.Run("can get already existing", func(t *testing.T) {
@@ -52,7 +53,7 @@ func TestEveCategory(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c2, c2)
+			xassert.Equal(t, c2, c2)
 		}
 	})
 	t.Run("can create when not existing", func(t *testing.T) {
@@ -66,8 +67,8 @@ func TestEveCategory(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 42, c.ID)
-			assert.EqualValues(t, "Alpha", c.Name)
+			xassert.Equal(t, 42, c.ID)
+			xassert.Equal(t, "Alpha", c.Name)
 			assert.True(t, c.IsPublished)
 		}
 	})

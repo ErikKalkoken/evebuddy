@@ -4,7 +4,7 @@ package {{.Package}}
 
 import "fyne.io/fyne/v2"
 
-var {{.Variable}} = map[int32]*fyne.StaticResource{
+var {{.Variable}} = map[int64]*fyne.StaticResource{
     {{range .Values}}{{.ID}}: {{.Res}},
     {{end}}
 }

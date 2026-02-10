@@ -43,6 +43,8 @@ require (
 	fyne.io/systray v1.12.0 // indirect
 	fyne.io/tools v1.7.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/MicahParks/jwkset v0.11.0 // indirect
+	github.com/MicahParks/keyfunc/v3 v3.6.2 // indirect
 	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
@@ -51,6 +53,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
+	github.com/fnt-eve/goesi-openapi v0.0.19 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -66,6 +69,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.2.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/hack-pad/go-indexeddb v0.3.2 // indirect
@@ -106,5 +110,6 @@ require (
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect
+	gopkg.in/validator.v2 v2.0.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

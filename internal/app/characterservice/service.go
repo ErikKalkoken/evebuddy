@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -37,7 +37,7 @@ type CharacterService struct {
 	cache            Cache
 	concurrencyLimit int
 	ens              *evenotification.EveNotificationService
-	esiClient        *goesi.APIClient
+	esiClient        *esi.APIClient
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
@@ -47,26 +47,30 @@ type CharacterService struct {
 }
 
 type Params struct {
-	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
+	AuthClient             AuthClient
 	Cache                  Cache
+	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
+	ESIClient              *esi.APIClient
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
-	AuthClient             AuthClient
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
 	HTTPClient *http.Client
-	ESIClient  *goesi.APIClient
 }
 
 // New creates a new character service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CharacterService {
+	if arg.ESIClient == nil {
+		panic("missing esi client")
+	}
 	s := &CharacterService{
 		authClient:       arg.AuthClient,
 		cache:            arg.Cache,
 		concurrencyLimit: -1, // Default is no limit
 		ens:              arg.EveNotificationService,
+		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
 		sfg:              new(singleflight.Group),
@@ -77,11 +81,6 @@ func New(arg Params) *CharacterService {
 		s.httpClient = http.DefaultClient
 	} else {
 		s.httpClient = arg.HTTPClient
-	}
-	if arg.ESIClient == nil {
-		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
-	} else {
-		s.esiClient = arg.ESIClient
 	}
 	if arg.ConcurrencyLimit > 0 {
 		s.concurrencyLimit = arg.ConcurrencyLimit

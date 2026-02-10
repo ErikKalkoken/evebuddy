@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/notification"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-var eventToStructureTypeID = map[int32]int32{
+var eventToStructureTypeID = map[int32]int64{
 	1: app.EveTypeTCU,
 	2: app.EveTypeIHUB,
 }
@@ -21,18 +21,18 @@ type entosisCaptureStarted struct {
 	baseRenderer
 }
 
-func (n entosisCaptureStarted) entityIDs(text string) (setInt32, error) {
+func (n entosisCaptureStarted) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n entosisCaptureStarted) unmarshal(text string) (notification.EntosisCaptureStarted, setInt32, error) {
-	var data notification.EntosisCaptureStarted
+func (n entosisCaptureStarted) unmarshal(text string) (goesi.EntosisCaptureStarted, setInt64, error) {
+	var data goesi.EntosisCaptureStarted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.StructureTypeID)
 	return data, ids, nil
@@ -65,18 +65,18 @@ type sovAllClaimAcquiredMsg struct {
 	baseRenderer
 }
 
-func (n sovAllClaimAcquiredMsg) entityIDs(text string) (setInt32, error) {
+func (n sovAllClaimAcquiredMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n sovAllClaimAcquiredMsg) unmarshal(text string) (notification.SovAllClaimAquiredMsg, setInt32, error) {
-	var data notification.SovAllClaimAquiredMsg
+func (n sovAllClaimAcquiredMsg) unmarshal(text string) (goesi.SovAllClaimAquiredMsg, setInt64, error) {
+	var data goesi.SovAllClaimAquiredMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CorpID)
 	return data, ids, nil
@@ -111,18 +111,18 @@ type sovAllClaimLostMsg struct {
 	baseRenderer
 }
 
-func (n sovAllClaimLostMsg) entityIDs(text string) (setInt32, error) {
+func (n sovAllClaimLostMsg) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n sovAllClaimLostMsg) unmarshal(text string) (notification.SovAllClaimLostMsg, setInt32, error) {
-	var data notification.SovAllClaimLostMsg
+func (n sovAllClaimLostMsg) unmarshal(text string) (goesi.SovAllClaimLostMsg, setInt64, error) {
+	var data goesi.SovAllClaimLostMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.CorpID)
 	return data, ids, nil
@@ -156,13 +156,13 @@ type sovCommandNodeEventStarted struct {
 	baseRenderer
 }
 
-func (n sovCommandNodeEventStarted) entityIDs(text string) (setInt32, error) {
-	return set.Of[int32](app.EveTypeTCU, app.EveTypeIHUB), nil
+func (n sovCommandNodeEventStarted) entityIDs(text string) (setInt64, error) {
+	return set.Of[int64](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 
 func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.SovCommandNodeEventStarted
+	var data goesi.SovCommandNodeEventStarted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -199,18 +199,18 @@ type sovStructureDestroyed struct {
 	baseRenderer
 }
 
-func (n sovStructureDestroyed) entityIDs(text string) (setInt32, error) {
+func (n sovStructureDestroyed) entityIDs(text string) (setInt64, error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return setInt64{}, err
 	}
 	return ids, nil
 }
 
-func (n sovStructureDestroyed) unmarshal(text string) (notification.SovStructureDestroyed, setInt32, error) {
-	var data notification.SovStructureDestroyed
+func (n sovStructureDestroyed) unmarshal(text string) (goesi.SovStructureDestroyed, setInt64, error) {
+	var data goesi.SovStructureDestroyed
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, setInt64{}, err
 	}
 	ids := set.Of(data.StructureTypeID)
 	return data, ids, nil
@@ -243,13 +243,13 @@ type sovStructureReinforced struct {
 	baseRenderer
 }
 
-func (n sovStructureReinforced) entityIDs(text string) (setInt32, error) {
-	return set.Of[int32](app.EveTypeTCU, app.EveTypeIHUB), nil
+func (n sovStructureReinforced) entityIDs(text string) (setInt64, error) {
+	return set.Of[int64](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 
 func (n sovStructureReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
 	var title, body string
-	var data notification.SovStructureReinforced
+	var data goesi.SovStructureReinforced
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}

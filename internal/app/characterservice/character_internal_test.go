@@ -2,10 +2,11 @@ package characterservice
 
 import (
 	"context"
+	"net/http"
 	"slices"
 
 	"github.com/ErikKalkoken/eveauth"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -16,13 +17,17 @@ import (
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(st)
+	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "MyApp/1.0 (contact@example.com)",
+	})
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		ESIClient:          goesi.NewAPIClient(nil, ""),
+		ESIClient:          client,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
 	arg := Params{
 		Cache:              testutil.NewCacheFake2(),
+		ESIClient:          client,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -56,7 +61,7 @@ func (s AuthClientFake) RefreshToken(ctx context.Context, token *eveauth.Token) 
 func AuthTokenFromAppToken(x *app.Token) *eveauth.Token {
 	return &eveauth.Token{
 		AccessToken:   x.AccessToken,
-		CharacterID:   x.CharacterID,
+		CharacterID:   int32(x.CharacterID),
 		CharacterName: x.CharacterName,
 		ExpiresAt:     x.ExpiresAt,
 		RefreshToken:  x.RefreshToken,

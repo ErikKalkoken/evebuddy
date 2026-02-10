@@ -7,19 +7,19 @@ import (
 	"maps"
 	"time"
 
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-func (s *CharacterService) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int32) (*app.CharacterIndustryJob, error) {
+func (s *CharacterService) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int64) (*app.CharacterIndustryJob, error) {
 	return s.st.GetCharacterIndustryJob(ctx, characterID, jobID)
 }
 
@@ -44,11 +44,9 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 	var hasChanged bool
 	_, err := s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdIndustryJobs")
-			jobs, _, err := s.esiClient.ESI.IndustryApi.GetCharactersCharacterIdIndustryJobs(ctx, characterID, &esi.GetCharactersCharacterIdIndustryJobsOpts{
-				IncludeCompleted: esioptional.NewBool(true),
-			})
+			jobs, _, err := s.esiClient.IndustryAPI.GetCharactersCharacterIdIndustryJobs(ctx, characterID).IncludeCompleted(true).Execute()
 			if err != nil {
 				return false, err
 			}
@@ -61,10 +59,10 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			slog.Debug("Received industry jobs from ESI", "characterID", characterID, "count", len(jobs))
 			return jobs, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			jobs := data.([]esi.GetCharactersCharacterIdIndustryJobs200Ok)
+		func(ctx context.Context, characterID int64, data any) error {
+			jobs := data.([]esi.CharactersCharacterIdIndustryJobsGetInner)
 
-			statusFromESIJob := func(j esi.GetCharactersCharacterIdIndustryJobs200Ok) app.IndustryJobStatus {
+			statusFromESIJob := func(j esi.CharactersCharacterIdIndustryJobsGetInner) app.IndustryJobStatus {
 				status, ok := jobStatusFromESIValue[j.Status]
 				if !ok {
 					return app.JobUndefined
@@ -77,10 +75,10 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			if err != nil {
 				return err
 			}
-			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CharacterIndustryJob) (int32, app.IndustryJobStatus) {
+			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
 				return j.JobID, j.Status
 			}))
-			changedJobs := make([]esi.GetCharactersCharacterIdIndustryJobs200Ok, 0)
+			changedJobs := make([]esi.CharactersCharacterIdIndustryJobsGetInner, 0)
 			for _, j := range jobs {
 				status, found := currentJobs[j.JobId]
 				if !found {
@@ -96,13 +94,19 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			// Process changed jobs
 			hasChanged = len(changedJobs) > 0
 			if hasChanged {
-				var entityIDs set.Set[int32]
-				var typeIDs set.Set[int32]
+				var entityIDs set.Set[int64]
+				var typeIDs set.Set[int64]
 				var locationIDs set.Set[int64]
 				for _, j := range jobs {
-					entityIDs.Add(j.InstallerId, j.CompletedCharacterId)
+					entityIDs.Add(j.InstallerId)
+					if x := j.CompletedCharacterId; x != nil {
+						entityIDs.Add(*x)
+					}
 					locationIDs.Add(j.BlueprintLocationId, j.OutputLocationId, j.StationId)
-					typeIDs.Add(j.BlueprintTypeId, j.ProductTypeId)
+					typeIDs.Add(j.BlueprintTypeId)
+					if x := j.ProductTypeId; x != nil {
+						typeIDs.Add(*x)
+					}
 				}
 				g := new(errgroup.Group)
 				g.Go(func() error {
@@ -125,24 +129,24 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 						BlueprintLocationID:  j.BlueprintLocationId,
 						BlueprintTypeID:      j.BlueprintTypeId,
 						CharacterID:          characterID,
-						CompletedCharacterID: j.CompletedCharacterId,
-						CompletedDate:        j.CompletedDate,
-						Cost:                 j.Cost,
+						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+						CompletedDate:        optional.FromPtr(j.CompletedDate),
+						Cost:                 optional.FromPtr(j.Cost),
 						Duration:             j.Duration,
 						EndDate:              j.EndDate,
 						FacilityID:           j.FacilityId,
 						InstallerID:          j.InstallerId,
-						LicensedRuns:         j.LicensedRuns,
+						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
 						JobID:                j.JobId,
 						OutputLocationID:     j.OutputLocationId,
 						Runs:                 j.Runs,
-						PauseDate:            j.PauseDate,
-						Probability:          j.Probability,
-						ProductTypeID:        j.ProductTypeId,
+						PauseDate:            optional.FromPtr(j.PauseDate),
+						Probability:          optional.FromPtr(j.Probability),
+						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
 						StartDate:            j.StartDate,
 						Status:               statusFromESIJob(j),
 						StationID:            j.StationId,
-						SuccessfulRuns:       j.SuccessfulRuns,
+						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
 					})
 					if err != nil {
 						return err
@@ -151,7 +155,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 				slog.Info("Updated industry jobs", "characterID", characterID, "count", len(jobs))
 
 				// Mark orphans
-				incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCharactersCharacterIdIndustryJobs200Ok) int32 {
+				incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.CharactersCharacterIdIndustryJobsGetInner) int64 {
 					return x.JobId
 				}))
 				jj2, err := s.st.ListCharacterIndustryJobs(ctx, characterID)
@@ -160,7 +164,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 				}
 				running := set.Collect(xiter.Map(xiter.FilterSlice(jj2, func(x *app.CharacterIndustryJob) bool {
 					return x.Status.IsActive()
-				}), func(x *app.CharacterIndustryJob) int32 {
+				}), func(x *app.CharacterIndustryJob) int64 {
 					return x.JobID
 				}))
 				orphans := set.Difference(running, incoming)

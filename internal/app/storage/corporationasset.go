@@ -165,16 +165,16 @@ func init() {
 }
 
 type CreateCorporationAssetParams struct {
-	CorporationID   int32
-	EveTypeID       int32
-	IsBlueprintCopy bool
+	CorporationID   int64
+	EveTypeID       int64
+	IsBlueprintCopy optional.Optional[bool]
 	IsSingleton     bool
 	ItemID          int64
 	LocationFlag    app.LocationFlag
 	LocationID      int64
 	LocationType    app.LocationType
 	Name            string
-	Quantity        int32
+	Quantity        int64
 }
 
 func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorporationAssetParams) error {
@@ -185,32 +185,32 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.CreateCorporationAsset(ctx, queries.CreateCorporationAssetParams{
-		CorporationID:   int64(arg.CorporationID),
-		EveTypeID:       int64(arg.EveTypeID),
-		IsBlueprintCopy: arg.IsBlueprintCopy,
+		CorporationID:   arg.CorporationID,
+		EveTypeID:       arg.EveTypeID,
+		IsBlueprintCopy: arg.IsBlueprintCopy.ValueOrZero(),
 		IsSingleton:     arg.IsSingleton,
 		ItemID:          arg.ItemID,
 		LocationFlag:    locationFlagToDBValue2[arg.LocationFlag],
 		LocationID:      arg.LocationID,
 		LocationType:    locationTypeToDBValue2[arg.LocationType],
 		Name:            arg.Name,
-		Quantity:        int64(arg.Quantity),
+		Quantity:        arg.Quantity,
 	}); err != nil {
 		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID int32, itemIDs set.Set[int64]) error {
+func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID int64, itemIDs set.Set[int64]) error {
 	return st.qRW.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
-		CorporationID: int64(corporationID),
+		CorporationID: corporationID,
 		ItemIds:       slices.Collect(itemIDs.All()),
 	})
 }
 
-func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int32, itemID int64) (*app.CorporationAsset, error) {
+func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int64, itemID int64) (*app.CorporationAsset, error) {
 	r, err := st.qRO.GetCorporationAsset(ctx, queries.GetCorporationAssetParams{
-		CorporationID: int64(corporationID),
+		CorporationID: corporationID,
 		ItemID:        itemID,
 	})
 	if err != nil {
@@ -220,16 +220,16 @@ func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int32,
 	return o, nil
 }
 
-func (st *Storage) CalculateCorporationAssetTotalValue(ctx context.Context, corporationID int32) (float64, error) {
-	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, int64(corporationID))
+func (st *Storage) CalculateCorporationAssetTotalValue(ctx context.Context, corporationID int64) (float64, error) {
+	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, corporationID)
 	if err != nil {
 		return 0, fmt.Errorf("calculate corporation asset for corporation %d: %w", corporationID, err)
 	}
 	return v.Float64, nil
 }
 
-func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID int32) (set.Set[int64], error) {
-	ids, err := st.qRO.ListCorporationAssetIDs(ctx, int64(corporationID))
+func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCorporationAssetIDs(ctx, corporationID)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list corporation asset IDs: %w", err)
 	}
@@ -237,12 +237,12 @@ func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID in
 }
 
 type UpdateCorporationAssetParams struct {
-	CorporationID int32
+	CorporationID int64
 	ItemID        int64
 	LocationFlag  app.LocationFlag
 	LocationID    int64
 	LocationType  app.LocationType
-	Quantity      int32
+	Quantity      int64
 }
 
 func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporationAssetParams) error {
@@ -253,12 +253,12 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
-		CorporationID: int64(arg.CorporationID),
+		CorporationID: arg.CorporationID,
 		ItemID:        arg.ItemID,
 		LocationFlag:  locationFlagToDBValue2[arg.LocationFlag],
 		LocationID:    arg.LocationID,
 		LocationType:  locationTypeToDBValue2[arg.LocationType],
-		Quantity:      int64(arg.Quantity),
+		Quantity:      arg.Quantity,
 	}); err != nil {
 		return wrapErr(err)
 	}
@@ -266,7 +266,7 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 }
 
 type UpdateCorporationAssetNameParams struct {
-	CorporationID int32
+	CorporationID int64
 	ItemID        int64
 	Name          string
 }
@@ -279,7 +279,7 @@ func (st *Storage) UpdateCorporationAssetName(ctx context.Context, arg UpdateCor
 		wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCorporationAssetName(ctx, queries.UpdateCorporationAssetNameParams{
-		CorporationID: int64(arg.CorporationID),
+		CorporationID: arg.CorporationID,
 		ItemID:        arg.ItemID,
 		Name:          arg.Name,
 	}); err != nil {
@@ -300,8 +300,8 @@ func (st *Storage) ListAllCorporationAssets(ctx context.Context) ([]*app.Corpora
 	return oo, nil
 }
 
-func (st *Storage) ListCorporationAssets(ctx context.Context, corporationID int32) ([]*app.CorporationAsset, error) {
-	rows, err := st.qRO.ListCorporationAssets(ctx, int64(corporationID))
+func (st *Storage) ListCorporationAssets(ctx context.Context, corporationID int64) ([]*app.CorporationAsset, error) {
+	rows, err := st.qRO.ListCorporationAssets(ctx, corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("list assets for corporation ID %d: %w", corporationID, err)
 	}
@@ -325,9 +325,9 @@ func corporationAssetFromDBModel(ca queries.CorporationAsset, t queries.EveType,
 		locationType = app.TypeUnknown
 	}
 	o := &app.CorporationAsset{
-		CorporationID: int32(ca.CorporationID),
+		CorporationID: ca.CorporationID,
 		Asset: app.Asset{
-			IsBlueprintCopy: ca.IsBlueprintCopy,
+			IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
 			IsSingleton:     ca.IsSingleton,
 			ItemID:          ca.ItemID,
 			LocationFlag:    locationFlag,

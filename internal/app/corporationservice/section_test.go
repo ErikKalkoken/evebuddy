@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
@@ -38,7 +39,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, j1.StartDate, j2.StartDate)
+				xassert.Equal(t, j1.StartDate, j2.StartDate)
 			}
 			status, err := st.GetCorporationSectionStatus(
 				ctx,
