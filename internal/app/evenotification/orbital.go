@@ -16,18 +16,18 @@ type orbitalAttacked struct {
 	baseRenderer
 }
 
-func (n orbitalAttacked) entityIDs(text string) (setInt64, error) {
+func (n orbitalAttacked) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n orbitalAttacked) unmarshal(text string) (goesi.OrbitalAttacked, setInt64, error) {
+func (n orbitalAttacked) unmarshal(text string) (goesi.OrbitalAttacked, set.Set[int64], error) {
 	var data goesi.OrbitalAttacked
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil
@@ -73,18 +73,18 @@ type orbitalReinforced struct {
 	baseRenderer
 }
 
-func (n orbitalReinforced) entityIDs(text string) (setInt64, error) {
+func (n orbitalReinforced) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n orbitalReinforced) unmarshal(text string) (goesi.OrbitalReinforced, setInt64, error) {
+func (n orbitalReinforced) unmarshal(text string) (goesi.OrbitalReinforced, set.Set[int64], error) {
 	var data goesi.OrbitalReinforced
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil

@@ -79,18 +79,18 @@ type corpAllBillMsg struct {
 	baseRenderer
 }
 
-func (n corpAllBillMsg) entityIDs(text string) (setInt64, error) {
+func (n corpAllBillMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, setInt64, error) {
+func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, set.Set[int64], error) {
 	var data goesi.CorpAllBillMsgV2
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CreditorID, data.DebtorID)
 	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int64(data.ExternalID)) {

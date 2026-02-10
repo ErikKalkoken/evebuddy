@@ -78,18 +78,18 @@ type moonminingAutomaticFracture struct {
 	baseRenderer
 }
 
-func (n moonminingAutomaticFracture) entityIDs(text string) (setInt64, error) {
+func (n moonminingAutomaticFracture) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n moonminingAutomaticFracture) unmarshal(text string) (goesi.MoonminingAutomaticFracture, setInt64, error) {
+func (n moonminingAutomaticFracture) unmarshal(text string) (goesi.MoonminingAutomaticFracture, set.Set[int64], error) {
 	var data goesi.MoonminingAutomaticFracture
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
@@ -122,18 +122,18 @@ type moonminingExtractionStarted struct {
 	baseRenderer
 }
 
-func (n moonminingExtractionStarted) entityIDs(text string) (setInt64, error) {
+func (n moonminingExtractionStarted) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n moonminingExtractionStarted) unmarshal(text string) (goesi.MoonminingExtractionStarted, setInt64, error) {
+func (n moonminingExtractionStarted) unmarshal(text string) (goesi.MoonminingExtractionStarted, set.Set[int64], error) {
 	var data goesi.MoonminingExtractionStarted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
@@ -169,18 +169,18 @@ type moonminingExtractionFinished struct {
 	baseRenderer
 }
 
-func (n moonminingExtractionFinished) entityIDs(text string) (setInt64, error) {
+func (n moonminingExtractionFinished) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n moonminingExtractionFinished) unmarshal(text string) (goesi.MoonminingExtractionFinished, setInt64, error) {
+func (n moonminingExtractionFinished) unmarshal(text string) (goesi.MoonminingExtractionFinished, set.Set[int64], error) {
 	var data goesi.MoonminingExtractionFinished
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
@@ -215,20 +215,20 @@ type moonminingExtractionCancelled struct {
 	baseRenderer
 }
 
-func (n moonminingExtractionCancelled) entityIDs(text string) (setInt64, error) {
+func (n moonminingExtractionCancelled) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n moonminingExtractionCancelled) unmarshal(text string) (goesi.MoonminingExtractionCancelled, setInt64, error) {
+func (n moonminingExtractionCancelled) unmarshal(text string) (goesi.MoonminingExtractionCancelled, set.Set[int64], error) {
 	var data goesi.MoonminingExtractionCancelled
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
-	var ids setInt64
+	var ids set.Set[int64]
 	if data.CancelledBy != 0 {
 		ids.Add(data.CancelledBy)
 	}
@@ -267,18 +267,18 @@ type moonminingLaserFired struct {
 	baseRenderer
 }
 
-func (n moonminingLaserFired) entityIDs(text string) (setInt64, error) {
+func (n moonminingLaserFired) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n moonminingLaserFired) unmarshal(text string) (goesi.MoonminingLaserFired, setInt64, error) {
+func (n moonminingLaserFired) unmarshal(text string) (goesi.MoonminingLaserFired, set.Set[int64], error) {
 	var data goesi.MoonminingLaserFired
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	if data.FiredBy != 0 {

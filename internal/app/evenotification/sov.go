@@ -21,18 +21,18 @@ type entosisCaptureStarted struct {
 	baseRenderer
 }
 
-func (n entosisCaptureStarted) entityIDs(text string) (setInt64, error) {
+func (n entosisCaptureStarted) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n entosisCaptureStarted) unmarshal(text string) (goesi.EntosisCaptureStarted, setInt64, error) {
+func (n entosisCaptureStarted) unmarshal(text string) (goesi.EntosisCaptureStarted, set.Set[int64], error) {
 	var data goesi.EntosisCaptureStarted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.StructureTypeID)
 	return data, ids, nil
@@ -65,18 +65,18 @@ type sovAllClaimAcquiredMsg struct {
 	baseRenderer
 }
 
-func (n sovAllClaimAcquiredMsg) entityIDs(text string) (setInt64, error) {
+func (n sovAllClaimAcquiredMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n sovAllClaimAcquiredMsg) unmarshal(text string) (goesi.SovAllClaimAquiredMsg, setInt64, error) {
+func (n sovAllClaimAcquiredMsg) unmarshal(text string) (goesi.SovAllClaimAquiredMsg, set.Set[int64], error) {
 	var data goesi.SovAllClaimAquiredMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CorpID)
 	return data, ids, nil
@@ -111,18 +111,18 @@ type sovAllClaimLostMsg struct {
 	baseRenderer
 }
 
-func (n sovAllClaimLostMsg) entityIDs(text string) (setInt64, error) {
+func (n sovAllClaimLostMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n sovAllClaimLostMsg) unmarshal(text string) (goesi.SovAllClaimLostMsg, setInt64, error) {
+func (n sovAllClaimLostMsg) unmarshal(text string) (goesi.SovAllClaimLostMsg, set.Set[int64], error) {
 	var data goesi.SovAllClaimLostMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CorpID)
 	return data, ids, nil
@@ -156,7 +156,7 @@ type sovCommandNodeEventStarted struct {
 	baseRenderer
 }
 
-func (n sovCommandNodeEventStarted) entityIDs(text string) (setInt64, error) {
+func (n sovCommandNodeEventStarted) entityIDs(text string) (set.Set[int64], error) {
 	return set.Of[int64](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 
@@ -199,18 +199,18 @@ type sovStructureDestroyed struct {
 	baseRenderer
 }
 
-func (n sovStructureDestroyed) entityIDs(text string) (setInt64, error) {
+func (n sovStructureDestroyed) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n sovStructureDestroyed) unmarshal(text string) (goesi.SovStructureDestroyed, setInt64, error) {
+func (n sovStructureDestroyed) unmarshal(text string) (goesi.SovStructureDestroyed, set.Set[int64], error) {
 	var data goesi.SovStructureDestroyed
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.StructureTypeID)
 	return data, ids, nil
@@ -243,7 +243,7 @@ type sovStructureReinforced struct {
 	baseRenderer
 }
 
-func (n sovStructureReinforced) entityIDs(text string) (setInt64, error) {
+func (n sovStructureReinforced) entityIDs(text string) (set.Set[int64], error) {
 	return set.Of[int64](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 

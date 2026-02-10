@@ -41,18 +41,18 @@ type towerAlertMsg struct {
 	baseRenderer
 }
 
-func (n towerAlertMsg) entityIDs(text string) (setInt64, error) {
+func (n towerAlertMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n towerAlertMsg) unmarshal(text string) (goesi.TowerAlertMsg, setInt64, error) {
+func (n towerAlertMsg) unmarshal(text string) (goesi.TowerAlertMsg, set.Set[int64], error) {
 	var data goesi.TowerAlertMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil

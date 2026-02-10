@@ -14,18 +14,18 @@ type charAppAcceptMsg struct {
 	baseRenderer
 }
 
-func (n charAppAcceptMsg) entityIDs(text string) (setInt64, error) {
+func (n charAppAcceptMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n charAppAcceptMsg) unmarshal(text string) (goesi.CharAppAcceptMsg, setInt64, error) {
+func (n charAppAcceptMsg) unmarshal(text string) (goesi.CharAppAcceptMsg, set.Set[int64], error) {
 	var data goesi.CharAppAcceptMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil
@@ -59,18 +59,18 @@ type corpAppNewMsg struct {
 	baseRenderer
 }
 
-func (n corpAppNewMsg) entityIDs(text string) (setInt64, error) {
+func (n corpAppNewMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n corpAppNewMsg) unmarshal(text string) (goesi.CorpAppNewMsg, setInt64, error) {
+func (n corpAppNewMsg) unmarshal(text string) (goesi.CorpAppNewMsg, set.Set[int64], error) {
 	var data goesi.CorpAppNewMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil
@@ -101,18 +101,18 @@ type corpAppInvitedMsg struct {
 	baseRenderer
 }
 
-func (n corpAppInvitedMsg) entityIDs(text string) (setInt64, error) {
+func (n corpAppInvitedMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n corpAppInvitedMsg) unmarshal(text string) (goesi.CorpAppInvitedMsg, setInt64, error) {
+func (n corpAppInvitedMsg) unmarshal(text string) (goesi.CorpAppInvitedMsg, set.Set[int64], error) {
 	var data goesi.CorpAppInvitedMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID, data.InvokingCharID)
 	return data, ids, nil
@@ -144,18 +144,18 @@ type charAppRejectMsg struct {
 	baseRenderer
 }
 
-func (n charAppRejectMsg) entityIDs(text string) (setInt64, error) {
+func (n charAppRejectMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n charAppRejectMsg) unmarshal(text string) (goesi.CharAppRejectMsg, setInt64, error) {
+func (n charAppRejectMsg) unmarshal(text string) (goesi.CharAppRejectMsg, set.Set[int64], error) {
 	var data goesi.CharAppRejectMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil
@@ -186,18 +186,18 @@ type corpAppRejectCustomMsg struct {
 	baseRenderer
 }
 
-func (n corpAppRejectCustomMsg) entityIDs(text string) (setInt64, error) {
+func (n corpAppRejectCustomMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n corpAppRejectCustomMsg) unmarshal(text string) (goesi.CorpAppRejectCustomMsg, setInt64, error) {
+func (n corpAppRejectCustomMsg) unmarshal(text string) (goesi.CorpAppRejectCustomMsg, set.Set[int64], error) {
 	var data goesi.CorpAppRejectCustomMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil
@@ -231,18 +231,18 @@ type charAppWithdrawMsg struct {
 	baseRenderer
 }
 
-func (n charAppWithdrawMsg) entityIDs(text string) (setInt64, error) {
+func (n charAppWithdrawMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n charAppWithdrawMsg) unmarshal(text string) (goesi.CharAppWithdrawMsg, setInt64, error) {
+func (n charAppWithdrawMsg) unmarshal(text string) (goesi.CharAppWithdrawMsg, set.Set[int64], error) {
 	var data goesi.CharAppWithdrawMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil
@@ -273,18 +273,18 @@ type charLeftCorpMsg struct {
 	baseRenderer
 }
 
-func (n charLeftCorpMsg) entityIDs(text string) (setInt64, error) {
+func (n charLeftCorpMsg) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt64{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n charLeftCorpMsg) unmarshal(text string) (goesi.CharLeftCorpMsg, setInt64, error) {
+func (n charLeftCorpMsg) unmarshal(text string) (goesi.CharLeftCorpMsg, set.Set[int64], error) {
 	var data goesi.CharLeftCorpMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt64{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CharID, data.CorpID)
 	return data, ids, nil

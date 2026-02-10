@@ -26,12 +26,10 @@ type EveUniverseService interface {
 	ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error)
 }
 
-type setInt64 = set.Set[int64]
-
 // notificationRenderer represents the interface every notification renderer needs to confirm with.
 type notificationRenderer interface {
 	// entityIDs returns the Entity IDs used by a notification (if any).
-	entityIDs(text string) (setInt64, error)
+	entityIDs(text string) (set.Set[int64], error)
 	// render returns the rendered title and body for a goesi.
 	render(ctx context.Context, text string, timestamp time.Time) (string, string, error)
 	// setEveUniverse initialized access to the EveUniverseService service and must be called before render().
@@ -57,8 +55,8 @@ func (br *baseRenderer) setEveUniverse(eus EveUniverseService) {
 // entityIDs returns the Entity IDs used by a notification (if any).
 //
 // Must be overwritten by a notification rendered that want to return IDs.
-func (br baseRenderer) entityIDs(_ string) (setInt64, error) {
-	return setInt64{}, nil
+func (br baseRenderer) entityIDs(_ string) (set.Set[int64], error) {
+	return set.Set[int64]{}, nil
 }
 
 // EveNotificationService is a service for rendering notifications.
@@ -76,13 +74,13 @@ func New(eus EveUniverseService) *EveNotificationService {
 // before rendering them one by one.
 // Returns an empty set when notification does not use Entity IDs.
 // Returns [app.ErrNotFound] for unsupported notification types.
-func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (setInt64, error) {
+func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
 	if text.IsEmpty() {
-		return setInt64{}, nil
+		return set.Set[int64]{}, nil
 	}
 	r, found := s.makeRenderer(app.EveNotificationType(nt))
 	if !found {
-		return setInt64{}, app.ErrNotFound
+		return set.Set[int64]{}, app.ErrNotFound
 	}
 	return r.entityIDs(text.ValueOrZero())
 }
