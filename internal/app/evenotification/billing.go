@@ -93,11 +93,11 @@ func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, set.Set[
 		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CreditorID, data.DebtorID)
-	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int64(data.ExternalID)) {
-		ids.Add(int64(data.ExternalID))
+	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
+		ids.Add(data.ExternalID)
 	}
-	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int64(data.ExternalID2)) {
-		ids.Add(int64(data.ExternalID2))
+	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
+		ids.Add(data.ExternalID2)
 	}
 	return data, ids, nil
 }
@@ -113,13 +113,13 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.
 		return title, body, err
 	}
 	var external1 string
-	if x, ok := entities[int64(data.ExternalID)]; ok && x.Name != "" {
+	if x, ok := entities[data.ExternalID]; ok && x.Name != "" {
 		external1 = x.Name
 	} else {
 		external1 = "?"
 	}
 	var external2 string
-	if x, ok := entities[int64(data.ExternalID2)]; ok && x.Name != "" {
+	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
 		external2 = x.Name
 	} else {
 		external2 = "?"

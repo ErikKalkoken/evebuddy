@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -76,27 +78,43 @@ externalID2: 0`
 	})
 }
 
-// func TestBilling_EntityIDs(t *testing.T) {
-// 	db, st, _ := testutil.NewDBInMemory()
-// 	defer db.Close()
-// 	eus := eveuniverseservice.New(eveuniverseservice.Params{
-// 		Storage: st,
-// 	})
-// 	en := evenotification.New(eus)
-// 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
-// 		// given
-// 		text := `
-// amount: 10000
-// billTypeID: 2
-// creditorID: 1000023
-// currentDate: 133678830021821155
-// debtorID: 98267621
-// dueDate: 133704743590000000
-// externalID: 27
-// externalID2: 60003760`
-// 		ids, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
-// 		require.NoError(t, err)
-// 		want := set.Of(27, 1000023, 60003760)
-// 		xassert.Equal2(t, want, ids)
-// 	})
-// }
+func TestBilling_EntityIDs(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage: st,
+	})
+	en := evenotification.New(eus)
+	t.Run("Can retrieve all entity IDs", func(t *testing.T) {
+		// given
+		text := `
+amount: 10000
+billTypeID: 2
+creditorID: 1000023
+currentDate: 133678830021821155
+debtorID: 98267621
+dueDate: 133704743590000000
+externalID: 27
+externalID2: 60003760`
+		ids, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
+		require.NoError(t, err)
+		want := set.Of[int64](27, 1000023, 60003760, 98267621)
+		xassert.Equal2(t, want, ids)
+	})
+	t.Run("should not return invalid entity IDs", func(t *testing.T) {
+		// given
+		text := `
+amount: 10000
+billTypeID: 2
+creditorID: 1000023
+currentDate: 133678830021821155
+debtorID: 98267621
+dueDate: 133704743590000000
+externalID: 27
+externalID2: 1047607396377`
+		ids, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
+		require.NoError(t, err)
+		want := set.Of[int64](27, 1000023, 98267621)
+		xassert.Equal2(t, want, ids)
+	})
+}
