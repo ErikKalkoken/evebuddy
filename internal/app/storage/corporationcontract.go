@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -145,7 +146,7 @@ func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID
 	}
 	err := st.qRW.DeleteCorporationContracts(ctx, queries.DeleteCorporationContractsParams{
 		CorporationID: corporationID,
-		ContractIds:   convertNumericSet[int64](contractIDs),
+		ContractIds:   slices.Collect(contractIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)

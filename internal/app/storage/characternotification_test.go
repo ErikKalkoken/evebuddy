@@ -45,7 +45,7 @@ func TestCharacterNotification(t *testing.T) {
 		if assert.NoError(t, err) {
 			xassert.Equal(t, c.ID, o.CharacterID)
 			assert.True(t, o.IsRead.ValueOrZero())
-			xassert.Equal(t, int64(42), o.NotificationID)
+			xassert.Equal(t, 42, o.NotificationID)
 			xassert.Equal(t, sender, o.Sender)
 			xassert.Equal(t, "text", o.Text.ValueOrZero())
 			xassert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
@@ -80,7 +80,7 @@ func TestCharacterNotification(t *testing.T) {
 			if assert.NoError(t, err) {
 				xassert.Equal(t, c.ID, o.CharacterID)
 				assert.True(t, o.IsRead.ValueOrZero())
-				xassert.Equal(t, int64(42), o.NotificationID)
+				xassert.Equal(t, 42, o.NotificationID)
 				xassert.Equal(t, sender, o.Sender)
 				xassert.Equal(t, "text", o.Text.ValueOrZero())
 				xassert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())

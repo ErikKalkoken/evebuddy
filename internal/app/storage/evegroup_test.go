@@ -31,7 +31,7 @@ func TestEveGroup(t *testing.T) {
 		if assert.NoError(t, err) {
 			g, err := st.GetEveGroup(ctx, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, int64(42), g.ID)
+				xassert.Equal(t, 42, g.ID)
 				xassert.Equal(t, "name", g.Name)
 				xassert.Equal(t, true, g.IsPublished)
 				xassert.Equal(t, c, g.Category)

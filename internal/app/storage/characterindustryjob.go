@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -45,7 +46,7 @@ func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characte
 	}
 	err := st.qRW.DeleteCharacterIndustryJobs(ctx, queries.DeleteCharacterIndustryJobsParams{
 		CharacterID: characterID,
-		JobIds:      convertNumericSet[int64](jobIDs),
+		JobIds:      slices.Collect(jobIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -244,7 +245,7 @@ func (st *Storage) UpdateCharacterIndustryJobStatus(ctx context.Context, arg Upd
 	}
 	err := st.qRW.UpdateCharacterIndustryJobStatus(ctx, queries.UpdateCharacterIndustryJobStatusParams{
 		CharacterID: arg.CharacterID,
-		JobIds:      convertNumericSet[int64](arg.JobIDs),
+		JobIds:      slices.Collect(arg.JobIDs.All()),
 		Status:      jobStatusToDBValue[arg.Status],
 	})
 	if err != nil {

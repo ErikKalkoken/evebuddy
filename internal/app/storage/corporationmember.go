@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -65,7 +66,7 @@ func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID i
 	}
 	err := st.qRW.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
 		CorporationID: corporationID,
-		CharacterIds:  convertNumericSet[int64](characterIDs),
+		CharacterIds:  slices.Collect(characterIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)

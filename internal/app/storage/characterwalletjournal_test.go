@@ -47,7 +47,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 			if assert.NoError(t, err) {
 				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
 				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
-				xassert.Equal(t, int64(42), i.ContextID.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
 				xassert.Equal2(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
@@ -92,7 +92,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 			if assert.NoError(t, err) {
 				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
 				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
-				xassert.Equal(t, int64(42), i.ContextID.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
 				xassert.Equal(t, e1, i.FirstParty)
 				xassert.Equal2(t, date, i.Date)

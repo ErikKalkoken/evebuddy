@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -13,7 +14,7 @@ import (
 func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int64, eveTypeIDs set.Set[int64]) error {
 	arg := queries.DeleteCharacterSkillsParams{
 		CharacterID: characterID,
-		EveTypeIds:  convertNumericSet[int64](eveTypeIDs),
+		EveTypeIds:  slices.Collect(eveTypeIDs.All()),
 	}
 	err := st.qRW.DeleteCharacterSkills(ctx, arg)
 	if err != nil {

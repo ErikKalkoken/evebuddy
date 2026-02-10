@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -43,7 +44,7 @@ func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacte
 func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int64, planetIDs set.Set[int64]) error {
 	arg := queries.DeleteCharacterPlanetsParams{
 		CharacterID:  characterID,
-		EvePlanetIds: convertNumericSet[int64](planetIDs),
+		EvePlanetIds: slices.Collect(planetIDs.All()),
 	}
 	if err := st.qRW.DeleteCharacterPlanets(ctx, arg); err != nil {
 		return fmt.Errorf("delete character planets: %+v: %w", arg, err)

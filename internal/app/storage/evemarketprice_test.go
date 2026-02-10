@@ -28,7 +28,7 @@ func TestEveMarketPrice(t *testing.T) {
 		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(42), x.TypeID)
+			xassert.Equal(t, 42, x.TypeID)
 			xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
 			xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
 		}
@@ -50,7 +50,7 @@ func TestEveMarketPrice(t *testing.T) {
 		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(42), x.TypeID)
+			xassert.Equal(t, 42, x.TypeID)
 			xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
 			xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
 		}

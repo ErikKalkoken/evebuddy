@@ -32,7 +32,7 @@ func TestEveSolarSystem(t *testing.T) {
 		if assert.NoError(t, err) {
 			g, err := st.GetEveSolarSystem(ctx, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, int64(42), g.ID)
+				xassert.Equal(t, 42, g.ID)
 				xassert.Equal(t, "name", g.Name)
 				xassert.Equal(t, c, g.Constellation)
 				xassert.Equal(t, float32(-8.5), g.SecurityStatus)

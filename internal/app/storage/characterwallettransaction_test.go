@@ -57,7 +57,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 				xassert.Equal(t, eveType.Name, i.Type.Name)
 				assert.True(t, i.IsBuy)
 				assert.True(t, i.IsPersonal)
-				xassert.Equal(t, int64(99), i.JournalRefID)
+				xassert.Equal(t, 99, i.JournalRefID)
 				xassert.Equal(t, location.ID, i.Location.ID)
 				xassert.Equal(t,
 					&app.EveLocationShort{
@@ -68,7 +68,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 					i.Location,
 				)
 				xassert.Equal(t, c.ID, i.CharacterID)
-				xassert.Equal(t, int64(7), i.Quantity)
+				xassert.Equal(t, 7, i.Quantity)
 				xassert.Equal(t, 123.45, i.UnitPrice)
 				xassert.Equal(t, location.ID, i.Location.ID)
 				xassert.Equal(t,

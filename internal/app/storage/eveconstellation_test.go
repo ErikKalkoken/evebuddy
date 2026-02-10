@@ -30,7 +30,7 @@ func TestEveConstellation(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetEveConstellation(ctx, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, int64(42), o.ID)
+				xassert.Equal(t, 42, o.ID)
 				xassert.Equal(t, "name", o.Name)
 				xassert.Equal(t, region, o.Region)
 			}

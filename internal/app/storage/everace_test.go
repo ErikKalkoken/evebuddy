@@ -27,7 +27,7 @@ func TestEveRace(t *testing.T) {
 		x1, err := r.CreateEveRace(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(42), x1.ID)
+			xassert.Equal(t, 42, x1.ID)
 			xassert.Equal(t, "description", x1.Description)
 			xassert.Equal(t, "name", x1.Name)
 			x2, err := r.GetEveRace(ctx, 42)

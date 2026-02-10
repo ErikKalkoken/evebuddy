@@ -100,7 +100,7 @@ func TestEveEntity(t *testing.T) {
 		if assert.NoError(t, err) {
 			e, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, e.ID, int64(42))
+				xassert.Equal(t, e.ID, 42)
 				xassert.Equal(t, e.Name, "Dummy")
 				xassert.Equal(t, e.Category, app.EveEntityAlliance)
 			}
@@ -285,7 +285,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 		if assert.NoError(t, err) {
 			e, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, e.ID, int64(42))
+				xassert.Equal(t, e.ID, 42)
 				xassert.Equal(t, e.Name, "Dummy")
 				xassert.Equal(t, e.Category, app.EveEntityAlliance)
 			}
@@ -310,7 +310,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 		e, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(42), e.ID)
+			xassert.Equal(t, 42, e.ID)
 			xassert.Equal(t, "Alpha", e.Name)
 			xassert.Equal(t, app.EveEntityCharacter, e.Category)
 		}

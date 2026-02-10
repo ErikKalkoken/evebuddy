@@ -44,7 +44,7 @@ func TestCharacterMail(t *testing.T) {
 		if assert.NoError(t, err) {
 			m, err := st.GetCharacterMail(ctx, c.ID, 42)
 			assert.NoError(t, err)
-			xassert.Equal(t, int64(42), m.MailID)
+			xassert.Equal(t, 42, m.MailID)
 			xassert.Equal(t, "body", m.Body.ValueOrZero())
 			xassert.Equal(t, f, m.From)
 			xassert.Equal(t, c.ID, m.CharacterID)
