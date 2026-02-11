@@ -867,10 +867,11 @@ type CharacterNotification struct {
 
 // TitleDisplay returns the rendered title when it exists or else the fake tile.
 func (cn *CharacterNotification) TitleDisplay() string {
-	if cn.Title.IsEmpty() {
+	v, ok := cn.Title.Value()
+	if !ok {
 		return cn.TitleFake()
 	}
-	return cn.Title.ValueOrZero()
+	return v
 }
 
 // TitleFake returns a title for output made from the name of the type.
@@ -890,11 +891,12 @@ func (cn *CharacterNotification) TitleFake() string {
 // BodyPlain returns the body of a notification as plain text.
 func (cn *CharacterNotification) BodyPlain() (optional.Optional[string], error) {
 	var b optional.Optional[string]
-	if cn.Body.IsEmpty() {
+	v, ok := cn.Body.Value()
+	if !ok {
 		return b, nil
 	}
 	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(cn.Body.ValueOrZero()), &buf); err != nil {
+	if err := goldmark.Convert([]byte(v), &buf); err != nil {
 		return b, fmt.Errorf("convert notification body: %w", err)
 	}
 	b.Set(evehtml.Strip(buf.String()))

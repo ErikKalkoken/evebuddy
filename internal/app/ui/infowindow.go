@@ -462,8 +462,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		}
 		// Attributes
 		attributes := make([]attributeItem, 0)
-		if x, ok := o.ExecutorCorporation.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Executor", x))
+		if v, ok := o.ExecutorCorporation.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Executor", v))
 		}
 		if o.Ticker != "" {
 			attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
@@ -477,8 +477,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		if !o.DateFounded.IsZero() {
 			attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
 		}
-		if x, ok := o.Faction.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Faction", x))
+		if v, ok := o.Faction.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Faction", v))
 		}
 		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", o.ID)
@@ -688,22 +688,23 @@ func (a *characterInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		x, ok := o.Alliance.Value()
+		v, ok := o.Alliance.Value()
 		if !ok {
 			a.alliance.Hide()
 			return
 		}
-		a.alliance.SetText(x.Name)
+		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(x)
+			a.iw.showEveEntity(v)
 		}
 	})
 	fyne.Do(func() {
-		if o.Title.IsEmpty() {
+		v, ok := o.Title.Value()
+		if !ok {
 			a.title.Hide()
 			return
 		}
-		a.title.SetText("Title: " + o.Title.ValueOrZero())
+		a.title.SetText("Title: " + v)
 	})
 	attributes, err := a.makeAttributes(o)
 	if err != nil {
@@ -775,17 +776,17 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 		})),
 		newAttributeItem("Corporation", o.Corporation),
 	}
-	if x, ok := o.Alliance.Value(); ok {
-		attributes = append(attributes, newAttributeItem("Alliance", x))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
-	if x, ok := o.Alliance.Value(); ok {
-		attributes = append(attributes, newAttributeItem("Faction", x))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
-		u = "?"
+	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+		u = v
 	} else {
-		u = v.ValueOrZero()
+		u = "?"
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
 	if a.isOwned {
@@ -1039,29 +1040,29 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		x, ok := o.Alliance.Value()
+		v, ok := o.Alliance.Value()
 		if !ok {
 			a.allianceBox.Hide()
 			return
 		}
-		a.alliance.SetText(x.Name)
+		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(x)
+			a.iw.showEveEntity(v)
 		}
-		a.iw.u.eis.AllianceLogoAsync(x.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.eis.AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		})
 	})
 	fyne.Do(func() {
-		x, ok := o.HomeStation.Value()
+		v, ok := o.HomeStation.Value()
 		if !ok {
 			a.hq.Hide()
 			return
 		}
-		a.hq.SetText("Headquarters: " + x.Name)
+		a.hq.SetText("Headquarters: " + v.Name)
 		a.hq.OnTapped = func() {
-			a.iw.showEveEntity(x)
+			a.iw.showEveEntity(v)
 		}
 	})
 	g := new(errgroup.Group)
@@ -1078,10 +1079,10 @@ func (a *corporationInfo) update(ctx context.Context) error {
 			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
 		}
 		var founded string
-		if o.DateFounded.IsEmpty() {
-			founded = "?"
+		if v, ok := o.DateFounded.Value(); ok {
+			founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
 		} else {
-			founded = fmt.Sprintf("**%s**", o.DateFounded.ValueOrZero().Format(app.DateFormat))
+			founded = "?"
 		}
 		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
 		fyne.Do(func() {
@@ -1095,41 +1096,36 @@ func (a *corporationInfo) update(ctx context.Context) error {
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
 	attributes := make([]attributeItem, 0)
-	if x, ok := o.Ceo.Value(); ok {
-		attributes = append(attributes, newAttributeItem("CEO", x))
+	if v, ok := o.Ceo.Value(); ok {
+		attributes = append(attributes, newAttributeItem("CEO", v))
 	}
-	if x, ok := o.Creator.Value(); ok {
-		attributes = append(attributes, newAttributeItem("Founder", x))
+	if v, ok := o.Creator.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Founder", v))
 	}
-	if x, ok := o.Alliance.Value(); ok {
-		attributes = append(attributes, newAttributeItem("Alliance", x))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
 	if o.Ticker != "" {
 		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
 	}
-	if x, ok := o.Faction.Value(); ok {
-		attributes = append(attributes, newAttributeItem("Faction", x))
+	if v, ok := o.Faction.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
-		u = "?"
+	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+		u = v
 	} else {
-		u = v.ValueOrZero()
+		u = "?"
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
-	if !o.Shares.IsEmpty() {
-		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
+	if v, ok := o.Shares.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Shares", v))
 	}
-	if o.MemberCount != 0 {
-		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
-	}
-	if o.TaxRate != 0 {
-		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
-	}
+	attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
+	attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
 	attributes = append(attributes, newAttributeItem("War Eligibility", o.WarEligible))
-	if !o.URL.IsEmpty() {
-		u, err := url.ParseRequestURI(o.URL.ValueOrZero())
-		if err == nil && u.Host != "" {
+	if v, ok := o.URL.Value(); ok {
+		if u, err := url.ParseRequestURI(v); err == nil && u.Host != "" {
 			attributes = append(attributes, newAttributeItem("URL", u))
 		}
 	}
@@ -1237,15 +1233,15 @@ func (a *locationInfo) update(ctx context.Context) error {
 			a.description.SetText(description)
 		})
 	}
-	if x, ok := o.Owner.Value(); ok {
+	if v, ok := o.Owner.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.eis.CorporationLogoAsync(x.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.eis.CorporationLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.ownerLogo.Resource = r
 				a.ownerLogo.Refresh()
 			})
-			a.owner.SetText(x.Name)
+			a.owner.SetText(v.Name)
 			a.owner.OnTapped = func() {
-				a.iw.showEveEntity(x)
+				a.iw.showEveEntity(v)
 			}
 		})
 	}
@@ -2134,16 +2130,16 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 		}
 	}
 	rows := make([]attributeRow, 0)
-	if x, ok := et.Volume.Value(); ok {
-		v, _ := u.eus.FormatDogmaValue(ctx, x, app.EveUnitVolume)
-		if !optional.Equal(et.Volume, et.PackagedVolume) && !et.PackagedVolume.IsEmpty() {
-			v2, _ := u.eus.FormatDogmaValue(ctx, et.PackagedVolume.ValueOrZero(), app.EveUnitVolume)
-			v += fmt.Sprintf(" (%s Packaged)", v2)
+	if v, ok := et.Volume.Value(); ok {
+		value, _ := u.eus.FormatDogmaValue(ctx, v, app.EveUnitVolume)
+		if pv, ok := et.PackagedVolume.Value(); ok && !optional.Equal(et.Volume, et.PackagedVolume) {
+			s, _ := u.eus.FormatDogmaValue(ctx, pv, app.EveUnitVolume)
+			value += fmt.Sprintf(" (%s Packaged)", s)
 		}
 		r := attributeRow{
 			icon:  eveicon.FromName(eveicon.Structure),
 			label: "Volume",
-			value: v,
+			value: value,
 		}
 		var ag attributeGroup
 		if len(groupedRows[attributeGroupStructure]) > 0 {

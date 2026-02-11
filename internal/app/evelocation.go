@@ -48,11 +48,12 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 	} else {
 		n = el.alternativeName()
 	}
-	if el.SolarSystem.IsEmpty() {
+	es, ok := el.SolarSystem.Value()
+	if !ok {
 		return iwidget.RichTextSegmentsFromText(n)
 	}
 	return slices.Concat(
-		el.SolarSystem.ValueOrZero().SecurityStatusRichText(),
+		es.SecurityStatusRichText(),
 		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", n)))
 }
 
@@ -130,14 +131,14 @@ func (el EveLocation) ToShort() *EveLocationShort {
 	}
 	switch el.Variant() {
 	case EveLocationSolarSystem:
-		if !el.SolarSystem.IsEmpty() {
-			o.Name = optional.New(el.SolarSystem.ValueOrZero().Name)
+		if v, ok := el.SolarSystem.Value(); ok {
+			o.Name = optional.New(v.Name)
 		}
 	default:
 		o.Name = optional.New(el.Name)
 	}
-	if !el.SolarSystem.IsEmpty() {
-		o.SecurityStatus = optional.New(el.SolarSystem.ValueOrZero().SecurityStatus)
+	if v, ok := el.SolarSystem.Value(); ok {
+		o.SecurityStatus = optional.New(v.SecurityStatus)
 	}
 	return o
 }
@@ -167,12 +168,14 @@ func (l EveLocationShort) DisplayName() string {
 
 func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	var s []widget.RichTextSegment
-	if !l.SecurityStatus.IsEmpty() {
-		secValue := l.SecurityStatus.MustValue()
-		secType := NewSolarSystemSecurityTypeFromValue(secValue)
+	if v, ok := l.SecurityStatus.Value(); ok {
+		secType := NewSolarSystemSecurityTypeFromValue(v)
 		s = slices.Concat(s, iwidget.RichTextSegmentsFromText(
-			fmt.Sprintf("%.1f", secValue),
-			widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
+			fmt.Sprintf("%.1f", v),
+			widget.RichTextStyle{
+				ColorName: secType.ToColorName(),
+				Inline:    true,
+			},
 		))
 	}
 	var name string
@@ -185,8 +188,9 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 }
 
 func (l EveLocationShort) SecurityType() optional.Optional[SolarSystemSecurityType] {
-	if l.SecurityStatus.IsEmpty() {
+	v, ok := l.SecurityStatus.Value()
+	if !ok {
 		return optional.Optional[SolarSystemSecurityType]{}
 	}
-	return optional.New(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
+	return optional.New(NewSolarSystemSecurityTypeFromValue(v))
 }

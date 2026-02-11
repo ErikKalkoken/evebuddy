@@ -67,7 +67,7 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 			if c.Status == c.StatusNotified {
 				continue
 			}
-			if !c.Acceptor.IsEmpty() && c.Acceptor.MustValue().ID == characterID {
+			if v, ok := c.Acceptor.Value(); ok && v.ID == characterID {
 				continue // ignore status changed caused by the current character
 			}
 			var content string

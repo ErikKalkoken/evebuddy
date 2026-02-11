@@ -346,8 +346,8 @@ func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntitySh
 			return v.Name
 		})
 		s := fmt.Sprintf("%s >> %s", startName, endName)
-		if !volume.IsEmpty() {
-			s += fmt.Sprintf(" (%.0f m3)", volume.ValueOrZero())
+		if v, ok := volume.Value(); ok {
+			s += fmt.Sprintf(" (%.0f m3)", v)
 		}
 		return s
 	}

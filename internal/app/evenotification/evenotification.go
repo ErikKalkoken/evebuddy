@@ -75,27 +75,29 @@ func New(eus EveUniverseService) *EveNotificationService {
 // Returns an empty set when notification does not use Entity IDs.
 // Returns [app.ErrNotFound] for unsupported notification types.
 func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
-	if text.IsEmpty() {
+	v, ok := text.Value()
+	if !ok {
 		return set.Set[int64]{}, nil
 	}
 	r, found := s.makeRenderer(app.EveNotificationType(nt))
 	if !found {
 		return set.Set[int64]{}, app.ErrNotFound
 	}
-	return r.entityIDs(text.ValueOrZero())
+	return r.entityIDs(v)
 }
 
 // RenderESI renders title and body for all supported notification types and returns them.
 // Returns [app.ErrNotFound] for unsupported notification types.
 func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
-	if text.IsEmpty() {
+	v, ok := text.Value()
+	if !ok {
 		return "", "", nil
 	}
 	r, found := s.makeRenderer(app.EveNotificationType(nt))
 	if !found {
 		return "", "", app.ErrNotFound
 	}
-	title, body, err = r.render(ctx, text.ValueOrZero(), timestamp)
+	title, body, err = r.render(ctx, v, timestamp)
 	if err != nil {
 		return "", "", err
 	}

@@ -57,9 +57,9 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structur
 		}
 		if structure.Variant() == app.EveLocationStructure {
 			structureName = structure.DisplayName2()
-			if x, ok := structure.Owner.Value(); ok {
-				owner = x
-				ownerLink = makeEveEntityProfileLink(x)
+			if v, ok := structure.Owner.Value(); ok {
+				owner = v
+				ownerLink = makeEveEntityProfileLink(v)
 			}
 		}
 	}

@@ -238,10 +238,10 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				return
 			}
 			s += "\n\n"
-			if b.IsEmpty() {
-				s += "(no body)"
+			if v, ok := b.Value(); ok {
+				s += v
 			} else {
-				s += b.ValueOrZero()
+				s += "(no body)"
 			}
 			a.u.App().Clipboard().SetContent(s)
 		}),

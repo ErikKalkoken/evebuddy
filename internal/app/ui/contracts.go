@@ -579,13 +579,13 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 
 	var availability fyne.CanvasObject
 	availabilityLabel := widget.NewLabel(o.Availability.Display())
-	if x, ok := o.Assignee.Value(); ok {
+	if v, ok := o.Assignee.Value(); ok {
 		availability = container.NewBorder(
 			nil,
 			nil,
 			availabilityLabel,
 			nil,
-			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow),
+			makeEveEntityActionLabel(v, u.ShowEveEntityInfoWindow),
 		)
 	} else {
 		availability = availabilityLabel

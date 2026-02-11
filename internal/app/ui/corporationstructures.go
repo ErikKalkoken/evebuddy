@@ -56,12 +56,12 @@ type corporationStructureRow struct {
 func (r corporationStructureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 	var text string
 	var color fyne.ThemeColorName
-	if r.fuelExpires.IsEmpty() {
+	if v, ok := r.fuelExpires.Value(); ok {
+		color = theme.ColorNameForeground
+		text = ihumanize.Duration(time.Until(v))
+	} else {
 		color = theme.ColorNameWarning
 		text = "Low Power"
-	} else {
-		color = theme.ColorNameForeground
-		text = ihumanize.Duration(time.Until(r.fuelExpires.ValueOrZero()))
 	}
 	return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: color,
@@ -382,10 +382,9 @@ func (a *corporationStructures) fetchData(corporationID int64) ([]corporationStr
 	rows := make([]corporationStructureRow, 0)
 	for _, s := range structures {
 		stateText := s.State.DisplayShort()
-		if !s.StateTimerEnd.IsEmpty() {
+		if v, ok := s.StateTimerEnd.Value(); ok {
 			var x string
-			end := s.StateTimerEnd.ValueOrZero()
-			d := time.Until(end)
+			d := time.Until(v)
 			if d >= 0 {
 				x = ihumanize.Duration(d)
 			} else {
@@ -466,14 +465,14 @@ func showCorporationStructureWindow(u *baseUI, corporationID int64, structureID 
 
 	var fuelText, powerText string
 	var powerColor fyne.ThemeColorName
-	if s.FuelExpires.IsEmpty() {
+	if v, ok := s.FuelExpires.Value(); ok {
+		powerText = "Full Power"
+		powerColor = theme.ColorNameSuccess
+		fuelText = v.Format(app.DateTimeFormat)
+	} else {
 		powerText = "Low Power / Abandoned"
 		powerColor = theme.ColorNameWarning
 		fuelText = "N/A"
-	} else {
-		powerText = "Full Power"
-		powerColor = theme.ColorNameSuccess
-		fuelText = s.FuelExpires.ValueOrZero().Format(app.DateTimeFormat)
 	}
 
 	fi := []*widget.FormItem{

@@ -781,12 +781,11 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 	}
-	if !r.productType.IsEmpty() {
-		x := r.productType.MustValue()
+	if v, ok := r.productType.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Product Type",
-			makeLinkLabelWithWrap(x.Name, func() {
-				a.u.ShowInfoWindow(app.EveEntityInventoryType, x.ID)
+			makeLinkLabelWithWrap(v.Name, func() {
+				a.u.ShowInfoWindow(app.EveEntityInventoryType, v.ID)
 			}),
 		))
 	}
@@ -796,36 +795,36 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 
-	if !r.licensedRuns.IsEmpty() {
+	if v, ok := r.licensedRuns.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Licensed Runs",
-			widget.NewLabel(ihumanize.Comma(r.licensedRuns.ValueOrZero())),
+			widget.NewLabel(ihumanize.Comma(v)),
 		))
 	}
-	if !r.successfulRuns.IsEmpty() {
+	if v, ok := r.successfulRuns.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Successful Runs",
-			widget.NewLabel(ihumanize.Comma(r.successfulRuns.ValueOrZero())),
+			widget.NewLabel(ihumanize.Comma(v)),
 		))
 	}
-	if !r.probability.IsEmpty() {
+	if v, ok := r.probability.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Probability",
-			widget.NewLabel(fmt.Sprintf("%.0f%%", r.probability.ValueOrZero()*100)),
+			widget.NewLabel(fmt.Sprintf("%.0f%%", v*100)),
 		))
 	}
 	items = append(items, widget.NewFormItem("Start date", widget.NewLabel(r.startDate.Format(app.DateTimeFormat))))
-	if !r.pauseDate.IsEmpty() {
+	if v, ok := r.pauseDate.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Pause date",
-			widget.NewLabel(r.pauseDate.ValueOrZero().Format(app.DateTimeFormat)),
+			widget.NewLabel(v.Format(app.DateTimeFormat)),
 		))
 	}
 	items = append(items, widget.NewFormItem("End date", widget.NewLabel(r.endDate.Format(app.DateTimeFormat))))
-	if !r.completedDate.IsEmpty() {
+	if v, ok := r.completedDate.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Completed date",
-			widget.NewLabel(r.completedDate.ValueOrZero().Format(app.DateTimeFormat))),
+			widget.NewLabel(v.Format(app.DateTimeFormat))),
 		)
 	}
 	items = slices.Concat(items, []*widget.FormItem{
@@ -835,10 +834,9 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
-	if !r.completedCharacter.IsEmpty() {
-		x := r.completedCharacter.MustValue()
-		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(x.Name, func() {
-			a.u.ShowEveEntityInfoWindow(x)
+	if v, ok := r.completedCharacter.Value(); ok {
+		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(v.Name, func() {
+			a.u.ShowEveEntityInfoWindow(v)
 		})))
 	}
 	if a.u.IsDeveloperMode() {

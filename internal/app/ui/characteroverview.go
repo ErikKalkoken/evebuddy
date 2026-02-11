@@ -530,8 +530,8 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 	if err != nil {
 		return r, err
 	}
-	if !d.IsEmpty() {
-		r.trainingActive.Set(d.ValueOrZero() > 0)
+	if v, ok := d.Value(); ok {
+		r.trainingActive.Set(v > 0)
 	}
 	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
@@ -839,11 +839,8 @@ func (w *characterCard) set(c characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	}))
 
-	if c.trainingActive.IsEmpty() {
-		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
-		w.trainingStatus.SetToolTip("Training status unknown")
-	} else {
-		if c.trainingActive.ValueOrZero() {
+	if v, ok := c.trainingActive.Value(); ok {
+		if v {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
 			w.trainingStatus.SetToolTip("Training is active")
 		} else {
@@ -855,6 +852,9 @@ func (w *characterCard) set(c characterOverviewRow) {
 				w.trainingStatus.SetToolTip("Training is not active")
 			}
 		}
+	} else {
+		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
+		w.trainingStatus.SetToolTip("Training status unknown")
 	}
 
 	w.wallet.SetText(c.walletBalance.StringFunc("?", func(v float64) string {

@@ -207,11 +207,13 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					case app.EveEntityCorporation:
 						recipientID = character.EveCharacter.Corporation.ID
 					case app.EveEntityAlliance:
-						if !character.EveCharacter.HasAlliance() {
-							recipientID = character.EveCharacter.Corporation.ID
-						} else {
-							recipientID = character.EveCharacter.Alliance.MustValue().ID
-						}
+						recipientID = optional.MapOrFallback(
+							character.EveCharacter.Alliance,
+							character.EveCharacter.Corporation.ID,
+							func(x *app.EveEntity) int64 {
+								return x.ID
+							},
+						)
 					default:
 						recipientID = character.ID
 					}
@@ -221,7 +223,11 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					if errors.Is(err, app.ErrNotFound) {
 						// do nothing
 					} else if err != nil {
-						slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+						slog.Error("Failed to render character notification",
+							slog.Any("characterID", characterID),
+							slog.Any("NotificationID", n.NotificationId),
+							slog.Any("error", err),
+						)
 					} else {
 						arg.Title.Set(title)
 						arg.Body.Set(body)

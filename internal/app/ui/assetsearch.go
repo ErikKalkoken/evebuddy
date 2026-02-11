@@ -145,9 +145,9 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 			})
 		}
 	}
-	if x, ok := el.SolarSystem.Value(); ok {
-		r.regionName = x.Constellation.Region.Name
-		r.regionID = x.Constellation.Region.ID
+	if v, ok := el.SolarSystem.Value(); ok {
+		r.regionName = v.Constellation.Region.Name
+		r.regionID = v.Constellation.Region.ID
 	}
 }
 
@@ -168,8 +168,8 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 	r.priceDisplay = r.price.StringFunc("?", func(v float64) string {
 		return ihumanize.NumberF(v, 1)
 	})
-	if !r.price.IsEmpty() {
-		r.total.Set(price.ValueOrZero() * float64(quantity))
+	if v, ok := r.price.Value(); ok {
+		r.total.Set(v * float64(quantity))
 	}
 	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
 		return humanize.FormatFloat(app.FloatFormat, v)

@@ -12,7 +12,7 @@ import (
 
 func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int64) (*app.CharacterAttributes, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreGetCharacterAttributesateCharacterAttributes character ID %d: %w", characterID, err)
+		return fmt.Errorf("GetCharacterAttributes character ID %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
@@ -43,7 +43,7 @@ func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Up
 	if arg.CharacterID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.UpdateOrCreateCharacterAttributesParams{
+	err := st.qRW.UpdateOrCreateCharacterAttributes(ctx, queries.UpdateOrCreateCharacterAttributesParams{
 		CharacterID:   arg.CharacterID,
 		BonusRemaps:   arg.BonusRemaps.ValueOrZero(),
 		Charisma:      arg.Charisma,
@@ -52,8 +52,7 @@ func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Up
 		Perception:    arg.Perception,
 		Willpower:     arg.Willpower,
 		LastRemapDate: optional.ToNullTime(arg.LastRemapDate),
-	}
-	err := st.qRW.UpdateOrCreateCharacterAttributes(ctx, arg2)
+	})
 	if err != nil {
 		return wrapErr(err)
 	}

@@ -98,10 +98,11 @@ func (r trainingRow) status() (string, widget.Importance) {
 }
 
 func timeUntil(t optional.Optional[time.Time]) optional.Optional[time.Duration] {
-	if t.IsEmpty() {
+	v, ok := t.Value()
+	if !ok {
 		return optional.Optional[time.Duration]{}
 	}
-	d := time.Until(t.MustValue())
+	d := time.Until(v)
 	if d < 0 {
 		return optional.New(time.Duration(0))
 	}

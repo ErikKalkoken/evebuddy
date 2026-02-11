@@ -308,8 +308,8 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 		}
 		days := int(endDate2.Sub(it.StartDate) / (time.Hour * 24))
 		var orig *app.EveEntity
-		if !it.OrganizationID.IsEmpty() {
-			orig = eeMap[it.OrganizationID.ValueOrZero()]
+		if v, ok := it.OrganizationID.Value(); ok {
+			orig = eeMap[v]
 		}
 		oo[i] = app.MembershipHistoryItem{
 			Days:         days,

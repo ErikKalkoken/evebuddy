@@ -146,7 +146,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
 		return nil, err
 	}
-	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
+	if isNPC, _ := character.Corporation.IsNPC().Value(); !isNPC {
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 			return nil, err
 		}

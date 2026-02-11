@@ -256,10 +256,11 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 	expireTimes := make([]time.Time, 0)
 	for pp := range cp.ActiveExtractors() {
-		if pp.ExpiryTime.IsEmpty() {
+		v, ok := pp.ExpiryTime.Value()
+		if !ok {
 			continue
 		}
-		expireTimes = append(expireTimes, pp.ExpiryTime.ValueOrZero())
+		expireTimes = append(expireTimes, v)
 	}
 	if len(expireTimes) == 0 {
 		return time.Time{}

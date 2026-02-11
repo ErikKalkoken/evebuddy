@@ -86,10 +86,10 @@ func (a *characterWallet) updateBalance() {
 			slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err2)
 			err = err2
 		} else {
-			if c.WalletBalance.IsEmpty() {
-				hasData = false
+			if v, ok := c.WalletBalance.Value(); ok {
+				balance = v
 			} else {
-				balance = c.WalletBalance.ValueOrZero()
+				hasData = false
 			}
 		}
 	}

@@ -246,8 +246,8 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			b := co.(*fyne.Container).Objects
 			b[0].(*widget.Label).SetText(cn.node.String())
 			var s string
-			if !cn.itemCount.IsEmpty() {
-				s = humanize.Comma(int64(cn.itemCount.ValueOrZero()))
+			if v, ok := cn.itemCount.Value(); ok {
+				s = humanize.Comma(int64(v))
 			}
 			b[1].(*widget.Label).SetText(s)
 		},
@@ -731,8 +731,8 @@ func (a *assetBrowserContainer) filterItems() {
 			}
 		}
 		bottom := fmt.Sprintf("%s items", humanize.Comma(itemCount))
-		if !value.IsEmpty() {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(value.ValueOrZero())))
+		if v, ok := value.Value(); ok {
+			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {

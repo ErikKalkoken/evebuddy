@@ -35,11 +35,10 @@ func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int64
 // It returns empty when a jump could not be calculated.
 func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
 	var z optional.Optional[time.Time]
-
-	if c.LastCloneJumpAt.IsEmpty() {
+	lastJump, ok := c.LastCloneJumpAt.Value()
+	if !ok {
 		return z, nil
 	}
-	lastJump := c.LastCloneJumpAt.MustValue()
 
 	var skillLevel int64
 	sk, err := s.GetSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)

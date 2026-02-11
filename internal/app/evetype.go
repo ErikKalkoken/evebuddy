@@ -154,10 +154,11 @@ func (et EveType) HasRender() bool {
 // Icon returns the icon for a type from the eveicon package
 // and whether and icon exists for this type.
 func (et EveType) Icon() (fyne.Resource, bool) {
-	if et.IconID.IsEmpty() {
+	v, ok := et.IconID.Value()
+	if !ok {
 		return nil, false
 	}
-	res, ok := eveicon.FromID(et.IconID.ValueOrZero())
+	res, ok := eveicon.FromID(v)
 	if !ok {
 		return nil, false
 	}

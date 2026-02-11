@@ -199,10 +199,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
-		if count.IsEmpty() {
-			s = "?"
+		if v, ok := count.Value(); ok {
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
 		} else if count.ValueOrZero() > 0 {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count.ValueOrZero())))
+			s = "?"
 		}
 		fyne.Do(func() {
 			navItemCommunications.Supporting = s

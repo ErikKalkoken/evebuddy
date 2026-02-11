@@ -250,9 +250,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
-		if count.IsEmpty() {
+		if v, ok := count.Value(); !ok {
 			s = "?"
-		} else if count.ValueOrZero() > 0 {
+		} else if v > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
 		fyne.Do(func() {

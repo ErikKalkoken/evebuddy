@@ -60,13 +60,26 @@ func formatISKAmount(v float64) string {
 	return t
 }
 
-func importanceISKAmount(v optional.Optional[float64]) widget.Importance {
-	switch {
-	case v.IsEmpty():
+func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {
+	var color fyne.ThemeColorName
+	if v, ok := amount.Value(); !ok {
+		color = theme.ColorNameDisabled
+	} else if v < 0 {
+		color = theme.ColorNameError
+	} else if v > 0 {
+		color = theme.ColorNameSuccess
+	} else {
+		color = theme.ColorNameForeground
+	}
+	return color
+}
+
+func importanceISKAmount(amount optional.Optional[float64]) widget.Importance {
+	if v, ok := amount.Value(); !ok {
 		return widget.LowImportance
-	case v.ValueOrZero() > 0:
+	} else if v > 0 {
 		return widget.SuccessImportance
-	case v.ValueOrZero() < 0:
+	} else if v < 0 {
 		return widget.DangerImportance
 	}
 	return widget.MediumImportance

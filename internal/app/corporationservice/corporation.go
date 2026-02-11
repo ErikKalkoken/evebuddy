@@ -31,11 +31,11 @@ func (s *CorporationService) GetAnyCorporation(ctx context.Context) (*app.Corpor
 // getOrCreateCorporation gets or creates a corporation and returns it.
 // It returns the error [app.ErrNotFound] for NPC corporations
 func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corporationID int64) (*app.Corporation, error) {
-	c, err := s.eus.GetOrCreateCorporationESI(ctx, corporationID)
+	corporation, err := s.eus.GetOrCreateCorporationESI(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
-	if x := c.EveEntity().IsNPC(); x.IsEmpty() || x.ValueOrZero() {
+	if isNPC, ok := corporation.EveEntity().IsNPC().Value(); !ok || isNPC {
 		return nil, app.ErrNotFound
 	}
 	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)

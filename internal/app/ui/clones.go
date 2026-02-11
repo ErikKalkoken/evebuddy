@@ -180,8 +180,8 @@ func newClones(u *baseUI) *clones {
 				case 0:
 					a.u.ShowLocationInfoWindow(r.jc.Location.ID)
 				case 1:
-					if x, ok := r.jc.Location.SolarSystem.Value(); ok {
-						a.u.ShowInfoWindow(app.EveEntityRegion, x.Constellation.Region.ID)
+					if v, ok := r.jc.Location.SolarSystem.Value(); ok {
+						a.u.ShowInfoWindow(app.EveEntityRegion, v.Constellation.Region.ID)
 					}
 				case 2:
 					if r.jc == nil || r.jc.ImplantsCount == 0 {
@@ -616,12 +616,12 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	from.Wrapping = fyne.TextWrapWord
 
 	var toText []widget.RichTextSegment
-	if x, ok := r.jc.Location.SolarSystem.Value(); ok {
-		toText = x.DisplayRichTextWithRegion()
+	if v, ok := r.jc.Location.SolarSystem.Value(); ok {
+		toText = v.DisplayRichTextWithRegion()
 	}
 	to := iwidget.NewTappableRichText(toText, func() {
-		if x, ok := r.jc.Location.SolarSystem.Value(); ok {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, x.ID)
+		if v, ok := r.jc.Location.SolarSystem.Value(); ok {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, v.ID)
 		}
 	})
 	to.Wrapping = fyne.TextWrapWord

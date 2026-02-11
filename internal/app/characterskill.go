@@ -125,7 +125,7 @@ func (sq *CharacterSkillqueue) IsActive() bool {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	for _, qi := range sq.items {
-		if qi.FinishDate.ValueOrZero().After(time.Now().UTC()) {
+		if v, ok := qi.FinishDate.Value(); ok && v.After(time.Now().UTC()) {
 			return true
 		}
 	}
@@ -170,10 +170,11 @@ func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
 func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] {
 	var zero optional.Optional[time.Duration]
 	t := sq.FinishDate()
-	if t.IsEmpty() {
+	v, ok := t.Value()
+	if !ok {
 		return zero
 	}
-	d := time.Until(t.MustValue())
+	d := time.Until(v)
 	if d < 0 {
 		return zero
 	}
@@ -245,10 +246,12 @@ func (qi CharacterSkillqueueItem) StringShortened() string {
 // IsActive reports whether a skill is active.
 func (qi CharacterSkillqueueItem) IsActive() bool {
 	now := time.Now()
-	return !qi.StartDate.IsEmpty() &&
-		!qi.FinishDate.IsEmpty() &&
-		qi.StartDate.ValueOrZero().Before(now) &&
-		qi.FinishDate.ValueOrZero().After(now)
+	start, ok1 := qi.StartDate.Value()
+	finish, ok2 := qi.FinishDate.Value()
+	if !ok1 || !ok2 {
+		return false
+	}
+	return start.Before(now) && finish.After(now)
 }
 
 func (qi CharacterSkillqueueItem) IsCompleted() bool {
@@ -256,26 +259,27 @@ func (qi CharacterSkillqueueItem) IsCompleted() bool {
 }
 
 func (qi CharacterSkillqueueItem) CompletionP() float64 {
-	if qi.StartDate.IsEmpty() || qi.FinishDate.IsEmpty() {
+	start, ok1 := qi.StartDate.Value()
+	finish, ok2 := qi.FinishDate.Value()
+	if !ok1 || !ok2 {
 		return 0
 	}
 	d := qi.Duration()
-	if d.IsEmpty() {
+	duration, ok := d.Value()
+	if !ok {
 		return 0
 	}
-	duration := d.ValueOrZero()
 	now := time.Now()
-	finishDate := qi.FinishDate.ValueOrZero()
-	if finishDate.Before(now) {
+	if finish.Before(now) {
 		return 1
 	}
-	if qi.StartDate.ValueOrZero().After(now) {
+	if start.After(now) {
 		return 0
 	}
 	if duration == 0 {
 		return 0
 	}
-	remaining := finishDate.Sub(now)
+	remaining := finish.Sub(now)
 	c := remaining.Seconds() / duration.Seconds()
 	levelEndSP := qi.LevelEndSP.ValueOrZero()
 	base := float64(levelEndSP-qi.TrainingStartSP.ValueOrZero()) / float64(levelEndSP-qi.LevelStartSP.ValueOrZero())
@@ -283,10 +287,12 @@ func (qi CharacterSkillqueueItem) CompletionP() float64 {
 }
 
 func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
-	if qi.StartDate.IsEmpty() || qi.FinishDate.IsEmpty() {
+	start, ok1 := qi.StartDate.Value()
+	finish, ok2 := qi.FinishDate.Value()
+	if !ok1 || !ok2 {
 		return optional.Optional[time.Duration]{}
 	}
-	return optional.New(qi.FinishDate.ValueOrZero().Sub(qi.StartDate.ValueOrZero()))
+	return optional.New(finish.Sub(start))
 }
 
 func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
@@ -294,8 +300,8 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	if p == 1 {
 		return optional.New(time.Duration(0)) // completed
 	}
-	if qi.IsActive() {
-		return optional.New(time.Until(qi.FinishDate.ValueOrZero()))
+	if v, ok := qi.FinishDate.Value(); ok && qi.IsActive() {
+		return optional.New(time.Until(v))
 	}
 	return qi.Duration()
 }
