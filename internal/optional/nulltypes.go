@@ -57,7 +57,7 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 
 // ToNullFloat64 converts an Optional variable to it's sql.Null equivalent and returns it.
 func ToNullFloat64[T constraints.Float](o Optional[T]) sql.NullFloat64 {
-	if o.IsEmpty() {
+	if !o.isPresent {
 		return sql.NullFloat64{}
 	}
 	return sql.NullFloat64{Float64: float64(o.ValueOrZero()), Valid: true}
@@ -65,7 +65,7 @@ func ToNullFloat64[T constraints.Float](o Optional[T]) sql.NullFloat64 {
 
 // ToNullInt64 converts an Optional variable to it's sql.Null equivalent and returns it.
 func ToNullInt64[T constraints.Integer](o Optional[T]) sql.NullInt64 {
-	if o.IsEmpty() {
+	if !o.isPresent {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: int64(o.ValueOrZero()), Valid: true}
@@ -73,7 +73,7 @@ func ToNullInt64[T constraints.Integer](o Optional[T]) sql.NullInt64 {
 
 // ToNullString converts an Optional variable to it's sql.Null equivalent and returns it.
 func ToNullString(o Optional[string]) sql.NullString {
-	if o.IsEmpty() {
+	if !o.isPresent {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: o.ValueOrZero(), Valid: true}
@@ -81,7 +81,7 @@ func ToNullString(o Optional[string]) sql.NullString {
 
 // ToNullTime converts an Optional variable to it's sql.Null equivalent and returns it.
 func ToNullTime(o Optional[time.Time]) sql.NullTime {
-	if o.IsEmpty() {
+	if !o.isPresent {
 		return sql.NullTime{}
 	}
 	return sql.NullTime{Time: o.ValueOrZero(), Valid: true}
