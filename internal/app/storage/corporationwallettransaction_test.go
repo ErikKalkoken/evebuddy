@@ -44,7 +44,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// when
 		err := st.CreateCorporationWalletTransaction(ctx, arg)
 		// then
-		region := location.SolarSystem.Constellation.Region
+		region := location.SolarSystem.ValueOrZero().Constellation.Region
 		if assert.NoError(t, err) {
 			i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 				CorporationID: c.ID,

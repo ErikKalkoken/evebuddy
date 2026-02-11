@@ -196,7 +196,7 @@ func (a *corporationSheet) update() {
 		})
 	})
 	fyne.Do(func() {
-		if alliance := corporation.Alliance; alliance != nil {
+		if alliance, ok := corporation.Alliance.Value(); ok {
 			a.alliance.SetText(alliance.Name)
 			a.alliance.OnTapped = func() {
 				a.u.ShowEveEntityInfoWindow(alliance)
@@ -207,7 +207,7 @@ func (a *corporationSheet) update() {
 		}
 	})
 	fyne.Do(func() {
-		if faction := corporation.Faction; faction != nil {
+		if faction, ok := corporation.Faction.Value(); ok {
 			a.faction.SetText(faction.Name)
 			a.faction.OnTapped = func() {
 				a.u.ShowEveEntityInfoWindow(faction)
@@ -218,7 +218,7 @@ func (a *corporationSheet) update() {
 		}
 	})
 	fyne.Do(func() {
-		if ceo := corporation.Ceo; ceo != nil {
+		if ceo, ok := corporation.Ceo.Value(); ok {
 			a.ceo.SetText(ceo.Name)
 			a.ceo.OnTapped = func() {
 				a.u.ShowEveEntityInfoWindow(ceo)
@@ -229,7 +229,7 @@ func (a *corporationSheet) update() {
 		}
 	})
 	fyne.Do(func() {
-		if home := corporation.HomeStation; home != nil {
+		if home, ok := corporation.HomeStation.Value(); ok {
 			a.home.SetText(home.Name)
 			a.home.OnTapped = func() {
 				a.u.ShowEveEntityInfoWindow(home)

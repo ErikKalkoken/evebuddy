@@ -12,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // Eve Entity categories in DB models
@@ -47,7 +48,7 @@ func (st *Storage) CreateEveEntity(ctx context.Context, arg CreateEveEntityParam
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.CreateEveEntity(ctx, queries.CreateEveEntityParams{
-		ID:      arg.ID,
+		ID:       arg.ID,
 		Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 		Name:     arg.Name,
 	})
@@ -72,13 +73,13 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	r, err := qtx.GetEveEntity(ctx,arg.ID)
+	r, err := qtx.GetEveEntity(ctx, arg.ID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 		r2, err := qtx.CreateEveEntity(ctx, queries.CreateEveEntityParams{
-			ID:      arg.ID,
+			ID:       arg.ID,
 			Name:     arg.Name,
 			Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 		})
@@ -95,7 +96,7 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 }
 
 func (st *Storage) GetEveEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
-	e, err := st.qRO.GetEveEntity(ctx,id)
+	e, err := st.qRO.GetEveEntity(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get eve entity for id %d: %w", id, convertGetError(err))
 	}
@@ -210,7 +211,7 @@ func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, arg CreateEveEnt
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.UpdateOrCreateEveEntity(ctx, queries.UpdateOrCreateEveEntityParams{
-		ID:      arg.ID,
+		ID:       arg.ID,
 		Name:     arg.Name,
 		Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 	})
@@ -229,7 +230,7 @@ func (st *Storage) UpdateEveEntity(ctx context.Context, id int64, name string) e
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateEveEntity(ctx, queries.UpdateEveEntityParams{
-		ID:  id,
+		ID:   id,
 		Name: name,
 	})
 	if err != nil {
@@ -287,7 +288,7 @@ func eveEntityFromDBModel(r queries.EveEntity) *app.EveEntity {
 	}
 	o := &app.EveEntity{
 		Category: eveEntityCategoryFromDBModel(r.Category),
-		ID:      r.ID,
+		ID:       r.ID,
 		Name:     r.Name,
 	}
 	return o
@@ -299,14 +300,14 @@ type nullEveEntry struct {
 	name     sql.NullString
 }
 
-func eveEntityFromNullableDBModel(o nullEveEntry) *app.EveEntity {
+func eveEntityFromNullableDBModel(o nullEveEntry) optional.Optional[*app.EveEntity] {
 	if !o.id.Valid {
-		return nil
+		return optional.Optional[*app.EveEntity]{}
 	}
 	o2 := &app.EveEntity{
 		Category: eveEntityCategoryFromDBModel(o.category.String),
-		ID:      o.id.Int64,
+		ID:       o.id.Int64,
 		Name:     o.name.String,
 	}
-	return o2
+	return optional.New(o2)
 }

@@ -188,10 +188,12 @@ func (cct ContractType) String() string {
 	return s
 }
 
+// TODO: Consolidate "Contract" into base struct
+
 type CharacterContract struct {
 	ID                int64
-	Acceptor          *EveEntity
-	Assignee          *EveEntity
+	Acceptor          optional.Optional[*EveEntity]
+	Assignee          optional.Optional[*EveEntity]
 	Availability      ContractAvailability
 	Buyout            optional.Optional[float64]
 	CharacterID       int64
@@ -202,16 +204,16 @@ type CharacterContract struct {
 	DateExpired       time.Time
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
-	EndLocation       *EveLocationShort
-	EndSolarSystem    *EntityShort[int64]
+	EndLocation       optional.Optional[*EveLocationShort]
+	EndSolarSystem    optional.Optional[*EntityShort[int64]]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
 	Items             []string
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
-	StartLocation     *EveLocationShort
-	StartSolarSystem  *EntityShort[int64]
+	StartLocation     optional.Optional[*EveLocationShort]
+	StartSolarSystem  optional.Optional[*EntityShort[int64]]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]
@@ -259,8 +261,8 @@ type CharacterContractItem struct {
 
 type CorporationContract struct {
 	ID                int64
-	Acceptor          *EveEntity
-	Assignee          *EveEntity
+	Acceptor          optional.Optional[*EveEntity]
+	Assignee          optional.Optional[*EveEntity]
 	Availability      ContractAvailability
 	Buyout            optional.Optional[float64]
 	CorporationID     int64
@@ -271,16 +273,16 @@ type CorporationContract struct {
 	DateExpired       time.Time
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
-	EndLocation       *EveLocationShort // optional
-	EndSolarSystem    *EntityShort[int64]
+	EndLocation       optional.Optional[*EveLocationShort]
+	EndSolarSystem    optional.Optional[*EntityShort[int64]]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
 	Items             []string
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
-	StartLocation     *EveLocationShort // optional
-	StartSolarSystem  *EntityShort[int64]
+	StartLocation     optional.Optional[*EveLocationShort]
+	StartSolarSystem  optional.Optional[*EntityShort[int64]]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]
@@ -335,24 +337,15 @@ func contractHasIssue(status ContractStatus, expired time.Time) bool {
 func contractIsExpired(expired time.Time) bool {
 	return expired.Before(time.Now())
 }
-func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int64], volume optional.Optional[float64], items []string) string {
+func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort[int64]], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {
-		var startName, endName string
-		if start1 != nil {
-			startName = start1.Name
-		} else {
-			startName = "?"
-		}
-		if end1 != nil {
-			endName = end1.Name
-		} else {
-			endName = "?"
-		}
-		s := fmt.Sprintf(
-			"%s >> %s",
-			startName,
-			endName,
-		)
+		startName := optional.MapOrFallback(start, "?", func(v *EntityShort[int64]) string {
+			return v.Name
+		})
+		endName := optional.MapOrFallback(end, "?", func(v *EntityShort[int64]) string {
+			return v.Name
+		})
+		s := fmt.Sprintf("%s >> %s", startName, endName)
 		if !volume.IsEmpty() {
 			s += fmt.Sprintf(" (%.0f m3)", volume.ValueOrZero())
 		}

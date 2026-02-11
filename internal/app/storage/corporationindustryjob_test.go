@@ -70,7 +70,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 					t, &app.EveLocationShort{
 						ID:             location.ID,
 						Name:           optional.New(location.Name),
-						SecurityStatus: optional.New(location.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(location.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.Location,
 				)

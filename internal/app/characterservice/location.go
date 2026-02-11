@@ -41,7 +41,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			if err != nil {
 				return err
 			}
-			if el.Variant() == app.EveLocationStructure && el.SolarSystem == nil {
+			if el.Variant() == app.EveLocationStructure && el.SolarSystem.IsEmpty() {
 				err := func() error {
 					_, err := s.eus.GetOrCreateSolarSystemESI(ctx, location.SolarSystemId)
 					if err != nil {

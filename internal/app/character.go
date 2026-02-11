@@ -19,13 +19,13 @@ import (
 type Character struct {
 	AssetValue        optional.Optional[float64]
 	EveCharacter      *EveCharacter
-	Home              *EveLocation
+	Home              optional.Optional[*EveLocation]
 	ID                int64
 	IsTrainingWatched bool
 	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
-	Location          *EveLocation
-	Ship              *EveType
+	Location          optional.Optional[*EveLocation]
+	Ship              optional.Optional[*EveType]
 	TotalSP           optional.Optional[int64]
 	UnallocatedSP     optional.Optional[int64]
 	WalletBalance     optional.Optional[float64]
@@ -333,14 +333,14 @@ type CharacterWalletJournalEntry struct {
 	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	FirstParty    *EveEntity // optional
+	FirstParty    optional.Optional[*EveEntity]
 	ID            int64
 	Reason        optional.Optional[string]
 	RefID         int64
 	RefType       string
-	SecondParty   *EveEntity // optional
+	SecondParty   optional.Optional[*EveEntity]
 	Tax           optional.Optional[float64]
-	TaxReceiver   *EveEntity // optional
+	TaxReceiver   optional.Optional[*EveEntity]
 }
 
 func (we CharacterWalletJournalEntry) RefTypeDisplay() string {

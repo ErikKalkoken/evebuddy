@@ -50,7 +50,7 @@ func TestCharacterNotification(t *testing.T) {
 			xassert.Equal(t, "text", o.Text.ValueOrZero())
 			xassert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
 			xassert.Equal(t, app.StructureDestroyed, o.Type)
-			assert.Nil(t, o.Recipient)
+			assert.True(t, o.Recipient.IsEmpty())
 		}
 	})
 	t.Run("can create new full", func(t *testing.T) {
@@ -87,7 +87,7 @@ func TestCharacterNotification(t *testing.T) {
 				xassert.Equal(t, app.StructureDestroyed, o.Type)
 				xassert.Equal(t, "body", o.Body.ValueOrZero())
 				xassert.Equal(t, "title", o.Title.ValueOrZero())
-				xassert.Equal(t, recipient, o.Recipient)
+				xassert.Equal(t, recipient, o.Recipient.ValueOrZero())
 			}
 		}
 	})

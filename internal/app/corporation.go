@@ -90,14 +90,14 @@ type CorporationWalletJournalEntry struct {
 	Date          time.Time
 	Description   string
 	DivisionID    int64
-	FirstParty    *EveEntity // optional
+	FirstParty    optional.Optional[*EveEntity]
 	ID            int64
 	Reason        optional.Optional[string]
 	RefID         int64
 	RefType       string
-	SecondParty   *EveEntity // optional
+	SecondParty   optional.Optional[*EveEntity]
 	Tax           optional.Optional[float64]
-	TaxReceiver   *EveEntity // optional
+	TaxReceiver   optional.Optional[*EveEntity]
 }
 
 func (we CorporationWalletJournalEntry) RefTypeDisplay() string {

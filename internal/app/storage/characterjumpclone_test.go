@@ -38,8 +38,8 @@ func TestCharacterJumpClone(t *testing.T) {
 				xassert.Equal(t, 5, x.CloneID)
 				xassert.Equal(t, "dummy", x.Name.ValueOrZero())
 				xassert.Equal(t, location.ToShort(), x.Location)
-				xassert.Equal(t, location.SolarSystem.Constellation.Region.ID, x.Region.ID)
-				xassert.Equal(t, location.SolarSystem.Constellation.Region.Name, x.Region.Name)
+				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.ID, x.Region.ID)
+				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.Name, x.Region.Name)
 			}
 		}
 	})

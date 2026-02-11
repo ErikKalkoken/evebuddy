@@ -560,26 +560,26 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int64, refID i
 		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
-	if o.FirstParty != nil {
+	if x, ok := o.FirstParty.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"First Party",
-			makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow),
 		))
 	}
-	if o.SecondParty != nil {
+	if x, ok := o.SecondParty.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Second Party",
-			makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow),
 		))
 	}
-	if o.TaxReceiver != nil {
+	if x, ok := o.TaxReceiver.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Tax",
 			widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
 		))
 		items = append(items, widget.NewFormItem(
 			"Tax Receiver",
-			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow)),
 		)
 	}
 	if !o.ContextIDType.IsEmpty() {
@@ -691,26 +691,26 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int64, div
 		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
-	if o.FirstParty != nil {
+	if x, ok := o.FirstParty.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"First Party",
-			makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow),
 		))
 	}
-	if o.SecondParty != nil {
+	if x, ok := o.FirstParty.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Second Party",
-			makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow),
 		))
 	}
-	if o.TaxReceiver != nil {
+	if x, ok := o.FirstParty.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Tax",
 			widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
 		))
 		items = append(items, widget.NewFormItem(
 			"Tax Receiver",
-			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
+			makeEveEntityActionLabel(x, u.ShowEveEntityInfoWindow)),
 		)
 	}
 	items = append(items, contextItem)

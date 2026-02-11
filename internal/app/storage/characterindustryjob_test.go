@@ -62,7 +62,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 					t, &app.EveLocationShort{
 						ID:             blueprintLocation.ID,
 						Name:           optional.New(blueprintLocation.Name),
-						SecurityStatus: optional.New(blueprintLocation.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(blueprintLocation.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.BlueprintLocation,
 				)
@@ -73,7 +73,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 					t, &app.EveLocationShort{
 						ID:             facility.ID,
 						Name:           optional.New(facility.Name),
-						SecurityStatus: optional.New(facility.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(facility.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.Facility,
 				)
@@ -82,7 +82,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 					t, &app.EveLocationShort{
 						ID:             outputLocation.ID,
 						Name:           optional.New(outputLocation.Name),
-						SecurityStatus: optional.New(outputLocation.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(outputLocation.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.OutputLocation,
 				)
@@ -93,7 +93,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 					t, &app.EveLocationShort{
 						ID:             station.ID,
 						Name:           optional.New(station.Name),
-						SecurityStatus: optional.New(station.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(station.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.Station,
 				)

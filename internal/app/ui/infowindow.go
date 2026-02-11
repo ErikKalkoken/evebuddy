@@ -462,8 +462,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		}
 		// Attributes
 		attributes := make([]attributeItem, 0)
-		if o.ExecutorCorporation != nil {
-			attributes = append(attributes, newAttributeItem("Executor", o.ExecutorCorporation))
+		if x, ok := o.ExecutorCorporation.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Executor", x))
 		}
 		if o.Ticker != "" {
 			attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
@@ -477,8 +477,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		if !o.DateFounded.IsZero() {
 			attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
 		}
-		if o.Faction != nil {
-			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+		if x, ok := o.Faction.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Faction", x))
 		}
 		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", o.ID)
@@ -688,13 +688,14 @@ func (a *characterInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		if !o.HasAlliance() {
+		x, ok := o.Alliance.Value()
+		if !ok {
 			a.alliance.Hide()
 			return
 		}
-		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.SetText(x.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
+			a.iw.showEveEntity(x)
 		}
 	})
 	fyne.Do(func() {
@@ -774,11 +775,11 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 		})),
 		newAttributeItem("Corporation", o.Corporation),
 	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	if x, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", x))
 	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	if x, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", x))
 	}
 	var u any
 	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
@@ -1038,27 +1039,29 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		if o.Alliance == nil {
+		x, ok := o.Alliance.Value()
+		if !ok {
 			a.allianceBox.Hide()
 			return
 		}
-		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.SetText(x.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
+			a.iw.showEveEntity(x)
 		}
-		a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.eis.AllianceLogoAsync(x.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		})
 	})
 	fyne.Do(func() {
-		if o.HomeStation == nil {
+		x, ok := o.HomeStation.Value()
+		if !ok {
 			a.hq.Hide()
 			return
 		}
-		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+		a.hq.SetText("Headquarters: " + x.Name)
 		a.hq.OnTapped = func() {
-			a.iw.showEveEntity(o.HomeStation)
+			a.iw.showEveEntity(x)
 		}
 	})
 	g := new(errgroup.Group)
@@ -1092,20 +1095,20 @@ func (a *corporationInfo) update(ctx context.Context) error {
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
 	attributes := make([]attributeItem, 0)
-	if o.Ceo != nil {
-		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
+	if x, ok := o.Ceo.Value(); ok {
+		attributes = append(attributes, newAttributeItem("CEO", x))
 	}
-	if o.Creator != nil {
-		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
+	if x, ok := o.Creator.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Founder", x))
 	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	if x, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", x))
 	}
 	if o.Ticker != "" {
 		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
 	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	if x, ok := o.Faction.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", x))
 	}
 	var u any
 	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
@@ -1215,43 +1218,43 @@ func (a *locationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 	})
-	if o.Type != nil {
+	if et, ok := o.Type.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
+			a.iw.u.eis.InventoryTypeRenderAsync(et.ID, renderIconPixelSize, func(r fyne.Resource) {
 				a.typeImage.SetResource(r)
 			})
-			a.typeInfo.SetText(o.Type.Name)
+			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.showEveEntity(o.Type.EveEntity())
+				a.iw.showEveEntity(et.EveEntity())
 			}
 			a.typeImage.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
+				a.iw.showZoomWindow(o.Name, et.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
 			}
-			description := o.Type.Description
+			description := et.Description
 			if description == "" {
-				description = o.Type.Name
+				description = et.Name
 			}
 			a.description.SetText(description)
 		})
 	}
-	if o.Owner != nil {
+	if x, ok := o.Owner.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.eis.CorporationLogoAsync(o.Owner.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.eis.CorporationLogoAsync(x.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.ownerLogo.Resource = r
 				a.ownerLogo.Refresh()
 			})
-			a.owner.SetText(o.Owner.Name)
+			a.owner.SetText(x.Name)
 			a.owner.OnTapped = func() {
-				a.iw.showEveEntity(o.Owner)
+				a.iw.showEveEntity(x)
 			}
 		})
 	}
-	if o.SolarSystem != nil {
+	if es, ok := o.SolarSystem.Value(); ok {
 		fyne.Do(func() {
 			a.location.set(
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
-				newEntityItemFromEveSolarSystem(o.SolarSystem),
+				newEntityItemFromEveEntityWithText(es.Constellation.Region.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.EveEntity(), ""),
+				newEntityItemFromEveSolarSystem(es),
 			)
 		})
 	}

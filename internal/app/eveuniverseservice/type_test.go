@@ -431,7 +431,7 @@ func TestMarketPrice(t *testing.T) {
 		o := factory.CreateEveType()
 		x, err := s.MarketPrice(ctx, o.ID)
 		if assert.NoError(t, err) {
-			assert.True(t, x.IsEmpty())
+			xassert.Empty(t, x)
 		}
 	})
 }

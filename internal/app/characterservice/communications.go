@@ -63,24 +63,23 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 
 // NotificationRecipient returns a valid recipient for a notification.
 func (s *CharacterService) NotificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
-	if cn.Recipient == nil {
-		return &app.EveEntity{
-			ID:       cn.CharacterID,
-			Name:     s.scs.CharacterName(cn.CharacterID),
-			Category: app.EveEntityCharacter,
-		}
-	}
-	return cn.Recipient
+	return cn.Recipient.ValueOrFallback(&app.EveEntity{
+		ID:       cn.CharacterID,
+		Name:     s.scs.CharacterName(cn.CharacterID),
+		Category: app.EveEntityCharacter,
+	})
 }
 
 // RenderNotificationSummary renders a summary from a character notification.
 func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotification) (title string, content string) {
-	var recipient string
-	if n.Recipient == nil {
-		recipient = s.scs.CharacterName(n.CharacterID)
-	} else {
-		recipient = n.Recipient.Name
-	}
+	recipient := optional.MapOrFallbackFunc(
+		n.Recipient,
+		func() string {
+			return s.scs.CharacterName(n.CharacterID)
+		}, func(v *app.EveEntity) string {
+			return v.Name
+		},
+	)
 	title = fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
 	content = n.Title.ValueOrZero()
 	return
@@ -211,7 +210,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						if !character.EveCharacter.HasAlliance() {
 							recipientID = character.EveCharacter.Corporation.ID
 						} else {
-							recipientID = character.EveCharacter.Alliance.ID
+							recipientID = character.EveCharacter.Alliance.MustValue().ID
 						}
 					default:
 						recipientID = character.ID

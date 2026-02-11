@@ -31,16 +31,16 @@ import (
 )
 
 type characterOverviewRow struct {
-	alliance        *app.EveEntity
+	alliance        optional.Optional[*app.EveEntity]
 	characterID     int64
 	characterName   string
 	corporation     *app.EveEntity
-	faction         *app.EveEntity
+	faction         optional.Optional[*app.EveEntity]
 	isWatched       bool
-	location        *app.EveLocation
+	location        optional.Optional[*app.EveLocation]
 	regionName      string
 	searchTarget    string
-	ship            *app.EveType
+	ship            optional.Optional[*app.EveType]
 	skillpoints     optional.Optional[int64]
 	solarSystemName string
 	tags            set.Set[string]
@@ -50,10 +50,9 @@ type characterOverviewRow struct {
 }
 
 func (r characterOverviewRow) allianceName() string {
-	if r.alliance == nil {
-		return ""
-	}
-	return r.alliance.Name
+	return optional.MapOrZero(r.alliance, func(v *app.EveEntity) string {
+		return v.Name
+	})
 }
 
 func (r characterOverviewRow) corporationName() string {
@@ -64,10 +63,9 @@ func (r characterOverviewRow) corporationName() string {
 }
 
 func (r characterOverviewRow) shipName() string {
-	if r.ship == nil {
-		return "?"
-	}
-	return r.ship.Name
+	return optional.MapOrZero(r.ship, func(v *app.EveType) string {
+		return v.Name
+	})
 }
 
 type characterOverview struct {
@@ -515,9 +513,11 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		skillpoints:   c.TotalSP,
 		walletBalance: c.WalletBalance,
 	}
-	if c.Location != nil && c.Location.SolarSystem != nil {
-		r.regionName = c.Location.SolarSystem.Constellation.Region.Name
-		r.solarSystemName = c.Location.SolarSystem.Name
+	if el, ok := c.Location.Value(); ok {
+		if es, ok := el.SolarSystem.Value(); ok {
+			r.regionName = es.Constellation.Region.Name
+			r.solarSystemName = es.Name
+		}
 	}
 	total, unread, err := a.u.cs.GetMailCounts(ctx, c.ID)
 	if err != nil {
@@ -811,15 +811,15 @@ func (w *characterCard) set(c characterOverviewRow) {
 		w.corporationLogo.SetResource(r)
 	})
 
-	if c.alliance != nil {
+	if alliance, ok := c.alliance.Value(); ok {
 		if !w.isSmall {
 			w.allianceLogo.OnTapped = func() {
-				w.showInfoWindow(app.EveEntityAlliance, c.alliance.ID)
+				w.showInfoWindow(app.EveEntityAlliance, alliance.ID)
 			}
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}
 		w.allianceLogo.Show()
-		w.eis.AllianceLogoAsync(c.alliance.ID, logoSize, func(r fyne.Resource) {
+		w.eis.AllianceLogoAsync(alliance.ID, logoSize, func(r fyne.Resource) {
 			w.allianceLogo.SetResource(r)
 		})
 	} else {
@@ -863,11 +863,11 @@ func (w *characterCard) set(c characterOverviewRow) {
 
 	w.ship.SetText(c.shipName())
 
-	var rt []widget.RichTextSegment
-	if c.location != nil && c.location.SolarSystem != nil {
-		rt = c.location.SolarSystem.DisplayRichText()
-	} else {
-		rt = iwidget.RichTextSegmentsFromText("?")
+	rt := iwidget.RichTextSegmentsFromText("?")
+	if el, ok := c.location.Value(); ok {
+		if es, ok := el.SolarSystem.Value(); ok {
+			rt = es.DisplayRichText()
+		}
 	}
 	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)

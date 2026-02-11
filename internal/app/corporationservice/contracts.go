@@ -284,10 +284,9 @@ func (s *CorporationService) updateContract(ctx context.Context, corporationID i
 	if err != nil {
 		return err
 	}
-	var acceptorID int64
-	if o.Acceptor != nil {
-		acceptorID = o.Acceptor.ID
-	}
+	acceptorID := optional.MapOrZero(o.Acceptor, func(x *app.EveEntity) int64 {
+		return x.ID
+	})
 	if c.AcceptorId == acceptorID &&
 		optional.Equal2(optional.FromPtr(c.DateAccepted), o.DateAccepted) &&
 		optional.Equal2(optional.FromPtr(c.DateCompleted), o.DateCompleted) &&

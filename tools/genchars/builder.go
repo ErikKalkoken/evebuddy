@@ -343,7 +343,7 @@ func (b *CharacterBuilder) createMarketOrders() error {
 			LocationID:    el.ID,
 			OrderID:       int64(i),
 			OwnerID:       b.character.ID,
-			RegionID:      el.SolarSystem.Constellation.Region.ID,
+			RegionID:      el.SolarSystem.MustValue().Constellation.Region.ID,
 			State:         app.OrderOpen,
 			TypeID:        typeID,
 			VolumeRemains: volumeRemain,

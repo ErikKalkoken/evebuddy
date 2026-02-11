@@ -191,36 +191,39 @@ func (a *characterSheet) update() {
 		a.u.eis.CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
 		})
-		if c.Location == nil {
+		el, ok := c.Location.Value()
+		if !ok {
 			a.location.SetText("?")
 			a.location.OnTapped = nil
 			return
 		}
-		a.location.SetText(c.Location.DisplayName())
+		a.location.SetText(el.DisplayName())
 		a.location.OnTapped = func() {
-			a.u.ShowLocationInfoWindow(c.Location.ID)
+			a.u.ShowLocationInfoWindow(el.ID)
 		}
 	})
 	fyne.Do(func() {
-		if c.Ship == nil {
+		ship, ok := c.Ship.Value()
+		if !ok {
 			a.ship.SetText("?")
 			a.ship.OnTapped = nil
 			return
 		}
-		a.ship.SetText(c.Ship.Name)
+		a.ship.SetText(ship.Name)
 		a.ship.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityInventoryType, c.Ship.ID)
+			a.u.ShowInfoWindow(app.EveEntityInventoryType, ship.ID)
 		}
 	})
 	fyne.Do(func() {
-		if c.Home == nil {
+		home, ok := c.Home.Value()
+		if !ok {
 			a.home.SetText("?")
 			a.home.OnTapped = nil
 			return
 		}
-		a.home.SetText(c.Home.DisplayName())
+		a.home.SetText(home.DisplayName())
 		a.home.OnTapped = func() {
-			a.u.ShowLocationInfoWindow(c.Home.ID)
+			a.u.ShowLocationInfoWindow(home.ID)
 		}
 	})
 	fyne.Do(func() {
@@ -231,13 +234,14 @@ func (a *characterSheet) update() {
 		}) + " ISK")
 	})
 	fyne.Do(func() {
-		if c.EveCharacter.Faction == nil {
+		faction, ok := c.EveCharacter.Faction.Value()
+		if !ok {
 			a.faction.SetText("")
 			return
 		}
-		a.faction.SetText(c.EveCharacter.FactionName())
+		a.faction.SetText(faction.Name)
 		a.faction.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
+			a.u.ShowInfoWindow(app.EveEntityFaction, faction.ID)
 		}
 	})
 

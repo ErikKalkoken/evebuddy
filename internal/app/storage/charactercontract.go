@@ -374,30 +374,30 @@ func characterContractFromDBModel(arg characterContractFromDBModelParams) *app.C
 		Volume:            optional.FromZeroValue(arg.contract.Volume),
 	}
 	if arg.contract.EndLocationID.Valid {
-		o2.EndLocation = &app.EveLocationShort{
+		o2.EndLocation = optional.New(&app.EveLocationShort{
 			ID:             arg.contract.EndLocationID.Int64,
 			Name:           optional.FromNullString(arg.endLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.endSolarSystemSecurity),
-		}
+		})
 	}
 	if arg.contract.StartLocationID.Valid {
-		o2.StartLocation = &app.EveLocationShort{
+		o2.StartLocation = optional.New(&app.EveLocationShort{
 			ID:             arg.contract.StartLocationID.Int64,
 			Name:           optional.FromNullString(arg.startLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.startSolarSystemSecurity),
-		}
+		})
 	}
 	if arg.endSolarSystemID.Valid && arg.endSolarSystemName.Valid {
-		o2.EndSolarSystem = &app.EntityShort[int64]{
+		o2.EndSolarSystem = optional.New(&app.EntityShort[int64]{
 			ID:   arg.endSolarSystemID.Int64,
 			Name: arg.endSolarSystemName.String,
-		}
+		})
 	}
 	if arg.startSolarSystemID.Valid && arg.startSolarSystemName.Valid {
-		o2.StartSolarSystem = &app.EntityShort[int64]{
+		o2.StartSolarSystem = optional.New(&app.EntityShort[int64]{
 			ID:   arg.startSolarSystemID.Int64,
 			Name: arg.startSolarSystemName.String,
-		}
+		})
 	}
 	return o2
 }

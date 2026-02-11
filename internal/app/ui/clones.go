@@ -180,8 +180,8 @@ func newClones(u *baseUI) *clones {
 				case 0:
 					a.u.ShowLocationInfoWindow(r.jc.Location.ID)
 				case 1:
-					if r.jc.Location.SolarSystem != nil {
-						a.u.ShowInfoWindow(app.EveEntityRegion, r.jc.Location.SolarSystem.Constellation.Region.ID)
+					if x, ok := r.jc.Location.SolarSystem.Value(); ok {
+						a.u.ShowInfoWindow(app.EveEntityRegion, x.Constellation.Region.ID)
 					}
 				case 2:
 					if r.jc == nil || r.jc.ImplantsCount == 0 {
@@ -414,8 +414,8 @@ func (a *clones) updateRoutes() {
 	headers := make([]app.EveRouteHeader, 0)
 	fyne.DoAndWait(func() {
 		for _, r := range a.rows {
-			destination := r.jc.Location.SolarSystem
-			if destination == nil {
+			destination, ok := r.jc.Location.SolarSystem.Value()
+			if !ok {
 				continue
 			}
 			headers = append(headers, app.EveRouteHeader{
@@ -442,8 +442,8 @@ func (a *clones) updateRoutes() {
 	}
 	fyne.Do(func() {
 		for i, r := range a.rows {
-			solarSystem := r.jc.Location.SolarSystem
-			if solarSystem == nil {
+			solarSystem, ok := r.jc.Location.SolarSystem.Value()
+			if !ok {
 				continue
 			}
 			a.rows[i].route = m[solarSystem.ID]
@@ -616,12 +616,12 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	from.Wrapping = fyne.TextWrapWord
 
 	var toText []widget.RichTextSegment
-	if r.jc.Location.SolarSystem != nil {
-		toText = r.jc.Location.SolarSystem.DisplayRichTextWithRegion()
+	if x, ok := r.jc.Location.SolarSystem.Value(); ok {
+		toText = x.DisplayRichTextWithRegion()
 	}
 	to := iwidget.NewTappableRichText(toText, func() {
-		if r.jc.Location.SolarSystem != nil {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
+		if x, ok := r.jc.Location.SolarSystem.Value(); ok {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, x.ID)
 		}
 	})
 	to.Wrapping = fyne.TextWrapWord

@@ -56,8 +56,8 @@ func TestFetchAlliance(t *testing.T) {
 			xassert.Equal(t, "<C C P>", x.Ticker)
 			xassert.Equal(t, creator, x.Creator)
 			xassert.Equal(t, creatorCorp, x.CreatorCorporation)
-			xassert.Equal(t, executor, x.ExecutorCorporation)
-			xassert.Equal(t, faction, x.Faction)
+			xassert.Equal(t, executor, x.ExecutorCorporation.MustValue())
+			xassert.Equal(t, faction, x.Faction.MustValue())
 			xassert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
 		}
 	})
@@ -81,7 +81,7 @@ func TestFetchAlliance(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			xassert.Equal(t, "C C P Alliance", x.Name)
-			assert.Nil(t, x.Faction)
+			xassert.Empty(t, x.Faction)
 		}
 	})
 }
@@ -176,13 +176,13 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.GetOrCreateCorporationESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance)
-			xassert.Equal(t, creator, o.Creator)
-			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, alliance, o.Alliance.MustValue())
+			xassert.Equal(t, creator, o.Creator.MustValue())
+			xassert.Equal(t, ceo, o.Ceo.MustValue())
 			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
 			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction)
-			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, faction, o.Faction.MustValue())
+			xassert.Equal(t, station, o.HomeStation.MustValue())
 			xassert.Equal(t, 656, o.MemberCount)
 			xassert.Equal(t, "C C P", o.Name)
 			xassert.Equal(t, 0.256, o.TaxRate)
@@ -220,10 +220,10 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 			xassert.Equal(t, "C C P", o.Name)
 			xassert.Equal(t, 0.256, o.TaxRate)
 			xassert.Equal(t, "-CCP-", o.Ticker)
-			assert.Nil(t, o.Ceo)
-			assert.Nil(t, o.Creator)
-			assert.Nil(t, o.Alliance)
-			assert.Nil(t, o.Faction)
+			xassert.Empty(t, o.Ceo)
+			xassert.Empty(t, o.Creator)
+			xassert.Empty(t, o.Alliance)
+			xassert.Empty(t, o.Faction)
 		}
 	})
 }
@@ -267,13 +267,13 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance)
-			xassert.Equal(t, creator, o.Creator)
-			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, alliance, o.Alliance.MustValue())
+			xassert.Equal(t, creator, o.Creator.MustValue())
+			xassert.Equal(t, ceo, o.Ceo.MustValue())
 			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
 			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction)
-			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, faction, o.Faction.MustValue())
+			xassert.Equal(t, station, o.HomeStation.MustValue())
 			xassert.Equal(t, 656, o.MemberCount)
 			xassert.Equal(t, "C C P", o.Name)
 			xassert.Equal(t, 0.256, o.TaxRate)
@@ -314,13 +314,13 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance)
+			xassert.Equal(t, alliance, o.Alliance.MustValue())
 			xassert.Equal(t, orig.Creator, o.Creator)
-			xassert.Equal(t, ceo, o.Ceo)
+			xassert.Equal(t, ceo, o.Ceo.MustValue())
 			xassert.Equal(t, orig.DateFounded.MustValue(), o.DateFounded.MustValue())
 			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction)
-			xassert.Equal(t, station, o.HomeStation)
+			xassert.Equal(t, faction, o.Faction.MustValue())
+			xassert.Equal(t, station, o.HomeStation.MustValue())
 			xassert.Equal(t, 656, o.MemberCount)
 			xassert.Equal(t, "C C P", o.Name)
 			xassert.Equal(t, 0.256, o.TaxRate)
@@ -373,13 +373,13 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 			xassert.Equal2(t, want, got)
 			ec, err := st.GetEveCorporation(ctx, 109299958)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, alliance, ec.Alliance)
+				xassert.Equal(t, alliance, ec.Alliance.MustValue())
 				xassert.Equal(t, orig.Creator, ec.Creator)
-				xassert.Equal(t, ceo, ec.Ceo)
+				xassert.Equal(t, ceo, ec.Ceo.MustValue())
 				xassert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
 				xassert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
-				xassert.Equal(t, faction, ec.Faction)
-				xassert.Equal(t, station, ec.HomeStation)
+				xassert.Equal(t, faction, ec.Faction.MustValue())
+				xassert.Equal(t, station, ec.HomeStation.MustValue())
 				xassert.Equal(t, 656, ec.MemberCount)
 				xassert.Equal(t, "C C P", ec.Name)
 				xassert.Equal(t, 0.256, ec.TaxRate)

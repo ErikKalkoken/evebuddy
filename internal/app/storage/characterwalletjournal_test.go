@@ -94,13 +94,13 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
 				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
-				xassert.Equal(t, e1, i.FirstParty)
+				xassert.Equal(t, e1, i.FirstParty.ValueOrZero())
 				xassert.Equal2(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
 				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
-				xassert.Equal(t, e2, i.SecondParty)
-				xassert.Equal(t, e3, i.TaxReceiver)
+				xassert.Equal(t, e2, i.SecondParty.ValueOrZero())
+				xassert.Equal(t, e3, i.TaxReceiver.ValueOrZero())
 				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}
@@ -109,9 +109,15 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
 		// when
 		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
@@ -124,9 +130,15 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
 		// when
 		ee, err := st.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then

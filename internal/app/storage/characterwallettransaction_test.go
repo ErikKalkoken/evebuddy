@@ -44,7 +44,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// when
 		err := st.CreateCharacterWalletTransaction(ctx, arg)
 		// then
-		region := location.SolarSystem.Constellation.Region
+		region := location.SolarSystem.ValueOrZero().Constellation.Region
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
 				CharacterID:   c.ID,

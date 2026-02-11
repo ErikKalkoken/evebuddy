@@ -28,13 +28,13 @@ func TestMakeStructureBaseText(t *testing.T) {
 		httpmock.Reset()
 		o := factory.CreateEveLocationStructure()
 		// when
-		x, err := makeStructureBaseText(ctx, o.Type.ID, o.SolarSystem.ID, o.ID, o.Name, eus)
+		x, err := makeStructureBaseText(ctx, o.Type.ValueOrZero().ID, o.SolarSystem.ValueOrZero().ID, o.ID, o.Name, eus)
 		// then
 		if assert.NoError(t, err) {
-		xassert.Equal(t, o.Name, x.name)
-		xassert.Equal(t, o.SolarSystem.Name, x.solarSystem.Name)
-		xassert.Equal(t, o.Type.Name, x.eveType.Name)
-		xassert.Equal(t, o.Owner.Name, x.owner.Name)
+			xassert.Equal(t, o.Name, x.name)
+			xassert.Equal(t, o.SolarSystem.MustValue().Name, x.solarSystem.Name)
+			xassert.Equal(t, o.Type.MustValue().Name, x.eveType.Name)
+			xassert.Equal(t, o.Owner.MustValue().Name, x.owner.Name)
 			assert.NotEmpty(t, x.intro)
 		}
 	})
@@ -47,8 +47,8 @@ func TestMakeStructureBaseText(t *testing.T) {
 		x, err := makeStructureBaseText(ctx, 0, es.ID, 1_000_000_000_000, "", eus)
 		// then
 		if assert.NoError(t, err) {
-		xassert.Equal(t, "???", x.name)
-		xassert.Equal(t, es.Name, x.solarSystem.Name)
+			xassert.Equal(t, "???", x.name)
+			xassert.Equal(t, es.Name, x.solarSystem.Name)
 			assert.Empty(t, x.eveType)
 			assert.Empty(t, x.owner)
 			assert.NotEmpty(t, x.intro)
@@ -79,7 +79,7 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 			if !assert.NoError(t, err) {
 				t.Fatal()
 			}
-		xassert.Equal(t, tc.category, o.Category)
+			xassert.Equal(t, tc.category, o.Category)
 			xassert.Equal(t, tc.id, o.ID)
 			xassert.Equal(t, tc.name, o.Name)
 		} else {

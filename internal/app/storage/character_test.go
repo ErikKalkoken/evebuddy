@@ -38,12 +38,12 @@ func TestCharacter(t *testing.T) {
 			xassert.Equal(t, c1.ID, c2.ID)
 			xassert.Equal(t, c1.AssetValue, c2.AssetValue)
 			xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
-			xassert.Equal(t, c1.Home.ID, c2.Home.ID)
+			xassert.Equal(t, c1.Home, c2.Home)
 			xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
 			xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
 			xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
-			xassert.Equal(t, c1.Location.ID, c2.Location.ID)
-			xassert.Equal(t, c1.Ship.ID, c2.Ship.ID)
+			xassert.Equal(t, c1.Location, c2.Location)
+			xassert.Equal(t, c1.Ship, c2.Ship)
 			xassert.Equal(t, c1.TotalSP, c2.TotalSP)
 			xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
 			xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
@@ -156,11 +156,11 @@ func TestCharacterCreate(t *testing.T) {
 		if assert.NoError(t, err) {
 			r, err := st.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, home, r.Home)
+				xassert.Equal(t, home, r.Home.MustValue())
 				xassert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
 				xassert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
-				xassert.Equal(t, location, r.Location)
-				xassert.Equal(t, ship, r.Ship)
+				xassert.Equal(t, location, r.Location.MustValue())
+				xassert.Equal(t, ship, r.Ship.MustValue())
 				xassert.Equal(t, 123, r.TotalSP.ValueOrZero())
 				xassert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
 				xassert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
@@ -304,7 +304,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, home, c2.Home)
+				xassert.Equal(t, home, c2.Home.MustValue())
 			}
 		}
 
@@ -375,7 +375,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, location, c2.Location)
+				xassert.Equal(t, location, c2.Location.MustValue())
 			}
 		}
 	})
@@ -390,7 +390,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, x, c2.Ship)
+				xassert.Equal(t, x, c2.Ship.MustValue())
 			}
 		}
 	})

@@ -67,17 +67,14 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 			if c.Status == c.StatusNotified {
 				continue
 			}
-			if c.Acceptor != nil && c.Acceptor.ID == characterID {
+			if !c.Acceptor.IsEmpty() && c.Acceptor.MustValue().ID == characterID {
 				continue // ignore status changed caused by the current character
 			}
 			var content string
-			var acceptorName string
 			name := "'" + c.NameDisplay() + "'"
-			if c.Acceptor != nil {
-				acceptorName = c.Acceptor.Name
-			} else {
-				acceptorName = "?"
-			}
+			acceptorName := c.Acceptor.StringFunc("?", func(v *app.EveEntity) string {
+				return v.Name
+			})
 			switch c.Type {
 			case app.ContractTypeCourier:
 				switch c.Status {
@@ -346,10 +343,9 @@ func (s *CharacterService) updateContract(ctx context.Context, characterID int64
 	if err != nil {
 		return err
 	}
-	var acceptorID int64
-	if o.Acceptor != nil {
-		acceptorID = o.Acceptor.ID
-	}
+	acceptorID := optional.MapOrZero(o.Acceptor, func(x *app.EveEntity) int64 {
+		return x.ID
+	})
 	if c.AcceptorId == acceptorID &&
 		optional.Equal2(optional.FromPtr(c.DateAccepted), o.DateAccepted) &&
 		optional.Equal2(optional.FromPtr(c.DateCompleted), o.DateCompleted) &&

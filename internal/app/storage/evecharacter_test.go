@@ -58,8 +58,8 @@ func TestEveCharacter(t *testing.T) {
 		}
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance2, c2.Alliance)
-			xassert.Equal(t, faction2, c2.Faction)
+			xassert.Equal(t, alliance2, c2.Alliance.ValueOrZero())
+			xassert.Equal(t, faction2, c2.Faction.ValueOrZero())
 			xassert.Equal(t, "Erik", c2.Name)
 			xassert.Equal(t, "new description", c2.Description.ValueOrZero())
 			xassert.Equal(t, "new title", c2.Title.ValueOrZero())
@@ -137,11 +137,11 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, c2.Alliance)
+			xassert.Equal(t, alliance, c2.Alliance.ValueOrZero())
 			xassert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
 			xassert.Equal(t, c1.Corporation, c2.Corporation)
 			xassert.Equal(t, c1.Description, c2.Description)
-			xassert.Equal(t, faction, c2.Faction)
+			xassert.Equal(t, faction, c2.Faction.ValueOrZero())
 			xassert.Equal(t, c1.ID, c2.ID)
 			xassert.Equal(t, c1.Name, c2.Name)
 		}

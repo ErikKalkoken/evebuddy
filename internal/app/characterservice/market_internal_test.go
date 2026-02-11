@@ -49,7 +49,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"order_id":       12,
 				"price":          0.45,
 				"range":          "station",
-				"region_id":      location2.SolarSystem.Constellation.Region.ID,
+				"region_id":      location2.SolarSystem.MustValue().Constellation.Region.ID,
 				"state":          "expired",
 				"type_id":        itemType2.ID,
 				"volume_remain":  1,
@@ -68,7 +68,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"order_id":       42,
 				"price":          123.45,
 				"range":          "1",
-				"region_id":      location1.SolarSystem.Constellation.Region.ID,
+				"region_id":      location1.SolarSystem.MustValue().Constellation.Region.ID,
 				"type_id":        itemType1.ID,
 				"volume_remain":  5,
 				"volume_total":   10,
@@ -102,7 +102,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				assert.True(t, o.MinVolume.IsEmpty())
 				xassert.Equal(t, 123.45, o.Price)
 				xassert.Equal(t, "1", o.Range)
-				xassert.Equal(t, location1.SolarSystem.Constellation.Region.ID, o.Region.ID)
+				xassert.Equal(t, location1.SolarSystem.MustValue().Constellation.Region.ID, o.Region.ID)
 				xassert.Equal(t, app.OrderOpen, o.State)
 				xassert.Equal(t, itemType1.ID, o.Type.ID)
 				xassert.Equal(t, 5, o.VolumeRemains)
@@ -295,7 +295,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 					"order_id":       12,
 					"price":          0.45,
 					"range":          "station",
-					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"region_id":      location.SolarSystem.MustValue().Constellation.Region.ID,
 					"state":          "expired",
 					"type_id":        itemType.ID,
 					"volume_remain":  1,
@@ -310,7 +310,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 					"order_id":       13,
 					"price":          0.45,
 					"range":          "station",
-					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"region_id":      location.SolarSystem.MustValue().Constellation.Region.ID,
 					"state":          "expired",
 					"type_id":        itemType.ID,
 					"volume_remain":  1,

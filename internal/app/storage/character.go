@@ -343,21 +343,21 @@ func (st *Storage) characterFromDBModel(
 		if err != nil {
 			return nil, err
 		}
-		o.Home = x
+		o.Home = optional.New(x)
 	}
 	if locationID.Valid {
 		x, err := st.GetLocation(ctx, locationID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		o.Location = x
+		o.Location = optional.New(x)
 	}
 	if shipID.Valid {
 		x, err := st.GetEveType(ctx, shipID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		o.Ship = x
+		o.Ship = optional.New(x)
 	}
 	return &o, nil
 }

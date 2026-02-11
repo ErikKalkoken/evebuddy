@@ -145,9 +145,9 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 			})
 		}
 	}
-	if el.SolarSystem != nil {
-		r.regionName = el.SolarSystem.Constellation.Region.Name
-		r.regionID = el.SolarSystem.Constellation.Region.ID
+	if x, ok := el.SolarSystem.Value(); ok {
+		r.regionName = x.Constellation.Region.Name
+		r.regionID = x.Constellation.Region.ID
 	}
 }
 

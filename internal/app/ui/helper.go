@@ -112,6 +112,17 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	})
 }
 
+// makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
+func makeEveEntityActionLabel2(o optional.Optional[*app.EveEntity], action func(o *app.EveEntity)) fyne.CanvasObject {
+	v, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("-")
+	}
+	return makeLinkLabelWithWrap(v.Name, func() {
+		action(v)
+	})
+}
+
 func makeLabelWithWrap(s string) *widget.Label {
 	l := widget.NewLabel(s)
 	l.Wrapping = fyne.TextWrapWord
@@ -135,6 +146,18 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	}
 	x := makeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(int64)) fyne.CanvasObject {
+	el, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("?")
+	}
+	x := makeLinkLabelWithWrap(el.DisplayName(), func() {
+		show(el.ID)
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
@@ -201,11 +224,4 @@ func generateUniqueID() string {
 	currentTime := time.Now().UnixNano()
 	randomNumber, _ := rand.Int(rand.Reader, big.NewInt(1000000))
 	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
-}
-
-func entityNameOrFallback(o *app.EveEntity, fallback string) string {
-	if o == nil {
-		return fallback
-	}
-	return o.Name
 }

@@ -370,11 +370,11 @@ func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) 
 			}
 			switch n.Sender.ID {
 			case app.EveTypeAlliance:
-				if c.EveCharacter.Alliance != nil {
-					n.Sender = c.EveCharacter.Alliance
-				} else {
-					n.Sender = &app.EveEntity{ID: 1, Name: "Unknown", Category: app.EveEntityCorporation}
-				}
+				n.Sender = c.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+					ID:       1,
+					Name:     "Unknown",
+					Category: app.EveEntityCorporation,
+				})
 			case app.EveTypeCorporation:
 				n.Sender = c.EveCharacter.Corporation
 			}

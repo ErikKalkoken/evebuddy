@@ -24,9 +24,9 @@ func TestEveAlliance(t *testing.T) {
 
 func TestEveCharacter_Alliance(t *testing.T) {
 	x1 := &app.EveCharacter{
-		Alliance: &app.EveEntity{
+		Alliance: optional.New(&app.EveEntity{
 			Name: "alliance",
-		},
+		}),
 	}
 	xassert.Equal(t, "alliance", x1.AllianceName())
 	assert.True(t, x1.HasAlliance())
@@ -45,9 +45,9 @@ func TestEveCharacter_Description(t *testing.T) {
 
 func TestEveCharacter_Faction(t *testing.T) {
 	x1 := &app.EveCharacter{
-		Faction: &app.EveEntity{
+		Faction: optional.New(&app.EveEntity{
 			Name: "faction",
-		},
+		}),
 	}
 	xassert.Equal(t, "faction", x1.FactionName())
 	assert.True(t, x1.HasFaction())
@@ -76,11 +76,11 @@ func TestEveCharacter_EveEntity(t *testing.T) {
 func TestEveCharacter_IsIdentical(t *testing.T) {
 	t.Run("should report when same", func(t *testing.T) {
 		x1 := &app.EveCharacter{
-			Alliance:       &app.EveEntity{ID: 1},
+			Alliance:       optional.New(&app.EveEntity{ID: 1}),
 			Birthday:       time.Now(),
 			Corporation:    &app.EveEntity{ID: 2},
 			Description:    optional.New("abc"),
-			Faction:        &app.EveEntity{ID: 3},
+			Faction:        optional.New(&app.EveEntity{ID: 3}),
 			Gender:         "male",
 			ID:             4,
 			Name:           "Bruce Wayne",
@@ -93,11 +93,11 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 	})
 	t.Run("should report when not same", func(t *testing.T) {
 		x1 := &app.EveCharacter{
-			Alliance:       &app.EveEntity{ID: 1},
+			Alliance:       optional.New(&app.EveEntity{ID: 1}),
 			Birthday:       time.Now(),
 			Corporation:    &app.EveEntity{ID: 2},
 			Description:    optional.New("abc"),
-			Faction:        &app.EveEntity{ID: 3},
+			Faction:        optional.New(&app.EveEntity{ID: 3}),
 			Gender:         "male",
 			ID:             4,
 			Name:           "Bruce Wayne",
@@ -113,7 +113,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 }
 
 func TestEveCorporation_Alliance(t *testing.T) {
-	x1 := &app.EveCorporation{Alliance: &app.EveEntity{}}
+	x1 := &app.EveCorporation{Alliance: optional.New(&app.EveEntity{})}
 	assert.True(t, x1.HasAlliance())
 
 	x2 := &app.EveCorporation{}
@@ -121,7 +121,7 @@ func TestEveCorporation_Alliance(t *testing.T) {
 }
 
 func TestEveCorporation_Faction(t *testing.T) {
-	x1 := &app.EveCorporation{Faction: &app.EveEntity{}}
+	x1 := &app.EveCorporation{Faction: optional.New(&app.EveEntity{})}
 	assert.True(t, x1.HasFaction())
 
 	x2 := &app.EveCorporation{}
@@ -139,13 +139,13 @@ func TestEveCorporation_EveEntity(t *testing.T) {
 func TestEveCorporation_IsIdentical(t *testing.T) {
 	t.Run("should report when same", func(t *testing.T) {
 		x1 := &app.EveCorporation{
-			Alliance:    &app.EveEntity{ID: 1},
-			Ceo:         &app.EveEntity{ID: 2},
-			Creator:     &app.EveEntity{ID: 3},
+			Alliance:    optional.New(&app.EveEntity{ID: 1}),
+			Ceo:         optional.New(&app.EveEntity{ID: 2}),
+			Creator:     optional.New(&app.EveEntity{ID: 3}),
 			DateFounded: optional.New(time.Now().Add(-3 * time.Hour)),
 			Description: "abc",
-			Faction:     &app.EveEntity{ID: 4},
-			HomeStation: &app.EveEntity{ID: 5},
+			Faction:     optional.New(&app.EveEntity{ID: 4}),
+			HomeStation: optional.New(&app.EveEntity{ID: 5}),
 			ID:          6,
 			MemberCount: 7,
 			Name:        "def",
@@ -161,13 +161,13 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 	})
 	t.Run("should report when not same", func(t *testing.T) {
 		x1 := &app.EveCorporation{
-			Alliance:    &app.EveEntity{ID: 1},
-			Ceo:         &app.EveEntity{ID: 2},
-			Creator:     &app.EveEntity{ID: 3},
+			Alliance:    optional.New(&app.EveEntity{ID: 1}),
+			Ceo:         optional.New(&app.EveEntity{ID: 2}),
+			Creator:     optional.New(&app.EveEntity{ID: 3}),
 			DateFounded: optional.New(time.Now().Add(-3 * time.Hour)),
 			Description: "abc",
-			Faction:     &app.EveEntity{ID: 4},
-			HomeStation: &app.EveEntity{ID: 5},
+			Faction:     optional.New(&app.EveEntity{ID: 4}),
+			HomeStation: optional.New(&app.EveEntity{ID: 5}),
 			ID:          6,
 			MemberCount: 7,
 			Name:        "def",

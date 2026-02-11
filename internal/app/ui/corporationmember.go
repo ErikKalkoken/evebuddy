@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -171,7 +172,9 @@ func (a *corporationMember) update() {
 	var corporationID, ceoID int64
 	if c := a.corporation.Load(); c != nil {
 		corporationID = c.ID
-		ceoID = c.EveCorporation.Ceo.ID
+		ceoID = optional.MapOrZero(c.EveCorporation.Ceo, func(x *app.EveEntity) int64 {
+			return x.ID
+		})
 	}
 	var rows []corporationMemberRow
 	var err error

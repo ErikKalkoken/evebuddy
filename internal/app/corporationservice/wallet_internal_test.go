@@ -216,9 +216,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		xassert.Equal(t, "contract_id", e.ContextIDType.ValueOrZero())
 		xassert.Equal(t, time.Date(2018, 02, 23, 14, 31, 32, 0, time.UTC), e.Date)
 		xassert.Equal(t, "Contract Deposit", e.Description)
-		xassert.Equal(t, firstParty.ID, e.FirstParty.ID)
+		xassert.Equal(t, firstParty.ID, e.FirstParty.MustValue().ID)
 		xassert.Equal(t, "contract_deposit", e.RefType)
-		xassert.Equal(t, secondParty.ID, e.SecondParty.ID)
+		xassert.Equal(t, secondParty.ID, e.SecondParty.MustValue().ID)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,

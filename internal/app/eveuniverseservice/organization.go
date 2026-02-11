@@ -55,10 +55,10 @@ func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int64
 		Ticker:             a.Ticker,
 	}
 	if x := a.ExecutorCorporationId; x != nil {
-		o.ExecutorCorporation = eeMap[*x]
+		o.ExecutorCorporation = optional.New(eeMap[*x])
 	}
 	if x := a.FactionId; x != nil {
-		o.Faction = eeMap[*x]
+		o.Faction = optional.New(eeMap[*x])
 	}
 	return o, nil
 }

@@ -118,8 +118,8 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"ceo_id":       corporation.Ceo.ID,
-				"creator_id":   corporation.Creator.ID,
+				"ceo_id":       corporation.Ceo.ValueOrZero().ID,
+				"creator_id":   corporation.Creator.ValueOrZero().ID,
 				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
 				"description":  corporation.Description,
 				"member_count": corporation.MemberCount,
@@ -200,8 +200,8 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"ceo_id":       corporation.Ceo.ID,
-				"creator_id":   corporation.Creator.ID,
+				"ceo_id":       corporation.Ceo.ValueOrZero().ID,
+				"creator_id":   corporation.Creator.ValueOrZero().ID,
 				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
 				"description":  corporation.Description,
 				"member_count": corporation.MemberCount,

@@ -857,7 +857,7 @@ type CharacterNotification struct {
 	IsProcessed    bool
 	IsRead         optional.Optional[bool]
 	NotificationID int64
-	Recipient      *EveEntity // optional
+	Recipient      optional.Optional[*EveEntity]
 	Sender         *EveEntity
 	Text           optional.Optional[string]
 	Timestamp      time.Time

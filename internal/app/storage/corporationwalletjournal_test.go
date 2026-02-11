@@ -100,13 +100,13 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
 				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "corporation", i.ContextIDType.ValueOrZero())
-				xassert.Equal(t, firstParty, i.FirstParty)
+				xassert.Equal(t, firstParty, i.FirstParty.ValueOrZero())
 				xassert.Equal2(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
 				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
-				xassert.Equal(t, secondParty, i.SecondParty)
-				xassert.Equal(t, taxReceiver, i.TaxReceiver)
+				xassert.Equal(t, secondParty, i.SecondParty.ValueOrZero())
+				xassert.Equal(t, taxReceiver, i.TaxReceiver.ValueOrZero())
 				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}

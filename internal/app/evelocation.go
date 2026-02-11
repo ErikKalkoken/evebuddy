@@ -26,10 +26,10 @@ const (
 // EveLocation is a location in Eve Online.
 type EveLocation struct {
 	ID          int64
-	SolarSystem *EveSolarSystem // optional
-	Type        *EveType        // optional
+	SolarSystem optional.Optional[*EveSolarSystem]
+	Type        optional.Optional[*EveType]
 	Name        string
-	Owner       *EveEntity // optional
+	Owner       optional.Optional[*EveEntity]
 	UpdatedAt   time.Time
 }
 
@@ -48,11 +48,11 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 	} else {
 		n = el.alternativeName()
 	}
-	if el.SolarSystem == nil {
+	if el.SolarSystem.IsEmpty() {
 		return iwidget.RichTextSegmentsFromText(n)
 	}
 	return slices.Concat(
-		el.SolarSystem.SecurityStatusRichText(),
+		el.SolarSystem.ValueOrZero().SecurityStatusRichText(),
 		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", n)))
 }
 
@@ -78,10 +78,9 @@ func (el EveLocation) alternativeName() string {
 	case EveLocationAssetSafety:
 		return "Asset Safety"
 	case EveLocationSolarSystem:
-		if el.SolarSystem == nil {
-			return fmt.Sprintf("Unknown solar system %d", el.ID)
-		}
-		return el.SolarSystem.Name
+		return el.SolarSystem.StringFunc(fmt.Sprintf("Unknown solar system %d", el.ID), func(v *EveSolarSystem) string {
+			return v.Name
+		})
 	case EveLocationStructure:
 		return fmt.Sprintf("Unknown structure %d", el.ID)
 	}
@@ -131,30 +130,28 @@ func (el EveLocation) ToShort() *EveLocationShort {
 	}
 	switch el.Variant() {
 	case EveLocationSolarSystem:
-		if el.SolarSystem != nil {
-			o.Name = optional.New(el.SolarSystem.Name)
+		if !el.SolarSystem.IsEmpty() {
+			o.Name = optional.New(el.SolarSystem.ValueOrZero().Name)
 		}
 	default:
 		o.Name = optional.New(el.Name)
 	}
-	if el.SolarSystem != nil {
-		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
+	if !el.SolarSystem.IsEmpty() {
+		o.SecurityStatus = optional.New(el.SolarSystem.ValueOrZero().SecurityStatus)
 	}
 	return o
 }
 
 func (el EveLocation) SolarSystemName() string {
-	if el.SolarSystem == nil {
-		return ""
-	}
-	return el.SolarSystem.Name
+	return el.SolarSystem.StringFunc("", func(v *EveSolarSystem) string {
+		return v.Name
+	})
 }
 
 func (el EveLocation) RegionName() string {
-	if el.SolarSystem == nil {
-		return ""
-	}
-	return el.SolarSystem.Constellation.Region.Name
+	return el.SolarSystem.StringFunc("", func(v *EveSolarSystem) string {
+		return v.Constellation.Region.Name
+	})
 }
 
 // EveLocationShort is a shortened representation of EveLocation.

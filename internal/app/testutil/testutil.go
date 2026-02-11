@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // NewDBInMemory creates and returns a database in memory for tests.
@@ -138,10 +139,10 @@ func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id 
 	o := &app.EveLocation{
 		ID:          id,
 		Name:        fmt.Sprintf("Location%d", id),
-		Owner:       owner,
-		SolarSystem: ss,
+		Owner:       optional.New(owner),
+		SolarSystem: optional.New(ss),
 		UpdatedAt:   time.Now(),
-		Type: &app.EveType{
+		Type: optional.New(&app.EveType{
 			ID:   35835,
 			Name: fmt.Sprintf("Type%d", id),
 			Group: &app.EveGroup{
@@ -152,7 +153,7 @@ func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id 
 					Name: "Structure",
 				},
 			},
-		},
+		}),
 	}
 	return o, nil
 }

@@ -20,8 +20,8 @@ type EveAlliance struct {
 	CreatorCorporation  *EveEntity
 	Creator             *EveEntity
 	DateFounded         time.Time
-	ExecutorCorporation *EveEntity
-	Faction             *EveEntity
+	ExecutorCorporation optional.Optional[*EveEntity]
+	Faction             optional.Optional[*EveEntity]
 	ID                  int64
 	Name                string
 	Ticker              string
@@ -35,11 +35,11 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 
 // EveCharacter is a character in Eve Online.
 type EveCharacter struct {
-	Alliance       *EveEntity // optional
+	Alliance       optional.Optional[*EveEntity]
 	Birthday       time.Time
 	Corporation    *EveEntity
 	Description    optional.Optional[string]
-	Faction        *EveEntity // optional
+	Faction        optional.Optional[*EveEntity]
 	Gender         string
 	ID             int64
 	Name           string
@@ -49,17 +49,15 @@ type EveCharacter struct {
 }
 
 func (ec EveCharacter) AllianceID() int64 {
-	if !ec.HasAlliance() {
-		return 0
-	}
-	return ec.Alliance.ID
+	return optional.MapOrZero(ec.Alliance, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCharacter) AllianceName() string {
-	if !ec.HasAlliance() {
-		return ""
-	}
-	return ec.Alliance.Name
+	return ec.Alliance.StringFunc("", func(v *EveEntity) string {
+		return v.Name
+	})
 }
 
 func (ec EveCharacter) DescriptionPlain() string {
@@ -70,36 +68,34 @@ func (ec EveCharacter) DescriptionPlain() string {
 func (ec EveCharacter) EntityIDs() set.Set[int64] {
 	s := set.Of(ec.ID, ec.Corporation.ID)
 	if ec.HasAlliance() {
-		s.Add(ec.Alliance.ID)
+		s.Add(ec.Alliance.ValueOrZero().ID)
 	}
 	if ec.HasFaction() {
-		s.Add(ec.Faction.ID)
+		s.Add(ec.Faction.ValueOrZero().ID)
 	}
 	return s
 }
 
 func (ec EveCharacter) FactionID() int64 {
-	if !ec.HasFaction() {
-		return 0
-	}
-	return ec.Faction.ID
+	return optional.MapOrZero(ec.Faction, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCharacter) FactionName() string {
-	if !ec.HasFaction() {
-		return ""
-	}
-	return ec.Faction.Name
+	return optional.MapOrZero(ec.Faction, func(x *EveEntity) string {
+		return x.Name
+	})
 }
 
 // HasAlliance reports whether the character is member of an alliance.
 func (ec EveCharacter) HasAlliance() bool {
-	return ec.Alliance != nil
+	return !ec.Alliance.IsEmpty()
 }
 
 // HasFaction reports whether the character is member of a faction.
 func (ec EveCharacter) HasFaction() bool {
-	return ec.Faction != nil
+	return !ec.Faction.IsEmpty()
 }
 
 // Equal reports whether two characters are equal.
@@ -153,13 +149,13 @@ func (ec EveCharacter) EveEntity() *EveEntity {
 
 // EveCorporation is a corporation in Eve Online.
 type EveCorporation struct {
-	Alliance    *EveEntity // optional
-	Ceo         *EveEntity // optional
-	Creator     *EveEntity // optional
+	Alliance    optional.Optional[*EveEntity]
+	Ceo         optional.Optional[*EveEntity]
+	Creator     optional.Optional[*EveEntity]
 	DateFounded optional.Optional[time.Time]
 	Description string
-	Faction     *EveEntity // optional
-	HomeStation *EveEntity // optional
+	Faction     optional.Optional[*EveEntity]
+	HomeStation optional.Optional[*EveEntity]
 	ID          int64
 	MemberCount int64
 	Name        string
@@ -172,46 +168,41 @@ type EveCorporation struct {
 }
 
 func (ec EveCorporation) AllianceID() int64 {
-	if !ec.HasAlliance() {
-		return 0
-	}
-	return ec.Alliance.ID
+	return optional.MapOrZero(ec.Alliance, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCorporation) CeoID() int64 {
-	if ec.Ceo == nil {
-		return 0
-	}
-	return ec.Ceo.ID
+	return optional.MapOrZero(ec.Ceo, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCorporation) CreatorID() int64 {
-	if ec.Creator == nil {
-		return 0
-	}
-	return ec.Creator.ID
+	return optional.MapOrZero(ec.Creator, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCorporation) FactionID() int64 {
-	if !ec.HasFaction() {
-		return 0
-	}
-	return ec.Faction.ID
+	return optional.MapOrZero(ec.Faction, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 
 func (ec EveCorporation) HasAlliance() bool {
-	return ec.Alliance != nil
+	return !ec.Alliance.IsEmpty()
 }
 
 func (ec EveCorporation) HasFaction() bool {
-	return ec.Faction != nil
+	return !ec.Faction.IsEmpty()
 }
 
 func (ec EveCorporation) HomeStationID() int64 {
-	if ec.HomeStation == nil {
-		return 0
-	}
-	return ec.HomeStation.ID
+	return optional.MapOrZero(ec.HomeStation, func(x *EveEntity) int64 {
+		return x.ID
+	})
 }
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)

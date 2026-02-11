@@ -35,7 +35,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/location", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"solar_system_id": el.SolarSystem.ID,
+				"solar_system_id": el.SolarSystem.ValueOrZero().ID,
 				"station_id":      el.ID,
 			}),
 		)
@@ -49,7 +49,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, el, c2.Location)
+		xassert.Equal(t, el, c2.Location.MustValue())
 	})
 
 	t.Run("should create new location for a known structure", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/location", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"solar_system_id": el.SolarSystem.ID,
+				"solar_system_id": el.SolarSystem.ValueOrZero().ID,
 				"structure_id":    el.ID,
 			}),
 		)
@@ -77,7 +77,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, el, c2.Location)
+		xassert.Equal(t, el, c2.Location.MustValue())
 	})
 
 	t.Run("should create new location for an unknown structure", func(t *testing.T) {
@@ -113,7 +113,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, structureID, c2.Location.ID)
-		xassert.Equal(t, es, c2.Location.SolarSystem)
+		xassert.Equal(t, structureID, c2.Location.MustValue().ID)
+		xassert.Equal(t, es, c2.Location.MustValue().SolarSystem.MustValue())
 	})
 }

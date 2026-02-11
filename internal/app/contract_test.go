@@ -14,11 +14,11 @@ import (
 )
 
 func TestContractStatusString(t *testing.T) {
-xassert.Equal(t, "cancelled", app.ContractStatusCancelled.String())
+	xassert.Equal(t, "cancelled", app.ContractStatusCancelled.String())
 }
 
 func TestContractStatusDisplay(t *testing.T) {
-xassert.Equal(t, "Cancelled", app.ContractStatusCancelled.Display())
+	xassert.Equal(t, "Cancelled", app.ContractStatusCancelled.Display())
 }
 
 func TestContractStatusDisplayRichText(t *testing.T) {
@@ -41,17 +41,17 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 					ColorName: tc.wantColor,
 				},
 			)
-		xassert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		})
 	}
 }
 
 func TestContractType(t *testing.T) {
-xassert.Equal(t, "auction", app.ContractTypeAuction.String())
+	xassert.Equal(t, "auction", app.ContractTypeAuction.String())
 }
 
 func TestContractAvailabilityDisplay(t *testing.T) {
-xassert.Equal(t, "Private", app.ContractAvailabilityPrivate.Display())
+	xassert.Equal(t, "Private", app.ContractAvailabilityPrivate.Display())
 }
 
 func TestContractNameDisplay(t *testing.T) {
@@ -64,12 +64,12 @@ func TestContractNameDisplay(t *testing.T) {
 			"normal courier",
 			&app.CharacterContract{
 				Type: app.ContractTypeCourier,
-				StartSolarSystem: &app.EntityShort[int64]{
+				StartSolarSystem: optional.New(&app.EntityShort[int64]{
 					Name: "start",
-				},
-				EndSolarSystem: &app.EntityShort[int64]{
+				}),
+				EndSolarSystem: optional.New(&app.EntityShort[int64]{
 					Name: "end",
-				},
+				}),
 				Volume: optional.New[float64](42),
 			},
 			"start >> end (42 m3)",
@@ -118,7 +118,7 @@ func TestContractNameDisplay(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := tc.contract.NameDisplay()
-		xassert.Equal(t, tc.want, got)
+			xassert.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -134,8 +134,8 @@ func TestCharacterContractDisplayName(t *testing.T) {
 			&app.CharacterContract{
 				Type:             app.ContractTypeCourier,
 				Volume:           optional.New[float64](10),
-				StartSolarSystem: &app.EntityShort[int64]{Name: "Start"},
-				EndSolarSystem:   &app.EntityShort[int64]{Name: "End"},
+				StartSolarSystem: optional.New(&app.EntityShort[int64]{Name: "Start"}),
+				EndSolarSystem:   optional.New(&app.EntityShort[int64]{Name: "End"}),
 			},
 			"Start >> End (10 m3)",
 		},
@@ -166,7 +166,7 @@ func TestCharacterContractDisplayName(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-		xassert.Equal(t, tc.want, tc.contract.NameDisplay())
+			xassert.Equal(t, tc.want, tc.contract.NameDisplay())
 		})
 	}
 }
