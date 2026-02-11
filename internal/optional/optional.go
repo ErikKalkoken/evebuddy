@@ -27,7 +27,10 @@ type Optional[T any] struct {
 
 // New returns an optional with the value v.
 func New[T any](v T) Optional[T] {
-	o := Optional[T]{value: v, isPresent: true}
+	o := Optional[T]{
+		value:     v,
+		isPresent: true,
+	}
 	return o
 }
 
@@ -61,6 +64,15 @@ func (o *Optional[T]) Clear() {
 // IsEmpty reports whether an Optional is empty.
 func (o Optional[T]) IsEmpty() bool {
 	return !o.isPresent
+}
+
+// MarshalJSON returns the JSON encoding of the optional.
+func (o Optional[T]) MarshalJSON() ([]byte, error) {
+	if !o.isPresent {
+		return json.Marshal(nil)
+	}
+	v := o.value
+	return json.Marshal(&v)
 }
 
 // MustValue returns the value of an Optional or panics if it is empty.
@@ -136,15 +148,6 @@ func (o Optional[T]) ValueOrZero() T {
 	return o.value
 }
 
-// MarshalJSON returns the JSON encoding of the optional.
-func (o Optional[T]) MarshalJSON() ([]byte, error) {
-	if !o.isPresent {
-		return json.Marshal(nil)
-	}
-	v := o.value
-	return json.Marshal(&v)
-}
-
 // UnmarshalJSON parses the JSON-encoded data b and replaces the current optional.
 // JSON null values will be unmarshaled into an empty optional.
 func (o *Optional[T]) UnmarshalJSON(b []byte) error {
@@ -166,7 +169,7 @@ func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
 	if !o.isPresent {
 		return Optional[Y]{}
 	}
-	return New(Y(o.ValueOrZero()))
+	return New(Y(o.value))
 }
 
 // Equal reports whether two optionals with comparable values are equal.
@@ -196,6 +199,18 @@ func Equal2[T Equaler[T]](a, b Optional[T]) bool {
 	return a.value.Equal(b.value)
 }
 
+// EqualFunc reports whether two optionals with comparable values are equal
+// using an equality function on each pair of elements.
+func EqualFunc[T any](a, b Optional[T], eq func(a2, b2 T) bool) bool {
+	if a.isPresent != b.isPresent {
+		return false
+	}
+	if !a.isPresent && !b.isPresent {
+		return true
+	}
+	return eq(a.value, b.value)
+}
+
 // Sum returns the sum of values v.
 // Empty values are added with their zero value (e.g. 0).
 // When all values are empty it returns an empty value.
@@ -212,4 +227,32 @@ func Sum[T Numeric](v ...Optional[T]) Optional[T] {
 		return Optional[T]{}
 	}
 	return New(s)
+}
+
+// MapOrFallback returns the result of applying f on the value of o
+// or fallback if o is empty.
+func MapOrFallback[X, Y any](o Optional[X], fallback Y, f func(v X) Y) Y {
+	if !o.isPresent {
+		return fallback
+	}
+	return f(o.value)
+}
+
+// MapOrFallbackFunc returns the result of applying f on the value of o
+// or the result of the fallback func if o is empty.
+func MapOrFallbackFunc[X, Y any](o Optional[X], fallback func() Y, f func(v X) Y) Y {
+	if !o.isPresent {
+		return fallback()
+	}
+	return f(o.value)
+}
+
+// MapOrZero returns the result of applying f on the value of o
+// or it's zero value if o is empty.
+func MapOrZero[X, Y any](o Optional[X], f func(v X) Y) Y {
+	if !o.isPresent {
+		var z Y
+		return z
+	}
+	return f(o.value)
 }

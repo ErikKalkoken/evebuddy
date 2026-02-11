@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // EqualDuration asserts that got is almost equal to want.
@@ -30,7 +32,12 @@ type Equaler[T any] interface {
 }
 
 // Equal2 asserts that two values which satisfy the equaler interface are equal .
-func Equal2[T Equaler[T]](t *testing.T, want, got T) {
+func Equal2[T Equaler[T]](t *testing.T, want, got T) bool {
 	t.Helper()
-	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+	return assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+}
+
+func Empty[T any](t *testing.T, v optional.Optional[T]) bool {
+	t.Helper()
+	return assert.Truef(t, v.IsEmpty(), "Not empty:\n%v", v)
 }
