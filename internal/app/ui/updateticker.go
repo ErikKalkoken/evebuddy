@@ -58,7 +58,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
+	changedIDs, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -68,9 +68,8 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		logErr(err)
 		return
 	}
-	if changed.Size() == 0 && !forceUpdate {
-		return
-	}
+
+	var hasChanged bool
 	switch section {
 	case app.SectionEveMarketPrices:
 		types, err := u.eus.ListEveTypeIDs(ctx)
@@ -78,13 +77,19 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			logErr(err)
 			return
 		}
-		if !changed.ContainsAny(types.All()) {
-			return
-		}
+		hasChanged = changedIDs.ContainsAny(types.All())
+	default:
+		hasChanged = changedIDs.Size() > 0
 	}
+
+	needsRefresh := hasChanged || forceUpdate
+	if !needsRefresh {
+		return
+	}
+
 	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
 		section: section,
-		changed: changed,
+		changed: changedIDs,
 	})
 }
 
@@ -449,11 +454,20 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
-	if !hasChanged && !forceUpdate {
-		return
-	}
-	go u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
+	needsRefresh := hasChanged || forceUpdate
+	arg := corporationSectionUpdated{
 		corporationID: corporationID,
 		section:       section,
+		needsRefresh:  needsRefresh,
+	}
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.corporationSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		u.corporationSectionUpdated.Emit(ctx, arg)
 	})
+	wg.Wait()
 }

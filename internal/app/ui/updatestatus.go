@@ -144,7 +144,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		a.update()
 	}, a.signalKey)
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionUpdated.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		a.update()
 	}, a.signalKey)
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
@@ -157,7 +157,7 @@ func (a *updateStatus) stop() {
 	a.u.characterAdded.RemoveListener(a.signalKey)
 	a.u.characterRemoved.RemoveListener(a.signalKey)
 	a.u.characterSectionUpdated.RemoveListener(a.signalKey)
-	a.u.corporationSectionChanged.RemoveListener(a.signalKey)
+	a.u.corporationSectionUpdated.RemoveListener(a.signalKey)
 	a.u.generalSectionChanged.RemoveListener(a.signalKey)
 }
 

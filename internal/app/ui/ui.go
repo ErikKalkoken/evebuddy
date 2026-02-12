@@ -98,6 +98,7 @@ type characterSectionUpdated struct {
 type corporationSectionUpdated struct {
 	corporationID int64
 	section       app.CorporationSection
+	needsRefresh  bool
 }
 
 type generalSectionUpdated struct {
@@ -184,10 +185,14 @@ type baseUI struct {
 	currentCorporationExchanged signals.Signal[*app.Corporation]
 	// A corporation has been added or removed.
 	corporationsChanged signals.Signal[struct{}]
-	// A character section has changed after an update from ESI.
+	// A corporation section has changed after an update from ESI.
 	corporationSectionChanged signals.Signal[corporationSectionUpdated]
+	// A corporation section has been updated from ESI.
+	corporationSectionUpdated signals.Signal[corporationSectionUpdated]
 	// A general section has changed after an update from ESI.
 	generalSectionChanged signals.Signal[generalSectionUpdated]
+	// A general section has been updated after an update from ESI.
+	generalSectionUpdated signals.Signal[generalSectionUpdated]
 	// Ticker for dynamic UI refresh has expired.
 	refreshTickerExpired signals.Signal[struct{}]
 	// A tag as been added, removed or renamed.
@@ -212,9 +217,9 @@ type baseUI struct {
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme       fyne.Theme
-	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
+	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
@@ -257,6 +262,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		concurrencyLimit:            -1, // Default is no limit
 		corporationsChanged:         signals.New[struct{}](),
 		corporationSectionChanged:   signals.New[corporationSectionUpdated](),
+		corporationSectionUpdated:   signals.New[corporationSectionUpdated](),
 		corporationWallets:          make(map[app.Division]*corporationWallet),
 		cs:                          arg.CharacterService,
 		currentCharacterExchanged:   signals.New[*app.Character](),
@@ -265,8 +271,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                         arg.ESIStatusService,
 		eus:                         arg.EveUniverseService,
 		generalSectionChanged:       signals.New[generalSectionUpdated](),
-		isMobile:                    arg.IsMobile,
+		generalSectionUpdated:       signals.New[generalSectionUpdated](),
 		isFakeMobile:                arg.IsFakeMobile,
+		isMobile:                    arg.IsMobile,
 		isOffline:                   arg.IsOffline,
 		isUpdateDisabled:            arg.IsUpdateDisabled,
 		js:                          arg.JaniceService,

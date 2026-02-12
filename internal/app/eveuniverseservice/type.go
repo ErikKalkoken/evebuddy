@@ -442,10 +442,16 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int64) (opt
 
 // TODO: Change to bulk create
 
+// updateMarketPricesESI updates all market prices from ESI and reports which have changed.
+// Will only reports changes on prices for known types.
 func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
 	x, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
 		var changed set.Set[int64]
 		prices, _, err := s.esiClient.MarketAPI.GetMarketsPrices(ctx).Execute()
+		if err != nil {
+			return changed, err
+		}
+		knownTypes, err := s.ListEveTypeIDs(ctx)
 		if err != nil {
 			return changed, err
 		}
@@ -454,19 +460,19 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 			if err != nil && !errors.Is(err, app.ErrNotFound) {
 				return changed, err
 			}
-			arg := storage.UpdateOrCreateEveMarketPriceParams{
+			o2, err := s.st.UpdateOrCreateEveMarketPrice(ctx, storage.UpdateOrCreateEveMarketPriceParams{
 				TypeID:        p.TypeId,
 				AdjustedPrice: optional.FromPtr(p.AdjustedPrice),
 				AveragePrice:  optional.FromPtr(p.AveragePrice),
-			}
-			o2, err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg)
+			})
 			if err != nil {
 				return changed, err
 			}
-			if o1 == nil || !o2.Equal(*o1) {
+			if knownTypes.Contains(p.TypeId) && (o1 == nil || !o2.Equal(*o1)) {
 				changed.Add(o2.TypeID)
 			}
 		}
+
 		slog.Info("Updated market prices", "total", len(prices), "changed", changed.Size())
 		return changed, nil
 	})
