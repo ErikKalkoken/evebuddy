@@ -147,17 +147,6 @@ type EveRouteHeader struct {
 	Preference  EveRoutePreference
 }
 
-func (x EveRouteHeader) String() string {
-	var originID, destinationID int64
-	if x.Origin != nil {
-		originID = x.Origin.ID
-	}
-	if x.Destination != nil {
-		destinationID = x.Destination.ID
-	}
-	return fmt.Sprintf("{Origin: %d Destination: %d Preference: %s}", originID, destinationID, x.Preference)
-}
-
 // EveRoutePreference represents the calculation preference when requesting a route from ESI.
 type EveRoutePreference uint
 
