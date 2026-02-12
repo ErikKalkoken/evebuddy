@@ -50,7 +50,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	a := &characterSkillQueue{
 		emptyInfo:            emptyInfo,
 		showCurrentCharacter: c == nil,
-		signalKey:            generateUniqueID(),
+		signalKey:            "characterSkillQueue-" + uniqueID(),
 		skillqueue:           app.NewCharacterSkillqueue(),
 		statusResource:       statusResources,
 		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),

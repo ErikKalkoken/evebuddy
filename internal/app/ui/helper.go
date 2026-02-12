@@ -1,11 +1,10 @@
 package ui
 
 import (
-	"crypto/rand"
 	"fmt"
 	"image/color"
 	"math"
-	"math/big"
+	"math/rand/v2"
 	"slices"
 	"time"
 
@@ -232,9 +231,9 @@ func corporationNameOrZero(c *app.Corporation) string {
 	return c.EveCorporation.Name
 }
 
-// generateUniqueID returns a unique ID.
-func generateUniqueID() string {
+// uniqueID returns a pseudo unique ID.
+func uniqueID() string {
 	currentTime := time.Now().UnixNano()
-	randomNumber, _ := rand.Int(rand.Reader, big.NewInt(1000000))
+	randomNumber := rand.Uint64()
 	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
 }
