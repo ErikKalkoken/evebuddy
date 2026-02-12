@@ -164,7 +164,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 							if err != nil {
 								return err
 							}
-							arg.FactorySchemaID = optional.New(es.ID)
+							arg.FactorySchematicID = optional.New(es.ID)
 						}
 						if x := pin.SchematicId; x != nil {
 							es, err := s.eus.GetOrCreateSchematicESI(ctx, *x)

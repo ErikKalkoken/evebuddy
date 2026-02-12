@@ -526,9 +526,13 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		} else {
 			due.Text = expiryTime.Format(app.DateTimeFormat)
 		}
-		icon, _ := pp.ExtractorProductType.Icon()
-		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
-			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.EveEntity())
+		productType, ok := pp.ExtractorProductType.Value()
+		if !ok {
+			panic("this should not happen")
+		}
+		icon, _ := productType.Icon()
+		product := makeLinkLabel(productType.Name, func() {
+			a.u.ShowEveEntityInfoWindow(productType.EveEntity())
 		})
 		row := container.NewHBox(
 			container.NewHBox(

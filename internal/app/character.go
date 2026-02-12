@@ -234,7 +234,9 @@ func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 func (cp CharacterPlanet) ExtractedTypes() []*EveType {
 	types := make(map[int64]*EveType)
 	for pp := range cp.ActiveExtractors() {
-		types[pp.ExtractorProductType.ID] = pp.ExtractorProductType
+		if v, ok := pp.ExtractorProductType.Value(); ok {
+			types[v.ID] = v
+		}
 	}
 	return slices.Collect(maps.Values(types))
 }
@@ -281,7 +283,9 @@ func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
 func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 	schematics := make(map[int64]*EveSchematic)
 	for pp := range cp.ActiveProducers() {
-		schematics[pp.Schematic.ID] = pp.Schematic
+		if v, ok := pp.Schematic.Value(); ok {
+			schematics[v.ID] = v
+		}
 	}
 	return slices.Collect(maps.Values(schematics))
 }
@@ -304,20 +308,20 @@ func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
 type PlanetPin struct {
 	ID                   int64
 	ExpiryTime           optional.Optional[time.Time]
-	ExtractorProductType *EveType
-	FactorySchematic     *EveSchematic
+	ExtractorProductType optional.Optional[*EveType]
+	FactorySchematic     optional.Optional[*EveSchematic]
 	InstallTime          optional.Optional[time.Time]
 	LastCycleStart       optional.Optional[time.Time]
-	Schematic            *EveSchematic
+	Schematic            optional.Optional[*EveSchematic]
 	Type                 *EveType
 }
 
 func (pp PlanetPin) IsExtracting() bool {
-	return pp.Type.Group.ID == EveGroupExtractorControlUnits && pp.ExtractorProductType != nil
+	return pp.Type.Group.ID == EveGroupExtractorControlUnits && !pp.ExtractorProductType.IsEmpty()
 }
 
 func (pp PlanetPin) IsProducing() bool {
-	return pp.Type.Group.ID == EveGroupProcessors && pp.Schematic != nil
+	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
 }
 
 type CharacterShipAbility struct {

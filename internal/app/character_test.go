@@ -18,15 +18,15 @@ func TestCharacterPlanetExtractedTypes(t *testing.T) {
 	productType2 := &app.EveType{ID: 2}
 	extractorPin1a := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType1a,
+		ExtractorProductType: optional.New(productType1a),
 	}
 	extractorPin1b := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType1b,
+		ExtractorProductType: optional.New(productType1b),
 	}
 	extractorPin2 := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType2,
+		ExtractorProductType: optional.New(productType2),
 	}
 	processorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupProcessors}}
 	processorPin := &app.PlanetPin{
@@ -79,17 +79,17 @@ func TestCharacterPlanetProducedSchematics(t *testing.T) {
 	schematic1a := &app.EveSchematic{ID: 1}
 	processorPin1a := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic1a,
+		Schematic: optional.New(schematic1a),
 	}
 	schematic1b := &app.EveSchematic{ID: 1}
 	processorPin1b := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic1b,
+		Schematic: optional.New(schematic1b),
 	}
 	schematic2 := &app.EveSchematic{ID: 2}
 	processorPin2 := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic2,
+		Schematic: optional.New(schematic2),
 	}
 	t.Run("should return produced schematics", func(t *testing.T) {
 		// given
@@ -143,19 +143,19 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et2),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et1),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			processorPin,
 		}}
 		// when
 		x := cp.ExtractionsExpiryTime()
 		// then
-	xassert.Equal(t, et2, x)
+		xassert.Equal(t, et2, x)
 	})
 	t.Run("should return expiration date in the past", func(t *testing.T) {
 		// given
@@ -164,14 +164,14 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et1),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			processorPin,
 		}}
 		// when
 		x := cp.ExtractionsExpiryTime()
 		// then
-	xassert.Equal(t, et1, x)
+		xassert.Equal(t, et1, x)
 	})
 	t.Run("should return zero time when no expiration date", func(t *testing.T) {
 		// given

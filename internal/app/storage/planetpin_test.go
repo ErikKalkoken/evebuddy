@@ -44,9 +44,9 @@ func TestPlanetPin(t *testing.T) {
 		planet := factory.CreateCharacterPlanet()
 		pinType := factory.CreateEveType()
 		productType := factory.CreateEveType()
-		expiryTime := time.Now().UTC()
-		installTime := time.Now().UTC()
-		lastCycleStart := time.Now().UTC()
+		expiryTime := time.Now()
+		installTime := time.Now()
+		lastCycleStart := time.Now()
 		schematic := factory.CreateEveSchematic()
 		factorySchematic := factory.CreateEveSchematic()
 		// when
@@ -54,7 +54,7 @@ func TestPlanetPin(t *testing.T) {
 			CharacterPlanetID:      planet.ID,
 			ExpiryTime:             optional.New(expiryTime),
 			ExtractorProductTypeID: optional.New(productType.ID),
-			FactorySchemaID:        optional.New(factorySchematic.ID),
+			FactorySchematicID:     optional.New(factorySchematic.ID),
 			InstallTime:            optional.New(installTime),
 			LastCycleStart:         optional.New(lastCycleStart),
 			PinID:                  42,
@@ -66,12 +66,12 @@ func TestPlanetPin(t *testing.T) {
 			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, pinType, c2.Type)
-				xassert.Equal(t, productType, c2.ExtractorProductType)
-				xassert.Equal(t, optional.New(expiryTime), c2.ExpiryTime)
-				xassert.Equal(t, optional.New(installTime), c2.InstallTime)
-				xassert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
-				xassert.Equal(t, schematic, c2.Schematic)
-				xassert.Equal(t, factorySchematic, c2.FactorySchematic)
+				xassert.Equal(t, productType, c2.ExtractorProductType.MustValue())
+				xassert.Equal2(t, expiryTime, c2.ExpiryTime.MustValue())
+				xassert.Equal2(t, installTime, c2.InstallTime.MustValue())
+				xassert.Equal2(t, lastCycleStart, c2.LastCycleStart.MustValue())
+				xassert.Equal(t, schematic, c2.Schematic.MustValue())
+				xassert.Equal(t, factorySchematic, c2.FactorySchematic.MustValue())
 			}
 		}
 	})
