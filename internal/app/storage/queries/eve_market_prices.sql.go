@@ -7,7 +7,29 @@ package queries
 
 import (
 	"context"
+	"strings"
 )
+
+const deleteEveMarketPrices = `-- name: DeleteEveMarketPrices :exec
+DELETE FROM eve_market_prices
+WHERE
+    type_id IN (/*SLICE:type_ids*/?)
+`
+
+func (q *Queries) DeleteEveMarketPrices(ctx context.Context, typeIds []int64) error {
+	query := deleteEveMarketPrices
+	var queryParams []interface{}
+	if len(typeIds) > 0 {
+		for _, v := range typeIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:type_ids*/?", strings.Repeat(",?", len(typeIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:type_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const getEveMarketPrice = `-- name: GetEveMarketPrice :one
 SELECT
@@ -25,18 +47,64 @@ func (q *Queries) GetEveMarketPrice(ctx context.Context, typeID int64) (EveMarke
 	return i, err
 }
 
-const listEveMarketPrices = `-- name: ListEveMarketPrices :one
+const listEveMarketPriceIDs = `-- name: ListEveMarketPriceIDs :many
+SELECT
+    type_id
+FROM
+    eve_market_prices
+`
+
+func (q *Queries) ListEveMarketPriceIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveMarketPriceIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var type_id int64
+		if err := rows.Scan(&type_id); err != nil {
+			return nil, err
+		}
+		items = append(items, type_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveMarketPrices = `-- name: ListEveMarketPrices :many
 SELECT
     type_id, adjusted_price, average_price
 FROM
     eve_market_prices
 `
 
-func (q *Queries) ListEveMarketPrices(ctx context.Context) (EveMarketPrice, error) {
-	row := q.db.QueryRowContext(ctx, listEveMarketPrices)
-	var i EveMarketPrice
-	err := row.Scan(&i.TypeID, &i.AdjustedPrice, &i.AveragePrice)
-	return i, err
+func (q *Queries) ListEveMarketPrices(ctx context.Context) ([]EveMarketPrice, error) {
+	rows, err := q.db.QueryContext(ctx, listEveMarketPrices)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EveMarketPrice
+	for rows.Next() {
+		var i EveMarketPrice
+		if err := rows.Scan(&i.TypeID, &i.AdjustedPrice, &i.AveragePrice); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateOrCreateEveMarketPrice = `-- name: UpdateOrCreateEveMarketPrice :one
@@ -47,7 +115,9 @@ VALUES
 ON CONFLICT (type_id) DO UPDATE
 SET
     adjusted_price = ?2,
-    average_price = ?3 RETURNING type_id, adjusted_price, average_price
+    average_price = ?3
+RETURNING
+    type_id, adjusted_price, average_price
 `
 
 type UpdateOrCreateEveMarketPriceParams struct {

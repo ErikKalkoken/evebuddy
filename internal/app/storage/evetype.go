@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -143,7 +144,7 @@ func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveTypeIDs: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 
@@ -152,7 +153,7 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int64]) (set
 	if err != nil {
 		return set.Set[int64]{}, err
 	}
-	current := set.Of(currentIDs...)
+	current := set.Collect(slices.Values(currentIDs))
 	missing := set.Difference(ids, current)
 	return missing, nil
 }

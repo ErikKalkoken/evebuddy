@@ -1,3 +1,8 @@
+-- name: DeleteEveMarketPrices :exec
+DELETE FROM eve_market_prices
+WHERE
+    type_id IN (sqlc.slice('type_ids'));
+
 -- name: GetEveMarketPrice :one
 SELECT
     *
@@ -6,9 +11,15 @@ FROM
 WHERE
     type_id = ?;
 
--- name: ListEveMarketPrices :one
+-- name: ListEveMarketPrices :many
 SELECT
     *
+FROM
+    eve_market_prices;
+
+-- name: ListEveMarketPriceIDs :many
+SELECT
+    type_id
 FROM
     eve_market_prices;
 
@@ -20,4 +31,6 @@ VALUES
 ON CONFLICT (type_id) DO UPDATE
 SET
     adjusted_price = ?2,
-    average_price = ?3 RETURNING *;
+    average_price = ?3
+RETURNING
+    *;

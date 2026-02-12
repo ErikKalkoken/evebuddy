@@ -58,7 +58,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
+	changedIDs, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -68,24 +68,24 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		logErr(err)
 		return
 	}
-	if changed.Size() == 0 && !forceUpdate {
-		return
+
+	needsRefresh := changedIDs.Size() > 0 || forceUpdate
+	arg := generalSectionUpdated{
+		section:      section,
+		changed:      changedIDs,
+		needsRefresh: needsRefresh,
 	}
-	switch section {
-	case app.SectionEveMarketPrices:
-		types, err := u.eus.ListEveTypeIDs(ctx)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		if !changed.ContainsAny(types.All()) {
-			return
-		}
+
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.generalSectionChanged.Emit(ctx, arg)
+		})
 	}
-	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
-		section: section,
-		changed: changed,
+	wg.Go(func() {
+		u.generalSectionUpdated.Emit(ctx, arg)
 	})
+	wg.Wait()
 }
 
 // update character sections
@@ -449,11 +449,20 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
-	if !hasChanged && !forceUpdate {
-		return
-	}
-	go u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
+	needsRefresh := hasChanged || forceUpdate
+	arg := corporationSectionUpdated{
 		corporationID: corporationID,
 		section:       section,
+		needsRefresh:  needsRefresh,
+	}
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.corporationSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		u.corporationSectionUpdated.Emit(ctx, arg)
 	})
+	wg.Wait()
 }

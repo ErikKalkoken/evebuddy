@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -90,7 +91,7 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int64], err
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -22,38 +22,58 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	s := NewTestService(st)
 	ctx := context.Background()
+	const (
+		knownTypeID = 32772
+		otherTypeID = 10001
+	)
 	t.Run("should create new objects from ESI", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/markets/prices",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"adjusted_price": 306988.09,
-					"average_price":  306292.67,
-					"type_id":        32772,
-				},
-			}))
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}, {
+				"adjusted_price": 123.45,
+				"average_price":  456.78,
+				"type_id":        otherTypeID,
+			}}),
+		)
 		// when
 		got, err := s.updateMarketPricesESI(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64](32772)
-			xassert.Equal2(t, want, got)
-			o, err := st.GetEveMarketPrice(ctx, 32772)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
-				xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal2(t, want, got)
+		prices, err := st.ListEveMarketPrices(ctx)
+		require.NoError(t, err)
+		require.Len(t, prices, 2)
+		for _, o := range prices {
+			switch o.TypeID {
+			case knownTypeID:
+				xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+			case o.TypeID:
+				xassert.Equal(t, 123.45, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 456.78, o.AveragePrice.MustValue())
 			}
 		}
 	})
 	t.Run("should update existing objects from ESI", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID:        32772,
+			TypeID:        knownTypeID,
 			AdjustedPrice: optional.New(2.0),
 			AveragePrice:  optional.New(3.0),
 		})
@@ -61,52 +81,86 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/markets/prices",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"adjusted_price": 306988.09,
-					"average_price":  306292.67,
-					"type_id":        32772,
-				},
-			}))
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}}),
+		)
 		// when
 		got, err := s.updateMarketPricesESI(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64](32772)
-			xassert.Equal2(t, want, got)
-			o, err := st.GetEveMarketPrice(ctx, 32772)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
-				xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
-			}
-		}
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal2(t, want, got)
+		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
+		require.NoError(t, err)
+		xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
+		xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
 	})
-	t.Run("should detect when object has not changed", func(t *testing.T) {
+	t.Run("should only report changes for known types", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID:        32772,
+			TypeID:        knownTypeID,
 			AdjustedPrice: optional.New(306988.09),
 			AveragePrice:  optional.New(306292.67),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        otherTypeID,
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/markets/prices",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"adjusted_price": 306988.09,
-					"average_price":  306292.67,
-					"type_id":        32772,
-				},
-			}))
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}, {
+				"adjusted_price": 123.45,
+				"average_price":  456.78,
+				"type_id":        otherTypeID,
+			}}),
+		)
 		// when
 		got, err := s.updateMarketPricesESI(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64]()
-			xassert.Equal2(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64]()
+		xassert.Equal2(t, want, got)
+	})
+
+	t.Run("should remove obsolete prices", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}}),
+		)
+		// when
+		_, err := s.updateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		got, err := s.st.ListEveMarketPriceIDs(ctx)
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal2(t, want, got)
 	})
 }
 

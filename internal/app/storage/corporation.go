@@ -158,7 +158,7 @@ func (st *Storage) ListCorporationIDs(ctx context.Context) (set.Set[int64], erro
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list corporation IDs: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 
@@ -168,7 +168,7 @@ func (st *Storage) ListOrphanedCorporationIDs(ctx context.Context) (set.Set[int6
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list orphaned corporation IDs: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 
