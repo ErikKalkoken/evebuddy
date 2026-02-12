@@ -99,15 +99,15 @@ func (sq *CharacterSkillqueue) Active() *CharacterSkillqueueItem {
 	return nil
 }
 
-// Last returns the last skill in the queue or nil if the queue is empty.
-func (sq *CharacterSkillqueue) Last() *CharacterSkillqueueItem {
+// Last tries to return the last skill in the queue and reports if a skill was returned.
+func (sq *CharacterSkillqueue) Last() (*CharacterSkillqueueItem, bool) {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	length := len(sq.items)
 	if length == 0 {
-		return nil
+		return nil, false
 	}
-	return sq.items[length-1]
+	return sq.items[length-1], true
 }
 
 // CompletionP returns the completion percentage of the current skill in training (if any).
@@ -183,7 +183,7 @@ func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] 
 
 // FinishDate returns the finish date of last skill in the queue.
 func (sq *CharacterSkillqueue) FinishDate() optional.Optional[time.Time] {
-	if last := sq.Last(); last != nil {
+	if last, ok := sq.Last(); ok {
 		return last.FinishDate
 	}
 	return optional.Optional[time.Time]{}
