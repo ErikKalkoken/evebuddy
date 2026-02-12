@@ -52,6 +52,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
 		xassert.Equal2(t, want, got)
+		// id, err := st.ListMarket
 		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
 		require.NoError(t, err)
 		xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())

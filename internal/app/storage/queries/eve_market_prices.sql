@@ -6,7 +6,7 @@ FROM
 WHERE
     type_id = ?;
 
--- name: ListEveMarketPrices :one
+-- name: ListEveMarketPrices :many
 SELECT
     *
 FROM

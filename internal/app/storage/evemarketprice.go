@@ -10,12 +10,29 @@ import (
 )
 
 func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int64) (*app.EveMarketPrice, error) {
-	row, err := st.qRO.GetEveMarketPrice(ctx,typeID)
-	if err != nil {
-		return nil, fmt.Errorf("get eve market price for type %d: %w", typeID, convertGetError(err))
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetEveMarketPrice %d: %w", typeID, err)
 	}
-	t2 := eveMarketPriceFromDBModel(row)
-	return t2, nil
+	if typeID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	row, err := st.qRO.GetEveMarketPrice(ctx, typeID)
+	if err != nil {
+		return nil, wrapErr(convertGetError(err))
+	}
+	return eveMarketPriceFromDBModel(row), nil
+}
+
+func (st *Storage) ListEveMarketPrices(ctx context.Context) ([]*app.EveMarketPrice, error) {
+	rows, err := st.qRO.ListEveMarketPrices(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListEveMarketPrices: %w", err)
+	}
+	oo := make([]*app.EveMarketPrice, 0)
+	for _, r := range rows {
+		oo = append(oo, eveMarketPriceFromDBModel(r))
+	}
+	return oo, nil
 }
 
 type UpdateOrCreateEveMarketPriceParams struct {
@@ -32,7 +49,7 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, queries.UpdateOrCreateEveMarketPriceParams{
-		TypeID:       arg.TypeID,
+		TypeID:        arg.TypeID,
 		AdjustedPrice: arg.AdjustedPrice.ValueOrZero(),
 		AveragePrice:  arg.AveragePrice.ValueOrZero(),
 	})
@@ -42,13 +59,11 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 	return eveMarketPriceFromDBModel(r), nil
 }
 
-func eveMarketPriceFromDBModel(o queries.EveMarketPrice) *app.EveMarketPrice {
-	if o.TypeID == 0 {
-		panic("missing type ID")
+func eveMarketPriceFromDBModel(r queries.EveMarketPrice) *app.EveMarketPrice {
+	o := &app.EveMarketPrice{
+		TypeID:        r.TypeID,
+		AdjustedPrice: optional.FromZeroValue(r.AdjustedPrice),
+		AveragePrice:  optional.FromZeroValue(r.AveragePrice),
 	}
-	return &app.EveMarketPrice{
-		TypeID:       o.TypeID,
-		AdjustedPrice: optional.FromZeroValue(o.AdjustedPrice),
-		AveragePrice:  optional.FromZeroValue(o.AveragePrice),
-	}
+	return o
 }

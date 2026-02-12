@@ -2519,7 +2519,7 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 		arg = args[0]
 	}
 	if arg.TypeID == 0 {
-		arg.TypeID = int64(f.calcNewID("eve_market_price", "type_id", 1))
+		arg.TypeID = int64(f.calcNewID("eve_market_prices", "type_id", 1))
 	}
 	if arg.AdjustedPrice.IsEmpty() {
 		arg.AdjustedPrice.Set(rand.Float64() * 100_000)
