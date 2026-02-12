@@ -3,11 +3,18 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
+
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
+
+func (st *Storage) DeleteEveMarketPrices(ctx context.Context, typeIDs set.Set[int64]) error {
+	return st.qRW.DeleteEveMarketPrices(ctx, slices.Collect(typeIDs.All()))
+}
 
 func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int64) (*app.EveMarketPrice, error) {
 	wrapErr := func(err error) error {
@@ -33,6 +40,15 @@ func (st *Storage) ListEveMarketPrices(ctx context.Context) ([]*app.EveMarketPri
 		oo = append(oo, eveMarketPriceFromDBModel(r))
 	}
 	return oo, nil
+}
+
+func (st *Storage) ListEveMarketPriceIDs(ctx context.Context) (set.Set[int64], error) {
+	ids, err := st.qRO.ListEveMarketPriceIDs(ctx)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("ListEveMarketPriceIDs: %w", err)
+	}
+	ids2 := set.Collect(slices.Values(ids))
+	return ids2, nil
 }
 
 type UpdateOrCreateEveMarketPriceParams struct {

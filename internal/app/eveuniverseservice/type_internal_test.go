@@ -52,11 +52,19 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
 		xassert.Equal2(t, want, got)
-		// id, err := st.ListMarket
-		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
+		prices, err := st.ListEveMarketPrices(ctx)
 		require.NoError(t, err)
-		xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
-		xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+		require.Len(t, prices, 2)
+		for _, o := range prices {
+			switch o.TypeID {
+			case knownTypeID:
+				xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+			case o.TypeID:
+				xassert.Equal(t, 123.45, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 456.78, o.AveragePrice.MustValue())
+			}
+		}
 	})
 	t.Run("should update existing objects from ESI", func(t *testing.T) {
 		// given
@@ -90,7 +98,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
 		xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
 	})
-	t.Run("should detect when object has not changed", func(t *testing.T) {
+	t.Run("should only report changes for known types", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{
@@ -100,6 +108,40 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			TypeID:        knownTypeID,
 			AdjustedPrice: optional.New(306988.09),
 			AveragePrice:  optional.New(306292.67),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        otherTypeID,
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}, {
+				"adjusted_price": 123.45,
+				"average_price":  456.78,
+				"type_id":        otherTypeID,
+			}}),
+		)
+		// when
+		got, err := s.updateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of[int64]()
+		xassert.Equal2(t, want, got)
+	})
+
+	t.Run("should remove obsolete prices", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -112,10 +154,12 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			}}),
 		)
 		// when
-		got, err := s.updateMarketPricesESI(ctx)
+		_, err := s.updateMarketPricesESI(ctx)
 		// then
 		require.NoError(t, err)
-		want := set.Of[int64]()
+		got, err := s.st.ListEveMarketPriceIDs(ctx)
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
 		xassert.Equal2(t, want, got)
 	})
 }

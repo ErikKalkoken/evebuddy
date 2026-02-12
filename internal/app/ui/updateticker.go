@@ -69,27 +69,15 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		return
 	}
 
-	var hasChanged bool
-	switch section {
-	case app.SectionEveMarketPrices:
-		types, err := u.eus.ListEveTypeIDs(ctx)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		hasChanged = changedIDs.ContainsAny(types.All())
-	default:
-		hasChanged = changedIDs.Size() > 0
-	}
-
-	needsRefresh := hasChanged || forceUpdate
+	needsRefresh := changedIDs.Size() > 0 || forceUpdate
 	if !needsRefresh {
 		return
 	}
 
 	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
-		section: section,
-		changed: changedIDs,
+		section:      section,
+		changed:      changedIDs,
+		needsRefresh: needsRefresh,
 	})
 }
 

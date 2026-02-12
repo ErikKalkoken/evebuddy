@@ -102,8 +102,9 @@ type corporationSectionUpdated struct {
 }
 
 type generalSectionUpdated struct {
-	changed set.Set[int64]
-	section app.GeneralSection
+	changed      set.Set[int64]
+	section      app.GeneralSection
+	needsRefresh bool
 }
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.

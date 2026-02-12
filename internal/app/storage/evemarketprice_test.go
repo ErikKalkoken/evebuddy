@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -14,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestStorage_UpdateOrCreateEveMarketPrice(t *testing.T) {
+func TestStorage_EveMarketPrices(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -83,5 +85,33 @@ func TestStorage_UpdateOrCreateEveMarketPrice(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.ElementsMatch(t, []*app.EveMarketPrice{o1, o2}, got)
+	})
+
+	t.Run("can list ids", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o1 := factory.CreateEveMarketPrice()
+		o2 := factory.CreateEveMarketPrice()
+		// when
+		got, err := st.ListEveMarketPriceIDs(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of(o1.TypeID, o2.TypeID)
+		xassert.Equal2(t, want, got)
+	})
+
+	t.Run("can delete prices by id", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o1 := factory.CreateEveMarketPrice()
+		o2 := factory.CreateEveMarketPrice()
+		// when
+		err := st.DeleteEveMarketPrices(ctx, set.Of(o2.TypeID))
+		require.NoError(t, err)
+		// then
+		got, err := st.ListEveMarketPriceIDs(ctx)
+		require.NoError(t, err)
+		want := set.Of(o1.TypeID)
+		xassert.Equal2(t, want, got)
 	})
 }
