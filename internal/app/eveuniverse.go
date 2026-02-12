@@ -73,13 +73,6 @@ func (ec EveCharacter) Equal(other *EveCharacter) bool {
 // Hash returns the hash for this character.
 // It can be used to detect changes between instances.
 func (ec EveCharacter) Hash() string {
-	var corporationID, raceID int64
-	if ec.Corporation != nil {
-		corporationID = ec.Corporation.ID
-	}
-	if ec.Race != nil {
-		raceID = ec.Race.ID
-	}
 	allianceID := optional.Map(ec.Alliance, 0, func(x *EveEntity) int64 {
 		return x.ID
 	})
@@ -89,13 +82,13 @@ func (ec EveCharacter) Hash() string {
 	xx := []any{
 		allianceID,
 		ec.Birthday,
-		corporationID,
+		ec.Corporation.ID,
 		ec.Description,
 		factionID,
 		ec.Gender,
 		ec.ID,
 		ec.Name,
-		raceID,
+		ec.Race.ID,
 		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
 		ec.Title,
 	}
@@ -106,13 +99,6 @@ func (ec EveCharacter) Hash() string {
 	h1 := md5.Sum([]byte(strings.Join(s, "-")))
 	h2 := hex.EncodeToString(h1[:])
 	return h2
-}
-
-func (ec EveCharacter) RaceDescription() string {
-	if ec.Race == nil {
-		return ""
-	}
-	return ec.Race.Description
 }
 
 func (ec EveCharacter) EveEntity() *EveEntity {

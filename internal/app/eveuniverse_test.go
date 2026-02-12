@@ -29,14 +29,6 @@ func TestEveCharacter_Description(t *testing.T) {
 	xassert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
 }
 
-func TestEveCharacter_Race(t *testing.T) {
-	x1 := &app.EveCharacter{Race: &app.EveRace{Description: "description"}}
-	xassert.Equal(t, "description", x1.RaceDescription())
-
-	x2 := &app.EveCharacter{}
-	xassert.Equal(t, "", x2.RaceDescription())
-}
-
 func TestEveCharacter_EveEntity(t *testing.T) {
 	x1 := &app.EveCharacter{ID: 42, Name: "name"}
 	x2 := x1.EveEntity()
@@ -60,7 +52,8 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			SecurityStatus: optional.New(-4.5),
 			Title:          optional.New("def"),
 		}
-		x2 := x1
+		x2 := new(app.EveCharacter)
+		*x2 = *x1
 		assert.True(t, x1.Equal(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
@@ -77,9 +70,9 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			SecurityStatus: optional.New(-4.5),
 			Title:          optional.New("def"),
 		}
-		x2 := &app.EveCharacter{
-			ID: 4,
-		}
+		x2 := new(app.EveCharacter)
+		*x2 = *x1
+		x2.ID = 3
 		assert.False(t, x1.Equal(x2))
 	})
 }

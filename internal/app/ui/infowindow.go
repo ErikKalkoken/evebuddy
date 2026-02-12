@@ -684,7 +684,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 	})
 	fyne.Do(func() {
 		a.bio.SetText(o.DescriptionPlain())
-		a.description.SetText(o.RaceDescription())
+		a.description.SetText(o.Race.Description)
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {

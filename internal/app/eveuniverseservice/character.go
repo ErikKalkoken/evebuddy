@@ -52,7 +52,6 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		// ,
 		affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
 		if err != nil {
 			return false, err
