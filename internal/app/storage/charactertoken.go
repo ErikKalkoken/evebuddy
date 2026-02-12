@@ -15,12 +15,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
-	r, err := st.qRO.GetCharacterToken(ctx, int64(characterID))
+func (st *Storage) GetCharacterToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
+	r, err := st.qRO.GetCharacterToken(ctx,characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
-	rows, err := st.qRO.ListCharacterTokenScopes(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterTokenScopes(ctx,characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 
 type UpdateOrCreateCharacterTokenParams struct {
 	AccessToken  string
-	CharacterID  int32
+	CharacterID  int64
 	ExpiresAt    time.Time
 	RefreshToken string
 	Scopes       set.Set[string]
@@ -57,7 +57,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	}
 	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, queries.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  arg.AccessToken,
-		CharacterID:  int64(arg.CharacterID),
+		CharacterID: arg.CharacterID,
 		ExpiresAt:    arg.ExpiresAt,
 		RefreshToken: arg.RefreshToken,
 		TokenType:    arg.TokenType,
@@ -79,7 +79,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	if err := qtx.ClearCharacterTokenScopes(ctx, int64(arg.CharacterID)); err != nil {
+	if err := qtx.ClearCharacterTokenScopes(ctx,arg.CharacterID); err != nil {
 		return wrapErr(err)
 	}
 	for _, s := range ss {
@@ -123,7 +123,7 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 	return s, nil
 }
 
-func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) ([]*app.CharacterToken, error) {
+func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) ([]*app.CharacterToken, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, roles %s, scopes %s: %w", corporationID, roles, scopes, err)
 	}
@@ -133,13 +133,13 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	var rows []queries.CharacterToken
 	var err error
 	if roles.Size() == 0 {
-		rows, err = st.qRO.ListCharacterTokenForCorporation(ctx, int64(corporationID))
+		rows, err = st.qRO.ListCharacterTokenForCorporation(ctx,corporationID)
 		if err != nil {
 			return nil, wrapErr(err)
 		}
 	} else {
 		arg := queries.ListCharacterTokenForCorporationWithRolesParams{
-			CorporationID: int64(corporationID),
+			CorporationID:corporationID,
 			Roles:         slices.Collect(roles2names(roles).All()),
 		}
 		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, arg)
@@ -173,7 +173,7 @@ func characterTokenFromDBModel(o queries.CharacterToken, scopes set.Set[string])
 	}
 	return &app.CharacterToken{
 		AccessToken:  o.AccessToken,
-		CharacterID:  int32(o.CharacterID),
+		CharacterID: o.CharacterID,
 		ExpiresAt:    o.ExpiresAt,
 		ID:           o.ID,
 		RefreshToken: o.RefreshToken,

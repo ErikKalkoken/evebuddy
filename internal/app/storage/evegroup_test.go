@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveGroup(t *testing.T) {
@@ -30,10 +31,10 @@ func TestEveGroup(t *testing.T) {
 		if assert.NoError(t, err) {
 			g, err := st.GetEveGroup(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), g.ID)
-				assert.Equal(t, "name", g.Name)
-				assert.Equal(t, true, g.IsPublished)
-				assert.Equal(t, c, g.Category)
+				xassert.Equal(t, 42, g.ID)
+				xassert.Equal(t, "name", g.Name)
+				xassert.Equal(t, true, g.IsPublished)
+				xassert.Equal(t, c, g.Category)
 			}
 		}
 	})
@@ -47,10 +48,10 @@ func TestEveGroup(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, g.ID, got.ID)
-			assert.Equal(t, g.Name, got.Name)
-			assert.Equal(t, g.IsPublished, got.IsPublished)
-			assert.Equal(t, g.Category, got.Category)
+			xassert.Equal(t, g.ID, got.ID)
+			xassert.Equal(t, g.Name, got.Name)
+			xassert.Equal(t, g.IsPublished, got.IsPublished)
+			xassert.Equal(t, g.Category, got.Category)
 		}
 	})
 	t.Run("can create new when not existing", func(t *testing.T) {
@@ -66,10 +67,10 @@ func TestEveGroup(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 42, got.ID)
-			assert.Equal(t, "Alpha", got.Name)
+			xassert.Equal(t, 42, got.ID)
+			xassert.Equal(t, "Alpha", got.Name)
 			assert.True(t, got.IsPublished)
-			assert.Equal(t, c, got.Category)
+			xassert.Equal(t, c, got.Category)
 		}
 	})
 }

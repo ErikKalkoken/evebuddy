@@ -12,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -39,12 +40,12 @@ func TestTree(t *testing.T) {
 
 		_, ok := tree.Location(loc1.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
+	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
+	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
 
 		_, ok = tree.Location(loc2.ID)
 		require.True(t, ok)
-		assert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
+	xassert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
 
 		printTrees(tree)
 		// t.Fail()
@@ -60,7 +61,7 @@ func TestTree(t *testing.T) {
 		}
 		for _, tc := range cases {
 			got := makeNamesPath(tree, tc.item)
-			assert.Equal(t, tc.want, got)
+		xassert.Equal(t, tc.want, got)
 		}
 	})
 	t.Run("can return asset nodes by item IDs", func(t *testing.T) {
@@ -81,7 +82,7 @@ func TestTree(t *testing.T) {
 			got, found := tree.Node(tc.itemID)
 			if tc.found {
 				assert.True(t, found)
-				assert.Equal(t, tc.itemID, got.ID())
+			xassert.Equal(t, tc.itemID, got.ID())
 			} else {
 				assert.False(t, found)
 				assert.Nil(t, got)
@@ -173,16 +174,16 @@ func TestTree_CustomNodes(t *testing.T) {
 	}
 	ac := asset.NewFromCharacterAssets(assets, locations)
 
-	assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-	assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral1))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay", "Hobgoblin I"}, makeNamesPath(ac, drone))
-	assert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship2))
+xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
+xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral1))
+xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay", "Hobgoblin I"}, makeNamesPath(ac, drone))
+xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship2))
 
-	assert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
-	assert.Equal(t, []string{"Bravo", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral2))
+xassert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
+xassert.Equal(t, []string{"Bravo", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral2))
 
-	assert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
-	assert.Equal(t, []string{"Charlie", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship3))
+xassert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
+xassert.Equal(t, []string{"Charlie", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship3))
 
 	printTrees(ac)
 	// t.Fail()
@@ -209,7 +210,7 @@ func TestTree_Impounded(t *testing.T) {
 	assets := []*app.CorporationAsset{office, item1}
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-	assert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
+xassert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	printTrees(ac)
 	// t.Fail()
@@ -244,7 +245,7 @@ func TestTree_Offices(t *testing.T) {
 
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-	assert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
+xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	officeNode := mustNode(ac, office.ItemID)
 	offices := xslices.Map(officeNode.Children(), func(x *asset.Node) string {
@@ -365,17 +366,17 @@ func TestTree_Character(t *testing.T) {
 		assert.Len(t, ac.Locations(), 3)
 
 		alpha := mustLocation(ac, alphaID)
-		assert.Equal(t, 3, alpha.ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, item1))
-		assert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
+	xassert.Equal(t, 3, alpha.ChildrenCount())
+	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, item1))
+	xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
 		bravo := mustLocation(ac, bravoID)
-		assert.Equal(t, 1, bravo.ChildrenCount())
-		assert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
+	xassert.Equal(t, 1, bravo.ChildrenCount())
+	xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
 		delta := mustLocation(ac, charlieID)
-		assert.Equal(t, 1, delta.ChildrenCount())
-		assert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap", "Tritanium"}, makeNamesPath(ac, safetyItem1))
+	xassert.Equal(t, 1, delta.ChildrenCount())
+	xassert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap", "Tritanium"}, makeNamesPath(ac, safetyItem1))
 
 		printTrees(ac)
 		// assert.Fail(t, "STOP")
@@ -541,21 +542,21 @@ func TestTree_Corporation(t *testing.T) {
 
 		assert.Len(t, ac.Locations(), 5)
 
-		assert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-		assert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
-		assert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
+	xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
+	xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
+	xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
-		assert.Equal(t, 1, mustLocation(ac, bravoID).ChildrenCount())
-		assert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
+	xassert.Equal(t, 1, mustLocation(ac, bravoID).ChildrenCount())
+	xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
-		assert.Equal(t, 1, mustLocation(ac, charlieID).ChildrenCount())
-		assert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, impoundedItem1))
+	xassert.Equal(t, 1, mustLocation(ac, charlieID).ChildrenCount())
+	xassert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, impoundedItem1))
 
-		assert.Equal(t, 1, mustLocation(ac, deltaID).ChildrenCount())
-		assert.Equal(t, []string{"Delta", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, structureCargoItem))
+	xassert.Equal(t, 1, mustLocation(ac, deltaID).ChildrenCount())
+	xassert.Equal(t, []string{"Delta", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, structureCargoItem))
 
-		assert.Equal(t, 1, mustLocation(ac, echoID).ChildrenCount())
-		assert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries", "Tritanium"}, makeNamesPath(ac, safetyItem3))
+	xassert.Equal(t, 1, mustLocation(ac, echoID).ChildrenCount())
+	xassert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries", "Tritanium"}, makeNamesPath(ac, safetyItem3))
 
 		printTrees(ac)
 		// assert.Fail(t, "STOP")

@@ -142,7 +142,7 @@ func (a *characterSendMail) SendAction() bool {
 	return true
 }
 
-func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	results := make([]*app.EveEntity, 0)
 	list := widget.NewList(

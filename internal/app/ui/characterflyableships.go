@@ -37,11 +37,11 @@ const (
 
 type flyableShipRow struct {
 	canFly      bool
-	characterID int32
-	groupID     int32
+	characterID int64
+	groupID     int64
 	groupName   string
 	searchText  string
-	typeID      int32
+	typeID      int64
 	typeName    string
 }
 
@@ -333,7 +333,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 var shipImageCache xsync.Map[string, *image.RGBA]
 
 type shipItemEIS interface {
-	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
+	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
 }
 
 // The shipItem widget is used to render items on the type info window.
@@ -362,7 +362,7 @@ func newShipItem(eis shipItemEIS) *shipItem {
 	return w
 }
 
-func (w *shipItem) Set(typeID int32, label string, canFly bool) {
+func (w *shipItem) Set(typeID int64, label string, canFly bool) {
 	w.label.Importance = widget.MediumImportance
 	w.label.Text = label
 	w.label.Wrapping = fyne.TextWrapWord

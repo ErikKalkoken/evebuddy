@@ -13,7 +13,7 @@ import (
 )
 
 type CharacterSectionStatusParams struct {
-	CharacterID int32
+	CharacterID int64
 	Section     app.CharacterSection
 
 	CompletedAt time.Time
@@ -22,9 +22,9 @@ type CharacterSectionStatusParams struct {
 	StartedAt   time.Time
 }
 
-func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
+func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int64, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
-		CharacterID: int64(characterID),
+		CharacterID:characterID,
 		SectionID:   section.String(),
 	}
 	s, err := st.qRO.GetCharacterSectionStatus(ctx, arg)
@@ -40,8 +40,8 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 	return s2, nil
 }
 
-func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*app.CharacterSectionStatus, error) {
-	rows, err := st.qRO.ListCharacterSectionStatus(ctx, int64(characterID))
+func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int64) ([]*app.CharacterSectionStatus, error) {
+	rows, err := st.qRO.ListCharacterSectionStatus(ctx,characterID)
 	if err != nil {
 		return nil, fmt.Errorf("list character status for ID %d: %w", characterID, err)
 	}
@@ -54,7 +54,7 @@ func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID i
 
 type UpdateOrCreateCharacterSectionStatusParams struct {
 	// mandatory
-	CharacterID int32
+	CharacterID int64
 	Section     app.CharacterSection
 	// optional
 	CompletedAt  *sql.NullTime
@@ -77,19 +77,19 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		qtx := st.qRW.WithTx(tx)
 		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
 		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
-			CharacterID: int64(arg.CharacterID),
+			CharacterID:arg.CharacterID,
 			SectionID:   arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID: int64(arg.CharacterID),
+				CharacterID:arg.CharacterID,
 				SectionID:   arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID: int64(arg.CharacterID),
+				CharacterID:arg.CharacterID,
 				SectionID:   arg.Section.String(),
 				CompletedAt: old.CompletedAt,
 				ContentHash: old.ContentHash,
@@ -131,7 +131,7 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {
 	x := &app.CharacterSectionStatus{
-		CharacterID: int32(o.CharacterID),
+		CharacterID:o.CharacterID,
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: o.Error,
 			ContentHash:  o.ContentHash,

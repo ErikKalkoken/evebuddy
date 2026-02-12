@@ -27,16 +27,16 @@ const (
 )
 
 type colonyRow struct {
-	characterID     int32
+	characterID     int64
 	due             time.Time
 	extracting      set.Set[string]
 	extractingText  string
 	name            string
 	nameDisplay     []widget.RichTextSegment
 	ownerName       string
-	planetID        int32
+	planetID        int64
 	planetName      string
-	planetTypeID    int32
+	planetTypeID    int64
 	planetTypeName  string
 	producing       set.Set[string]
 	producingText   string
@@ -255,7 +255,7 @@ func newColonies(u *baseUI) *colonies {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -526,9 +526,13 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		} else {
 			due.Text = expiryTime.Format(app.DateTimeFormat)
 		}
-		icon, _ := pp.ExtractorProductType.Icon()
-		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
-			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.EveEntity())
+		productType, ok := pp.ExtractorProductType.Value()
+		if !ok {
+			panic("this should not happen")
+		}
+		icon, _ := productType.Icon()
+		product := makeLinkLabel(productType.Name, func() {
+			a.u.ShowEveEntityInfoWindow(productType.EveEntity())
 		})
 		row := container.NewHBox(
 			container.NewHBox(

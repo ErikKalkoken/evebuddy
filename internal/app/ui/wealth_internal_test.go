@@ -6,6 +6,8 @@ import (
 	chartData "github.com/s-daehling/fyne-charts/pkg/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestReduceChartPoints(t *testing.T) {
@@ -17,7 +19,7 @@ func TestReduceChartPoints(t *testing.T) {
 		result := reduceProportionalPoints(input, 5)
 
 		assert.Len(t, result, 2)
-		assert.Equal(t, input, result)
+		xassert.Equal(t, input, result)
 	})
 
 	t.Run("reduces and aggregates 'Others' correctly", func(t *testing.T) {
@@ -39,14 +41,14 @@ func TestReduceChartPoints(t *testing.T) {
 		// Check 'Others' aggregation
 		// 'Others' is appended last
 		others := result[2]
-		assert.Equal(t, "Others", others.C)
-		assert.Equal(t, float64(20), others.Val)
+		xassert.Equal(t, "Others", others.C)
+		xassert.Equal(t, float64(20), others.Val)
 
 		// Check alphabetical sorting of the remaining top items
 		// "Apple" (50) and "Zebra" (100) are top 2.
 		// Alphabetically, Apple comes before Zebra.
-		assert.Equal(t, "Apple", result[0].C)
-		assert.Equal(t, "Zebra", result[1].C)
+		xassert.Equal(t, "Apple", result[0].C)
+		xassert.Equal(t, "Zebra", result[1].C)
 	})
 
 	t.Run("handles m=0", func(t *testing.T) {
@@ -58,8 +60,8 @@ func TestReduceChartPoints(t *testing.T) {
 		result := reduceProportionalPoints(input, 0)
 
 		assert.Len(t, result, 1)
-		assert.Equal(t, "Others", result[0].C)
-		assert.Equal(t, float64(30), result[0].Val)
+		xassert.Equal(t, "Others", result[0].C)
+		xassert.Equal(t, float64(30), result[0].Val)
 	})
 }
 
@@ -118,7 +120,7 @@ func TestReduceCategoricalPoints(t *testing.T) {
 
 			actual := reduceCategoricalPoints(input, tt.m)
 
-			assert.Equal(t, tt.expected, actual, "The reduced slice should match expected output")
+			xassert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -164,7 +166,7 @@ func TestTruncateWithSuffix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := TruncateWithSuffix(tt.input, tt.limit, tt.suffixLen)
-			assert.Equal(t, tt.expected, result)
+			xassert.Equal(t, tt.expected, result)
 		})
 	}
 }

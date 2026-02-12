@@ -35,7 +35,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		startDate := now.Add(-6 * time.Hour)
 		station := factory.CreateEveLocationStructure()
 		arg := storage.UpdateOrCreateCharacterIndustryJobParams{
-			ActivityID:          int32(app.Manufacturing),
+			ActivityID:          int64(app.Manufacturing),
 			BlueprintID:         42,
 			BlueprintLocationID: blueprintLocation.ID,
 			BlueprintTypeID:     blueprintType.ID,
@@ -57,43 +57,43 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 42, o.BlueprintID)
-				assert.EqualValues(
+				xassert.Equal(t, 42, o.BlueprintID)
+				xassert.Equal(
 					t, &app.EveLocationShort{
 						ID:             blueprintLocation.ID,
 						Name:           optional.New(blueprintLocation.Name),
-						SecurityStatus: optional.New(blueprintLocation.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(blueprintLocation.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.BlueprintLocation,
 				)
-				assert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
-				assert.EqualValues(t, 123, o.Duration)
-				assert.Equal(t, endDate, o.EndDate)
-				assert.EqualValues(
+				xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
+				xassert.Equal(t, 123, o.Duration)
+				xassert.Equal(t, endDate, o.EndDate)
+				xassert.Equal(
 					t, &app.EveLocationShort{
 						ID:             facility.ID,
 						Name:           optional.New(facility.Name),
-						SecurityStatus: optional.New(facility.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(facility.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.Facility,
 				)
-				assert.Equal(t, installer, o.Installer)
-				assert.EqualValues(
+				xassert.Equal(t, installer, o.Installer)
+				xassert.Equal(
 					t, &app.EveLocationShort{
 						ID:             outputLocation.ID,
 						Name:           optional.New(outputLocation.Name),
-						SecurityStatus: optional.New(outputLocation.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(outputLocation.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.OutputLocation,
 				)
-				assert.EqualValues(t, 7, o.Runs)
-				assert.Equal(t, startDate, o.StartDate)
-				assert.Equal(t, app.JobActive, o.Status)
-				assert.EqualValues(
+				xassert.Equal(t, 7, o.Runs)
+				xassert.Equal(t, startDate, o.StartDate)
+				xassert.Equal(t, app.JobActive, o.Status)
+				xassert.Equal(
 					t, &app.EveLocationShort{
 						ID:             station.ID,
 						Name:           optional.New(station.Name),
-						SecurityStatus: optional.New(station.SolarSystem.SecurityStatus),
+						SecurityStatus: optional.New(station.SolarSystem.ValueOrZero().SecurityStatus),
 					},
 					o.Station,
 				)
@@ -118,29 +118,29 @@ func TestCharacterIndustryJob(t *testing.T) {
 		startDate := now.Add(-6 * time.Hour)
 		station := factory.CreateEveLocationStructure()
 		arg := storage.UpdateOrCreateCharacterIndustryJobParams{
-			ActivityID:           int32(app.Manufacturing),
+			ActivityID:           int64(app.Manufacturing),
 			BlueprintID:          42,
 			BlueprintLocationID:  blueprintLocation.ID,
 			BlueprintTypeID:      blueprintType.ID,
 			CharacterID:          c.ID,
-			CompletedCharacterID: completedCharacter.ID,
-			CompletedDate:        completedDate,
-			Cost:                 123.45,
+			CompletedCharacterID: optional.New(completedCharacter.ID),
+			CompletedDate:        optional.New(completedDate),
+			Cost:                 optional.New(123.45),
 			Duration:             123,
 			EndDate:              endDate,
 			FacilityID:           facility.ID,
 			InstallerID:          installer.ID,
-			LicensedRuns:         3,
+			LicensedRuns:         optional.New[int64](3),
 			JobID:                1,
 			OutputLocationID:     outputLocation.ID,
 			Runs:                 7,
-			PauseDate:            pauseDate,
-			Probability:          0.8,
-			ProductTypeID:        productType.ID,
+			PauseDate:            optional.New(pauseDate),
+			Probability:          optional.New(0.8),
+			ProductTypeID:        optional.New(productType.ID),
 			StartDate:            startDate,
 			Status:               app.JobActive,
 			StationID:            station.ID,
-			SuccessfulRuns:       2,
+			SuccessfulRuns:       optional.New[int64](2),
 		}
 		// when
 		err := st.UpdateOrCreateCharacterIndustryJob(ctx, arg)
@@ -148,26 +148,26 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 42, o.BlueprintID)
-				assert.EqualValues(t, blueprintLocation.ID, o.BlueprintLocation.ID)
-				assert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
-				assert.Equal(t, completedCharacter, o.CompletedCharacter.MustValue())
-				assert.Equal(t, completedDate, o.CompletedDate.MustValue())
-				assert.EqualValues(t, 123.45, o.Cost.MustValue())
-				assert.EqualValues(t, 123, o.Duration)
-				assert.Equal(t, endDate, o.EndDate)
-				assert.EqualValues(t, facility.ID, o.Facility.ID)
-				assert.Equal(t, installer, o.Installer)
-				assert.EqualValues(t, 3, o.LicensedRuns.MustValue())
-				assert.EqualValues(t, outputLocation.ID, o.OutputLocation.ID)
-				assert.Equal(t, float32(0.8), o.Probability.MustValue())
-				assert.Equal(t, productType.ID, o.ProductType.MustValue().ID)
-				assert.Equal(t, pauseDate, o.PauseDate.MustValue())
-				assert.EqualValues(t, 7, o.Runs)
-				assert.Equal(t, startDate, o.StartDate)
-				assert.Equal(t, app.JobActive, o.Status)
-				assert.EqualValues(t, station.ID, o.Station.ID)
-				assert.EqualValues(t, 2, o.SuccessfulRuns.MustValue())
+				xassert.Equal(t, 42, o.BlueprintID)
+				xassert.Equal(t, blueprintLocation.ID, o.BlueprintLocation.ID)
+				xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
+				xassert.Equal(t, completedCharacter, o.CompletedCharacter.MustValue())
+				xassert.Equal(t, completedDate, o.CompletedDate.MustValue())
+				xassert.Equal(t, 123.45, o.Cost.MustValue())
+				xassert.Equal(t, 123, o.Duration)
+				xassert.Equal(t, endDate, o.EndDate)
+				xassert.Equal(t, facility.ID, o.Facility.ID)
+				xassert.Equal(t, installer, o.Installer)
+				xassert.Equal(t, 3, o.LicensedRuns.MustValue())
+				xassert.Equal(t, outputLocation.ID, o.OutputLocation.ID)
+				xassert.Equal(t, float32(0.8), o.Probability.MustValue())
+				xassert.Equal(t, productType.ID, o.ProductType.MustValue().ID)
+				xassert.Equal(t, pauseDate, o.PauseDate.MustValue())
+				xassert.Equal(t, 7, o.Runs)
+				xassert.Equal(t, startDate, o.StartDate)
+				xassert.Equal(t, app.JobActive, o.Status)
+				xassert.Equal(t, station.ID, o.Station.ID)
+				xassert.Equal(t, 2, o.SuccessfulRuns.MustValue())
 			}
 		}
 	})
@@ -183,36 +183,36 @@ func TestCharacterIndustryJob(t *testing.T) {
 		pauseDate := completedDate.Add(-3 * time.Hour)
 		endDate2 := completedDate.Add(20 * time.Hour)
 		err := st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
-			ActivityID:           int32(j1.Activity),
+			ActivityID:           int64(j1.Activity),
 			BlueprintID:          j1.BlueprintID,
 			BlueprintLocationID:  j1.BlueprintLocation.ID,
 			BlueprintTypeID:      j1.BlueprintType.ID,
 			CharacterID:          j1.CharacterID,
-			CompletedCharacterID: completedCharacter.ID,
-			CompletedDate:        completedDate,
-			Duration:             int32(j1.Duration),
+			CompletedCharacterID: optional.New(completedCharacter.ID),
+			CompletedDate:        optional.New(completedDate),
+			Duration:             int64(j1.Duration),
 			EndDate:              endDate2,
 			FacilityID:           j1.Facility.ID,
 			InstallerID:          j1.Installer.ID,
 			JobID:                j1.JobID,
 			OutputLocationID:     j1.OutputLocation.ID,
-			PauseDate:            pauseDate,
-			Runs:                 int32(j1.Runs),
+			PauseDate:            optional.New(pauseDate),
+			Runs:                 int64(j1.Runs),
 			StartDate:            j1.StartDate,
 			Status:               app.JobDelivered,
 			StationID:            j1.Station.ID,
-			SuccessfulRuns:       5,
+			SuccessfulRuns:       optional.New[int64](5),
 		})
 		// then
 		if assert.NoError(t, err) {
 			j2, err := st.GetCharacterIndustryJob(ctx, j1.CharacterID, j1.JobID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
-				assert.Equal(t, completedDate, j2.CompletedDate.MustValue())
-				assert.Equal(t, endDate2, j2.EndDate)
-				assert.Equal(t, pauseDate, j2.PauseDate.ValueOrZero())
-				assert.Equal(t, app.JobDelivered, j2.Status)
-				assert.EqualValues(t, 5, j2.SuccessfulRuns.ValueOrZero())
+				xassert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
+				xassert.Equal(t, completedDate, j2.CompletedDate.MustValue())
+				xassert.Equal(t, endDate2, j2.EndDate)
+				xassert.Equal(t, pauseDate, j2.PauseDate.ValueOrZero())
+				xassert.Equal(t, app.JobDelivered, j2.Status)
+				xassert.Equal(t, 5, j2.SuccessfulRuns.ValueOrZero())
 			}
 		}
 	})
@@ -232,10 +232,10 @@ func TestCharacterIndustryJob(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(j1.JobID, j2.JobID)
-			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int64 {
 				return x.JobID
 			}))
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {
@@ -248,10 +248,10 @@ func TestCharacterIndustryJob(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(j1.JobID, j2.JobID)
-			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int64 {
 				return x.JobID
 			}))
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
@@ -268,10 +268,10 @@ func TestCharacterIndustryJob(t *testing.T) {
 		x, err := st.GetCharacterIndustryJob(ctx, j.CharacterID, j.JobID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, el.ID, x.BlueprintLocation.ID)
-			assert.Equal(t, el.ID, x.Facility.ID)
-			assert.Equal(t, el.ID, x.OutputLocation.ID)
-			assert.Equal(t, el.ID, x.Station.ID)
+			xassert.Equal(t, el.ID, x.BlueprintLocation.ID)
+			xassert.Equal(t, el.ID, x.Facility.ID)
+			xassert.Equal(t, el.ID, x.OutputLocation.ID)
+			xassert.Equal(t, el.ID, x.Station.ID)
 		}
 	})
 	t.Run("can list jobs with incomplete locations", func(t *testing.T) {
@@ -297,38 +297,38 @@ func TestCharacterIndustryJob(t *testing.T) {
 		character1 := factory.CreateCharacterFull()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobReady,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobDelivered,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Reactions2),
+			ActivityID:  int64(app.Reactions2),
 			Status:      app.JobActive,
 		})
 		character2 := factory.CreateCharacterFull()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character2.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			InstallerID: character1.ID,
-			ActivityID:  int32(app.Manufacturing),
+			ActivityID:  int64(app.Manufacturing),
 			Status:      app.JobActive,
 		})
 		// when
@@ -370,7 +370,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(j3.ID, j4.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can update job status", func(t *testing.T) {
@@ -389,7 +389,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCharacterIndustryJob(ctx, j1.CharacterID, j1.JobID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.JobUnknown, j2.Status)
+				xassert.Equal(t, app.JobUnknown, j2.Status)
 			}
 		}
 	})

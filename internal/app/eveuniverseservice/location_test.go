@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,7 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
+			fmt.Sprintf("https://esi.evetech.net/universe/stations/%d", stationID),
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"max_dockable_ship_volume": 50000000,
 				"name":                     "Jakanerva III - Moon 15 - Prompt Delivery Storage",
@@ -77,14 +77,14 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 		x1, err := s.GetOrCreateLocationESI(ctx, stationID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(stationID), x1.ID)
-		assert.Equal(t, "Jakanerva III - Moon 15 - Prompt Delivery Storage", x1.Name)
-		assert.Equal(t, owner, x1.Owner)
-		assert.Equal(t, system, x1.SolarSystem)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, int64(stationID), x1.ID)
+		xassert.Equal(t, "Jakanerva III - Moon 15 - Prompt Delivery Storage", x1.Name)
+		xassert.Equal(t, owner, x1.Owner.MustValue())
+		xassert.Equal(t, system, x1.SolarSystem.MustValue())
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, stationID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should create location for a solar system", func(t *testing.T) {
 		// given
@@ -96,14 +96,14 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 		x1, err := s.GetOrCreateLocationESI(ctx, int64(system.ID))
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(system.ID), x1.ID)
-		assert.Equal(t, system.Name, x1.DisplayName())
-		assert.Nil(t, x1.Owner)
-		assert.Equal(t, system, x1.SolarSystem)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, int64(system.ID), x1.ID)
+		xassert.Equal(t, system.Name, x1.DisplayName())
+		xassert.Empty(t, x1.Owner)
+		xassert.Equal(t, system, x1.SolarSystem.MustValue())
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, int64(system.ID))
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("can create unknown location", func(t *testing.T) {
 		// given
@@ -114,10 +114,10 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 		x1, err := s.GetOrCreateLocationESI(ctx, 888)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, x1.ID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 
 	})
 	t.Run("can create asset safety location", func(t *testing.T) {
@@ -129,10 +129,10 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 		x1, err := s.GetOrCreateLocationESI(ctx, 2004)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, x1.ID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -151,7 +151,7 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 		x, err := s.GetOrCreateLocationESI(context.Background(), structureID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, "Alpha", x.Name)
+		xassert.Equal(t, "Alpha", x.Name)
 	})
 	t.Run("should fetch structure from ESI and create it", func(t *testing.T) {
 		// given
@@ -162,7 +162,7 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"name":            "V-3YG7 VI - The Capital",
 				"owner_id":        109299958,
@@ -174,19 +174,19 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 					"z": 3.3,
 				}}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(structureID), x1.ID)
-		assert.Equal(t, "V-3YG7 VI - The Capital", x1.Name)
-		assert.Equal(t, owner, x1.Owner)
-		assert.Equal(t, system, x1.SolarSystem)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, int64(structureID), x1.ID)
+		xassert.Equal(t, "V-3YG7 VI - The Capital", x1.Name)
+		xassert.Equal(t, owner, x1.Owner.MustValue())
+		xassert.Equal(t, system, x1.SolarSystem.MustValue())
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, structureID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should return error when trying to fetch structure without token", func(t *testing.T) {
 		// given
@@ -203,24 +203,24 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]any{
 				"error": "forbidden",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(structureID), x1.ID)
-		assert.Equal(t, "", x1.Name)
-		assert.Nil(t, x1.Owner)
-		assert.Nil(t, x1.SolarSystem)
-		assert.Nil(t, x1.Type)
+		xassert.Equal(t, int64(structureID), x1.ID)
+		xassert.Equal(t, "", x1.Name)
+		xassert.Empty(t, x1.Owner)
+		xassert.Empty(t, x1.SolarSystem)
+		xassert.Empty(t, x1.Type)
 		x2, err := st.GetLocation(ctx, structureID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should return error when other http error occurs", func(t *testing.T) {
 		// given
@@ -228,12 +228,12 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{
 				"error": "xxx",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		_, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
@@ -260,7 +260,7 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
+			fmt.Sprintf("https://esi.evetech.net/universe/stations/%d", stationID),
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"max_dockable_ship_volume": 50000000,
 				"name":                     "Jakanerva III - Moon 15 - Prompt Delivery Storage",
@@ -297,14 +297,14 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 		x1, err := s.UpdateOrCreateLocationESI(ctx, stationID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(stationID), x1.ID)
-		assert.Equal(t, "Jakanerva III - Moon 15 - Prompt Delivery Storage", x1.Name)
-		assert.Equal(t, owner, x1.Owner)
-		assert.Equal(t, system, x1.SolarSystem)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, int64(stationID), x1.ID)
+		xassert.Equal(t, "Jakanerva III - Moon 15 - Prompt Delivery Storage", x1.Name)
+		xassert.Equal(t, owner, x1.Owner.MustValue())
+		xassert.Equal(t, system, x1.SolarSystem.MustValue())
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, stationID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 
 	t.Run("should update existing structure", func(t *testing.T) {
@@ -317,7 +317,7 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"name":            "V-3YG7 VI - The Capital",
 				"owner_id":        109299958,
@@ -329,19 +329,19 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 					"z": 3.3,
 				}}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		x1, err := s.UpdateOrCreateLocationESI(ctx, structureID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, int64(structureID), x1.ID)
-		assert.Equal(t, "V-3YG7 VI - The Capital", x1.Name)
-		assert.Equal(t, owner, x1.Owner)
-		assert.Equal(t, system, x1.SolarSystem)
-		assert.Equal(t, myType, x1.Type)
+		xassert.Equal(t, int64(structureID), x1.ID)
+		xassert.Equal(t, "V-3YG7 VI - The Capital", x1.Name)
+		xassert.Equal(t, owner, x1.Owner.MustValue())
+		xassert.Equal(t, system, x1.SolarSystem.MustValue())
+		xassert.Equal(t, myType, x1.Type.MustValue())
 		x2, err := st.GetLocation(ctx, structureID)
 		require.NoError(t, err)
-		assert.Equal(t, x1, x2)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -352,7 +352,7 @@ func TestGetStationServicesESI(t *testing.T) {
 	s := eveuniverseservice.NewTestService(nil)
 	httpmock.RegisterResponder(
 		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/universe/stations/\d+/`,
+		`=~^https://esi.evetech.net/universe/stations/\d+`,
 		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 			"max_dockable_ship_volume": 50000000,
 			"name":                     "Jakanerva III - Moon 15 - Prompt Delivery Storage",
@@ -386,7 +386,7 @@ func TestGetStationServicesESI(t *testing.T) {
 		"market",
 		"reprocessing-plant",
 	}
-	assert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 }
 
 func TestAddMissingLocations(t *testing.T) {
@@ -402,7 +402,7 @@ func TestAddMissingLocations(t *testing.T) {
 		require.NoError(t, err)
 		ids, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, 0, ids.Size())
+		xassert.Equal(t, 0, ids.Size())
 	})
 	t.Run("can create missing location from scratch", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -412,7 +412,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("ignores invalid location IDs", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -422,7 +422,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can create missing locations only", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -437,7 +437,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004, 888)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }
 
@@ -451,7 +451,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
+			fmt.Sprintf("https://esi.evetech.net/universe/stations/%d", stationID),
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"max_dockable_ship_volume": 50000000,
 				"name":                     "Jakanerva III - Moon 15 - Prompt Delivery Storage",
@@ -488,15 +488,15 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{60000277})
 		// then
 		require.NoError(t, err)
-		want := set.Of[int32](1000003)
-		xassert.EqualSet(t, want, got)
+		want := set.Of[int64](1000003)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can return owner of a structure", func(t *testing.T) {
 		// given
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"name":            "V-3YG7 VI - The Capital",
 				"owner_id":        109299958,
@@ -508,13 +508,13 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 					"z": 3.3,
 				}}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 		// then
 		require.NoError(t, err)
-		want := set.Of[int32](109299958)
-		xassert.EqualSet(t, want, got)
+		want := set.Of[int64](109299958)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("should return error when structure and no token", func(t *testing.T) {
 		// when
@@ -532,7 +532,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 			httpmock.Reset()
 			httpmock.RegisterResponder(
 				"GET",
-				`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+				`=~^https://esi.evetech.net/universe/structures/\d+`,
 				httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 					"name":            "V-3YG7 VI - The Capital",
 					"owner_id":        tc.ownerID,
@@ -544,10 +544,10 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 						"z": 3.3,
 					}}),
 			)
-			ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+			ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 			got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 			require.NoError(t, err)
-			assert.Equal(t, 0, got.Size())
+			xassert.Equal(t, 0, got.Size())
 
 		}
 	})
@@ -556,23 +556,23 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
+			`=~^https://esi.evetech.net/universe/structures/\d+`,
 			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]string{
 				"error": "no access",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := context.WithValue(context.Background(), goesi.ContextOAuth2, "DUMMY")
 		// when
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got.Size())
 	})
 	t.Run("should return empty when no IDs given", func(t *testing.T) {
 		// when
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got.Size())
 	})
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -19,30 +19,29 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
-			location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+			location, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdLocation(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return location, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			location := data.(esi.GetCharactersCharacterIdLocationOk)
+		func(ctx context.Context, characterID int64, data any) error {
+			location := data.(*esi.CharactersCharacterIdLocationGet)
 			var locationID int64
-			switch {
-			case location.StructureId != 0:
-				locationID = location.StructureId
-			case location.StationId != 0:
-				locationID = int64(location.StationId)
-			default:
-				locationID = int64(location.SolarSystemId)
+			if x := location.StructureId; x != nil {
+				locationID = *x
+			} else if y := location.StationId; y != nil {
+				locationID = *y
+			} else {
+				locationID = location.SolarSystemId
 			}
-			x, err := s.eus.GetOrCreateLocationESI(ctx, locationID)
+			el, err := s.eus.GetOrCreateLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}
-			if x.Variant() == app.EveLocationStructure && x.SolarSystem == nil {
+			if el.Variant() == app.EveLocationStructure && el.SolarSystem.IsEmpty() {
 				err := func() error {
 					_, err := s.eus.GetOrCreateSolarSystemESI(ctx, location.SolarSystemId)
 					if err != nil {
@@ -50,9 +49,9 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 					}
 					err = s.st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
 						ID:            locationID,
-						Name:          x.Name,
+						Name:          el.Name,
 						SolarSystemID: optional.New(location.SolarSystemId),
-						UpdatedAt:     x.UpdatedAt,
+						UpdatedAt:     el.UpdatedAt,
 					})
 					return err
 				}()
@@ -73,17 +72,18 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOnline")
-			online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+			online, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdOnline(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return online, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.New(online.LastLogin)); err != nil {
+		func(ctx context.Context, characterID int64, data any) error {
+			online := data.(*esi.CharactersCharacterIdOnlineGet)
+			err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.FromPtr(online.LastLogin))
+			if err != nil {
 				return err
 			}
 			return nil
@@ -96,16 +96,16 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdShip")
-			ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+			ship, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdShip(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return ship, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			ship := data.(esi.GetCharactersCharacterIdShipOk)
+		func(ctx context.Context, characterID int64, data any) error {
+			ship := data.(*esi.CharactersCharacterIdShipGet)
 			_, err := s.eus.GetOrCreateTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
 				return err

@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -37,7 +39,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		location2 := factory.CreateEveLocationStation()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"duration":       9,
 				"is_buy_order":   false,
@@ -47,7 +49,8 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"order_id":       12,
 				"price":          0.45,
 				"range":          "station",
-				"region_id":      location2.SolarSystem.Constellation.Region.ID,
+				"region_id":      location2.SolarSystem.MustValue().Constellation.Region.ID,
+				"state":          "expired",
 				"type_id":        itemType2.ID,
 				"volume_remain":  1,
 				"volume_total":   100,
@@ -55,7 +58,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"duration":       3,
 				"is_buy_order":   true,
@@ -65,7 +68,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"order_id":       42,
 				"price":          123.45,
 				"range":          "1",
-				"region_id":      location1.SolarSystem.Constellation.Region.ID,
+				"region_id":      location1.SolarSystem.MustValue().Constellation.Region.ID,
 				"type_id":        itemType1.ID,
 				"volume_remain":  5,
 				"volume_total":   10,
@@ -87,23 +90,23 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				}
 				want := set.Of[int64](12, 42)
 				got := set.Collect(maps.Keys(m))
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 				o := m[42]
 				issued := time.Date(2019, 8, 24, 14, 15, 22, 0, time.UTC)
-				assert.EqualValues(t, 3, o.Duration)
+				xassert.Equal(t, 3, o.Duration)
 				assert.True(t, o.Escrow.IsEmpty())
-				assert.EqualValues(t, true, o.IsBuyOrder)
-				assert.EqualValues(t, true, o.IsCorporation)
+				xassert.Equal(t, true, o.IsBuyOrder.ValueOrZero())
+				xassert.Equal(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
-				assert.EqualValues(t, location1.ID, o.Location.ID)
+				xassert.Equal(t, location1.ID, o.Location.ID)
 				assert.True(t, o.MinVolume.IsEmpty())
-				assert.EqualValues(t, 123.45, o.Price)
-				assert.EqualValues(t, "1", o.Range)
-				assert.EqualValues(t, location1.SolarSystem.Constellation.Region.ID, o.Region.ID)
-				assert.EqualValues(t, app.OrderOpen, o.State)
-				assert.EqualValues(t, itemType1.ID, o.Type.ID)
-				assert.EqualValues(t, 5, o.VolumeRemains)
-				assert.EqualValues(t, 10, o.VolumeTotal)
+				xassert.Equal(t, 123.45, o.Price)
+				xassert.Equal(t, "1", o.Range)
+				xassert.Equal(t, location1.SolarSystem.MustValue().Constellation.Region.ID, o.Region.ID)
+				xassert.Equal(t, app.OrderOpen, o.State)
+				xassert.Equal(t, itemType1.ID, o.Type.ID)
+				xassert.Equal(t, 5, o.VolumeRemains)
+				xassert.Equal(t, 10, o.VolumeTotal)
 			}
 		}
 	})
@@ -115,14 +118,14 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
-			IsBuyOrder:  true,
+			IsBuyOrder:  optional.New(true),
 		})
 		remain := o1.VolumeRemains - 1
 		price := 1234.56
 		escrow := 1_000_000.12
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"escrow":         escrow,
 				"duration":       o1.Duration,
@@ -142,7 +145,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
@@ -158,9 +161,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				if assert.Len(t, oo, 1) {
 					o2 := oo[0]
 					assert.InDelta(t, escrow, o2.Escrow.ValueOrZero(), 0.01)
-					assert.EqualValues(t, remain, o2.VolumeRemains)
+					xassert.Equal(t, remain, o2.VolumeRemains)
 					assert.InDelta(t, price, o2.Price, 0.01)
-					assert.Equal(t, app.OrderExpired, o2.State)
+					xassert.Equal(t, app.OrderExpired, o2.State)
 				}
 			}
 		}
@@ -181,12 +184,12 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"duration":       o1.Duration,
 				"is_buy_order":   o1.IsBuyOrder,
@@ -197,7 +200,6 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"price":          o1.Price,
 				"range":          o1.Range,
 				"region_id":      o1.Region.ID,
-				"state":          "open",
 				"type_id":        o1.Type.ID,
 				"volume_remain":  o1.VolumeRemains,
 				"volume_total":   o1.VolumeTotal,
@@ -213,7 +215,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			assert.True(t, changed)
 			o2a, err := st.GetCharacterMarketOrder(ctx, o2.CharacterID, o2.OrderID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.OrderUnknown, o2a.State)
+				xassert.Equal(t, app.OrderUnknown, o2a.State)
 			}
 		}
 	})
@@ -234,12 +236,12 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"duration":       o1.Duration,
 				"is_buy_order":   o1.IsBuyOrder,
@@ -250,7 +252,6 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"price":          o1.Price,
 				"range":          o1.Range,
 				"region_id":      o1.Region.ID,
-				"state":          "open",
 				"type_id":        o1.Type.ID,
 				"volume_remain":  o1.VolumeRemains,
 				"volume_total":   o1.VolumeTotal,
@@ -268,7 +269,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(o1.OrderID)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})
@@ -283,7 +284,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		location := factory.CreateEveLocationStation()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"duration":       9,
@@ -294,7 +295,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 					"order_id":       12,
 					"price":          0.45,
 					"range":          "station",
-					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"region_id":      location.SolarSystem.MustValue().Constellation.Region.ID,
 					"state":          "expired",
 					"type_id":        itemType.ID,
 					"volume_remain":  1,
@@ -309,7 +310,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 					"order_id":       13,
 					"price":          0.45,
 					"range":          "station",
-					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"region_id":      location.SolarSystem.MustValue().Constellation.Region.ID,
 					"state":          "expired",
 					"type_id":        itemType.ID,
 					"volume_remain":  1,
@@ -319,7 +320,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
@@ -333,7 +334,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of[int64](12)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})

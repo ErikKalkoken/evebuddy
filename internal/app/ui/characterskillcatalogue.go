@@ -18,7 +18,7 @@ import (
 )
 
 type skillGroupProgress struct {
-	id      int32
+	id      int64
 	name    string
 	trained float64
 	total   float64
@@ -29,12 +29,12 @@ func (g skillGroupProgress) completionP() float64 {
 }
 
 type skillTrained struct {
-	activeLevel  int
+	activeLevel  int64
 	description  string
 	groupName    string
-	id           int32
+	id           int64
 	name         string
-	trainedLevel int
+	trainedLevel int64
 }
 
 type characterSkillCatalogue struct {
@@ -256,7 +256,7 @@ func (a *characterSkillCatalogue) update() {
 	})
 }
 
-func (*characterSkillCatalogue) updateGroups(characterID int32, s services) ([]skillGroupProgress, error) {
+func (*characterSkillCatalogue) updateGroups(characterID int64, s services) ([]skillGroupProgress, error) {
 	gg, err := s.cs.ListSkillGroupsProgress(context.TODO(), characterID)
 	if err != nil {
 		return nil, err

@@ -2,10 +2,13 @@ package corporationservice
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"net/http"
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,27 +18,33 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
-	CorporationIDs set.Set[int32]
+	CorporationIDs set.Set[int64]
 	Error          error
 }
 
-func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
+func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
 	return s.Token, s.Error
 }
 
 func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 	scs := statuscacheservice.New(st)
+	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "MyApp/1.0 (contact@example.com)",
+	})
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		ESIClient:          client,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
 	arg := Params{
 		Cache:              testutil.NewCacheFake2(),
+		ESIClient:          client,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -64,7 +73,7 @@ func TestUpdateDivisionsESI(t *testing.T) {
 
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/divisions/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/divisions", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"hangar": []map[string]any{
 					{
@@ -91,23 +100,23 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		// wallets
 		wallets, err := st.ListCorporationWalletNames(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(wallets, func(x *app.CorporationWalletName) (int32, string) {
+		got := maps.Collect(xiter.MapSlice2(wallets, func(x *app.CorporationWalletName) (int64, string) {
 			return x.DivisionID, x.Name
 		}))
-		want := map[int32]string{
+		want := map[int64]string{
 			1: "Rich Wallet 1",
 		}
-		assert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 		// hangar
 		hangars, err := st.ListCorporationHangarNames(ctx, c.ID)
 		require.NoError(t, err)
-		got2 := maps.Collect(xiter.MapSlice2(hangars, func(x *app.CorporationHangarName) (int32, string) {
+		got2 := maps.Collect(xiter.MapSlice2(hangars, func(x *app.CorporationHangarName) (int64, string) {
 			return x.DivisionID, x.Name
 		}))
-		want2 := map[int32]string{
+		want2 := map[int64]string{
 			1: "Awesome Hangar 1",
 		}
-		assert.Equal(t, want2, got2)
+		xassert.Equal(t, want2, got2)
 	})
 	t.Run("should update existing balances", func(t *testing.T) {
 		// given
@@ -118,14 +127,14 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		for id := range 7 {
 			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 				CorporationID: c.ID,
-				DivisionID:    int32(id + 1),
+				DivisionID:    int64(id + 1),
 			})
 			assert.NoError(t, err)
 		}
 
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"balance":  123.45,
 				"division": 1,
@@ -159,10 +168,10 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
 			return x.DivisionID, x.Balance
 		}))
-		want := map[int32]float64{
+		want := map[int64]float64{
 			1: 123.45,
 			2: 223.45,
 			3: 323.45,
@@ -171,6 +180,6 @@ func TestUpdateDivisionsESI(t *testing.T) {
 			6: 623.45,
 			7: 723.45,
 		}
-		assert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

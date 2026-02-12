@@ -62,7 +62,7 @@ func (st *Storage) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, err
 	return tags, nil
 }
 
-func (st *Storage) ReplaceTags(ctx context.Context, data map[string][]int32) error {
+func (st *Storage) ReplaceTags(ctx context.Context, data map[string][]int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ReplaceTags: %+v: %w", data, err)
 	}
@@ -125,7 +125,7 @@ func (st *Storage) UpdateTagName(ctx context.Context, id int64, name string) err
 }
 
 type CreateCharacterTagParams struct {
-	CharacterID int32
+	CharacterID int64
 	TagID       int64
 }
 
@@ -141,7 +141,7 @@ func (st *Storage) createCharactersCharacterTag(ctx context.Context, q *queries.
 		return wrapErr(app.ErrInvalid)
 	}
 	err := q.CreateCharactersCharacterTag(ctx, queries.CreateCharactersCharacterTagParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID:arg.CharacterID,
 		TagID:       arg.TagID,
 	})
 	if err != nil {
@@ -155,12 +155,12 @@ func (st *Storage) DeleteCharactersCharacterTag(ctx context.Context, arg CreateC
 		return fmt.Errorf("DeleteCharactersCharacterTag: %+v: %w", arg, app.ErrInvalid)
 	}
 	return st.qRW.DeleteCharactersCharacterTag(ctx, queries.DeleteCharactersCharacterTagParams{
-		CharacterID: int64(arg.CharacterID),
+		CharacterID:arg.CharacterID,
 		TagID:       arg.TagID,
 	})
 }
 
-func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int64) ([]*app.EntityShort[int32], error) {
+func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int64) ([]*app.EntityShort[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharactersForCharacterTag: %d: %w", tagID, err)
 	}
@@ -172,24 +172,24 @@ func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int6
 		return nil, wrapErr(err)
 
 	}
-	cc := make([]*app.EntityShort[int32], 0)
+	cc := make([]*app.EntityShort[int64], 0)
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort[int32]{
-			ID:   int32(r.ID),
+		cc = append(cc, &app.EntityShort[int64]{
+			ID:  r.ID,
 			Name: r.Name,
 		})
 	}
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterTagsForCharacter(ctx context.Context, characterID int32) ([]*app.CharacterTag, error) {
+func (st *Storage) ListCharacterTagsForCharacter(ctx context.Context, characterID int64) ([]*app.CharacterTag, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterTagsForCharacter: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterTagsForCharacter(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterTagsForCharacter(ctx,characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 

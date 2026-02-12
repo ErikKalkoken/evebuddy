@@ -45,14 +45,14 @@ func (s SectionStatus) IsExpired() bool {
 // CharacterSectionStatus represents the status for a character's section.
 type CharacterSectionStatus struct {
 	SectionStatus
-	CharacterID   int32
+	CharacterID   int64
 	CharacterName string
 }
 
 type CorporationSectionStatus struct {
 	SectionStatus
 	Comment         string
-	CorporationID   int32
+	CorporationID   int64
 	CorporationName string
 }
 

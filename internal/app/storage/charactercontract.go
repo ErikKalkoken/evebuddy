@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -63,31 +64,31 @@ func init() {
 }
 
 type CreateCharacterContractParams struct {
-	AcceptorID          int32
-	AssigneeID          int32
+	AcceptorID          int64
+	AssigneeID          int64
 	Availability        app.ContractAvailability
-	Buyout              float64
-	CharacterID         int32
-	Collateral          float64
-	ContractID          int32
-	DateAccepted        time.Time
-	DateCompleted       time.Time
+	Buyout              optional.Optional[float64]
+	CharacterID         int64
+	Collateral          optional.Optional[float64]
+	ContractID          int64
+	DateAccepted        optional.Optional[time.Time]
+	DateCompleted       optional.Optional[time.Time]
 	DateExpired         time.Time
 	DateIssued          time.Time
-	DaysToComplete      int32
-	EndLocationID       int64
+	DaysToComplete      optional.Optional[int64]
+	EndLocationID       optional.Optional[int64]
 	ForCorporation      bool
-	IssuerCorporationID int32
-	IssuerID            int32
-	Price               float64
-	Reward              float64
-	StartLocationID     int64
+	IssuerCorporationID int64
+	IssuerID            int64
+	Price               optional.Optional[float64]
+	Reward              optional.Optional[float64]
+	StartLocationID     optional.Optional[int64]
 	Status              app.ContractStatus
 	StatusNotified      app.ContractStatus
-	Title               string
+	Title               optional.Optional[string]
 	Type                app.ContractType
 	UpdatedAt           time.Time
-	Volume              float64
+	Volume              optional.Optional[float64]
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
@@ -101,31 +102,31 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		arg.UpdatedAt = time.Now().UTC()
 	}
 	id, err := st.qRW.CreateCharacterContract(ctx, queries.CreateCharacterContractParams{
-		AcceptorID:          NewNullInt64(int64(arg.AcceptorID)),
-		AssigneeID:          NewNullInt64(int64(arg.AssigneeID)),
+		AcceptorID:          NewNullInt64(arg.AcceptorID),
+		AssigneeID:          NewNullInt64(arg.AssigneeID),
 		Availability:        characterContractAvailabilityToDBValue[arg.Availability],
-		Buyout:              arg.Buyout,
-		CharacterID:         int64(arg.CharacterID),
-		Collateral:          arg.Collateral,
-		ContractID:          int64(arg.ContractID),
-		DateAccepted:        NewNullTimeFromTime(arg.DateAccepted),
-		DateCompleted:       NewNullTimeFromTime(arg.DateCompleted),
+		Buyout:              arg.Buyout.ValueOrZero(),
+		CharacterID:         arg.CharacterID,
+		Collateral:          arg.Collateral.ValueOrZero(),
+		ContractID:          arg.ContractID,
+		DateAccepted:        optional.ToNullTime(arg.DateAccepted),
+		DateCompleted:       optional.ToNullTime(arg.DateCompleted),
 		DateExpired:         arg.DateExpired,
 		DateIssued:          arg.DateIssued,
-		DaysToComplete:      int64(arg.DaysToComplete),
-		EndLocationID:       NewNullInt64(arg.EndLocationID),
+		DaysToComplete:      arg.DaysToComplete.ValueOrZero(),
+		EndLocationID:       optional.ToNullInt64(arg.EndLocationID),
 		ForCorporation:      arg.ForCorporation,
-		IssuerCorporationID: int64(arg.IssuerCorporationID),
-		IssuerID:            int64(arg.IssuerID),
-		Price:               arg.Price,
-		Reward:              arg.Reward,
-		StartLocationID:     NewNullInt64(arg.StartLocationID),
+		IssuerCorporationID: arg.IssuerCorporationID,
+		IssuerID:            arg.IssuerID,
+		Price:               arg.Price.ValueOrZero(),
+		Reward:              arg.Reward.ValueOrZero(),
+		StartLocationID:     optional.ToNullInt64(arg.StartLocationID),
 		Status:              characterContractStatusToDBValue[arg.Status],
 		StatusNotified:      characterContractStatusToDBValue[arg.StatusNotified],
-		Title:               arg.Title,
+		Title:               arg.Title.ValueOrZero(),
 		Type:                characterContractTypeToDBValue[arg.Type],
 		UpdatedAt:           arg.UpdatedAt,
-		Volume:              arg.Volume,
+		Volume:              arg.Volume.ValueOrZero(),
 	})
 	if err != nil {
 		return 0, wrapErr(err)
@@ -133,7 +134,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 	return id, nil
 }
 
-func (st *Storage) DeleteCharacterContracts(ctx context.Context, characterID int32, contractIDs set.Set[int32]) error {
+func (st *Storage) DeleteCharacterContracts(ctx context.Context, characterID int64, contractIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterContracts for character %d and contract IDs: %s: %w", characterID, contractIDs, err)
 	}
@@ -144,8 +145,8 @@ func (st *Storage) DeleteCharacterContracts(ctx context.Context, characterID int
 		return nil
 	}
 	err := st.qRW.DeleteCharacterContracts(ctx, queries.DeleteCharacterContractsParams{
-		CharacterID: int64(characterID),
-		ContractIds: convertNumericSet[int64](contractIDs),
+		CharacterID: characterID,
+		ContractIds: slices.Collect(contractIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -154,13 +155,13 @@ func (st *Storage) DeleteCharacterContracts(ctx context.Context, characterID int
 	return nil
 }
 
-func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contractID int32) (*app.CharacterContract, error) {
+func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contractID int64) (*app.CharacterContract, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterContract for character %d: %w", characterID, err)
 	}
 	r, err := st.qRO.GetCharacterContract(ctx, queries.GetCharacterContractParams{
-		CharacterID: int64(characterID),
-		ContractID:  int64(contractID),
+		CharacterID: characterID,
+		ContractID:  contractID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -187,18 +188,18 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	return o, nil
 }
 
-func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
+func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterContractIDs: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
-		return set.Set[int32]{}, wrapErr(app.ErrInvalid)
+		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterContractIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterContractIDs(ctx, characterID)
 	if err != nil {
-		return set.Set[int32]{}, wrapErr(err)
+		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.CharacterContract, error) {
@@ -231,14 +232,14 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
+func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int64) ([]*app.CharacterContract, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterContracts: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterContracts(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterContracts(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -268,11 +269,11 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 }
 
 type UpdateCharacterContractParams struct {
-	AcceptorID    int32
-	DateAccepted  time.Time
-	DateCompleted time.Time
-	CharacterID   int32
-	ContractID    int32
+	AcceptorID    int64
+	DateAccepted  optional.Optional[time.Time]
+	DateCompleted optional.Optional[time.Time]
+	CharacterID   int64
+	ContractID    int64
 	Status        app.ContractStatus
 }
 
@@ -284,10 +285,10 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateCharacterContract(ctx, queries.UpdateCharacterContractParams{
-		CharacterID:   int64(arg.CharacterID),
-		ContractID:    int64(arg.ContractID),
-		DateAccepted:  NewNullTimeFromTime(arg.DateAccepted),
-		DateCompleted: NewNullTimeFromTime(arg.DateCompleted),
+		CharacterID:   arg.CharacterID,
+		ContractID:    arg.ContractID,
+		DateAccepted:  optional.ToNullTime(arg.DateAccepted),
+		DateCompleted: optional.ToNullTime(arg.DateCompleted),
 		Status:        characterContractStatusToDBValue[arg.Status],
 		UpdatedAt:     time.Now().UTC(),
 		AcceptorID:    NewNullInt64(arg.AcceptorID),
@@ -349,62 +350,62 @@ func characterContractFromDBModel(arg characterContractFromDBModelParams) *app.C
 		Acceptor:          eveEntityFromNullableDBModel(arg.acceptor),
 		Assignee:          eveEntityFromNullableDBModel(arg.assignee),
 		Availability:      characterContractAvailabilityFromDBValue[arg.contract.Availability],
-		Buyout:            arg.contract.Buyout,
-		CharacterID:       int32(arg.contract.CharacterID),
-		Collateral:        arg.contract.Collateral,
-		ContractID:        int32(arg.contract.ContractID),
+		Buyout:            optional.FromZeroValue(arg.contract.Buyout),
+		CharacterID:       arg.contract.CharacterID,
+		Collateral:        optional.FromZeroValue(arg.contract.Collateral),
+		ContractID:        arg.contract.ContractID,
 		DateAccepted:      optional.FromNullTime(arg.contract.DateAccepted),
 		DateCompleted:     optional.FromNullTime(arg.contract.DateCompleted),
 		DateExpired:       arg.contract.DateExpired,
 		DateIssued:        arg.contract.DateIssued,
-		DaysToComplete:    int32(arg.contract.DaysToComplete),
+		DaysToComplete:    optional.FromZeroValue(arg.contract.DaysToComplete),
 		ForCorporation:    arg.contract.ForCorporation,
 		ID:                arg.contract.ID,
 		Issuer:            eveEntityFromDBModel(arg.issuer),
 		IssuerCorporation: eveEntityFromDBModel(arg.issuerCorporation),
 		Items:             strings.Split(i2, ","),
-		Price:             arg.contract.Price,
-		Reward:            arg.contract.Reward,
+		Price:             optional.FromZeroValue(arg.contract.Price),
+		Reward:            optional.FromZeroValue(arg.contract.Reward),
 		Status:            characterContractStatusFromDBValue[arg.contract.Status],
 		StatusNotified:    characterContractStatusFromDBValue[arg.contract.StatusNotified],
-		Title:             arg.contract.Title,
+		Title:             optional.FromZeroValue(arg.contract.Title),
 		Type:              characterContractTypeFromDBValue[arg.contract.Type],
 		UpdatedAt:         arg.contract.UpdatedAt,
-		Volume:            arg.contract.Volume,
+		Volume:            optional.FromZeroValue(arg.contract.Volume),
 	}
 	if arg.contract.EndLocationID.Valid {
-		o2.EndLocation = &app.EveLocationShort{
+		o2.EndLocation = optional.New(&app.EveLocationShort{
 			ID:             arg.contract.EndLocationID.Int64,
 			Name:           optional.FromNullString(arg.endLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.endSolarSystemSecurity),
-		}
+		})
 	}
 	if arg.contract.StartLocationID.Valid {
-		o2.StartLocation = &app.EveLocationShort{
+		o2.StartLocation = optional.New(&app.EveLocationShort{
 			ID:             arg.contract.StartLocationID.Int64,
 			Name:           optional.FromNullString(arg.startLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.startSolarSystemSecurity),
-		}
+		})
 	}
 	if arg.endSolarSystemID.Valid && arg.endSolarSystemName.Valid {
-		o2.EndSolarSystem = &app.EntityShort[int32]{
-			ID:   int32(arg.endSolarSystemID.Int64),
+		o2.EndSolarSystem = optional.New(&app.EntityShort[int64]{
+			ID:   arg.endSolarSystemID.Int64,
 			Name: arg.endSolarSystemName.String,
-		}
+		})
 	}
 	if arg.startSolarSystemID.Valid && arg.startSolarSystemName.Valid {
-		o2.StartSolarSystem = &app.EntityShort[int32]{
-			ID:   int32(arg.startSolarSystemID.Int64),
+		o2.StartSolarSystem = optional.New(&app.EntityShort[int64]{
+			ID:   arg.startSolarSystemID.Int64,
 			Name: arg.startSolarSystemName.String,
-		}
+		})
 	}
 	return o2
 }
 
 type CreateCharacterContractBidParams struct {
-	Amount     float32
-	BidderID   int32
-	BidID      int32
+	Amount     float64
+	BidderID   int64
+	BidID      int64
 	ContractID int64
 	DateBid    time.Time
 }
@@ -418,8 +419,8 @@ func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCha
 	}
 	if err := st.qRW.CreateCharacterContractBid(ctx, queries.CreateCharacterContractBidParams{
 		Amount:     float64(arg.Amount),
-		BidderID:   int64(arg.BidderID),
-		BidID:      int64(arg.BidID),
+		BidderID:   arg.BidderID,
+		BidID:      arg.BidID,
 		ContractID: arg.ContractID,
 		DateBid:    arg.DateBid,
 	}); err != nil {
@@ -428,7 +429,7 @@ func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCha
 	return nil
 }
 
-func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64, bidID int32) (*app.CharacterContractBid, error) {
+func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64, bidID int64) (*app.CharacterContractBid, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterContractBid %d %d: %w", contractID, bidID, err)
 	}
@@ -437,7 +438,7 @@ func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64
 	}
 	r, err := st.qRO.GetCharacterContractBid(ctx, queries.GetCharacterContractBidParams{
 		ContractID: contractID,
-		BidID:      int64(bidID),
+		BidID:      bidID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -458,19 +459,19 @@ func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (set.Set[int32], error) {
+func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
+		return set.Set[int64]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), err
+	return set.Of(ids...), err
 }
 
 func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.CharacterContractBid {
 	o2 := &app.CharacterContractBid{
 		ContractID: o.ContractID,
 		Amount:     float32(o.Amount),
-		BidID:      int32(o.BidID),
+		BidID:      o.BidID,
 		Bidder:     eveEntityFromDBModel(e),
 		DateBid:    o.DateBid,
 	}
@@ -481,10 +482,10 @@ type CreateCharacterContractItemParams struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
-	Quantity    int32
-	RawQuantity int32
+	Quantity    int64
+	RawQuantity optional.Optional[int64]
 	RecordID    int64
-	TypeID      int32
+	TypeID      int64
 }
 
 func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateCharacterContractItemParams) error {
@@ -498,10 +499,10 @@ func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateCh
 		ContractID:  arg.ContractID,
 		IsIncluded:  arg.IsIncluded,
 		IsSingleton: arg.IsSingleton,
-		Quantity:    int64(arg.Quantity),
-		RawQuantity: int64(arg.RawQuantity),
+		Quantity:    arg.Quantity,
+		RawQuantity: arg.RawQuantity.ValueOrZero(),
 		RecordID:    arg.RecordID,
-		TypeID:      int64(arg.TypeID),
+		TypeID:      arg.TypeID,
 	}); err != nil {
 		return wrapErr(err)
 	}
@@ -543,8 +544,8 @@ func characterContractItemFromDBModel(o queries.CharacterContractItem, t queries
 		ContractID:  o.ContractID,
 		IsIncluded:  o.IsIncluded,
 		IsSingleton: o.IsSingleton,
-		Quantity:    int(o.Quantity),
-		RawQuantity: int(o.RawQuantity),
+		Quantity:    o.Quantity,
+		RawQuantity: optional.FromZeroValue(o.RawQuantity),
 		RecordID:    o.RecordID,
 		Type:        eveTypeFromDBModel(t, g, c),
 	}

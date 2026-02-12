@@ -39,7 +39,7 @@ func (ss *statusSummary) add(other statusSummary) {
 }
 
 type cacheKey struct {
-	id      int32
+	id      int64
 	section string
 }
 
@@ -142,7 +142,7 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 // Character sections
 
 // HasCharacterSection reports whether a character section exists.
-func (sc *StatusCacheService) HasCharacterSection(characterID int32, section app.CharacterSection) bool {
+func (sc *StatusCacheService) HasCharacterSection(characterID int64, section app.CharacterSection) bool {
 	if characterID == 0 {
 		return false
 	}
@@ -153,7 +153,7 @@ func (sc *StatusCacheService) HasCharacterSection(characterID int32, section app
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSection(characterID int32, section app.CharacterSection) (app.CacheSectionStatus, bool) {
+func (sc *StatusCacheService) CharacterSection(characterID int64, section app.CharacterSection) (app.CacheSectionStatus, bool) {
 	o := app.CacheSectionStatus{
 		EntityID:    characterID,
 		EntityName:  sc.CharacterName(characterID),
@@ -172,7 +172,7 @@ func (sc *StatusCacheService) CharacterSection(characterID int32, section app.Ch
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.CacheSectionStatus {
+func (sc *StatusCacheService) ListCharacterSections(characterID int64) []app.CacheSectionStatus {
 	list := make([]app.CacheSectionStatus, 0)
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSection(characterID, section)
@@ -190,7 +190,7 @@ func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.Cac
 	return list
 }
 
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.StatusSummary {
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int64) app.StatusSummary {
 	total := len(app.CharacterSections)
 	ss := sc.calcCharacterSectionSummary(characterID)
 	s := app.StatusSummary{
@@ -202,7 +202,7 @@ func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.Sta
 	return s
 }
 
-func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int32) statusSummary {
+func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int64) statusSummary {
 	var ss statusSummary
 	csl := sc.ListCharacterSections(characterID)
 	for _, o := range csl {
@@ -235,7 +235,7 @@ func (sc *StatusCacheService) SetCharacterSection(o *app.CharacterSectionStatus)
 }
 
 // CharacterName returns the name of a character by ID or an empty string if not found.
-func (sc *StatusCacheService) CharacterName(characterID int32) string {
+func (sc *StatusCacheService) CharacterName(characterID int64) string {
 	cc := sc.ListCharacters()
 	if len(cc) == 0 {
 		return ""
@@ -249,19 +249,19 @@ func (sc *StatusCacheService) CharacterName(characterID int32) string {
 }
 
 // ListCharacterIDs returns the user's character IDs.
-func (sc *StatusCacheService) ListCharacterIDs() set.Set[int32] {
-	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort[int32]) int32 {
+func (sc *StatusCacheService) ListCharacterIDs() set.Set[int64] {
+	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort[int64]) int64 {
 		return x.ID
 	}))
 }
 
 // ListCharacters returns the user's characters in alphabetical order.
-func (sc *StatusCacheService) ListCharacters() []*app.EntityShort[int32] {
+func (sc *StatusCacheService) ListCharacters() []*app.EntityShort[int64] {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
 	}
-	return x.([]*app.EntityShort[int32])
+	return x.([]*app.EntityShort[int64])
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
@@ -269,7 +269,7 @@ func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	cc, err := sc.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.Enti
 // Corporation sections
 
 // HasCorporationSection reports whether a corporation section exists.
-func (sc *StatusCacheService) HasCorporationSection(corporationID int32, section app.CorporationSection) bool {
+func (sc *StatusCacheService) HasCorporationSection(corporationID int64, section app.CorporationSection) bool {
 	if corporationID == 0 {
 		return false
 	}
@@ -292,7 +292,7 @@ func (sc *StatusCacheService) HasCorporationSection(corporationID int32, section
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CorporationSection(corporationID int32, section app.CorporationSection) (app.CacheSectionStatus, bool) {
+func (sc *StatusCacheService) CorporationSection(corporationID int64, section app.CorporationSection) (app.CacheSectionStatus, bool) {
 	o := app.CacheSectionStatus{
 		EntityID:    corporationID,
 		EntityName:  sc.CorporationName(corporationID),
@@ -312,7 +312,7 @@ func (sc *StatusCacheService) CorporationSection(corporationID int32, section ap
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app.CacheSectionStatus {
+func (sc *StatusCacheService) ListCorporationSections(corporationID int64) []app.CacheSectionStatus {
 	list := make([]app.CacheSectionStatus, 0)
 	for _, section := range app.CorporationSections {
 		v, ok := sc.CorporationSection(corporationID, section)
@@ -330,7 +330,7 @@ func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app
 	return list
 }
 
-func (sc *StatusCacheService) CorporationSectionSummary(corporationID int32) app.StatusSummary {
+func (sc *StatusCacheService) CorporationSectionSummary(corporationID int64) app.StatusSummary {
 	total := len(app.CorporationSections)
 	ss := sc.calcCorporationSectionSummary(corporationID)
 	s := app.StatusSummary{
@@ -344,7 +344,7 @@ func (sc *StatusCacheService) CorporationSectionSummary(corporationID int32) app
 	return s
 }
 
-func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int32) statusSummary {
+func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int64) statusSummary {
 	var ss statusSummary
 	csl := sc.ListCorporationSections(corporationID)
 	for _, o := range csl {
@@ -382,7 +382,7 @@ func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionSta
 }
 
 // CorporationName return the name of a corporation by ID or an empty string if not found.
-func (sc *StatusCacheService) CorporationName(corporationID int32) string {
+func (sc *StatusCacheService) CorporationName(corporationID int64) string {
 	cc := sc.ListCorporations()
 	if len(cc) == 0 {
 		return ""
@@ -396,12 +396,12 @@ func (sc *StatusCacheService) CorporationName(corporationID int32) string {
 }
 
 // ListCorporations returns the user's corporations in alphabetical order.
-func (sc *StatusCacheService) ListCorporations() []*app.EntityShort[int32] {
+func (sc *StatusCacheService) ListCorporations() []*app.EntityShort[int64] {
 	x, ok := sc.cache.Get(keyCorporations)
 	if !ok {
 		return nil
 	}
-	return x.([]*app.EntityShort[int32])
+	return x.([]*app.EntityShort[int64])
 }
 
 func (sc *StatusCacheService) UpdateCorporations(ctx context.Context) error {
@@ -409,7 +409,7 @@ func (sc *StatusCacheService) UpdateCorporations(ctx context.Context) error {
 	return err
 }
 
-func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	cc, err := sc.st.ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err

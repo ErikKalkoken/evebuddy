@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterSectionStatus(t *testing.T) {
@@ -50,14 +51,14 @@ func TestCharacterSectionStatus(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
-				assert.Equal(t, "", x1.ContentHash)
-				assert.Equal(t, "error", x1.ErrorMessage)
+				xassert.Equal(t, "", x1.ContentHash)
+				xassert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionCharacterImplants)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -79,14 +80,14 @@ func TestCharacterSectionStatus(t *testing.T) {
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x.ContentHash, x1.ContentHash)
-			assert.Equal(t, "error", x1.ErrorMessage)
-			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			assert.Equal(t, x.StartedAt, x1.StartedAt)
+			xassert.Equal(t, x.ContentHash, x1.ContentHash)
+			xassert.Equal(t, "error", x1.ErrorMessage)
+			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+			xassert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section.(app.CharacterSection))
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -108,14 +109,14 @@ func TestCharacterSectionStatus(t *testing.T) {
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x.ContentHash, x1.ContentHash)
-			assert.Equal(t, x.ErrorMessage, x1.ErrorMessage)
-			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			assert.Equal(t, x.StartedAt, x1.StartedAt)
-			assert.Equal(t, ua, x1.UpdatedAt)
+			xassert.Equal(t, x.ContentHash, x1.ContentHash)
+			xassert.Equal(t, x.ErrorMessage, x1.ErrorMessage)
+			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+			xassert.Equal(t, x.StartedAt, x1.StartedAt)
+			xassert.Equal(t, ua, x1.UpdatedAt)
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section.(app.CharacterSection))
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})

@@ -31,6 +31,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -69,7 +70,7 @@ func (iw *infoWindow) showEveEntity(ee *app.EveEntity) {
 }
 
 // Show shows a new info window for an EveEntity.
-func (iw *infoWindow) Show(c app.EveEntityCategory, id int32) {
+func (iw *infoWindow) Show(c app.EveEntityCategory, id int64) {
 	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), int64(id))
 }
 
@@ -77,7 +78,7 @@ func (iw *infoWindow) showLocation(id int64) {
 	iw.show(infoLocation, id)
 }
 
-func (iw *infoWindow) showRace(id int32) {
+func (iw *infoWindow) showRace(id int64) {
 	iw.show(infoRace, int64(id))
 }
 
@@ -92,7 +93,7 @@ func (iw *infoWindow) show(v infoVariant, id int64) {
 	iw.showWithCharacterID(v, id, 0)
 }
 
-func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int32) {
+func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -129,30 +130,30 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	switch v {
 	case infoAlliance:
 		title = "Alliance"
-		page = newAllianceInfo(iw, int32(entityID))
+		page = newAllianceInfo(iw, int64(entityID))
 	case infoCharacter:
 		title = "Character"
-		page = newCharacterInfo(iw, int32(entityID))
+		page = newCharacterInfo(iw, int64(entityID))
 	case infoConstellation:
 		title = "Constellation"
-		page = newConstellationInfo(iw, int32(entityID))
+		page = newConstellationInfo(iw, int64(entityID))
 	case infoCorporation:
 		title = "Corporation"
-		page = newCorporationInfo(iw, int32(entityID))
+		page = newCorporationInfo(iw, int64(entityID))
 	case infoInventoryType:
-		x := newInventoryTypeInfo(iw, int32(entityID), characterID)
+		x := newInventoryTypeInfo(iw, int64(entityID), characterID)
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
 	case infoRace:
 		title = "Race"
-		page = newRaceInfo(iw, int32(entityID))
+		page = newRaceInfo(iw, int64(entityID))
 	case infoRegion:
 		title = "Region"
-		page = newRegionInfo(iw, int32(entityID))
+		page = newRegionInfo(iw, int64(entityID))
 	case infoSolarSystem:
 		title = "Solar System"
-		page = newSolarSystemInfo(iw, int32(entityID))
+		page = newSolarSystemInfo(iw, int64(entityID))
 	case infoLocation:
 		title = "Location"
 		page = newLocationInfo(iw, entityID)
@@ -205,7 +206,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}()
 }
 
-func (iw *infoWindow) showZoomWindow(title string, id int32, loaderAsync func(int32, int, func(fyne.Resource)), w fyne.Window) {
+func (iw *infoWindow) showZoomWindow(title string, id int64, loaderAsync func(int64, int, func(fyne.Resource)), w fyne.Window) {
 	w2, created := iw.u.getOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
@@ -235,7 +236,7 @@ func (iw *infoWindow) openURL(s string) {
 	}
 }
 
-func (iw *infoWindow) makeZKillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -259,7 +260,7 @@ func (iw *infoWindow) makeZKillboardIcon(id int32, v infoVariant) *iwidget.Tappa
 	return icon
 }
 
-func (iw *infoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corp",
@@ -282,7 +283,7 @@ func (iw *infoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableI
 	return icon
 }
 
-func (iw *infoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corporation",
@@ -397,13 +398,13 @@ type allianceInfo struct {
 
 	attributes *attributeList
 	hq         *widget.Hyperlink
-	id         int32
+	id         int64
 	logo       *canvas.Image
 	members    *entityList
 	tabs       *container.AppTabs
 }
 
-func newAllianceInfo(iw *infoWindow, id int32) *allianceInfo {
+func newAllianceInfo(iw *infoWindow, id int64) *allianceInfo {
 	hq := widget.NewHyperlink("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
@@ -461,8 +462,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		}
 		// Attributes
 		attributes := make([]attributeItem, 0)
-		if o.ExecutorCorporation != nil {
-			attributes = append(attributes, newAttributeItem("Executor", o.ExecutorCorporation))
+		if v, ok := o.ExecutorCorporation.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Executor", v))
 		}
 		if o.Ticker != "" {
 			attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
@@ -476,8 +477,8 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		if !o.DateFounded.IsZero() {
 			attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
 		}
-		if o.Faction != nil {
-			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+		if v, ok := o.Faction.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Faction", v))
 		}
 		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", o.ID)
@@ -522,7 +523,7 @@ type characterInfo struct {
 	corporationLogo *canvas.Image
 	description     *widget.Label
 	employeeHistory *entityList
-	id              int32
+	id              int64
 	isOwned         bool
 	membership      *widget.Label
 	ownedIcon       *ttwidget.Icon
@@ -532,7 +533,7 @@ type characterInfo struct {
 	title           *widget.Label
 }
 
-func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
+func newCharacterInfo(iw *infoWindow, id int64) *characterInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
@@ -670,7 +671,9 @@ func (a *characterInfo) update(ctx context.Context) error {
 
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+		a.security.SetText(fmt.Sprintf("Security Status: %s", o.SecurityStatus.StringFunc("?", func(v float64) string {
+			return fmt.Sprintf("%.1f", v)
+		})))
 		a.corporation.SetText(o.Corporation.Name)
 		a.corporation.OnTapped = func() {
 			a.iw.showEveEntity(o.Corporation)
@@ -681,25 +684,27 @@ func (a *characterInfo) update(ctx context.Context) error {
 	})
 	fyne.Do(func() {
 		a.bio.SetText(o.DescriptionPlain())
-		a.description.SetText(o.RaceDescription())
+		a.description.SetText(o.Race.Description)
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		if !o.HasAlliance() {
+		v, ok := o.Alliance.Value()
+		if !ok {
 			a.alliance.Hide()
 			return
 		}
-		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
+			a.iw.showEveEntity(v)
 		}
 	})
 	fyne.Do(func() {
-		if o.Title == "" {
+		v, ok := o.Title.Value()
+		if !ok {
 			a.title.Hide()
 			return
 		}
-		a.title.SetText("Title: " + o.Title)
+		a.title.SetText("Title: " + v)
 	})
 	attributes, err := a.makeAttributes(o)
 	if err != nil {
@@ -766,20 +771,22 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
-		newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
+		newAttributeItem("Security Status", o.SecurityStatus.StringFunc("?", func(v float64) string {
+			return fmt.Sprintf("%.1f", v)
+		})),
 		newAttributeItem("Corporation", o.Corporation),
 	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
-		u = "?"
+	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+		u = v
 	} else {
-		u = v.ValueOrZero()
+		u = "?"
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
 	if a.isOwned {
@@ -851,14 +858,14 @@ type constellationInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	id      int32
+	id      int64
 	logo    *canvas.Image
 	region  *widget.Hyperlink
 	systems *entityList
 	tabs    *container.AppTabs
 }
 
-func newConstellationInfo(iw *infoWindow, id int32) *constellationInfo {
+func newConstellationInfo(iw *infoWindow, id int64) *constellationInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{
@@ -941,12 +948,12 @@ type corporationInfo struct {
 	attributes      *attributeList
 	description     *widget.Label
 	hq              *widget.Hyperlink
-	id              int32
+	id              int64
 	logo            *canvas.Image
 	tabs            *container.AppTabs
 }
 
-func newCorporationInfo(iw *infoWindow, id int32) *corporationInfo {
+func newCorporationInfo(iw *infoWindow, id int64) *corporationInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := widget.NewHyperlink("", nil)
@@ -1033,27 +1040,29 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
-		if o.Alliance == nil {
+		v, ok := o.Alliance.Value()
+		if !ok {
 			a.allianceBox.Hide()
 			return
 		}
-		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
+			a.iw.showEveEntity(v)
 		}
-		a.iw.u.eis.AllianceLogoAsync(o.Alliance.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.eis.AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		})
 	})
 	fyne.Do(func() {
-		if o.HomeStation == nil {
+		v, ok := o.HomeStation.Value()
+		if !ok {
 			a.hq.Hide()
 			return
 		}
-		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+		a.hq.SetText("Headquarters: " + v.Name)
 		a.hq.OnTapped = func() {
-			a.iw.showEveEntity(o.HomeStation)
+			a.iw.showEveEntity(v)
 		}
 	})
 	g := new(errgroup.Group)
@@ -1070,10 +1079,10 @@ func (a *corporationInfo) update(ctx context.Context) error {
 			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
 		}
 		var founded string
-		if o.DateFounded.IsEmpty() {
-			founded = "?"
+		if v, ok := o.DateFounded.Value(); ok {
+			founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
 		} else {
-			founded = fmt.Sprintf("**%s**", o.DateFounded.ValueOrZero().Format(app.DateFormat))
+			founded = "?"
 		}
 		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
 		fyne.Do(func() {
@@ -1087,41 +1096,36 @@ func (a *corporationInfo) update(ctx context.Context) error {
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
 	attributes := make([]attributeItem, 0)
-	if o.Ceo != nil {
-		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
+	if v, ok := o.Ceo.Value(); ok {
+		attributes = append(attributes, newAttributeItem("CEO", v))
 	}
-	if o.Creator != nil {
-		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
+	if v, ok := o.Creator.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Founder", v))
 	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	if v, ok := o.Alliance.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
 	if o.Ticker != "" {
 		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
 	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	if v, ok := o.Faction.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
-		u = "?"
+	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+		u = v
 	} else {
-		u = v.ValueOrZero()
+		u = "?"
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
-	if !o.Shares.IsEmpty() {
-		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
+	if v, ok := o.Shares.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Shares", v))
 	}
-	if o.MemberCount != 0 {
-		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
-	}
-	if o.TaxRate != 0 {
-		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
-	}
+	attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
+	attributes = append(attributes, newAttributeItem("ISK Tax Rate", fmt.Sprintf("%.1f %%", o.TaxRate*100)))
 	attributes = append(attributes, newAttributeItem("War Eligibility", o.WarEligible))
-	if o.URL != "" {
-		u, err := url.ParseRequestURI(o.URL)
-		if err == nil && u.Host != "" {
+	if v, ok := o.URL.Value(); ok {
+		if u, err := url.ParseRequestURI(v); err == nil && u.Host != "" {
 			attributes = append(attributes, newAttributeItem("URL", u))
 		}
 	}
@@ -1210,43 +1214,43 @@ func (a *locationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 	})
-	if o.Type != nil {
+	if et, ok := o.Type.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.eis.InventoryTypeRenderAsync(o.Type.ID, renderIconPixelSize, func(r fyne.Resource) {
+			a.iw.u.eis.InventoryTypeRenderAsync(et.ID, renderIconPixelSize, func(r fyne.Resource) {
 				a.typeImage.SetResource(r)
 			})
-			a.typeInfo.SetText(o.Type.Name)
+			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.showEveEntity(o.Type.EveEntity())
+				a.iw.showEveEntity(et.EveEntity())
 			}
 			a.typeImage.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
+				a.iw.showZoomWindow(o.Name, et.ID, a.iw.u.eis.InventoryTypeRenderAsync, a.iw.w)
 			}
-			description := o.Type.Description
+			description := et.Description
 			if description == "" {
-				description = o.Type.Name
+				description = et.Name
 			}
 			a.description.SetText(description)
 		})
 	}
-	if o.Owner != nil {
+	if v, ok := o.Owner.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.eis.CorporationLogoAsync(o.Owner.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.eis.CorporationLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.ownerLogo.Resource = r
 				a.ownerLogo.Refresh()
 			})
-			a.owner.SetText(o.Owner.Name)
+			a.owner.SetText(v.Name)
 			a.owner.OnTapped = func() {
-				a.iw.showEveEntity(o.Owner)
+				a.iw.showEveEntity(v)
 			}
 		})
 	}
-	if o.SolarSystem != nil {
+	if es, ok := o.SolarSystem.Value(); ok {
 		fyne.Do(func() {
 			a.location.set(
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
-				newEntityItemFromEveSolarSystem(o.SolarSystem),
+				newEntityItemFromEveEntityWithText(es.Constellation.Region.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.EveEntity(), ""),
+				newEntityItemFromEveSolarSystem(es),
 			)
 		})
 	}
@@ -1269,7 +1273,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
 		}
-		ss, err := a.iw.u.eus.GetStationServicesESI(ctx, int32(a.id))
+		ss, err := a.iw.u.eus.GetStationServicesESI(ctx, int64(a.id))
 		if err != nil {
 			return err
 		}
@@ -1294,13 +1298,13 @@ type raceInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	id          int32
+	id          int64
 	logo        *canvas.Image
 	tabs        *container.AppTabs
 	description *widget.Label
 }
 
-func newRaceInfo(iw *infoWindow, id int32) *raceInfo {
+func newRaceInfo(iw *infoWindow, id int64) *raceInfo {
 	a := &raceInfo{
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
@@ -1370,12 +1374,12 @@ type regionInfo struct {
 
 	description    *widget.Label
 	constellations *entityList
-	id             int32
+	id             int64
 	logo           *canvas.Image
 	tabs           *container.AppTabs
 }
 
-func newRegionInfo(iw *infoWindow, id int32) *regionInfo {
+func newRegionInfo(iw *infoWindow, id int64) *regionInfo {
 	a := &regionInfo{
 		id:          id,
 		description: newLabelWithWrapAndSelectable(""),
@@ -1468,7 +1472,7 @@ type solarSystemInfo struct {
 	baseInfo
 
 	constellation *widget.Hyperlink
-	id            int32
+	id            int64
 	logo          *canvas.Image
 	planets       *entityList
 	region        *widget.Hyperlink
@@ -1479,7 +1483,7 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw *infoWindow, id int32) *solarSystemInfo {
+func newSolarSystemInfo(iw *infoWindow, id int64) *solarSystemInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := widget.NewHyperlink("", nil)
@@ -1605,19 +1609,21 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 		})
 		return nil
 	})
-	g.Go(func() error {
-		id, err := a.iw.u.eus.GetStarTypeID(ctx, starID)
-		if err != nil {
-			return err
-		}
-		fyne.Do(func() {
-			a.iw.u.eis.InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
-				a.logo.Resource = r
-				a.logo.Refresh()
+	if v, ok := starID.Value(); ok {
+		g.Go(func() error {
+			id, err := a.iw.u.eus.GetStarTypeID(ctx, v)
+			if err != nil {
+				return err
+			}
+			fyne.Do(func() {
+				a.iw.u.eis.InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+					a.logo.Resource = r
+					a.logo.Refresh()
+				})
 			})
+			return nil
 		})
-		return nil
-	})
+	}
 	g.Go(func() error {
 		ss, err := a.iw.u.eus.GetStargatesSolarSystemsESI(ctx, stargateIDs)
 		if err != nil {
@@ -1651,7 +1657,7 @@ type inventoryTypeInfo struct {
 	baseInfo
 
 	characterIcon    *canvas.Image
-	characterID      int32
+	characterID      int64
 	characterName    *widget.Hyperlink
 	checkIcon        *widget.Icon
 	description      *widget.Label
@@ -1660,10 +1666,10 @@ type inventoryTypeInfo struct {
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
 	typeIcon         *iwidget.TappableImage
-	typeID           int32
+	typeID           int64
 }
 
-func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryTypeInfo {
+func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int64) *inventoryTypeInfo {
 	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
@@ -1795,7 +1801,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	dogmaAttributes := make(map[int32]*app.EveTypeDogmaAttribute)
+	dogmaAttributes := make(map[int64]*app.EveTypeDogmaAttribute)
 	for _, o := range oo {
 		dogmaAttributes[o.DogmaAttribute.ID] = o
 	}
@@ -1855,7 +1861,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 		} else if requirementsTab != nil && et.Group.Category.ID == app.EveCategorySkill {
 			a.tabs.Select(requirementsTab)
 		} else if attributeTab != nil &&
-			set.Of[int32](
+			set.Of[int64](
 				app.EveCategoryDrone,
 				app.EveCategoryFighter,
 				app.EveCategoryOrbitals,
@@ -1869,7 +1875,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	return nil
 }
 
-func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttributes map[int32]*app.EveTypeDogmaAttribute, et *app.EveType) *container.TabItem {
+func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute, et *app.EveType) *container.TabItem {
 	attributes := a.calcAttributesData(ctx, et, dogmaAttributes, a.iw.u)
 	if len(attributes) == 0 {
 		return nil
@@ -1945,7 +1951,7 @@ var attributeGroups = []attributeGroup{
 }
 
 // assignment of attributes to groups
-var attributeGroupsMap = map[attributeGroup][]int32{
+var attributeGroupsMap = map[attributeGroup][]int64{
 	attributeGroupStructure: {
 		app.EveDogmaAttributeStructureHitpoints,
 		app.EveDogmaAttributeCapacity,
@@ -2053,7 +2059,7 @@ type attributeRow struct {
 	action  func(v string)
 }
 
-func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
+func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -2109,31 +2115,31 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 				value = value * x.Value
 			}
 			v, substituteIcon := u.eus.FormatDogmaValue(ctx, value, o.DogmaAttribute.Unit)
-			var iconID int32
+			var iconID int64
 			if substituteIcon != 0 {
 				iconID = substituteIcon
 			} else {
-				iconID = o.DogmaAttribute.IconID
+				iconID = o.DogmaAttribute.IconID.ValueOrZero()
 			}
 			r, _ := eveicon.FromID(iconID)
 			groupedRows[ag] = append(groupedRows[ag], attributeRow{
 				icon:  r,
-				label: o.DogmaAttribute.DisplayName,
+				label: o.DogmaAttribute.DisplayName.ValueOrZero(),
 				value: v,
 			})
 		}
 	}
 	rows := make([]attributeRow, 0)
-	if et.Volume > 0 {
-		v, _ := u.eus.FormatDogmaValue(ctx, et.Volume, app.EveUnitVolume)
-		if et.Volume != et.PackagedVolume {
-			v2, _ := u.eus.FormatDogmaValue(ctx, et.PackagedVolume, app.EveUnitVolume)
-			v += fmt.Sprintf(" (%s Packaged)", v2)
+	if v, ok := et.Volume.Value(); ok {
+		value, _ := u.eus.FormatDogmaValue(ctx, v, app.EveUnitVolume)
+		if pv, ok := et.PackagedVolume.Value(); ok && !optional.Equal(et.Volume, et.PackagedVolume) {
+			s, _ := u.eus.FormatDogmaValue(ctx, pv, app.EveUnitVolume)
+			value += fmt.Sprintf(" (%s Packaged)", s)
 		}
 		r := attributeRow{
 			icon:  eveicon.FromName(eveicon.Structure),
 			label: "Volume",
-			value: v,
+			value: value,
 		}
 		var ag attributeGroup
 		if len(groupedRows[attributeGroupStructure]) > 0 {
@@ -2170,7 +2176,7 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 	return rows
 }
 
-func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes map[int32]*app.EveTypeDogmaAttribute) *container.TabItem {
+func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute) *container.TabItem {
 	fittingData := a.calcFittingData(ctx, dogmaAttributes, a.iw.u)
 	if len(fittingData) == 0 {
 		return nil
@@ -2194,19 +2200,18 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 	return container.NewTabItem("Fittings", list)
 }
 
-func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
+func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := dogmaAttributes[da]
 		if !ok {
 			continue
 		}
-		iconID := o.DogmaAttribute.IconID
-		r, _ := eveicon.FromID(iconID)
+		r, _ := eveicon.FromID(o.DogmaAttribute.IconID.ValueOrZero())
 		v, _ := u.eus.FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
-			label: o.DogmaAttribute.DisplayName,
+			label: o.DogmaAttribute.DisplayName.ValueOrZero(),
 			value: v,
 		})
 	}
@@ -2304,8 +2309,14 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 				items = append(items, newAttributeItem("Janice prices", s))
 			} else {
 				items2 := []attributeItem{
-					newAttributeItem("Jita sell price", humanize.FormatFloat(priceFormat, j.ImmediatePrices.SellPrice)+currencySuffix),
-					newAttributeItem("Jita buy price", humanize.FormatFloat(priceFormat, j.ImmediatePrices.BuyPrice)+currencySuffix),
+					newAttributeItem("Jita sell price", humanize.FormatFloat(
+						priceFormat,
+						j.ImmediatePrices.SellPrice)+currencySuffix,
+					),
+					newAttributeItem("Jita buy price", humanize.FormatFloat(
+						priceFormat,
+						j.ImmediatePrices.BuyPrice)+currencySuffix,
+					),
 					newAttributeItem("Jita sell volume", ihumanize.Comma(j.SellVolume)),
 					newAttributeItem("Jita buy volume", ihumanize.Comma(j.BuyVolume)),
 				}
@@ -2330,17 +2341,17 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 type requiredSkill struct {
 	rank          int
 	name          string
-	typeID        int32
-	activeLevel   int
-	requiredLevel int
-	trainedLevel  int
+	typeID        int64
+	activeLevel   int64
+	requiredLevel int64
+	trainedLevel  int64
 }
 
-func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) ([]requiredSkill, error) {
+func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int64, attributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
-		id    int32
-		level int32
+		id    int64
+		level int64
 	}{
 		{app.EveDogmaAttributePrimarySkillID, app.EveDogmaAttributePrimarySkillLevel},
 		{app.EveDogmaAttributeSecondarySkillID, app.EveDogmaAttributeSecondarySkillLevel},
@@ -2354,12 +2365,12 @@ func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID in
 		if !ok {
 			continue
 		}
-		typeID := int32(daID.Value)
+		typeID := int64(daID.Value)
 		daLevel, ok := attributes[x.level]
 		if !ok {
 			continue
 		}
-		requiredLevel := int(daLevel.Value)
+		requiredLevel := int64(daLevel.Value)
 		et, err := u.eus.GetType(ctx, typeID)
 		if err != nil {
 			return nil, err
@@ -2706,7 +2717,7 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 		endDateStr = "this day"
 	}
 	var closed string
-	if hi.IsDeleted {
+	if hi.IsDeleted.ValueOrZero() {
 		closed = " (closed)"
 	}
 	text := fmt.Sprintf(

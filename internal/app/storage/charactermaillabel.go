@@ -8,12 +8,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) DeleteObsoleteCharacterMailLabels(ctx context.Context, characterID int32) error {
+func (st *Storage) DeleteObsoleteCharacterMailLabels(ctx context.Context, characterID int64) error {
 	arg := queries.DeleteObsoleteCharacterMailLabelsParams{
-		CharacterID:   int64(characterID),
-		CharacterID_2: int64(characterID),
+		CharacterID:   characterID,
+		CharacterID_2: characterID,
 	}
 	if err := st.qRW.DeleteObsoleteCharacterMailLabels(ctx, arg); err != nil {
 		return fmt.Errorf("delete obsolete mail labels for character %d: %w", characterID, err)
@@ -21,10 +22,10 @@ func (st *Storage) DeleteObsoleteCharacterMailLabels(ctx context.Context, charac
 	return nil
 }
 
-func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, labelID int32) (*app.CharacterMailLabel, error) {
+func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, labelID int64) (*app.CharacterMailLabel, error) {
 	arg := queries.GetCharacterMailLabelParams{
-		CharacterID: int64(characterID),
-		LabelID:     int64(labelID),
+		CharacterID: characterID,
+		LabelID:     labelID,
 	}
 	l, err := st.qRO.GetCharacterMailLabel(ctx, arg)
 	if err != nil {
@@ -40,11 +41,11 @@ func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, label
 }
 
 type MailLabelParams struct {
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
+	CharacterID int64
+	Color       optional.Optional[string]
+	LabelID     int64
+	Name        optional.Optional[string]
+	UnreadCount optional.Optional[int64]
 }
 
 func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLabelParams) (*app.CharacterMailLabel, error) {
@@ -56,22 +57,20 @@ func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLa
 		}
 		defer tx.Rollback()
 		qtx := st.qRW.WithTx(tx)
-		arg2 := queries.GetCharacterMailLabelParams{
-			CharacterID: int64(arg.CharacterID),
-			LabelID:     int64(arg.LabelID),
-		}
-		l, err = qtx.GetCharacterMailLabel(ctx, arg2)
+		l, err = qtx.GetCharacterMailLabel(ctx, queries.GetCharacterMailLabelParams{
+			CharacterID: arg.CharacterID,
+			LabelID:     arg.LabelID,
+		})
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		} else if err != nil {
-			arg3 := queries.CreateCharacterMailLabelParams{
-				CharacterID: int64(arg.CharacterID),
-				LabelID:     int64(arg.LabelID),
-				Color:       arg.Color,
-				Name:        arg.Name,
-				UnreadCount: int64(arg.UnreadCount),
-			}
-			l, err = qtx.CreateCharacterMailLabel(ctx, arg3)
+			l, err = qtx.CreateCharacterMailLabel(ctx, queries.CreateCharacterMailLabelParams{
+				CharacterID: arg.CharacterID,
+				LabelID:     arg.LabelID,
+				Color:       arg.Color.ValueOrZero(),
+				Name:        arg.Name.ValueOrZero(),
+				UnreadCount: arg.UnreadCount.ValueOrZero(),
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -87,8 +86,8 @@ func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLa
 	return label, nil
 }
 
-func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
-	ll, err := st.qRO.ListCharacterMailLabelsOrdered(ctx, int64(characterID))
+func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int64) ([]*app.CharacterMailLabel, error) {
+	ll, err := st.qRO.ListCharacterMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("list mail label IDs for character %d: %w", characterID, err)
 	}
@@ -100,14 +99,13 @@ func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, character
 }
 
 func (st *Storage) UpdateOrCreateCharacterMailLabel(ctx context.Context, arg MailLabelParams) (*app.CharacterMailLabel, error) {
-	arg1 := queries.UpdateOrCreateCharacterMailLabelParams{
-		CharacterID: int64(arg.CharacterID),
-		LabelID:     int64(arg.LabelID),
-		Color:       arg.Color,
-		Name:        arg.Name,
-		UnreadCount: int64(arg.UnreadCount),
-	}
-	l, err := st.qRW.UpdateOrCreateCharacterMailLabel(ctx, arg1)
+	l, err := st.qRW.UpdateOrCreateCharacterMailLabel(ctx, queries.UpdateOrCreateCharacterMailLabelParams{
+		CharacterID: arg.CharacterID,
+		LabelID:     arg.LabelID,
+		Color:       arg.Color.ValueOrZero(),
+		Name:        arg.Name.ValueOrZero(),
+		UnreadCount: arg.UnreadCount.ValueOrZero(),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
@@ -118,10 +116,10 @@ func (st *Storage) UpdateOrCreateCharacterMailLabel(ctx context.Context, arg Mai
 func characterMailLabelFromDBModel(l queries.CharacterMailLabel) *app.CharacterMailLabel {
 	return &app.CharacterMailLabel{
 		ID:          l.ID,
-		CharacterID: int32(l.CharacterID),
-		Color:       l.Color,
-		LabelID:     int32(l.LabelID),
-		Name:        l.Name,
-		UnreadCount: int(l.UnreadCount),
+		CharacterID: l.CharacterID,
+		Color:       optional.FromZeroValue(l.Color),
+		LabelID:     l.LabelID,
+		Name:        optional.FromZeroValue(l.Name),
+		UnreadCount: optional.FromZeroValue(l.UnreadCount),
 	}
 }

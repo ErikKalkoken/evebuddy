@@ -4,7 +4,7 @@ package eveicon
 
 import "fyne.io/fyne/v2"
 
-var id2fileMap = map[int32]*fyne.StaticResource{
+var id2fileMap = map[int64]*fyne.StaticResource{
     0: resource76415Png,
     15: resource56411Png,
     16: resource266411Png,

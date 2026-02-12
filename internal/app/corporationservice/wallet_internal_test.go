@@ -35,7 +35,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"balance":  123.45,
@@ -77,10 +77,10 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
 			return x.DivisionID, x.Balance
 		}))
-		want := map[int32]float64{
+		want := map[int64]float64{
 			1: 123.45,
 			2: 223.45,
 			3: 323.45,
@@ -89,7 +89,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 			6: 623.45,
 			7: 723.45,
 		}
-		assert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should update existing balances", func(t *testing.T) {
 		// given
@@ -102,13 +102,13 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		for id := range 7 {
 			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 				CorporationID: c.ID,
-				DivisionID:    int32(id + 1),
+				DivisionID:    int64(id + 1),
 			})
 			assert.NoError(t, err)
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"balance":  123.45,
@@ -150,10 +150,10 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
 			return x.DivisionID, x.Balance
 		}))
-		want := map[int32]float64{
+		want := map[int64]float64{
 			1: 123.45,
 			2: 223.45,
 			3: 323.45,
@@ -162,7 +162,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 			6: 623.45,
 			7: 723.45,
 		}
-		assert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -182,7 +182,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/journal/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/journal?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -210,21 +210,21 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			RefID:         89,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, -100000.0, e.Amount)
-		assert.Equal(t, 500000.4316, e.Balance)
-		assert.Equal(t, int64(4), e.ContextID)
-		assert.Equal(t, "contract_id", e.ContextIDType)
-		assert.Equal(t, time.Date(2018, 02, 23, 14, 31, 32, 0, time.UTC), e.Date)
-		assert.Equal(t, "Contract Deposit", e.Description)
-		assert.Equal(t, firstParty.ID, e.FirstParty.ID)
-		assert.Equal(t, "contract_deposit", e.RefType)
-		assert.Equal(t, secondParty.ID, e.SecondParty.ID)
+		xassert.Equal(t, -100000.0, e.Amount.ValueOrZero())
+		xassert.Equal(t, 500000.4316, e.Balance.ValueOrZero())
+		xassert.Equal(t, 4, e.ContextID.ValueOrZero())
+		xassert.Equal(t, "contract_id", e.ContextIDType.ValueOrZero())
+		xassert.Equal(t, time.Date(2018, 02, 23, 14, 31, 32, 0, time.UTC), e.Date)
+		xassert.Equal(t, "Contract Deposit", e.Description)
+		xassert.Equal(t, firstParty.ID, e.FirstParty.MustValue().ID)
+		xassert.Equal(t, "contract_deposit", e.RefType)
+		xassert.Equal(t, secondParty.ID, e.SecondParty.MustValue().ID)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 1, ids.Size())
+		xassert.Equal(t, 1, ids.Size())
 	})
 	t.Run("should add new", func(t *testing.T) {
 		// given
@@ -237,7 +237,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/journal/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/journal?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -265,14 +265,14 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			RefID:         89,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "Contract Deposit", e2.Description)
+		xassert.Equal(t, "Contract Deposit", e2.Description)
 
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 2, ids.Size())
+		xassert.Equal(t, 2, ids.Size())
 	})
 	t.Run("should ignore existing", func(t *testing.T) {
 		// given
@@ -290,7 +290,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/journal/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/journal?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -317,14 +317,14 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			RefID:         89,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "existing", e2.Description)
+		xassert.Equal(t, "existing", e2.Description)
 
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 1, ids.Size())
+		xassert.Equal(t, 1, ids.Size())
 	})
 	t.Run("should handle empty response", func(t *testing.T) {
 		// given
@@ -334,7 +334,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/journal/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/journal?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
@@ -350,7 +350,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 0, ids.Size())
+		xassert.Equal(t, 0, ids.Size())
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
@@ -365,7 +365,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=1", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -381,7 +381,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=2", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -110000,
 				"balance":         500000.4316,
@@ -408,22 +408,22 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		if assert.Equal(t, 2, ids.Size()) {
+		if xassert.Equal(t, 2, ids.Size()) {
 			x1, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
 				RefID:         89,
 			})
 			require.NoError(t, err)
-			assert.Equal(t, "First", x1.Description)
+			xassert.Equal(t, "First", x1.Description)
 			x2, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
 				RefID:         90,
 			})
 			require.NoError(t, err)
-			assert.Equal(t, "Second", x2.Description)
-			assert.Equal(t, 2, httpmock.GetTotalCallCount())
+			xassert.Equal(t, "Second", x2.Description)
+			xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 		}
 	})
 	t.Run("should fetch first page only when entries already fetched previouly", func(t *testing.T) {
@@ -439,7 +439,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=1", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -455,7 +455,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=2", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -110000,
 				"balance":         500000.4316,
@@ -483,7 +483,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 	})
 	t.Run("should fetch all pages when forced", func(t *testing.T) {
 		// given
@@ -498,7 +498,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=1", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -100000,
 				"balance":         500000.4316,
@@ -514,7 +514,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=2", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":          -110000,
 				"balance":         500000.4316,
@@ -543,7 +543,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 }
 
@@ -577,7 +577,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 			return x.RefID
 		})...)
 		want := set.Of(e1.RefID, e2.RefID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }
 
@@ -598,12 +598,11 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/transactions", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -626,20 +625,20 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			TransactionID: 1234567890,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, client, e.Client)
-		assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
+		xassert.Equal(t, client, e.Client)
+		xassert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
 		assert.True(t, e.IsBuy)
-		assert.Equal(t, location.ID, e.Location.ID)
-		assert.Equal(t, int64(67890), e.JournalRefID)
-		assert.Equal(t, int32(1), e.Quantity)
-		assert.Equal(t, eveType.ID, e.Type.ID)
-		assert.Equal(t, 1.23, e.UnitPrice)
+		xassert.Equal(t, location.ID, e.Location.ID)
+		xassert.Equal(t, 67890, e.JournalRefID)
+		xassert.Equal(t, 1, e.Quantity)
+		xassert.Equal(t, eveType.ID, e.Type.ID)
+		xassert.Equal(t, 1.23, e.UnitPrice)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 1, ids.Size())
+		xassert.Equal(t, 1, ids.Size())
 	})
 	t.Run("should add new transaction", func(t *testing.T) {
 		// given
@@ -653,12 +652,11 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/transactions", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -681,20 +679,20 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			TransactionID: 1234567890,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, client, e.Client)
-		assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
+		xassert.Equal(t, client, e.Client)
+		xassert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
 		assert.True(t, e.IsBuy)
-		assert.Equal(t, location.ID, e.Location.ID)
-		assert.Equal(t, int64(67890), e.JournalRefID)
-		assert.Equal(t, int32(1), e.Quantity)
-		assert.Equal(t, eveType.ID, e.Type.ID)
-		assert.Equal(t, 1.23, e.UnitPrice)
+		xassert.Equal(t, location.ID, e.Location.ID)
+		xassert.Equal(t, 67890, e.JournalRefID)
+		xassert.Equal(t, 1, e.Quantity)
+		xassert.Equal(t, eveType.ID, e.Type.ID)
+		xassert.Equal(t, 1.23, e.UnitPrice)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 2, ids.Size())
+		xassert.Equal(t, 2, ids.Size())
 	})
 	t.Run("should ignore when transaction already exists", func(t *testing.T) {
 		// given
@@ -709,12 +707,11 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/transactions", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -736,7 +733,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		require.NoError(t, err)
 		want := set.Of[int64](1234567890)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("should handle empty response", func(t *testing.T) {
 		// given
@@ -746,7 +743,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/1/transactions", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
@@ -762,7 +759,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 0, ids.Size())
+		xassert.Equal(t, 0, ids.Size())
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
@@ -779,7 +776,6 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -790,18 +786,17 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/?from_id=1000000001", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions?from_id=1000000001", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"client_id":      54321,
 					"date":           "2016-10-24T08:00:00Z",
 					"is_buy":         true,
-					"is_personal":    true,
 					"journal_ref_id": 67891,
 					"location_id":    60014719,
 					"quantity":       1,
@@ -822,8 +817,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			DivisionID:    1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 2501, ids.Size())
-		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 2501, ids.Size())
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 	t.Run("should fetch only first page when transactions already fetched previously", func(t *testing.T) {
 		// given
@@ -840,7 +835,6 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -851,18 +845,17 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/?from_id=1000000001", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions?from_id=1000000001", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"client_id":      54321,
 					"date":           "2016-10-24T08:00:00Z",
 					"is_buy":         true,
-					"is_personal":    true,
 					"journal_ref_id": 67891,
 					"location_id":    60014719,
 					"quantity":       1,
@@ -885,7 +878,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 	})
 	t.Run("should fetch all pages when forced", func(t *testing.T) {
 		// given
@@ -902,7 +895,6 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				"client_id":      54321,
 				"date":           "2016-10-24T09:00:00Z",
 				"is_buy":         true,
-				"is_personal":    true,
 				"journal_ref_id": 67890,
 				"location_id":    60014719,
 				"quantity":       1,
@@ -913,18 +905,17 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/?from_id=1000000001", c.ID, 1),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions?from_id=1000000001", c.ID, 1),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"client_id":      54321,
 					"date":           "2016-10-24T08:00:00Z",
 					"is_buy":         true,
-					"is_personal":    true,
 					"journal_ref_id": 67891,
 					"location_id":    60014719,
 					"quantity":       1,
@@ -948,7 +939,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 }
 
@@ -982,6 +973,6 @@ func TestListWalletTransactions(t *testing.T) {
 			return x.TransactionID
 		})...)
 		want := set.Of(t1.TransactionID, t2.TransactionID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }

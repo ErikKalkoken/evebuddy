@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) GetJumpClone(ctx context.Context, characterID, cloneID int32) (*app.CharacterJumpClone, error) {
+func (s *CharacterService) GetJumpClone(ctx context.Context, characterID, cloneID int64) (*app.CharacterJumpClone, error) {
 	return s.st.GetCharacterJumpClone(ctx, characterID, cloneID)
 }
 
@@ -26,7 +26,7 @@ func (s *CharacterService) ListAllJumpClones(ctx context.Context) ([]*app.Charac
 	return s.st.ListAllCharacterJumpClones(ctx)
 }
 
-func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
+func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int64) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
@@ -35,13 +35,12 @@ func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int32
 // It returns empty when a jump could not be calculated.
 func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
 	var z optional.Optional[time.Time]
-
-	if c.LastCloneJumpAt.IsEmpty() {
+	lastJump, ok := c.LastCloneJumpAt.Value()
+	if !ok {
 		return z, nil
 	}
-	lastJump := c.LastCloneJumpAt.MustValue()
 
-	var skillLevel int
+	var skillLevel int64
 	sk, err := s.GetSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
 	if errors.Is(err, app.ErrNotFound) {
 		skillLevel = 0
@@ -66,25 +65,25 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdClones")
-			clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
+			clones, _, err := s.esiClient.ClonesAPI.GetCharactersCharacterIdClones(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received jump clones from ESI", "characterID", characterID, "count", len(clones.JumpClones))
 			return clones, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			clones := data.(esi.GetCharactersCharacterIdClonesOk)
+		func(ctx context.Context, characterID int64, data any) error {
+			clones := data.(*esi.CharactersCharacterIdClonesGet)
 			var locationIDs set.Set[int64]
-			var typeIDs set.Set[int32]
+			var typeIDs set.Set[int64]
 			for _, jc := range clones.JumpClones {
 				locationIDs.Add(jc.LocationId)
 				typeIDs.AddSeq(slices.Values(jc.Implants))
 			}
-			if clones.HomeLocation.LocationId != 0 {
-				locationIDs.Add(clones.HomeLocation.LocationId)
+			if clones.HomeLocation.LocationId != nil {
+				locationIDs.Add(*clones.HomeLocation.LocationId)
 			}
 			g := new(errgroup.Group)
 			g.Go(func() error {
@@ -101,9 +100,9 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				args[i] = storage.CreateCharacterJumpCloneParams{
 					CharacterID: characterID,
 					Implants:    jc.Implants,
-					JumpCloneID: int64(jc.JumpCloneId),
+					JumpCloneID: jc.JumpCloneId,
 					LocationID:  jc.LocationId,
-					Name:        jc.Name,
+					Name:        optional.FromPtr(jc.Name),
 				}
 			}
 			if err := s.st.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
@@ -112,13 +111,13 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 			slog.Info("Stored updated jump clones", "characterID", characterID, "count", len(clones.JumpClones))
 
 			var home optional.Optional[int64]
-			if clones.HomeLocation.LocationId != 0 {
-				home.Set(clones.HomeLocation.LocationId)
+			if clones.HomeLocation.LocationId != nil {
+				home.Set(*clones.HomeLocation.LocationId)
 			}
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.New(clones.LastCloneJumpDate)); err != nil {
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.FromPtr(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
 			return nil

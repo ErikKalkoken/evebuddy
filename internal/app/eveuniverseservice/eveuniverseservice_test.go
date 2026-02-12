@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetOrCreateEveSchematicESI(t *testing.T) {
@@ -27,7 +28,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		x2, err := s.GetOrCreateSchematicESI(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1, x2)
+			xassert.Equal(t, x1, x2)
 		}
 	})
 	t.Run("should fetch schematic from ESI and create it", func(t *testing.T) {
@@ -36,7 +37,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/schematics/3/",
+			"https://esi.evetech.net/universe/schematics/3",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"cycle_time":     1800,
 				"schematic_name": "Bacteria",
@@ -46,12 +47,12 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		x1, err := s.GetOrCreateSchematicESI(ctx, 3)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(3), x1.ID)
-			assert.Equal(t, "Bacteria", x1.Name)
-			assert.Equal(t, 1800, x1.CycleTime)
+			xassert.Equal(t, int64(3), x1.ID)
+			xassert.Equal(t, "Bacteria", x1.Name)
+			xassert.Equal(t, 1800, x1.CycleTime)
 			x2, err := st.GetEveSchematic(ctx, 3)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})

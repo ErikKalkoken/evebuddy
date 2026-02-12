@@ -10,7 +10,7 @@ import (
 
 // FetchPages fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
-func FetchPages[T any](fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+func FetchPages[T any](fetch func(page int32) ([]T, *http.Response, error)) ([]T, error) {
 	return FetchPagesWithStop(fetch, nil)
 }
 
@@ -18,7 +18,7 @@ func FetchPages[T any](fetch func(page int) ([]T, *http.Response, error)) ([]T, 
 // from all pages of an ESI endpoint that supports paging with X-Pages.
 // Will stop fetching subsequent pages when a page returns an item for which the stop function returns true.
 // If found is nil it will be ignored.
-func FetchPagesWithStop[T any](fetch func(page int) ([]T, *http.Response, error), stop func(x T) bool) ([]T, error) {
+func FetchPagesWithStop[T any](fetch func(page int32) ([]T, *http.Response, error), stop func(x T) bool) ([]T, error) {
 	exit := func(s []T) bool {
 		if stop == nil {
 			return false
@@ -36,7 +36,7 @@ func FetchPagesWithStop[T any](fetch func(page int) ([]T, *http.Response, error)
 	if pages < 2 || exit(items) {
 		return items, nil
 	}
-	for p := 2; p <= pages; p++ {
+	for p := int32(2); p <= pages; p++ {
 		it, _, err := fetch(p)
 		if err != nil {
 			return nil, err
@@ -52,7 +52,7 @@ func FetchPagesWithStop[T any](fetch func(page int) ([]T, *http.Response, error)
 // FetchPagesConcurrently fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
 // Subsequent pages are fetched concurrently.
-func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int32) ([]T, *http.Response, error)) ([]T, error) {
 	result, r, err := fetch(1)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int) ([
 	results[0] = result
 	g := new(errgroup.Group)
 	g.SetLimit(concurrencyLimit)
-	for p := 2; p <= pages; p++ {
+	for p := int32(2); p <= pages; p++ {
 		p := p
 		g.Go(func() error {
 			result, _, err := fetch(p)
@@ -89,7 +89,7 @@ func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int) ([
 	return combined, nil
 }
 
-func extractPageCount(r *http.Response) (int, error) {
+func extractPageCount(r *http.Response) (int32, error) {
 	x := r.Header.Get("X-Pages")
 	if x == "" {
 		return 1, nil
@@ -98,5 +98,5 @@ func extractPageCount(r *http.Response) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pages, nil
+	return int32(pages), nil
 }

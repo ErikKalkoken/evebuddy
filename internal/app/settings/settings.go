@@ -214,27 +214,27 @@ func (s Settings) SetTabsMainID(v int) {
 	s.p.SetInt(settingTabsMainID, v)
 }
 
-func (s Settings) LastCharacterID() int32 {
-	return int32(s.p.Int(settingLastCharacterID))
+func (s Settings) LastCharacterID() int64 {
+	return int64(s.p.Int(settingLastCharacterID))
 }
 
 func (s Settings) ResetLastCharacterID() {
 	s.SetLastCharacterID(0)
 }
 
-func (s Settings) SetLastCharacterID(id int32) {
+func (s Settings) SetLastCharacterID(id int64) {
 	s.p.SetInt(settingLastCharacterID, int(id))
 }
 
-func (s Settings) LastCorporationID() int32 {
-	return int32(s.p.Int(settingLastCorporationID))
+func (s Settings) LastCorporationID() int64 {
+	return int64(s.p.Int(settingLastCorporationID))
 }
 
 func (s Settings) ResetLastCorporationID() {
 	s.SetLastCorporationID(0)
 }
 
-func (s Settings) SetLastCorporationID(id int32) {
+func (s Settings) SetLastCorporationID(id int64) {
 	s.p.SetInt(settingLastCorporationID, int(id))
 }
 
@@ -439,13 +439,13 @@ func (s Settings) TabsMainID() int {
 	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
 }
 
-func (s Settings) RecentSearches() []int32 {
-	return xslices.Map(s.p.IntList(settingRecentSearches), func(x int) int32 {
-		return int32(x)
+func (s Settings) RecentSearches() []int64 {
+	return xslices.Map(s.p.IntList(settingRecentSearches), func(x int) int64 {
+		return int64(x)
 	})
 }
-func (s Settings) SetRecentSearches(v []int32) {
-	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int32) int {
+func (s Settings) SetRecentSearches(v []int64) {
+	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int64) int {
 		return int(x)
 	}))
 }

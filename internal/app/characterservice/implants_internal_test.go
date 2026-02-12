@@ -33,8 +33,8 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		t2 := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{t1.ID, t2.ID}))
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{t1.ID, t2.ID}))
 
 		// when
 		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
@@ -46,12 +46,12 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			assert.True(t, changed)
 			oo, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
-				got := set.Of[int32]()
+				got := set.Of[int64]()
 				for _, o := range oo {
 					got.Add(o.EveType.ID)
 				}
 				want := set.Of(t1.ID, t2.ID)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})

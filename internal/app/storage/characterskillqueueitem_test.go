@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -34,10 +35,10 @@ func TestSkillqueueItems(t *testing.T) {
 		require.NoError(t, err)
 		got, err := st.GetCharacterSkillqueueItem(ctx, c.ID, 4)
 		require.NoError(t, err)
-		assert.Equal(t, arg.CharacterID, got.CharacterID)
-		assert.Equal(t, arg.EveTypeID, got.SkillID)
-		assert.Equal(t, arg.FinishedLevel, got.FinishedLevel)
-		assert.Equal(t, arg.QueuePosition, got.QueuePosition)
+		xassert.Equal(t, arg.CharacterID, got.CharacterID)
+		xassert.Equal(t, arg.EveTypeID, got.SkillID)
+		xassert.Equal(t, arg.FinishedLevel, got.FinishedLevel)
+		xassert.Equal(t, arg.QueuePosition, got.QueuePosition)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -46,31 +47,31 @@ func TestSkillqueueItems(t *testing.T) {
 		eveType := factory.CreateEveType()
 		finishDate := time.Now().Add(10 * time.Hour)
 		startDate := time.Now().Add(-4 * time.Hour)
+		// when
 		arg := storage.SkillqueueItemParams{
 			CharacterID:     c.ID,
 			EveTypeID:       eveType.ID,
-			FinishDate:      finishDate,
+			FinishDate:      optional.New(finishDate),
 			FinishedLevel:   5,
-			LevelEndSP:      10000,
-			LevelStartSP:    100,
+			LevelEndSP:      optional.New[int64](10000),
+			LevelStartSP:    optional.New[int64](100),
 			QueuePosition:   4,
-			StartDate:       startDate,
-			TrainingStartSP: 50,
+			StartDate:       optional.New(startDate),
+			TrainingStartSP: optional.New[int64](50),
 		}
-		// when
 		err := st.CreateCharacterSkillqueueItem(ctx, arg)
 		// then
 		require.NoError(t, err)
 		got, err := st.GetCharacterSkillqueueItem(ctx, c.ID, 4)
 		require.NoError(t, err)
-		assert.Equal(t, arg.CharacterID, got.CharacterID)
-		assert.Equal(t, arg.EveTypeID, got.SkillID)
-		assert.Equal(t, arg.FinishedLevel, got.FinishedLevel)
-		assert.Equal(t, arg.LevelEndSP, got.LevelEndSP)
-		assert.Equal(t, arg.QueuePosition, got.QueuePosition)
-		assert.Equal(t, arg.TrainingStartSP, got.TrainingStartSP)
-		xassert.EqualTime(t, arg.FinishDate, got.FinishDate)
-		xassert.EqualTime(t, arg.StartDate, got.StartDate)
+		xassert.Equal(t, arg.CharacterID, got.CharacterID)
+		xassert.Equal(t, arg.EveTypeID, got.SkillID)
+		xassert.Equal(t, arg.FinishedLevel, got.FinishedLevel)
+		xassert.Equal(t, arg.LevelEndSP, got.LevelEndSP)
+		xassert.Equal(t, arg.QueuePosition, got.QueuePosition)
+		xassert.Equal(t, arg.TrainingStartSP, got.TrainingStartSP)
+		xassert.Equal2(t, arg.FinishDate.ValueOrZero(), got.FinishDate.ValueOrZero())
+		xassert.Equal2(t, arg.StartDate.ValueOrZero(), got.StartDate.ValueOrZero())
 	})
 	t.Run("can list items", func(t *testing.T) {
 		// given
@@ -98,8 +99,8 @@ func TestSkillqueueItems(t *testing.T) {
 			FinishedLevel: 5,
 			CharacterID:   c.ID,
 			QueuePosition: 0,
-			StartDate:     time.Now().Add(1 * time.Hour),
-			FinishDate:    time.Now().Add(3 * time.Hour),
+			StartDate:     optional.New(time.Now().Add(1 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(3 * time.Hour)),
 		}
 		// when
 		err := st.ReplaceCharacterSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{arg})
@@ -122,13 +123,13 @@ func TestSkillqueueItems_GetCharacterTotalTrainingTime(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
-			StartDate:   now.Add(1 * time.Hour),
-			FinishDate:  now.Add(3 * time.Hour),
+			StartDate:   optional.New(now.Add(1 * time.Hour)),
+			FinishDate:  optional.New(now.Add(3 * time.Hour)),
 		})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
-			StartDate:   now.Add(3 * time.Hour),
-			FinishDate:  now.Add(4 * time.Hour),
+			StartDate:   optional.New(now.Add(3 * time.Hour)),
+			FinishDate:  optional.New(now.Add(4 * time.Hour)),
 		})
 		// when
 		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
@@ -143,13 +144,13 @@ func TestSkillqueueItems_GetCharacterTotalTrainingTime(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
-			StartDate:   now.Add(-3 * time.Hour),
-			FinishDate:  now.Add(-1 * time.Hour),
+			StartDate:   optional.New(now.Add(-3 * time.Hour)),
+			FinishDate:  optional.New(now.Add(-1 * time.Hour)),
 		})
 		// when
 		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		assert.EqualValues(t, 0, v)
+		xassert.Equal(t, 0, v)
 	})
 }

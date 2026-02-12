@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -25,18 +26,18 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
-			Amount:        123.45,
-			Balance:       234.56,
-			ContextID:     42,
-			ContextIDType: "corporation",
+			Amount:        optional.New(123.45),
+			Balance:       optional.New(234.56),
+			ContextID:     optional.New[int64](42),
+			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
 			DivisionID:    1,
 			RefID:         4,
 			CorporationID: c.ID,
-			Reason:        "my reason",
+			Reason:        optional.New("my reason"),
 			RefType:       "player_donation",
-			Tax:           0.12,
+			Tax:           optional.New(0.12),
 		}
 		// when
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
@@ -48,15 +49,15 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				RefID:         4,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, 123.45, i.Amount)
-				assert.Equal(t, 234.56, i.Balance)
-				assert.Equal(t, int64(42), i.ContextID)
-				assert.Equal(t, "corporation", i.ContextIDType)
-				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, "bla bla", i.Description)
-				assert.Equal(t, "player_donation", i.RefType)
-				assert.Equal(t, "my reason", i.Reason)
-				assert.Equal(t, 0.12, i.Tax)
+				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
+				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
+				xassert.Equal(t, "corporation", i.ContextIDType.ValueOrZero())
+				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, "bla bla", i.Description)
+				xassert.Equal(t, "player_donation", i.RefType)
+				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
+				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}
 	})
@@ -69,21 +70,21 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		taxReceiver := factory.CreateEveEntity()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
-			Amount:        123.45,
-			Balance:       234.56,
-			ContextID:     42,
-			ContextIDType: "corporation",
-			FirstPartyID:  firstParty.ID,
+			Amount:        optional.New(123.45),
+			Balance:       optional.New(234.56),
+			ContextID:     optional.New[int64](42),
+			ContextIDType: optional.New("corporation"),
+			FirstPartyID:  optional.New(firstParty.ID),
 			Date:          date,
 			Description:   "bla bla",
 			DivisionID:    1,
 			RefID:         4,
 			CorporationID: c.ID,
-			Reason:        "my reason",
+			Reason:        optional.New("my reason"),
 			RefType:       "player_donation",
-			SecondPartyID: secondParty.ID,
-			Tax:           0.12,
-			TaxReceiverID: taxReceiver.ID,
+			SecondPartyID: optional.New(secondParty.ID),
+			Tax:           optional.New(0.12),
+			TaxReceiverID: optional.New(taxReceiver.ID),
 		}
 		// when
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
@@ -95,18 +96,18 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				RefID:         4,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, 123.45, i.Amount)
-				assert.Equal(t, 234.56, i.Balance)
-				assert.Equal(t, int64(42), i.ContextID)
-				assert.Equal(t, "corporation", i.ContextIDType)
-				assert.Equal(t, firstParty, i.FirstParty)
-				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, "bla bla", i.Description)
-				assert.Equal(t, "player_donation", i.RefType)
-				assert.Equal(t, "my reason", i.Reason)
-				assert.Equal(t, secondParty, i.SecondParty)
-				assert.Equal(t, taxReceiver, i.TaxReceiver)
-				assert.Equal(t, 0.12, i.Tax)
+				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
+				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
+				xassert.Equal(t, "corporation", i.ContextIDType.ValueOrZero())
+				xassert.Equal(t, firstParty, i.FirstParty.ValueOrZero())
+				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, "bla bla", i.Description)
+				xassert.Equal(t, "player_donation", i.RefType)
+				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
+				xassert.Equal(t, secondParty, i.SecondParty.ValueOrZero())
+				xassert.Equal(t, taxReceiver, i.TaxReceiver.ValueOrZero())
+				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}
 	})
@@ -135,7 +136,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
@@ -166,7 +167,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				return x.RefID
 			})...)
 			want := set.Of(e1.RefID, e2.RefID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can store multiple", func(t *testing.T) {
@@ -175,18 +176,18 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
-			Amount:        123.45,
-			Balance:       234.56,
-			ContextID:     42,
-			ContextIDType: "corporation",
+			Amount:        optional.New(123.45),
+			Balance:       optional.New(234.56),
+			ContextID:     optional.New[int64](42),
+			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
 			DivisionID:    1,
 			RefID:         4,
 			CorporationID: c.ID,
-			Reason:        "my reason",
+			Reason:        optional.New("my reason"),
 			RefType:       "player_donation",
-			Tax:           0.12,
+			Tax:           optional.New(0.12),
 		}
 
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
@@ -200,7 +201,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				})
 				if assert.NoError(t, err) {
 					want := set.Of[int64](4, 5)
-					xassert.EqualSet(t, want, got)
+					xassert.Equal2(t, want, got)
 				}
 			}
 		}
@@ -219,7 +220,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				DivisionID:    e1.DivisionID,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, 0, x1.Size())
+				xassert.Equal(t, 0, x1.Size())
 			}
 			x2, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 				CorporationID: e2.CorporationID,

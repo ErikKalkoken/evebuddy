@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestNotifyUpdatedContracts(t *testing.T) {
@@ -23,7 +24,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 	now := time.Now().UTC()
 	cases := []struct {
 		name           string
-		acceptorID     int32
+		acceptorID     int64
 		status         app.ContractStatus
 		statusNotified app.ContractStatus
 		typ            app.ContractType
@@ -64,7 +65,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 			})
 			// then
 			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
+				 xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
 	}

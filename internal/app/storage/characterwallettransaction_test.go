@@ -44,22 +44,22 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// when
 		err := st.CreateCharacterWalletTransaction(ctx, arg)
 		// then
-		region := location.SolarSystem.Constellation.Region
+		region := location.SolarSystem.ValueOrZero().Constellation.Region
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
 				CharacterID:   c.ID,
 				TransactionID: 42,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, client, i.Client)
-				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, eveType.ID, i.Type.ID)
-				assert.Equal(t, eveType.Name, i.Type.Name)
+				xassert.Equal(t, client, i.Client)
+				xassert.Equal(t, date.UTC(), i.Date.UTC())
+				xassert.Equal(t, eveType.ID, i.Type.ID)
+				xassert.Equal(t, eveType.Name, i.Type.Name)
 				assert.True(t, i.IsBuy)
 				assert.True(t, i.IsPersonal)
-				assert.Equal(t, int64(99), i.JournalRefID)
-				assert.Equal(t, location.ID, i.Location.ID)
-				assert.Equal(t,
+				xassert.Equal(t, 99, i.JournalRefID)
+				xassert.Equal(t, location.ID, i.Location.ID)
+				xassert.Equal(t,
 					&app.EveLocationShort{
 						ID:             location.ID,
 						Name:           optional.New(location.Name),
@@ -67,12 +67,12 @@ func TestCharacterWalletTransaction(t *testing.T) {
 					},
 					i.Location,
 				)
-				assert.Equal(t, c.ID, i.CharacterID)
-				assert.Equal(t, int32(7), i.Quantity)
-				assert.Equal(t, 123.45, i.UnitPrice)
-				assert.Equal(t, location.ID, i.Location.ID)
-				assert.Equal(t,
-					&app.EntityShort[int32]{
+				xassert.Equal(t, c.ID, i.CharacterID)
+				xassert.Equal(t, 7, i.Quantity)
+				xassert.Equal(t, 123.45, i.UnitPrice)
+				xassert.Equal(t, location.ID, i.Location.ID)
+				xassert.Equal(t,
+					&app.EntityShort[int64]{
 						ID:   region.ID,
 						Name: region.Name,
 					},
@@ -93,7 +93,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.TransactionID, e2.TransactionID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list existing entries for a character", func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 }

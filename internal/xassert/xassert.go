@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // EqualDuration asserts that got is almost equal to want.
@@ -19,21 +20,24 @@ func EqualDuration(t *testing.T, want, got, delta time.Duration) {
 	assert.True(t, diff <= delta, "%s is not almost equal to %s (+/- %s)", got, want, delta)
 }
 
-// EqualSet asserts that two sets are equal.
-func EqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
-	t.Helper()
-	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
-}
-
-// EqualTime asserts that two time values are equal.
-func EqualTime(t *testing.T, want, got time.Time) {
-	t.Helper()
-	assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
-}
-
 // Equal asserts that two objects are equal.
 // This variant is type safe.
-func Equal[T any](t *testing.T, want, got T) {
+func Equal[T any](t *testing.T, want, got T) bool {
 	t.Helper()
-	assert.Equal(t, want, got)
+	return assert.Equal(t, want, got)
+}
+
+type Equaler[T any] interface {
+	Equal(other T) bool
+}
+
+// Equal2 asserts that two values which satisfy the equaler interface are equal .
+func Equal2[T Equaler[T]](t *testing.T, want, got T) bool {
+	t.Helper()
+	return assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+}
+
+func Empty[T any](t *testing.T, v optional.Optional[T]) bool {
+	t.Helper()
+	return assert.Truef(t, v.IsEmpty(), "Not empty:\n%v", v)
 }

@@ -9,8 +9,8 @@ import (
 )
 
 type CreateEveSchematicParams struct {
-	ID        int32
-	CycleTime int
+	ID        int64
+	CycleTime int64
 	Name      string
 }
 
@@ -18,20 +18,19 @@ func (st *Storage) CreateEveSchematic(ctx context.Context, arg CreateEveSchemati
 	if arg.ID == 0 {
 		return nil, fmt.Errorf("invalid EveSchematic ID %d", arg.ID)
 	}
-	arg2 := queries.CreateEveSchematicParams{
-		ID:        int64(arg.ID),
-		CycleTime: int64(arg.CycleTime),
+	o, err := st.qRW.CreateEveSchematic(ctx, queries.CreateEveSchematicParams{
+		ID:        arg.ID,
+		CycleTime: arg.CycleTime,
 		Name:      arg.Name,
-	}
-	e, err := st.qRW.CreateEveSchematic(ctx, arg2)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("create EveSchematic %+v, %w", arg, err)
 	}
-	return eveSchematicFromDBModel(e), nil
+	return eveSchematicFromDBModel(o), nil
 }
 
-func (st *Storage) GetEveSchematic(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	c, err := st.qRO.GetEveSchematic(ctx, int64(id))
+func (st *Storage) GetEveSchematic(ctx context.Context, id int64) (*app.EveSchematic, error) {
+	c, err := st.qRO.GetEveSchematic(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get EveSchematic for id %d: %w", id, convertGetError(err))
 	}
@@ -40,7 +39,7 @@ func (st *Storage) GetEveSchematic(ctx context.Context, id int32) (*app.EveSchem
 
 func eveSchematicFromDBModel(o queries.EveSchematic) *app.EveSchematic {
 	return &app.EveSchematic{
-		ID:        int32(o.ID),
+		ID:        o.ID,
 		Name:      o.Name,
 		CycleTime: int(o.CycleTime),
 	}

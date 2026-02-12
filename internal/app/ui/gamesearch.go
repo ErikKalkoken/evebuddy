@@ -198,7 +198,7 @@ func (a *gameSearch) setRecentItems(ee []*app.EveEntity) {
 }
 
 func (a *gameSearch) storeRecentItems() {
-	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int32 {
+	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
 	a.u.settings.SetRecentSearches(ids)
@@ -412,20 +412,20 @@ func (a *gameSearch) doSearch2(search string) {
 }
 
 type searchResultEIS interface {
-	AllianceLogo(int32, int) (fyne.Resource, error)
-	CharacterPortrait(int32, int) (fyne.Resource, error)
-	CorporationLogo(int32, int) (fyne.Resource, error)
-	FactionLogo(int32, int) (fyne.Resource, error)
-	InventoryTypeIcon(int32, int) (fyne.Resource, error)
-	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
-	InventoryTypeBPO(int32, int) (fyne.Resource, error)
+	AllianceLogo(int64, int) (fyne.Resource, error)
+	CharacterPortrait(int64, int) (fyne.Resource, error)
+	CorporationLogo(int64, int) (fyne.Resource, error)
+	FactionLogo(int64, int) (fyne.Resource, error)
+	InventoryTypeIcon(int64, int) (fyne.Resource, error)
+	InventoryTypeSKIN(int64, int) (fyne.Resource, error)
+	InventoryTypeBPO(int64, int) (fyne.Resource, error)
 }
 
 type searchResultEUS interface {
-	GetOrCreateTypeESI(context.Context, int32) (*app.EveType, error)
+	GetOrCreateTypeESI(context.Context, int64) (*app.EveType, error)
 }
 
-var searchResultResourceCache xsync.Map[int32, fyne.Resource]
+var searchResultResourceCache xsync.Map[int64, fyne.Resource]
 
 type searchResult struct {
 	widget.BaseWidget

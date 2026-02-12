@@ -15,14 +15,14 @@ import (
 
 type CreateCharacterMailParams struct {
 	Body         optional.Optional[string]
-	CharacterID  int32
-	FromID       int32
-	LabelIDs     []int32
+	CharacterID  int64
+	FromID       int64
+	LabelIDs     []int64
 	IsProcessed  bool
-	IsRead       bool
-	MailID       int32
-	RecipientIDs []int32
-	Subject      string
+	IsRead       optional.Optional[bool]
+	MailID       int64
+	RecipientIDs []int64
+	Subject      optional.Optional[string]
 	Timestamp    time.Time
 }
 
@@ -33,28 +33,29 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 	if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	characterID2 := int64(arg.CharacterID)
+	characterID2 := arg.CharacterID
 	from, err := st.GetEveEntity(ctx, arg.FromID)
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	mailParams := queries.CreateMailParams{
+	mail, err := st.qRW.CreateMail(ctx, queries.CreateMailParams{
 		Body2:       optional.ToNullString(arg.Body),
 		CharacterID: characterID2,
-		FromID:      int64(from.ID),
-		MailID:      int64(arg.MailID),
-		Subject:     arg.Subject,
+		FromID:      from.ID,
+		MailID:      arg.MailID,
+		Subject:     arg.Subject.ValueOrZero(),
 		IsProcessed: arg.IsProcessed,
-		IsRead:      arg.IsRead,
+		IsRead:      arg.IsRead.ValueOrZero(),
 		Timestamp:   arg.Timestamp,
-	}
-	mail, err := st.qRW.CreateMail(ctx, mailParams)
+	})
 	if err != nil {
 		return 0, wrapErr(err)
 	}
 	for _, id := range arg.RecipientIDs {
-		arg := queries.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
-		err := st.qRW.CreateMailRecipient(ctx, arg)
+		err := st.qRW.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
+			MailID:      mail.ID,
+			EveEntityID: id,
+		})
 		if err != nil {
 			return 0, wrapErr(fmt.Errorf("create mail recipient: %w", err))
 		}
@@ -67,13 +68,18 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 
 }
 
-func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int32) (*app.CharacterMail, error) {
+func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int64) (*app.CharacterMail, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterMail: character %d, mail ID %d: %w", characterID, mailID, err)
+	}
+	if characterID == 0 || mailID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	mail, err := func() (*app.CharacterMail, error) {
-		arg := queries.GetMailParams{
-			CharacterID: int64(characterID),
-			MailID:      int64(mailID),
-		}
-		row, err := st.qRO.GetMail(ctx, arg)
+		row, err := st.qRO.GetMail(ctx, queries.GetMailParams{
+			CharacterID: characterID,
+			MailID:      mailID,
+		})
 		if err != nil {
 			return nil, convertGetError(err)
 		}
@@ -89,13 +95,13 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 		return mail, nil
 	}()
 	if err != nil {
-		return nil, fmt.Errorf("get mail for character %d with mail ID %d: %w", characterID, mailID, err)
+		return nil, wrapErr(err)
 	}
 	return mail, nil
 }
 
-func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (int, error) {
-	count, err := st.qRO.GetMailUnreadCount(ctx, int64(id))
+func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int64) (int, error) {
+	count, err := st.qRO.GetMailUnreadCount(ctx, id)
 	if err != nil {
 		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, convertGetError(err))
 	}
@@ -110,68 +116,73 @@ func (st *Storage) GetAllCharactersMailUnreadCount(ctx context.Context) (int, er
 	return int(count), err
 }
 
-func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int32) (int, error) {
-	count, err := st.qRO.GetMailCount(ctx, int64(characterID))
+func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int64) (int, error) {
+	count, err := st.qRO.GetMailCount(ctx, characterID)
 	if err != nil {
 		return 0, fmt.Errorf("get mail count for character %d: %w", characterID, convertGetError(err))
 	}
 	return int(count), err
 }
 
-func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID int32) error {
-	arg := queries.DeleteMailParams{
-		CharacterID: int64(characterID),
-		MailID:      int64(mailID),
+func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterMail: character %d, mail ID %d: %w", characterID, mailID, err)
 	}
-	err := st.qRW.DeleteMail(ctx, arg)
+	if characterID == 0 || mailID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteMail(ctx, queries.DeleteMailParams{
+		CharacterID: characterID,
+		MailID:      mailID,
+	})
 	if err != nil {
-		return fmt.Errorf("delete mail for character %d with ID%d: %w", characterID, mailID, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	rows, err := st.qRO.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
+func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
+	rows, err := st.qRO.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, convertGetError(err))
 	}
-	result := make(map[int32]int)
+	result := make(map[int64]int)
 	for _, r := range rows {
-		result[int32(r.LabelID)] = int(r.UnreadCount2)
+		result[int64(r.LabelID)] = int(r.UnreadCount2)
 	}
 	return result, nil
 }
 
-func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	rows, err := st.qRO.GetCharacterMailListUnreadCounts(ctx, int64(characterID))
+func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
+	rows, err := st.qRO.GetCharacterMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, convertGetError(err))
 	}
-	result := make(map[int32]int)
+	result := make(map[int64]int)
 	for _, r := range rows {
-		result[int32(r.ListID)] = int(r.UnreadCount2)
+		result[int64(r.ListID)] = int(r.UnreadCount2)
 	}
 	return result, nil
 }
 
-func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
-	ids, err := st.qRO.ListMailIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListMailIDs(ctx, characterID)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
+		return set.Set[int64]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterID int32) (set.Set[int32], error) {
-	ids, err := st.qRO.ListMailsWithoutBody(ctx, int64(characterID))
+func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListMailsWithoutBody(ctx, characterID)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
+		return set.Set[int64]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
-	ll, err := st.qRO.ListCharacterMailListsOrdered(ctx, int64(characterID))
+func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int64) ([]*app.EveEntity, error) {
+	ll, err := st.qRO.ListCharacterMailListsOrdered(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("list mail lists for character %d: %w", characterID, err)
 	}
@@ -182,7 +193,7 @@ func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterI
 	return ee, nil
 }
 
-func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID int32, mailID int32, body optional.Optional[string]) error {
+func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID int64, mailID int64, body optional.Optional[string]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateCharacterMailBody: %d %d: %w", characterID, mailID, err)
 	}
@@ -190,8 +201,8 @@ func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID i
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateCharacterMailSetBody(ctx, queries.UpdateCharacterMailSetBodyParams{
-		CharacterID: int64(characterID),
-		MailID:      int64(mailID),
+		CharacterID: characterID,
+		MailID:      mailID,
 		Body2:       optional.ToNullString(body),
 	})
 	if err != nil {
@@ -200,7 +211,7 @@ func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID i
 	return nil
 }
 
-func (st *Storage) UpdateCharacterMailSetIsRead(ctx context.Context, characterID int32, mailPK int64, isRead bool) error {
+func (st *Storage) UpdateCharacterMailSetIsRead(ctx context.Context, characterID int64, mailPK int64, isRead bool) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateCharacterMailIsRead: %d %d: %w", characterID, mailPK, err)
 	}
@@ -217,7 +228,7 @@ func (st *Storage) UpdateCharacterMailSetIsRead(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterMailSetLabels(ctx context.Context, characterID int32, mailPK int64, labelIDs []int32) error {
+func (st *Storage) UpdateCharacterMailSetLabels(ctx context.Context, characterID int64, mailPK int64, labelIDs []int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateCharacterMailLabels: %d %d: %w", characterID, mailPK, err)
 	}
@@ -234,18 +245,17 @@ func (st *Storage) UpdateCharacterMailSetLabels(ctx context.Context, characterID
 		return wrapErr(fmt.Errorf("delete mail labels: %w", err))
 	}
 	for _, l := range labelIDs {
-		arg := queries.GetCharacterMailLabelParams{
-			CharacterID: int64(characterID),
-			LabelID:     int64(l),
-		}
-		label, err := qtx.GetCharacterMailLabel(ctx, arg)
+		label, err := qtx.GetCharacterMailLabel(ctx, queries.GetCharacterMailLabelParams{
+			CharacterID: characterID,
+			LabelID:     l,
+		})
 		if err != nil {
 			return wrapErr(fmt.Errorf("get mail label: %w", err))
 		}
-		mailMailLabelParams := queries.CreateMailCharacterMailLabelParams{
-			CharacterMailID: mailPK, CharacterMailLabelID: label.ID,
-		}
-		if err := qtx.CreateMailCharacterMailLabel(ctx, mailMailLabelParams); err != nil {
+		if err := qtx.CreateMailCharacterMailLabel(ctx, queries.CreateMailCharacterMailLabelParams{
+			CharacterMailID:      mailPK,
+			CharacterMailLabelID: label.ID,
+		}); err != nil {
 			return wrapErr(fmt.Errorf("create mail label: %w", err))
 		}
 	}
@@ -274,15 +284,15 @@ func characterMailFromDBModel(
 	}
 	m := app.CharacterMail{
 		Body:        optional.FromNullString(mail.Body2),
-		CharacterID: int32(mail.CharacterID),
+		CharacterID: mail.CharacterID,
 		From:        eveEntityFromDBModel(from),
 		IsProcessed: mail.IsProcessed,
-		IsRead:      mail.IsRead,
+		IsRead:      optional.FromZeroValue(mail.IsRead),
 		ID:          mail.ID,
 		Labels:      ll,
-		MailID:      int32(mail.MailID),
+		MailID:      mail.MailID,
 		Recipients:  rr,
-		Subject:     mail.Subject,
+		Subject:     optional.FromZeroValue(mail.Subject),
 		Timestamp:   mail.Timestamp,
 	}
 	return &m

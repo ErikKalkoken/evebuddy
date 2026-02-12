@@ -9,6 +9,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -25,7 +27,7 @@ func TestCharacterJumpClone(t *testing.T) {
 			CharacterID: c.ID,
 			JumpCloneID: 5,
 			LocationID:  location.ID,
-			Name:        "dummy",
+			Name:        optional.New("dummy"),
 		}
 		// when
 		err := st.CreateCharacterJumpClone(ctx, arg)
@@ -33,11 +35,11 @@ func TestCharacterJumpClone(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(5), x.CloneID)
-				assert.Equal(t, "dummy", x.Name)
-				assert.Equal(t, location.ToShort(), x.Location)
-				assert.Equal(t, location.SolarSystem.Constellation.Region.ID, x.Region.ID)
-				assert.Equal(t, location.SolarSystem.Constellation.Region.Name, x.Region.Name)
+				xassert.Equal(t, 5, x.CloneID)
+				xassert.Equal(t, "dummy", x.Name.ValueOrZero())
+				xassert.Equal(t, location.ToShort(), x.Location)
+				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.ID, x.Region.ID)
+				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.Name, x.Region.Name)
 			}
 		}
 	})
@@ -50,9 +52,9 @@ func TestCharacterJumpClone(t *testing.T) {
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 			JumpCloneID: 5,
-			Implants:    []int32{eveType.ID},
+			Implants:    []int64{eveType.ID},
 			LocationID:  location.ID,
-			Name:        "dummy",
+			Name:        optional.New("dummy"),
 		}
 		// when
 		err := st.CreateCharacterJumpClone(ctx, arg)
@@ -60,10 +62,10 @@ func TestCharacterJumpClone(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
-				assert.Equal(t, location.ID, x.Location.ID)
+				xassert.Equal(t, location.ID, x.Location.ID)
 				if assert.NotEmpty(t, x.Implants) {
 					y := x.Implants[0]
-					assert.Equal(t, eveType, y.EveType)
+					xassert.Equal(t, eveType, y.EveType)
 				}
 			}
 		}
@@ -80,9 +82,9 @@ func TestCharacterJumpClone(t *testing.T) {
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 			JumpCloneID: 5,
-			Implants:    []int32{eveType.ID},
+			Implants:    []int64{eveType.ID},
 			LocationID:  location.ID,
-			Name:        "dummy",
+			Name:        optional.New("dummy"),
 		}
 		// when
 		err := st.ReplaceCharacterJumpClones(ctx, c.ID, []storage.CreateCharacterJumpCloneParams{arg})
@@ -90,11 +92,11 @@ func TestCharacterJumpClone(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
-				assert.Equal(t, location.ID, x.Location.ID)
-				assert.Equal(t, "dummy", x.Name)
+				xassert.Equal(t, location.ID, x.Location.ID)
+				xassert.Equal(t, "dummy", x.Name.ValueOrZero())
 				if assert.NotEmpty(t, x.Implants) {
 					y := x.Implants[0]
-					assert.Equal(t, eveType, y.EveType)
+					xassert.Equal(t, eveType, y.EveType)
 				}
 			}
 		}
@@ -113,10 +115,10 @@ func TestCharacterJumpClone(t *testing.T) {
 		oo, err := st.ListCharacterJumpClones(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int32 {
+			ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int64 {
 				return a.CloneID
 			})
-			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
+			assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
 		}
 	})
 	t.Run("can list clones for all characters", func(t *testing.T) {
@@ -125,16 +127,16 @@ func TestCharacterJumpClone(t *testing.T) {
 		x1 := factory.CreateCharacterJumpClone()
 		eveType := factory.CreateEveType()
 		x2 := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
-			Implants: []int32{eveType.ID},
+			Implants: []int64{eveType.ID},
 		})
 		// when
 		oo, err := st.ListAllCharacterJumpClones(ctx)
 		// then
 		if assert.NoError(t, err) {
-			ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int32 {
+			ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int64 {
 				return a.CloneID
 			})
-			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
+			assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
 		}
 	})
 }

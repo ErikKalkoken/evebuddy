@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,10 +20,7 @@ func TestEveuniverseservice_HasSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:   st,
-		ESIClient: goesi.NewAPIClient(nil, ""),
-	})
+	s := eveuniverseservice.NewTestService(st)
 	section := app.SectionEveTypes
 	ctx := context.Background()
 	t.Run("should report true when exists", func(t *testing.T) {

@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterService_HasSection(t *testing.T) {
@@ -89,8 +90,8 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{et.ID}))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
@@ -108,7 +109,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		data := []int32{100}
+		data := []int64{100}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -118,7 +119,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
@@ -132,7 +133,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 0)
@@ -150,8 +151,8 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{et.ID}))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
@@ -160,7 +161,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
-		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 0)
@@ -173,7 +174,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
@@ -185,7 +186,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 		require.NoError(t, err)
 		assert.True(t, x.HasError())
-		assert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
+		 xassert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
 	})
 	t.Run("should fetch and update when not expired and force update requested", func(t *testing.T) {
 		// given
@@ -200,8 +201,8 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{et.ID}))
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
@@ -210,7 +211,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 1)
@@ -221,7 +222,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		et := factory.CreateEveType()
-		data := []int32{et.ID}
+		data := []int64{et.ID}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -231,7 +232,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
@@ -244,7 +245,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 1)
@@ -255,7 +256,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		et := factory.CreateEveType()
-		data := []int32{et.ID}
+		data := []int64{et.ID}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID:  c.ID,
 			Section:      section,
@@ -267,7 +268,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
@@ -279,7 +280,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 1)
@@ -290,7 +291,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		et := factory.CreateEveType()
-		data := []int32{et.ID}
+		data := []int64{et.ID}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID:  c.ID,
 			Section:      section,
@@ -302,7 +303,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
@@ -312,7 +313,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
-		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		 xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		xx, err := st.ListCharacterImplants(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, xx, 0)

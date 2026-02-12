@@ -128,10 +128,10 @@ func Comma[T constraints.Integer](x T) string {
 // Optional returns a string representation of on optional value when set
 // or the fallback when not set.
 func Optional[T any](o optional.Optional[T], fallback string) string {
-	if o.IsEmpty() {
+	v, ok := o.Value()
+	if !ok {
 		return fallback
 	}
-	v := o.ValueOrZero()
 	switch x := any(v).(type) {
 	case time.Duration:
 		return Duration(x)
@@ -140,8 +140,6 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 	case string:
 		return x
 	case int:
-		return NumberF(float64(x), 0)
-	case int32:
 		return NumberF(float64(x), 0)
 	case int64:
 		return NumberF(float64(x), 0)
@@ -155,17 +153,19 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 }
 
 func OptionalWithComma[T constraints.Integer](o optional.Optional[T], fallback string) string {
-	if o.IsEmpty() {
+	v, ok := o.Value()
+	if !ok {
 		return fallback
 	}
-	return humanize.Comma(int64(o.ValueOrZero()))
+	return humanize.Comma(int64(v))
 }
 
 func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
-	if o.IsEmpty() {
+	v, ok := o.Value()
+	if !ok {
 		return fallback
 	}
-	return NumberF(float64(o.ValueOrZero()), decimals)
+	return NumberF(float64(v), decimals)
 }
 
 // RomanLetter returns a number as roman letters.

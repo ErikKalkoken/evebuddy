@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -23,17 +24,17 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		date := time.Now()
 		arg := storage.CreateCharacterWalletJournalEntryParams{
-			Amount:        123.45,
-			Balance:       234.56,
-			ContextID:     42,
-			ContextIDType: "character",
+			Amount:        optional.New(123.45),
+			Balance:       optional.New(234.56),
+			ContextID:     optional.New[int64](42),
+			ContextIDType: optional.New("character"),
 			Date:          date,
 			Description:   "bla bla",
 			RefID:         4,
 			CharacterID:   c.ID,
-			Reason:        "my reason",
+			Reason:        optional.New("my reason"),
 			RefType:       "player_donation",
-			Tax:           0.12,
+			Tax:           optional.New(0.12),
 		}
 		// when
 		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
@@ -44,15 +45,15 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 				RefID:       4,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, 123.45, i.Amount)
-				assert.Equal(t, 234.56, i.Balance)
-				assert.Equal(t, int64(42), i.ContextID)
-				assert.Equal(t, "character", i.ContextIDType)
-				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, "bla bla", i.Description)
-				assert.Equal(t, "player_donation", i.RefType)
-				assert.Equal(t, "my reason", i.Reason)
-				assert.Equal(t, 0.12, i.Tax)
+				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
+				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
+				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
+				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, "bla bla", i.Description)
+				xassert.Equal(t, "player_donation", i.RefType)
+				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
+				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}
 	})
@@ -65,20 +66,20 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		e3 := factory.CreateEveEntity()
 		date := time.Now()
 		arg := storage.CreateCharacterWalletJournalEntryParams{
-			Amount:        123.45,
-			Balance:       234.56,
-			ContextID:     42,
-			ContextIDType: "character",
-			FirstPartyID:  e1.ID,
+			Amount:        optional.New(123.45),
+			Balance:       optional.New(234.56),
+			ContextID:     optional.New[int64](42),
+			ContextIDType: optional.New("character"),
+			FirstPartyID:  optional.New(e1.ID),
 			Date:          date,
 			Description:   "bla bla",
 			RefID:         4,
 			CharacterID:   c.ID,
-			Reason:        "my reason",
+			Reason:        optional.New("my reason"),
 			RefType:       "player_donation",
-			SecondPartyID: e2.ID,
-			Tax:           0.12,
-			TaxReceiverID: e3.ID,
+			SecondPartyID: optional.New(e2.ID),
+			Tax:           optional.New(0.12),
+			TaxReceiverID: optional.New(e3.ID),
 		}
 		// when
 		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
@@ -89,18 +90,18 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 				RefID:       4,
 			})
 			if assert.NoError(t, err) {
-				assert.Equal(t, 123.45, i.Amount)
-				assert.Equal(t, 234.56, i.Balance)
-				assert.Equal(t, int64(42), i.ContextID)
-				assert.Equal(t, "character", i.ContextIDType)
-				assert.Equal(t, e1, i.FirstParty)
-				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, "bla bla", i.Description)
-				assert.Equal(t, "player_donation", i.RefType)
-				assert.Equal(t, "my reason", i.Reason)
-				assert.Equal(t, e2, i.SecondParty)
-				assert.Equal(t, e3, i.TaxReceiver)
-				assert.Equal(t, 0.12, i.Tax)
+				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
+				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
+				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
+				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
+				xassert.Equal(t, e1, i.FirstParty.ValueOrZero())
+				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, "bla bla", i.Description)
+				xassert.Equal(t, "player_donation", i.RefType)
+				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
+				xassert.Equal(t, e2, i.SecondParty.ValueOrZero())
+				xassert.Equal(t, e3, i.TaxReceiver.ValueOrZero())
+				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
 			}
 		}
 	})
@@ -108,24 +109,36 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
 		// when
 		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID, e3.RefID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+		})
 		// when
 		ee, err := st.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then

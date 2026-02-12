@@ -77,7 +77,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 			a.update()
 		}
 	}, a.signalKey)
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		if characterIDOrZero(a.character.Load()) != characterID {
 			return
 		}
@@ -129,7 +129,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 			c[0].(*skillQueueItem).Set(qi)
 
 			level := c[1].(*skillLevel)
-			var active, trained, required int
+			var active, trained, required int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel
 				trained = qi.FinishedLevel
@@ -292,10 +292,14 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		widget.NewFormItem("Duration", widget.NewLabel(r.Duration().StringFunc("?", func(v time.Duration) string {
 			return ihumanize.DurationRoundedUp(v)
 		}))),
-		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(r.StartDate, app.DateTimeFormat, "?"))),
-		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(r.FinishDate, app.DateTimeFormat, "?"))),
-		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
-		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(r.LevelEndSP-r.LevelStartSP)))),
+		widget.NewFormItem("Start date", widget.NewLabel(r.StartDate.StringFunc("?", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))),
+		widget.NewFormItem("End date", widget.NewLabel(r.FinishDate.StringFunc("?", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))),
+		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(r.TrainingStartSP.ValueOrZero()-r.LevelStartSP.ValueOrZero()))),
+		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(r.LevelEndSP.ValueOrZero()-r.LevelStartSP.ValueOrZero()))),
 	}
 	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem(

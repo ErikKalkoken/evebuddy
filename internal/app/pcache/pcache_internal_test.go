@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestPCache(t *testing.T) {
@@ -25,7 +27,7 @@ func TestPCache(t *testing.T) {
 		// then
 		x, found := c.Get(key)
 		if assert.True(t, found) {
-			assert.Equal(t, value, x)
+		xassert.Equal(t, value, x)
 		}
 	})
 }

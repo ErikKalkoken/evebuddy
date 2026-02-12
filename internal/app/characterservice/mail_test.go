@@ -48,13 +48,13 @@ func TestUpdateMail(t *testing.T) {
 				"recipient_type": "mail_list",
 			},
 		}
-		mailID := int32(7)
-		labelIDs := []int32{16, 32}
+		mailID := int64(7)
+		labelIDs := []int64{16, 32}
 		timestamp := "2015-09-30T16:07:00Z"
 		subject := "test"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c1.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c1.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"from":       e1.ID,
@@ -69,7 +69,7 @@ func TestUpdateMail(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c1.ID, mailID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c1.ID, mailID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"body":       "blah blah blah",
 				"from":       e1.ID,
@@ -82,7 +82,7 @@ func TestUpdateMail(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c1.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/lists", c1.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"mailing_list_id": m1.ID,
@@ -92,7 +92,7 @@ func TestUpdateMail(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c1.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/labels", c1.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"labels": []map[string]any{
 					{
@@ -130,24 +130,24 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c1.ID, mailID)
 		require.NoError(t, err)
-		assert.Equal(t, subject, m.Subject)
+		xassert.Equal(t, subject, m.Subject.ValueOrZero())
 		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 		require.NoError(t, err)
-		got := set.Of[int32]()
+		got := set.Of[int64]()
 		for _, l := range labels {
 			got.Add(l.LabelID)
 		}
 		want := set.Of(labelIDs...)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 
 		lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 		require.NoError(t, err)
-		got2 := set.Of[int32]()
+		got2 := set.Of[int64]()
 		for _, l := range lists {
 			got2.Add(l.ID)
 		}
 		want2 := set.Of(m2.ID)
-		xassert.EqualSet(t, want2, got2)
+		xassert.Equal2(t, want2, got2)
 	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
@@ -161,21 +161,21 @@ func TestUpdateMail(t *testing.T) {
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
-		mailID := int32(7)
+		mailID := int64(7)
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			Body:         optional.New("blah blah blah"),
 			CharacterID:  c.ID,
 			FromID:       e1.ID,
-			LabelIDs:     []int32{16},
+			LabelIDs:     []int64{16},
 			MailID:       mailID,
-			IsRead:       false,
-			RecipientIDs: []int32{e2.ID, m1.ID},
-			Subject:      "test",
+			IsRead:       optional.New(false),
+			RecipientIDs: []int64{e2.ID, m1.ID},
+			Subject:      optional.New("test"),
 			Timestamp:    timestamp,
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/lists", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"mailing_list_id": m1.ID,
@@ -185,7 +185,7 @@ func TestUpdateMail(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/labels", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"labels": []map[string]any{
 					{
@@ -206,7 +206,7 @@ func TestUpdateMail(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"from":    e1.ID,
@@ -237,19 +237,19 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		assert.Equal(t, "blah blah blah", m.Body.ValueOrZero())
-		assert.True(t, m.IsRead)
+		xassert.Equal(t, "blah blah blah", m.Body.ValueOrZero())
+		assert.True(t, m.IsRead.ValueOrZero())
 		assert.Len(t, m.Labels, 1)
-		assert.Equal(t, int32(32), m.Labels[0].LabelID)
+		xassert.Equal(t, int64(32), m.Labels[0].LabelID)
 		assert.Len(t, m.Recipients, 2)
 		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		require.NoError(t, err)
-		got := set.Of[int32]()
+		got := set.Of[int64]()
 		for _, l := range labels {
 			got.Add(l.LabelID)
 		}
-		want := set.Of[int32](16, 32)
-		xassert.EqualSet(t, want, got)
+		want := set.Of[int64](16, 32)
+		xassert.Equal2(t, want, got)
 	})
 }
 
@@ -269,13 +269,19 @@ func TestUpdateMailBodies(t *testing.T) {
 			recipients = append(recipients, x)
 		}
 		data := map[string]any{
-			"body":       m.Body.MustValue(),
-			"from":       m.From,
 			"labels":     m.LabelIDs(),
 			"read":       true,
 			"recipients": recipients,
-			"subject":    m.Subject,
 			"timestamp":  m.Timestamp.Format(app.DateTimeFormatESI),
+		}
+		if x, ok := m.Body.Value(); ok {
+			data["body"] = x
+		}
+		if x, ok := m.Subject.Value(); ok {
+			data["subject"] = x
+		}
+		if m.From != nil {
+			data["from"] = m.From.ID
 		}
 		return data
 	}
@@ -287,17 +293,17 @@ func TestUpdateMailBodies(t *testing.T) {
 		mail.Body.Set("body")
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", mail.CharacterID, mail.MailID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", mail.CharacterID, mail.MailID),
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail)),
 		)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
 		// when
 		body, err := s.UpdateMailBodyESI(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body", body)
+		xassert.Equal(t, "body", body)
 		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body", mail2.Body.ValueOrZero())
+		xassert.Equal(t, "body", mail2.Body.ValueOrZero())
 	})
 	t.Run("Can download missing mail bodies", func(t *testing.T) {
 		// given
@@ -312,12 +318,12 @@ func TestUpdateMailBodies(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail1a.MailID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, mail1a.MailID),
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail1a)),
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail2a.MailID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, mail2a.MailID),
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail2a)),
 		)
 		// when
@@ -326,10 +332,10 @@ func TestUpdateMailBodies(t *testing.T) {
 		require.False(t, aborted)
 		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body1", mail1b.Body.ValueOrZero())
+		xassert.Equal(t, "body1", mail1b.Body.ValueOrZero())
 		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body2", mail2b.Body.ValueOrZero())
+		xassert.Equal(t, "body2", mail2b.Body.ValueOrZero())
 	})
 }
 
@@ -365,7 +371,7 @@ func TestNotifyMails(t *testing.T) {
 			})
 			// then
 			require.NoError(t, err)
-			assert.Equal(t, tc.shouldNotify, sendCount == 1)
+			xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 		})
 	}
 }
@@ -387,7 +393,7 @@ func TestSendMail(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
 			httpmock.NewJsonResponderOrPanic(201, 123))
 
 		// when
@@ -396,6 +402,6 @@ func TestSendMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body", m.Body.ValueOrZero())
+		xassert.Equal(t, "body", m.Body.ValueOrZero())
 	})
 }

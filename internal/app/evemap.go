@@ -8,13 +8,15 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // EveConstellation is a constellation in Eve Online.
 type EveConstellation struct {
-	ID     int32
+	ID     int64
 	Name   string
 	Region *EveRegion
 }
@@ -25,13 +27,13 @@ func (ec EveConstellation) EveEntity() *EveEntity {
 
 // EveRegion is a region in Eve Online.
 type EveRegion struct {
-	Description string
-	ID          int32
+	Description optional.Optional[string]
+	ID          int64
 	Name        string
 }
 
 func (er EveRegion) DescriptionPlain() string {
-	return evehtml.ToPlain(er.Description)
+	return evehtml.ToPlain(er.Description.ValueOrZero())
 }
 
 func (er EveRegion) EveEntity() *EveEntity {
@@ -87,7 +89,7 @@ func NewSolarSystemSecurityTypeFromValue(v float32) SolarSystemSecurityType {
 // EveSolarSystem is a solar system in Eve Online.
 type EveSolarSystem struct {
 	Constellation  *EveConstellation
-	ID             int32
+	ID             int64
 	Name           string
 	SecurityStatus float32
 }
@@ -133,9 +135,9 @@ func (es EveSolarSystem) DisplayRichTextWithRegion() []widget.RichTextSegment {
 }
 
 type EveSolarSystemPlanet struct {
-	AsteroidBeltIDs []int32
-	MoonIDs         []int32
-	PlanetID        int32
+	AsteroidBeltIDs []int64
+	MoonIDs         []int64
+	PlanetID        int64
 }
 
 // EveRouteHeader describes the header for a route in EVE Online.
@@ -145,51 +147,40 @@ type EveRouteHeader struct {
 	Preference  EveRoutePreference
 }
 
-func (x EveRouteHeader) String() string {
-	var originID, destinationID int32
-	if x.Origin != nil {
-		originID = x.Origin.ID
-	}
-	if x.Destination != nil {
-		destinationID = x.Destination.ID
-	}
-	return fmt.Sprintf("{Origin: %d Destination: %d Preference: %s}", originID, destinationID, x.Preference)
-}
-
 // EveRoutePreference represents the calculation preference when requesting a route from ESI.
 type EveRoutePreference uint
 
 const (
-	RouteShortest EveRoutePreference = iota
-	RouteSecure
-	RouteInsecure
+	RouteShorter EveRoutePreference = iota
+	RouteSafer
+	RouteLessSecure
 )
 
 func (x EveRoutePreference) String() string {
 	m := map[EveRoutePreference]string{
-		RouteShortest: "shortest",
-		RouteSecure:   "secure",
-		RouteInsecure: "insecure",
+		RouteShorter:    "shortest",
+		RouteSafer:      "secure",
+		RouteLessSecure: "insecure",
 	}
 	return m[x]
 }
 
 func EveRoutePreferenceFromString(s string) EveRoutePreference {
 	m := map[string]EveRoutePreference{
-		"shortest": RouteShortest,
-		"secure":   RouteSecure,
-		"insecure": RouteInsecure,
+		"shortest": RouteShorter,
+		"secure":   RouteSafer,
+		"insecure": RouteLessSecure,
 	}
 	return m[s]
 }
 
 func EveRoutePreferences() []EveRoutePreference {
-	return []EveRoutePreference{RouteShortest, RouteSecure, RouteInsecure}
+	return []EveRoutePreference{RouteShorter, RouteSafer, RouteLessSecure}
 }
 
 // EveMoon is a moon in Eve Online.
 type EveMoon struct {
-	ID          int32
+	ID          int64
 	Name        string
 	SolarSystem *EveSolarSystem
 }
@@ -198,7 +189,7 @@ var rePlanetType = regexp.MustCompile(`Planet \((\S*)\)`)
 
 // EvePlanet is a planet in Eve Online.
 type EvePlanet struct {
-	ID          int32
+	ID          int64
 	Name        string
 	SolarSystem *EveSolarSystem
 	Type        *EveType

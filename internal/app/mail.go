@@ -34,30 +34,30 @@ const (
 // CharacterMailLabel is a mail label for an EVE mail belonging to a character.
 type CharacterMailLabel struct {
 	ID          int64
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
+	CharacterID int64
+	Color       optional.Optional[string]
+	LabelID     int64
+	Name        optional.Optional[string]
+	UnreadCount optional.Optional[int64]
 }
 
 // CharacterMail is an EVE mail belonging to a character.
 type CharacterMail struct {
 	Body        optional.Optional[string]
-	CharacterID int32
+	CharacterID int64
 	From        *EveEntity
 	Labels      []*CharacterMailLabel
 	IsProcessed bool
-	IsRead      bool
+	IsRead      optional.Optional[bool]
 	ID          int64
-	MailID      int32
+	MailID      int64
 	Recipients  []*EveEntity
-	Subject     string
+	Subject     optional.Optional[string]
 	Timestamp   time.Time
 }
 
-func (cm CharacterMail) LabelIDs() []int32 {
-	ids := xslices.Map(cm.Labels, func(x *CharacterMailLabel) int32 {
+func (cm CharacterMail) LabelIDs() []int64 {
+	ids := xslices.Map(cm.Labels, func(x *CharacterMailLabel) int64 {
 		return x.LabelID
 	})
 	return ids
@@ -65,11 +65,11 @@ func (cm CharacterMail) LabelIDs() []int32 {
 
 // CharacterMailHeader is an EVE mail header belonging to a character.
 type CharacterMailHeader struct {
-	CharacterID int32
+	CharacterID int64
 	From        *EveEntity
 	IsRead      bool
 	ID          int64
-	MailID      int32
+	MailID      int64
 	Subject     string
 	Timestamp   time.Time
 }

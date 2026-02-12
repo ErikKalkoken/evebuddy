@@ -33,7 +33,7 @@ func TestCharacterImplant(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, eveType, x.EveType)
+				xassert.Equal(t, eveType, x.EveType)
 			}
 		}
 	})
@@ -53,7 +53,7 @@ func TestCharacterImplant(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, eveType, x.EveType)
+				xassert.Equal(t, eveType, x.EveType)
 			}
 		}
 	})
@@ -67,11 +67,11 @@ func TestCharacterImplant(t *testing.T) {
 		oo, err := st.ListCharacterImplants(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 
@@ -84,11 +84,11 @@ func TestCharacterImplant(t *testing.T) {
 		oo, err := st.ListAllCharacterImplants(ctx)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 }

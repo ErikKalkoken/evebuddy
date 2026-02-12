@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestPCache(t *testing.T) {
@@ -23,7 +25,7 @@ func TestPCache(t *testing.T) {
 		// then
 		got, found := c.Get("key")
 		if assert.True(t, found) {
-			assert.Equal(t, value, got)
+		xassert.Equal(t, value, got)
 		}
 	})
 	t.Run("should create immortal cache", func(t *testing.T) {
@@ -38,7 +40,7 @@ func TestPCache(t *testing.T) {
 		// then
 		got, found := c.Get("key")
 		if assert.True(t, found) {
-			assert.Equal(t, value, got)
+		xassert.Equal(t, value, got)
 		}
 	})
 	t.Run("can check key existance 1", func(t *testing.T) {
@@ -95,7 +97,7 @@ func TestPCache(t *testing.T) {
 		// then
 		assert.False(t, c.Exists("k1"))
 		assert.True(t, c.Exists("k2"))
-		assert.Equal(t, 1, got)
+	xassert.Equal(t, 1, got)
 	})
 	t.Run("can start with cleanup", func(t *testing.T) {
 		// given

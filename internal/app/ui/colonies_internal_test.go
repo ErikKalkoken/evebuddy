@@ -89,7 +89,7 @@ func TestColonies_CanRenderFull(t *testing.T) {
 	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
 		CharacterPlanetID:      p.ID,
 		TypeID:                 extractor.ID,
-		ExpiryTime:             time.Now().UTC().Add(-time.Hour),
+		ExpiryTime:             optional.New(time.Now().UTC().Add(-time.Hour)),
 		ExtractorProductTypeID: optional.New(extracted.ID),
 	})
 	processorGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{

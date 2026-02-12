@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestListMailHeaders(t *testing.T) {
@@ -21,17 +23,28 @@ func TestListMailHeaders(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
-		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
-		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -120),
+		})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -60),
+		})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l2.LabelID},
+		})
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, l1.LabelID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, xx, 2)
-			want := []int32{m2.MailID, m1.MailID}
+			want := []int64{m2.MailID, m1.MailID}
 			got := mailIDsFromHeaders(xx)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can fetch for all labels", func(t *testing.T) {
@@ -40,17 +53,32 @@ func TestListMailHeaders(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
-		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
-		m3 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
-		m4 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -120),
+		})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -60),
+		})
+		m3 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l2.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -240),
+		})
+		m4 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			Timestamp:   time.Now().Add(time.Second * -360),
+		})
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelAll)
 		// then
 		if assert.NoError(t, err) {
-			want := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
+			want := []int64{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
 			got := mailIDsFromHeaders(xx)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return mail without label only", func(t *testing.T) {
@@ -60,7 +88,7 @@ func TestListMailHeaders(t *testing.T) {
 		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
-			LabelIDs:    []int32{l.LabelID},
+			LabelIDs:    []int64{l.LabelID},
 			Timestamp:   time.Now().Add(time.Second * -120),
 		})
 		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
@@ -68,9 +96,9 @@ func TestListMailHeaders(t *testing.T) {
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelNone)
 		// then
 		if assert.NoError(t, err) {
-			want := []int32{m.MailID}
+			want := []int64{m.MailID}
 			got := mailIDsFromHeaders(xx)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return empty when no match", func(t *testing.T) {
@@ -91,7 +119,7 @@ func TestListMailHeaders(t *testing.T) {
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID, LabelID: 1})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c1.ID,
-			LabelIDs:    []int32{l1.LabelID},
+			LabelIDs:    []int64{l1.LabelID},
 		})
 		c2 := factory.CreateCharacterFull()
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: 1})
@@ -99,7 +127,7 @@ func TestListMailHeaders(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			FromID:      from.ID,
 			CharacterID: c2.ID,
-			LabelIDs:    []int32{l2.LabelID},
+			LabelIDs:    []int64{l2.LabelID},
 		})
 		// when
 		mm, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c2.ID, l2.LabelID)
@@ -114,21 +142,21 @@ func TestListMailHeaders(t *testing.T) {
 		l1 := factory.CreateCharacterMailList(c.ID)
 		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
-			RecipientIDs: []int32{l1.ID},
+			RecipientIDs: []int64{l1.ID},
 		})
 		l2 := factory.CreateCharacterMailList(c.ID)
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
-			RecipientIDs: []int32{l2.ID},
+			RecipientIDs: []int64{l2.ID},
 		})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
 		xx, err := st.ListCharacterMailHeadersForListOrdered(ctx, c.ID, l1.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := []int32{m1.MailID}
+			want := []int64{m1.MailID}
 			got := mailIDsFromHeaders(xx)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return unprocessed mails only and ignore sent mails", func(t *testing.T) {
@@ -148,7 +176,7 @@ func TestListMailHeaders(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: false,
-			LabelIDs:    []int32{l.LabelID},
+			LabelIDs:    []int64{l.LabelID},
 		})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
@@ -160,15 +188,15 @@ func TestListMailHeaders(t *testing.T) {
 		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
 		// then
 		if assert.NoError(t, err) {
-			want := []int32{m1.MailID}
+			want := []int64{m1.MailID}
 			got := mailIDsFromHeaders(xx)
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }
 
-func mailIDsFromHeaders(hh []*app.CharacterMailHeader) []int32 {
-	ids := make([]int32, len(hh))
+func mailIDsFromHeaders(hh []*app.CharacterMailHeader) []int64 {
+	ids := make([]int64, len(hh))
 	for i, h := range hh {
 		ids[i] = h.MailID
 	}

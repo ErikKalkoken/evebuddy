@@ -27,7 +27,7 @@ func TestTag(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.NotEqual(t, got.ID, 0)
-			assert.Equal(t, got.Name, "name")
+			xassert.Equal(t, got.Name, "name")
 		}
 	})
 	t.Run("can get by ID", func(t *testing.T) {
@@ -38,7 +38,7 @@ func TestTag(t *testing.T) {
 		t2, err := st.GetTag(ctx, t1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, t2, t1)
+			xassert.Equal(t, t2, t1)
 		}
 	})
 	t.Run("can list ordered by name", func(t *testing.T) {
@@ -54,7 +54,7 @@ func TestTag(t *testing.T) {
 			got := xslices.Map(oo, func(x *app.CharacterTag) int64 {
 				return x.ID
 			})
-			assert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("raise specfic error when tyring to create new with existing name", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestTag(t *testing.T) {
 		if assert.NoError(t, err) {
 			t2, err := st.GetTag(ctx, t1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "alpha", t2.Name)
+				xassert.Equal(t, "alpha", t2.Name)
 			}
 		}
 	})
@@ -106,7 +106,7 @@ func TestReplaceTags(t *testing.T) {
 		c2 := factory.CreateCharacter()
 
 		// when
-		exported := map[string][]int32{"Alpha": {c1.ID, c2.ID}, "Bravo": {}}
+		exported := map[string][]int64{"Alpha": {c1.ID, c2.ID}, "Bravo": {}}
 		err := st.ReplaceTags(ctx, exported)
 
 		// then
@@ -122,14 +122,14 @@ func TestReplaceTags(t *testing.T) {
 		for _, tag := range tags {
 			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			require.NoError(t, err)
-			got := xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+			got := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
 				return x.ID
 			})
 			switch tag.Name {
 			case "Alpha":
-				assert.ElementsMatch(t, []int32{c1.ID, c2.ID}, got)
+				assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, got)
 			case "Bravo":
-				assert.ElementsMatch(t, []int32{}, got)
+				assert.ElementsMatch(t, []int64{}, got)
 			}
 		}
 	})
@@ -140,7 +140,7 @@ func TestReplaceTags(t *testing.T) {
 		c1 := factory.CreateCharacter()
 
 		// when
-		exported := map[string][]int32{
+		exported := map[string][]int64{
 			"Alpha": {c1.ID, 42},
 		}
 		err := st.ReplaceTags(ctx, exported)
@@ -158,10 +158,10 @@ func TestReplaceTags(t *testing.T) {
 		tag := tags[0]
 		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 		require.NoError(t, err)
-		gotIDs := xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+		gotIDs := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
 			return x.ID
 		})
-		assert.ElementsMatch(t, []int32{c1.ID}, gotIDs)
+		assert.ElementsMatch(t, []int64{c1.ID}, gotIDs)
 	})
 }
 
@@ -184,9 +184,9 @@ func TestCharacterTag(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(
+				xassert.Equal(
 					t,
-					[]*app.EntityShort[int32]{
+					[]*app.EntityShort[int64]{
 						{
 							ID:   character1.ID,
 							Name: character1.EveCharacter.Name,
@@ -227,10 +227,10 @@ func TestCharacterTag(t *testing.T) {
 			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(character2.ID)
-				got := set.Of(xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+				got := set.Of(xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
 					return x.ID
 				})...)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})
@@ -252,7 +252,7 @@ func TestCharacterTag(t *testing.T) {
 		got, err := st.ListCharacterTagsForCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, []*app.CharacterTag{tag}, got)
+			xassert.Equal(t, []*app.CharacterTag{tag}, got)
 		}
 	})
 }

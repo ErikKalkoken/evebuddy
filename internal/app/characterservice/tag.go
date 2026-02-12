@@ -35,39 +35,39 @@ func (s *CharacterService) RenameTag(ctx context.Context, id int64, name string)
 	return s.st.UpdateTagName(ctx, id, name)
 }
 
-func (s *CharacterService) AddTagToCharacter(ctx context.Context, characterID int32, tagID int64) error {
+func (s *CharacterService) AddTagToCharacter(ctx context.Context, characterID int64, tagID int64) error {
 	return s.st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 		CharacterID: characterID,
 		TagID:       tagID,
 	})
 }
 
-func (s *CharacterService) RemoveTagFromCharacter(ctx context.Context, characterID int32, tagID int64) error {
+func (s *CharacterService) RemoveTagFromCharacter(ctx context.Context, characterID int64, tagID int64) error {
 	return s.st.DeleteCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 		CharacterID: characterID,
 		TagID:       tagID,
 	})
 }
 
-func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64) (tagged []*app.EntityShort[int32], others []*app.EntityShort[int32], err error) {
+func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64) (tagged []*app.EntityShort[int64], others []*app.EntityShort[int64], err error) {
 	tagged, err = s.st.ListCharactersForCharacterTag(ctx, tagID)
 	if err != nil {
 		return
 	}
-	taggedIDs := set.Of(xslices.Map(tagged, func(x *app.EntityShort[int32]) int32 {
+	taggedIDs := set.Of(xslices.Map(tagged, func(x *app.EntityShort[int64]) int64 {
 		return x.ID
 	})...)
 	cc, err := s.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	others = xslices.Filter(cc, func(x *app.EntityShort[int32]) bool {
+	others = xslices.Filter(cc, func(x *app.EntityShort[int64]) bool {
 		return !taggedIDs.Contains(x.ID)
 	})
 	return
 }
 
-func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int32) (set.Set[string], error) {
+func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int64) (set.Set[string], error) {
 	oo, err := s.st.ListCharacterTagsForCharacter(ctx, characterID)
 	if err != nil {
 		return set.Set[string]{}, err
@@ -81,7 +81,7 @@ func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID
 // TagsExported represents the data structure for exported character tags.
 type TagsExported struct {
 	Info    string             // file information
-	Tags    map[string][]int32 // mapping of tags to character IDs
+	Tags    map[string][]int64 // mapping of tags to character IDs
 	Version string             // app version that created an export
 }
 
@@ -103,7 +103,7 @@ func (s *CharacterService) WriteTags(ctx context.Context, writer io.Writer, vers
 
 func (s *CharacterService) compileTags(ctx context.Context, version string) (TagsExported, error) {
 	data := TagsExported{
-		Tags:    make(map[string][]int32),
+		Tags:    make(map[string][]int64),
 		Info:    "Created by EVE Buddy",
 		Version: version,
 	}
@@ -116,7 +116,7 @@ func (s *CharacterService) compileTags(ctx context.Context, version string) (Tag
 		if err != nil {
 			return data, err
 		}
-		data.Tags[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int32]) int32 {
+		data.Tags[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int64]) int64 {
 			return x.ID
 		})
 	}

@@ -60,24 +60,24 @@ const (
 var defaultImageScaleMode canvas.ImageScale
 
 type eveImageService interface {
-	AllianceLogo(id int32, size int) (fyne.Resource, error)
-	AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource))
-	CharacterPortrait(id int32, size int) (fyne.Resource, error)
-	CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource))
-	CorporationLogo(id int32, size int) (fyne.Resource, error)
-	CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource))
-	FactionLogo(id int32, size int) (fyne.Resource, error)
-	FactionLogoAsync(id int32, size int, setter func(r fyne.Resource))
-	InventoryTypeRender(id int32, size int) (fyne.Resource, error)
-	InventoryTypeRenderAsync(id int32, size int, setter func(r fyne.Resource))
-	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
-	InventoryTypeIconAsync(id int32, size int, setter func(r fyne.Resource))
-	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPOAsync(id int32, size int, setter func(r fyne.Resource))
-	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPCAsync(id int32, size int, setter func(r fyne.Resource))
-	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
-	InventoryTypeSKINAsync(id int32, size int, setter func(r fyne.Resource))
+	AllianceLogo(id int64, size int) (fyne.Resource, error)
+	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	CharacterPortrait(id int64, size int) (fyne.Resource, error)
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+	CorporationLogo(id int64, size int) (fyne.Resource, error)
+	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	FactionLogo(id int64, size int) (fyne.Resource, error)
+	FactionLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
+	InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource))
+	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
+	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
+	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
+	InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource))
+	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
+	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
+	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
+	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
 // services represents a wrapper for passing the main services to functions.
@@ -90,18 +90,18 @@ type services struct {
 }
 
 type characterSectionUpdated struct {
-	characterID  int32
+	characterID  int64
 	section      app.CharacterSection
 	needsRefresh bool
 }
 
 type corporationSectionUpdated struct {
-	corporationID int32
+	corporationID int64
 	section       app.CorporationSection
 }
 
 type generalSectionUpdated struct {
-	changed set.Set[int32]
+	changed set.Set[int64]
 	section app.GeneralSection
 }
 
@@ -173,7 +173,7 @@ type baseUI struct {
 	// A character was added.
 	characterAdded signals.Signal[*app.Character]
 	// A character was removed.
-	characterRemoved signals.Signal[*app.EntityShort[int32]]
+	characterRemoved signals.Signal[*app.EntityShort[int64]]
 	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
 	// A character section has been updated from ESI.
@@ -193,7 +193,7 @@ type baseUI struct {
 	// A tag as been added, removed or renamed.
 	tagsChanged signals.Signal[struct{}]
 	// A Character has changed [only: trainingWatcher].
-	characterChanged signals.Signal[int32]
+	characterChanged signals.Signal[int64]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -250,8 +250,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                         arg.App,
 		characterAdded:              signals.New[*app.Character](),
-		characterChanged:            signals.New[int32](),
-		characterRemoved:            signals.New[*app.EntityShort[int32]](),
+		characterChanged:            signals.New[int64](),
+		characterRemoved:            signals.New[*app.EntityShort[int64]](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		characterSectionUpdated:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
@@ -366,7 +366,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		updateStatus()
 	})
-	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		updateStatus()
 	})
 
@@ -546,7 +546,7 @@ func (u *baseUI) Start() bool {
 		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			updateCharactersMissingScope()
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 			updateCharactersMissingScope()
 		})
 		updateCharactersMissingScope()
@@ -639,7 +639,7 @@ func (u *baseUI) initCharacter() {
 	var err error
 	ctx := context.Background()
 	if cID := u.settings.LastCharacterID(); cID != 0 {
-		c, err = u.cs.GetCharacter(ctx, int32(cID))
+		c, err = u.cs.GetCharacter(ctx, int64(cID))
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -662,7 +662,7 @@ func (u *baseUI) initCharacter() {
 }
 
 // currentCharacterID returns the ID of the current character or 0 if non is set.
-func (u *baseUI) currentCharacterID() int32 {
+func (u *baseUI) currentCharacterID() int64 {
 	c := u.currentCharacter()
 	if c == nil {
 		return 0
@@ -678,7 +678,7 @@ func (u *baseUI) hasCharacter() bool {
 	return u.currentCharacter() != nil
 }
 
-func (u *baseUI) loadCharacter(id int32) error {
+func (u *baseUI) loadCharacter(id int64) error {
 	c, err := u.cs.GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
@@ -738,7 +738,7 @@ func (u *baseUI) initCorporation() {
 	var err error
 	ctx := context.Background()
 	if cID := u.settings.LastCorporationID(); cID != 0 {
-		c, err = u.rs.GetCorporation(ctx, int32(cID))
+		c, err = u.rs.GetCorporation(ctx, int64(cID))
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load corporation", "error", err)
@@ -761,7 +761,7 @@ func (u *baseUI) initCorporation() {
 }
 
 // currentCorporationID returns the ID of the current corporation or 0 if non is set.
-func (u *baseUI) currentCorporationID() int32 {
+func (u *baseUI) currentCorporationID() int64 {
 	c := u.currentCorporation()
 	if c == nil {
 		return 0
@@ -777,7 +777,7 @@ func (u *baseUI) hasCorporation() bool {
 	return u.currentCorporation() != nil
 }
 
-func (u *baseUI) loadCorporation(id int32) error {
+func (u *baseUI) loadCorporation(id int64) error {
 	c, err := u.rs.GetCorporation(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load corporation ID %d: %w", id, err)
@@ -907,7 +907,7 @@ func (u *baseUI) updateMailIndicator() {
 	}
 }
 
-func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int32], error) {
+func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int64], error) {
 	if u.settings.HideLimitedCorporations() {
 		return u.rs.ListPrivilegedCorporations(context.Background())
 	}
@@ -1010,17 +1010,17 @@ func (u *baseUI) ShowLocationInfoWindow(id int64) {
 	iw.showLocation(id)
 }
 
-func (u *baseUI) ShowRaceInfoWindow(id int32) {
+func (u *baseUI) ShowRaceInfoWindow(id int64) {
 	iw := newInfoWindow(u)
 	iw.showRace(id)
 }
 
-func (u *baseUI) ShowTypeInfoWindow(id int32) {
+func (u *baseUI) ShowTypeInfoWindow(id int64) {
 	iw := newInfoWindow(u)
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
-func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int32) {
+func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int64) {
 	iw := newInfoWindow(u)
 	iw.showWithCharacterID(infoInventoryType, int64(typeID), characterID)
 }
@@ -1030,7 +1030,7 @@ func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
 	iw.showEveEntity(o)
 }
 
-func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
+func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int64) {
 	iw := newInfoWindow(u)
 	iw.Show(c, id)
 }
@@ -1064,12 +1064,12 @@ func (u *baseUI) appName() string {
 // Avatars & switch menus
 
 var (
-	avatarCache                       xsync.Map[int32, fyne.Resource]
+	avatarCache                       xsync.Map[int64, fyne.Resource]
 	characterAvatarPlaceholder64, _   = fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	corporationAvatarPlaceholder64, _ = fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 )
 
-func (u *baseUI) setCharacterAvatar(characterID int32, setIcon func(fyne.Resource)) {
+func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resource)) {
 	iwidget.LoadResourceAsyncWithCache(
 		characterAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
@@ -1089,7 +1089,7 @@ func (u *baseUI) setCharacterAvatar(characterID int32, setIcon func(fyne.Resourc
 	)
 }
 
-func (u *baseUI) setCorporationAvatar(corporationID int32, setIcon func(fyne.Resource)) {
+func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Resource)) {
 	iwidget.LoadResourceAsyncWithCache(
 		corporationAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
@@ -1170,7 +1170,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		it.Disabled = true
 		return append(items, it)
 	}
-	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int64]) int64 {
 		return x.ID
 	}))
 	currentID := u.currentCorporationID()
@@ -1270,7 +1270,7 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 }
 
 // makeTopText makes the content for the top label of a gui element.
-func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+func (u *baseUI) makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}

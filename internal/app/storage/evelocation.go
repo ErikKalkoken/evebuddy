@@ -16,9 +16,9 @@ import (
 type UpdateOrCreateLocationParams struct {
 	ID            int64
 	Name          string
-	OwnerID       optional.Optional[int32]
-	SolarSystemID optional.Optional[int32]
-	TypeID        optional.Optional[int32]
+	OwnerID       optional.Optional[int64]
+	SolarSystemID optional.Optional[int64]
+	TypeID        optional.Optional[int64]
 	UpdatedAt     time.Time
 }
 
@@ -27,7 +27,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 		return fmt.Errorf("UpdateOrCreateEveLocation: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.UpdateOrCreateEveLocationParams{
-		ID:               int64(arg.ID),
+		ID:               arg.ID,
 		EveSolarSystemID: optional.ToNullInt64(arg.SolarSystemID),
 		EveTypeID:        optional.ToNullInt64(arg.TypeID),
 		Name:             arg.Name,
@@ -76,8 +76,8 @@ func (st *Storage) ListEveLocationIDs(ctx context.Context) (set.Set[int64], erro
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int32) ([]*app.EveLocation, error) {
-	rows, err := st.qRO.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: int64(solarSystemID), Valid: true})
+func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int64) ([]*app.EveLocation, error) {
+	rows, err := st.qRO.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: solarSystemID, Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("list eve locations in solar system: %w", err)
 	}
@@ -111,25 +111,25 @@ func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLoca
 		UpdatedAt: l.UpdatedAt,
 	}
 	if l.EveTypeID.Valid {
-		x, err := st.GetEveType(ctx, int32(l.EveTypeID.Int64))
+		o, err := st.GetEveType(ctx, l.EveTypeID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		l2.Type = x
+		l2.Type = optional.New(o)
 	}
 	if l.EveSolarSystemID.Valid {
-		x, err := st.GetEveSolarSystem(ctx, int32(l.EveSolarSystemID.Int64))
+		o, err := st.GetEveSolarSystem(ctx, l.EveSolarSystemID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		l2.SolarSystem = x
+		l2.SolarSystem = optional.New(o)
 	}
 	if l.OwnerID.Valid {
-		x, err := st.GetEveEntity(ctx, int32(l.OwnerID.Int64))
+		o, err := st.GetEveEntity(ctx, l.OwnerID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		l2.Owner = x
+		l2.Owner = optional.New(o)
 	}
 	return l2, nil
 }

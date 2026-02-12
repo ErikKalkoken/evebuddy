@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -24,13 +25,14 @@ func TestCorporationAsset(t *testing.T) {
 		c := factory.CreateCorporation()
 		eveType := factory.CreateEveType()
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID: eveType.ID, AveragePrice: 1.24,
+			TypeID:       eveType.ID,
+			AveragePrice: optional.New(1.24),
 		})
 		// when
 		err := st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
 			CorporationID:   c.ID,
 			EveTypeID:       eveType.ID,
-			IsBlueprintCopy: false,
+			IsBlueprintCopy: optional.New(false),
 			IsSingleton:     true,
 			ItemID:          42,
 			LocationFlag:    app.FlagHangar,
@@ -43,17 +45,17 @@ func TestCorporationAsset(t *testing.T) {
 		require.NoError(t, err)
 		x, err := st.GetCorporationAsset(ctx, c.ID, 42)
 		require.NoError(t, err)
-		assert.Equal(t, eveType.ID, x.Type.ID)
-		assert.Equal(t, eveType.Name, x.Type.Name)
-		assert.False(t, x.IsBlueprintCopy)
+		xassert.Equal(t, eveType.ID, x.Type.ID)
+		xassert.Equal(t, eveType.Name, x.Type.Name)
+		assert.False(t, x.IsBlueprintCopy.ValueOrZero())
 		assert.True(t, x.IsSingleton)
-		assert.Equal(t, int64(42), x.ItemID)
-		assert.Equal(t, app.FlagHangar, x.LocationFlag)
-		assert.Equal(t, int64(99), x.LocationID)
-		assert.Equal(t, app.TypeOther, x.LocationType)
-		assert.Equal(t, "Alpha", x.Name)
-		assert.EqualValues(t, 7, x.Quantity)
-		assert.Equal(t, 1.24, x.Price.ValueOrZero())
+		xassert.Equal(t, 42, x.ItemID)
+		xassert.Equal(t, app.FlagHangar, x.LocationFlag)
+		xassert.Equal(t, 99, x.LocationID)
+		xassert.Equal(t, app.TypeOther, x.LocationType)
+		xassert.Equal(t, "Alpha", x.Name)
+		xassert.Equal(t, 7, x.Quantity)
+		xassert.Equal(t, 1.24, x.Price.ValueOrZero())
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -73,11 +75,11 @@ func TestCorporationAsset(t *testing.T) {
 		require.NoError(t, err)
 		x2, err := st.GetCorporationAsset(ctx, c.ID, x1.ItemID)
 		require.NoError(t, err)
-		assert.Equal(t, app.FlagHangar, x2.LocationFlag)
-		assert.Equal(t, int64(99), x2.LocationID)
-		assert.Equal(t, app.TypeOther, x2.LocationType)
-		assert.Equal(t, x1.Name, x2.Name)
-		assert.EqualValues(t, 7, x2.Quantity)
+		xassert.Equal(t, app.FlagHangar, x2.LocationFlag)
+		xassert.Equal(t, 99, x2.LocationID)
+		xassert.Equal(t, app.TypeOther, x2.LocationType)
+		xassert.Equal(t, x1.Name, x2.Name)
+		xassert.Equal(t, 7, x2.Quantity)
 	})
 	t.Run("can update name", func(t *testing.T) {
 		// given
@@ -94,7 +96,7 @@ func TestCorporationAsset(t *testing.T) {
 		require.NoError(t, err)
 		x2, err := st.GetCorporationAsset(ctx, c.ID, x1.ItemID)
 		require.NoError(t, err)
-		assert.Equal(t, "Alpha", x2.Name)
+		xassert.Equal(t, "Alpha", x2.Name)
 	})
 	t.Run("can delete assets", func(t *testing.T) {
 		// given
@@ -109,7 +111,7 @@ func TestCorporationAsset(t *testing.T) {
 		got, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
 		want := set.Of(x1.ItemID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can list assets for corporation", func(t *testing.T) {
 		// given
@@ -150,11 +152,11 @@ func TestCorporationAsset(t *testing.T) {
 		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:       ca1.Type.ID,
-			AveragePrice: 100.1,
+			AveragePrice: optional.New(100.1),
 		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:       ca2.Type.ID,
-			AveragePrice: 200.2,
+			AveragePrice: optional.New(200.2),
 		})
 		// when
 		got, err := st.CalculateCorporationAssetTotalValue(ctx, c.ID)

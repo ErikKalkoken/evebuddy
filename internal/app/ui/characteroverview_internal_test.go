@@ -28,11 +28,11 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 		Name: "Wayne Technolgy",
 	})
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		AllianceID:     alliance.ID,
+		AllianceID:     optional.New(alliance.ID),
 		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
 		CorporationID:  corporation.ID,
 		Name:           "Bruce Wayne",
-		SecurityStatus: -10.0,
+		SecurityStatus: optional.New(-10.0),
 	})
 	homeSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
 		SecurityStatus: 0.3,
@@ -56,7 +56,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 		CharacterID: character.ID,
-		IsRead:      false,
+		IsRead:      optional.New(false),
 	})
 
 	cases := []struct {
@@ -97,7 +97,7 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
 		CorporationID:  corporation.ID,
 		Name:           "Bruce Wayne",
-		SecurityStatus: -10.0,
+		SecurityStatus: optional.New(-10.0),
 	})
 	factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,

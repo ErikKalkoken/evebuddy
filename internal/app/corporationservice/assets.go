@@ -10,16 +10,16 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CorporationService) ListAssets(ctx context.Context, corporationID int32) ([]*app.CorporationAsset, error) {
+func (s *CorporationService) ListAssets(ctx context.Context, corporationID int64) ([]*app.CorporationAsset, error) {
 	assets, err := s.st.ListCorporationAssets(ctx, corporationID)
 	if err != nil {
 		return nil, err
@@ -182,11 +182,8 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdAssets")
 			assets, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCorporationsCorporationIdAssets200Ok, *http.Response, error) {
-					opts := &esi.GetCorporationsCorporationIdAssetsOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
-					}
-					return s.esiClient.ESI.AssetsApi.GetCorporationsCorporationIdAssets(ctx, arg.CorporationID, opts)
+				func(page int32) ([]esi.CorporationsCorporationIdAssetsGetInner, *http.Response, error) {
+					return s.esiClient.AssetsAPI.GetCorporationsCorporationIdAssets(ctx, arg.CorporationID).Page(page).Execute()
 				})
 			if err != nil {
 				return false, err
@@ -195,12 +192,12 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			return assets, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			assets := data.([]esi.GetCorporationsCorporationIdAssets200Ok)
+			assets := data.([]esi.CorporationsCorporationIdAssetsGetInner)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
 				incomingIDs.Add(ca.ItemId)
 			}
-			typeIDs := set.Of[int32]()
+			typeIDs := set.Of[int64]()
 			locationIDs := set.Of[int64]()
 			for _, ca := range assets {
 				typeIDs.Add(ca.TypeId)
@@ -235,31 +232,31 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					slog.Warn("Unknown location type encountered", "corporationID", arg.CorporationID, "item", a)
 				}
 				if currentIDs.Contains(a.ItemId) {
-					arg := storage.UpdateCorporationAssetParams{
+					err := s.st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
 						CorporationID: arg.CorporationID,
 						ItemID:        a.ItemId,
 						LocationFlag:  locationFlag,
 						LocationID:    a.LocationId,
 						LocationType:  locationType,
 						Quantity:      a.Quantity,
-					}
-					if err := s.st.UpdateCorporationAsset(ctx, arg); err != nil {
+					})
+					if err != nil {
 						return err
 					}
 					updated++
 				} else {
-					arg := storage.CreateCorporationAssetParams{
+					err := s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
 						CorporationID:   arg.CorporationID,
 						EveTypeID:       a.TypeId,
-						IsBlueprintCopy: a.IsBlueprintCopy,
+						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
 						IsSingleton:     a.IsSingleton,
 						ItemID:          a.ItemId,
 						LocationFlag:    locationFlag,
 						LocationID:      a.LocationId,
 						LocationType:    locationType,
 						Quantity:        a.Quantity,
-					}
-					if err := s.st.CreateCorporationAsset(ctx, arg); err != nil {
+					})
+					if err != nil {
 						return err
 					}
 					created++
@@ -337,13 +334,13 @@ func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) 
 	}
 }
 
-func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int32, ids []int64) (map[int64]string, error) {
+func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.PostCorporationsCorporationIdAssetsNames200Ok, 0)
+	results := make([][]esi.CharactersCharacterIdAssetsNamesPostInner, 0)
 	if len(ids) > 0 {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-			names, _, err := s.esiClient.ESI.AssetsApi.PostCorporationsCorporationIdAssetsNames(ctx, corporationID, chunk, nil)
+			names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, corporationID).RequestBody(chunk).Execute()
 			if err != nil {
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names

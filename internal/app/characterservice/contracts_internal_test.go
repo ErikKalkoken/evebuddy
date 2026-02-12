@@ -27,22 +27,30 @@ func TestUpdateContractESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new item exchange contract from scratch", func(t *testing.T) {
 		// given
+		const (
+			contractID = 42
+			quantity   = 7
+			recordID   = 123456
+			volume     = 0.01
+		)
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		contractID := int32(42)
-		volume := 0.01
+		acceptor := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           acceptor.ID,
+				"assignee_id":           acceptor.ID,
 				"availability":          "public",
 				"contract_id":           contractID,
 				"date_expired":          "2017-06-13T13:12:32Z",
 				"date_issued":           "2017-06-05T13:12:32Z",
 				"days_to_complete":      3,
+				"for_corporation":       false,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
 				"price":                 1000000.01,
@@ -51,12 +59,10 @@ func TestUpdateContractESI(t *testing.T) {
 				"volume":                volume,
 			}}),
 		)
-		recordID := int64(123456)
-		quantity := 7
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/items/", c.ID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/items", c.ID, contractID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_included":  true,
 				"is_singleton": false,
@@ -77,32 +83,32 @@ func TestUpdateContractESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, o.DateAccepted.IsEmpty())
 		assert.True(t, o.DateCompleted.IsEmpty())
-		assert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
-		assert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
-		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-		assert.Equal(t, app.ContractTypeItemExchange, o.Type)
-		assert.Equal(t, volume, o.Volume)
+		xassert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
+		xassert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
+		xassert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		xassert.Equal(t, app.ContractTypeItemExchange, o.Type)
+		xassert.Equal(t, volume, o.Volume.ValueOrZero())
 		ii, err := st.ListCharacterContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Len(t, ii, 1)
-		assert.Equal(t, quantity, ii[0].Quantity)
-		assert.Equal(t, recordID, ii[0].RecordID)
-		assert.Equal(t, et, ii[0].Type)
+		xassert.Equal(t, quantity, ii[0].Quantity)
+		xassert.Equal(t, recordID, ii[0].RecordID)
+		xassert.Equal(t, et, ii[0].Type)
 	})
 	t.Run("should create new courier contract from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		contractID := int32(42)
+		contractID := int64(42)
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
 		volume := 0.01
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"acceptor_id":           0,
 				"assignee_id":           0,
@@ -125,12 +131,14 @@ func TestUpdateContractESI(t *testing.T) {
 				"volume":                volume,
 			}}),
 		)
-		recordID := int64(123456)
-		quantity := 7
+		const (
+			recordID = 123456
+			quantity = 7
+		)
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/items/", c.ID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/items", c.ID, contractID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_included":  true,
 				"is_singleton": false,
@@ -149,36 +157,36 @@ func TestUpdateContractESI(t *testing.T) {
 		assert.True(t, changed)
 		o, err := st.GetCharacterContract(ctx, c.ID, contractID)
 		require.NoError(t, err)
-		assert.Equal(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o.DateAccepted.MustValue())
-		assert.Equal(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o.DateCompleted.MustValue())
-		assert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
-		assert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
-		assert.Equal(t, startLocation.ID, o.StartLocation.ID)
-		assert.Equal(t, endLocation.ID, o.EndLocation.ID)
-		assert.Equal(t, app.ContractStatusFinished, o.Status)
-		assert.Equal(t, app.ContractTypeCourier, o.Type)
-		assert.Equal(t, volume, o.Volume)
+		xassert.Equal(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o.DateAccepted.MustValue())
+		xassert.Equal(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o.DateCompleted.MustValue())
+		xassert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
+		xassert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
+		xassert.Equal(t, startLocation.ID, o.StartLocation.ValueOrZero().ID)
+		xassert.Equal(t, endLocation.ID, o.EndLocation.ValueOrZero().ID)
+		xassert.Equal(t, app.ContractStatusFinished, o.Status)
+		xassert.Equal(t, app.ContractTypeCourier, o.Type)
+		xassert.Equal(t, volume, o.Volume.ValueOrZero())
 		ii, err := st.ListCharacterContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Len(t, ii, 1)
-		assert.Equal(t, quantity, ii[0].Quantity)
-		assert.Equal(t, recordID, ii[0].RecordID)
-		assert.Equal(t, et, ii[0].Type)
+		xassert.Equal(t, quantity, ii[0].Quantity)
+		xassert.Equal(t, recordID, ii[0].RecordID)
+		xassert.Equal(t, et, ii[0].Type)
 	})
 	t.Run("should create new auction contract from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		contractID := int32(42)
+		contractID := int64(42)
 		startLocation := factory.CreateEveLocationStructure()
 		buyout := 10000000000.01
 		volume := 0.01
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"acceptor_id":           0,
 				"assignee_id":           0,
@@ -197,12 +205,14 @@ func TestUpdateContractESI(t *testing.T) {
 				"volume":                volume,
 			}}),
 		)
-		recordID := int64(123456)
-		quantity := 7
+		const (
+			recordID = 123456
+			quantity = 7
+		)
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/items/", c.ID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/items", c.ID, contractID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_included":  true,
 				"is_singleton": false,
@@ -218,7 +228,7 @@ func TestUpdateContractESI(t *testing.T) {
 		bidder := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/bids/", c.ID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/bids", c.ID, contractID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"amount":    amount,
 				"bid_id":    bidID,
@@ -236,30 +246,30 @@ func TestUpdateContractESI(t *testing.T) {
 		assert.True(t, changed)
 		o, err := st.GetCharacterContract(ctx, c.ID, contractID)
 		require.NoError(t, err)
-		assert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
-		assert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
-		assert.Equal(t, startLocation.ID, o.StartLocation.ID)
-		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-		assert.Equal(t, app.ContractTypeAuction, o.Type)
-		assert.Equal(t, buyout, o.Buyout)
+		xassert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
+		xassert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
+		xassert.Equal(t, startLocation.ID, o.StartLocation.ValueOrZero().ID)
+		xassert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		xassert.Equal(t, app.ContractTypeAuction, o.Type)
+		xassert.Equal(t, buyout, o.Buyout.ValueOrZero())
 		ii, err := st.ListCharacterContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Len(t, ii, 1)
-		assert.Equal(t, quantity, ii[0].Quantity)
-		assert.Equal(t, recordID, ii[0].RecordID)
-		assert.Equal(t, et, ii[0].Type)
+		xassert.Equal(t, quantity, ii[0].Quantity)
+		xassert.Equal(t, recordID, ii[0].RecordID)
+		xassert.Equal(t, et, ii[0].Type)
 		bb, err := st.ListCharacterContractBids(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Len(t, bb, 1)
 		assert.InDelta(t, amount, bb[0].Amount, 0.1)
-		assert.Equal(t, bidder, bb[0].Bidder)
-		assert.Equal(t, time.Date(2017, 1, 1, 10, 10, 10, 0, time.UTC), bb[0].DateBid)
+		xassert.Equal(t, bidder, bb[0].Bidder)
+		xassert.Equal(t, time.Date(2017, 1, 1, 10, 10, 10, 0, time.UTC), bb[0].DateBid)
 	})
 	t.Run("should update existing contract", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
@@ -271,26 +281,26 @@ func TestUpdateContractESI(t *testing.T) {
 		acceptor := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"acceptor_id":           acceptor.ID,
 				"assignee_id":           0,
 				"availability":          "public",
-				"buyout":                o1.Buyout,
+				"buyout":                o1.Buyout.ValueOrZero(),
 				"contract_id":           o1.ContractID,
 				"date_accepted":         "2017-06-06T13:12:32Z",
 				"date_completed":        "2017-06-07T13:12:32Z",
 				"date_expired":          o1.DateExpired.Format(time.RFC3339),
 				"date_issued":           o1.DateIssued.Format(time.RFC3339),
-				"days_to_complete":      o1.DaysToComplete,
+				"days_to_complete":      o1.DaysToComplete.ValueOrZero(),
 				"for_corporation":       true,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
-				"price":                 o1.Price,
-				"reward":                o1.Reward,
+				"price":                 o1.Price.ValueOrZero(),
+				"reward":                o1.Reward.ValueOrZero(),
 				"status":                "finished",
 				"type":                  "courier",
-				"volume":                o1.Volume,
+				"volume":                o1.Volume.ValueOrZero(),
 			}}),
 		)
 		// when
@@ -303,18 +313,18 @@ func TestUpdateContractESI(t *testing.T) {
 		assert.True(t, changed)
 		o2, err := st.GetCharacterContract(ctx, c.ID, o1.ContractID)
 		require.NoError(t, err)
-		assert.Equal(t, acceptor, o2.Acceptor)
-		assert.Equal(t, app.ContractStatusFinished, o2.Status)
-		assert.Equal(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o2.DateAccepted.MustValue())
-		assert.Equal(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o2.DateCompleted.MustValue())
-		assert.Equal(t, o1.DateIssued, o2.DateIssued)
-		assert.Equal(t, o1.DateExpired, o2.DateExpired)
+		xassert.Equal(t, acceptor, o2.Acceptor.ValueOrZero())
+		xassert.Equal(t, app.ContractStatusFinished, o2.Status)
+		xassert.Equal(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o2.DateAccepted.MustValue())
+		xassert.Equal(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o2.DateCompleted.MustValue())
+		xassert.Equal(t, o1.DateIssued, o2.DateIssued)
+		xassert.Equal(t, o1.DateExpired, o2.DateExpired)
 	})
 	t.Run("should not update unchanged contract", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
@@ -325,22 +335,24 @@ func TestUpdateContractESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
 				"availability":          "public",
-				"buyout":                o1.Buyout,
+				"buyout":                o1.Buyout.ValueOrZero(),
 				"contract_id":           o1.ContractID,
 				"date_expired":          o1.DateExpired.Format(time.RFC3339),
 				"date_issued":           o1.DateIssued.Format(time.RFC3339),
-				"days_to_complete":      o1.DaysToComplete,
-				"for_corporation":       true,
+				"days_to_complete":      o1.DaysToComplete.ValueOrZero(),
+				"for_corporation":       o1.ForCorporation,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
-				"price":                 o1.Price,
-				"reward":                o1.Reward,
+				"price":                 o1.Price.ValueOrZero(),
+				"reward":                o1.Reward.ValueOrZero(),
 				"status":                "outstanding",
 				"type":                  "courier",
-				"volume":                o1.Volume,
+				"volume":                o1.Volume.ValueOrZero(),
 			}}),
 		)
 		// when
@@ -353,26 +365,34 @@ func TestUpdateContractESI(t *testing.T) {
 		assert.True(t, changed)
 		o2, err := st.GetCharacterContract(ctx, c.ID, o1.ContractID)
 		require.NoError(t, err)
-		assert.Equal(t, o1.UpdatedAt, o2.UpdatedAt)
+		xassert.Equal(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
 	t.Run("should not create deleted contracts", func(t *testing.T) {
 		// given
+		const (
+			contractID = 42
+			volume     = 0.01
+			recordID   = 123456
+			quantity   = 7
+		)
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		contractID := int32(42)
-		volume := 0.01
+		asignee := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           asignee.ID,
+				"assignee_id":           asignee.ID,
 				"availability":          "public",
 				"contract_id":           contractID,
 				"date_expired":          "2017-06-13T13:12:32Z",
 				"date_issued":           "2017-06-05T13:12:32Z",
 				"days_to_complete":      3,
+				"for_corporation":       false,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
 				"price":                 1000000.01,
@@ -381,12 +401,10 @@ func TestUpdateContractESI(t *testing.T) {
 				"volume":                volume,
 			}}),
 		)
-		recordID := int64(123456)
-		quantity := 7
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/%d/items/", c.ID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/items", c.ID, contractID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_included":  true,
 				"is_singleton": false,
@@ -404,13 +422,13 @@ func TestUpdateContractESI(t *testing.T) {
 		require.NoError(t, err)
 		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
 		require.NoError(t, err)
-		assert.Equal(t, 0, ids.Size())
+		xassert.Equal(t, 0, ids.Size())
 	})
 	t.Run("should remove unfinished contracts missing in ESI response", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
@@ -445,13 +463,16 @@ func TestUpdateContractESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
 				"availability":          "public",
 				"contract_id":           o4.ContractID,
 				"date_expired":          "2017-06-13T13:12:32Z",
 				"date_issued":           "2017-06-05T13:12:32Z",
 				"days_to_complete":      3,
+				"for_corporation":       false,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
 				"price":                 1000000.01,
@@ -469,6 +490,6 @@ func TestUpdateContractESI(t *testing.T) {
 		require.NoError(t, err)
 		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.EqualSet(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
+		xassert.Equal2(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
 	})
 }

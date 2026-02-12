@@ -15,15 +15,15 @@ import (
 )
 
 type CreateCorporationWalletTransactionParams struct {
-	ClientID      int32
+	ClientID      int64
 	Date          time.Time
-	DivisionID    int32
-	EveTypeID     int32
+	DivisionID    int64
+	EveTypeID     int64
 	IsBuy         bool
 	JournalRefID  int64
 	LocationID    int64
-	CorporationID int32
-	Quantity      int32
+	CorporationID int64
+	Quantity      int64
 	TransactionID int64
 	UnitPrice     float64
 }
@@ -36,15 +36,15 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
-		ClientID:      int64(arg.ClientID),
+		ClientID:     arg.ClientID,
 		Date:          arg.Date,
-		DivisionID:    int64(arg.DivisionID),
-		EveTypeID:     int64(arg.EveTypeID),
+		DivisionID:   arg.DivisionID,
+		EveTypeID:    arg.EveTypeID,
 		IsBuy:         arg.IsBuy,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
-		CorporationID: int64(arg.CorporationID),
-		Quantity:      int64(arg.Quantity),
+		CorporationID:arg.CorporationID,
+		Quantity:     arg.Quantity,
 		TransactionID: arg.TransactionID,
 		UnitPrice:     arg.UnitPrice,
 	})
@@ -54,7 +54,7 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 	return nil
 }
 
-func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corporationID int32, d app.Division) error {
+func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corporationID int64, d app.Division) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationWalletTransactions: %d %d %w", corporationID, d, err)
 	}
@@ -62,8 +62,8 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
-		CorporationID: int64(corporationID),
-		DivisionID:    int64(d.ID()),
+		CorporationID:corporationID,
+		DivisionID:   d.ID(),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -73,8 +73,8 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 }
 
 type GetCorporationWalletTransactionParams struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	TransactionID int64
 }
 
@@ -86,8 +86,8 @@ func (st *Storage) GetCorporationWalletTransaction(ctx context.Context, arg GetC
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletTransaction(ctx, queries.GetCorporationWalletTransactionParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID:arg.CorporationID,
+		DivisionID:   arg.DivisionID,
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {
@@ -115,8 +115,8 @@ func (st *Storage) ListCorporationWalletTransactionIDs(ctx context.Context, arg 
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
 	ids, err := st.qRO.ListCorporationWalletTransactionIDs(ctx, queries.ListCorporationWalletTransactionIDsParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID:arg.CorporationID,
+		DivisionID:   arg.DivisionID,
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -132,8 +132,8 @@ func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg Co
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	rows, err := st.qRO.ListCorporationWalletTransactions(ctx, queries.ListCorporationWalletTransactionsParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID:arg.CorporationID,
+		DivisionID:   arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -169,7 +169,7 @@ func corporationWalletTransactionFromDBModel(
 	o2 := &app.CorporationWalletTransaction{
 		Client:       eveEntityFromDBModel(client),
 		Date:         o.Date,
-		DivisionID:   int32(o.DivisionID),
+		DivisionID:  o.DivisionID,
 		Type:         eveTypeFromDBModel(et, eg, ec),
 		ID:           o.ID,
 		IsBuy:        o.IsBuy,
@@ -178,14 +178,14 @@ func corporationWalletTransactionFromDBModel(
 			ID:             o.LocationID,
 			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
-		CorporationID: int32(o.CorporationID),
-		Quantity:      int32(o.Quantity),
+		CorporationID:o.CorporationID,
+		Quantity:     o.Quantity,
 		TransactionID: o.TransactionID,
 		UnitPrice:     o.UnitPrice,
 	}
 	if regionID.Valid && regionName.Valid {
-		o2.Region = &app.EntityShort[int32]{
-			ID:   int32(regionID.Int64),
+		o2.Region = &app.EntityShort[int64]{
+			ID:  regionID.Int64,
 			Name: regionName.String,
 		}
 	}

@@ -9,7 +9,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/icrowley/fake"
 
 	"github.com/ErikKalkoken/go-set"
@@ -51,21 +52,24 @@ func main() {
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
 
+	rhc1 := retryablehttp.NewClient()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:   st,
-		ESIClient: goesi.NewAPIClient(nil, "EVE Buddy generate"),
+		Storage: st,
+		ESIClient: goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
+			UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+		}),
 	})
 
 	ctx := context.Background()
-	typeIDs := []int32{typeAstrahus, typeKeepstar, typeRaitaru, typeTatara, typeAthanor, typeMetanox}
-	systemIDs := []int32{systemAbune, systemEnaluri, systemJita}
+	typeIDs := []int64{typeAstrahus, typeKeepstar, typeRaitaru, typeTatara, typeAthanor, typeMetanox}
+	systemIDs := []int64{systemAbune, systemEnaluri, systemJita}
 
 	for _, id := range typeIDs {
 		if _, err := eus.GetOrCreateTypeESI(ctx, id); err != nil {
 			log.Fatal(err)
 		}
 	}
-	systems := make(map[int32]*app.EveSolarSystem)
+	systems := make(map[int64]*app.EveSolarSystem)
 	for _, id := range systemIDs {
 		es, err := eus.GetOrCreateSolarSystemESI(ctx, id)
 		if err != nil {
@@ -92,7 +96,7 @@ func main() {
 		typeID := typeIDs[rand.IntN(len(typeIDs))]
 		st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: corporationID,
-			Name:          fmt.Sprintf("%s - %s", systems[systemID].Name, fake.City()),
+			Name:          optional.New(fmt.Sprintf("%s - %s", systems[systemID].Name, fake.City())),
 			State:         app.StructureStateShieldVulnerable,
 			StructureID:   id,
 			SystemID:      systemID,

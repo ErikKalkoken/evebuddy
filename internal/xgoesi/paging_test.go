@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
-	"github.com/antihax/goesi"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,15 +16,20 @@ import (
 func TestFetchPagesConcurrently(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
+	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "MyApp/1.0 (contact@example.com)",
+	})
 	ctx := context.Background()
+	const (
+		characterID = 99
+	)
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
 		httpmock.Reset()
 		pages := "3"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -41,7 +45,7 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=2",
+			"https://esi.evetech.net/characters/99/assets?page=2",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -57,7 +61,7 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=3",
+			"https://esi.evetech.net/characters/99/assets?page=3",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -72,11 +76,8 @@ func TestFetchPagesConcurrently(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesConcurrently(-1, func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		xx, err := FetchPagesConcurrently(-1, func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -94,7 +95,7 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		pages := "1"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -110,11 +111,8 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		)
 		// when
 		xx, err := FetchPagesConcurrently(-1,
-			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: esioptional.NewInt32(int32(pageNum)),
-				}
-				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+			func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+				return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -126,7 +124,7 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -142,11 +140,8 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		)
 		// when
 		xx, err := FetchPagesConcurrently(-1,
-			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: esioptional.NewInt32(int32(pageNum)),
-				}
-				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+			func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+				return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -158,7 +153,7 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		myErr := errors.New("error")
 		// when
 		_, err := FetchPagesConcurrently(-1,
-			func(pageNum int) ([]int, *http.Response, error) {
+			func(page int32) ([]int, *http.Response, error) {
 				return nil, nil, myErr
 			})
 		// then
@@ -169,15 +164,12 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
 		_, err := FetchPagesConcurrently(-1,
-			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: esioptional.NewInt32(int32(pageNum)),
-				}
-				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+			func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+				return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 			})
 		// then
 		assert.Error(t, err)
@@ -187,7 +179,9 @@ func TestFetchPagesConcurrently(t *testing.T) {
 func TestFetchPagesWithShortcut(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
+	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+	})
 	ctx := context.Background()
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
@@ -195,7 +189,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		pages := "3"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -211,7 +205,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=2",
+			"https://esi.evetech.net/characters/99/assets?page=2",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -227,7 +221,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=3",
+			"https://esi.evetech.net/characters/99/assets?page=3",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -242,11 +236,8 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		xx, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
 		if assert.NoError(t, err) {
@@ -264,7 +255,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		pages := "1"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -279,11 +270,8 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		xx, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
 		if assert.NoError(t, err) {
@@ -295,7 +283,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -310,11 +298,8 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}),
 		)
 		// when
-		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		xx, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
 		if assert.NoError(t, err) {
@@ -325,7 +310,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		// given
 		myErr := errors.New("error")
 		// when
-		_, err := FetchPagesWithStop(func(pageNum int) ([]int, *http.Response, error) {
+		_, err := FetchPagesWithStop(func(page int32) ([]int, *http.Response, error) {
 			return nil, nil, myErr
 		}, nil)
 		// then
@@ -336,14 +321,11 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
-		_, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		_, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
 		assert.Error(t, err)
@@ -354,7 +336,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		pages := "3"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -370,7 +352,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=2",
+			"https://esi.evetech.net/characters/99/assets?page=2",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -386,7 +368,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=3",
+			"https://esi.evetech.net/characters/99/assets?page=3",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -401,12 +383,9 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
-		}, func(x esi.GetCharactersCharacterIdAssets200Ok) bool {
+		xx, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
+		}, func(x esi.CharactersCharacterIdAssetsGetInner) bool {
 			return x.ItemId == 1000000016836
 		})
 		// then
@@ -425,7 +404,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		pages := "3"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/",
+			"https://esi.evetech.net/characters/99/assets?page=1",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -441,7 +420,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=2",
+			"https://esi.evetech.net/characters/99/assets?page=2",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -457,7 +436,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v4/characters/99/assets/?page=3",
+			"https://esi.evetech.net/characters/99/assets?page=3",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -472,12 +451,9 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: esioptional.NewInt32(int32(pageNum)),
-			}
-			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
-		}, func(x esi.GetCharactersCharacterIdAssets200Ok) bool {
+		xx, err := FetchPagesWithStop(func(page int32) ([]esi.CharactersCharacterIdAssetsGetInner, *http.Response, error) {
+			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
+		}, func(x esi.CharactersCharacterIdAssetsGetInner) bool {
 			return x.ItemId == 1000000016835
 		})
 		// then

@@ -3,19 +3,21 @@ package app_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveCorporationDescription(t *testing.T) {
 	x := &app.EveCorporation{Description: "alpha<br>bravo"}
-	assert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
+xassert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
 }
 
 func TestEveEntityCategory(t *testing.T) {
 	x := &app.EveEntity{Category: app.EveEntityAlliance}
-	assert.Equal(t, "Alliance", x.CategoryDisplay())
+xassert.Equal(t, "Alliance", x.CategoryDisplay())
 }
 
 func TestEveEntityIsCharacter(t *testing.T) {
@@ -28,7 +30,7 @@ func TestEveEntityIsCharacter(t *testing.T) {
 func TestEveEntityIsNPC(t *testing.T) {
 	cases := []struct {
 		name     string
-		id       int32
+		id       int64
 		category app.EveEntityCategory
 		want     optional.Optional[bool]
 	}{
@@ -43,7 +45,7 @@ func TestEveEntityIsNPC(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ee := &app.EveEntity{ID: tc.id, Category: tc.category}
 			got := ee.IsNPC()
-			assert.Equal(t, tc.want, got)
+		xassert.Equal(t, tc.want, got)
 		})
 	}
 }

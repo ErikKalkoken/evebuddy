@@ -12,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // Eve Entity categories in DB models
@@ -30,7 +31,7 @@ const (
 )
 
 type CreateEveEntityParams struct {
-	ID       int32
+	ID       int64
 	Name     string
 	Category app.EveEntityCategory
 }
@@ -47,7 +48,7 @@ func (st *Storage) CreateEveEntity(ctx context.Context, arg CreateEveEntityParam
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.CreateEveEntity(ctx, queries.CreateEveEntityParams{
-		ID:       int64(arg.ID),
+		ID:       arg.ID,
 		Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 		Name:     arg.Name,
 	})
@@ -72,13 +73,13 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	r, err := qtx.GetEveEntity(ctx, int64(arg.ID))
+	r, err := qtx.GetEveEntity(ctx, arg.ID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 		r2, err := qtx.CreateEveEntity(ctx, queries.CreateEveEntityParams{
-			ID:       int64(arg.ID),
+			ID:       arg.ID,
 			Name:     arg.Name,
 			Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 		})
@@ -94,8 +95,8 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 	return eveEntityFromDBModel(r), nil
 }
 
-func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
-	e, err := st.qRO.GetEveEntity(ctx, int64(id))
+func (st *Storage) GetEveEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
+	e, err := st.qRO.GetEveEntity(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get eve entity for id %d: %w", id, convertGetError(err))
 	}
@@ -135,12 +136,12 @@ func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial str
 	return oo, nil
 }
 
-func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int64], error) {
 	ids, err := st.qRO.ListEveEntityIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("list eve entity id: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 
@@ -159,21 +160,21 @@ func (st *Storage) ListEveEntities(ctx context.Context) ([]*app.EveEntity, error
 // ListEveEntitiesForIDs returns a slice of EveEntities in the same order as ids.
 //
 // Returns an error if at least one object can not be found.
-func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
+func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
 	if len(ids) == 0 {
 		return []*app.EveEntity{}, nil
 	}
 	rows := make([]queries.EveEntity, 0)
-	for idsChunk := range slices.Chunk(convertNumericSlice[int64](ids), st.MaxListEveEntitiesForIDs) {
+	for idsChunk := range slices.Chunk(ids, st.MaxListEveEntitiesForIDs) {
 		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
 		}
 		rows = slices.Concat(rows, r)
 	}
-	m := make(map[int32]*app.EveEntity)
+	m := make(map[int64]*app.EveEntity)
 	for _, r := range rows {
-		m[int32(r.ID)] = eveEntityFromDBModel(r)
+		m[int64(r.ID)] = eveEntityFromDBModel(r)
 	}
 	oo := make([]*app.EveEntity, 0)
 	for _, id := range ids {
@@ -188,15 +189,15 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*a
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.
 // IDs with value 0 are ignored.
-func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	incoming := ids.Clone()
 	incoming.Delete(0)
 	if incoming.Size() == 0 {
-		return set.Set[int32]{}, nil
+		return set.Set[int64]{}, nil
 	}
 	current, err := st.ListEveEntityIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, err
+		return set.Set[int64]{}, err
 	}
 	missing := set.Difference(incoming, current)
 	return missing, nil
@@ -210,7 +211,7 @@ func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, arg CreateEveEnt
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.UpdateOrCreateEveEntity(ctx, queries.UpdateOrCreateEveEntityParams{
-		ID:       int64(arg.ID),
+		ID:       arg.ID,
 		Name:     arg.Name,
 		Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 	})
@@ -221,7 +222,7 @@ func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, arg CreateEveEnt
 	return eveEntityFromDBModel(r), nil
 }
 
-func (st *Storage) UpdateEveEntity(ctx context.Context, id int32, name string) error {
+func (st *Storage) UpdateEveEntity(ctx context.Context, id int64, name string) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateEveEntity: %d: %w", id, err)
 	}
@@ -229,7 +230,7 @@ func (st *Storage) UpdateEveEntity(ctx context.Context, id int32, name string) e
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateEveEntity(ctx, queries.UpdateEveEntityParams{
-		ID:   int64(id),
+		ID:   id,
 		Name: name,
 	})
 	if err != nil {
@@ -287,7 +288,7 @@ func eveEntityFromDBModel(r queries.EveEntity) *app.EveEntity {
 	}
 	o := &app.EveEntity{
 		Category: eveEntityCategoryFromDBModel(r.Category),
-		ID:       int32(r.ID),
+		ID:       r.ID,
 		Name:     r.Name,
 	}
 	return o
@@ -299,14 +300,14 @@ type nullEveEntry struct {
 	name     sql.NullString
 }
 
-func eveEntityFromNullableDBModel(o nullEveEntry) *app.EveEntity {
+func eveEntityFromNullableDBModel(o nullEveEntry) optional.Optional[*app.EveEntity] {
 	if !o.id.Valid {
-		return nil
+		return optional.Optional[*app.EveEntity]{}
 	}
 	o2 := &app.EveEntity{
 		Category: eveEntityCategoryFromDBModel(o.category.String),
-		ID:       int32(o.id.Int64),
+		ID:       o.id.Int64,
 		Name:     o.name.String,
 	}
-	return o2
+	return optional.New(o2)
 }

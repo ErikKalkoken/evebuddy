@@ -9,16 +9,16 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) GetPlanet(ctx context.Context, characterID, planetID int32) (*app.CharacterPlanet, error) {
+func (s *CharacterService) GetPlanet(ctx context.Context, characterID, planetID int64) (*app.CharacterPlanet, error) {
 	return s.st.GetCharacterPlanet(ctx, characterID, planetID)
 }
 
@@ -26,14 +26,14 @@ func (s *CharacterService) ListAllPlanets(ctx context.Context) ([]*app.Character
 	return s.st.ListAllCharacterPlanets(ctx)
 }
 
-func (s *CharacterService) ListPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
+func (s *CharacterService) ListPlanets(ctx context.Context, characterID int64) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
 }
 
 // NotifyExpiredExtractions sends notifications for expired extractions of a character.
 // Expired notifications are notified once only.
 // It will sent one notification covering all currently expired extractions.
-func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
+func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
 		planets, err := s.ListPlanets(ctx, characterID)
 		if err != nil {
@@ -82,27 +82,27 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanets")
-			planets, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanets(ctx, characterID, nil)
+			planets, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanets(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received planets from ESI", "characterID", characterID, "count", len(planets))
 			return planets, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
+		func(ctx context.Context, characterID int64, data any) error {
 			// remove obsolete planets
 			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			existing := set.Of[int32]()
+			existing := set.Of[int64]()
 			for _, p := range pp {
 				existing.Add(p.EvePlanet.ID)
 			}
-			planets := data.([]esi.GetCharactersCharacterIdPlanets200Ok)
-			incoming := set.Of[int32]()
+			planets := data.([]esi.CharactersCharacterIdPlanetsGetInner)
+			incoming := set.Of[int64]()
 			for _, p := range planets {
 				incoming.Add(p.PlanetId)
 			}
@@ -115,7 +115,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			}
 			// update or create planet
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanetsPlanetId")
-			g := new(errgroup.Group)
+			g := new(testutil.ErrGroupDebug)
 			for _, o := range planets {
 				g.Go(func() error {
 					_, err := s.eus.GetOrCreatePlanetESI(ctx, o.PlanetId)
@@ -126,12 +126,12 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 						CharacterID:  characterID,
 						EvePlanetID:  o.PlanetId,
 						LastUpdate:   o.LastUpdate,
-						UpgradeLevel: int(o.UpgradeLevel),
+						UpgradeLevel: o.UpgradeLevel,
 					})
 					if err != nil {
 						return err
 					}
-					planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
+					planet, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId).Execute()
 					if err != nil {
 						return err
 					}
@@ -148,26 +148,26 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 							CharacterPlanetID: characterPlanetID,
 							TypeID:            et.ID,
 							PinID:             pin.PinId,
-							ExpiryTime:        pin.ExpiryTime,
-							InstallTime:       pin.InstallTime,
-							LastCycleStart:    pin.LastCycleStart,
+							ExpiryTime:        optional.FromPtr(pin.ExpiryTime),
+							InstallTime:       optional.FromPtr(pin.InstallTime),
+							LastCycleStart:    optional.FromPtr(pin.LastCycleStart),
 						}
-						if pin.ExtractorDetails.ProductTypeId != 0 {
-							et, err := s.eus.GetOrCreateTypeESI(ctx, pin.ExtractorDetails.ProductTypeId)
+						if pin.ExtractorDetails != nil && pin.ExtractorDetails.ProductTypeId != nil {
+							et, err := s.eus.GetOrCreateTypeESI(ctx, *pin.ExtractorDetails.ProductTypeId)
 							if err != nil {
 								return err
 							}
 							arg.ExtractorProductTypeID = optional.New(et.ID)
 						}
-						if pin.FactoryDetails.SchematicId != 0 {
+						if pin.FactoryDetails != nil && pin.FactoryDetails.SchematicId != 0 {
 							es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
 							if err != nil {
 								return err
 							}
-							arg.FactorySchemaID = optional.New(es.ID)
+							arg.FactorySchematicID = optional.New(es.ID)
 						}
-						if pin.SchematicId != 0 {
-							es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
+						if x := pin.SchematicId; x != nil {
+							es, err := s.eus.GetOrCreateSchematicESI(ctx, *x)
 							if err != nil {
 								return err
 							}

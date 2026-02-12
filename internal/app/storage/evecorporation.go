@@ -12,8 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
-	r, err := st.qRO.GetEveCorporation(ctx, int64(corporationID))
+func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
+	r, err := st.qRO.GetEveCorporation(ctx,corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, convertGetError(err))
 	}
@@ -48,31 +48,31 @@ func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int32) (
 	return c, nil
 }
 
-func (st *Storage) ListEveCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListEveCorporationIDs(ctx context.Context) (set.Set[int64], error) {
 	ids, err := st.qRO.ListEveCorporationIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("ListEveCorporationIDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("ListEveCorporationIDs: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	ids2 := set.Of(ids...)
 	return ids2, nil
 }
 
 type UpdateOrCreateEveCorporationParams struct {
-	AllianceID    optional.Optional[int32]
-	CeoID         optional.Optional[int32]
-	CreatorID     optional.Optional[int32]
+	AllianceID    optional.Optional[int64]
+	CeoID         optional.Optional[int64]
+	CreatorID     optional.Optional[int64]
 	DateFounded   optional.Optional[time.Time]
-	Description   string
-	FactionID     optional.Optional[int32]
-	HomeStationID optional.Optional[int32]
-	ID            int32
-	MemberCount   int32
+	Description   optional.Optional[string]
+	FactionID     optional.Optional[int64]
+	HomeStationID optional.Optional[int64]
+	ID            int64
+	MemberCount   int64
 	Name          string
 	Shares        optional.Optional[int64]
-	TaxRate       float32
+	TaxRate       float64
 	Ticker        string
-	URL           string
-	WarEligible   bool
+	URL           optional.Optional[string]
+	WarEligible   optional.Optional[bool]
 }
 
 func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateOrCreateEveCorporationParams) error {
@@ -84,17 +84,17 @@ func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateO
 		CeoID:         optional.ToNullInt64(arg.CeoID),
 		CreatorID:     optional.ToNullInt64(arg.CreatorID),
 		DateFounded:   optional.ToNullTime(arg.DateFounded),
-		Description:   arg.Description,
+		Description:   arg.Description.ValueOrZero(),
 		FactionID:     optional.ToNullInt64(arg.FactionID),
 		HomeStationID: optional.ToNullInt64(arg.HomeStationID),
-		ID:            int64(arg.ID),
-		MemberCount:   int64(arg.MemberCount),
+		ID:           arg.ID,
+		MemberCount:  arg.MemberCount,
 		Name:          arg.Name,
 		Shares:        optional.ToNullInt64(arg.Shares),
 		TaxRate:       float64(arg.TaxRate),
 		Ticker:        arg.Ticker,
-		Url:           arg.URL,
-		WarEligible:   arg.WarEligible,
+		Url:           arg.URL.ValueOrZero(),
+		WarEligible:   arg.WarEligible.ValueOrZero(),
 	}
 	err := st.qRW.UpdateOrCreateEveCorporation(ctx, arg2)
 	if err != nil {
@@ -103,12 +103,12 @@ func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateO
 	return nil
 }
 
-func (st *Storage) UpdateEveCorporationName(ctx context.Context, corporationID int32, name string) error {
+func (st *Storage) UpdateEveCorporationName(ctx context.Context, corporationID int64, name string) error {
 	if corporationID == 0 || name == "" {
 		return fmt.Errorf("UpdateEveCorporationName: %w", app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateEveCorporationName(ctx, queries.UpdateEveCorporationNameParams{
-		ID:   int64(corporationID),
+		ID:  corporationID,
 		Name: name,
 	}); err != nil {
 		return fmt.Errorf("UpdateEveCorporationName %d: %w", corporationID, err)
@@ -127,7 +127,7 @@ type eveCorporationFromDBModelParams struct {
 
 func eveCorporationFromDBModel(arg eveCorporationFromDBModelParams) *app.EveCorporation {
 	o := &app.EveCorporation{
-		ID:          int32(arg.corporation.ID),
+		ID:         arg.corporation.ID,
 		Alliance:    eveEntityFromNullableDBModel(arg.alliance),
 		Ceo:         eveEntityFromNullableDBModel(arg.ceo),
 		Creator:     eveEntityFromNullableDBModel(arg.creator),
@@ -135,13 +135,13 @@ func eveCorporationFromDBModel(arg eveCorporationFromDBModelParams) *app.EveCorp
 		Description: arg.corporation.Description,
 		Faction:     eveEntityFromNullableDBModel(arg.faction),
 		HomeStation: eveEntityFromNullableDBModel(arg.station),
-		MemberCount: int(arg.corporation.MemberCount),
+		MemberCount: arg.corporation.MemberCount,
 		Name:        arg.corporation.Name,
-		Shares:      optional.FromNullInt64ToInteger[int](arg.corporation.Shares),
-		TaxRate:     float32(arg.corporation.TaxRate),
+		Shares:      optional.FromNullInt64(arg.corporation.Shares),
+		TaxRate:     arg.corporation.TaxRate,
 		Ticker:      arg.corporation.Ticker,
-		URL:         arg.corporation.Url,
-		WarEligible: arg.corporation.WarEligible,
+		URL:         optional.FromZeroValue(arg.corporation.Url),
+		WarEligible: optional.FromZeroValue(arg.corporation.WarEligible),
 	}
 	return o
 }

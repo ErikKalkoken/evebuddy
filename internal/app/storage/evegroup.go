@@ -10,8 +10,8 @@ import (
 )
 
 type CreateEveGroupParams struct {
-	ID          int32
-	CategoryID  int32
+	ID          int64
+	CategoryID  int64
 	IsPublished bool
 	Name        string
 }
@@ -28,8 +28,8 @@ func createEveGroup(ctx context.Context, q *queries.Queries, arg CreateEveGroupP
 		return wrapErr(app.ErrInvalid)
 	}
 	err := q.CreateEveGroup(ctx, queries.CreateEveGroupParams{
-		ID:            int64(arg.ID),
-		EveCategoryID: int64(arg.CategoryID),
+		ID:           arg.ID,
+		EveCategoryID:arg.CategoryID,
 		IsPublished:   arg.IsPublished,
 		Name:          arg.Name,
 	})
@@ -39,12 +39,12 @@ func createEveGroup(ctx context.Context, q *queries.Queries, arg CreateEveGroupP
 	return nil
 }
 
-func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, error) {
+func (st *Storage) GetEveGroup(ctx context.Context, id int64) (*app.EveGroup, error) {
 	return getEveGroup(ctx, st.qRO, id)
 }
 
-func getEveGroup(ctx context.Context, q *queries.Queries, id int32) (*app.EveGroup, error) {
-	row, err := q.GetEveGroup(ctx, int64(id))
+func getEveGroup(ctx context.Context, q *queries.Queries, id int64) (*app.EveGroup, error) {
+	row, err := q.GetEveGroup(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("GetEveGroup for id %d: %w", id, convertGetError(err))
 	}
@@ -86,7 +86,7 @@ func (st *Storage) GetOrCreateEveGroup(ctx context.Context, arg CreateEveGroupPa
 func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) *app.EveGroup {
 	return &app.EveGroup{
 		Category:    eveCategoryFromDBModel(c),
-		ID:          int32(g.ID),
+		ID:         g.ID,
 		IsPublished: g.IsPublished,
 		Name:        g.Name,
 	}

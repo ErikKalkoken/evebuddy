@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEntityIcon(t *testing.T) {
@@ -40,7 +41,7 @@ func TestEntityIcon(t *testing.T) {
 			ee := &app.EveEntity{ID: 1, Category: tc.category, Name: "Dummy"}
 			got, err := entityIcon(eis, ee, 64, fallback)
 			if assert.NoError(t, err) {
-				assert.Equal(t, tc.want, got)
+			xassert.Equal(t, tc.want, got)
 			}
 		})
 	}

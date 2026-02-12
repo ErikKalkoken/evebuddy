@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGeneralSectionStatus(t *testing.T) {
@@ -44,13 +45,13 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
-				assert.Equal(t, "", x1.ContentHash)
-				assert.Equal(t, "error", x1.ErrorMessage)
+				xassert.Equal(t, "", x1.ContentHash)
+				xassert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 			}
 			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -69,13 +70,13 @@ func TestGeneralSectionStatus(t *testing.T) {
 		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x.ContentHash, x1.ContentHash)
-			assert.Equal(t, "error", x1.ErrorMessage)
-			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			assert.Equal(t, x.StartedAt, x1.StartedAt)
+			xassert.Equal(t, x.ContentHash, x1.ContentHash)
+			xassert.Equal(t, "error", x1.ErrorMessage)
+			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+			xassert.Equal(t, x.StartedAt, x1.StartedAt)
 			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})

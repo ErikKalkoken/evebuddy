@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) ListImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
+func (s *CharacterService) ListImplants(ctx context.Context, characterID int64) ([]*app.CharacterImplant, error) {
 	return s.st.ListCharacterImplants(ctx, characterID)
 }
 
@@ -26,17 +26,17 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdImplants")
-			implants, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdImplants(ctx, characterID, nil)
+			implants, _, err := s.esiClient.ClonesAPI.GetCharactersCharacterIdImplants(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
 			slog.Debug("Received implants from ESI", "count", len(implants), "characterID", characterID)
 			return implants, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			implants := data.([]int32)
+		func(ctx context.Context, characterID int64, data any) error {
+			implants := data.([]int64)
 			if err := s.eus.AddMissingTypes(ctx, set.Of(implants...)); err != nil {
 				return err
 			}

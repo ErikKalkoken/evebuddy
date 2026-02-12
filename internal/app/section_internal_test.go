@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestMakeSectionDisplayName(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMakeSectionDisplayName(t *testing.T) {
 	for _, tc := range cases {
 		t.Run("can make display name for section", func(t *testing.T) {
 			// when/then
-			assert.Equal(t, tc.want, tc.section.DisplayName())
+		xassert.Equal(t, tc.want, tc.section.DisplayName())
 		})
 	}
 }

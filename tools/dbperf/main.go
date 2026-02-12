@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
-const objectsCount = int32(10_000)
+const objectsCount = int64(10_000)
 
 func main() {
 	dsn := "file:test.db"

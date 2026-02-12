@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -109,7 +109,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 			Transport: &xgoesi.RateLimiter{},
 		}
 		var wg sync.WaitGroup
-		for _, characterID := range []int32{42, 43} {
+		for _, characterID := range []int64{42, 43} {
 			wg.Go(func() {
 				ctx := xgoesi.NewContextWithAuth(t.Context(), characterID, "token")
 				ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
@@ -172,7 +172,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := context.WithValue(t.Context(), goesi.ContextAccessToken, "token")
+		ctx := context.WithValue(t.Context(), goesi.ContextOAuth2, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)

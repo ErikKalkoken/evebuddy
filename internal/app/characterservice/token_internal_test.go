@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEnsureValidToken(t *testing.T) {
@@ -36,8 +37,8 @@ func TestEnsureValidToken(t *testing.T) {
 		err := cs.ensureValidCharacterToken(ctx, token1)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "access-old", token1.AccessToken)
-			assert.Equal(t, "refresh-old", token1.RefreshToken)
+			 xassert.Equal(t, "access-old", token1.AccessToken)
+			 xassert.Equal(t, "refresh-old", token1.RefreshToken)
 		}
 	})
 	t.Run("should refresh token when expired", func(t *testing.T) {
@@ -61,8 +62,8 @@ func TestEnsureValidToken(t *testing.T) {
 		err := cs.ensureValidCharacterToken(ctx, token)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "access-new", token.AccessToken)
-			assert.Equal(t, "refresh-new", token.RefreshToken)
+			 xassert.Equal(t, "access-new", token.AccessToken)
+			 xassert.Equal(t, "refresh-new", token.RefreshToken)
 			assert.True(t, token.ExpiresAt.After(time.Now()))
 		}
 	})

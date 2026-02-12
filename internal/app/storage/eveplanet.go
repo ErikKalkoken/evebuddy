@@ -9,10 +9,10 @@ import (
 )
 
 type CreateEvePlanetParams struct {
-	ID            int32
+	ID            int64
 	Name          string
-	SolarSystemID int32
-	TypeID        int32
+	SolarSystemID int64
+	TypeID        int64
 }
 
 func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParams) error {
@@ -20,10 +20,10 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 		return fmt.Errorf("CreateEvePlanet: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEvePlanetParams{
-		ID:               int64(arg.ID),
+		ID:              arg.ID,
 		Name:             arg.Name,
-		EveSolarSystemID: int64(arg.SolarSystemID),
-		EveTypeID:        int64(arg.TypeID),
+		EveSolarSystemID:arg.SolarSystemID,
+		EveTypeID:       arg.TypeID,
 	}
 	err := st.qRW.CreateEvePlanet(ctx, arg2)
 	if err != nil {
@@ -32,8 +32,8 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 	return nil
 }
 
-func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	row, err := st.qRO.GetEvePlanet(ctx, int64(id))
+func (st *Storage) GetEvePlanet(ctx context.Context, id int64) (*app.EvePlanet, error) {
+	row, err := st.qRO.GetEvePlanet(ctx,id)
 	if err != nil {
 		return nil, fmt.Errorf("get EvePlanet for id %d: %w", id, convertGetError(err))
 	}
@@ -47,7 +47,7 @@ func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, 
 
 func evePlanetFromDBModel(p queries.EvePlanet, ess *app.EveSolarSystem, et *app.EveType) *app.EvePlanet {
 	return &app.EvePlanet{
-		ID:          int32(p.ID),
+		ID:         p.ID,
 		Name:        p.Name,
 		SolarSystem: ess,
 		Type:        et,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestPlanet(t *testing.T) {
@@ -34,10 +35,10 @@ func TestPlanet(t *testing.T) {
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c.ID, i.CharacterID)
-				assert.Equal(t, evePlanet, i.EvePlanet)
-				assert.Equal(t, lastUpdate, i.LastUpdate)
-				assert.Equal(t, 3, i.UpgradeLevel)
+				xassert.Equal(t, c.ID, i.CharacterID)
+				xassert.Equal(t, evePlanet, i.EvePlanet)
+				xassert.Equal(t, lastUpdate, i.LastUpdate)
+				xassert.Equal(t, 3, i.UpgradeLevel)
 			}
 		}
 	})
@@ -67,11 +68,11 @@ func TestPlanet(t *testing.T) {
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c.ID, i.CharacterID)
-				assert.Equal(t, evePlanet, i.EvePlanet)
-				assert.Equal(t, lastUpdate, i.LastUpdate)
-				assert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
-				assert.Equal(t, 3, i.UpgradeLevel)
+				xassert.Equal(t, c.ID, i.CharacterID)
+				xassert.Equal(t, evePlanet, i.EvePlanet)
+				xassert.Equal(t, lastUpdate, i.LastUpdate)
+				xassert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
+				xassert.Equal(t, 3, i.UpgradeLevel)
 			}
 		}
 	})
@@ -89,8 +90,8 @@ func TestPlanet(t *testing.T) {
 			assert.Len(t, oo, 3)
 			assert.ElementsMatch(
 				t,
-				[]int32{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
-				[]int32{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
+				[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
+				[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
 			)
 		}
 	})
@@ -110,7 +111,7 @@ func TestPlanet(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Len(t, oo, 1)
-			assert.ElementsMatch(t, []int32{p3.EvePlanet.ID}, []int32{oo[0].EvePlanet.ID})
+			assert.ElementsMatch(t, []int64{p3.EvePlanet.ID}, []int64{oo[0].EvePlanet.ID})
 		}
 	})
 	t.Run("can update last notified", func(t *testing.T) {
@@ -129,7 +130,7 @@ func TestPlanet(t *testing.T) {
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
+				xassert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
 			}
 		}
 	})
@@ -148,8 +149,8 @@ func TestPlanet(t *testing.T) {
 			assert.Len(t, oo, 3)
 			assert.ElementsMatch(
 				t,
-				[]int32{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
-				[]int32{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
+				[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
+				[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
 			)
 		}
 	})

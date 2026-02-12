@@ -9,18 +9,18 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // GetCorporationIndustryJob returns an industry job.
-func (s *CorporationService) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
+func (s *CorporationService) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int64) (*app.CorporationIndustryJob, error) {
 	return s.st.GetCorporationIndustryJob(ctx, corporationID, jobID)
 }
 
@@ -30,7 +30,7 @@ func (s *CorporationService) ListAllCorporationIndustryJobs(ctx context.Context)
 }
 
 // ListCorporationIndustryJobs returns all industry jobs from a corporation.
-func (s *CorporationService) ListCorporationIndustryJobs(ctx context.Context, corporationID int32) ([]*app.CorporationIndustryJob, error) {
+func (s *CorporationService) ListCorporationIndustryJobs(ctx context.Context, corporationID int64) ([]*app.CorporationIndustryJob, error) {
 	return s.st.ListCorporationIndustryJobs(ctx, corporationID)
 }
 
@@ -53,13 +53,8 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdIndustryJobs")
 			jobs, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
-					return s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
-						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
-							IncludeCompleted: esioptional.NewBool(true),
-							Page:             esioptional.NewInt32(int32(pageNum)),
-						},
-					)
+				func(page int32) ([]esi.CorporationsCorporationIdIndustryJobsGetInner, *http.Response, error) {
+					return s.esiClient.IndustryAPI.GetCorporationsCorporationIdIndustryJobs(ctx, arg.CorporationID).IncludeCompleted(true).Page(page).Execute()
 				},
 			)
 			if err != nil {
@@ -75,9 +70,9 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			return jobs, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			jobs := data.([]esi.GetCorporationsCorporationIdIndustryJobs200Ok)
+			jobs := data.([]esi.CorporationsCorporationIdIndustryJobsGetInner)
 
-			statusFromESIJob := func(j esi.GetCorporationsCorporationIdIndustryJobs200Ok) app.IndustryJobStatus {
+			statusFromESIJob := func(j esi.CorporationsCorporationIdIndustryJobsGetInner) app.IndustryJobStatus {
 				status, ok := jobStatusFromESIValue[j.Status]
 				if !ok {
 					return app.JobUndefined
@@ -90,10 +85,10 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			if err != nil {
 				return err
 			}
-			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CorporationIndustryJob) (int32, app.IndustryJobStatus) {
+			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
 				return j.JobID, j.Status
 			}))
-			changedJobs := make([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, 0)
+			changedJobs := make([]esi.CorporationsCorporationIdIndustryJobsGetInner, 0)
 			for _, j := range jobs {
 				status, found := currentJobs[j.JobId]
 				if !found {
@@ -109,13 +104,19 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			// Process changed jobs
 			hasChanged = len(changedJobs) > 0
 			if hasChanged {
-				var entityIDs set.Set[int32]
-				var typeIDs set.Set[int32]
+				var entityIDs set.Set[int64]
+				var typeIDs set.Set[int64]
 				var locationIDs set.Set[int64]
 				for _, j := range jobs {
-					entityIDs.Add(j.InstallerId, j.CompletedCharacterId)
+					entityIDs.Add(j.InstallerId)
+					if x := j.CompletedCharacterId; x != nil {
+						entityIDs.Add(*x)
+					}
 					locationIDs.Add(j.LocationId)
-					typeIDs.Add(j.BlueprintTypeId, j.ProductTypeId)
+					typeIDs.Add(j.BlueprintTypeId)
+					if x := j.ProductTypeId; x != nil {
+						typeIDs.Add(*x)
+					}
 				}
 				g := new(errgroup.Group)
 				g.Go(func() error {
@@ -137,25 +138,25 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 						BlueprintID:          j.BlueprintId,
 						BlueprintLocationID:  j.BlueprintLocationId,
 						BlueprintTypeID:      j.BlueprintTypeId,
-						CompletedCharacterID: j.CompletedCharacterId,
-						CompletedDate:        j.CompletedDate,
+						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+						CompletedDate:        optional.FromPtr(j.CompletedDate),
 						CorporationID:        arg.CorporationID,
-						Cost:                 j.Cost,
+						Cost:                 optional.FromPtr(j.Cost),
 						Duration:             j.Duration,
 						EndDate:              j.EndDate,
 						FacilityID:           j.FacilityId,
 						InstallerID:          j.InstallerId,
 						JobID:                j.JobId,
-						LicensedRuns:         j.LicensedRuns,
+						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
 						LocationID:           j.LocationId,
 						OutputLocationID:     j.OutputLocationId,
-						PauseDate:            j.PauseDate,
-						Probability:          j.Probability,
-						ProductTypeID:        j.ProductTypeId,
+						PauseDate:            optional.FromPtr(j.PauseDate),
+						Probability:          optional.FromPtr(j.Probability),
+						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
 						Runs:                 j.Runs,
 						StartDate:            j.StartDate,
 						Status:               statusFromESIJob(j),
-						SuccessfulRuns:       j.SuccessfulRuns,
+						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
 					}); err != nil {
 						return err
 					}
@@ -163,7 +164,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 				slog.Info("Updated industry jobs", "corporationID", arg.CorporationID, "count", len(jobs))
 
 				// Mark orphans
-				incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCorporationsCorporationIdIndustryJobs200Ok) int32 {
+				incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.CorporationsCorporationIdIndustryJobsGetInner) int64 {
 					return x.JobId
 				}))
 				current, err := s.st.ListCorporationIndustryJobs(ctx, arg.CorporationID)
@@ -172,7 +173,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 				}
 				running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
 					return x.Status.IsActive()
-				}), func(x *app.CorporationIndustryJob) int32 {
+				}), func(x *app.CorporationIndustryJob) int64 {
 					return x.JobID
 				}))
 				orphans := set.Difference(running, incoming)

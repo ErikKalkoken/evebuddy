@@ -19,15 +19,15 @@ import (
 type Character struct {
 	AssetValue        optional.Optional[float64]
 	EveCharacter      *EveCharacter
-	Home              *EveLocation
-	ID                int32
+	Home              optional.Optional[*EveLocation]
+	ID                int64
 	IsTrainingWatched bool
 	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
-	Location          *EveLocation
-	Ship              *EveType
-	TotalSP           optional.Optional[int]
-	UnallocatedSP     optional.Optional[int]
+	Location          optional.Optional[*EveLocation]
+	Ship              optional.Optional[*EveType]
+	TotalSP           optional.Optional[int64]
+	UnallocatedSP     optional.Optional[int64]
 	WalletBalance     optional.Optional[float64]
 	// Calculated fields
 	NextCloneJump optional.Optional[time.Time] // zero time == now
@@ -35,18 +35,18 @@ type Character struct {
 
 type CharacterAttributes struct {
 	ID            int64
-	BonusRemaps   int
-	CharacterID   int32
-	Charisma      int
-	Intelligence  int
-	LastRemapDate time.Time
-	Memory        int
-	Perception    int
-	Willpower     int
+	BonusRemaps   optional.Optional[int64]
+	CharacterID   int64
+	Charisma      int64
+	Intelligence  int64
+	LastRemapDate optional.Optional[time.Time]
+	Memory        int64
+	Perception    int64
+	Willpower     int64
 }
 
 type CharacterImplant struct {
-	CharacterID int32
+	CharacterID int64
 	EveType     *EveType
 	ID          int64
 	SlotNum     int // 0 = unknown
@@ -184,26 +184,26 @@ var role2String = map[Role]string{
 }
 
 type CharacterRole struct {
-	CharacterID int32
+	CharacterID int64
 	Role        Role
 	Granted     bool
 }
 
 type CharacterJumpClone struct {
-	CharacterID int32
+	CharacterID int64
 	ID          int64
 	Implants    []*CharacterJumpCloneImplant
-	CloneID     int32
+	CloneID     int64
 	Location    *EveLocationShort
-	Name        string
-	Region      *EntityShort[int32]
+	Name        optional.Optional[string]
+	Region      *EntityShort[int64]
 }
 
 type CharacterJumpClone2 struct {
-	Character     *EntityShort[int32]
+	Character     *EntityShort[int64]
 	ImplantsCount int
 	ID            int64
-	CloneID       int32
+	CloneID       int64
 	Location      *EveLocation
 }
 
@@ -215,12 +215,12 @@ type CharacterJumpCloneImplant struct {
 
 type CharacterPlanet struct {
 	ID           int64
-	CharacterID  int32
+	CharacterID  int64
 	EvePlanet    *EvePlanet
 	LastUpdate   time.Time
 	LastNotified optional.Optional[time.Time] // expiry time that was last notified
 	Pins         []*PlanetPin
-	UpgradeLevel int
+	UpgradeLevel int64
 }
 
 func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
@@ -232,9 +232,11 @@ func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 
 // ExtractedTypes returns a list of unique types currently being extracted.
 func (cp CharacterPlanet) ExtractedTypes() []*EveType {
-	types := make(map[int32]*EveType)
+	types := make(map[int64]*EveType)
 	for pp := range cp.ActiveExtractors() {
-		types[pp.ExtractorProductType.ID] = pp.ExtractorProductType
+		if v, ok := pp.ExtractorProductType.Value(); ok {
+			types[v.ID] = v
+		}
 	}
 	return slices.Collect(maps.Values(types))
 }
@@ -256,10 +258,11 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 	expireTimes := make([]time.Time, 0)
 	for pp := range cp.ActiveExtractors() {
-		if pp.ExpiryTime.IsEmpty() {
+		v, ok := pp.ExpiryTime.Value()
+		if !ok {
 			continue
 		}
-		expireTimes = append(expireTimes, pp.ExpiryTime.ValueOrZero())
+		expireTimes = append(expireTimes, v)
 	}
 	if len(expireTimes) == 0 {
 		return time.Time{}
@@ -278,9 +281,11 @@ func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
 
 // ProducedSchematics returns a list of unique schematics currently in production.
 func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
-	schematics := make(map[int32]*EveSchematic)
+	schematics := make(map[int64]*EveSchematic)
 	for pp := range cp.ActiveProducers() {
-		schematics[pp.Schematic.ID] = pp.Schematic
+		if v, ok := pp.Schematic.Value(); ok {
+			schematics[v.ID] = v
+		}
 	}
 	return slices.Collect(maps.Values(schematics))
 }
@@ -303,44 +308,44 @@ func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
 type PlanetPin struct {
 	ID                   int64
 	ExpiryTime           optional.Optional[time.Time]
-	ExtractorProductType *EveType
-	FactorySchematic     *EveSchematic
+	ExtractorProductType optional.Optional[*EveType]
+	FactorySchematic     optional.Optional[*EveSchematic]
 	InstallTime          optional.Optional[time.Time]
 	LastCycleStart       optional.Optional[time.Time]
-	Schematic            *EveSchematic
+	Schematic            optional.Optional[*EveSchematic]
 	Type                 *EveType
 }
 
 func (pp PlanetPin) IsExtracting() bool {
-	return pp.Type.Group.ID == EveGroupExtractorControlUnits && pp.ExtractorProductType != nil
+	return pp.Type.Group.ID == EveGroupExtractorControlUnits && !pp.ExtractorProductType.IsEmpty()
 }
 
 func (pp PlanetPin) IsProducing() bool {
-	return pp.Type.Group.ID == EveGroupProcessors && pp.Schematic != nil
+	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
 }
 
 type CharacterShipAbility struct {
-	Type   EntityShort[int32]
-	Group  EntityShort[int32]
+	Type   EntityShort[int64]
+	Group  EntityShort[int64]
 	CanFly bool
 }
 
 type CharacterWalletJournalEntry struct {
-	Amount        float64
-	Balance       float64
-	CharacterID   int32
-	ContextID     int64
-	ContextIDType string
+	Amount        optional.Optional[float64]
+	Balance       optional.Optional[float64]
+	CharacterID   int64
+	ContextID     optional.Optional[int64]
+	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	FirstParty    *EveEntity
+	FirstParty    optional.Optional[*EveEntity]
 	ID            int64
-	Reason        string
+	Reason        optional.Optional[string]
 	RefID         int64
 	RefType       string
-	SecondParty   *EveEntity
-	Tax           float64
-	TaxReceiver   *EveEntity
+	SecondParty   optional.Optional[*EveEntity]
+	Tax           optional.Optional[float64]
+	TaxReceiver   optional.Optional[*EveEntity]
 }
 
 func (we CharacterWalletJournalEntry) RefTypeDisplay() string {
@@ -348,7 +353,7 @@ func (we CharacterWalletJournalEntry) RefTypeDisplay() string {
 }
 
 type CharacterWalletTransaction struct {
-	CharacterID   int32
+	CharacterID   int64
 	Client        *EveEntity
 	Date          time.Time
 	ID            int64
@@ -356,8 +361,8 @@ type CharacterWalletTransaction struct {
 	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EveLocationShort
-	Region        *EntityShort[int32]
-	Quantity      int32
+	Region        *EntityShort[int64]
+	Quantity      int64
 	TransactionID int64
 	Type          *EveType
 	UnitPrice     float64

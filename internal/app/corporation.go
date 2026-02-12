@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
@@ -23,8 +24,8 @@ const (
 
 // TODO: Move ID resolution into storage layer
 
-func (d Division) ID() int32 {
-	return int32(d)
+func (d Division) ID() int64 {
+	return int64(d)
 }
 
 func (d Division) DefaultWalletName() string {
@@ -51,52 +52,52 @@ var Divisions = []Division{
 }
 
 type Corporation struct {
-	ID             int32
+	ID             int64
 	EveCorporation *EveCorporation
 }
 
 type CorporationHangarName struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	Name          string
 }
 
 type CorporationWalletBalance struct {
 	Balance       float64
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 }
 
 type CorporationWalletBalanceWithName struct {
 	Balance       float64
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	Name          string
 }
 
 type CorporationWalletName struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	Name          string
 }
 
 type CorporationWalletJournalEntry struct {
-	Amount        float64
-	Balance       float64
-	CorporationID int32
-	ContextID     int64
-	ContextIDType string
+	Amount        optional.Optional[float64]
+	Balance       optional.Optional[float64]
+	CorporationID int64
+	ContextID     optional.Optional[int64]
+	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	DivisionID    int32
-	FirstParty    *EveEntity
+	DivisionID    int64
+	FirstParty    optional.Optional[*EveEntity]
 	ID            int64
-	Reason        string
+	Reason        optional.Optional[string]
 	RefID         int64
 	RefType       string
-	SecondParty   *EveEntity
-	Tax           float64
-	TaxReceiver   *EveEntity
+	SecondParty   optional.Optional[*EveEntity]
+	Tax           optional.Optional[float64]
+	TaxReceiver   optional.Optional[*EveEntity]
 }
 
 func (we CorporationWalletJournalEntry) RefTypeDisplay() string {
@@ -104,16 +105,16 @@ func (we CorporationWalletJournalEntry) RefTypeDisplay() string {
 }
 
 type CorporationWalletTransaction struct {
-	CorporationID int32
+	CorporationID int64
 	Client        *EveEntity
 	Date          time.Time
-	DivisionID    int32
+	DivisionID    int64
 	ID            int64
 	IsBuy         bool
 	JournalRefID  int64
 	Location      *EveLocationShort
-	Region        *EntityShort[int32]
-	Quantity      int32
+	Region        *EntityShort[int64]
+	Quantity      int64
 	TransactionID int64
 	Type          *EveType
 	UnitPrice     float64
@@ -125,6 +126,6 @@ func (wt *CorporationWalletTransaction) Total() float64 {
 
 // CorporationMember represents a member in an EVE Online corporation.
 type CorporationMember struct {
-	CorporationID int32
+	CorporationID int64
 	Character     *EveEntity
 }

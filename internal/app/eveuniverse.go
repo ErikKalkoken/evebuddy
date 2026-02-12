@@ -20,9 +20,9 @@ type EveAlliance struct {
 	CreatorCorporation  *EveEntity
 	Creator             *EveEntity
 	DateFounded         time.Time
-	ExecutorCorporation *EveEntity
-	Faction             *EveEntity
-	ID                  int32
+	ExecutorCorporation optional.Optional[*EveEntity]
+	Faction             optional.Optional[*EveEntity]
+	ID                  int64
 	Name                string
 	Ticker              string
 }
@@ -35,71 +35,33 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 
 // EveCharacter is a character in Eve Online.
 type EveCharacter struct {
-	Alliance       *EveEntity
+	Alliance       optional.Optional[*EveEntity]
 	Birthday       time.Time
 	Corporation    *EveEntity
-	Description    string
-	Faction        *EveEntity
+	Description    optional.Optional[string]
+	Faction        optional.Optional[*EveEntity]
 	Gender         string
-	ID             int32
+	ID             int64
 	Name           string
 	Race           *EveRace
-	SecurityStatus float64
-	Title          string
-}
-
-func (ec EveCharacter) AllianceID() int32 {
-	if !ec.HasAlliance() {
-		return 0
-	}
-	return ec.Alliance.ID
-}
-
-func (ec EveCharacter) AllianceName() string {
-	if !ec.HasAlliance() {
-		return ""
-	}
-	return ec.Alliance.Name
+	SecurityStatus optional.Optional[float64]
+	Title          optional.Optional[string]
 }
 
 func (ec EveCharacter) DescriptionPlain() string {
-	return evehtml.ToPlain(ec.Description)
+	return evehtml.ToPlain(ec.Description.ValueOrZero())
 }
 
 // EntityIDs returns the IDs of all entities for a character.
-func (ec EveCharacter) EntityIDs() set.Set[int32] {
+func (ec EveCharacter) EntityIDs() set.Set[int64] {
 	s := set.Of(ec.ID, ec.Corporation.ID)
-	if ec.HasAlliance() {
-		s.Add(ec.Alliance.ID)
+	if v, ok := ec.Alliance.Value(); ok {
+		s.Add(v.ID)
 	}
-	if ec.HasFaction() {
-		s.Add(ec.Faction.ID)
+	if v, ok := ec.Faction.Value(); ok {
+		s.Add(v.ID)
 	}
 	return s
-}
-
-func (ec EveCharacter) FactionID() int32 {
-	if !ec.HasFaction() {
-		return 0
-	}
-	return ec.Faction.ID
-}
-
-func (ec EveCharacter) FactionName() string {
-	if !ec.HasFaction() {
-		return ""
-	}
-	return ec.Faction.Name
-}
-
-// HasAlliance reports whether the character is member of an alliance.
-func (ec EveCharacter) HasAlliance() bool {
-	return ec.Alliance != nil
-}
-
-// HasFaction reports whether the character is member of a faction.
-func (ec EveCharacter) HasFaction() bool {
-	return ec.Faction != nil
 }
 
 // Equal reports whether two characters are equal.
@@ -111,24 +73,23 @@ func (ec EveCharacter) Equal(other *EveCharacter) bool {
 // Hash returns the hash for this character.
 // It can be used to detect changes between instances.
 func (ec EveCharacter) Hash() string {
-	var corporationID, raceID int32
-	if ec.Corporation != nil {
-		corporationID = ec.Corporation.ID
-	}
-	if ec.Race != nil {
-		raceID = ec.Race.ID
-	}
+	allianceID := optional.Map(ec.Alliance, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
 	xx := []any{
-		ec.AllianceID(),
+		allianceID,
 		ec.Birthday,
-		corporationID,
+		ec.Corporation.ID,
 		ec.Description,
-		ec.FactionID(),
+		factionID,
 		ec.Gender,
 		ec.ID,
 		ec.Name,
-		raceID,
-		math.Round(ec.SecurityStatus * 100),
+		ec.Race.ID,
+		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
 		ec.Title,
 	}
 	s := make([]string, 0)
@@ -140,79 +101,30 @@ func (ec EveCharacter) Hash() string {
 	return h2
 }
 
-func (ec EveCharacter) RaceDescription() string {
-	if ec.Race == nil {
-		return ""
-	}
-	return ec.Race.Description
-}
-
 func (ec EveCharacter) EveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
 // EveCorporation is a corporation in Eve Online.
 type EveCorporation struct {
-	Alliance    *EveEntity
-	Ceo         *EveEntity
-	Creator     *EveEntity
+	Alliance    optional.Optional[*EveEntity]
+	Ceo         optional.Optional[*EveEntity]
+	Creator     optional.Optional[*EveEntity]
 	DateFounded optional.Optional[time.Time]
 	Description string
-	Faction     *EveEntity
-	HomeStation *EveEntity
-	ID          int32
-	MemberCount int
+	Faction     optional.Optional[*EveEntity]
+	HomeStation optional.Optional[*EveEntity]
+	ID          int64
+	MemberCount int64
 	Name        string
-	Shares      optional.Optional[int]
-	TaxRate     float32
+	Shares      optional.Optional[int64]
+	TaxRate     float64
 	Ticker      string
-	URL         string
-	WarEligible bool
+	URL         optional.Optional[string]
+	WarEligible optional.Optional[bool]
 	Timestamp   time.Time
 }
 
-func (ec EveCorporation) AllianceID() int32 {
-	if !ec.HasAlliance() {
-		return 0
-	}
-	return ec.Alliance.ID
-}
-
-func (ec EveCorporation) CeoID() int32 {
-	if ec.Ceo == nil {
-		return 0
-	}
-	return ec.Ceo.ID
-}
-
-func (ec EveCorporation) CreatorID() int32 {
-	if ec.Creator == nil {
-		return 0
-	}
-	return ec.Creator.ID
-}
-
-func (ec EveCorporation) FactionID() int32 {
-	if !ec.HasFaction() {
-		return 0
-	}
-	return ec.Faction.ID
-}
-
-func (ec EveCorporation) HasAlliance() bool {
-	return ec.Alliance != nil
-}
-
-func (ec EveCorporation) HasFaction() bool {
-	return ec.Faction != nil
-}
-
-func (ec EveCorporation) HomeStationID() int32 {
-	if ec.HomeStation == nil {
-		return 0
-	}
-	return ec.HomeStation.ID
-}
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
@@ -228,14 +140,29 @@ func (ec EveCorporation) Equal(other *EveCorporation) bool {
 }
 
 func (ec EveCorporation) Hash() string {
+	allianceID := optional.Map(ec.Alliance, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	ceoID := optional.Map(ec.Ceo, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	creatorID := optional.Map(ec.Creator, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	homeStationID := optional.Map(ec.HomeStation, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
 	xx := []any{
-		ec.AllianceID(),
-		ec.CeoID(),
-		ec.CreatorID(),
+		allianceID,
+		ceoID,
+		creatorID,
 		ec.DateFounded.ValueOrZero().UTC(),
 		ec.Description,
-		ec.FactionID(),
-		ec.HomeStationID(),
+		factionID,
+		homeStationID,
 		ec.ID,
 		ec.MemberCount,
 		ec.Name,
@@ -260,12 +187,12 @@ func (ec EveCorporation) Hash() string {
 type EveRace struct {
 	Description string
 	Name        string
-	ID          int32
+	ID          int64
 }
 
 // FactionID returns the faction ID of a race.
-func (er EveRace) FactionID() (int32, bool) {
-	m := map[int32]int32{
+func (er EveRace) FactionID() (int64, bool) {
+	m := map[int64]int64{
 		1:   500001,
 		2:   500002,
 		4:   500003,
@@ -279,7 +206,7 @@ func (er EveRace) FactionID() (int32, bool) {
 
 // EveSchematic is a schematic for planetary industry in Eve Online.
 type EveSchematic struct {
-	ID        int32
+	ID        int64
 	CycleTime int
 	Name      string
 }
@@ -291,8 +218,8 @@ func (es EveSchematic) Icon() (fyne.Resource, bool) {
 type EveShipSkill struct {
 	ID          int64
 	Rank        uint
-	ShipTypeID  int32
-	SkillTypeID int32
+	ShipTypeID  int64
+	SkillTypeID int64
 	SkillName   string
 	SkillLevel  uint
 }
@@ -300,10 +227,10 @@ type EveShipSkill struct {
 type MembershipHistoryItem struct {
 	EndDate      time.Time
 	Days         int
-	IsDeleted    bool
+	IsDeleted    optional.Optional[bool]
 	IsOldest     bool
 	Organization *EveEntity
-	RecordID     int
+	RecordID     int64
 	StartDate    time.Time
 }
 

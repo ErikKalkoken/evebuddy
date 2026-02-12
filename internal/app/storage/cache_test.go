@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCacheGet(t *testing.T) {
@@ -31,7 +33,7 @@ func TestCacheGet(t *testing.T) {
 		if assert.NoError(t, err) {
 			v, err := r.CacheGet(ctx, key)
 			if assert.NoError(t, err) {
-				assert.Equal(t, value, v)
+				xassert.Equal(t, value, v)
 			}
 		}
 	})
@@ -71,7 +73,7 @@ func TestCacheGet(t *testing.T) {
 		x, err := r.CacheGet(ctx, key)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, value, x)
+			xassert.Equal(t, value, x)
 		}
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
@@ -203,7 +205,7 @@ func TestCacheSet(t *testing.T) {
 		if assert.NoError(t, err) {
 			v, err := r.CacheGet(ctx, key)
 			if assert.NoError(t, err) {
-				assert.Equal(t, value, v)
+				xassert.Equal(t, value, v)
 			}
 		}
 	})
@@ -311,7 +313,7 @@ func TestCacheOther(t *testing.T) {
 		n, err := r.CacheCleanUp(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 2, n)
+			xassert.Equal(t, 2, n)
 			rows, err := db.Query("SELECT key FROM cache;")
 			if err != nil {
 				t.Fatal(err)

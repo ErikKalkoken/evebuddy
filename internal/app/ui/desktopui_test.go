@@ -8,12 +8,13 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestDesktopUI_StartEmpty(t *testing.T) {
@@ -37,7 +38,7 @@ func TestDesktopUI_StartEmpty(t *testing.T) {
 		}
 	}()
 	u.ShowAndRun()
-	assert.Equal(t, 0, httpmock.GetTotalCallCount())
+xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
 func TestDesktopUI_StartWithCharacter(t *testing.T) {
@@ -77,7 +78,7 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 		}
 	}()
 	u.ShowAndRun()
-	assert.Equal(t, 0, httpmock.GetTotalCallCount())
+xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
 func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
@@ -127,7 +128,7 @@ func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 	et := factory.CreateEveType()
 	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 		TypeID:       et.ID,
-		AveragePrice: 120000.0,
+		AveragePrice: optional.New(120000.0),
 	})
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 		CharacterID: character.ID,

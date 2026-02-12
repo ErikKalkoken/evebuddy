@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveSchematic(t *testing.T) {
@@ -28,7 +29,7 @@ func TestEveSchematic(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := r.GetEveSchematic(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c1, c2)
+				xassert.Equal(t, c1, c2)
 			}
 		}
 	})

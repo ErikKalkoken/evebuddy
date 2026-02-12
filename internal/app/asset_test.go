@@ -3,9 +3,9 @@ package app_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestAssetDisplayName(t *testing.T) {
@@ -22,14 +22,14 @@ func TestAssetDisplayName(t *testing.T) {
 				Type: &app.EveType{
 					Name: "type",
 				},
-				IsBlueprintCopy: true,
+				IsBlueprintCopy: optional.New(true),
 			},
 			"type (Copy)",
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.ca.DisplayName())
+		xassert.Equal(t, tc.want, tc.ca.DisplayName())
 		})
 	}
 }
@@ -63,14 +63,14 @@ func TestAssetDisplayName2(t *testing.T) {
 				Type: &app.EveType{
 					Name: "type",
 				},
-				IsBlueprintCopy: true,
+				IsBlueprintCopy: optional.New(true),
 			},
 			"type (Copy)",
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.ca.DisplayName2())
+		xassert.Equal(t, tc.want, tc.ca.DisplayName2())
 		})
 	}
 }
@@ -78,7 +78,7 @@ func TestAssetDisplayName2(t *testing.T) {
 func TestAssetIsContainer(t *testing.T) {
 	cases := []struct {
 		IsSingleton   bool
-		EveCategoryID int32
+		EveCategoryID int64
 		want          bool
 	}{
 		{true, app.EveCategoryShip, true},
@@ -91,7 +91,7 @@ func TestAssetIsContainer(t *testing.T) {
 			g := &app.EveGroup{Category: c}
 			typ := &app.EveType{Group: g}
 			ca := app.Asset{IsSingleton: tc.IsSingleton, Type: typ}
-			assert.Equal(t, tc.want, ca.IsContainer())
+		xassert.Equal(t, tc.want, ca.IsContainer())
 		})
 	}
 }
@@ -103,11 +103,11 @@ func TestAssetTypeName(t *testing.T) {
 				Name: "Alpha",
 			},
 		}
-		assert.Equal(t, "Alpha", ca.TypeName())
+	xassert.Equal(t, "Alpha", ca.TypeName())
 	})
 	t.Run("no type", func(t *testing.T) {
 		ca := &app.Asset{}
-		assert.Equal(t, "", ca.TypeName())
+	xassert.Equal(t, "", ca.TypeName())
 	})
 }
 
@@ -136,7 +136,7 @@ func TestAssetVariant(t *testing.T) {
 						Category: &app.EveCategory{
 							ID: app.EveCategoryBlueprint,
 						}}},
-				IsBlueprintCopy: true,
+				IsBlueprintCopy: optional.New(true),
 			},
 			app.VariantBPC,
 		},
@@ -165,7 +165,7 @@ func TestAssetVariant(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.ca.Variant())
+		xassert.Equal(t, tc.want, tc.ca.Variant())
 		})
 	}
 }
@@ -189,7 +189,7 @@ func TestAssetVariant(t *testing.T) {
 // 	for _, tc := range cases {
 // 		t.Run(tc.locationFlag, func(t *testing.T) {
 // 			ca := &app.Asset{LocationFlag: tc.locationFlag}
-// 			assert.Equal(t, tc.want, ca.IsInCargoBay())
+// 		xassert.Equal(t, tc.want, ca.IsInCargoBay())
 // 		})
 // 	}
 // }

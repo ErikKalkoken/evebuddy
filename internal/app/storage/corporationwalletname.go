@@ -16,8 +16,8 @@ func (st *Storage) GetCorporationWalletName(ctx context.Context, arg Corporation
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	o, err := st.qRO.GetCorporationWalletName(ctx, queries.GetCorporationWalletNameParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -25,14 +25,14 @@ func (st *Storage) GetCorporationWalletName(ctx context.Context, arg Corporation
 	return corporationWalletNameFromDBModel(o), nil
 }
 
-func (st *Storage) ListCorporationWalletNames(ctx context.Context, corporationID int32) ([]*app.CorporationWalletName, error) {
+func (st *Storage) ListCorporationWalletNames(ctx context.Context, corporationID int64) ([]*app.CorporationWalletName, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationWalletNames for id %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationWalletNames(ctx, int64(corporationID))
+	rows, err := st.qRO.ListCorporationWalletNames(ctx, corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -44,8 +44,8 @@ func (st *Storage) ListCorporationWalletNames(ctx context.Context, corporationID
 }
 
 type UpdateOrCreateCorporationWalletNameParams struct {
-	CorporationID int32
-	DivisionID    int32
+	CorporationID int64
+	DivisionID    int64
 	Name          string
 }
 
@@ -57,8 +57,8 @@ func (st *Storage) UpdateOrCreateCorporationWalletName(ctx context.Context, arg 
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationWalletName(ctx, queries.UpdateOrCreateCorporationWalletNameParams{
-		CorporationID: int64(arg.CorporationID),
-		DivisionID:    int64(arg.DivisionID),
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 		Name:          arg.Name,
 	})
 	if err != nil {
@@ -69,8 +69,8 @@ func (st *Storage) UpdateOrCreateCorporationWalletName(ctx context.Context, arg 
 
 func corporationWalletNameFromDBModel(o queries.CorporationWalletName) *app.CorporationWalletName {
 	o2 := &app.CorporationWalletName{
-		CorporationID: int32(o.CorporationID),
-		DivisionID:    int32(o.DivisionID),
+		CorporationID: o.CorporationID,
+		DivisionID:    o.DivisionID,
 		Name:          o.Name,
 	}
 	return o2

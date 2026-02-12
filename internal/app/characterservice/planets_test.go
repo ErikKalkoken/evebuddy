@@ -5,11 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestNotifyExpiredExtractions(t *testing.T) {
@@ -44,13 +46,13 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 			if tc.isExtractor {
 				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
 					CharacterPlanetID:      p.ID,
-					ExpiryTime:             tc.expiryTime,
+					ExpiryTime:             optional.New(tc.expiryTime),
 					ExtractorProductTypeID: optional.New(product.ID),
 				})
 			} else {
 				factory.CreatePlanetPin(storage.CreatePlanetPinParams{
 					CharacterPlanetID: p.ID,
-					ExpiryTime:        tc.expiryTime,
+					ExpiryTime:        optional.New(tc.expiryTime),
 				})
 			}
 			var sendCount int
@@ -60,7 +62,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 			})
 			// then
 			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
+				 xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
 	}
@@ -83,7 +85,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	})
 	factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
 		CharacterPlanetID:      p1.ID,
-		ExpiryTime:             now.Add(-3 * time.Hour),
+		ExpiryTime:             optional.New(now.Add(-3 * time.Hour)),
 		ExtractorProductTypeID: optional.New(product.ID),
 	})
 	p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
@@ -92,7 +94,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	})
 	factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
 		CharacterPlanetID:      p2.ID,
-		ExpiryTime:             now.Add(-3 * time.Hour),
+		ExpiryTime:             optional.New(now.Add(-3 * time.Hour)),
 		ExtractorProductTypeID: optional.New(product.ID),
 	})
 	// when
@@ -107,7 +109,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 1, sendCount)
+	 xassert.Equal(t, 1, sendCount)
 	assert.Contains(t, content, p1.EvePlanet.Name)
 	assert.Contains(t, content, p2.EvePlanet.Name)
 	assert.Contains(t, title, "2")

@@ -43,7 +43,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -69,7 +69,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets/names", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -91,21 +91,21 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		assert.True(t, changed)
 		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
-		assert.Equal(t, 2, ids.Size())
+		xassert.Equal(t, 2, ids.Size())
 		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
 		require.NoError(t, err)
-		assert.Equal(t, ship.ID, x.Type.ID)
-		assert.Equal(t, ship.Name, x.Type.Name)
-		assert.True(t, x.IsBlueprintCopy)
+		xassert.Equal(t, ship.ID, x.Type.ID)
+		xassert.Equal(t, ship.Name, x.Type.Name)
+		assert.True(t, x.IsBlueprintCopy.ValueOrZero())
 		assert.True(t, x.IsSingleton)
-		assert.Equal(t, app.FlagHangar, x.LocationFlag)
-		assert.Equal(t, location.ID, x.LocationID)
-		assert.Equal(t, app.TypeStation, x.LocationType)
-		assert.Equal(t, "Awesome Name", x.Name)
-		assert.EqualValues(t, 1, x.Quantity)
+		xassert.Equal(t, app.FlagHangar, x.LocationFlag)
+		xassert.Equal(t, location.ID, x.LocationID)
+		xassert.Equal(t, app.TypeStation, x.LocationType)
+		xassert.Equal(t, "Awesome Name", x.Name)
+		xassert.Equal(t, 1, x.Quantity)
 		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
 		require.NoError(t, err)
-		assert.Equal(t, "", x.Name)
+		xassert.Equal(t, "", x.Name)
 	})
 	t.Run("should remove obsolete items", func(t *testing.T) {
 		// given
@@ -122,7 +122,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -148,7 +148,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets/names", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -170,7 +170,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		assert.True(t, changed)
 		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.EqualSet(t, set.Of[int64](1000000016835, 1000000016836), ids)
+		xassert.Equal2(t, set.Of[int64](1000000016835, 1000000016836), ids)
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
@@ -192,7 +192,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets?page=1", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -208,7 +208,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/corporations/%d/assets/?page=2", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets?page=2", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -223,7 +223,7 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/assets/names/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/assets/names", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
@@ -245,21 +245,21 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		assert.True(t, changed)
 		ids, err := st.ListCorporationAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
-		assert.Equal(t, 2, ids.Size())
+		xassert.Equal(t, 2, ids.Size())
 		x, err := st.GetCorporationAsset(ctx, c.ID, 1000000016835)
 		require.NoError(t, err)
-		assert.Equal(t, ship.ID, x.Type.ID)
-		assert.Equal(t, ship.Name, x.Type.Name)
-		assert.True(t, x.IsBlueprintCopy)
+		xassert.Equal(t, ship.ID, x.Type.ID)
+		xassert.Equal(t, ship.Name, x.Type.Name)
+		assert.True(t, x.IsBlueprintCopy.ValueOrZero())
 		assert.True(t, x.IsSingleton)
-		assert.Equal(t, app.FlagHangar, x.LocationFlag)
-		assert.Equal(t, location.ID, x.LocationID)
-		assert.Equal(t, app.TypeStation, x.LocationType)
-		assert.Equal(t, "Awesome Name", x.Name)
-		assert.EqualValues(t, 1, x.Quantity)
+		xassert.Equal(t, app.FlagHangar, x.LocationFlag)
+		xassert.Equal(t, location.ID, x.LocationID)
+		xassert.Equal(t, app.TypeStation, x.LocationType)
+		xassert.Equal(t, "Awesome Name", x.Name)
+		xassert.Equal(t, 1, x.Quantity)
 		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
 		require.NoError(t, err)
-		assert.Equal(t, "", x.Name)
+		xassert.Equal(t, "", x.Name)
 	})
 }
 
@@ -298,8 +298,8 @@ func TestAssets_AdoptNames(t *testing.T) {
 
 	modifyAssetNames(assets, names)
 
-	assert.Equal(t, "Sirikur VII", names[1])
+	xassert.Equal(t, "Sirikur VII", names[1])
 	assert.NotContains(t, names, 2)
-	assert.Equal(t, "Alpha", names[3])
-	assert.Equal(t, "Bravo", names[4])
+	xassert.Equal(t, "Alpha", names[3])
+	xassert.Equal(t, "Bravo", names[4])
 }

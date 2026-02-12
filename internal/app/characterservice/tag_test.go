@@ -42,8 +42,8 @@ func TestExportTags(t *testing.T) {
 
 	assert.Contains(t, got.Tags, tag1.Name)
 	assert.Contains(t, got.Tags, tag2.Name)
-	assert.ElementsMatch(t, []int32{c1.ID, c2.ID}, got.Tags[tag1.Name])
-	assert.ElementsMatch(t, []int32{}, got.Tags[tag2.Name])
+	assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, got.Tags[tag1.Name])
+	assert.ElementsMatch(t, []int64{}, got.Tags[tag2.Name])
 }
 
 func TestImportTags(t *testing.T) {
@@ -58,7 +58,7 @@ func TestImportTags(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		c2 := factory.CreateCharacter()
 		x := characterservice.TagsExported{
-			Tags:    map[string][]int32{"Alpha": {c1.ID, c2.ID}},
+			Tags:    map[string][]int64{"Alpha": {c1.ID, c2.ID}},
 			Version: "0.1.0",
 		}
 		b, err := json.Marshal(x)
@@ -81,16 +81,16 @@ func TestImportTags(t *testing.T) {
 		tag := tags[0]
 		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 		require.NoError(t, err)
-		got2 := xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
+		got2 := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
 			return x.ID
 		})
-		assert.ElementsMatch(t, []int32{c1.ID, c2.ID}, got2)
+		assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, got2)
 	})
 
 	t.Run("should return error when minor versions do not match", func(t *testing.T) {
 		// given
 		x := characterservice.TagsExported{
-			Tags:    map[string][]int32{},
+			Tags:    map[string][]int64{},
 			Version: "0.1.0",
 		}
 		b, err := json.Marshal(x)
@@ -105,7 +105,7 @@ func TestImportTags(t *testing.T) {
 	t.Run("should return error when major versions do not match", func(t *testing.T) {
 		// given
 		x := characterservice.TagsExported{
-			Tags:    map[string][]int32{},
+			Tags:    map[string][]int64{},
 			Version: "0.1.0",
 		}
 		b, err := json.Marshal(x)
@@ -119,7 +119,7 @@ func TestImportTags(t *testing.T) {
 
 	t.Run("should not return error when minor versions are the same", func(t *testing.T) {
 		x := characterservice.TagsExported{
-			Tags:    map[string][]int32{},
+			Tags:    map[string][]int64{},
 			Version: "0.1.0",
 		}
 		b, err := json.Marshal(x)

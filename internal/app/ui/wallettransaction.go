@@ -33,12 +33,12 @@ const (
 
 type walletTransactionRow struct {
 	categoryName     string
-	characterID      int32
+	characterID      int64
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
 	dateFormatted    string
-	corporationID    int32
+	corporationID    int64
 	division         app.Division
 	isBuy            bool
 	locationDisplay  []widget.RichTextSegment
@@ -52,7 +52,7 @@ type walletTransactionRow struct {
 	totalFormatted   string
 	totalImportance  widget.Importance
 	transactionID    int64
-	typeID           int32
+	typeID           int64
 	typeName         string
 	unitPrice        float64
 	unitPriceDisplay string
@@ -475,7 +475,7 @@ func (a *walletTransactions) updateCharacter() {
 	})
 }
 
-func (a *walletTransactions) fetchCharacterRows(characterID int32, s services) ([]walletTransactionRow, error) {
+func (a *walletTransactions) fetchCharacterRows(characterID int64, s services) ([]walletTransactionRow, error) {
 	entries, err := s.cs.ListWalletTransactions(context.Background(), characterID)
 	if err != nil {
 		return nil, err
@@ -550,7 +550,7 @@ func (a *walletTransactions) updateCorporation() {
 	})
 }
 
-func (a *walletTransactions) fetchCorporationRows(corporationID int32, division app.Division, s services) ([]walletTransactionRow, error) {
+func (a *walletTransactions) fetchCorporationRows(corporationID int64, division app.Division, s services) ([]walletTransactionRow, error) {
 	entries, err := s.rs.ListWalletTransactions(context.Background(), corporationID, division)
 	if err != nil {
 		return nil, err
@@ -596,7 +596,7 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 }
 
 // showCharacterWalletTransactionWindow shows the detail of a character wallet transaction in a window.
-func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transactionID int64) {
+func showCharacterWalletTransactionWindow(u *baseUI, characterID int64, transactionID int64) {
 	o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 	if err != nil {
 		u.showErrorDialog("Failed to show market transaction", err, u.window)
@@ -667,7 +667,7 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 }
 
 // showCorporationWalletTransactionWindow shows the detail of a corporation wallet transaction in a window.
-func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
+func showCorporationWalletTransactionWindow(u *baseUI, corporationID int64, division app.Division, transactionID int64) {
 	o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 	if err != nil {
 		u.showErrorDialog("Failed to show market transaction", err, u.window)

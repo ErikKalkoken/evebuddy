@@ -2,7 +2,7 @@
 
 package eveicon
 
-var schematicToIconIDs = map[int32]int32{
+var schematicToIconIDs = map[int64]int64{
     66:1360,
     67:1359,
     68:1187,

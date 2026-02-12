@@ -8,6 +8,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveMarketPrice(t *testing.T) {
@@ -19,16 +21,16 @@ func TestEveMarketPrice(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		arg := storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        42,
-			AdjustedPrice: 1.23,
-			AveragePrice:  4.56,
+			AdjustedPrice: optional.New(1.23),
+			AveragePrice:  optional.New(4.56),
 		}
 		// when
 		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(42), x.TypeID)
-			assert.Equal(t, 1.23, x.AdjustedPrice)
-			assert.Equal(t, 4.56, x.AveragePrice)
+			xassert.Equal(t, 42, x.TypeID)
+			xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
+			xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -36,21 +38,21 @@ func TestEveMarketPrice(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        42,
-			AdjustedPrice: 4,
-			AveragePrice:  5,
+			AdjustedPrice: optional.New(4.0),
+			AveragePrice:  optional.New(5.0),
 		})
 		arg := storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        42,
-			AdjustedPrice: 1.23,
-			AveragePrice:  4.56,
+			AdjustedPrice: optional.New(1.23),
+			AveragePrice:  optional.New(4.56),
 		}
 		// when
 		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(42), x.TypeID)
-			assert.Equal(t, 1.23, x.AdjustedPrice)
-			assert.Equal(t, 4.56, x.AveragePrice)
+			xassert.Equal(t, 42, x.TypeID)
+			xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
+			xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
 		}
 	})
 }

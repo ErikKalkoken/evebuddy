@@ -25,16 +25,16 @@ import (
 )
 
 type hasCharacterSection interface {
-	HasCharacterSection(characterID int32, section app.CharacterSection) bool
+	HasCharacterSection(characterID int64, section app.CharacterSection) bool
 }
 
 type jumpCloneNode struct {
 	implantCount           int
-	implantTypeID          int32
+	implantTypeID          int64
 	implantTypeName        string
 	implantTypeDescription string
 	isUnknown              bool
-	jumpCloneID            int32
+	jumpCloneID            int64
 	jumpCloneName          string
 	locationID             int64
 	locationName           string
@@ -216,18 +216,20 @@ func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode],
 		clone := &jumpCloneNode{
 			implantCount:  len(c.Implants),
 			jumpCloneID:   c.CloneID,
-			jumpCloneName: c.Name,
+			jumpCloneName: c.Name.ValueOrZero(),
 			locationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
-		if c.Location != nil && !c.Location.Name.IsEmpty() && !c.Location.SecurityStatus.IsEmpty() {
-			clone.locationName = c.Location.Name.ValueOrZero()
-			clone.systemSecurityValue = c.Location.SecurityStatus.MustValue()
-			clone.systemSecurityType = app.NewSolarSystemSecurityTypeFromValue(clone.systemSecurityValue)
-		}
-		if clone.locationName == "" {
+		// if v, ok := c.Location
+		if v, ok := c.Location.Name.Value(); ok {
+			clone.locationName = v
+		} else {
 			clone.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			clone.isUnknown = true
+		}
+		if v, ok := c.Location.SecurityStatus.Value(); ok {
+			clone.systemSecurityValue = v
+			clone.systemSecurityType = app.NewSolarSystemSecurityTypeFromValue(v)
 		}
 		err := td.Add(nil, clone, len(c.Implants) > 0)
 		if err != nil {
@@ -254,7 +256,7 @@ func (a *characterJumpClones) refreshTop(cloneCount int) {
 	a.top.Set(segs)
 }
 
-func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character, s hasCharacterSection) []widget.RichTextSegment {
+func (*characterJumpClones) makeTopText(cloneCount int, c *app.Character, s hasCharacterSection) []widget.RichTextSegment {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
@@ -262,34 +264,39 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 		Text:  "",
 		Style: defaultStyle,
 	}
-	if character == nil {
+	if c == nil {
 		ts.Text = "No character"
 		ts.Style.ColorName = theme.ColorNameDisabled
 		return []widget.RichTextSegment{ts}
 	}
-	hasData := s.HasCharacterSection(character.ID, app.SectionCharacterJumpClones)
+	hasData := s.HasCharacterSection(c.ID, app.SectionCharacterJumpClones)
 	if !hasData {
 		ts.Text = "Waiting for character data to be loaded..."
 		ts.Style.ColorName = theme.ColorNameWarning
 		return []widget.RichTextSegment{ts}
 	}
+
 	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
-	if character.NextCloneJump.IsEmpty() {
+
+	v, ok := c.NextCloneJump.Value()
+	if !ok {
 		nextJump = "?"
 		nextJumpColor = theme.ColorNameForeground
-	} else if character.NextCloneJump.MustValue().IsZero() {
+	} else if v.IsZero() {
 		nextJump = "NOW"
 		nextJumpColor = theme.ColorNameSuccess
 	} else {
-		nextJump = ihumanize.Duration(time.Until(character.NextCloneJump.MustValue()))
+		nextJump = ihumanize.Duration(time.Until(v))
 		nextJumpColor = theme.ColorNameError
 	}
-	if x := character.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+
+	if v, ok := c.LastCloneJumpAt.Value(); !ok {
 		lastJump = "?"
 	} else {
-		lastJump = humanize.Time(x)
+		lastJump = humanize.Time(v)
 	}
+
 	defaultStyleInline := defaultStyle
 	defaultStyleInline.Inline = true
 	segs := []widget.RichTextSegment{

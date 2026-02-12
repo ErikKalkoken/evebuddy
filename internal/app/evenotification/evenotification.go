@@ -13,25 +13,24 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type EveUniverseService interface {
-	GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error)
+	GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error)
 	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
-	GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
-	GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error)
-	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error)
-	GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error)
-	ToEntities(ctx context.Context, ids set.Set[int32]) (map[int32]*app.EveEntity, error)
+	GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error)
+	GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error)
+	GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error)
+	GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error)
+	ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error)
 }
-
-type setInt32 = set.Set[int32]
 
 // notificationRenderer represents the interface every notification renderer needs to confirm with.
 type notificationRenderer interface {
 	// entityIDs returns the Entity IDs used by a notification (if any).
-	entityIDs(text string) (setInt32, error)
-	// render returns the rendered title and body for a notification.
+	entityIDs(text string) (set.Set[int64], error)
+	// render returns the rendered title and body for a goesi.
 	render(ctx context.Context, text string, timestamp time.Time) (string, string, error)
 	// setEveUniverse initialized access to the EveUniverseService service and must be called before render().
 	setEveUniverse(EveUniverseService)
@@ -39,7 +38,7 @@ type notificationRenderer interface {
 
 // baseRenderer represents the base renderer for all notification types.
 //
-// Each notification type has a renderer which can produce the title and string for a notification.
+// Each notification type has a renderer which can produce the title and string for a goesi.
 // In addition the renderer can return the Entity IDs of a notification,
 // which allows refetching Entities for multiple notifications in bulk before rendering.
 //
@@ -56,8 +55,8 @@ func (br *baseRenderer) setEveUniverse(eus EveUniverseService) {
 // entityIDs returns the Entity IDs used by a notification (if any).
 //
 // Must be overwritten by a notification rendered that want to return IDs.
-func (br baseRenderer) entityIDs(_ string) (setInt32, error) {
-	return setInt32{}, nil
+func (br baseRenderer) entityIDs(_ string) (set.Set[int64], error) {
+	return set.Set[int64]{}, nil
 }
 
 // EveNotificationService is a service for rendering notifications.
@@ -70,27 +69,35 @@ func New(eus EveUniverseService) *EveNotificationService {
 	return s
 }
 
-// EntityIDs returns the Entity IDs used in a notification.
+// EntityIDs returns the Entity IDs used in a goesi.
 // This is useful to resolve Entity IDs in bulk for all notifications,
 // before rendering them one by one.
 // Returns an empty set when notification does not use Entity IDs.
 // Returns [app.ErrNotFound] for unsupported notification types.
-func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text string) (setInt32, error) {
+func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
+	v, ok := text.Value()
+	if !ok {
+		return set.Set[int64]{}, nil
+	}
 	r, found := s.makeRenderer(app.EveNotificationType(nt))
 	if !found {
-		return setInt32{}, app.ErrNotFound
+		return set.Set[int64]{}, app.ErrNotFound
 	}
-	return r.entityIDs(text)
+	return r.entityIDs(v)
 }
 
 // RenderESI renders title and body for all supported notification types and returns them.
 // Returns [app.ErrNotFound] for unsupported notification types.
-func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotificationType, text string, timestamp time.Time) (title string, body string, err error) {
+func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
+	v, ok := text.Value()
+	if !ok {
+		return "", "", nil
+	}
 	r, found := s.makeRenderer(app.EveNotificationType(nt))
 	if !found {
 		return "", "", app.ErrNotFound
 	}
-	title, body, err = r.render(ctx, text, timestamp)
+	title, body, err = r.render(ctx, v, timestamp)
 	if err != nil {
 		return "", "", err
 	}
@@ -282,7 +289,7 @@ func makeAllianceLink(name string) string {
 	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanAlliance))
 }
 
-func makeEveWhoCharacterURL(id int32) string {
+func makeEveWhoCharacterURL(id int64) string {
 	return fmt.Sprintf("https://evewho.com/character/%d", id)
 }
 

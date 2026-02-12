@@ -37,7 +37,7 @@ const (
 
 type assetRow struct {
 	categoryName    string
-	groupID         int32
+	groupID         int64
 	groupName       string
 	isSingleton     bool
 	itemID          int64
@@ -52,18 +52,18 @@ type assetRow struct {
 	priceDisplay    string
 	quantity        int
 	quantityDisplay string
-	regionID        int32
+	regionID        int64
 	regionName      string
 	searchTarget    string
 	tags            set.Set[string]
 	total           optional.Optional[float64]
 	totalDisplay    string
-	typeID          int32
+	typeID          int64
 	typeName        string
 	variant         app.InventoryTypeVariant
 }
 
-func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int32) string) assetRow {
+func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int64) string) assetRow {
 	r := assetRow{
 		categoryName: ca.Type.Group.Category.Name,
 		groupID:      ca.Type.Group.ID,
@@ -145,9 +145,9 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 			})
 		}
 	}
-	if el.SolarSystem != nil {
-		r.regionName = el.SolarSystem.Constellation.Region.Name
-		r.regionID = el.SolarSystem.Constellation.Region.ID
+	if v, ok := el.SolarSystem.Value(); ok {
+		r.regionName = v.Constellation.Region.Name
+		r.regionID = v.Constellation.Region.ID
 	}
 }
 
@@ -161,15 +161,15 @@ func (r *assetRow) setQuantity(isSingleton bool, quantity int) {
 	}
 }
 
-func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBPC bool) {
-	if !isBPC {
+func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBPC optional.Optional[bool]) {
+	if !isBPC.ValueOrZero() {
 		r.price = price
 	}
 	r.priceDisplay = r.price.StringFunc("?", func(v float64) string {
 		return ihumanize.NumberF(v, 1)
 	})
-	if !r.price.IsEmpty() {
-		r.total.Set(price.ValueOrZero() * float64(quantity))
+	if v, ok := r.price.Value(); ok {
+		r.total.Set(v * float64(quantity))
 	}
 	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
 		return humanize.FormatFloat(app.FloatFormat, v)
@@ -388,7 +388,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			a.update()
 		})
-		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 			a.update()
 		})
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -644,11 +644,11 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, f
 	if len(cc) == 0 {
 		return nil, 0, nil
 	}
-	characterNames := make(map[int32]string)
+	characterNames := make(map[int64]string)
 	for _, o := range cc {
 		characterNames[o.ID] = o.Name
 	}
-	tagsPerCharacter := make(map[int32]set.Set[string])
+	tagsPerCharacter := make(map[int64]set.Set[string])
 	for _, c := range cc {
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
@@ -668,7 +668,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, f
 	rows := make([]assetRow, 0)
 	var total float64
 	for _, ca := range assets {
-		r := newCharacterAssetRow(ca, ac, func(id int32) string {
+		r := newCharacterAssetRow(ca, ac, func(id int64) string {
 			return characterNames[id]
 		})
 		r.searchTarget = strings.ToLower(r.name)
@@ -729,16 +729,16 @@ func (a *assetSearch) characterCount() int {
 }
 
 type assetIconEIS interface {
-	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
-	InventoryTypeBPO(id int32, size int) (fyne.Resource, error)
-	InventoryTypeIcon(id int32, size int) (fyne.Resource, error)
-	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
+	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
+	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
+	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
+	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
 }
 
 // assetIconCache caches the images for asset icons.
 var assetIconCache xsync.Map[string, fyne.Resource]
 
-func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int32, variant app.InventoryTypeVariant) {
+func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, variant app.InventoryTypeVariant) {
 	key := fmt.Sprintf("%d-%d", typeID, variant)
 	iwidget.LoadResourceAsyncWithCache(
 		icons.BlankSvg,

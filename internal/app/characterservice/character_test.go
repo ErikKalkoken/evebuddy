@@ -2,6 +2,7 @@ package characterservice_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -12,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetCharacter(t *testing.T) {
@@ -35,7 +37,7 @@ func TestGetCharacter(t *testing.T) {
 		x2, err := cs.GetCharacter(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1.ID, x2.ID)
+			xassert.Equal(t, x1.ID, x2.ID)
 		}
 	})
 }
@@ -61,7 +63,7 @@ func TestGetAnyCharacter(t *testing.T) {
 		x2, err := cs.GetAnyCharacter(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1, x2)
+			xassert.Equal(t, x1, x2)
 		}
 	})
 }
@@ -91,7 +93,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", ec.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        ec.Birthday.Format(app.DateTimeFormatESI),
 				"bloodline_id":    3,
@@ -105,7 +107,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			"https://esi.evetech.net/characters/affiliation",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"character_id":   ec.ID,
@@ -114,10 +116,10 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"ceo_id":       corporation.Ceo.ID,
-				"creator_id":   corporation.Creator.ID,
+				"ceo_id":       corporation.Ceo.ValueOrZero().ID,
+				"creator_id":   corporation.Creator.ValueOrZero().ID,
 				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
 				"description":  corporation.Description,
 				"member_count": corporation.MemberCount,
@@ -134,18 +136,18 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, ec.ID, got.ID)
+			xassert.Equal(t, ec.ID, got.ID)
 			ok, err := cs.HasCharacter(ctx, ec.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 			}
 			token, err := st.GetCharacterToken(ctx, ec.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, token.CharacterID, ec.ID)
+				xassert.Equal(t, token.CharacterID, ec.ID)
 			}
 			x, err := st.GetCorporation(ctx, corporation.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, corporation, x.EveCorporation)
+				xassert.Equal(t, corporation, x.EveCorporation)
 			}
 			assert.NotZero(t, info)
 		}
@@ -173,7 +175,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", ec.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        ec.Birthday.Format(app.DateTimeFormatESI),
 				"bloodline_id":    3,
@@ -187,7 +189,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"POST",
-			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			"https://esi.evetech.net/characters/affiliation",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"character_id":   ec.ID,
@@ -196,10 +198,10 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"ceo_id":       corporation.Ceo.ID,
-				"creator_id":   corporation.Creator.ID,
+				"ceo_id":       corporation.Ceo.ValueOrZero().ID,
+				"creator_id":   corporation.Creator.ValueOrZero().ID,
 				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
 				"description":  corporation.Description,
 				"member_count": corporation.MemberCount,
@@ -216,10 +218,10 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.ID, got.ID)
+			xassert.Equal(t, c.ID, got.ID)
 			token, err := st.GetCharacterToken(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, token.CharacterID, c.ID)
+				xassert.Equal(t, token.CharacterID, c.ID)
 			}
 			assert.NotZero(t, info)
 		}

@@ -16,6 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -59,8 +60,24 @@ func formatISKAmount(v float64) string {
 	return t
 }
 
-func importanceISKAmount(v float64) widget.Importance {
-	if v > 0 {
+func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {
+	var color fyne.ThemeColorName
+	if v, ok := amount.Value(); !ok {
+		color = theme.ColorNameDisabled
+	} else if v < 0 {
+		color = theme.ColorNameError
+	} else if v > 0 {
+		color = theme.ColorNameSuccess
+	} else {
+		color = theme.ColorNameForeground
+	}
+	return color
+}
+
+func importanceISKAmount(amount optional.Optional[float64]) widget.Importance {
+	if v, ok := amount.Value(); !ok {
+		return widget.LowImportance
+	} else if v > 0 {
 		return widget.SuccessImportance
 	} else if v < 0 {
 		return widget.DangerImportance
@@ -80,7 +97,7 @@ func makeLinkLabel(text string, action func()) *widget.Hyperlink {
 	return x
 }
 
-func makeCharacterActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+func makeCharacterActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     name,
@@ -89,7 +106,7 @@ func makeCharacterActionLabel(id int32, name string, action func(o *app.EveEntit
 	return makeEveEntityActionLabel(o, action)
 }
 
-func makeCorporationActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+func makeCorporationActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     name,
@@ -105,6 +122,17 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	}
 	return makeLinkLabelWithWrap(o.Name, func() {
 		action(o)
+	})
+}
+
+// makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
+func makeEveEntityActionLabel2(o optional.Optional[*app.EveEntity], action func(o *app.EveEntity)) fyne.CanvasObject {
+	v, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("-")
+	}
+	return makeLinkLabelWithWrap(v.Name, func() {
+		action(v)
 	})
 }
 
@@ -131,6 +159,18 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	}
 	x := makeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(int64)) fyne.CanvasObject {
+	el, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("?")
+	}
+	x := makeLinkLabelWithWrap(el.DisplayName(), func() {
+		show(el.ID)
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
@@ -169,7 +209,7 @@ func newStandardSpacer() fyne.CanvasObject {
 }
 
 // characterIDOrZero returns the ID of a character or 0 if the c does not exist.
-func characterIDOrZero(c *app.Character) int32 {
+func characterIDOrZero(c *app.Character) int64 {
 	if c == nil {
 		return 0
 	}
@@ -177,7 +217,7 @@ func characterIDOrZero(c *app.Character) int32 {
 }
 
 // corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.
-func corporationIDOrZero(c *app.Corporation) int32 {
+func corporationIDOrZero(c *app.Corporation) int64 {
 	if c == nil {
 		return 0
 	}
@@ -197,18 +237,4 @@ func generateUniqueID() string {
 	currentTime := time.Now().UnixNano()
 	randomNumber, _ := rand.Int(rand.Reader, big.NewInt(1000000))
 	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
-}
-
-func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
-	if t.IsZero() {
-		return fallback
-	}
-	return t.Format(layout)
-}
-
-func entityNameOrFallback(o *app.EveEntity, fallback string) string {
-	if o == nil {
-		return fallback
-	}
-	return o.Name
 }

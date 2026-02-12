@@ -34,27 +34,27 @@ const (
 )
 
 type trainingRow struct {
-	characterID                int32
+	characterID                int64
 	characterName              string
 	isActive                   bool
 	isWatched                  bool
 	searchTarget               string
 	skill                      *app.CharacterSkillqueueItem
 	skillFinishDate            optional.Optional[time.Time]
-	skillID                    int32
+	skillID                    int64
 	skillName                  string
 	skillProgress              optional.Optional[float64]
 	tags                       set.Set[string]
 	totalFinishDate            optional.Optional[time.Time]
 	totalRemainingCount        optional.Optional[int]
 	totalRemainingCountDisplay string
-	totalSP                    optional.Optional[int]
+	totalSP                    optional.Optional[int64]
 	totalSPDisplay             string
-	unallocatedSP              optional.Optional[int]
+	unallocatedSP              optional.Optional[int64]
 	unallocatedSPDisplay       string
 }
 
-func (r trainingRow) CharacterID() int32 {
+func (r trainingRow) CharacterID() int64 {
 	return r.characterID
 }
 
@@ -98,10 +98,11 @@ func (r trainingRow) status() (string, widget.Importance) {
 }
 
 func timeUntil(t optional.Optional[time.Time]) optional.Optional[time.Duration] {
-	if t.IsEmpty() {
+	v, ok := t.Value()
+	if !ok {
 		return optional.Optional[time.Duration]{}
 	}
-	d := time.Until(t.MustValue())
+	d := time.Until(v)
 	if d < 0 {
 		return optional.New(time.Duration(0))
 	}
@@ -298,13 +299,13 @@ func newTraining(u *baseUI) *training {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update()
 	})
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -501,7 +502,7 @@ func (a *training) update() {
 	})
 }
 
-func (a *training) updateItem(ctx context.Context, characterID int32) {
+func (a *training) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
 	}
@@ -575,12 +576,12 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		isWatched:     c.IsTrainingWatched,
 		tags:          tags,
 		totalSP:       c.TotalSP,
-		totalSPDisplay: c.TotalSP.StringFunc("?", func(v int) string {
-			return humanize.Comma(int64(v))
+		totalSPDisplay: c.TotalSP.StringFunc("?", func(v int64) string {
+			return humanize.Comma(v)
 		}),
 		unallocatedSP: c.UnallocatedSP,
-		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int) string {
-			return humanize.Comma(int64(v))
+		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int64) string {
+			return humanize.Comma(v)
 		}),
 	}
 	queue := app.NewCharacterSkillqueue()
@@ -592,7 +593,7 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		r.isActive = true
 		r.skillID = r.skill.SkillID
 		r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
-		r.skillFinishDate.Set(r.skill.FinishDate)
+		r.skillFinishDate = r.skill.FinishDate
 		r.skillProgress.Set(r.skill.CompletionP())
 	} else {
 		r.skillName = "N/A"

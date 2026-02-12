@@ -13,7 +13,7 @@ import (
 )
 
 type CorporationSectionParams struct {
-	CorporationID int32
+	CorporationID int64
 	Section       app.CorporationSection
 }
 
@@ -30,7 +30,7 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 	}
 	err := st.qRW.UpdateCorporationSectionStatusContentHash(ctx, queries.UpdateCorporationSectionStatusContentHashParams{
 		ContentHash:   "",
-		CorporationID: int64(arg.CorporationID),
+		CorporationID:arg.CorporationID,
 		SectionID:     arg.Section.String(),
 	})
 	if err != nil {
@@ -39,9 +39,9 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 	return nil
 }
 
-func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int32, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
+func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int64, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
-		CorporationID: int64(corporationID),
+		CorporationID:corporationID,
 		SectionID:     section.String(),
 	}
 	s, err := st.qRO.GetCorporationSectionStatus(ctx, arg)
@@ -57,8 +57,8 @@ func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationI
 	return s2, nil
 }
 
-func (st *Storage) ListCorporationSectionStatus(ctx context.Context, corporationID int32) ([]*app.CorporationSectionStatus, error) {
-	rows, err := st.qRO.ListCorporationSectionStatus(ctx, int64(corporationID))
+func (st *Storage) ListCorporationSectionStatus(ctx context.Context, corporationID int64) ([]*app.CorporationSectionStatus, error) {
+	rows, err := st.qRO.ListCorporationSectionStatus(ctx,corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("list corporation status for ID %d: %w", corporationID, err)
 	}
@@ -71,7 +71,7 @@ func (st *Storage) ListCorporationSectionStatus(ctx context.Context, corporation
 
 type UpdateOrCreateCorporationSectionStatusParams struct {
 	// mandatory
-	CorporationID int32
+	CorporationID int64
 	Section       app.CorporationSection
 	// optional
 	Comment      *string
@@ -94,19 +94,19 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 		qtx := st.qRW.WithTx(tx)
 		var arg2 queries.UpdateOrCreateCorporationSectionStatusParams
 		old, err := qtx.GetCorporationSectionStatus(ctx, queries.GetCorporationSectionStatusParams{
-			CorporationID: int64(arg.CorporationID),
+			CorporationID:arg.CorporationID,
 			SectionID:     arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
-				CorporationID: int64(arg.CorporationID),
+				CorporationID:arg.CorporationID,
 				SectionID:     arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
-				CorporationID: int64(arg.CorporationID),
+				CorporationID:arg.CorporationID,
 				SectionID:     arg.Section.String(),
 				CompletedAt:   old.CompletedAt,
 				ContentHash:   old.ContentHash,
@@ -148,7 +148,7 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *app.CorporationSectionStatus {
 	x := &app.CorporationSectionStatus{
 		Comment:       o.Comment,
-		CorporationID: int32(o.CorporationID),
+		CorporationID:o.CorporationID,
 		SectionStatus: app.SectionStatus{
 			ContentHash:  o.ContentHash,
 			ErrorMessage: o.Error,

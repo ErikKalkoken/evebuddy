@@ -246,8 +246,8 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			b := co.(*fyne.Container).Objects
 			b[0].(*widget.Label).SetText(cn.node.String())
 			var s string
-			if !cn.itemCount.IsEmpty() {
-				s = humanize.Comma(int64(cn.itemCount.ValueOrZero()))
+			if v, ok := cn.itemCount.Value(); ok {
+				s = humanize.Comma(int64(v))
 			}
 			b[1].(*widget.Label).SetText(s)
 		},
@@ -472,20 +472,20 @@ func updateItemCounts(td iwidget.TreeData[assetContainerNode]) {
 			switch top.node.Category() {
 			case asset.NodeOfficeFolder, asset.NodeAssetSafetyCharacter:
 				for _, n1 := range td.Children(top) {
-					n1.itemCount = optional.FromIntegerWithZero(len(n1.node.Children()))
+					n1.itemCount = optional.FromZeroValue(len(n1.node.Children()))
 					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
 				}
 			case asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
 				for _, n1 := range td.Children(top) {
 					n1.itemCount.Clear()
 					for _, n2 := range td.Children(n1) {
-						n2.itemCount = optional.FromIntegerWithZero(len(n2.node.Children()))
+						n2.itemCount = optional.FromZeroValue(len(n2.node.Children()))
 						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
 					}
 					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
 				}
 			default:
-				top.itemCount = optional.FromIntegerWithZero(len(top.node.Children()))
+				top.itemCount = optional.FromZeroValue(len(top.node.Children()))
 			}
 			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
 		}
@@ -731,8 +731,8 @@ func (a *assetBrowserContainer) filterItems() {
 			}
 		}
 		bottom := fmt.Sprintf("%s items", humanize.Comma(itemCount))
-		if !value.IsEmpty() {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(value.ValueOrZero())))
+		if v, ok := value.Value(); ok {
+			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {

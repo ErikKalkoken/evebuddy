@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/rand/v2"
 
-	"github.com/antihax/goesi"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -39,8 +39,10 @@ func main() {
 
 	rhc1 := retryablehttp.NewClient()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:   st,
-		ESIClient: goesi.NewAPIClient(rhc1.StandardClient(), "EVE Buddy generate"),
+		Storage: st,
+		ESIClient: goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
+			UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+		}),
 	})
 	fmt.Println()
 

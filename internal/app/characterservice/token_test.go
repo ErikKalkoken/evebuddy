@@ -83,7 +83,7 @@ func TestMissingScopes(t *testing.T) {
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, got.Size())
+			 xassert.Equal(t, 0, got.Size())
 		}
 	})
 	t.Run("should return scopes that are missing", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestMissingScopes(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of("bravo")
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 	t.Run("when no token found all scopes are missing", func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestMissingScopes(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of("alpha", "bravo")
-			xassert.EqualSet(t, want, got)
+			xassert.Equal2(t, want, got)
 		}
 	})
 }
@@ -137,7 +137,7 @@ func TestCharacterTokenForCorporation(t *testing.T) {
 		o2, err := s.CharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{}, false)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, o1.ID, o2.ID)
+			 xassert.Equal(t, o1.ID, o2.ID)
 		}
 	})
 	t.Run("should report not found when token exists and role not matching", func(t *testing.T) {

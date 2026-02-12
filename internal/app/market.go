@@ -34,21 +34,21 @@ func (mos MarketOrderState) String() string {
 }
 
 type CharacterMarketOrder struct {
-	CharacterID   int32
-	Duration      int
+	CharacterID   int64
+	Duration      int64
 	Escrow        optional.Optional[float64]
-	IsBuyOrder    bool
+	IsBuyOrder    optional.Optional[bool]
 	IsCorporation bool
 	Issued        time.Time
 	Location      *EveLocationShort
-	MinVolume     optional.Optional[int]
+	MinVolume     optional.Optional[int64]
 	OrderID       int64
 	Owner         *EveEntity
 	Price         float64
 	Range         string
-	Region        *EntityShort[int32]
+	Region        *EntityShort[int64]
 	State         MarketOrderState
-	Type          *EntityShort[int32]
-	VolumeRemains int
-	VolumeTotal   int
+	Type          *EntityShort[int64]
+	VolumeRemains int64
+	VolumeTotal   int64
 }

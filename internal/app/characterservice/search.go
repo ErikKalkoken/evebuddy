@@ -6,8 +6,6 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -16,8 +14,8 @@ import (
 
 // AddEveEntitiesFromSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
 // This method performs a character specific search and needs a token.
-func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int32, search string) (set.Set[int32], error) {
-	var z set.Set[int32]
+func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int64, search string) (set.Set[int64], error) {
+	var z set.Set[int64]
 	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return z, err
@@ -29,7 +27,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 	}
 	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
-	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
+	r, _, err := s.esiClient.SearchAPI.GetCharactersCharacterIdSearch(ctx, characterID).Search(search).Categories(categories).Execute()
 	if err != nil {
 		return z, err
 	}
@@ -60,13 +58,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	})
 	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
-	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
-		ctx,
-		cc,
-		c.ID,
-		search,
-		&esi.GetCharactersCharacterIdSearchOpts{Strict: esioptional.NewBool(strict)},
-	)
+	x, _, err := s.esiClient.SearchAPI.GetCharactersCharacterIdSearch(ctx, c.ID).Search(search).Categories(cc).Strict(strict).Execute()
 	if err != nil {
 		return nil, 0, err
 	}
@@ -87,7 +79,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
 		return nil, 0, err
 	}
-	categoryMap := map[app.SearchCategory][]int32{
+	categoryMap := map[app.SearchCategory][]int64{
 		app.SearchAgent:         x.Agent,
 		app.SearchAlliance:      x.Alliance,
 		app.SearchCharacter:     x.Character,

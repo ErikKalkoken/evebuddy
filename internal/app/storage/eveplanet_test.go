@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEvePlanet(t *testing.T) {
@@ -31,10 +32,10 @@ func TestEvePlanet(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetEvePlanet(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), o.ID)
-				assert.Equal(t, "name", o.Name)
-				assert.Equal(t, solarSystem, o.SolarSystem)
-				assert.Equal(t, type_, o.Type)
+				xassert.Equal(t, 42, o.ID)
+				xassert.Equal(t, "name", o.Name)
+				xassert.Equal(t, solarSystem, o.SolarSystem)
+				xassert.Equal(t, type_, o.Type)
 			}
 		}
 	})

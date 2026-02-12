@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -17,11 +17,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *CorporationService) GetStructure(ctx context.Context, corporationID int32, structureID int64) (*app.CorporationStructure, error) {
+func (s *CorporationService) GetStructure(ctx context.Context, corporationID int64, structureID int64) (*app.CorporationStructure, error) {
 	return s.st.GetCorporationStructure(ctx, corporationID, structureID)
 }
 
-func (s *CorporationService) ListStructures(ctx context.Context, corporationID int32) ([]*app.CorporationStructure, error) {
+func (s *CorporationService) ListStructures(ctx context.Context, corporationID int64) ([]*app.CorporationStructure, error) {
 	return s.st.ListCorporationStructures(ctx, corporationID)
 }
 
@@ -33,14 +33,14 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdStructures")
-			structures, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdStructures(ctx, arg.CorporationID, nil)
+			structures, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.CorporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return structures, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			structures := data.([]esi.GetCorporationsCorporationIdStructures200Ok)
+			structures := data.([]esi.CorporationsCorporationIdStructuresGetInner)
 
 			structureStateFromESIValue := map[string]app.StructureState{
 				"anchor_vulnerable":    app.StructureStateAnchorVulnerable,
@@ -65,7 +65,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			}
 
 			// Remove vanished structures
-			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.GetCorporationsCorporationIdStructures200Ok) int64 {
+			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.CorporationsCorporationIdStructuresGetInner) int64 {
 				return x.StructureId
 			}))
 			current, err := s.st.ListCorporationStructureIDs(ctx, arg.CorporationID)
@@ -81,7 +81,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			}
 
 			// Update structures
-			var typeIDs, systemIDs set.Set[int32]
+			var typeIDs, systemIDs set.Set[int64]
 			for _, o := range structures {
 				typeIDs.Add(o.TypeId)
 				systemIDs.Add(o.SystemId)
@@ -101,7 +101,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 				if !ok {
 					state = app.StructureStateUnknown
 				}
-				services := xslices.Map(o.Services, func(x esi.GetCorporationsCorporationIdStructuresService) storage.StructureServiceParams {
+				services := xslices.Map(o.Services, func(x esi.CorporationsCorporationIdStructuresGetInnerServicesInner) storage.StructureServiceParams {
 					return storage.StructureServiceParams{
 						Name:  x.Name,
 						State: structureServiceStateFromESIValue[x.State],
@@ -109,20 +109,20 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 				})
 				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
 					CorporationID:      arg.CorporationID,
-					FuelExpires:        optional.FromTimeWithZero(o.FuelExpires),
-					Name:               o.Name,
-					NextReinforceApply: optional.FromTimeWithZero(o.NextReinforceApply),
-					NextReinforceHour:  optional.FromIntegerWithZero(int64(o.NextReinforceHour)),
-					ProfileID:          int64(o.ProfileId),
-					ReinforceHour:      optional.FromIntegerWithZero(int64(o.ReinforceHour)),
+					FuelExpires:        optional.FromPtr(o.FuelExpires),
+					Name:               optional.FromPtr(o.Name),
+					NextReinforceApply: optional.FromPtr(o.NextReinforceApply),
+					NextReinforceHour:  optional.FromPtr(o.NextReinforceHour),
+					ProfileID:          o.ProfileId,
+					ReinforceHour:      optional.FromPtr(o.ReinforceHour),
 					Services:           services,
 					State:              state,
-					StateTimerEnd:      optional.FromTimeWithZero(o.StateTimerEnd),
-					StateTimerStart:    optional.FromTimeWithZero(o.StateTimerStart),
+					StateTimerEnd:      optional.FromPtr(o.StateTimerEnd),
+					StateTimerStart:    optional.FromPtr(o.StateTimerStart),
 					StructureID:        o.StructureId,
 					SystemID:           o.SystemId,
 					TypeID:             o.TypeId,
-					UnanchorsAt:        optional.FromTimeWithZero(o.UnanchorsAt),
+					UnanchorsAt:        optional.FromPtr(o.UnanchorsAt),
 				})
 				if err != nil {
 					return err

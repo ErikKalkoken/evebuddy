@@ -4,58 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
-
-func TestCharacterContractDisplayName(t *testing.T) {
-	cases := []struct {
-		name     string
-		contract *app.CharacterContract
-		want     string
-	}{
-		{
-			"courier contract",
-			&app.CharacterContract{
-				Type:             app.ContractTypeCourier,
-				Volume:           10,
-				StartSolarSystem: &app.EntityShort[int32]{Name: "Start"},
-				EndSolarSystem:   &app.EntityShort[int32]{Name: "End"},
-			},
-			"Start >> End (10 m3)",
-		},
-		{
-			"courier contract without solar systems",
-			&app.CharacterContract{
-				Type:   app.ContractTypeCourier,
-				Volume: 10,
-			},
-			"? >> ? (10 m3)",
-		},
-		{
-			"non-courier contract with multiple items",
-			&app.CharacterContract{
-				Type:  app.ContractTypeItemExchange,
-				Items: []string{"first", "second"},
-			},
-			"[Multiple Items]",
-		},
-		{
-			"non-courier contract with single items",
-			&app.CharacterContract{
-				Type:  app.ContractTypeItemExchange,
-				Items: []string{"first"},
-			},
-			"first",
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.contract.NameDisplay())
-		})
-	}
-}
 
 func TestCharacterPlanetExtractedTypes(t *testing.T) {
 	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
@@ -64,15 +18,15 @@ func TestCharacterPlanetExtractedTypes(t *testing.T) {
 	productType2 := &app.EveType{ID: 2}
 	extractorPin1a := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType1a,
+		ExtractorProductType: optional.New(productType1a),
 	}
 	extractorPin1b := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType1b,
+		ExtractorProductType: optional.New(productType1b),
 	}
 	extractorPin2 := &app.PlanetPin{
 		Type:                 extractorType,
-		ExtractorProductType: productType2,
+		ExtractorProductType: optional.New(productType2),
 	}
 	processorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupProcessors}}
 	processorPin := &app.PlanetPin{
@@ -89,11 +43,11 @@ func TestCharacterPlanetExtractedTypes(t *testing.T) {
 		// when
 		x := cp.ExtractedTypes()
 		// then
-		got := make([]int32, 0)
+		got := make([]int64, 0)
 		for _, o := range x {
 			got = append(got, o.ID)
 		}
-		assert.ElementsMatch(t, []int32{productType1a.ID, productType2.ID}, got)
+		assert.ElementsMatch(t, []int64{productType1a.ID, productType2.ID}, got)
 	})
 	t.Run("should return empty when no extractor", func(t *testing.T) {
 		// given
@@ -125,17 +79,17 @@ func TestCharacterPlanetProducedSchematics(t *testing.T) {
 	schematic1a := &app.EveSchematic{ID: 1}
 	processorPin1a := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic1a,
+		Schematic: optional.New(schematic1a),
 	}
 	schematic1b := &app.EveSchematic{ID: 1}
 	processorPin1b := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic1b,
+		Schematic: optional.New(schematic1b),
 	}
 	schematic2 := &app.EveSchematic{ID: 2}
 	processorPin2 := &app.PlanetPin{
 		Type:      processorType,
-		Schematic: schematic2,
+		Schematic: optional.New(schematic2),
 	}
 	t.Run("should return produced schematics", func(t *testing.T) {
 		// given
@@ -148,11 +102,11 @@ func TestCharacterPlanetProducedSchematics(t *testing.T) {
 		// when
 		x := cp.ProducedSchematics()
 		// then
-		got := make([]int32, 0)
+		got := make([]int64, 0)
 		for _, o := range x {
 			got = append(got, o.ID)
 		}
-		assert.ElementsMatch(t, []int32{schematic1a.ID, schematic2.ID}, got)
+		assert.ElementsMatch(t, []int64{schematic1a.ID, schematic2.ID}, got)
 
 	})
 	t.Run("should return empty when no processor", func(t *testing.T) {
@@ -189,19 +143,19 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et2),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et1),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			processorPin,
 		}}
 		// when
 		x := cp.ExtractionsExpiryTime()
 		// then
-		assert.Equal(t, et2, x)
+		xassert.Equal(t, et2, x)
 	})
 	t.Run("should return expiration date in the past", func(t *testing.T) {
 		// given
@@ -210,14 +164,14 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			{
 				Type:                 extractorType,
 				ExpiryTime:           optional.New(et1),
-				ExtractorProductType: productType,
+				ExtractorProductType: optional.New(productType),
 			},
 			processorPin,
 		}}
 		// when
 		x := cp.ExtractionsExpiryTime()
 		// then
-		assert.Equal(t, et1, x)
+		xassert.Equal(t, et1, x)
 	})
 	t.Run("should return zero time when no expiration date", func(t *testing.T) {
 		// given
@@ -239,7 +193,7 @@ func TestCharacterWalletTransaction_Total(t *testing.T) {
 		name      string
 		IsBuy     bool
 		UnitPrice float64
-		Quantity  int32
+		Quantity  int64
 		want      float64
 	}{
 		{"buy", true, 1.2, 3, -3.6},

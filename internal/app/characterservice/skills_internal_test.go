@@ -36,7 +36,7 @@ func TestGetAttributes(t *testing.T) {
 		x2, err := cs.GetAttributes(ctx, x1.CharacterID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1, x2)
+			xassert.Equal(t, x1, x2)
 		}
 	})
 }
@@ -63,7 +63,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/attributes/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/attributes", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -76,11 +76,11 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCharacterAttributes(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 20, x.Charisma)
-				assert.Equal(t, 21, x.Intelligence)
-				assert.Equal(t, 22, x.Memory)
-				assert.Equal(t, 23, x.Perception)
-				assert.Equal(t, 24, x.Willpower)
+				xassert.Equal(t, 20, x.Charisma)
+				xassert.Equal(t, 21, x.Intelligence)
+				xassert.Equal(t, 22, x.Memory)
+				xassert.Equal(t, 23, x.Perception)
+				xassert.Equal(t, 24, x.Willpower)
 			}
 		}
 	})
@@ -120,7 +120,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/skills/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -133,19 +133,19 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			c2, err := st.GetCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 90000, c2.TotalSP.ValueOrZero())
+				xassert.Equal(t, 90000, c2.TotalSP.ValueOrZero())
 			}
 			o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 3, o1.ActiveSkillLevel)
-				assert.Equal(t, 10000, o1.SkillPointsInSkill)
-				assert.Equal(t, 4, o1.TrainedSkillLevel)
+				xassert.Equal(t, 3, o1.ActiveSkillLevel)
+				xassert.Equal(t, 10000, o1.SkillPointsInSkill)
+				xassert.Equal(t, 4, o1.TrainedSkillLevel)
 			}
 			o2, err := st.GetCharacterSkill(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 1, o2.ActiveSkillLevel)
-				assert.Equal(t, 20000, o2.SkillPointsInSkill)
-				assert.Equal(t, 2, o2.TrainedSkillLevel)
+				xassert.Equal(t, 1, o2.ActiveSkillLevel)
+				xassert.Equal(t, 20000, o2.SkillPointsInSkill)
+				xassert.Equal(t, 2, o2.TrainedSkillLevel)
 			}
 		}
 	})
@@ -178,7 +178,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/skills/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -191,7 +191,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.EqualSet(t, set.Of[int32](41), ids)
+				xassert.Equal2(t, set.Of[int64](41), ids)
 			}
 		}
 	})
@@ -257,7 +257,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/skillqueue/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skillqueue", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when

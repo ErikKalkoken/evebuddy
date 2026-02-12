@@ -86,7 +86,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 		}
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			typeTested[nt] = true
-			title, body, err := ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
+			title, body, err := ens.RenderESI(ctx, nt, optional.New(n.Text), n.Timestamp)
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, "", title)
 				assert.NotEqual(t, "", body)
@@ -117,10 +117,10 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
-		got, err := en.EntityIDs(app.CorpAllBillMsg, text)
+		got, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
 		if assert.NoError(t, err) {
-			want := set.Of[int32](1000023, 98267621, 27, 60003760)
-			xassert.EqualSet(t, want, got)
+			want := set.Of[int64](1000023, 98267621, 27, 60003760)
+			xassert.Equal2(t, want, got)
 		}
 	})
 }
@@ -128,7 +128,7 @@ externalID2: 60003760`
 func TestRenderESIErrorHandling(t *testing.T) {
 	en := evenotification.New(nil)
 	t.Run("return error for unsurported", func(t *testing.T) {
-		_, _, err := en.RenderESI(context.Background(), app.UnknownNotification, "", time.Now())
+		_, _, err := en.RenderESI(context.Background(), app.UnknownNotification, optional.New("xxx"), time.Now())
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
@@ -150,7 +150,7 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 			continue
 		}
 		t.Run("should process notification type "+n.Type, func(t *testing.T) {
-			_, err := en.EntityIDs(nt, n.Text)
+			_, err := en.EntityIDs(nt, optional.New(n.Text))
 			assert.NoError(t, err)
 		})
 	}
@@ -159,7 +159,7 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 func TestEntityIDErrorHandling(t *testing.T) {
 	en := evenotification.New(nil)
 	t.Run("return error for unsurported", func(t *testing.T) {
-		_, err := en.EntityIDs(app.UnknownNotification, "")
+		_, err := en.EntityIDs(app.UnknownNotification, optional.New("xxx"))
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

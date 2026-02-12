@@ -11,27 +11,38 @@ import (
 )
 
 type CreateCharacterJumpCloneParams struct {
-	CharacterID int32
+	CharacterID int64
 	JumpCloneID int64
-	Implants    []int32
+	Implants    []int64
 	LocationID  int64
-	Name        string
+	Name        optional.Optional[string]
 }
 
 func (st *Storage) CreateCharacterJumpClone(ctx context.Context, arg CreateCharacterJumpCloneParams) error {
 	return createCharacterJumpClone(ctx, st.qRW, arg)
 }
 
-func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, cloneID int32) (*app.CharacterJumpClone, error) {
-	arg := queries.GetCharacterJumpCloneParams{
-		CharacterID: int64(characterID),
-		JumpCloneID: int64(cloneID),
+func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int64, cloneID int64) (*app.CharacterJumpClone, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterJumpClone: %d %d: %w", characterID, cloneID, err)
 	}
-	r, err := st.qRO.GetCharacterJumpClone(ctx, arg)
+	if characterID == 0 || cloneID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRO.GetCharacterJumpClone(ctx, queries.GetCharacterJumpCloneParams{
+		CharacterID: characterID,
+		JumpCloneID: cloneID,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, convertGetError(err))
+		return nil, wrapErr(convertGetError(err))
 	}
-	o := characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
+	o := characterJumpCloneFromDBModel(characterJumpCloneFromDBModelParams{
+		jc:               r.CharacterJumpClone,
+		locationName:     r.LocationName,
+		regionID:         r.RegionID,
+		regionName:       r.RegionName,
+		locationSecurity: r.LocationSecurity,
+	})
 	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)
 	if err != nil {
 		return nil, err
@@ -41,23 +52,46 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 }
 
 func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, cloneID int64) ([]*app.CharacterJumpCloneImplant, error) {
-	arg2 := queries.ListCharacterJumpCloneImplantParams{
+	rows, err := q.ListCharacterJumpCloneImplant(ctx, queries.ListCharacterJumpCloneImplantParams{
 		CloneID:          cloneID,
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
-	}
-	row2, err := q.ListCharacterJumpCloneImplant(ctx, arg2)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get character jump clone implants for clone ID %d: %w", cloneID, err)
 	}
-	x := make([]*app.CharacterJumpCloneImplant, len(row2))
-	for i, row := range row2 {
-		x[i] = characterJumpCloneImplantFromDBModel(
-			row.CharacterJumpCloneImplant,
-			row.EveType,
-			row.EveGroup,
-			row.EveCategory, row.SlotNum)
+	oo := make([]*app.CharacterJumpCloneImplant, 0)
+	for _, r := range rows {
+		oo = append(oo, characterJumpCloneImplantFromDBModel(characterJumpCloneImplantFromDBModelParams{
+			jci:  r.CharacterJumpCloneImplant,
+			et:   r.EveType,
+			eg:   r.EveGroup,
+			ec:   r.EveCategory,
+			slot: r.SlotNum,
+		}))
 	}
-	return x, nil
+	return oo, nil
+}
+
+type characterJumpCloneImplantFromDBModelParams struct {
+	jci  queries.CharacterJumpCloneImplant
+	et   queries.EveType
+	eg   queries.EveGroup
+	ec   queries.EveCategory
+	slot sql.NullFloat64
+}
+
+func characterJumpCloneImplantFromDBModel(arg characterJumpCloneImplantFromDBModelParams) *app.CharacterJumpCloneImplant {
+	if arg.jci.CloneID == 0 {
+		panic("missing clone ID")
+	}
+	o2 := &app.CharacterJumpCloneImplant{
+		EveType: eveTypeFromDBModel(arg.et, arg.eg, arg.ec),
+		ID:      arg.jci.ID,
+	}
+	if arg.slot.Valid {
+		o2.SlotNum = int(arg.slot.Float64)
+	}
+	return o2
 }
 
 // TODO: Refactor SQL for better performance
@@ -67,51 +101,65 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 	if err != nil {
 		return nil, fmt.Errorf("list all character jump clones: %w", err)
 	}
-	oo := make([]*app.CharacterJumpClone2, len(rows))
-	for i, r := range rows {
-		arg := queries.EveLocation{
+	oo := make([]*app.CharacterJumpClone2, 0)
+	for _, r := range rows {
+		el, err := st.eveLocationFromDBModel(ctx, queries.EveLocation{
 			ID:               r.LocationID,
 			EveSolarSystemID: r.LocationSolarSystemID,
 			EveTypeID:        r.LocationTypeID,
 			Name:             r.LocationName,
 			OwnerID:          r.LocationOwnerID,
-		}
-		l, err := st.eveLocationFromDBModel(ctx, arg)
+		})
 		if err != nil {
 			return nil, err
 		}
-		o := &app.CharacterJumpClone2{
+		oo = append(oo, &app.CharacterJumpClone2{
 			ID:            r.ID,
 			ImplantsCount: int(r.ImplantsCount),
-			CloneID:       int32(r.JumpCloneID),
-			Character:     &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
-			Location:      l,
-		}
-		oo[i] = o
+			CloneID:      r.JumpCloneID,
+			Character:     &app.EntityShort[int64]{ID:r.CharacterID, Name: r.CharacterName},
+			Location:      el,
+		})
 	}
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
-	rows, err := st.qRO.ListCharacterJumpClones(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("list jump clones for character %d: %w", characterID, err)
+func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int64) ([]*app.CharacterJumpClone, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterJumpClones: %d: %w", characterID, err)
 	}
-	oo := make([]*app.CharacterJumpClone, len(rows))
-	for i, r := range rows {
-		oo[i] = characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterJumpClones(ctx, characterID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]*app.CharacterJumpClone, 0)
+	for _, r := range rows {
+		o := characterJumpCloneFromDBModel(characterJumpCloneFromDBModelParams{
+			jc:               r.CharacterJumpClone,
+			locationName:     r.LocationName,
+			regionID:         r.RegionID,
+			regionName:       r.RegionName,
+			locationSecurity: r.LocationSecurity,
+		})
 		x, err := listCharacterJumpCloneImplants(ctx, st.qRO, r.CharacterJumpClone.ID)
 		if err != nil {
 			return nil, err
 		}
-		oo[i].Implants = x
+		o.Implants = x
+		oo = append(oo, o)
 	}
 	return oo, nil
 }
 
-func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID int32, args []CreateCharacterJumpCloneParams) error {
+func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID int64, args []CreateCharacterJumpCloneParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("replaceCharacterJumpClones for ID %d: %+v: %w", characterID, args, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
@@ -119,7 +167,7 @@ func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID i
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
+	if err := qtx.DeleteCharacterJumpClones(ctx, characterID); err != nil {
 		return wrapErr(err)
 	}
 	for _, arg := range args {
@@ -134,67 +182,58 @@ func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID i
 }
 
 func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg CreateCharacterJumpCloneParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("createCharacterJumpClone: %+v: %w", arg, err)
+	}
 	if arg.CharacterID == 0 || arg.JumpCloneID == 0 || arg.LocationID == 0 {
-		return fmt.Errorf("createCharacterJumpClone: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterJumpCloneParams{
-		CharacterID: int64(arg.CharacterID),
-		JumpCloneID: int64(arg.JumpCloneID),
+		CharacterID: arg.CharacterID,
+		JumpCloneID: arg.JumpCloneID,
 		LocationID:  arg.LocationID,
-		Name:        arg.Name,
+		Name:        arg.Name.ValueOrZero(),
 	}
 	cloneID, err := q.CreateCharacterJumpClone(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create character jump clone %+v, %w", arg, err)
+		return wrapErr(err)
 	}
 	for _, eveTypeID := range arg.Implants {
 		arg3 := queries.CreateCharacterJumpCloneImplantParams{
 			CloneID:   cloneID,
-			EveTypeID: int64(eveTypeID),
+			EveTypeID: eveTypeID,
 		}
 		if err := q.CreateCharacterJumpCloneImplant(ctx, arg3); err != nil {
-			return fmt.Errorf("create character jump clone implant %+v, %w", arg, err)
+			return wrapErr(err)
 		}
 	}
 	return nil
 }
 
-func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString, locationSecurity sql.NullFloat64) *app.CharacterJumpClone {
-	if o.CharacterID == 0 || o.JumpCloneID == 0 || o.LocationID == 0 {
+type characterJumpCloneFromDBModelParams struct {
+	jc               queries.CharacterJumpClone
+	locationName     string
+	locationSecurity sql.NullFloat64
+	regionID         sql.NullInt64
+	regionName       sql.NullString
+}
+
+func characterJumpCloneFromDBModel(arg characterJumpCloneFromDBModelParams) *app.CharacterJumpClone {
+	if arg.jc.CharacterID == 0 || arg.jc.JumpCloneID == 0 || arg.jc.LocationID == 0 {
 		panic("invalid IDs")
 	}
 	o2 := &app.CharacterJumpClone{
-		CharacterID: int32(o.CharacterID),
-		ID:          o.ID,
-		CloneID:     int32(o.JumpCloneID),
+		CharacterID:arg.jc.CharacterID,
+		ID:          arg.jc.ID,
+		CloneID:    arg.jc.JumpCloneID,
 		Location: &app.EveLocationShort{
-			ID:             o.LocationID,
-			Name:           optional.New(locationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity)},
-		Name: o.Name,
+			ID:             arg.jc.LocationID,
+			Name:           optional.New(arg.locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity)},
+		Name: optional.FromZeroValue(arg.jc.Name),
 	}
-	if regionID.Valid && regionName.Valid {
-		o2.Region = &app.EntityShort[int32]{ID: int32(regionID.Int64), Name: regionName.String}
-	}
-	return o2
-}
-
-func characterJumpCloneImplantFromDBModel(
-	o queries.CharacterJumpCloneImplant,
-	t queries.EveType,
-	g queries.EveGroup,
-	c queries.EveCategory,
-	s sql.NullFloat64,
-) *app.CharacterJumpCloneImplant {
-	if o.CloneID == 0 {
-		panic("missing clone ID")
-	}
-	o2 := &app.CharacterJumpCloneImplant{
-		EveType: eveTypeFromDBModel(t, g, c),
-		ID:      o.ID,
-	}
-	if s.Valid {
-		o2.SlotNum = int(s.Float64)
+	if arg.regionID.Valid && arg.regionName.Valid {
+		o2.Region = &app.EntityShort[int64]{ID: arg.regionID.Int64, Name: arg.regionName.String}
 	}
 	return o2
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/notification"
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -16,18 +16,18 @@ type orbitalAttacked struct {
 	baseRenderer
 }
 
-func (n orbitalAttacked) entityIDs(text string) (setInt32, error) {
+func (n orbitalAttacked) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n orbitalAttacked) unmarshal(text string) (notification.OrbitalAttacked, setInt32, error) {
-	var data notification.OrbitalAttacked
+func (n orbitalAttacked) unmarshal(text string) (goesi.OrbitalAttacked, set.Set[int64], error) {
+	var data goesi.OrbitalAttacked
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil
@@ -73,18 +73,18 @@ type orbitalReinforced struct {
 	baseRenderer
 }
 
-func (n orbitalReinforced) entityIDs(text string) (setInt32, error) {
+func (n orbitalReinforced) entityIDs(text string) (set.Set[int64], error) {
 	_, ids, err := n.unmarshal(text)
 	if err != nil {
-		return setInt32{}, err
+		return set.Set[int64]{}, err
 	}
 	return ids, nil
 }
 
-func (n orbitalReinforced) unmarshal(text string) (notification.OrbitalReinforced, setInt32, error) {
-	var data notification.OrbitalReinforced
+func (n orbitalReinforced) unmarshal(text string) (goesi.OrbitalReinforced, set.Set[int64], error) {
+	var data goesi.OrbitalReinforced
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-		return data, setInt32{}, err
+		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
 	return data, ids, nil
@@ -132,7 +132,7 @@ type orbitalInfo struct {
 	intro         string
 }
 
-func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus EveUniverseService) (orbitalInfo, error) {
+func makeOrbitalBaseText(ctx context.Context, planetID, typeID int64, eus EveUniverseService) (orbitalInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err

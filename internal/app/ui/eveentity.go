@@ -25,11 +25,11 @@ import (
 )
 
 type eveEntityEIS interface {
-	AllianceLogo(int32, int) (fyne.Resource, error)
-	CharacterPortrait(int32, int) (fyne.Resource, error)
-	CorporationLogo(int32, int) (fyne.Resource, error)
-	FactionLogo(int32, int) (fyne.Resource, error)
-	InventoryTypeIcon(int32, int) (fyne.Resource, error)
+	AllianceLogo(int64, int) (fyne.Resource, error)
+	CharacterPortrait(int64, int) (fyne.Resource, error)
+	CorporationLogo(int64, int) (fyne.Resource, error)
+	FactionLogo(int64, int) (fyne.Resource, error)
+	InventoryTypeIcon(int64, int) (fyne.Resource, error)
 }
 
 // eveEntityEntry represents an entry widget for Eve Entity items.
@@ -101,7 +101,7 @@ func (w *eveEntityEntry) Add(ee *app.EveEntity) {
 	}
 }
 
-func (w *eveEntityEntry) Remove(id int32) {
+func (w *eveEntityEntry) Remove(id int64) {
 	removed := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -307,7 +307,7 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-var eveEntityResourceCache xsync.Map[int32, fyne.Resource]
+var eveEntityResourceCache xsync.Map[int64, fyne.Resource]
 
 // loadEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
 func loadEveEntityIconAsync(eis eveEntityEIS, ee *app.EveEntity, setter func(r fyne.Resource)) {

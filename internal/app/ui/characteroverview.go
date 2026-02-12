@@ -31,17 +31,17 @@ import (
 )
 
 type characterOverviewRow struct {
-	alliance        *app.EveEntity
-	characterID     int32
+	alliance        optional.Optional[*app.EveEntity]
+	characterID     int64
 	characterName   string
 	corporation     *app.EveEntity
-	faction         *app.EveEntity
+	faction         optional.Optional[*app.EveEntity]
 	isWatched       bool
-	location        *app.EveLocation
+	location        optional.Optional[*app.EveLocation]
 	regionName      string
 	searchTarget    string
-	ship            *app.EveType
-	skillpoints     optional.Optional[int]
+	ship            optional.Optional[*app.EveType]
+	skillpoints     optional.Optional[int64]
 	solarSystemName string
 	tags            set.Set[string]
 	trainingActive  optional.Optional[bool]
@@ -50,10 +50,9 @@ type characterOverviewRow struct {
 }
 
 func (r characterOverviewRow) allianceName() string {
-	if r.alliance == nil {
-		return ""
-	}
-	return r.alliance.Name
+	return optional.Map(r.alliance, "", func(v *app.EveEntity) string {
+		return v.Name
+	})
 }
 
 func (r characterOverviewRow) corporationName() string {
@@ -64,10 +63,9 @@ func (r characterOverviewRow) corporationName() string {
 }
 
 func (r characterOverviewRow) shipName() string {
-	if r.ship == nil {
-		return "?"
-	}
-	return r.ship.Name
+	return optional.Map(r.ship, "", func(v *app.EveType) string {
+		return v.Name
+	})
 }
 
 type characterOverview struct {
@@ -203,7 +201,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		switch arg.section {
 		case app.SectionEveCharacters:
-			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int64 {
 				return r.characterID
 			}))
 			for characterID := range set.Intersection(characters, arg.changed).All() {
@@ -214,7 +212,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -237,7 +235,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			a.updateItem(ctx, arg.characterID)
 		}
 	})
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int32) {
+	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
 	return a
@@ -453,7 +451,7 @@ func (a *characterOverview) update() {
 	})
 }
 
-func (a *characterOverview) updateItem(ctx context.Context, characterID int32) {
+func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
@@ -515,9 +513,11 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		skillpoints:   c.TotalSP,
 		walletBalance: c.WalletBalance,
 	}
-	if c.Location != nil && c.Location.SolarSystem != nil {
-		r.regionName = c.Location.SolarSystem.Constellation.Region.Name
-		r.solarSystemName = c.Location.SolarSystem.Name
+	if el, ok := c.Location.Value(); ok {
+		if es, ok := el.SolarSystem.Value(); ok {
+			r.regionName = es.Constellation.Region.Name
+			r.solarSystemName = es.Name
+		}
 	}
 	total, unread, err := a.u.cs.GetMailCounts(ctx, c.ID)
 	if err != nil {
@@ -530,8 +530,8 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 	if err != nil {
 		return r, err
 	}
-	if !d.IsEmpty() {
-		r.trainingActive.Set(d.ValueOrZero() > 0)
+	if v, ok := d.Value(); ok {
+		r.trainingActive.Set(v > 0)
 	}
 	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
@@ -542,9 +542,9 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 }
 
 type characterCardEIS interface {
-	AllianceLogoAsync(id int32, size int, setter func(r fyne.Resource))
-	CharacterPortraitAsync(id int32, size int, setter func(r fyne.Resource))
-	CorporationLogoAsync(id int32, size int, setter func(r fyne.Resource))
+	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
 // characterCard is a widget that shows a card for a character.
@@ -566,14 +566,14 @@ type characterCard struct {
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
-	showInfoWindow           func(c app.EveEntityCategory, id int32)
+	showInfoWindow           func(c app.EveEntityCategory, id int64)
 	skillpoints              *widget.Label
 	solarSystem              *iwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
 }
 
-func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCard {
+func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int64)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -811,15 +811,15 @@ func (w *characterCard) set(c characterOverviewRow) {
 		w.corporationLogo.SetResource(r)
 	})
 
-	if c.alliance != nil {
+	if alliance, ok := c.alliance.Value(); ok {
 		if !w.isSmall {
 			w.allianceLogo.OnTapped = func() {
-				w.showInfoWindow(app.EveEntityAlliance, c.alliance.ID)
+				w.showInfoWindow(app.EveEntityAlliance, alliance.ID)
 			}
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}
 		w.allianceLogo.Show()
-		w.eis.AllianceLogoAsync(c.alliance.ID, logoSize, func(r fyne.Resource) {
+		w.eis.AllianceLogoAsync(alliance.ID, logoSize, func(r fyne.Resource) {
 			w.allianceLogo.SetResource(r)
 		})
 	} else {
@@ -835,15 +835,12 @@ func (w *characterCard) set(c characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	}))
 
-	w.skillpoints.SetText(c.skillpoints.StringFunc("?", func(v int) string {
+	w.skillpoints.SetText(c.skillpoints.StringFunc("?", func(v int64) string {
 		return humanize.Comma(int64(v))
 	}))
 
-	if c.trainingActive.IsEmpty() {
-		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
-		w.trainingStatus.SetToolTip("Training status unknown")
-	} else {
-		if c.trainingActive.ValueOrZero() {
+	if v, ok := c.trainingActive.Value(); ok {
+		if v {
 			w.trainingStatus.SetResource(w.resourceTrainingActive)
 			w.trainingStatus.SetToolTip("Training is active")
 		} else {
@@ -855,6 +852,9 @@ func (w *characterCard) set(c characterOverviewRow) {
 				w.trainingStatus.SetToolTip("Training is not active")
 			}
 		}
+	} else {
+		w.trainingStatus.SetResource(w.resourceTrainingUnknown)
+		w.trainingStatus.SetToolTip("Training status unknown")
 	}
 
 	w.wallet.SetText(c.walletBalance.StringFunc("?", func(v float64) string {
@@ -863,11 +863,11 @@ func (w *characterCard) set(c characterOverviewRow) {
 
 	w.ship.SetText(c.shipName())
 
-	var rt []widget.RichTextSegment
-	if c.location != nil && c.location.SolarSystem != nil {
-		rt = c.location.SolarSystem.DisplayRichText()
-	} else {
-		rt = iwidget.RichTextSegmentsFromText("?")
+	rt := iwidget.RichTextSegmentsFromText("?")
+	if el, ok := c.location.Value(); ok {
+		if es, ok := el.SolarSystem.Value(); ok {
+			rt = es.DisplayRichText()
+		}
 	}
 	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)

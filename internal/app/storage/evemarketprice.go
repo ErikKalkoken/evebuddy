@@ -6,10 +6,11 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
-	row, err := st.qRO.GetEveMarketPrice(ctx, int64(typeID))
+func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int64) (*app.EveMarketPrice, error) {
+	row, err := st.qRO.GetEveMarketPrice(ctx,typeID)
 	if err != nil {
 		return nil, fmt.Errorf("get eve market price for type %d: %w", typeID, convertGetError(err))
 	}
@@ -18,9 +19,9 @@ func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.Ev
 }
 
 type UpdateOrCreateEveMarketPriceParams struct {
-	TypeID        int32
-	AdjustedPrice float64
-	AveragePrice  float64
+	TypeID        int64
+	AdjustedPrice optional.Optional[float64]
+	AveragePrice  optional.Optional[float64]
 }
 
 func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateOrCreateEveMarketPriceParams) (*app.EveMarketPrice, error) {
@@ -31,9 +32,9 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, queries.UpdateOrCreateEveMarketPriceParams{
-		TypeID:        int64(arg.TypeID),
-		AdjustedPrice: arg.AdjustedPrice,
-		AveragePrice:  arg.AveragePrice,
+		TypeID:       arg.TypeID,
+		AdjustedPrice: arg.AdjustedPrice.ValueOrZero(),
+		AveragePrice:  arg.AveragePrice.ValueOrZero(),
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -46,8 +47,8 @@ func eveMarketPriceFromDBModel(o queries.EveMarketPrice) *app.EveMarketPrice {
 		panic("missing type ID")
 	}
 	return &app.EveMarketPrice{
-		TypeID:        int32(o.TypeID),
-		AdjustedPrice: o.AdjustedPrice,
-		AveragePrice:  o.AveragePrice,
+		TypeID:       o.TypeID,
+		AdjustedPrice: optional.FromZeroValue(o.AdjustedPrice),
+		AveragePrice:  optional.FromZeroValue(o.AveragePrice),
 	}
 }

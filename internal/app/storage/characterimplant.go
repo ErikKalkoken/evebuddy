@@ -10,19 +10,19 @@ import (
 )
 
 type CreateCharacterImplantParams struct {
-	CharacterID int32
-	EveTypeID   int32
+	CharacterID int64
+	EveTypeID   int64
 }
 
 func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
 	return createCharacterImplant(ctx, st.qRW, arg)
 }
 
-func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*app.CharacterImplant, error) {
+func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int64, typeID int64) (*app.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
-		CharacterID:      int64(characterID),
+		CharacterID:     characterID,
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
-		EveTypeID:        int64(typeID),
+		EveTypeID:       typeID,
 	}
 	row, err := st.qRO.GetCharacterImplant(ctx, arg)
 	if err != nil {
@@ -36,10 +36,10 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 	return t2, nil
 }
 
-func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
+func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int64) ([]*app.CharacterImplant, error) {
 	rows, err := st.qRO.ListCharacterImplants(ctx, queries.ListCharacterImplantsParams{
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
-		CharacterID:      int64(characterID),
+		CharacterID:     characterID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list implants for character ID %d: %w", characterID, err)
@@ -73,7 +73,7 @@ func (st *Storage) ListAllCharacterImplants(ctx context.Context) ([]*app.Charact
 	return oo, nil
 }
 
-func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
+func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int64, args []CreateCharacterImplantParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("replaceCharacterImplants for ID %d: %+v: %w", characterID, args, err)
 	}
@@ -83,7 +83,7 @@ func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
+	if err := qtx.DeleteCharacterImplants(ctx,characterID); err != nil {
 		return wrapErr(err)
 	}
 	for _, arg := range args {
@@ -103,8 +103,8 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 		return fmt.Errorf("createCharacterImplant: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterImplantParams{
-		CharacterID: int64(arg.CharacterID),
-		EveTypeID:   int64(arg.EveTypeID),
+		CharacterID:arg.CharacterID,
+		EveTypeID:  arg.EveTypeID,
 	}
 	err := q.CreateCharacterImplant(ctx, arg2)
 	if err != nil {
@@ -124,7 +124,7 @@ func characterImplantFromDBModel(
 		panic("missing character ID")
 	}
 	o2 := &app.CharacterImplant{
-		CharacterID: int32(o.CharacterID),
+		CharacterID:o.CharacterID,
 		EveType:     eveTypeFromDBModel(t, g, c),
 		ID:          o.ID,
 	}

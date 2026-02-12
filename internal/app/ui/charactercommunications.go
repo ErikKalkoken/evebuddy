@@ -179,7 +179,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*mailHeaderItem)
-			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
@@ -238,10 +238,10 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				return
 			}
 			s += "\n\n"
-			if b.IsEmpty() {
-				s += "(no body)"
+			if v, ok := b.Value(); ok {
+				s += v
 			} else {
-				s += b.ValueOrZero()
+				s += "(no body)"
 			}
 			a.u.App().Clipboard().SetContent(s)
 		}),
@@ -370,11 +370,11 @@ func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) 
 			}
 			switch n.Sender.ID {
 			case app.EveTypeAlliance:
-				if c.EveCharacter.Alliance != nil {
-					n.Sender = c.EveCharacter.Alliance
-				} else {
-					n.Sender = &app.EveEntity{ID: 1, Name: "Unknown", Category: app.EveEntityCorporation}
-				}
+				n.Sender = c.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+					ID:       1,
+					Name:     "Unknown",
+					Category: app.EveEntityCorporation,
+				})
 			case app.EveTypeCorporation:
 				n.Sender = c.EveCharacter.Corporation
 			}

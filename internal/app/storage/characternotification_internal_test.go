@@ -3,8 +3,10 @@ package storage
 import (
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestNotificationHelpers(t *testing.T) {
@@ -12,7 +14,7 @@ func TestNotificationHelpers(t *testing.T) {
 	t.Run("can convert valid name to type", func(t *testing.T) {
 		got, found := EveNotificationTypeFromESIString("StructureDestroyed")
 		if assert.True(t, found) {
-			assert.Equal(t, app.StructureDestroyed, got)
+			xassert.Equal(t, app.StructureDestroyed, got)
 		}
 	})
 	t.Run("should report when string can not be matched", func(t *testing.T) {
@@ -22,7 +24,7 @@ func TestNotificationHelpers(t *testing.T) {
 	t.Run("can convert regular type to string", func(t *testing.T) {
 		got, ok := st.EveNotificationTypeToESIString(app.StructureDestroyed)
 		if assert.True(t, ok) {
-			assert.Equal(t, "StructureDestroyed", got)
+			xassert.Equal(t, "StructureDestroyed", got)
 		}
 	})
 	t.Run("can report when type is irregular", func(t *testing.T) {

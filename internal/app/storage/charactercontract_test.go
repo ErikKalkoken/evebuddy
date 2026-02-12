@@ -47,12 +47,12 @@ func TestCharacterContract(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		assert.Equal(t, id, o.ID)
-		assert.Equal(t, issuer, o.Issuer)
-		assert.Equal(t, dateExpired, o.DateExpired)
-		assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
-		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-		assert.Equal(t, app.ContractTypeCourier, o.Type)
+		xassert.Equal(t, id, o.ID)
+		xassert.Equal(t, issuer, o.Issuer)
+		xassert.Equal(t, dateExpired, o.DateExpired)
+		xassert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
+		xassert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		xassert.Equal(t, app.ContractTypeCourier, o.Type)
 		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
 	t.Run("can create new full", func(t *testing.T) {
@@ -75,8 +75,8 @@ func TestCharacterContract(t *testing.T) {
 			IssuerID:            issuer.ID,
 			Status:              app.ContractStatusOutstanding,
 			Type:                app.ContractTypeCourier,
-			EndLocationID:       endLocation.ID,
-			StartLocationID:     startLocation.ID,
+			EndLocationID:       optional.New(endLocation.ID),
+			StartLocationID:     optional.New(startLocation.ID),
 		}
 		// when
 		id, err := st.CreateCharacterContract(ctx, arg)
@@ -84,18 +84,18 @@ func TestCharacterContract(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		assert.Equal(t, id, o.ID)
-		assert.Equal(t, issuer, o.Issuer)
-		assert.Equal(t, dateExpired, o.DateExpired)
-		assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
-		assert.Equal(t, app.ContractStatusOutstanding, o.Status)
-		assert.Equal(t, app.ContractTypeCourier, o.Type)
-		assert.Equal(t, endLocation.ToShort(), o.EndLocation)
-		assert.Equal(t, startLocation.ToShort(), o.StartLocation)
-		assert.Equal(t, endLocation.SolarSystem.ID, o.EndSolarSystem.ID)
-		assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
-		assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
-		assert.Equal(t, startLocation.SolarSystem.Name, o.StartSolarSystem.Name)
+		xassert.Equal(t, id, o.ID)
+		xassert.Equal(t, issuer, o.Issuer)
+		xassert.Equal(t, dateExpired, o.DateExpired)
+		xassert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
+		xassert.Equal(t, app.ContractStatusOutstanding, o.Status)
+		xassert.Equal(t, app.ContractTypeCourier, o.Type)
+		xassert.Equal(t, endLocation.ToShort(), o.EndLocation.ValueOrZero())
+		xassert.Equal(t, startLocation.ToShort(), o.StartLocation.ValueOrZero())
+		xassert.Equal(t, endLocation.SolarSystem.ValueOrZero().ID, o.EndSolarSystem.ValueOrZero().ID)
+		xassert.Equal(t, endLocation.SolarSystem.ValueOrZero().Name, o.EndSolarSystem.ValueOrZero().Name)
+		xassert.Equal(t, startLocation.SolarSystem.ValueOrZero().ID, o.StartSolarSystem.ValueOrZero().ID)
+		xassert.Equal(t, startLocation.SolarSystem.ValueOrZero().Name, o.StartSolarSystem.ValueOrZero().Name)
 		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
 	t.Run("can update contract", func(t *testing.T) {
@@ -109,8 +109,8 @@ func TestCharacterContract(t *testing.T) {
 		arg2 := storage.UpdateCharacterContractParams{
 			CharacterID:   o1.CharacterID,
 			ContractID:    o1.ContractID,
-			DateAccepted:  dateAccepted,
-			DateCompleted: dateCompleted,
+			DateAccepted:  optional.New(dateAccepted),
+			DateCompleted: optional.New(dateCompleted),
 			Status:        app.ContractStatusFinished,
 		}
 		// when
@@ -119,9 +119,9 @@ func TestCharacterContract(t *testing.T) {
 		require.NoError(t, err)
 		o2, err := st.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 		require.NoError(t, err)
-		assert.Equal(t, app.ContractStatusFinished, o2.Status)
-		assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
-		assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
+		xassert.Equal(t, app.ContractStatusFinished, o2.Status)
+		xassert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
+		xassert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
 		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
 	t.Run("can update notified", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestCharacterContract(t *testing.T) {
 		require.NoError(t, err)
 		o2, err := st.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 		require.NoError(t, err)
-		assert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
+		xassert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
 		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestCharacterContract(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(e1.ContractID, e2.ContractID, e3.ContractID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can list contracts for multiple characters", func(t *testing.T) {
 		// given
@@ -169,7 +169,7 @@ func TestCharacterContract(t *testing.T) {
 		got := set.Of(xslices.Map(oo, func(x *app.CharacterContract) int64 {
 			return x.ID
 		})...)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can list existing contracts for a character", func(t *testing.T) {
 		// given
@@ -181,7 +181,7 @@ func TestCharacterContract(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Len(t, oo, 1)
-		assert.Equal(t, o.ID, oo[0].ID)
+		xassert.Equal(t, o.ID, oo[0].ID)
 	})
 	t.Run("can delete contracts for a character", func(t *testing.T) {
 		// given
@@ -197,7 +197,7 @@ func TestCharacterContract(t *testing.T) {
 		got, err := st.ListCharacterContractIDs(ctx, c.ID)
 		require.NoError(t, err)
 		want := set.Of(e2.ContractID, e3.ContractID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }
 
@@ -229,8 +229,8 @@ func TestCharacterContractBid(t *testing.T) {
 		o, err := st.GetCharacterContractBid(ctx, c.ID, bidID)
 		require.NoError(t, err)
 		assert.InDelta(t, amount, o.Amount, 0.1)
-		assert.Equal(t, bidder, o.Bidder)
-		assert.Equal(t, dateBid, o.DateBid)
+		xassert.Equal(t, bidder, o.Bidder)
+		xassert.Equal(t, dateBid, o.DateBid)
 	})
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
@@ -242,11 +242,11 @@ func TestCharacterContractBid(t *testing.T) {
 		oo, err := st.ListCharacterContractBids(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractBid) int32 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractBid) int64 {
 			return x.BidID
 		}))
 		want := set.Of(b1.BidID, b2.BidID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
@@ -259,7 +259,7 @@ func TestCharacterContractBid(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(b1.BidID, b2.BidID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }
 
@@ -277,7 +277,7 @@ func TestCharacterContractItem(t *testing.T) {
 			IsIncluded:  true,
 			IsSingleton: true,
 			Quantity:    7,
-			RawQuantity: -5,
+			RawQuantity: optional.New[int64](-5),
 			RecordID:    42,
 			TypeID:      et.ID,
 		}
@@ -289,9 +289,9 @@ func TestCharacterContractItem(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, o.IsIncluded)
 		assert.True(t, o.IsSingleton)
-		assert.Equal(t, 7, o.Quantity)
-		assert.Equal(t, -5, o.RawQuantity)
-		assert.Equal(t, et, o.Type)
+		xassert.Equal(t, 7, o.Quantity)
+		xassert.Equal(t, -5, o.RawQuantity.ValueOrZero())
+		xassert.Equal(t, et, o.Type)
 	})
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
@@ -307,6 +307,6 @@ func TestCharacterContractItem(t *testing.T) {
 			return x.RecordID
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
-		xassert.EqualSet(t, want, got)
+		xassert.Equal2(t, want, got)
 	})
 }

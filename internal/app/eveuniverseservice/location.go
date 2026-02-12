@@ -69,7 +69,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			es, err := s.GetOrCreateSolarSystemESI(ctx, int32(id))
+			es, err := s.GetOrCreateSolarSystemESI(ctx, int64(id))
 			if err != nil {
 				return nil, err
 			}
@@ -79,7 +79,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				SolarSystemID: optional.New(es.ID),
 			}
 		case app.EveLocationStation:
-			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
+			station, _, err := s.esiClient.UniverseAPI.GetUniverseStationsStationId(ctx, int64(id)).Execute()
 			if err != nil {
 				return nil, err
 			}
@@ -98,19 +98,19 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				TypeID:        optional.New(station.TypeId),
 				Name:          station.Name,
 			}
-			if station.Owner != 0 {
-				_, err = s.AddMissingEntities(ctx, set.Of(station.Owner))
+			if station.Owner != nil {
+				_, err = s.AddMissingEntities(ctx, set.Of(*station.Owner))
 				if err != nil {
 					return nil, err
 				}
-				arg.OwnerID = optional.New(station.Owner)
+				arg.OwnerID = optional.New(*station.Owner)
 			}
 		case app.EveLocationStructure:
 			if !xgoesi.ContextHasAccessToken(ctx) {
 				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
 			}
 			ctx2 := xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
-			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx2, id, nil)
+			structure, r, err := s.esiClient.UniverseAPI.GetUniverseStructuresStructureId(ctx2, id).Execute()
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
 					arg = storage.UpdateOrCreateLocationParams{ID: id}
@@ -132,8 +132,8 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				Name:          structure.Name,
 				OwnerID:       optional.New(structure.OwnerId),
 			}
-			if structure.TypeId != 0 {
-				myType, err := s.GetOrCreateTypeESI(ctx2, structure.TypeId)
+			if structure.TypeId != nil {
+				myType, err := s.GetOrCreateTypeESI(ctx2, *structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
@@ -190,35 +190,35 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 
 // EntityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
 // This methods allows bulk resolving EveEntities before fetching many new locations from ESI.
-func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int32], error) {
+func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int64], error) {
 	if len(ids) == 0 {
-		return set.Set[int32]{}, nil
+		return set.Set[int64]{}, nil
 	}
 	for _, id := range ids {
 		if app.LocationVariantFromID(id) == app.EveLocationStructure {
 			if !xgoesi.ContextHasAccessToken(ctx) {
-				return set.Set[int32]{}, fmt.Errorf("EntityIDsFromLocationsESI: token not set for location ID %d: %w", id, app.ErrInvalid)
+				return set.Set[int64]{}, fmt.Errorf("EntityIDsFromLocationsESI: token not set for location ID %d: %w", id, app.ErrInvalid)
 			}
 			break
 		}
 	}
-	entityIDs := make([]int32, len(ids))
+	entityIDs := make([]int64, len(ids))
 	g := new(errgroup.Group)
 	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids {
 		g.Go(func() error {
 			switch app.LocationVariantFromID(id) {
 			case app.EveLocationStation:
-				station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
+				station, _, err := s.esiClient.UniverseAPI.GetUniverseStationsStationId(ctx, int64(id)).Execute()
 				if err != nil {
 					return err
 				}
-				if x := station.Owner; x != 0 {
-					entityIDs[i] = x
+				if x := station.Owner; x != nil {
+					entityIDs[i] = *x
 				}
 			case app.EveLocationStructure:
 				ctx2 := xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
-				structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx2, id, nil)
+				structure, r, err := s.esiClient.UniverseAPI.GetUniverseStructuresStructureId(ctx2, id).Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusForbidden {
 						return nil
@@ -231,17 +231,17 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return set.Set[int32]{}, err
+		return set.Set[int64]{}, err
 	}
-	r := set.Of(xslices.Filter(entityIDs, func(x int32) bool {
+	r := set.Of(xslices.Filter(entityIDs, func(x int64) bool {
 		return x != 0 && x != 1 && x != -1
 	})...)
 	return r, nil
 }
 
 // GetStationServicesESI fetches and returns the services of a station from ESI.
-func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32) ([]string, error) {
-	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, id, nil)
+func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int64) ([]string, error) {
+	o, _, err := s.esiClient.UniverseAPI.GetUniverseStationsStationId(ctx, id).Execute()
 	if err != nil {
 		return nil, err
 	}

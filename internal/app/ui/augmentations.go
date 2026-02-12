@@ -23,11 +23,11 @@ import (
 )
 
 type characterAugmentationNode struct {
-	characterID            int32
+	characterID            int64
 	characterName          string
 	implantCount           int
 	implantTypeDescription string
-	implantTypeID          int32
+	implantTypeID          int64
 	implantTypeName        string
 	tags                   set.Set[string]
 }
@@ -84,7 +84,7 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -252,7 +252,7 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentation
 	if err != nil {
 		return td, err
 	}
-	characterImplants := make(map[int32][]*app.CharacterImplant)
+	characterImplants := make(map[int64][]*app.CharacterImplant)
 	for _, c := range characters {
 		characterImplants[c.ID] = make([]*app.CharacterImplant, 0)
 	}

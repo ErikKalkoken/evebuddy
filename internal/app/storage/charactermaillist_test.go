@@ -41,7 +41,7 @@ func TestMailList(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Len(t, ll, 2)
 			o := ll[0]
-			assert.Equal(t, o.Name, "alpha")
+			xassert.Equal(t, o.Name, "alpha")
 		}
 	})
 	t.Run("can delete obsolete mail lists for a character", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestMailList(t *testing.T) {
 		if err := st.CreateCharacterMailList(ctx, c1.ID, e1.ID); err != nil {
 			t.Fatal(err)
 		}
-		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int64{e1.ID}})
 		e2 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := st.CreateCharacterMailList(ctx, c1.ID, e2.ID); err != nil {
 			t.Fatal(err)
@@ -68,21 +68,21 @@ func TestMailList(t *testing.T) {
 		if assert.NoError(t, err) {
 			lists, err := st.ListCharacterMailListsOrdered(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				got := set.Of[int32]()
+				got := set.Of[int64]()
 				for _, l := range lists {
 					got.Add(l.ID)
 				}
-				want := set.Of([]int32{e1.ID}...)
-				xassert.EqualSet(t, want, got)
+				want := set.Of([]int64{e1.ID}...)
+				xassert.Equal2(t, want, got)
 			}
 			lists, err = st.ListCharacterMailListsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
-				got := set.Of[int32]()
+				got := set.Of[int64]()
 				for _, l := range lists {
 					got.Add(l.ID)
 				}
 				want := set.Of(e3.ID)
-				xassert.EqualSet(t, want, got)
+				xassert.Equal2(t, want, got)
 			}
 		}
 	})

@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestSearchESI(t *testing.T) {
@@ -30,7 +31,7 @@ func TestSearchESI(t *testing.T) {
 		x1 := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/search/?categories=character&search=search&strict=false", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/search?categories=character&search=search&strict=false", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string][]int{
 				"agent":          {},
 				"alliance":       {},
@@ -51,7 +52,7 @@ func TestSearchESI(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.Equal(t, 1, n)
-		assert.Equal(t, map[app.SearchCategory][]*app.EveEntity{app.SearchCharacter: {x1}}, got)
+		xassert.Equal(t, 1, n)
+		xassert.Equal(t, map[app.SearchCategory][]*app.EveEntity{app.SearchCharacter: {x1}}, got)
 	})
 }

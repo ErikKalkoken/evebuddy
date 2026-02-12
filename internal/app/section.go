@@ -474,7 +474,7 @@ type GeneralSectionUpdateParams struct {
 }
 
 type CharacterSectionUpdateParams struct {
-	CharacterID           int32
+	CharacterID           int64
 	ForceUpdate           bool
 	MarketOrderRetention  time.Duration
 	MaxMails              int
@@ -485,7 +485,7 @@ type CharacterSectionUpdateParams struct {
 }
 
 type CorporationSectionUpdateParams struct {
-	CorporationID         int32
+	CorporationID         int64
 	ForceUpdate           bool
 	MaxWalletTransactions int
 	OnUpdateStarted       func()

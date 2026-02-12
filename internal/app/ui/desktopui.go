@@ -250,9 +250,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
-		if count.IsEmpty() {
+		if v, ok := count.Value(); !ok {
 			s = "?"
-		} else if count.ValueOrZero() > 0 {
+		} else if v > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
 		fyne.Do(func() {
@@ -598,8 +598,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		s := c.EveCorporation.Name
-		if c.EveCorporation.HasAlliance() {
-			s += fmt.Sprintf(" (%s)", c.EveCorporation.Alliance.Name)
+		if v, ok := c.EveCorporation.Alliance.Value(); ok {
+			s += fmt.Sprintf(" (%s)", v.Name)
 		}
 		fyne.Do(func() {
 			corporationHeader.SetTitle(s)
@@ -804,11 +804,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				if c.Location == nil {
+				el, ok := c.Location.Value()
+				if !ok {
 					u.ShowSnackbar("ERROR: Missing location for current character.")
 					return
 				}
-				u.ShowLocationInfoWindow(c.Location.ID)
+				u.ShowLocationInfoWindow(el.ID)
 			}},
 		"currentShip": {
 			&desktop.CustomShortcut{
@@ -821,11 +822,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				if c.Ship == nil {
+				ship, ok := c.Ship.Value()
+				if !ok {
 					u.ShowSnackbar("ERROR: Missing ship for current character.")
 					return
 				}
-				u.ShowTypeInfoWindow(c.Ship.ID)
+				u.ShowTypeInfoWindow(ship.ID)
 			}},
 		"search": {
 			&desktop.CustomShortcut{

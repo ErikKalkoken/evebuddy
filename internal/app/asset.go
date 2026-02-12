@@ -167,7 +167,7 @@ const (
 
 // Asset represents a generic asset in Eve Online.
 type Asset struct {
-	IsBlueprintCopy bool
+	IsBlueprintCopy optional.Optional[bool]
 	IsSingleton     bool
 	ItemID          int64
 	LocationFlag    LocationFlag
@@ -218,7 +218,7 @@ func (ca Asset) DisplayName() string {
 		return ca.Name
 	}
 	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
+	if ca.IsBlueprintCopy.ValueOrZero() {
 		s += " (Copy)"
 	}
 	return s
@@ -229,7 +229,7 @@ func (ca Asset) DisplayName2() string {
 		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
 	}
 	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
+	if ca.IsBlueprintCopy.ValueOrZero() {
 		s += " (Copy)"
 	}
 	return s
@@ -240,14 +240,14 @@ func (ca Asset) DisplayName3() string {
 		return fmt.Sprintf("%s (%s)", ca.Name, ca.TypeName())
 	}
 	s := ca.TypeName()
-	if ca.IsBlueprintCopy {
+	if ca.IsBlueprintCopy.ValueOrZero() {
 		s += " (Copy)"
 	}
 	return s
 }
 
 func (ca Asset) IsBPO() bool {
-	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
+	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy.ValueOrZero()
 }
 
 func (ca Asset) IsSKIN() bool {
@@ -380,7 +380,7 @@ func (ca Asset) Variant() InventoryTypeVariant {
 	if ca.IsBPO() {
 		return VariantBPO
 	}
-	if ca.IsBlueprintCopy {
+	if ca.IsBlueprintCopy.ValueOrZero() {
 		return VariantBPC
 	}
 	return VariantRegular
@@ -388,10 +388,10 @@ func (ca Asset) Variant() InventoryTypeVariant {
 
 type CharacterAsset struct {
 	Asset
-	CharacterID int32
+	CharacterID int64
 }
 
 type CorporationAsset struct {
 	Asset
-	CorporationID int32
+	CorporationID int64
 }

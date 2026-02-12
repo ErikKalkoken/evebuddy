@@ -16,7 +16,7 @@ const (
 	baseURL = "https://janice.e-351.com/api"
 )
 
-var ErrHttpError = errors.New("HTTP error")
+var ErrHTTPError = errors.New("HTTP error")
 
 type JaniceService struct {
 	apiKey     string
@@ -41,9 +41,9 @@ type PricerItem struct {
 		ID   int
 		Name string
 	}
-	BuyOrderCount     int32
+	BuyOrderCount     int64
 	BuyVolume         int64
-	SellOrderCount    int32
+	SellOrderCount    int64
 	SellVolume        int64
 	ImmediatePrices   PricerItemValues
 	Top5AveragePrices PricerItemValues
@@ -68,7 +68,7 @@ type PricerItemValues struct {
 	SellPrice30DayMedian     float64
 }
 
-func (s *JaniceService) FetchPrices(ctx context.Context, typeID int32) (PricerItem, error) {
+func (s *JaniceService) FetchPrices(ctx context.Context, typeID int64) (PricerItem, error) {
 	var info PricerItem
 	if typeID <= 0 {
 		return info, errors.New("invalid typeID")
@@ -94,7 +94,7 @@ func (s *JaniceService) FetchPrices(ctx context.Context, typeID int32) (PricerIt
 		return info, err
 	}
 	if r.StatusCode >= 400 {
-		return info, fmt.Errorf("%s: %w", r.Status, ErrHttpError)
+		return info, fmt.Errorf("%s: %w", r.Status, ErrHTTPError)
 	}
 	if err := json.Unmarshal(data, &info); err != nil {
 		return info, err

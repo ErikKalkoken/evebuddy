@@ -12,6 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
@@ -30,7 +32,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(6), x1.ID)
+			xassert.Equal(t, int64(6), x1.ID)
 		}
 	})
 	t.Run("should fetch category from ESI and create it", func(t *testing.T) {
@@ -39,7 +41,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
+			`=~^https://esi.evetech.net/universe/categories/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"category_id": 6,
 				"groups":      []int{25, 26, 27},
@@ -51,12 +53,12 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(6), x1.ID)
-			assert.Equal(t, "Ship", x1.Name)
-			assert.Equal(t, true, x1.IsPublished)
+			xassert.Equal(t, int64(6), x1.ID)
+			xassert.Equal(t, "Ship", x1.Name)
+			xassert.Equal(t, true, x1.IsPublished)
 			x2, err := st.GetEveCategory(ctx, 6)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -78,7 +80,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(25), x1.ID)
+			xassert.Equal(t, int64(25), x1.ID)
 		}
 	})
 	t.Run("should fetch group from ESI and create it", func(t *testing.T) {
@@ -88,26 +90,26 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
+			`=~^https://esi.evetech.net/universe/groups/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"category_id": 6,
 				"group_id":    25,
 				"name":        "Frigate",
 				"published":   true,
-				"types":       []int32{587, 586, 585},
+				"types":       []int64{587, 586, 585},
 			}))
 
 		// when
 		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(25), x1.ID)
-			assert.Equal(t, "Frigate", x1.Name)
-			assert.Equal(t, int32(6), x1.Category.ID)
-			assert.Equal(t, true, x1.IsPublished)
+			xassert.Equal(t, int64(25), x1.ID)
+			xassert.Equal(t, "Frigate", x1.Name)
+			xassert.Equal(t, int64(6), x1.Category.ID)
+			xassert.Equal(t, true, x1.IsPublished)
 			x2, err := st.GetEveGroup(ctx, 25)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -129,7 +131,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(587), x1.ID)
+			xassert.Equal(t, int64(587), x1.ID)
 		}
 	})
 	t.Run("should fetch type from ESI and create it", func(t *testing.T) {
@@ -141,7 +143,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 162})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
+			`=~^https://esi.evetech.net/universe/types/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"description": "The Rifter is a...",
 				"dogma_attributes": []map[string]any{
@@ -174,17 +176,17 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(587), x1.ID)
-			assert.Equal(t, "Rifter", x1.Name)
-			assert.Equal(t, int32(25), x1.Group.ID)
-			assert.Equal(t, true, x1.IsPublished)
+			xassert.Equal(t, int64(587), x1.ID)
+			xassert.Equal(t, "Rifter", x1.Name)
+			xassert.Equal(t, int64(25), x1.Group.ID)
+			xassert.Equal(t, true, x1.IsPublished)
 			x2, err := st.GetEveType(ctx, 587)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 			y, err := st.GetEveTypeDogmaAttribute(ctx, 587, 161)
 			if assert.NoError(t, err) {
-				assert.Equal(t, float32(11), y)
+				xassert.Equal(t, 11.0, y)
 			}
 			z, err := st.GetEveTypeDogmaEffect(ctx, 587, 111)
 			if assert.NoError(t, err) {
@@ -199,7 +201,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
+			`=~^https://esi.evetech.net/universe/categories/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"category_id": 6,
 				"groups":      []int{25, 26, 27},
@@ -209,7 +211,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
+			`=~^https://esi.evetech.net/universe/groups/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"category_id": 6,
 				"group_id":    25,
@@ -220,7 +222,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		)
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
+			`=~^https://esi.evetech.net/universe/types/\d+`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"description": "The Rifter is a...",
 				"group_id":    25,
@@ -233,13 +235,13 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(587), x1.ID)
-			assert.Equal(t, "Rifter", x1.Name)
-			assert.Equal(t, int32(25), x1.Group.ID)
-			assert.Equal(t, true, x1.IsPublished)
+			xassert.Equal(t, int64(587), x1.ID)
+			xassert.Equal(t, "Rifter", x1.Name)
+			xassert.Equal(t, int64(25), x1.Group.ID)
+			xassert.Equal(t, true, x1.IsPublished)
 			x2, err := st.GetEveType(ctx, 587)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -261,7 +263,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 		err := s.AddMissingTypes(ctx, set.Of(x1.ID))
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 	t.Run("ignore invalid IDs", func(t *testing.T) {
@@ -273,7 +275,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 		err := s.AddMissingTypes(ctx, set.Of(x1.ID, 0))
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 }
@@ -294,7 +296,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		x2, err := s.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1, x2)
+			xassert.Equal(t, x1, x2)
 		}
 	})
 	t.Run("should create race from ESI when it does not exit in DB", func(t *testing.T) {
@@ -303,7 +305,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/races/",
+			"https://esi.evetech.net/universe/races",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"alliance_id": 500001,
@@ -317,11 +319,11 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		x1, err := s.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "Caldari", x1.Name)
-			assert.Equal(t, "Founded on the tenets of patriotism and hard work...", x1.Description)
+			xassert.Equal(t, "Caldari", x1.Name)
+			xassert.Equal(t, "Founded on the tenets of patriotism and hard work...", x1.Description)
 			x2, err := st.GetEveRace(ctx, 7)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -331,7 +333,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/races/",
+			"https://esi.evetech.net/universe/races",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"alliance_id": 500001,
@@ -364,7 +366,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		x2, err := s.GetOrCreateDogmaAttributeESI(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x2, x1)
+			xassert.Equal(t, x2, x1)
 		}
 	})
 	t.Run("should create new object from ESI when it does not exist", func(t *testing.T) {
@@ -373,7 +375,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/dogma/attributes/20/",
+			"https://esi.evetech.net/dogma/attributes/20",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"attribute_id":  20,
 				"default_value": 1,
@@ -389,19 +391,19 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		x1, err := s.GetOrCreateDogmaAttributeESI(ctx, 20)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(20), x1.ID)
-			assert.Equal(t, float32(1), x1.DefaultValue)
-			assert.Equal(t, "Factor by which top speed increases.", x1.Description)
-			assert.Equal(t, "Maximum Velocity Bonus", x1.DisplayName)
-			assert.Equal(t, int32(1389), x1.IconID)
-			assert.Equal(t, "speedFactor", x1.Name)
-			assert.True(t, x1.IsHighGood)
-			assert.True(t, x1.IsPublished)
-			assert.False(t, x1.IsStackable)
-			assert.Equal(t, app.EveUnitID(124), x1.Unit)
+			xassert.Equal(t, int64(20), x1.ID)
+			xassert.Equal(t, 1.0, x1.DefaultValue.ValueOrZero())
+			xassert.Equal(t, "Factor by which top speed increases.", x1.Description.ValueOrZero())
+			xassert.Equal(t, "Maximum Velocity Bonus", x1.DisplayName.ValueOrZero())
+			xassert.Equal(t, int64(1389), x1.IconID.ValueOrZero())
+			xassert.Equal(t, "speedFactor", x1.Name.ValueOrZero())
+			assert.True(t, x1.IsHighGood.ValueOrZero())
+			assert.True(t, x1.IsPublished.ValueOrZero())
+			assert.False(t, x1.IsStackable.ValueOrZero())
+			xassert.Equal(t, app.EveUnitID(124), x1.Unit)
 			x2, err := st.GetEveDogmaAttribute(ctx, 20)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1, x2)
+				xassert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -417,7 +419,7 @@ func TestMarketPrice(t *testing.T) {
 		o := factory.CreateEveType()
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:       o.ID,
-			AveragePrice: 12.34,
+			AveragePrice: optional.New(12.34),
 		})
 		x, err := s.MarketPrice(ctx, o.ID)
 		if assert.NoError(t, err) {
@@ -429,7 +431,7 @@ func TestMarketPrice(t *testing.T) {
 		o := factory.CreateEveType()
 		x, err := s.MarketPrice(ctx, o.ID)
 		if assert.NoError(t, err) {
-			assert.True(t, x.IsEmpty())
+			xassert.Empty(t, x)
 		}
 	})
 }

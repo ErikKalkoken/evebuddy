@@ -8,7 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/antihax/goesi/esi"
+	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -18,7 +18,7 @@ import (
 
 // GetCorporation returns a corporation from storage.
 // Returns [app.ErrNotFound] if the corporation does not exist.
-func (s *CorporationService) GetCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
+func (s *CorporationService) GetCorporation(ctx context.Context, corporationID int64) (*app.Corporation, error) {
 	return s.st.GetCorporation(ctx, corporationID)
 }
 
@@ -30,12 +30,12 @@ func (s *CorporationService) GetAnyCorporation(ctx context.Context) (*app.Corpor
 
 // getOrCreateCorporation gets or creates a corporation and returns it.
 // It returns the error [app.ErrNotFound] for NPC corporations
-func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
-	c, err := s.eus.GetOrCreateCorporationESI(ctx, corporationID)
+func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corporationID int64) (*app.Corporation, error) {
+	corporation, err := s.eus.GetOrCreateCorporationESI(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
-	if x := c.EveEntity().IsNPC(); x.IsEmpty() || x.ValueOrZero() {
+	if isNPC, ok := corporation.EveEntity().IsNPC().Value(); !ok || isNPC {
 		return nil, app.ErrNotFound
 	}
 	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)
@@ -49,7 +49,7 @@ func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corpora
 }
 
 // HasCorporation reports whether we have access to a corporation via an owned character.
-func (s *CorporationService) HasCorporation(ctx context.Context, corporationID int32) (bool, error) {
+func (s *CorporationService) HasCorporation(ctx context.Context, corporationID int64) (bool, error) {
 	if corporationID == 0 {
 		return false, nil
 	}
@@ -61,12 +61,12 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 }
 
 // ListCorporationsShort returns all corporations in short form.
-func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	return s.st.ListCorporationsShort(ctx)
 }
 
 // ListPrivilegedCorporations returns all corporations with privileged access.
-func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
 	var roles set.Set[app.Role]
 	for _, s := range []app.CorporationSection{app.CorporationSectionWalletJournal(app.Division1)} {
 		roles.AddSeq(s.Roles().All())
@@ -75,7 +75,7 @@ func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]
 }
 
 // ListCorporationIDs returns all corporation IDs.
-func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListCorporationIDs(ctx)
 }
 
@@ -94,7 +94,7 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 	if err != nil {
 		return false, wrapErr(err)
 	}
-	valid = set.Collect(xiter.Filter(valid.All(), func(id int32) bool {
+	valid = set.Collect(xiter.Filter(valid.All(), func(id int64) bool {
 		return !app.IsNPCCorporation(id)
 	}))
 	obsolete := set.Difference(current, valid)
@@ -130,29 +130,35 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.Cor
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdDivisions")
-			divisions, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID, nil)
+			divisions, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return divisions, nil
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-			divisions := data.(esi.GetCorporationsCorporationIdDivisionsOk)
+			divisions := data.(*esi.CorporationsCorporationIdDivisionsGet)
 			for _, w := range divisions.Hangar {
+				if w.Division == nil || w.Name == nil {
+					continue
+				}
 				if err := s.st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 					CorporationID: arg.CorporationID,
-					DivisionID:    w.Division,
-					Name:          w.Name,
+					DivisionID:    *w.Division,
+					Name:          *w.Name,
 				}); err != nil {
 					return err
 				}
 			}
 			slog.Info("Updated corporation hangar names", "corporationID", arg.CorporationID)
 			for _, w := range divisions.Wallet {
+				if w.Division == nil || w.Name == nil {
+					continue
+				}
 				if err := s.st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 					CorporationID: arg.CorporationID,
-					DivisionID:    w.Division,
-					Name:          w.Name,
+					DivisionID:    *w.Division,
+					Name:          *w.Name,
 				}); err != nil {
 					return err
 				}

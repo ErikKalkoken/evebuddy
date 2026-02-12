@@ -13,13 +13,14 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
 	return s.st.GetEveCharacter(ctx, characterID)
 }
 
-func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, bool, error) {
+func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	o, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCharacterESI(ctx, characterID)
@@ -32,7 +33,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 
 // UpdateOrCreateCharacterESI updates or create a character from ESI.
 // Returns [app.ErrNotFound] when the character does not exist.
-func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, bool, error) {
+func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	c1, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		c1 = nil
@@ -40,7 +41,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return nil, false, err
 	}
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
-		ec, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
+		ec, r, err := s.esiClient.CharacterAPI.GetCharactersCharacterId(ctx, characterID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return nil, app.ErrNotFound // character does not exist
@@ -51,7 +52,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		affiliations, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{characterID}, nil)
+		affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
 		if err != nil {
 			return false, err
 		}
@@ -63,19 +64,26 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 			return false, fmt.Errorf("wrong character %d in affiliations. Expected %d", af.CharacterId, characterID)
 		}
 		arg := storage.CreateEveCharacterParams{
-			AllianceID:     af.AllianceId,
+			AllianceID:     optional.FromPtr(af.AllianceId),
 			Birthday:       ec.Birthday,
 			CorporationID:  af.CorporationId,
-			Description:    ec.Description,
-			FactionID:      af.FactionId,
+			Description:    optional.FromPtr(ec.Description),
+			FactionID:      optional.FromPtr(af.FactionId),
 			Gender:         ec.Gender,
 			ID:             characterID,
 			Name:           ec.Name,
 			RaceID:         ec.RaceId,
-			SecurityStatus: float64(ec.SecurityStatus),
-			Title:          ec.Title,
+			SecurityStatus: optional.FromPtr(ec.SecurityStatus),
+			Title:          optional.FromPtr(ec.Title),
 		}
-		_, err = s.AddMissingEntities(ctx, set.Of(characterID, arg.CorporationID, arg.AllianceID, arg.FactionID))
+		ids := set.Of(characterID, arg.CorporationID)
+		if af.AllianceId != nil {
+			ids.Add(*af.AllianceId)
+		}
+		if af.FactionId != nil {
+			ids.Add(*af.FactionId)
+		}
+		_, err = s.AddMissingEntities(ctx, ids)
 		if err != nil {
 			return nil, err
 		}
@@ -109,8 +117,8 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI
 // and returns the IDs of all changed characters.
-func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Set[int32], error) {
-	var changed set.Set[int32]
+func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Set[int64], error) {
+	var changed set.Set[int64]
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return changed, err

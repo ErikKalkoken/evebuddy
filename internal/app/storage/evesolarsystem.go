@@ -11,10 +11,10 @@ import (
 )
 
 type CreateEveSolarSystemParams struct {
-	ConstellationID int32
-	ID              int32
+	ConstellationID int64
+	ID              int64
 	Name            string
-	SecurityStatus  float32
+	SecurityStatus  float64
 }
 
 func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
@@ -22,10 +22,10 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 		return fmt.Errorf("CreateEveSolarSystem: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveSolarSystemParams{
-		ID:                 int64(arg.ID),
-		EveConstellationID: int64(arg.ConstellationID),
+		ID:                 arg.ID,
+		EveConstellationID: arg.ConstellationID,
 		Name:               arg.Name,
-		SecurityStatus:     float64(arg.SecurityStatus),
+		SecurityStatus:     arg.SecurityStatus,
 	}
 	err := st.qRW.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
@@ -34,8 +34,8 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 	return nil
 }
 
-func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	row, err := st.qRO.GetEveSolarSystem(ctx, int64(id))
+func (st *Storage) GetEveSolarSystem(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
+	row, err := st.qRO.GetEveSolarSystem(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get EveSolarSystem for id %d: %w", id, convertGetError(err))
 	}
@@ -46,26 +46,26 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSol
 func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *app.EveSolarSystem {
 	return &app.EveSolarSystem{
 		Constellation:  eveConstellationFromDBModel(c, r),
-		ID:             int32(s.ID),
+		ID:             s.ID,
 		Name:           s.Name,
 		SecurityStatus: float32(s.SecurityStatus),
 	}
 }
 
-func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int32], error) {
+func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int64], error) {
 	ids, err := st.qRO.ListEveSolarSystemIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
 	}
-	return set.Of(convertNumericSlice[int32](ids)...), nil
+	return set.Of(ids...), nil
 }
 
-func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	currentIDs, err := st.qRO.ListEveSolarSystemIDs(ctx)
 	if err != nil {
-		return set.Set[int32]{}, err
+		return set.Set[int64]{}, err
 	}
-	current := set.Of(convertNumericSlice[int32](currentIDs)...)
+	current := set.Of(currentIDs...)
 	missing := set.Difference(ids, current)
 	return missing, nil
 }
