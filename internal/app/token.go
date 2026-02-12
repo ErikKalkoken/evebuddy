@@ -1,8 +1,10 @@
 package app
 
 import (
+	"slices"
 	"time"
 
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 )
 
@@ -18,14 +20,26 @@ type CharacterToken struct {
 }
 
 // RemainsValid reports whether a token remains valid within a duration.
-func (ct CharacterToken) RemainsValid(d time.Duration) bool {
-	return ct.ExpiresAt.After(time.Now().Add(d))
+func (t CharacterToken) RemainsValid(d time.Duration) bool {
+	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
-func (ct CharacterToken) HasScopes(scopes set.Set[string]) bool {
-	return ct.Scopes.ContainsAll(scopes.All())
+func (t CharacterToken) HasScopes(scopes set.Set[string]) bool {
+	return t.Scopes.ContainsAll(scopes.All())
 }
 
-func (ct CharacterToken) MissingScopes(scopes set.Set[string]) bool {
-	return ct.Scopes.ContainsAll(scopes.All())
+func (t CharacterToken) MissingScopes(scopes set.Set[string]) bool {
+	return t.Scopes.ContainsAll(scopes.All())
+}
+
+func (t CharacterToken) AuthToken() *eveauth.Token {
+	token2 := &eveauth.Token{
+		AccessToken:  t.AccessToken,
+		CharacterID:  int32(t.CharacterID),
+		ExpiresAt:    t.ExpiresAt,
+		RefreshToken: t.RefreshToken,
+		Scopes:       slices.Collect(t.Scopes.All()),
+		TokenType:    t.TokenType,
+	}
+	return token2
 }

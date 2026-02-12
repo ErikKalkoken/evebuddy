@@ -3,12 +3,13 @@ package characterservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
-	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
+	"golang.org/x/oauth2"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -70,7 +71,7 @@ func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, cor
 		return token[0], nil
 	}
 	for _, t := range token {
-		err := s.ensureValidCharacterToken(ctx, t)
+		_, err := s.ensureValidToken(ctx, t)
 		if err != nil {
 			slog.Error(
 				"Failed to refresh token for corporation",
@@ -93,7 +94,7 @@ func (s *CharacterService) GetValidCharacterToken(ctx context.Context, character
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureValidCharacterToken(ctx, token); err != nil {
+	if _, err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
 	return token, nil
@@ -110,35 +111,81 @@ func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context,
 	return token, nil
 }
 
-// ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token *app.CharacterToken) error {
-	if token.RemainsValid(time.Second * 60) {
-		return nil
+// ensureValidToken will try to refresh token if it is about to become invalid
+// and report whether it was refreshed.
+func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.CharacterToken) (bool, error) {
+	const tokenTimeout = time.Second * 60
+	if token.RemainsValid(tokenTimeout) {
+		return false, nil
 	}
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-	token2 := &eveauth.Token{
-		AccessToken:  token.AccessToken,
-		CharacterID:  int32(token.CharacterID),
-		ExpiresAt:    token.ExpiresAt,
-		RefreshToken: token.RefreshToken,
-		Scopes:       slices.Collect(token.Scopes.All()),
-		TokenType:    token.TokenType,
-	}
-	err := s.authClient.RefreshToken(ctx, token2)
+	x, err, _ := s.sfg.Do(fmt.Sprintf("ensureValidToken-%d", token.ID), func() (any, error) {
+		token2, err := s.st.GetCharacterToken(ctx, token.CharacterID)
+		if err != nil {
+			return nil, err
+		}
+		if token2.RemainsValid(tokenTimeout) {
+			return token2, nil
+		}
+		at := token2.AuthToken()
+		if err := s.authClient.RefreshToken(ctx, at); err != nil {
+			return nil, err
+		}
+		if err = s.st.UpdateOrCreateCharacterToken(ctx, storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  at.AccessToken,
+			CharacterID:  int64(at.CharacterID),
+			ExpiresAt:    at.ExpiresAt,
+			RefreshToken: at.RefreshToken,
+			Scopes:       set.Of(at.Scopes...),
+			TokenType:    at.TokenType,
+		}); err != nil {
+			return nil, err
+		}
+		slog.Info("Token refreshed", "characterID", token.CharacterID)
+		token2.AccessToken = at.AccessToken
+		token2.RefreshToken = at.RefreshToken
+		token2.ExpiresAt = at.ExpiresAt
+		return token2, err
+	})
 	if err != nil {
-		return err
+		return false, err
 	}
-	arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(token)
-	arg.AccessToken = token2.AccessToken
-	arg.RefreshToken = token2.RefreshToken
-	arg.ExpiresAt = token2.ExpiresAt
-	err = s.st.UpdateOrCreateCharacterToken(ctx, arg)
-	if err != nil {
-		return err
+	token2 := x.(*app.CharacterToken)
+	*token = *token2
+	return true, err
+}
+
+type tokenSource struct {
+	ensureValid func(context.Context, *app.CharacterToken) (bool, error)
+
+	sfg   *singleflight.Group
+	token *app.CharacterToken
+}
+
+func newTokenSource(token *app.CharacterToken, ensureValid func(context.Context, *app.CharacterToken) (bool, error)) *tokenSource {
+	ts := &tokenSource{
+		token:       token,
+		ensureValid: ensureValid,
+		sfg:         new(singleflight.Group),
 	}
-	token.AccessToken = token2.AccessToken
-	token.RefreshToken = token2.RefreshToken
-	token.ExpiresAt = token2.ExpiresAt
-	slog.Info("Token refreshed", "characterID", token.CharacterID)
-	return nil
+	return ts
+}
+
+func (ts *tokenSource) Token() (*oauth2.Token, error) {
+	x, err, _ := ts.sfg.Do("KEY", func() (any, error) {
+		if time.Now().After(ts.token.ExpiresAt) {
+			_, err := ts.ensureValid(context.Background(), ts.token)
+			if err != nil {
+				return nil, err
+			}
+		}
+		tok := &oauth2.Token{
+			AccessToken:  ts.token.AccessToken,
+			RefreshToken: ts.token.RefreshToken,
+			Expiry:       ts.token.ExpiresAt,
+			ExpiresIn:    int64(time.Until(ts.token.ExpiresAt).Seconds()),
+		}
+		return tok, nil
+	})
+	return x.(*oauth2.Token), err
 }

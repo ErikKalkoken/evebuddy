@@ -35,6 +35,12 @@ func NewContextWithAuth(ctx context.Context, characterID int64, accessToken stri
 	return ctx
 }
 
+func NewContextWithAuth2(ctx context.Context, characterID int64, tokenSource oauth2.TokenSource) context.Context {
+	ctx = context.WithValue(ctx, contextCharacterID, characterID)
+	ctx = context.WithValue(ctx, goesi.ContextOAuth2, tokenSource)
+	return ctx
+}
+
 // ContextHasAccessToken reports whether the context contains an access token.
 func ContextHasAccessToken(ctx context.Context) bool {
 	return ctx.Value(goesi.ContextOAuth2) != nil
