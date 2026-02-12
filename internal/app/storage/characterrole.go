@@ -78,7 +78,7 @@ func init() {
 }
 
 func (st *Storage) ListCharacterRoles(ctx context.Context, characterID int64) (set.Set[app.Role], error) {
-	s, err := st.qRO.ListCharacterRoles(ctx,characterID)
+	s, err := st.qRO.ListCharacterRoles(ctx, characterID)
 	if err != nil {
 		return set.Set[app.Role]{}, fmt.Errorf("list roles for character %d: %w", characterID, err)
 	}
@@ -90,7 +90,7 @@ func (st *Storage) ListCharacterRoles(ctx context.Context, characterID int64) (s
 
 func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int64, roles set.Set[app.Role]) error {
 	incoming := roles2names(roles)
-	s, err := st.qRO.ListCharacterRoles(ctx,characterID)
+	s, err := st.qRO.ListCharacterRoles(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int64, 
 	added := set.Difference(incoming, current)
 	for s := range added.All() {
 		arg := queries.CreateCharacterRoleParams{
-			CharacterID:characterID,
+			CharacterID: characterID,
 			Name:        s,
 		}
 		if err := st.qRW.CreateCharacterRole(ctx, arg); err != nil {
@@ -108,7 +108,7 @@ func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int64, 
 	removed := set.Difference(current, incoming)
 	for s := range removed.All() {
 		arg := queries.DeleteCharacterRoleParams{
-			CharacterID:characterID,
+			CharacterID: characterID,
 			Name:        s,
 		}
 		if err := st.qRW.DeleteCharacterRole(ctx, arg); err != nil {

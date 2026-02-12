@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -211,7 +212,7 @@ func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (se
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 

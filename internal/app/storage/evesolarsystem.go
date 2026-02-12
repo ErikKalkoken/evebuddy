@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -65,7 +66,7 @@ func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64
 	if err != nil {
 		return set.Set[int64]{}, err
 	}
-	current := set.Of(currentIDs...)
+	current := set.Collect(slices.Values(currentIDs))
 	missing := set.Difference(ids, current)
 	return missing, nil
 }

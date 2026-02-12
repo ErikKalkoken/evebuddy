@@ -141,7 +141,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int64], error)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.Of(ids...)
+	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
 }
 
