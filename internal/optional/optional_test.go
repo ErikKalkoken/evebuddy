@@ -298,60 +298,16 @@ func TestEqualFunc(t *testing.T) {
 func TestMapOrFallback(t *testing.T) {
 	t.Run("should return applied value when set", func(t *testing.T) {
 		x := optional.New(12)
-		got := optional.MapOrFallback(x, "nope", func(x int) string {
+		got := optional.Map(x, "nope", func(x int) string {
 			return fmt.Sprint(x)
 		})
 		xassert.Equal(t, "12", got)
 	})
 	t.Run("should return fallback when empty", func(t *testing.T) {
 		x := optional.Optional[int]{}
-		got := optional.MapOrFallback(x, "nope", func(x int) string {
+		got := optional.Map(x, "nope", func(x int) string {
 			return fmt.Sprint(x)
 		})
 		xassert.Equal(t, "nope", got)
-	})
-}
-
-func TestMapOrFallbackFunc(t *testing.T) {
-	t.Run("should return applied value when set", func(t *testing.T) {
-		x := optional.New(12)
-		got := optional.MapOrFallbackFunc(x,
-			func() string {
-				return "nope"
-			},
-			func(x int) string {
-				return fmt.Sprint(x)
-			},
-		)
-		xassert.Equal(t, "12", got)
-	})
-	t.Run("should return fallback when empty", func(t *testing.T) {
-		x := optional.Optional[int]{}
-		got := optional.MapOrFallbackFunc(x,
-			func() string {
-				return "nope"
-			},
-			func(x int) string {
-				return fmt.Sprint(x)
-			},
-		)
-		xassert.Equal(t, "nope", got)
-	})
-}
-
-func TestMapOrZero(t *testing.T) {
-	t.Run("should return applied value when set", func(t *testing.T) {
-		x := optional.New(12)
-		got := optional.MapOrZero(x, func(x int) string {
-			return fmt.Sprint(x)
-		})
-		xassert.Equal(t, "12", got)
-	})
-	t.Run("should return fallback when empty", func(t *testing.T) {
-		x := optional.Optional[int]{}
-		got := optional.MapOrZero(x, func(x int) string {
-			return fmt.Sprint(x)
-		})
-		xassert.Equal(t, "", got)
 	})
 }

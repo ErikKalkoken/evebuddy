@@ -172,7 +172,7 @@ func (a *corporationMember) update() {
 	var corporationID, ceoID int64
 	if c := a.corporation.Load(); c != nil {
 		corporationID = c.ID
-		ceoID = optional.MapOrZero(c.EveCorporation.Ceo, func(x *app.EveEntity) int64 {
+		ceoID = optional.Map(c.EveCorporation.Ceo, 0, func(x *app.EveEntity) int64 {
 			return x.ID
 		})
 	}

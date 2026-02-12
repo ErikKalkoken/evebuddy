@@ -118,8 +118,8 @@ func TestEveCharacter(t *testing.T) {
 			xassert.Equal(t, c1.Race, c2.Race)
 			xassert.Equal(t, c1.SecurityStatus, c2.SecurityStatus)
 			xassert.Equal(t, c1.Title, c2.Title)
-			assert.False(t, c2.HasAlliance())
-			assert.False(t, c2.HasFaction())
+			xassert.Empty(t, c2.Alliance)
+			xassert.Empty(t, c2.Faction)
 		}
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {

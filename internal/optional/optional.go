@@ -115,11 +115,11 @@ func (o Optional[T]) String() string {
 
 // StringFunc returns the result of applying convert when the optional has a value.
 // Or it returns the provided fallback, when the optional is empty,
-func (o Optional[T]) StringFunc(fallback string, convert func(v T) string) string {
+func (o Optional[T]) StringFunc(fallback string, mapper func(v T) string) string {
 	if !o.isPresent {
 		return fallback
 	}
-	return convert(o.ValueOrZero())
+	return mapper(o.ValueOrZero())
 }
 
 // Value returns the value of an Optional and reports whether the value exists.
@@ -199,7 +199,7 @@ func Equal2[T Equaler[T]](a, b Optional[T]) bool {
 	return a.value.Equal(b.value)
 }
 
-// EqualFunc reports whether two optionals with comparable values are equal
+// EqualFunc reports whether two optionals are equal
 // using an equality function on each pair of elements.
 func EqualFunc[T any](a, b Optional[T], eq func(a2, b2 T) bool) bool {
 	if a.isPresent != b.isPresent {
@@ -229,30 +229,11 @@ func Sum[T Numeric](v ...Optional[T]) Optional[T] {
 	return New(s)
 }
 
-// MapOrFallback returns the result of applying f on the value of o
+// Map returns the result of applying mapper on the value of o
 // or fallback if o is empty.
-func MapOrFallback[X, Y any](o Optional[X], fallback Y, f func(v X) Y) Y {
+func Map[X, Y any](o Optional[X], fallback Y, mapper func(v X) Y) Y {
 	if !o.isPresent {
 		return fallback
 	}
-	return f(o.value)
-}
-
-// MapOrFallbackFunc returns the result of applying f on the value of o
-// or the result of the fallback func if o is empty.
-func MapOrFallbackFunc[X, Y any](o Optional[X], fallback func() Y, f func(v X) Y) Y {
-	if !o.isPresent {
-		return fallback()
-	}
-	return f(o.value)
-}
-
-// MapOrZero returns the result of applying f on the value of o
-// or it's zero value if o is empty.
-func MapOrZero[X, Y any](o Optional[X], f func(v X) Y) Y {
-	if !o.isPresent {
-		var z Y
-		return z
-	}
-	return f(o.value)
+	return mapper(o.value)
 }

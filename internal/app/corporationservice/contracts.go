@@ -284,7 +284,7 @@ func (s *CorporationService) updateContract(ctx context.Context, corporationID i
 	if err != nil {
 		return err
 	}
-	acceptorID := optional.MapOrZero(o.Acceptor, func(x *app.EveEntity) int64 {
+	acceptorID := optional.Map(o.Acceptor, 0, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
 	if c.AcceptorId == acceptorID &&

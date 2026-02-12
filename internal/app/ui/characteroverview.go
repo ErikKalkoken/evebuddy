@@ -50,7 +50,7 @@ type characterOverviewRow struct {
 }
 
 func (r characterOverviewRow) allianceName() string {
-	return optional.MapOrZero(r.alliance, func(v *app.EveEntity) string {
+	return optional.Map(r.alliance, "", func(v *app.EveEntity) string {
 		return v.Name
 	})
 }
@@ -63,7 +63,7 @@ func (r characterOverviewRow) corporationName() string {
 }
 
 func (r characterOverviewRow) shipName() string {
-	return optional.MapOrZero(r.ship, func(v *app.EveType) string {
+	return optional.Map(r.ship, "", func(v *app.EveType) string {
 		return v.Name
 	})
 }

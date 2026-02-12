@@ -72,14 +72,13 @@ func (s *CharacterService) NotificationRecipient(cn *app.CharacterNotification) 
 
 // RenderNotificationSummary renders a summary from a character notification.
 func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotification) (title string, content string) {
-	recipient := optional.MapOrFallbackFunc(
-		n.Recipient,
-		func() string {
-			return s.scs.CharacterName(n.CharacterID)
-		}, func(v *app.EveEntity) string {
-			return v.Name
-		},
-	)
+	var recipient string
+	v, ok := n.Recipient.Value()
+	if ok {
+		recipient = v.Name
+	} else {
+		recipient = s.scs.CharacterName(n.CharacterID)
+	}
 	title = fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
 	content = n.Title.ValueOrZero()
 	return
@@ -207,13 +206,12 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					case app.EveEntityCorporation:
 						recipientID = character.EveCharacter.Corporation.ID
 					case app.EveEntityAlliance:
-						recipientID = optional.MapOrFallback(
-							character.EveCharacter.Alliance,
-							character.EveCharacter.Corporation.ID,
-							func(x *app.EveEntity) int64 {
-								return x.ID
-							},
-						)
+						v, ok := character.EveCharacter.Alliance.Value()
+						if ok {
+							recipientID = v.ID
+						} else {
+							recipientID = character.EveCharacter.Corporation.ID
+						}
 					default:
 						recipientID = character.ID
 					}

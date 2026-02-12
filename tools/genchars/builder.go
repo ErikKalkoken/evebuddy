@@ -419,11 +419,11 @@ func (b *CharacterBuilder) createMail() {
 				recipientIDs.Add(b.character.EveCharacter.Corporation.ID)
 				isRead = spin(0.2)
 			case app.MailLabelAlliance:
-				id := b.character.EveCharacter.AllianceID()
-				if id == 0 {
+				v, ok := b.character.EveCharacter.Alliance.Value()
+				if !ok {
 					continue
 				}
-				recipientIDs.Add(id)
+				recipientIDs.Add(v.ID)
 				fromID = b.randomCharacterID()
 				isRead = spin(0.2)
 			case app.MailLabelSent:

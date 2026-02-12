@@ -22,39 +22,11 @@ func TestEveAlliance(t *testing.T) {
 	xassert.Equal(t, app.EveEntityAlliance, ee.Category)
 }
 
-func TestEveCharacter_Alliance(t *testing.T) {
-	x1 := &app.EveCharacter{
-		Alliance: optional.New(&app.EveEntity{
-			Name: "alliance",
-		}),
-	}
-	xassert.Equal(t, "alliance", x1.AllianceName())
-	assert.True(t, x1.HasAlliance())
-
-	x2 := &app.EveCharacter{}
-	xassert.Equal(t, "", x2.AllianceName())
-	assert.False(t, x2.HasAlliance())
-}
-
 func TestEveCharacter_Description(t *testing.T) {
 	x := &app.EveCharacter{
 		Description: optional.New("alpha<br>bravo"),
 	}
 	xassert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
-}
-
-func TestEveCharacter_Faction(t *testing.T) {
-	x1 := &app.EveCharacter{
-		Faction: optional.New(&app.EveEntity{
-			Name: "faction",
-		}),
-	}
-	xassert.Equal(t, "faction", x1.FactionName())
-	assert.True(t, x1.HasFaction())
-
-	x2 := &app.EveCharacter{}
-	xassert.Equal(t, "", x2.FactionName())
-	assert.False(t, x2.HasFaction())
 }
 
 func TestEveCharacter_Race(t *testing.T) {
@@ -110,22 +82,6 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 		}
 		assert.False(t, x1.Equal(x2))
 	})
-}
-
-func TestEveCorporation_Alliance(t *testing.T) {
-	x1 := &app.EveCorporation{Alliance: optional.New(&app.EveEntity{})}
-	assert.True(t, x1.HasAlliance())
-
-	x2 := &app.EveCorporation{}
-	assert.False(t, x2.HasAlliance())
-}
-
-func TestEveCorporation_Faction(t *testing.T) {
-	x1 := &app.EveCorporation{Faction: optional.New(&app.EveEntity{})}
-	assert.True(t, x1.HasFaction())
-
-	x2 := &app.EveCorporation{}
-	assert.False(t, x2.HasFaction())
 }
 
 func TestEveCorporation_EveEntity(t *testing.T) {

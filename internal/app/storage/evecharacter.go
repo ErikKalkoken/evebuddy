@@ -101,6 +101,12 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 	if c.ID == 0 || c.Corporation == nil {
 		return wrapErr(app.ErrInvalid)
 	}
+	allianceID := optional.Map(c.Alliance, 0, func(x *app.EveEntity) int64 {
+		return x.ID
+	})
+	factionID := optional.Map(c.Faction, 0, func(x *app.EveEntity) int64 {
+		return x.ID
+	})
 	err := st.qRW.UpdateEveCharacter(ctx, queries.UpdateEveCharacterParams{
 		ID:             c.ID,
 		CorporationID:  c.Corporation.ID,
@@ -108,8 +114,8 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 		Name:           c.Name,
 		SecurityStatus: c.SecurityStatus.ValueOrZero(),
 		Title:          c.Title.ValueOrZero(),
-		AllianceID:     NewNullInt64(c.AllianceID()),
-		FactionID:      NewNullInt64(c.FactionID()),
+		AllianceID:     NewNullInt64(allianceID),
+		FactionID:      NewNullInt64(factionID),
 	})
 	if err != nil {
 		return wrapErr(err)

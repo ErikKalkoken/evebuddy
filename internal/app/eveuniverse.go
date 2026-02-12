@@ -48,18 +48,6 @@ type EveCharacter struct {
 	Title          optional.Optional[string]
 }
 
-func (ec EveCharacter) AllianceID() int64 {
-	return optional.MapOrZero(ec.Alliance, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCharacter) AllianceName() string {
-	return ec.Alliance.StringFunc("", func(v *EveEntity) string {
-		return v.Name
-	})
-}
-
 func (ec EveCharacter) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description.ValueOrZero())
 }
@@ -67,35 +55,13 @@ func (ec EveCharacter) DescriptionPlain() string {
 // EntityIDs returns the IDs of all entities for a character.
 func (ec EveCharacter) EntityIDs() set.Set[int64] {
 	s := set.Of(ec.ID, ec.Corporation.ID)
-	if ec.HasAlliance() {
-		s.Add(ec.Alliance.ValueOrZero().ID)
+	if v, ok := ec.Alliance.Value(); ok {
+		s.Add(v.ID)
 	}
-	if ec.HasFaction() {
-		s.Add(ec.Faction.ValueOrZero().ID)
+	if v, ok := ec.Faction.Value(); ok {
+		s.Add(v.ID)
 	}
 	return s
-}
-
-func (ec EveCharacter) FactionID() int64 {
-	return optional.MapOrZero(ec.Faction, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCharacter) FactionName() string {
-	return optional.MapOrZero(ec.Faction, func(x *EveEntity) string {
-		return x.Name
-	})
-}
-
-// HasAlliance reports whether the character is member of an alliance.
-func (ec EveCharacter) HasAlliance() bool {
-	return !ec.Alliance.IsEmpty()
-}
-
-// HasFaction reports whether the character is member of a faction.
-func (ec EveCharacter) HasFaction() bool {
-	return !ec.Faction.IsEmpty()
 }
 
 // Equal reports whether two characters are equal.
@@ -114,12 +80,18 @@ func (ec EveCharacter) Hash() string {
 	if ec.Race != nil {
 		raceID = ec.Race.ID
 	}
+	allianceID := optional.Map(ec.Alliance, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
 	xx := []any{
-		ec.AllianceID(),
+		allianceID,
 		ec.Birthday,
 		corporationID,
 		ec.Description,
-		ec.FactionID(),
+		factionID,
 		ec.Gender,
 		ec.ID,
 		ec.Name,
@@ -167,43 +139,6 @@ type EveCorporation struct {
 	Timestamp   time.Time
 }
 
-func (ec EveCorporation) AllianceID() int64 {
-	return optional.MapOrZero(ec.Alliance, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCorporation) CeoID() int64 {
-	return optional.MapOrZero(ec.Ceo, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCorporation) CreatorID() int64 {
-	return optional.MapOrZero(ec.Creator, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCorporation) FactionID() int64 {
-	return optional.MapOrZero(ec.Faction, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
-
-func (ec EveCorporation) HasAlliance() bool {
-	return !ec.Alliance.IsEmpty()
-}
-
-func (ec EveCorporation) HasFaction() bool {
-	return !ec.Faction.IsEmpty()
-}
-
-func (ec EveCorporation) HomeStationID() int64 {
-	return optional.MapOrZero(ec.HomeStation, func(x *EveEntity) int64 {
-		return x.ID
-	})
-}
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
@@ -219,14 +154,29 @@ func (ec EveCorporation) Equal(other *EveCorporation) bool {
 }
 
 func (ec EveCorporation) Hash() string {
+	allianceID := optional.Map(ec.Alliance, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	ceoID := optional.Map(ec.Ceo, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	creatorID := optional.Map(ec.Creator, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
+	homeStationID := optional.Map(ec.HomeStation, 0, func(x *EveEntity) int64 {
+		return x.ID
+	})
 	xx := []any{
-		ec.AllianceID(),
-		ec.CeoID(),
-		ec.CreatorID(),
+		allianceID,
+		ceoID,
+		creatorID,
 		ec.DateFounded.ValueOrZero().UTC(),
 		ec.Description,
-		ec.FactionID(),
-		ec.HomeStationID(),
+		factionID,
+		homeStationID,
 		ec.ID,
 		ec.MemberCount,
 		ec.Name,

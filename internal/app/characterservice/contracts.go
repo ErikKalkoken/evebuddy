@@ -343,7 +343,7 @@ func (s *CharacterService) updateContract(ctx context.Context, characterID int64
 	if err != nil {
 		return err
 	}
-	acceptorID := optional.MapOrZero(o.Acceptor, func(x *app.EveEntity) int64 {
+	acceptorID := optional.Map(o.Acceptor, 0, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
 	if c.AcceptorId == acceptorID &&

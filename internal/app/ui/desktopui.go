@@ -598,10 +598,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		s := c.EveCorporation.Name
-		if c.EveCorporation.HasAlliance() {
-			s += fmt.Sprintf(" (%s)", c.EveCorporation.Alliance.StringFunc("?", func(v *app.EveEntity) string {
-				return v.Name
-			}))
+		if v, ok := c.EveCorporation.Alliance.Value(); ok {
+			s += fmt.Sprintf(" (%s)", v.Name)
 		}
 		fyne.Do(func() {
 			corporationHeader.SetTitle(s)

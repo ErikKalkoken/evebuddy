@@ -339,10 +339,10 @@ func contractIsExpired(expired time.Time) bool {
 }
 func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort[int64]], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {
-		startName := optional.MapOrFallback(start, "?", func(v *EntityShort[int64]) string {
+		startName := optional.Map(start, "?", func(v *EntityShort[int64]) string {
 			return v.Name
 		})
-		endName := optional.MapOrFallback(end, "?", func(v *EntityShort[int64]) string {
+		endName := optional.Map(end, "?", func(v *EntityShort[int64]) string {
 			return v.Name
 		})
 		s := fmt.Sprintf("%s >> %s", startName, endName)
