@@ -70,15 +70,22 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 
 	needsRefresh := changedIDs.Size() > 0 || forceUpdate
-	if !needsRefresh {
-		return
-	}
-
-	go u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
+	arg := generalSectionUpdated{
 		section:      section,
 		changed:      changedIDs,
 		needsRefresh: needsRefresh,
+	}
+
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			u.generalSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		u.generalSectionUpdated.Emit(ctx, arg)
 	})
+	wg.Wait()
 }
 
 // update character sections

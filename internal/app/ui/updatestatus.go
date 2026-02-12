@@ -72,7 +72,7 @@ func showUpdateStatusWindow(u *baseUI) {
 		return
 	}
 	a := newUpdateStatus(u)
-	a.update()
+	a.update(context.Background())
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.SetOnClosed(func() {
@@ -135,20 +135,20 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	}
 
 	// Signals
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	}, a.signalKey)
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort[int64]) {
+		a.update(ctx)
 	}, a.signalKey)
-	a.u.characterSectionUpdated.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		a.update()
+	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
+		a.update(ctx)
 	}, a.signalKey)
-	a.u.corporationSectionUpdated.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		a.update()
+	a.u.corporationSectionUpdated.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
+		a.update(ctx)
 	}, a.signalKey)
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		a.update()
+	a.u.generalSectionUpdated.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+		a.update(ctx)
 	}, a.signalKey)
 	return a
 }
@@ -158,7 +158,7 @@ func (a *updateStatus) stop() {
 	a.u.characterRemoved.RemoveListener(a.signalKey)
 	a.u.characterSectionUpdated.RemoveListener(a.signalKey)
 	a.u.corporationSectionUpdated.RemoveListener(a.signalKey)
-	a.u.generalSectionChanged.RemoveListener(a.signalKey)
+	a.u.generalSectionUpdated.RemoveListener(a.signalKey)
 }
 
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
@@ -312,8 +312,8 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 	}
 }
 
-func (a *updateStatus) update() {
-	entities, count := a.updateEntityList(a.u.services())
+func (a *updateStatus) update(ctx context.Context) {
+	entities, count := a.updateEntityList(ctx, a.u.services())
 
 	fyne.Do(func() {
 		a.sectionEntities = entities
@@ -324,7 +324,7 @@ func (a *updateStatus) update() {
 	})
 }
 
-func (*updateStatus) updateEntityList(s services) ([]sectionEntity, int) {
+func (*updateStatus) updateEntityList(_ context.Context, s services) ([]sectionEntity, int) {
 	var count int
 	entities := make([]sectionEntity, 0)
 	cc := s.scs.ListCharacters()
