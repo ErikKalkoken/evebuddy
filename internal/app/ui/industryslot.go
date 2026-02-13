@@ -289,8 +289,12 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataColumns[industrySlotRo
 			if tci.Row >= len(a.rowsFiltered) {
 				return
 			}
+			id, ok := headers.IDLookup(tci.Col)
+			if !ok {
+				return
+			}
 			r := a.rowsFiltered[tci.Row]
-			co.(*iwidget.RichText).Set(makeCell(tci.Col, r))
+			co.(*iwidget.RichText).Set(makeCell(id, r))
 		},
 	)
 	w.ShowHeaderRow = true
