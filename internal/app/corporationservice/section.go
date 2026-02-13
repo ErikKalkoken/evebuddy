@@ -87,7 +87,7 @@ func (s *CorporationService) PermittedSections(ctx context.Context, corporationI
 		return enabled, nil
 	}
 	for _, section := range app.CorporationSections {
-		_, err := s.cs.CharacterTokenForCorporation(ctx, corporationID, section.Roles(), section.Scopes(), false)
+		_, err := s.cs.ValidTokenForCorporation(ctx, corporationID, section.Roles(), section.Scopes(), false)
 		if errors.Is(err, app.ErrNotFound) {
 			continue
 		}
@@ -227,7 +227,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var needsUpdate bool
-	token, err := s.cs.CharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes(), true)
+	token, err := s.cs.ValidTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes(), true)
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
 			"update skipped due to missing corporation member with required roles %s and/or missing or invalid token",

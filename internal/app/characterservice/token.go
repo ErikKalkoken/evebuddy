@@ -55,11 +55,11 @@ func (s *CharacterService) MissingScopes(ctx context.Context, characterID int64,
 	return set.Difference(scopes, t.Scopes), nil
 }
 
-// CharacterTokenForCorporation returns a token with a specific scope and from a member character with a specific role and matching scope.
+// ValidTokenForCorporation returns a token with a specific scope and from a member character with a specific role and matching scope.
 // Will be valid when any of the given roles and scopes match.
 // It can optionally ensure the token is valid by with checkToken.
 // It returns [app.ErrNotFound] if no such token exists.
-func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
+func (s *CharacterService) ValidTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
 	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
 	if err != nil {
 		return nil, err
@@ -87,9 +87,9 @@ func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, cor
 	return nil, app.ErrNotFound
 }
 
-// GetValidCharacterToken returns a valid token for a character.
+// ValidToken returns a valid token for a character.
 // Will automatically try to refresh a token if needed.
-func (s *CharacterService) GetValidCharacterToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
+func (s *CharacterService) ValidToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (s *CharacterService) GetValidCharacterToken(ctx context.Context, character
 }
 
 func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (*app.CharacterToken, error) {
-	token, err := s.GetValidCharacterToken(ctx, characterID)
+	token, err := s.ValidToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}

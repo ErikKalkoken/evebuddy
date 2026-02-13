@@ -224,7 +224,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		u.characterRemoved.RemoveListener(key)
 	}()
 	slog.Debug("Starting to check character sections for update", "sections", sections)
-	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
+	_, err := u.cs.ValidToken(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}

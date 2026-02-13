@@ -16,7 +16,7 @@ import (
 // This method performs a character specific search and needs a token.
 func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int64, search string) (set.Set[int64], error) {
 	var z set.Set[int64]
-	token, err := s.GetValidCharacterToken(ctx, characterID)
+	token, err := s.ValidToken(ctx, characterID)
 	if err != nil {
 		return z, err
 	}
@@ -49,7 +49,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	if err != nil {
 		return nil, 0, err
 	}
-	token, err := s.GetValidCharacterToken(ctx, c.ID)
+	token, err := s.ValidToken(ctx, c.ID)
 	if err != nil {
 		return nil, 0, err
 	}

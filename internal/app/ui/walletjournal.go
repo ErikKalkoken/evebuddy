@@ -510,7 +510,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int64, refID i
 		case "station_id", "structure_id":
 			contextItem.Text = "Related location"
 			go func() {
-				token, err := u.cs.GetValidCharacterToken(ctx, characterID)
+				token, err := u.cs.ValidToken(ctx, characterID)
 				if err != nil {
 					reportError(o, err)
 					return

@@ -16,7 +16,7 @@ import (
 )
 
 type CharacterService interface {
-	CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error)
+	ValidTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error)
 }
 
 // Cache defines a cache.
