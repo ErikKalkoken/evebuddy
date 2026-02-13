@@ -1244,6 +1244,25 @@ func (f Factory) CreateCorporationAsset(args ...storage.CreateCorporationAssetPa
 	return o
 }
 
+func (f Factory) CreateCorporationTokenForSection(corporationID int64, section app.CorporationSection) *app.CharacterToken {
+	return f.CreateCorporationToken(corporationID, section.Roles(), section.Scopes())
+}
+
+func (f Factory) CreateCorporationToken(corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) *app.CharacterToken {
+	ec := f.CreateEveCharacter(storage.CreateEveCharacterParams{
+		CorporationID: corporationID,
+	})
+	f.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+	err := f.st.UpdateCharacterRoles(context.Background(), ec.ID, roles)
+	if err != nil {
+		panic(err)
+	}
+	return f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+		CharacterID: ec.ID,
+		Scopes:      scopes,
+	})
+}
+
 func (f Factory) CreateCorporationContract(args ...storage.CreateCorporationContractParams) *app.CorporationContract {
 	ctx := context.Background()
 	var arg storage.CreateCorporationContractParams

@@ -127,7 +127,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		Scopes:       set.Of(ssoToken.Scopes...),
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithAuthStatic(ctx, token.CharacterID, token.AccessToken)
 	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return nil, err

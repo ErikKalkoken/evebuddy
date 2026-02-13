@@ -516,7 +516,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int64, refID i
 					reportError(o, err)
 					return
 				}
-				ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+				ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 				el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
 				if err != nil {
 					reportError(o, err)

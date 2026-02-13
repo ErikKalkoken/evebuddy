@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
@@ -87,18 +88,15 @@ func (s *CorporationService) PermittedSections(ctx context.Context, corporationI
 		return zero, nil
 	}
 	for _, section := range app.CorporationSections {
-		ts, _, err := s.cs.TokenSourceForCorporation(ctx, corporationID, section.Roles(), section.Scopes())
+		ok, err := s.hasToken(ctx, corporationID, section.Roles(), section.Scopes())
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
 				continue
 			}
 			return zero, wrapErr(err)
 		}
-		if _, err := ts.Token(); err != nil {
-			if errors.Is(err, app.ErrNotFound) {
-				continue
-			}
-			return zero, wrapErr(err)
+		if !ok {
+			continue
 		}
 		enabled.Add(section)
 	}
@@ -250,7 +248,7 @@ func (s *CorporationService) updateSectionIfChanged(
 		return false, err
 	} else {
 		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", characterID)
-		ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		data, err := fetch(ctx, arg)
 		if err != nil {
 			return false, err
@@ -327,4 +325,13 @@ func calcContentHash(data any) (string, error) {
 	b2 := md5.Sum(b)
 	hash := hex.EncodeToString(b2[:])
 	return hash, nil
+}
+
+func (s *CorporationService) hasToken(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (bool, error) {
+	tokens, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
+	if err != nil {
+		return false, err
+	}
+	_, ok := xslices.Pop(&tokens)
+	return ok, nil
 }

@@ -550,12 +550,13 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -952,6 +953,7 @@ func TestListWalletTransactions(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletTransactions(1))
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
 			DivisionID:    1,

@@ -19,22 +19,20 @@ import (
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	s := corporationservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should do nothing when permission exists", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				Token: &app.CharacterToken{AccessToken: "accessToken"},
-			},
-		})
+		const section = app.SectionCorporationIndustryJobs
+		factory.CreateCorporationTokenForSection(corporation.ID, section)
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: corporation.ID,
 		})
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: corporation.ID,
-			Section:       app.SectionCorporationIndustryJobs,
+			Section:       section,
 		})
 		// when
 		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
@@ -42,7 +40,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, j1.StartDate, j2.StartDate)
+				xassert.Equal2(t, j1.StartDate, j2.StartDate)
 			}
 			status, err := st.GetCorporationSectionStatus(
 				ctx,
@@ -58,11 +56,6 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				Error: app.ErrNotFound,
-			},
-		})
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: corporation.ID,
 		})
@@ -91,31 +84,32 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 func TestCorporationService_PermittedSections(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	s := corporationservice.NewFake(st)
 	ctx := context.Background()
-	t.Run("should return sections when permission exists", func(t *testing.T) {
+	t.Run("should return section when matching token exists", func(t *testing.T) {
 		// given
+		section := app.SectionCorporationStructures
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				Token: &app.CharacterToken{AccessToken: "accessToken"},
-			},
-		})
+		factory.CreateCorporationTokenForSection(corporation.ID, section)
 		// when
 		got, err := s.PermittedSections(ctx, corporation.ID)
 		// then
 		require.NoError(t, err)
-		want := set.Of(app.CorporationSections...)
+		want := set.Of(section)
 		xassert.Equal2(t, want, got)
 	})
 	t.Run("should return no sections when permission does not exist", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				Error: app.ErrNotFound,
-			},
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: character.ID,
+			Scopes:      app.SectionCharacterAssets.Scopes(),
 		})
 		// when
 		got, err := s.PermittedSections(ctx, corporation.ID)

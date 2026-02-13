@@ -25,8 +25,8 @@ func (c contextKey) String() string {
 	return "xgoesi-" + string(c)
 }
 
-// NewContextWithAuth returns a new context with a characterID and an access token.
-func NewContextWithAuth(ctx context.Context, characterID int64, accessToken string) context.Context {
+// NewContextWithAuthStatic returns a new context with a characterID and an access token.
+func NewContextWithAuthStatic(ctx context.Context, characterID int64, accessToken string) context.Context {
 	ctx = context.WithValue(ctx, contextCharacterID, characterID)
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: accessToken,
@@ -35,7 +35,7 @@ func NewContextWithAuth(ctx context.Context, characterID int64, accessToken stri
 	return ctx
 }
 
-func NewContextWithAuth2(ctx context.Context, characterID int64, tokenSource oauth2.TokenSource) context.Context {
+func NewContextWithAuth(ctx context.Context, characterID int64, tokenSource oauth2.TokenSource) context.Context {
 	ctx = context.WithValue(ctx, contextCharacterID, characterID)
 	ctx = context.WithValue(ctx, goesi.ContextOAuth2, tokenSource)
 	return ctx
@@ -74,7 +74,7 @@ type rateLimitGroup struct {
 // For the rate limit group detection to work HTTP clients must add the operation ID
 // from ESI's OpenAPI spec through [NewContextWithOperationID] to the context.
 // Authenticated endpoints must also add the token's character ID
-// and access token through [NewContextWithAuth].
+// and access token through [NewContextWithAuthStatic].
 // Requests without an operation ID will be assumed to have error rate limiting.
 //
 // Rate limiting is implemented by ensuring requests belonging to the same bucket

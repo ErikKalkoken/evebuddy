@@ -25,7 +25,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		"character",
 		"alliance",
 	}
-	ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+	ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
 	r, _, err := s.esiClient.SearchAPI.GetCharactersCharacterIdSearch(ctx, characterID).Search(search).Categories(categories).Execute()
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
 	})
-	ctx = xgoesi.NewContextWithAuth2(ctx, c.ID, ts)
+	ctx = xgoesi.NewContextWithAuth(ctx, c.ID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
 	x, _, err := s.esiClient.SearchAPI.GetCharactersCharacterIdSearch(ctx, c.ID).Search(search).Categories(cc).Strict(strict).Execute()
 	if err != nil {

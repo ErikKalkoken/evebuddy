@@ -25,7 +25,7 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 	if err != nil {
 		return err
 	}
-	ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+	ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "DeleteCharactersCharacterIdMailMailId")
 	_, err = s.esiClient.MailAPI.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	if err != nil {
 		return 0, err
 	}
-	ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+	ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdMail")
 	request := esi.PostCharactersCharacterIdMailRequest{
 		Body:       body,
@@ -186,7 +186,7 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 		if err != nil {
 			return nil, err
 		}
-		ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
 		m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 		if err != nil {
@@ -229,7 +229,7 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 		if err != nil {
 			return "", err
 		}
-		ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
+		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
 		mail, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 		if err != nil {

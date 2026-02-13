@@ -16,11 +16,11 @@ import (
 )
 
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
-	r, err := st.qRO.GetCharacterToken(ctx,characterID)
+	r, err := st.qRO.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
-	rows, err := st.qRO.ListCharacterTokenScopes(ctx,characterID)
+	rows, err := st.qRO.ListCharacterTokenScopes(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	}
 	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, queries.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  arg.AccessToken,
-		CharacterID: arg.CharacterID,
+		CharacterID:  arg.CharacterID,
 		ExpiresAt:    arg.ExpiresAt,
 		RefreshToken: arg.RefreshToken,
 		TokenType:    arg.TokenType,
@@ -79,7 +79,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	if err := qtx.ClearCharacterTokenScopes(ctx,arg.CharacterID); err != nil {
+	if err := qtx.ClearCharacterTokenScopes(ctx, arg.CharacterID); err != nil {
 		return wrapErr(err)
 	}
 	for _, s := range ss {
@@ -123,6 +123,7 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 	return s, nil
 }
 
+// ListCharacterTokenForCorporation returns tokens from a corporation members that match any of the provided roles an scopes.
 func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) ([]*app.CharacterToken, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, roles %s, scopes %s: %w", corporationID, roles, scopes, err)
@@ -133,22 +134,15 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	var rows []queries.CharacterToken
 	var err error
 	if roles.Size() == 0 {
-		rows, err = st.qRO.ListCharacterTokenForCorporation(ctx,corporationID)
-		if err != nil {
-			return nil, wrapErr(err)
-		}
+		rows, err = st.qRO.ListCharacterTokenForCorporation(ctx, corporationID)
 	} else {
-		arg := queries.ListCharacterTokenForCorporationWithRolesParams{
-			CorporationID:corporationID,
+		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, queries.ListCharacterTokenForCorporationWithRolesParams{
+			CorporationID: corporationID,
 			Roles:         slices.Collect(roles2names(roles).All()),
-		}
-		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, arg)
-		if err != nil {
-			return nil, wrapErr(err)
-		}
+		})
 	}
-	if len(rows) == 0 {
-		return nil, wrapErr(app.ErrNotFound)
+	if err != nil {
+		return nil, wrapErr(err)
 	}
 	tokens := make([]*app.CharacterToken, 0)
 	for _, r := range rows {
@@ -173,7 +167,7 @@ func characterTokenFromDBModel(o queries.CharacterToken, scopes set.Set[string])
 	}
 	return &app.CharacterToken{
 		AccessToken:  o.AccessToken,
-		CharacterID: o.CharacterID,
+		CharacterID:  o.CharacterID,
 		ExpiresAt:    o.ExpiresAt,
 		ID:           o.ID,
 		RefreshToken: o.RefreshToken,

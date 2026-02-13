@@ -25,6 +25,10 @@ func (t CharacterToken) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
+func (t CharacterToken) IsValid() bool {
+	return t.ExpiresAt.After(time.Now())
+}
+
 func (t CharacterToken) HasScopes(scopes set.Set[string]) bool {
 	return t.Scopes.ContainsAll(scopes.All())
 }

@@ -135,7 +135,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	ctx = xgoesi.NewContextWithAuth2(ctx, arg.CharacterID, ts)
+	ctx = xgoesi.NewContextWithAuth(ctx, arg.CharacterID, ts)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err

@@ -31,7 +31,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		var wg sync.WaitGroup
 		for _, characterID := range []int64{42, 43} {
 			wg.Go(func() {
-				ctx := xgoesi.NewContextWithAuth(t.Context(), characterID, "token")
+				ctx := xgoesi.NewContextWithAuthStatic(t.Context(), characterID, "token")
 				ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 				if !assert.NoError(t, err) {
@@ -143,7 +143,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		var wg sync.WaitGroup
 		for _, operationID := range []string{"GetCharactersCharacterIdLocation", "GetCharactersCharacterIdNotifications"} {
 			wg.Go(func() {
-				ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+				ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 				ctx = xgoesi.NewContextWithOperationID(ctx, operationID)
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 				if !assert.NoError(t, err) {
@@ -190,7 +190,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		client := &http.Client{
 			Transport: &xgoesi.RateLimiter{},
 		}
-		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
@@ -64,10 +65,10 @@ func (s *CharacterService) TokenSourceForCorporation(ctx context.Context, corpor
 	if err != nil {
 		return nil, 0, err
 	}
-	if len(tokens) == 0 {
+	token, ok := xslices.Pop(&tokens)
+	if !ok {
 		return nil, 0, app.ErrNotFound
 	}
-	token := tokens[0]
 	ts := newTokenSource(token, s.ensureValidToken)
 	return ts, token.CharacterID, nil
 }
