@@ -235,7 +235,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int64 {
 				return x.JobID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int64 {
 				return x.JobID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
@@ -370,7 +370,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(j3.ID, j4.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can update job status", func(t *testing.T) {

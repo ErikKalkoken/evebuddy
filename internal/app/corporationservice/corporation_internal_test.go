@@ -12,6 +12,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -28,8 +29,23 @@ type CharacterServiceFake struct {
 	Error          error
 }
 
-func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
-	return s.Token, s.Error
+type tokenSourceFake struct {
+	token *app.CharacterToken
+	err   error
+}
+
+func (ts tokenSourceFake) Token() (*oauth2.Token, error) {
+	if ts.err != nil {
+		return nil, ts.err
+	}
+	return ts.token.OauthToken(), nil
+}
+
+func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+	if s.Error != nil {
+		return &tokenSourceFake{token: s.Token, err: s.Error}, 0, nil
+	}
+	return &tokenSourceFake{token: s.Token, err: nil}, s.Token.CharacterID, nil
 }
 
 func NewFake(st *storage.Storage, args ...Params) *CorporationService {

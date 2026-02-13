@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
@@ -79,20 +80,23 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
 func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
-	var enabled set.Set[app.CorporationSection]
+	var enabled, zero set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
 		return fmt.Errorf("PermittedSections %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
-		return enabled, nil
+		return zero, nil
 	}
 	for _, section := range app.CorporationSections {
-		_, err := s.cs.CharacterTokenForCorporation(ctx, corporationID, section.Roles(), section.Scopes(), false)
-		if errors.Is(err, app.ErrNotFound) {
-			continue
-		}
+		ok, err := s.hasToken(ctx, corporationID, section.Roles(), section.Scopes())
 		if err != nil {
-			return enabled, wrapErr(err)
+			if errors.Is(err, app.ErrNotFound) {
+				continue
+			}
+			return zero, wrapErr(err)
+		}
+		if !ok {
+			continue
 		}
 		enabled.Add(section)
 	}
@@ -227,7 +231,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var needsUpdate bool
-	token, err := s.cs.CharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes(), true)
+	ts, characterID, err := s.cs.TokenSourceForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
 			"update skipped due to missing corporation member with required roles %s and/or missing or invalid token",
@@ -243,8 +247,8 @@ func (s *CorporationService) updateSectionIfChanged(
 	} else if err != nil {
 		return false, err
 	} else {
-		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", token.CharacterID)
-		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", characterID)
+		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		data, err := fetch(ctx, arg)
 		if err != nil {
 			return false, err
@@ -321,4 +325,13 @@ func calcContentHash(data any) (string, error) {
 	b2 := md5.Sum(b)
 	hash := hex.EncodeToString(b2[:])
 	return hash, nil
+}
+
+func (s *CorporationService) hasToken(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (bool, error) {
+	tokens, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
+	if err != nil {
+		return false, err
+	}
+	_, ok := xslices.Pop(&tokens)
+	return ok, nil
 }

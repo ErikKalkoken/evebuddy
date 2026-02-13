@@ -140,7 +140,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		}
 		assert.True(t, changed)
 		xassert.Equal(t, characterID, x1.ID)
-		xassert.Equal2(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
+		xassert.Equal(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
 		xassert.Equal(t, alliance, x1.Alliance.MustValue())
 		xassert.Equal(t, corporation, x1.Corporation)
 		xassert.Equal(t, faction, x1.Faction.MustValue())
@@ -379,7 +379,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int64](characterID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 		ec2, err := st.GetEveCharacter(ctx, characterID)
 		if !assert.NoError(t, err) {
 			t.Fatal()
@@ -418,7 +418,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int64](characterID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 		_, err2 := st.GetEveCharacter(ctx, characterID)
 		assert.ErrorIs(t, err2, app.ErrNotFound)
 	})

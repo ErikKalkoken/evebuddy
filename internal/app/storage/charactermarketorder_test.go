@@ -172,7 +172,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list order IDs for a character", func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.OrderID, o2.OrderID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list all buy orders", func(t *testing.T) {
@@ -212,7 +212,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list all sell orders", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can delete orders for a character by ID", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			want := set.Of(o1.OrderID)
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

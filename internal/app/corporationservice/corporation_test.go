@@ -34,7 +34,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -51,7 +51,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -65,7 +65,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can add missing corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -83,7 +83,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of(character.EveCharacter.Corporation.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should not add missing NPC corp", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

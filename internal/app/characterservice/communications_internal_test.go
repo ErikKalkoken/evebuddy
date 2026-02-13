@@ -65,7 +65,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, c.ID, o.Recipient.ValueOrZero().ID)
 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of[int64](42), ids)
+		xassert.Equal(t, set.Of[int64](42), ids)
 	})
 	// t.Run("should create new notification from scratch 2", func(t *testing.T) {
 	// 	// given
@@ -155,7 +155,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of(42, n1.NotificationID), ids)
+		xassert.Equal(t, set.Of(42, n1.NotificationID), ids)
 	})
 	t.Run("should update isRead for existing notification", func(t *testing.T) {
 		// given
@@ -238,7 +238,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, corporation, o.Sender)
 		xassert.Equal(t, app.CharLeftCorpMsg, o.Type)
 		xassert.Equal(t, text, o.Text.ValueOrZero())
-		xassert.Equal2(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 		xassert.Equal(t, corporation, o.Recipient.ValueOrZero())
 	})
 
@@ -280,7 +280,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		assert.Error(t, err)
 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of[int64](), ids)
+		xassert.Equal(t, set.Of[int64](), ids)
 	})
 
 	t.Run("should not abort when entities inside notification can not be resolved", func(t *testing.T) {
@@ -327,7 +327,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, corporation, o.Sender)
 		xassert.Equal(t, app.CharLeftCorpMsg, o.Type)
 		xassert.Equal(t, text, o.Text.ValueOrZero())
-		xassert.Equal2(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 		xassert.Equal(t, corporation, o.Recipient.ValueOrZero())
 	})
 }

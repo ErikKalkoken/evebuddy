@@ -412,7 +412,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("ignores invalid location IDs", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -422,7 +422,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can create missing locations only", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -437,7 +437,7 @@ func TestAddMissingLocations(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](2004, 888)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -489,7 +489,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](1000003)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can return owner of a structure", func(t *testing.T) {
 		// given
@@ -514,7 +514,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](109299958)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return error when structure and no token", func(t *testing.T) {
 		// when

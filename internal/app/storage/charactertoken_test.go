@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -77,7 +78,7 @@ func TestToken(t *testing.T) {
 			xassert.Equal(t, "changed", o2.AccessToken)
 			xassert.Equal(t, c.ID, o2.CharacterID)
 			xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			xassert.Equal2(t, set.Of("alpha", "bravo"), o2.Scopes)
+			xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
 			xassert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})
@@ -106,34 +107,36 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		// token with correct corp, role and scope
 		ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
 		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
-		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager)); err != nil {
-			panic(err)
-		}
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID, Scopes: set.Of("alpha", "bravo")})
+		err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager))
+		require.NoError(t, err)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c1.ID,
+			Scopes:      set.Of("alpha", "bravo"),
+		})
 
 		// token with correct corp and wrong role
 		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
 		c2 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
-		if err := st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAccountant)); err != nil {
-			panic(err)
-		}
+		err = st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAccountant))
+		require.NoError(t, err)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c2.ID})
 
 		// token with wrong corp and correct role
 		ec3 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp2.ID})
 		c3 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec3.ID})
-		if err := st.UpdateCharacterRoles(ctx, c3.ID, set.Of(app.RoleAccountant)); err != nil {
-			panic(err)
-		}
+		err = st.UpdateCharacterRoles(ctx, c3.ID, set.Of(app.RoleAccountant))
+		require.NoError(t, err)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c3.ID})
 
 		// token with correct corp and role, but wrong scope
 		ec4 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
 		c4 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec4.ID})
-		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager)); err != nil {
-			panic(err)
-		}
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c4.ID, Scopes: set.Of("bravo")})
+		err = st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager))
+		require.NoError(t, err)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c4.ID,
+			Scopes:      set.Of("bravo"),
+		})
 
 		// when
 		r, err := st.ListCharacterTokenForCorporation(
@@ -156,17 +159,15 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		// token with no role
 		ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: c.ID})
 		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
-		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of[app.Role]()); err != nil {
-			panic(err)
-		}
+		err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of[app.Role]())
+		require.NoError(t, err)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID, Scopes: set.Of("alpha", "bravo")})
 
 		// token with other role
 		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: c.ID})
 		c2 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
-		if err := st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAuditor)); err != nil {
-			panic(err)
-		}
+		err = st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAuditor))
+		require.NoError(t, err)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c2.ID, Scopes: set.Of("alpha", "bravo")})
 
 		// when
@@ -181,10 +182,11 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 			assert.Len(t, r, 2)
 		}
 	})
-	t.Run("list for corporation returns not found error when no token", func(t *testing.T) {
+	t.Run("returns empty when no tokens found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		corp := factory.CreateCorporation()
-		_, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, set.Of(app.RoleFactoryManager), set.Of("alpha"))
-		assert.Error(t, err, app.ErrNotFound)
+		got, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, set.Of(app.RoleFactoryManager), set.Of("alpha"))
+		require.NoError(t, err)
+		assert.Empty(t, got)
 	})
 }

@@ -272,7 +272,7 @@ func TestStructureService(t *testing.T) {
 			return x.Name
 		}))
 		want := set.Of(x1.Name, x2.Name)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can delete services", func(t *testing.T) {
 		// given

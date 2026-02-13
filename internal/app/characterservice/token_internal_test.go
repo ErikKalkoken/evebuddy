@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -13,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestEnsureValidToken(t *testing.T) {
+func TestCharacterService_EnsureValidToken(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -34,12 +35,12 @@ func TestEnsureValidToken(t *testing.T) {
 		})
 		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: AuthTokenFromAppToken(token2)}})
 		// when
-		err := cs.ensureValidCharacterToken(ctx, token1)
+		changed, err := cs.ensureValidToken(ctx, token1)
 		// then
-		if assert.NoError(t, err) {
-			 xassert.Equal(t, "access-old", token1.AccessToken)
-			 xassert.Equal(t, "refresh-old", token1.RefreshToken)
-		}
+		require.NoError(t, err)
+		assert.False(t, changed)
+		xassert.Equal(t, "access-old", token1.AccessToken)
+		xassert.Equal(t, "refresh-old", token1.RefreshToken)
 	})
 	t.Run("should refresh token when expired", func(t *testing.T) {
 		// given
@@ -59,12 +60,12 @@ func TestEnsureValidToken(t *testing.T) {
 		})
 		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: AuthTokenFromAppToken(token2)}})
 		// when
-		err := cs.ensureValidCharacterToken(ctx, token)
+		changed, err := cs.ensureValidToken(ctx, token)
 		// then
-		if assert.NoError(t, err) {
-			 xassert.Equal(t, "access-new", token.AccessToken)
-			 xassert.Equal(t, "refresh-new", token.RefreshToken)
-			assert.True(t, token.ExpiresAt.After(time.Now()))
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, "access-new", token.AccessToken)
+		xassert.Equal(t, "refresh-new", token.RefreshToken)
+		assert.True(t, token.ExpiresAt.After(time.Now()))
 	})
 }

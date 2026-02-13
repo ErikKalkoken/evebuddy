@@ -11,7 +11,7 @@ import (
 
 func TestContext(t *testing.T) {
 	t.Run("should set character ID and access token", func(t *testing.T) {
-		ctx := NewContextWithAuth(context.Background(), 42, "token")
+		ctx := NewContextWithAuthStatic(context.Background(), 42, "token")
 		characterID, ok := ctx.Value(contextCharacterID).(int64)
 		assert.True(t, ok)
 		assert.Equal(t, int64(42), characterID)

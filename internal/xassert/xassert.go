@@ -20,21 +20,20 @@ func EqualDuration(t *testing.T, want, got, delta time.Duration) {
 	assert.True(t, diff <= delta, "%s is not almost equal to %s (+/- %s)", got, want, delta)
 }
 
-// Equal asserts that two objects are equal.
-// This variant is type safe.
-func Equal[T any](t *testing.T, want, got T) bool {
-	t.Helper()
-	return assert.Equal(t, want, got)
-}
-
 type Equaler[T any] interface {
 	Equal(other T) bool
 }
 
-// Equal2 asserts that two values which satisfy the equaler interface are equal .
-func Equal2[T Equaler[T]](t *testing.T, want, got T) bool {
+// Equal asserts that two objects are equal.
+// This variant is type safe
+// and will also compare objects with their Equal() methods if available.
+func Equal[T any](t *testing.T, want, got T) bool {
 	t.Helper()
-	return assert.Truef(t, got.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+	got2, ok := any(want).(Equaler[T])
+	if ok {
+		return assert.Truef(t, got2.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
+	}
+	return assert.Equal(t, want, got)
 }
 
 func Empty[T any](t *testing.T, v optional.Optional[T]) bool {

@@ -78,7 +78,7 @@ func TestCorporationMember(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.Character.ID, e2.Character.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can delete members", func(t *testing.T) {

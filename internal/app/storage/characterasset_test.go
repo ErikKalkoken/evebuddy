@@ -110,7 +110,7 @@ func TestCharacterAsset(t *testing.T) {
 		got, err := st.ListCharacterAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
 		want := set.Of(x1.ItemID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list assets for character", func(t *testing.T) {
 		// given

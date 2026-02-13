@@ -120,7 +120,7 @@ func TestEveType(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(x1.ID, x2.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list types", func(t *testing.T) {
 		// given

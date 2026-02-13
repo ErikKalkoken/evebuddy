@@ -211,7 +211,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID
 		}))
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 
 	t.Run("can return all jobs for current corporation", func(t *testing.T) {
@@ -224,6 +224,6 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID
 		}))
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

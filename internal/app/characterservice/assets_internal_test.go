@@ -161,7 +161,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		assert.True(t, changed)
 		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of[int64](1000000016835, 1000000016836), ids)
+		xassert.Equal(t, set.Of[int64](1000000016835, 1000000016836), ids)
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given

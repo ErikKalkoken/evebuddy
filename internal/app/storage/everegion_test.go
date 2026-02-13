@@ -44,7 +44,7 @@ func TestEveRegion(t *testing.T) {
 		got, err := st.ListEveRegionIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(r1.ID, r2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
@@ -55,7 +55,7 @@ func TestEveRegion(t *testing.T) {
 		got, err := st.MissingEveRegions(ctx, set.Of(r1.ID, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

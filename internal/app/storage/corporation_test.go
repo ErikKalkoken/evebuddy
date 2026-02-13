@@ -90,7 +90,7 @@ func TestListCorporations(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list corporations in short form", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestListCorporations(t *testing.T) {
 			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int64]) int64 {
 				return x.ID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list priviledged corporations", func(t *testing.T) {
@@ -124,7 +124,7 @@ func TestListCorporations(t *testing.T) {
 			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int64]) int64 {
 				return x.ID
 			}))
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }
@@ -147,7 +147,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(corporation2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("orphaned corporation does not exist", func(t *testing.T) {
@@ -163,7 +163,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int64]()
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
@@ -47,7 +48,8 @@ func TestAugmentations_CanRenderWithData(t *testing.T) {
 	w.Resize(fyne.NewSize(600, 300))
 
 	a.update()
-	a.tree.OpenAllBranches()
+	time.Sleep(50 * time.Millisecond)
 
+	a.tree.OpenAllBranches()
 	test.AssertImageMatches(t, "augmentations/master.png", w.Canvas().Capture())
 }

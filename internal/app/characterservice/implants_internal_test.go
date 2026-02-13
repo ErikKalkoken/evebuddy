@@ -51,7 +51,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 					got.Add(o.EveType.ID)
 				}
 				want := set.Of(t1.ID, t2.ID)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -510,12 +511,12 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int64, refID i
 		case "station_id", "structure_id":
 			contextItem.Text = "Related location"
 			go func() {
-				token, err := u.cs.GetValidCharacterToken(ctx, characterID)
+				ts, err := u.cs.TokenSource(ctx, characterID, set.Of("esi-universe.read_structures.v1"))
 				if err != nil {
 					reportError(o, err)
 					return
 				}
-				ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+				ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 				el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
 				if err != nil {
 					reportError(o, err)

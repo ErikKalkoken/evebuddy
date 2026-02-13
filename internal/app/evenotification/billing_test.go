@@ -99,7 +99,7 @@ externalID2: 60003760`
 		ids, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
 		require.NoError(t, err)
 		want := set.Of[int64](27, 1000023, 60003760, 98267621)
-		xassert.Equal2(t, want, ids)
+		xassert.Equal(t, want, ids)
 	})
 	t.Run("should not return invalid entity IDs", func(t *testing.T) {
 		// given
@@ -115,6 +115,6 @@ externalID2: 1047607396377`
 		ids, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
 		require.NoError(t, err)
 		want := set.Of[int64](27, 1000023, 98267621)
-		xassert.Equal2(t, want, ids)
+		xassert.Equal(t, want, ids)
 	})
 }

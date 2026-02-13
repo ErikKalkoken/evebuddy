@@ -550,12 +550,13 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -577,7 +578,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 			return x.RefID
 		})...)
 		want := set.Of(e1.RefID, e2.RefID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -733,7 +734,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		require.NoError(t, err)
 		want := set.Of[int64](1234567890)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should handle empty response", func(t *testing.T) {
 		// given
@@ -952,6 +953,7 @@ func TestListWalletTransactions(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletTransactions(1))
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -973,6 +975,6 @@ func TestListWalletTransactions(t *testing.T) {
 			return x.TransactionID
 		})...)
 		want := set.Of(t1.TransactionID, t2.TransactionID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

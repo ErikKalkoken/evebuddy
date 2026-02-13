@@ -71,7 +71,7 @@ func TestCharacterImplant(t *testing.T) {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 
@@ -88,7 +88,7 @@ func TestCharacterImplant(t *testing.T) {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

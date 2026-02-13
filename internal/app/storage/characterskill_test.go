@@ -86,7 +86,7 @@ func TestCharacterSkill(t *testing.T) {
 		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal2(t, set.Of(o1.EveType.ID, o2.EveType.ID), ids)
+			xassert.Equal(t, set.Of(o1.EveType.ID, o2.EveType.ID), ids)
 		}
 	})
 	t.Run("can delete excluded skills", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestCharacterSkill(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal2(t, set.Of(x1.EveType.ID), ids)
+				xassert.Equal(t, set.Of(x1.EveType.ID), ids)
 			}
 		}
 	})

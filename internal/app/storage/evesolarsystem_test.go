@@ -48,7 +48,7 @@ func TestEveSolarSystem(t *testing.T) {
 		got, err := st.ListEveSolarSystemIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(o1.ID, o2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestEveSolarSystem(t *testing.T) {
 		got, err := st.MissingEveSolarSystems(ctx, set.Of(r1.ID, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

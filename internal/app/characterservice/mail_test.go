@@ -138,7 +138,7 @@ func TestUpdateMail(t *testing.T) {
 			got.Add(l.LabelID)
 		}
 		want := set.Of(labelIDs...)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 
 		lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 		require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestUpdateMail(t *testing.T) {
 			got2.Add(l.ID)
 		}
 		want2 := set.Of(m2.ID)
-		xassert.Equal2(t, want2, got2)
+		xassert.Equal(t, want2, got2)
 	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
@@ -249,7 +249,7 @@ func TestUpdateMail(t *testing.T) {
 			got.Add(l.LabelID)
 		}
 		want := set.Of[int64](16, 32)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 

@@ -224,10 +224,10 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		u.characterRemoved.RemoveListener(key)
 	}()
 	slog.Debug("Starting to check character sections for update", "sections", sections)
-	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
-	if err != nil {
-		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
-	}
+	// _, err := u.cs.TokenSource(ctx, characterID)
+	// if err != nil {
+	// 	slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
+	// }
 	var wg sync.WaitGroup
 	// updateGroup starts a sequential update of group and removes them from sections.
 	// It skips all updates for group if one of the group's sections has not been registered for update.

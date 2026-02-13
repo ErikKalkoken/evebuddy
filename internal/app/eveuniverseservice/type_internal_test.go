@@ -51,7 +51,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 		prices, err := st.ListEveMarketPrices(ctx)
 		require.NoError(t, err)
 		require.Len(t, prices, 2)
@@ -92,7 +92,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
 		require.NoError(t, err)
 		xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
@@ -133,7 +133,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64]()
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 
 	t.Run("should remove obsolete prices", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		got, err := s.st.ListEveMarketPriceIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 

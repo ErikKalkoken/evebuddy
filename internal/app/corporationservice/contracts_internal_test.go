@@ -428,6 +428,6 @@ func TestUpdateContractESI(t *testing.T) {
 		assert.True(t, changed)
 		got, err := st.ListCorporationContractIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of(o2.ContractID, o3.ContractID, o4.ContractID), got)
+		xassert.Equal(t, set.Of(o2.ContractID, o3.ContractID, o4.ContractID), got)
 	})
 }

@@ -131,11 +131,11 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	token, err := s.GetValidCharacterTokenWithScopes(ctx, arg.CharacterID, arg.Section.Scopes())
+	ts, err := s.TokenSource(ctx, arg.CharacterID, arg.Section.Scopes())
 	if err != nil {
 		return false, err
 	}
-	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithAuth(ctx, arg.CharacterID, ts)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err

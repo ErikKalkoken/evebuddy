@@ -191,7 +191,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal2(t, set.Of[int64](41), ids)
+				xassert.Equal(t, set.Of[int64](41), ids)
 			}
 		}
 	})

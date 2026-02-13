@@ -70,8 +70,8 @@ func TestSkillqueueItems(t *testing.T) {
 		xassert.Equal(t, arg.LevelEndSP, got.LevelEndSP)
 		xassert.Equal(t, arg.QueuePosition, got.QueuePosition)
 		xassert.Equal(t, arg.TrainingStartSP, got.TrainingStartSP)
-		xassert.Equal2(t, arg.FinishDate.ValueOrZero(), got.FinishDate.ValueOrZero())
-		xassert.Equal2(t, arg.StartDate.ValueOrZero(), got.StartDate.ValueOrZero())
+		xassert.Equal(t, arg.FinishDate.ValueOrZero(), got.FinishDate.ValueOrZero())
+		xassert.Equal(t, arg.StartDate.ValueOrZero(), got.StartDate.ValueOrZero())
 	})
 	t.Run("can list items", func(t *testing.T) {
 		// given

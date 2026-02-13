@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
-	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -32,13 +31,7 @@ func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 
 	const balance = 12_345_678.99
 	c := factory.CreateCorporation()
-	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		CorporationID: c.ID,
-	})
-	factory.CreateCharacter(storage.CreateCharacterParams{
-		ID: ec.ID,
-	})
-	factory.SetCharacterRoles(ec.ID, set.Of(app.RoleAccountant))
+	factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletJournal1)
 	factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 		Amount:        optional.New(2_345_67.89),
 		Balance:       optional.New(balance),

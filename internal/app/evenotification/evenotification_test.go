@@ -120,7 +120,7 @@ externalID2: 60003760`
 		got, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](1000023, 98267621, 27, 60003760)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

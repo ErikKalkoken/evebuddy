@@ -131,7 +131,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		xassert.Equal(t, count, missing.Size())
 		ids2, err := st.ListEveEntityIDs(ctx)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of(ids...), ids2)
+		xassert.Equal(t, set.Of(ids...), ids2)
 	})
 	t.Run("should store unresolvable IDs accordingly", func(t *testing.T) {
 		// given
@@ -362,7 +362,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](42)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 		o2, err := st.GetEveEntity(ctx, 42)
 		require.NoError(t, err)
 		xassert.Equal(t, 42, o2.ID)
@@ -387,6 +387,6 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64]()
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

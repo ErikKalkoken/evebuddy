@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
 func TestUpdateSectionIfChanged(t *testing.T) {
@@ -197,6 +200,48 @@ func TestHasSectionChanged(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
+		assert.False(t, got)
+	})
+}
+
+// TODO: The method will not match against empty role /scopes. Check if that makes sense
+
+func TestCorporationService_HasValidToken(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	s := NewFake(st)
+	ctx := context.Background()
+	t.Run("should report true when matching token was found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		section := app.SectionCorporationMembers
+		err := st.UpdateCharacterRoles(ctx, character.ID, section.Roles())
+		require.NoError(t, err)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: character.ID,
+			Scopes:      section.Scopes(),
+		})
+		// when
+		got, err := s.hasToken(ctx, corporation.ID, section.Roles(), section.Scopes())
+		// then
+		require.NoError(t, err)
+		assert.True(t, got)
+	})
+	t.Run("should report false when not matching token was found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		section := app.SectionCorporationMembers
+		// when
+		got, err := s.hasToken(ctx, corporation.ID, section.Roles(), section.Scopes())
+		// then
+		require.NoError(t, err)
 		assert.False(t, got)
 	})
 }
