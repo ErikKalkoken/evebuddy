@@ -108,7 +108,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.structureName)
 		},
-	}, makeEveEntityColumn(makeIconColumnParams[corporationStructureRow]{
+	}, makeEveEntityColumn(makeEveEntityColumnParams[corporationStructureRow]{
 		columnID: structuresColType,
 		eis:      u.eis,
 		label:    "Type",

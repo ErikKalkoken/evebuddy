@@ -139,7 +139,7 @@ const (
 
 func newTraining(u *baseUI) *training {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[trainingRow]{
-		makeEveEntityColumn(makeIconColumnParams[trainingRow]{
+		makeEveEntityColumn(makeEveEntityColumnParams[trainingRow]{
 			columnID: trainingColCharacter,
 			eis:      u.eis,
 			getEntity: func(r trainingRow) *app.EveEntity {

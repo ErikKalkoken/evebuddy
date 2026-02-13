@@ -365,17 +365,17 @@ func entityIcon(eis eveEntityEIS, ee *app.EveEntity, size int, fallback fyne.Res
 	return r, nil
 }
 
-type makeIconColumnParams[T any] struct {
+type makeEveEntityColumnParams[T any] struct {
 	columnID  int
+	eis       eveEntityEIS
+	getEntity func(r T) *app.EveEntity
 	isAvatar  bool
 	label     string
 	width     int
-	eis       eveEntityEIS
-	getEntity func(r T) *app.EveEntity
 }
 
 // makeEveEntityColumn returns a new data column for showing an entity.
-func makeEveEntityColumn[T any](arg makeIconColumnParams[T]) iwidget.DataColumn[T] {
+func makeEveEntityColumn[T any](arg makeEveEntityColumnParams[T]) iwidget.DataColumn[T] {
 	// set defaults
 	if arg.width == 0 {
 		arg.width = 220
