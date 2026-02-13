@@ -21,11 +21,11 @@ import (
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID int64) error {
-	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
+	ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 	if err != nil {
 		return err
 	}
-	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "DeleteCharactersCharacterIdMailMailId")
 	_, err = s.esiClient.MailAPI.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 	if err != nil {
@@ -129,11 +129,11 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	if err != nil {
 		return 0, err
 	}
-	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
+	ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 	if err != nil {
 		return 0, err
 	}
-	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdMail")
 	request := esi.PostCharactersCharacterIdMailRequest{
 		Body:       body,
@@ -182,11 +182,11 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 // UpdateMailRead updates an existing mail as read
 func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int64, isRead bool) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailRead-%d-%d", characterID, mailID), func() (any, error) {
-		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
+		ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 		if err != nil {
 			return nil, err
 		}
-		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
 		m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 		if err != nil {
@@ -225,11 +225,11 @@ func (s *CharacterService) UpdateMailBodyESI(ctx context.Context, characterID in
 
 func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID int64, mailID int64) (string, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBodyESI-%d-%d", characterID, mailID), func() (any, error) {
-		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
+		ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 		if err != nil {
 			return "", err
 		}
-		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		ctx = xgoesi.NewContextWithAuth2(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
 		mail, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 		if err != nil {

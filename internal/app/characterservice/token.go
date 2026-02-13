@@ -55,60 +55,35 @@ func (s *CharacterService) MissingScopes(ctx context.Context, characterID int64,
 	return set.Difference(scopes, t.Scopes), nil
 }
 
-// ValidTokenForCorporation returns a token with a specific scope and from a member character with a specific role and matching scope.
-// Will be valid when any of the given roles and scopes match.
-// It can optionally ensure the token is valid by with checkToken.
+// TokenSourceForCorporation returns a token and character ID of the token's owner
+// from a member character of the corporation.
+// Will match when any of the given roles and scopes.
 // It returns [app.ErrNotFound] if no such token exists.
-func (s *CharacterService) ValidTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
-	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
+func (s *CharacterService) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+	tokens, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	if len(token) == 0 {
-		return nil, app.ErrNotFound
+	if len(tokens) == 0 {
+		return nil, 0, app.ErrNotFound
 	}
-	if !checkToken {
-		return token[0], nil
-	}
-	for _, t := range token {
-		_, err := s.ensureValidToken(ctx, t)
-		if err != nil {
-			slog.Error(
-				"Failed to refresh token for corporation",
-				"characterID", t.CharacterID,
-				"corporationID", corporationID,
-				"roles", roles,
-				"scopes", scopes,
-			)
-			continue
-		}
-		return t, nil
-	}
-	return nil, app.ErrNotFound
+	token := tokens[0]
+	ts := newTokenSource(token, s.ensureValidToken)
+	return ts, token.CharacterID, nil
 }
 
-// ValidToken returns a valid token for a character.
-// Will automatically try to refresh a token if needed.
-func (s *CharacterService) ValidToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
+// TokenSource returns a valid token source for a character.
+// The token source will automatically refresh a token when needed.
+func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, scopes set.Set[string]) (oauth2.TokenSource, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := s.ensureValidToken(ctx, token); err != nil {
-		return nil, err
-	}
-	return token, nil
-}
-
-func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (*app.CharacterToken, error) {
-	token, err := s.ValidToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
 	if !token.HasScopes(scopes) {
 		return nil, app.ErrNotFound
 	}
-	return token, nil
+	ts := newTokenSource(token, s.ensureValidToken)
+	return ts, nil
 }
 
 // ensureValidToken will try to refresh token if it is about to become invalid
@@ -179,13 +154,7 @@ func (ts *tokenSource) Token() (*oauth2.Token, error) {
 				return nil, err
 			}
 		}
-		tok := &oauth2.Token{
-			AccessToken:  ts.token.AccessToken,
-			RefreshToken: ts.token.RefreshToken,
-			Expiry:       ts.token.ExpiresAt,
-			ExpiresIn:    int64(time.Until(ts.token.ExpiresAt).Seconds()),
-		}
-		return tok, nil
+		return ts.token.OauthToken(), nil
 	})
 	return x.(*oauth2.Token), err
 }

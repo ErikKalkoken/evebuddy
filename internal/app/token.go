@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
+	"golang.org/x/oauth2"
 )
 
 // CharacterToken is a SSO token belonging to a character in Eve Online.
@@ -40,6 +41,16 @@ func (t CharacterToken) AuthToken() *eveauth.Token {
 		RefreshToken: t.RefreshToken,
 		Scopes:       slices.Collect(t.Scopes.All()),
 		TokenType:    t.TokenType,
+	}
+	return token2
+}
+
+func (t CharacterToken) OauthToken() *oauth2.Token {
+	token2 := &oauth2.Token{
+		AccessToken:  t.AccessToken,
+		RefreshToken: t.RefreshToken,
+		Expiry:       t.ExpiresAt,
+		ExpiresIn:    int64(time.Until(t.ExpiresAt).Seconds()),
 	}
 	return token2
 }

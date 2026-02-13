@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
@@ -82,5 +85,43 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 				assert.False(t, status.HasContent())
 			}
 		}
+	})
+}
+
+func TestCorporationService_PermittedSections(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return sections when permission exists", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		s := corporationservice.NewFake(st, corporationservice.Params{
+			CharacterService: &corporationservice.CharacterServiceFake{
+				Token: &app.CharacterToken{AccessToken: "accessToken"},
+			},
+		})
+		// when
+		got, err := s.PermittedSections(ctx, corporation.ID)
+		// then
+		require.NoError(t, err)
+		want := set.Of(app.CorporationSections...)
+		xassert.Equal2(t, want, got)
+	})
+	t.Run("should return no sections when permission does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		s := corporationservice.NewFake(st, corporationservice.Params{
+			CharacterService: &corporationservice.CharacterServiceFake{
+				Error: app.ErrNotFound,
+			},
+		})
+		// when
+		got, err := s.PermittedSections(ctx, corporation.ID)
+		// then
+		require.NoError(t, err)
+		want := set.Of[app.CorporationSection]()
+		xassert.Equal2(t, want, got)
 	})
 }

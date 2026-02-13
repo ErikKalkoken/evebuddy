@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -83,7 +84,7 @@ func TestMissingScopes(t *testing.T) {
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
 		if assert.NoError(t, err) {
-			 xassert.Equal(t, 0, got.Size())
+			xassert.Equal(t, 0, got.Size())
 		}
 	})
 	t.Run("should return scopes that are missing", func(t *testing.T) {
@@ -134,10 +135,13 @@ func TestCharacterTokenForCorporation(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		o2, err := s.CharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{}, false)
+		ts, id, err := s.TokenSourceForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{})
 		// then
 		if assert.NoError(t, err) {
-			 xassert.Equal(t, o1.ID, o2.ID)
+			token, err := ts.Token()
+			require.NoError(t, err)
+			xassert.Equal(t, o1.AccessToken, token.AccessToken)
+			xassert.Equal(t, o1.CharacterID, id)
 		}
 	})
 	t.Run("should report not found when token exists and role not matching", func(t *testing.T) {
@@ -152,7 +156,7 @@ func TestCharacterTokenForCorporation(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		_, err := s.CharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{}, false)
+		_, _, err := s.TokenSourceForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{})
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
