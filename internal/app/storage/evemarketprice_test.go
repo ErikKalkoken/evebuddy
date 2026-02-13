@@ -97,7 +97,7 @@ func TestStorage_EveMarketPrices(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(o1.TypeID, o2.TypeID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 
 	t.Run("can delete prices by id", func(t *testing.T) {
@@ -112,6 +112,6 @@ func TestStorage_EveMarketPrices(t *testing.T) {
 		got, err := st.ListEveMarketPriceIDs(ctx)
 		require.NoError(t, err)
 		want := set.Of(o1.TypeID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

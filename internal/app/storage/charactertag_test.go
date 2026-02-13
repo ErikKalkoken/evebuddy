@@ -230,7 +230,7 @@ func TestCharacterTag(t *testing.T) {
 				got := set.Of(xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
 					return x.ID
 				})...)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

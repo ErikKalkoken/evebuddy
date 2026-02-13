@@ -331,7 +331,7 @@ func TestEveEntityIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int64](5, 42)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return missing IDs and ignore IDs with zero value", func(t *testing.T) {
@@ -343,7 +343,7 @@ func TestEveEntityIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int64](5)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

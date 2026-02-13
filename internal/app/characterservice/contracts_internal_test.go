@@ -490,6 +490,6 @@ func TestUpdateContractESI(t *testing.T) {
 		require.NoError(t, err)
 		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal2(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
+		xassert.Equal(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
 	})
 }

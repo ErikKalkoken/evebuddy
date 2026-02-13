@@ -49,7 +49,7 @@ func TestCharacterMail(t *testing.T) {
 			xassert.Equal(t, f, m.From)
 			xassert.Equal(t, c.ID, m.CharacterID)
 			xassert.Equal(t, "subject", m.Subject.ValueOrZero())
-			xassert.Equal2(t, timestamp, m.Timestamp)
+			xassert.Equal(t, timestamp, m.Timestamp)
 			xassert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
 			xassert.Equal(t, label.Name, m.Labels[0].Name)
 			xassert.Equal(t, label.LabelID, m.Labels[0].LabelID)
@@ -133,7 +133,7 @@ func TestCharacterMail(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		want := set.Of([]int64{10, 11, 12}...)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list IDs for mails withtout bodies", func(t *testing.T) {
 		// given
@@ -154,7 +154,7 @@ func TestCharacterMail(t *testing.T) {
 		got, err := st.ListCharacterMailsWithoutBody(ctx, c.ID)
 		// then
 		assert.NoError(t, err)
-		xassert.Equal2(t, mailIDs, got)
+		xassert.Equal(t, mailIDs, got)
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given

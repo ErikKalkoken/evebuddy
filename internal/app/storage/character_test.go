@@ -248,7 +248,7 @@ func TestListCharacters(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list character corporations", func(t *testing.T) {
@@ -268,7 +268,7 @@ func TestListCharacters(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(ec1.Corporation.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list character corporation IDs", func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestListCharacters(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

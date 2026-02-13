@@ -221,7 +221,7 @@ func TestEveCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can update name", func(t *testing.T) {

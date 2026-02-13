@@ -40,7 +40,7 @@ func TestSettings(t *testing.T) {
 		got := set.Of([]string{"alpha", "bravo"}...)
 		s.SetNotificationTypesEnabled(got)
 		want := s.NotificationTypesEnabled()
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 

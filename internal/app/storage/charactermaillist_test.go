@@ -73,7 +73,7 @@ func TestMailList(t *testing.T) {
 					got.Add(l.ID)
 				}
 				want := set.Of([]int64{e1.ID}...)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 			lists, err = st.ListCharacterMailListsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
@@ -82,7 +82,7 @@ func TestMailList(t *testing.T) {
 					got.Add(l.ID)
 				}
 				want := set.Of(e3.ID)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

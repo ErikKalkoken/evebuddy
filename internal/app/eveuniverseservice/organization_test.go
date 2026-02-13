@@ -370,7 +370,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int64](109299958)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 			ec, err := st.GetEveCorporation(ctx, 109299958)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, alliance, ec.Alliance.MustValue())
@@ -441,7 +441,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int64]()
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

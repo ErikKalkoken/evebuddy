@@ -106,7 +106,7 @@ func TestLocation(t *testing.T) {
 				xassert.Equal(t, owner, x.Owner.ValueOrZero())
 				xassert.Equal(t, system, x.SolarSystem.ValueOrZero())
 				xassert.Equal(t, myType, x.Type.ValueOrZero())
-				xassert.Equal2(t, updatedAt, x.UpdatedAt)
+				xassert.Equal(t, updatedAt, x.UpdatedAt)
 			}
 		}
 	})
@@ -131,7 +131,7 @@ func TestLocation(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(l1.ID, l2.ID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list locations in solar system", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestLocation(t *testing.T) {
 		got, err := st.MissingEveLocations(ctx, set.Of[int64](42, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

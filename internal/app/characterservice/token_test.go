@@ -100,7 +100,7 @@ func TestMissingScopes(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of("bravo")
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("when no token found all scopes are missing", func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestMissingScopes(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of("alpha", "bravo")
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

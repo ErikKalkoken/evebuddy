@@ -578,7 +578,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 			return x.RefID
 		})...)
 		want := set.Of(e1.RefID, e2.RefID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -734,7 +734,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		require.NoError(t, err)
 		want := set.Of[int64](1234567890)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should handle empty response", func(t *testing.T) {
 		// given
@@ -975,6 +975,6 @@ func TestListWalletTransactions(t *testing.T) {
 			return x.TransactionID
 		})...)
 		want := set.Of(t1.TransactionID, t2.TransactionID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

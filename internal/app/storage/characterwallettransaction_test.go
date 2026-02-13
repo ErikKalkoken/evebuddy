@@ -93,7 +93,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.TransactionID, e2.TransactionID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list existing entries for a character", func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 }

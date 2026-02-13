@@ -90,7 +90,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				}
 				want := set.Of[int64](12, 42)
 				got := set.Collect(maps.Keys(m))
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 				o := m[42]
 				issued := time.Date(2019, 8, 24, 14, 15, 22, 0, time.UTC)
 				xassert.Equal(t, 3, o.Duration)
@@ -269,7 +269,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(o1.OrderID)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})
@@ -334,7 +334,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of[int64](12)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

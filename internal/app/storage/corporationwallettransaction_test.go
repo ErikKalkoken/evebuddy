@@ -106,7 +106,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list existing entries for a corporation", func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can delete transactions", func(t *testing.T) {

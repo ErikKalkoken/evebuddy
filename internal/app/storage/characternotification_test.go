@@ -220,7 +220,7 @@ func TestCharacterNotification(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can calculate counts", func(t *testing.T) {
 		// given
@@ -272,7 +272,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -300,7 +300,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.NotificationID
 		}))
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list unread notifs", func(t *testing.T) {
 		// given
@@ -329,7 +329,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID, n2.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -367,7 +367,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should not return stale notifs", func(t *testing.T) {
 		// given
@@ -398,7 +398,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should not return notifs which have no title or body", func(t *testing.T) {
 		// given
@@ -434,7 +434,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should not return duplicates of processed notifs", func(t *testing.T) {
 		// given
@@ -474,7 +474,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 

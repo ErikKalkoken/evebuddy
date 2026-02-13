@@ -50,7 +50,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(app.RoleDirector, app.RoleStationManager)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

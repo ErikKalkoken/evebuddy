@@ -40,7 +40,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
 			if assert.NoError(t, err) {
-				xassert.Equal2(t, j1.StartDate, j2.StartDate)
+				xassert.Equal(t, j1.StartDate, j2.StartDate)
 			}
 			status, err := st.GetCorporationSectionStatus(
 				ctx,
@@ -97,7 +97,7 @@ func TestCorporationService_PermittedSections(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(section)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return no sections when permission does not exist", func(t *testing.T) {
 		// given
@@ -116,6 +116,6 @@ func TestCorporationService_PermittedSections(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of[app.CorporationSection]()
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }

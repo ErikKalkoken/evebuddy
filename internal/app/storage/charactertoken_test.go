@@ -78,7 +78,7 @@ func TestToken(t *testing.T) {
 			xassert.Equal(t, "changed", o2.AccessToken)
 			xassert.Equal(t, c.ID, o2.CharacterID)
 			xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			xassert.Equal2(t, set.Of("alpha", "bravo"), o2.Scopes)
+			xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
 			xassert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})

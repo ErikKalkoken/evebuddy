@@ -49,7 +49,7 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(data...)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

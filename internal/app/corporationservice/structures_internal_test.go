@@ -77,7 +77,7 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int64](42)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 
 		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
 		if !assert.NoError(t, err) {

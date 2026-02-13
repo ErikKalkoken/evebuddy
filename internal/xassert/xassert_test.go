@@ -11,10 +11,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestEqual2(t *testing.T) {
-	s1 := set.Of(1)
-	s2 := set.Of(1)
-	assert.True(t, xassert.Equal2(t, s1, s2))
+func TestEqual(t *testing.T) {
+	t.Run("should use Equal() method to compare when type has it", func(t *testing.T) {
+		a := set.Of[int]()
+		b := set.Set[int]{}
+		xassert.Equal(t, a, b)
+	})
+	t.Run("should compare normally when type has no Equal method", func(t *testing.T) {
+		a := 1
+		b := 1
+		xassert.Equal(t, a, b)
+	})
 }
 
 func TestEmptyOptional(t *testing.T) {

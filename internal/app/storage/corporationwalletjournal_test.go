@@ -53,7 +53,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
 				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "corporation", i.ContextIDType.ValueOrZero())
-				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
 				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
@@ -101,7 +101,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
 				xassert.Equal(t, "corporation", i.ContextIDType.ValueOrZero())
 				xassert.Equal(t, firstParty, i.FirstParty.ValueOrZero())
-				xassert.Equal2(t, date, i.Date)
+				xassert.Equal(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
 				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
@@ -136,7 +136,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				return x.RefID
 			})...)
 			want := set.Of(e1.RefID, e2.RefID)
-			xassert.Equal2(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("can store multiple", func(t *testing.T) {
@@ -201,7 +201,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				})
 				if assert.NoError(t, err) {
 					want := set.Of[int64](4, 5)
-					xassert.Equal2(t, want, got)
+					xassert.Equal(t, want, got)
 				}
 			}
 		}

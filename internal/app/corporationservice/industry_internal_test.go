@@ -461,7 +461,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 					return x.JobID
 				})...)
 				want := set.Of[int64](229136101, 229136102)
-				xassert.Equal2(t, want, got)
+				xassert.Equal(t, want, got)
 			}
 		}
 	})

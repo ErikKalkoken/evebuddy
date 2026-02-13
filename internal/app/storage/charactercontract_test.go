@@ -151,7 +151,7 @@ func TestCharacterContract(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(e1.ContractID, e2.ContractID, e3.ContractID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list contracts for multiple characters", func(t *testing.T) {
 		// given
@@ -169,7 +169,7 @@ func TestCharacterContract(t *testing.T) {
 		got := set.Of(xslices.Map(oo, func(x *app.CharacterContract) int64 {
 			return x.ID
 		})...)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing contracts for a character", func(t *testing.T) {
 		// given
@@ -197,7 +197,7 @@ func TestCharacterContract(t *testing.T) {
 		got, err := st.ListCharacterContractIDs(ctx, c.ID)
 		require.NoError(t, err)
 		want := set.Of(e2.ContractID, e3.ContractID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -246,7 +246,7 @@ func TestCharacterContractBid(t *testing.T) {
 			return x.BidID
 		}))
 		want := set.Of(b1.BidID, b2.BidID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
@@ -259,7 +259,7 @@ func TestCharacterContractBid(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		want := set.Of(b1.BidID, b2.BidID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -307,6 +307,6 @@ func TestCharacterContractItem(t *testing.T) {
 			return x.RecordID
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
-		xassert.Equal2(t, want, got)
+		xassert.Equal(t, want, got)
 	})
 }
