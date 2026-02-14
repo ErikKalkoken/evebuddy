@@ -50,7 +50,7 @@ type statusBar struct {
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *statusBarItem
-	updatingCount     int // count of currently running updates. serialized with Fyne.Do.
+	updatingCount     int
 	updatingIndicator *iwidget.Activity
 }
 
@@ -185,14 +185,16 @@ func (a *statusBar) startUpdateTicker() {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+			a.refreshUpdateStatus()
 		})
-		a.refreshUpdateStatus()
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.refreshUpdateStatus()
+			fyne.Do(func() {
+				a.refreshUpdateStatus()
+			})
 			<-updateTicker.C
 		}
 	}()
@@ -247,11 +249,11 @@ func (a *statusBar) startUpdateTicker() {
 }
 
 func (a *statusBar) update() {
+	x := a.u.scs.ListCharacters()
 	fyne.Do(func() {
-		x := a.u.scs.ListCharacters()
 		a.characterCount.SetText(strconv.Itoa(len(x)))
+		a.refreshUpdateStatus()
 	})
-	a.refreshUpdateStatus()
 }
 
 func (a *statusBar) refreshUpdateStatus() {
@@ -264,9 +266,7 @@ func (a *statusBar) refreshUpdateStatus() {
 		s = x.DisplayShort()
 		i = x.Status().ToImportance()
 	}
-	fyne.Do(func() {
-		a.updateStatus.SetTextAndImportance(s, i)
-	})
+	a.updateStatus.SetTextAndImportance(s, i)
 }
 
 func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
@@ -288,29 +288,25 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 }
 
 func (a *statusBar) ShowUpdating() {
-	fyne.Do(func() {
-		a.updateStatus.Refresh()
-		a.updatingCount++
-		if a.updatingIndicator.Hidden {
-			a.updatingIndicator.Start()
-			a.updatingIndicator.Show()
-		}
-	})
+	a.updateStatus.Refresh()
+	a.updatingCount++
+	if a.updatingIndicator.Hidden {
+		a.updatingIndicator.Start()
+		a.updatingIndicator.Show()
+	}
 }
 
 func (a *statusBar) HideUpdating() {
-	fyne.Do(func() {
-		a.updateStatus.Refresh()
-		if a.updatingCount == 0 {
-			return
-		}
-		a.updatingCount--
-		if a.updatingCount > 0 {
-			return
-		}
-		a.updatingIndicator.Hide()
-		a.updatingIndicator.Stop()
-	})
+	a.updateStatus.Refresh()
+	if a.updatingCount == 0 {
+		return
+	}
+	a.updatingCount--
+	if a.updatingCount > 0 {
+		return
+	}
+	a.updatingIndicator.Hide()
+	a.updatingIndicator.Stop()
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.
