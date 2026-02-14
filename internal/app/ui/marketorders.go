@@ -148,7 +148,7 @@ const (
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{
-		makeEveEntityColumn(makeIconColumnParams[marketOrderRow]{
+		makeEveEntityColumn(makeEveEntityColumnParams[marketOrderRow]{
 			columnID: marketOrdersColType,
 			eis:      u.eis,
 			getEntity: func(r marketOrderRow) *app.EveEntity {

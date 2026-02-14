@@ -126,7 +126,7 @@ func newClones(u *baseUI) *clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, makeEveEntityColumn(makeIconColumnParams[cloneRow]{
+	}, makeEveEntityColumn(makeEveEntityColumnParams[cloneRow]{
 		columnID: clonesColCharacter,
 		eis:      u.eis,
 		getEntity: func(r cloneRow) *app.EveEntity {

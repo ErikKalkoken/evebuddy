@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -15,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -26,6 +28,7 @@ const (
 )
 
 type industrySlotRow struct {
+	characterID   int64
 	characterName string
 	busy          int
 	ready         int
@@ -115,8 +118,35 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		Sort: func(a, b industrySlotRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			icon.CornerRadius = app.IconUnitSize / 2
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
+		},
 		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.characterDisplay())
+			border := co.(*fyne.Container).Objects
+			label := border[0].(*widget.Label)
+			icon := border[1].(*canvas.Image)
+			if r.isSummary {
+				label.Text = "Total"
+				label.TextStyle = fyne.TextStyle{Bold: true}
+				label.Refresh()
+				icon.Resource = icons.BlankSvg
+				icon.Refresh()
+			} else {
+				label.Text = r.characterName
+				label.TextStyle = fyne.TextStyle{}
+				label.Refresh()
+				u.eis.CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
+					icon.Resource = r
+					icon.Refresh()
+				})
+			}
 		},
 	}, {
 		ID:    industrySlotsColBusy,
@@ -415,6 +445,7 @@ func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]ind
 	rows := make([]industrySlotRow, 0)
 	for _, o := range oo {
 		r := industrySlotRow{
+			characterID:   o.CharacterID,
 			characterName: o.CharacterName,
 			busy:          o.Busy,
 			ready:         o.Ready,
