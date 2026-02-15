@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/s-daehling/fyne-charts/pkg/coord"
 	"github.com/s-daehling/fyne-charts/pkg/data"
 	"github.com/s-daehling/fyne-charts/pkg/prop"
+	"github.com/s-daehling/fyne-charts/pkg/style"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -56,18 +56,25 @@ func newWealth(u *baseUI) *wealth {
 	}
 	a.ExtendBaseWidget(a)
 	a.top.Hide()
-	size := theme.SizeNameSubHeadingText
-	color := theme.ColorNameForeground
-	a.assetDetail.SetTitleStyle(size, color)
+
+	ts := style.DefaultTitleStyle()
+	ts.SizeName = theme.SizeNameText
+	ts.TextStyle.Bold = true
+	yls := style.DefaultAxisLabelStyle()
+	yls.SizeName = theme.SizeNameText
+
+	a.assetDetail.SetTitleStyle(ts)
 	a.assetDetail.HideLegend()
+	a.assetDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
 	a.assetDetail.SetYAxisLabel("B ISK")
-	a.assetSplit.SetTitleStyle(size, color)
-	a.walletSplit.SetTitleStyle(size, color)
-	a.walletDetail.SetTitleStyle(size, color)
+	a.assetSplit.SetTitleStyle(ts)
+	a.walletSplit.SetTitleStyle(ts)
+	a.walletDetail.SetTitleStyle(ts)
 	a.walletDetail.HideLegend()
+	a.walletDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
 	a.walletDetail.SetYAxisLabel("B ISK")
-	a.totalSplit.SetTitleStyle(size, color)
-	a.characterSplit.SetTitleStyle(size, color)
+	a.totalSplit.SetTitleStyle(ts)
+	a.characterSplit.SetTitleStyle(ts)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		switch arg.section {
@@ -85,10 +92,34 @@ func newWealth(u *baseUI) *wealth {
 
 func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Total", container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit)),
-		container.NewTabItem("Breakdown", container.NewAdaptiveGrid(2, a.assetSplit, a.walletSplit)),
-		container.NewTabItem("Assets", a.assetDetail),
-		container.NewTabItem("Wallets", a.walletDetail),
+		container.NewTabItem("Total", container.NewBorder(
+			container.NewPadded(),
+			nil,
+			nil,
+			nil,
+			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
+		)),
+		container.NewTabItem("Breakdown", container.NewBorder(
+			container.NewPadded(),
+			nil,
+			nil,
+			nil,
+			container.NewAdaptiveGrid(2, a.assetSplit, a.walletSplit),
+		)),
+		container.NewTabItem("Assets", container.NewBorder(
+			container.NewPadded(),
+			nil,
+			nil,
+			nil,
+			a.assetDetail,
+		)),
+		container.NewTabItem("Wallets", container.NewBorder(
+			container.NewPadded(),
+			nil,
+			nil,
+			nil,
+			a.walletDetail,
+		)),
 	)
 	var c fyne.CanvasObject
 	if !a.u.isMobile {
@@ -178,9 +209,9 @@ func (a *wealth) updateAssetSplit(rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
-			C:   r.character,
-			Val: r.assets,
-			Col: colors.next(),
+			C:       r.character,
+			Val:     r.assets,
+			ColName: colors.next(),
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
@@ -204,9 +235,9 @@ func (a *wealth) updateCharacterSplit(rows []wealthRow, totalAssets float64, tot
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
-			C:   r.character,
-			Val: r.assets,
-			Col: colors.next(),
+			C:       r.character,
+			Val:     r.assets,
+			ColName: colors.next(),
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
@@ -230,14 +261,14 @@ func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
 	s, err := prop.NewSeries("", []data.ProportionalPoint{
 		{
-			C:   "Assets combined",
-			Val: totalAssets,
-			Col: colors.next(),
+			C:       "Assets combined",
+			Val:     totalAssets,
+			ColName: colors.next(),
 		},
 		{
-			C:   "Wallets combined",
-			Val: totalWallet,
-			Col: colors.next(),
+			C:       "Wallets combined",
+			Val:     totalWallet,
+			ColName: colors.next(),
 		},
 	})
 	fyne.Do(func() {
@@ -280,9 +311,9 @@ func (a *wealth) updateWalletSplit(rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
-			C:   r.character,
-			Val: r.wallet,
-			Col: colors.next(),
+			C:       r.character,
+			Val:     r.wallet,
+			ColName: colors.next(),
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
@@ -321,9 +352,9 @@ func reduceProportionalPoints(rows []data.ProportionalPoint, m int) []data.Propo
 	})
 	rows = append(rows,
 		data.ProportionalPoint{
-			C:   "Others",
-			Val: others,
-			Col: theme.Color(theme.ColorNameDisabled),
+			C:       "Others",
+			Val:     others,
+			ColName: theme.ColorNameDisabled,
 		})
 	return rows
 }
@@ -402,28 +433,27 @@ func (*wealth) compileData(s services) ([]wealthRow, int, error) {
 
 type colorWheel struct {
 	n      int
-	colors []color.Color
+	colors []fyne.ThemeColorName
 }
 
 func newColorWheel() colorWheel {
 	w := colorWheel{
-		colors: make([]color.Color, 0),
-	}
-	w.colors = []color.Color{
-		theme.Color(theme.ColorNamePrimary),
-		theme.Color(theme.ColorNameWarning),
-		theme.Color(theme.ColorNameSuccess),
-		theme.Color(theme.ColorNameError),
-		theme.Color(colorNameInfo),
-		theme.Color(colorNameAttention),
-		theme.Color(colorNameCreative),
-		theme.Color(colorNameSystem),
-		theme.Color(theme.ColorNamePlaceHolder),
+		colors: []fyne.ThemeColorName{
+			theme.ColorNamePrimary,
+			theme.ColorNameWarning,
+			theme.ColorNameSuccess,
+			theme.ColorNameError,
+			colorNameInfo,
+			colorNameAttention,
+			colorNameCreative,
+			colorNameSystem,
+			theme.ColorNamePlaceHolder,
+		},
 	}
 	return w
 }
 
-func (w *colorWheel) next() color.Color {
+func (w *colorWheel) next() fyne.ThemeColorName {
 	c := w.colors[w.n]
 	if w.n < len(w.colors)-1 {
 		w.n++
