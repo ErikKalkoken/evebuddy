@@ -1651,7 +1651,7 @@ func (f Factory) CreateCorporationStructure(args ...storage.UpdateOrCreateCorpor
 		arg.ReinforceHour.Set(rand.Int64N(24))
 	}
 	if arg.FuelExpires.IsEmpty() {
-		arg.FuelExpires.Set(time.Now().UTC().Add(time.Duration(rand.IntN(1000) * int(time.Hour))))
+		arg.FuelExpires.Set(time.Now().UTC().Add(time.Duration(rand.IntN(1000)) * time.Hour))
 	}
 	err := f.st.UpdateOrCreateCorporationStructure(ctx, arg)
 	if err != nil {

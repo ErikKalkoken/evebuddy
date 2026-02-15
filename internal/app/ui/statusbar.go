@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"log/slog"
 	"strconv"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -20,15 +21,16 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
+	"github.com/ErikKalkoken/go-set"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
-	characterUpdateStatusTicker = 2 * time.Second
-	clockUpdateTicker           = 2 * time.Second
-	esiStatusUpdateTicker       = 10 * time.Second
+	clockUpdateTicker = 2 * time.Second
 )
 
 type eveStatus uint
@@ -50,14 +52,12 @@ type statusBar struct {
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *statusBarItem
-	updatingCount     int // count of currently running updates. serialized with Fyne.Do.
 	updatingIndicator *iwidget.Activity
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
 	ac := iwidget.NewActivity()
 	ac.SetToolTip("Synchronizing with game server...")
-	ac.Stop()
 	a := &statusBar{
 		updatingIndicator: ac,
 		u:                 u,
@@ -93,7 +93,8 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		"?",
 		func() {
 			showUpdateStatusWindow(u.baseUI)
-		})
+		},
+	)
 	a.updateStatus.SetToolTip("Current update status - click for details")
 	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
@@ -125,6 +126,155 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 			a.eveStatus,
 		))
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *statusBar) start() {
+	// signals
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.updateCharacterCount()
+		a.updateUpdateStatus()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		a.updateCharacterCount()
+		a.updateUpdateStatus()
+	})
+	a.u.characterSectionUpdated.AddListener(func(_ context.Context, _ characterSectionUpdated) {
+		a.updateUpdateStatus()
+	})
+	a.u.corporationSectionUpdated.AddListener(func(_ context.Context, _ corporationSectionUpdated) {
+		a.updateUpdateStatus()
+	})
+	a.u.generalSectionUpdated.AddListener(func(_ context.Context, _ generalSectionUpdated) {
+		a.updateUpdateStatus()
+	})
+
+	var mu sync.Mutex
+	var updating set.Set[string]
+	showUpdate := func(on bool) {
+		if on {
+			a.updatingIndicator.Start()
+			a.updatingIndicator.Show()
+		} else {
+			a.updatingIndicator.Hide()
+			a.updatingIndicator.Stop()
+		}
+		a.updateStatus.Refresh()
+	}
+	a.u.updateStarted.AddListener(func(_ context.Context, id string) {
+		var on bool
+		mu.Lock()
+		updating.Add(id)
+		on = updating.Size() > 0
+		mu.Unlock()
+		fyne.Do(func() {
+			showUpdate(on)
+		})
+	})
+	a.u.updateStopped.AddListener(func(_ context.Context, id string) {
+		var on bool
+		mu.Lock()
+		updating.Delete(id)
+		on = updating.Size() > 0
+		mu.Unlock()
+		fyne.Do(func() {
+			showUpdate(on)
+		})
+	})
+	fyne.Do(func() {
+		a.updateCharacterCount()
+		a.updateUpdateStatus()
+		a.refreshEveStatus()
+	})
+
+	clockTicker := time.NewTicker(clockUpdateTicker)
+	go func() {
+		for {
+			fyne.Do(func() {
+				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
+			})
+			<-clockTicker.C
+		}
+	}()
+
+	if a.u.IsOffline() {
+		fyne.Do(func() {
+			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+		})
+		return
+	}
+
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+		a.refreshEveStatus()
+	})
+
+	go func() {
+		v, err := a.u.availableUpdate()
+		if err != nil {
+			slog.Error("fetch latest github version for download hint", "err", err)
+			return
+		}
+		if !v.IsRemoteNewer {
+			return
+		}
+		fyne.Do(func() {
+			a.updateHint.set(v)
+			a.updateHint.Show()
+		})
+	}()
+}
+
+func (a *statusBar) refreshEveStatus() {
+	var t, errorMessage string
+	var s eveStatus
+	if a.u.ess.IsDailyDowntime() {
+		s = eveStatusOffline
+		t = "OFFLINE"
+		errorMessage = fmt.Sprintf(
+			"Offline during planned daily downtime:\n%s",
+			a.u.ess.DailyDowntime(),
+		)
+	} else {
+		x, err := a.u.ess.Fetch(context.Background())
+		if err != nil {
+			slog.Error("Failed to fetch ESI status", "err", err)
+			errorMessage = a.u.humanizeError(err)
+			s = eveStatusError
+			t = "ERROR"
+		} else if !x.IsOK() {
+			errorMessage = x.ErrorMessage
+			s = eveStatusOffline
+			t = "OFFLINE"
+		} else {
+			arg := message.NewPrinter(language.English)
+			t = arg.Sprintf("%d players", x.PlayerCount)
+			s = eveStatusOnline
+		}
+	}
+	fyne.Do(func() {
+		a.setEveStatus(s, t, errorMessage)
+	})
+}
+
+func (a *statusBar) updateCharacterCount() {
+	s := strconv.Itoa(len(a.u.scs.ListCharacters()))
+	fyne.Do(func() {
+		a.characterCount.SetText(s)
+	})
+}
+
+func (a *statusBar) updateUpdateStatus() {
+	var s string
+	var i widget.Importance
+	if a.u.isUpdateDisabled.Load() || a.u.ess.IsDailyDowntime() {
+		s = "Off"
+	} else {
+		x := a.u.scs.Summary()
+		s = x.DisplayShort()
+		i = x.Status().ToImportance()
+	}
+	fyne.Do(func() {
+		a.updateStatus.SetTextAndImportance(s, i)
+	})
 }
 
 func (a *statusBar) showClockDialog() {
@@ -172,103 +322,6 @@ func (a *statusBar) showEveStatusDialog() {
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
-func (a *statusBar) startUpdateTicker() {
-	clockTicker := time.NewTicker(clockUpdateTicker)
-	go func() {
-		for {
-			fyne.Do(func() {
-				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
-			})
-			<-clockTicker.C
-		}
-	}()
-	if a.u.IsOffline() {
-		fyne.Do(func() {
-			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
-		})
-		a.refreshUpdateStatus()
-		return
-	}
-	updateTicker := time.NewTicker(characterUpdateStatusTicker)
-	go func() {
-		for {
-			a.refreshUpdateStatus()
-			<-updateTicker.C
-		}
-	}()
-	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
-	go func() {
-		for {
-			var t, errorMessage string
-			var s eveStatus
-			if a.u.ess.IsDailyDowntime() {
-				s = eveStatusOffline
-				t = "OFFLINE"
-				errorMessage = fmt.Sprintf("Offline during planned daily downtime:\n%s", a.u.ess.DailyDowntime())
-			} else {
-				x, err := a.u.ess.Fetch(context.Background())
-				if err != nil {
-					slog.Error("Failed to fetch ESI status", "err", err)
-					errorMessage = a.u.humanizeError(err)
-					s = eveStatusError
-					t = "ERROR"
-				} else if !x.IsOK() {
-					errorMessage = x.ErrorMessage
-					s = eveStatusOffline
-					t = "OFFLINE"
-				} else {
-					arg := message.NewPrinter(language.English)
-					t = arg.Sprintf("%d players", x.PlayerCount)
-					s = eveStatusOnline
-				}
-			}
-			fyne.Do(func() {
-				a.setEveStatus(s, t, errorMessage)
-			})
-			<-esiStatusTicker.C
-		}
-	}()
-	if !a.u.IsOffline() {
-		go func() {
-			v, err := a.u.availableUpdate()
-			if err != nil {
-				slog.Error("fetch latest github version for download hint", "err", err)
-				return
-			}
-			if !v.IsRemoteNewer {
-				return
-			}
-			fyne.Do(func() {
-				a.updateHint.set(v)
-				a.updateHint.Show()
-			})
-		}()
-	}
-}
-
-func (a *statusBar) update() {
-	fyne.Do(func() {
-		x := a.u.scs.ListCharacters()
-		a.characterCount.SetText(strconv.Itoa(len(x)))
-	})
-	a.refreshUpdateStatus()
-}
-
-func (a *statusBar) refreshUpdateStatus() {
-	var s string
-	var i widget.Importance
-	if a.u.isUpdateDisabled || a.u.ess.IsDailyDowntime() {
-		s = "Off"
-	} else {
-		x := a.u.scs.Summary()
-		s = x.DisplayShort()
-		i = x.Status().ToImportance()
-	}
-	fyne.Do(func() {
-		a.updateStatus.SetTextAndImportance(s, i)
-	})
-}
-
 func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatusError = errorMessage
 	r1 := theme.MediaRecordIcon()
@@ -285,32 +338,6 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	}
 	a.eveStatus.SetLeading(r2)
 	a.eveStatus.SetText(title)
-}
-
-func (a *statusBar) ShowUpdating() {
-	fyne.Do(func() {
-		a.updateStatus.Refresh()
-		a.updatingCount++
-		if a.updatingIndicator.Hidden {
-			a.updatingIndicator.Start()
-			a.updatingIndicator.Show()
-		}
-	})
-}
-
-func (a *statusBar) HideUpdating() {
-	fyne.Do(func() {
-		a.updateStatus.Refresh()
-		if a.updatingCount == 0 {
-			return
-		}
-		a.updatingCount--
-		if a.updatingCount > 0 {
-			return
-		}
-		a.updatingIndicator.Hide()
-		a.updatingIndicator.Stop()
-	})
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.

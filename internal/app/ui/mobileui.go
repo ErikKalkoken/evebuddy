@@ -541,12 +541,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	u.onUpdateStatus = func() {
 		go togglePermittedSections()
 		go func() {
-			fyne.Do(func() {
-				navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
-				moreList.Refresh()
-			})
-		}()
-		go func() {
 			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
 			fyne.Do(func() {
 				characterSelector.SetMenuItems(items)
@@ -655,36 +649,64 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
-	u.onAppFirstStarted = func() {
-		tickerUpdateStatus := time.NewTicker(5 * time.Second)
-		go func() {
-			for {
-				var icon fyne.Resource
-				var s string
-				if u.ess.IsDailyDowntime() {
-					isOffline.Store(true)
-					icon = theme.NewWarningThemedResource(theme.WarningIcon())
-					s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
-				} else {
-					isOffline.Store(false)
-					status := u.scs.Summary()
-					if status.Errors > 0 {
-						icon = theme.NewErrorThemedResource(theme.WarningIcon())
-						hasUpdateError.Store(true)
-					} else {
-						hasUpdateError.Store(false)
-					}
-					s = status.Display()
-				}
-				fyne.Do(func() {
-					refreshMoreBadge()
-					navItemUpdateStatus.Supporting = s
-					navItemUpdateStatus.Trailing = icon
-					moreList.Refresh()
-				})
-				<-tickerUpdateStatus.C
+	updateCharacterCount := func() {
+		s := fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
+		fyne.Do(func() {
+			navItemManageCharacters.Supporting = s
+			moreList.Refresh()
+		})
+	}
+
+	updateUpdateStatus := func() {
+		var icon fyne.Resource
+		var s string
+		if u.ess.IsDailyDowntime() {
+			isOffline.Store(true)
+			icon = theme.NewWarningThemedResource(theme.WarningIcon())
+			s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
+		} else {
+			isOffline.Store(false)
+			status := u.scs.Summary()
+			if status.Errors > 0 {
+				icon = theme.NewErrorThemedResource(theme.WarningIcon())
+				hasUpdateError.Store(true)
+			} else {
+				hasUpdateError.Store(false)
 			}
-		}()
+			s = status.Display()
+		}
+		fyne.Do(func() {
+			refreshMoreBadge()
+			navItemUpdateStatus.Supporting = s
+			navItemUpdateStatus.Trailing = icon
+			moreList.Refresh()
+		})
+	}
+
+	u.onAppFirstStarted = func() {
+		// signals
+		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+		u.characterSectionUpdated.AddListener(func(_ context.Context, _ characterSectionUpdated) {
+			updateUpdateStatus()
+		})
+		u.corporationSectionUpdated.AddListener(func(_ context.Context, _ corporationSectionUpdated) {
+			updateUpdateStatus()
+		})
+		u.generalSectionUpdated.AddListener(func(_ context.Context, _ generalSectionUpdated) {
+			updateUpdateStatus()
+		})
+		fyne.Do(func() {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
