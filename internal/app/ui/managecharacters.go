@@ -317,7 +317,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 				}
 			}
 			go a.mc.u.characterAdded.Emit(context.Background(), character)
-			if !a.mc.u.isUpdateDisabled {
+			if !a.mc.u.isUpdateDisabled.Load() {
 				go a.mc.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 			}
 			return nil

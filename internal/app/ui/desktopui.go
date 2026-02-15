@@ -640,7 +640,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onAppFirstStarted = func() {
 		u.enableShortcuts()
 		go u.updateMailIndicator()
-		go statusBar.startUpdateTicker()
+		go statusBar.start()
 	}
 	u.onAppStopped = func() {
 		u.saveAppState()
@@ -662,7 +662,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				corporationHeader.SetButtonMenu(items)
 			})
 		}()
-		go statusBar.update()
+		// go statusBar.update()
 		go togglePermittedSections()
 		go func() {
 			cc, err := u.ListCorporationsForSelection()
@@ -681,16 +681,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				tabs.EnableItem(corporationTab)
 			})
 		}()
-	}
-	u.onSectionUpdateStarted = func() {
-		fyne.Do(func() {
-			statusBar.ShowUpdating()
-		})
-	}
-	u.onSectionUpdateCompleted = func() {
-		fyne.Do(func() {
-			statusBar.HideUpdating()
-		})
 	}
 	return u
 }

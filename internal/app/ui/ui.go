@@ -124,8 +124,6 @@ type baseUI struct {
 	onUpdateCorporationWalletTotals func(balance float64, ok bool)
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
-	onSectionUpdateStarted          func()
-	onSectionUpdateCompleted        func()
 	showMailIndicator               func()
 	showManageCharacters            func()
 
@@ -201,6 +199,9 @@ type baseUI struct {
 	// A Character has changed [only: trainingWatcher].
 	characterChanged signals.Signal[int64]
 
+	updateStarted signals.Signal[string]
+	updateStopped signals.Signal[string]
+
 	// Services
 	cs       *characterservice.CharacterService
 	eis      eveImageService
@@ -223,7 +224,7 @@ type baseUI struct {
 	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
-	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
+	isUpdateDisabled   atomic.Bool // Whether to disable update tickers (useful for debugging)
 	sig                *singleinstance.Group
 	wasStarted         atomic.Bool            // whether the app has already been started at least once
 	window             fyne.Window            // main window
@@ -276,10 +277,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		isFakeMobile:                arg.IsFakeMobile,
 		isMobile:                    arg.IsMobile,
 		isOffline:                   arg.IsOffline,
-		isUpdateDisabled:            arg.IsUpdateDisabled,
 		js:                          arg.JaniceService,
-		onSectionUpdateCompleted:    func() {},
-		onSectionUpdateStarted:      func() {},
 		refreshTickerExpired:        signals.New[struct{}](),
 		rs:                          arg.CorporationService,
 		scs:                         arg.StatusCacheService,
@@ -287,9 +285,12 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		sig:                         singleinstance.NewGroup(),
 		statusText:                  NewStatusText(),
 		tagsChanged:                 signals.New[struct{}](),
+		updateStarted:               signals.New[string](),
+		updateStopped:               signals.New[string](),
 		windows:                     make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
+	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
 
 	if arg.ClearCacheFunc != nil {
 		u.clearCache = arg.ClearCacheFunc
@@ -495,7 +496,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
 			go u.refreshTickerExpired.Emit(context.Background(), struct{}{})
-			if !u.isOffline && !u.isUpdateDisabled {
+			if !u.isOffline && !u.isUpdateDisabled.Load() {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					go u.updateCharactersIfNeeded(context.Background(), false)
@@ -568,7 +569,7 @@ func (u *baseUI) Start() bool {
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
-		if !u.isOffline && !u.isUpdateDisabled {
+		if !u.isOffline && !u.isUpdateDisabled.Load() {
 			time.Sleep(3 * time.Second) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
 			u.startUpdateTickerGeneralSections()

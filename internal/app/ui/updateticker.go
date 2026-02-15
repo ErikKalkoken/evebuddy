@@ -38,6 +38,11 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
+
+	id := "general-" + uniqueID()
+	u.updateStarted.Emit(ctx, id)
+	defer u.updateStopped.Emit(ctx, id)
+
 	sections := set.Of(app.GeneralSections...)
 	var wg sync.WaitGroup
 	for s := range sections.All() {
@@ -54,15 +59,9 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
-	if u.onSectionUpdateStarted != nil && u.onSectionUpdateCompleted != nil {
-		u.onSectionUpdateStarted()
-		defer u.onSectionUpdateCompleted()
-	}
 	changedIDs, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
-		Section:           section,
-		ForceUpdate:       forceUpdate,
-		OnUpdateStarted:   u.onSectionUpdateStarted,
-		OnUpdateCompleted: u.onSectionUpdateCompleted,
+		Section:     section,
+		ForceUpdate: forceUpdate,
 	})
 	if err != nil {
 		logErr(err)
@@ -212,8 +211,14 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if sections.Size() == 0 {
 		return
 	}
+
+	id := "characters-" + uniqueID()
+	u.updateStarted.Emit(ctx, id)
+	defer u.updateStopped.Emit(ctx, id)
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
 	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
 	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int64]) {
 		if c != nil && c.ID == characterID {
@@ -292,8 +297,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		MarketOrderRetention:  time.Duration(u.settings.MarketOrderRetentionDays()) * time.Hour * 24,
 		MaxMails:              u.settings.MaxMails(),
 		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-		OnUpdateCompleted:     u.onSectionUpdateCompleted,
-		OnUpdateStarted:       u.onSectionUpdateStarted,
 		Section:               section,
 	})
 	if err != nil {
@@ -384,12 +387,17 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
 	}
+
+	id := "corporations-" + uniqueID()
+	u.updateStarted.Emit(ctx, id)
+	defer u.updateStopped.Emit(ctx, id)
+
 	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
 	}
 	if changed {
-		go u.corporationsChanged.Emit(ctx, struct{}{})
+		u.corporationsChanged.Emit(ctx, struct{}{})
 	}
 	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
@@ -441,8 +449,6 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			ForceUpdate:           forceUpdate,
 			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
 			Section:               section,
-			OnUpdateStarted:       u.onSectionUpdateStarted,
-			OnUpdateCompleted:     u.onSectionUpdateCompleted,
 		},
 	)
 	if err != nil {

@@ -467,10 +467,8 @@ func Scopes() set.Set[string] {
 }
 
 type GeneralSectionUpdateParams struct {
-	ForceUpdate       bool
-	OnUpdateStarted   func()
-	OnUpdateCompleted func()
-	Section           GeneralSection
+	ForceUpdate bool
+	Section     GeneralSection
 }
 
 type CharacterSectionUpdateParams struct {
@@ -479,8 +477,6 @@ type CharacterSectionUpdateParams struct {
 	MarketOrderRetention  time.Duration
 	MaxMails              int
 	MaxWalletTransactions int
-	OnUpdateCompleted     func()
-	OnUpdateStarted       func()
 	Section               CharacterSection
 }
 
@@ -488,7 +484,5 @@ type CorporationSectionUpdateParams struct {
 	CorporationID         int64
 	ForceUpdate           bool
 	MaxWalletTransactions int
-	OnUpdateStarted       func()
-	OnUpdateCompleted     func()
 	Section               CorporationSection
 }

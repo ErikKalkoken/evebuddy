@@ -655,33 +655,37 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
+	refreshUpdateStatus := func() {
+		var icon fyne.Resource
+		var s string
+		if u.ess.IsDailyDowntime() {
+			isOffline.Store(true)
+			icon = theme.NewWarningThemedResource(theme.WarningIcon())
+			s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
+		} else {
+			isOffline.Store(false)
+			status := u.scs.Summary()
+			if status.Errors > 0 {
+				icon = theme.NewErrorThemedResource(theme.WarningIcon())
+				hasUpdateError.Store(true)
+			} else {
+				hasUpdateError.Store(false)
+			}
+			s = status.Display()
+		}
+		fyne.Do(func() {
+			refreshMoreBadge()
+			navItemUpdateStatus.Supporting = s
+			navItemUpdateStatus.Trailing = icon
+			moreList.Refresh()
+		})
+	}
+
 	u.onAppFirstStarted = func() {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
-				var icon fyne.Resource
-				var s string
-				if u.ess.IsDailyDowntime() {
-					isOffline.Store(true)
-					icon = theme.NewWarningThemedResource(theme.WarningIcon())
-					s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
-				} else {
-					isOffline.Store(false)
-					status := u.scs.Summary()
-					if status.Errors > 0 {
-						icon = theme.NewErrorThemedResource(theme.WarningIcon())
-						hasUpdateError.Store(true)
-					} else {
-						hasUpdateError.Store(false)
-					}
-					s = status.Display()
-				}
-				fyne.Do(func() {
-					refreshMoreBadge()
-					navItemUpdateStatus.Supporting = s
-					navItemUpdateStatus.Trailing = icon
-					moreList.Refresh()
-				})
+				refreshUpdateStatus()
 				<-tickerUpdateStatus.C
 			}
 		}()
