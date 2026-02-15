@@ -12,7 +12,7 @@ type MercenaryDenAttacked struct {
 	PlanetID                 int64   `json:"planetID"`
 	PlanetShowInfoData       []any   `json:"planetShowInfoData"`
 	ShieldPercentage         float64 `json:"shieldPercentage"`
-	SolarsystemID            int64   `json:"solarsystemID"`
+	SolarSystemID            int64   `json:"solarsystemID"`
 	TypeID                   int64   `json:"typeID"`
 }
 
@@ -24,7 +24,7 @@ type MercenaryDenReinforced struct {
 	MercenaryDenShowInfoData []any  `json:"mercenaryDenShowInfoData"`
 	PlanetID                 int64  `json:"planetID"`
 	PlanetShowInfoData       []any  `json:"planetShowInfoData"`
-	SolarsystemID            int64  `json:"solarsystemID"`
+	SolarSystemID            int64  `json:"solarsystemID"`
 	TimestampEntered         int64  `json:"timestampEntered"`
 	TimestampExited          int64  `json:"timestampExited"`
 	TypeID                   int64  `json:"typeID"`
