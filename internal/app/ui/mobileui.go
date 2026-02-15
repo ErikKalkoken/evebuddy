@@ -541,12 +541,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	u.onUpdateStatus = func() {
 		go togglePermittedSections()
 		go func() {
-			fyne.Do(func() {
-				navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
-				moreList.Refresh()
-			})
-		}()
-		go func() {
 			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
 			fyne.Do(func() {
 				characterSelector.SetMenuItems(items)
@@ -655,7 +649,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
-	refreshUpdateStatus := func() {
+	updateCharacterCount := func() {
+		s := fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
+		fyne.Do(func() {
+			navItemManageCharacters.Supporting = s
+			moreList.Refresh()
+		})
+	}
+
+	updateUpdateStatus := func() {
 		var icon fyne.Resource
 		var s string
 		if u.ess.IsDailyDowntime() {
@@ -682,13 +684,29 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	u.onAppFirstStarted = func() {
-		tickerUpdateStatus := time.NewTicker(5 * time.Second)
-		go func() {
-			for {
-				refreshUpdateStatus()
-				<-tickerUpdateStatus.C
-			}
-		}()
+		// signals
+		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+		u.characterSectionUpdated.AddListener(func(_ context.Context, _ characterSectionUpdated) {
+			updateUpdateStatus()
+		})
+		u.corporationSectionUpdated.AddListener(func(_ context.Context, _ corporationSectionUpdated) {
+			updateUpdateStatus()
+		})
+		u.generalSectionUpdated.AddListener(func(_ context.Context, _ generalSectionUpdated) {
+			updateUpdateStatus()
+		})
+		fyne.Do(func() {
+			updateCharacterCount()
+			updateUpdateStatus()
+		})
+
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
