@@ -63,12 +63,10 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		a.filterRows()
 		a.list.ScrollToTop()
 	}
-	a.u.currentCorporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
-			a.corporation.Store(c)
-			a.update()
-		},
-	)
+	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.corporation.Store(c)
+		a.update()
+	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return

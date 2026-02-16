@@ -213,6 +213,14 @@ type CharacterJumpCloneImplant struct {
 	SlotNum int // 0 = unknown
 }
 
+type CharacterLoyaltyPointEntry struct {
+	ID            int64
+	CharacterID   int64
+	Corporation   *EntityShort[int64]
+	Faction       optional.Optional[*EveEntity]
+	LoyaltyPoints int64
+}
+
 type CharacterPlanet struct {
 	ID           int64
 	CharacterID  int64

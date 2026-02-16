@@ -73,7 +73,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	}
 	a.ExtendBaseWidget(a)
 
-	// Sections
+	// Signals
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update()

@@ -53,11 +53,10 @@ func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID 
 }
 
 func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int64, orderID int64) (*app.CharacterMarketOrder, error) {
-	arg := queries.GetCharacterMarketOrderParams{
+	r, err := st.qRO.GetCharacterMarketOrder(ctx, queries.GetCharacterMarketOrderParams{
 		CharacterID: characterID,
 		OrderID:     orderID,
-	}
-	r, err := st.qRO.GetCharacterMarketOrder(ctx, arg)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("GetCharacterMarketOrder for character %d: %w", characterID, convertGetError(err))
 	}

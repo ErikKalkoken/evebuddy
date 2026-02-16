@@ -14,7 +14,7 @@ import (
 )
 
 func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
-	r, err := st.qRO.GetEveCorporation(ctx,corporationID)
+	r, err := st.qRO.GetEveCorporation(ctx, corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, convertGetError(err))
 	}
@@ -47,6 +47,36 @@ func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int64) (
 		},
 	})
 	return c, nil
+}
+
+type eveCorporationFromDBModelParams struct {
+	corporation queries.EveCorporation
+	ceo         nullEveEntry
+	creator     nullEveEntry
+	alliance    nullEveEntry
+	faction     nullEveEntry
+	station     nullEveEntry
+}
+
+func eveCorporationFromDBModel(arg eveCorporationFromDBModelParams) *app.EveCorporation {
+	o := &app.EveCorporation{
+		ID:          arg.corporation.ID,
+		Alliance:    eveEntityFromNullableDBModel(arg.alliance),
+		Ceo:         eveEntityFromNullableDBModel(arg.ceo),
+		Creator:     eveEntityFromNullableDBModel(arg.creator),
+		DateFounded: optional.FromNullTime(arg.corporation.DateFounded),
+		Description: arg.corporation.Description,
+		Faction:     eveEntityFromNullableDBModel(arg.faction),
+		HomeStation: eveEntityFromNullableDBModel(arg.station),
+		MemberCount: arg.corporation.MemberCount,
+		Name:        arg.corporation.Name,
+		Shares:      optional.FromNullInt64(arg.corporation.Shares),
+		TaxRate:     arg.corporation.TaxRate,
+		Ticker:      arg.corporation.Ticker,
+		URL:         optional.FromZeroValue(arg.corporation.Url),
+		WarEligible: optional.FromZeroValue(arg.corporation.WarEligible),
+	}
+	return o
 }
 
 func (st *Storage) ListEveCorporationIDs(ctx context.Context) (set.Set[int64], error) {
@@ -88,8 +118,8 @@ func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateO
 		Description:   arg.Description.ValueOrZero(),
 		FactionID:     optional.ToNullInt64(arg.FactionID),
 		HomeStationID: optional.ToNullInt64(arg.HomeStationID),
-		ID:           arg.ID,
-		MemberCount:  arg.MemberCount,
+		ID:            arg.ID,
+		MemberCount:   arg.MemberCount,
 		Name:          arg.Name,
 		Shares:        optional.ToNullInt64(arg.Shares),
 		TaxRate:       float64(arg.TaxRate),
@@ -109,40 +139,10 @@ func (st *Storage) UpdateEveCorporationName(ctx context.Context, corporationID i
 		return fmt.Errorf("UpdateEveCorporationName: %w", app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateEveCorporationName(ctx, queries.UpdateEveCorporationNameParams{
-		ID:  corporationID,
+		ID:   corporationID,
 		Name: name,
 	}); err != nil {
 		return fmt.Errorf("UpdateEveCorporationName %d: %w", corporationID, err)
 	}
 	return nil
-}
-
-type eveCorporationFromDBModelParams struct {
-	corporation queries.EveCorporation
-	ceo         nullEveEntry
-	creator     nullEveEntry
-	alliance    nullEveEntry
-	faction     nullEveEntry
-	station     nullEveEntry
-}
-
-func eveCorporationFromDBModel(arg eveCorporationFromDBModelParams) *app.EveCorporation {
-	o := &app.EveCorporation{
-		ID:         arg.corporation.ID,
-		Alliance:    eveEntityFromNullableDBModel(arg.alliance),
-		Ceo:         eveEntityFromNullableDBModel(arg.ceo),
-		Creator:     eveEntityFromNullableDBModel(arg.creator),
-		DateFounded: optional.FromNullTime(arg.corporation.DateFounded),
-		Description: arg.corporation.Description,
-		Faction:     eveEntityFromNullableDBModel(arg.faction),
-		HomeStation: eveEntityFromNullableDBModel(arg.station),
-		MemberCount: arg.corporation.MemberCount,
-		Name:        arg.corporation.Name,
-		Shares:      optional.FromNullInt64(arg.corporation.Shares),
-		TaxRate:     arg.corporation.TaxRate,
-		Ticker:      arg.corporation.Ticker,
-		URL:         optional.FromZeroValue(arg.corporation.Url),
-		WarEligible: optional.FromZeroValue(arg.corporation.WarEligible),
-	}
-	return o
 }

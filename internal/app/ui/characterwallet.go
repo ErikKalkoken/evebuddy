@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -23,19 +24,21 @@ type characterWallet struct {
 	onTopUpdate     func(top string)
 	onBalanceUpdate func(balance float64)
 
-	balance      *widget.Label
-	character    atomic.Pointer[app.Character]
-	journal      *walletJournal
-	transactions *walletTransactions
-	u            *baseUI
+	balance       *widget.Label
+	character     atomic.Pointer[app.Character]
+	journal       *walletJournal
+	transactions  *walletTransactions
+	loyaltyPoints *characterLoyaltyPoints
+	u             *baseUI
 }
 
 func newCharacterWallet(u *baseUI) *characterWallet {
 	a := &characterWallet{
-		balance:      iwidget.NewLabelWithSelection(""),
-		journal:      newCharacterWalletJournal(u),
-		transactions: newCharacterWalletTransaction(u),
-		u:            u,
+		balance:       iwidget.NewLabelWithSelection(""),
+		journal:       newCharacterWalletJournal(u),
+		transactions:  newCharacterWalletTransaction(u),
+		loyaltyPoints: newCharacterLoyaltyPoints(u),
+		u:             u,
 	}
 	a.ExtendBaseWidget(a)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
@@ -62,15 +65,21 @@ func (a *characterWallet) CreateRenderer() fyne.WidgetRenderer {
 		container.NewAppTabs(
 			container.NewTabItem("Transactions", a.journal),
 			container.NewTabItem("Market Transactions", a.transactions),
+			container.NewTabItem("Loyalty Points", a.loyaltyPoints),
 		),
 	)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *characterWallet) update() {
-	go a.journal.update()
-	go a.transactions.update()
-	go a.updateBalance()
+	var wg sync.WaitGroup
+	wg.Go(a.journal.update)
+	wg.Go(a.transactions.update)
+	wg.Go(func() {
+		a.loyaltyPoints.update(context.Background())
+	})
+	wg.Go(a.updateBalance)
+	wg.Wait()
 }
 
 func (a *characterWallet) updateBalance() {

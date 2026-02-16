@@ -539,6 +539,39 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 	return o
 }
 
+func (f Factory) CreateCharacterLoyaltyPointEntry(args ...storage.UpdateOrCreateCharacterLoyaltyPointEntryParams) *app.CharacterLoyaltyPointEntry {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterLoyaltyPointEntryParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.CorporationID == 0 {
+		x1 := f.CreateEveEntity(app.EveEntity{
+			Category: app.EveEntityFaction,
+		})
+		x2 := f.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+			FactionID: optional.New(x1.ID),
+		})
+		arg.CorporationID = x2.ID
+	}
+	if arg.LoyaltyPoints == 0 {
+		arg.LoyaltyPoints = rand.Int64N(10_000_000) + 1000
+	}
+	err := f.st.UpdateOrCreateCharacterLoyaltyPointEntry(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterLoyaltyPointEntry(ctx, arg.CharacterID, arg.CorporationID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterMailWithBody(args ...storage.CreateCharacterMailParams) *app.CharacterMail {
 	return f.createCharacterMail(true, args...)
 }
