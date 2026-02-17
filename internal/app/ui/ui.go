@@ -157,6 +157,7 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
+	loyaltyPoints           *loyaltyPoints
 	manageCharacters        *manageCharacters
 	marketOrdersBuy         *marketOrders
 	marketOrdersSell        *marketOrders
@@ -173,7 +174,7 @@ type baseUI struct {
 	// A character was added.
 	characterAdded signals.Signal[*app.Character]
 	// A character was removed.
-	characterRemoved signals.Signal[*app.EntityShort[int64]]
+	characterRemoved signals.Signal[*app.EntityShort]
 	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
 	// A character section has been updated from ESI.
@@ -258,7 +259,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		app:                         arg.App,
 		characterAdded:              signals.New[*app.Character](),
 		characterChanged:            signals.New[int64](),
-		characterRemoved:            signals.New[*app.EntityShort[int64]](),
+		characterRemoved:            signals.New[*app.EntityShort](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		characterSectionUpdated:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
@@ -375,7 +376,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		updateStatus()
 	})
-	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 		updateStatus()
 	})
 
@@ -470,15 +471,16 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobsForOverview(u)
-	u.marketOrdersSell = newMarketOrders(u, false)
+	u.loyaltyPoints = newLoyaltyPoints(u)
+	u.manageCharacters = newManageCharacters(u)
 	u.marketOrdersBuy = newMarketOrders(u, true)
-	u.snackbar = iwidget.NewSnackbar(u.window)
+	u.marketOrdersSell = newMarketOrders(u, false)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
+	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
-	u.manageCharacters = newManageCharacters(u)
 
 	u.MainWindow().SetMaster()
 
@@ -555,7 +557,7 @@ func (u *baseUI) Start() bool {
 		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			updateCharactersMissingScope()
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 			updateCharactersMissingScope()
 		})
 		updateCharactersMissingScope()
@@ -832,13 +834,16 @@ func (u *baseUI) setAnyCorporation() error {
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
-		"characterOverview":  u.characterOverview.update,
-		"assetSearchAll":     u.assetSearchAll.update,
-		"augmentations":      u.augmentations.update,
-		"contracts":          u.contracts.update,
-		"clones":             u.clones.update,
-		"colonies":           u.colonies.update,
-		"industryJobs":       u.industryJobs.update,
+		"characterOverview": u.characterOverview.update,
+		"assetSearchAll":    u.assetSearchAll.update,
+		"augmentations":     u.augmentations.update,
+		"contracts":         u.contracts.update,
+		"clones":            u.clones.update,
+		"colonies":          u.colonies.update,
+		"industryJobs":      u.industryJobs.update,
+		"loyaltyPoints": func() {
+			u.loyaltyPoints.update(context.Background())
+		},
 		"marketOrdersSell":   u.marketOrdersSell.update,
 		"marketOrdersBuy":    u.marketOrdersBuy.update,
 		"slotsManufacturing": u.slotsManufacturing.update,
@@ -916,7 +921,7 @@ func (u *baseUI) updateMailIndicator() {
 	}
 }
 
-func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int64], error) {
+func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {
 	if u.settings.HideLimitedCorporations() {
 		return u.rs.ListPrivilegedCorporations(context.Background())
 	}
@@ -1179,7 +1184,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		it.Disabled = true
 		return append(items, it)
 	}
-	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int64]) int64 {
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
 	currentID := u.currentCorporationID()

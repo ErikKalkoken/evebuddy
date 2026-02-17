@@ -47,16 +47,17 @@ type CharacterSection string
 var _ section = (*CharacterSection)(nil)
 
 const (
-	SectionCharacterAssets             CharacterSection = "assets"              // char-asset
-	SectionCharacterAttributes         CharacterSection = "attributes"          // char-social
-	SectionCharacterContracts          CharacterSection = "contracts"           // char-contract
-	SectionCharacterImplants           CharacterSection = "implants"            // char-detail
-	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"       // char-industry
-	SectionCharacterJumpClones         CharacterSection = "jump_clones"         // char-location
-	SectionCharacterLocation           CharacterSection = "location"            // char-location
+	SectionCharacterAssets             CharacterSection = "assets"        // char-asset
+	SectionCharacterAttributes         CharacterSection = "attributes"    // char-social
+	SectionCharacterContracts          CharacterSection = "contracts"     // char-contract
+	SectionCharacterImplants           CharacterSection = "implants"      // char-detail
+	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs" // char-industry
+	SectionCharacterJumpClones         CharacterSection = "jump_clones"   // char-location
+	SectionCharacterLocation           CharacterSection = "location"      // char-location
+	SectionCharacterLoyaltyPoints      CharacterSection = "loyalty_points"
+	SectionCharacterMailHeaders        CharacterSection = "mail_headers"        // char-social
 	SectionCharacterMailLabels         CharacterSection = "mail_labels"         // char-social
 	SectionCharacterMailLists          CharacterSection = "mail_lists"          // char-social
-	SectionCharacterMailHeaders        CharacterSection = "mail_headers"        // char-social
 	SectionCharacterMarketOrders       CharacterSection = "market_orders"       // char-market
 	SectionCharacterNotifications      CharacterSection = "notifications"       // char-social
 	SectionCharacterOnline             CharacterSection = "online"              // char-location
@@ -78,6 +79,7 @@ var CharacterSections = []CharacterSection{
 	SectionCharacterIndustryJobs,
 	SectionCharacterJumpClones,
 	SectionCharacterLocation,
+	SectionCharacterLoyaltyPoints,
 	SectionCharacterMailHeaders,
 	SectionCharacterMailLabels,
 	SectionCharacterMailLists,
@@ -115,6 +117,7 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 		SectionCharacterIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
 		SectionCharacterJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
 		SectionCharacterLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterLoyaltyPoints:      {"esi-characters.read_loyalty.v1"},
 		SectionCharacterMailHeaders:        {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
 		SectionCharacterMailLabels:         {"esi-mail.read_mail.v1"},
 		SectionCharacterMailLists:          {"esi-mail.read_mail.v1"},
@@ -151,9 +154,10 @@ func (cs CharacterSection) Timeout() time.Duration {
 		SectionCharacterIndustryJobs:       300 * time.Second,
 		SectionCharacterJumpClones:         120 * time.Second,
 		SectionCharacterLocation:           300 * time.Second, // minimum 5 seconds
-		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
-		SectionCharacterMailLists:          120 * time.Second,
+		SectionCharacterLoyaltyPoints:      3600 * time.Second,
 		SectionCharacterMailHeaders:        60 * time.Second, // minimum 30 seconds
+		SectionCharacterMailLabels:         60 * time.Second, // minimum 30 seconds
+		SectionCharacterMailLists:          120 * time.Second,
 		SectionCharacterMarketOrders:       1200 * time.Second,
 		SectionCharacterNotifications:      600 * time.Second,
 		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds

@@ -26,8 +26,8 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 }
 
 // CharactersWithMissingScopes returns a list of characters which are missing scopes (if any),
-func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*app.EntityShort[int64], error) {
-	var characters []*app.EntityShort[int64]
+func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*app.EntityShort, error) {
+	var characters []*app.EntityShort
 	cc, err := s.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err

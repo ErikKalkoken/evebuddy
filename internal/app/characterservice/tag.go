@@ -49,19 +49,19 @@ func (s *CharacterService) RemoveTagFromCharacter(ctx context.Context, character
 	})
 }
 
-func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64) (tagged []*app.EntityShort[int64], others []*app.EntityShort[int64], err error) {
+func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64) (tagged []*app.EntityShort, others []*app.EntityShort, err error) {
 	tagged, err = s.st.ListCharactersForCharacterTag(ctx, tagID)
 	if err != nil {
 		return
 	}
-	taggedIDs := set.Of(xslices.Map(tagged, func(x *app.EntityShort[int64]) int64 {
+	taggedIDs := set.Of(xslices.Map(tagged, func(x *app.EntityShort) int64 {
 		return x.ID
 	})...)
 	cc, err := s.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	others = xslices.Filter(cc, func(x *app.EntityShort[int64]) bool {
+	others = xslices.Filter(cc, func(x *app.EntityShort) bool {
 		return !taggedIDs.Contains(x.ID)
 	})
 	return
@@ -116,7 +116,7 @@ func (s *CharacterService) compileTags(ctx context.Context, version string) (Tag
 		if err != nil {
 			return data, err
 		}
-		data.Tags[t.Name] = xslices.Map(characters, func(x *app.EntityShort[int64]) int64 {
+		data.Tags[t.Name] = xslices.Map(characters, func(x *app.EntityShort) int64 {
 			return x.ID
 		})
 	}

@@ -264,7 +264,7 @@ func TestListCharacters(t *testing.T) {
 		cc, err := st.ListCharacterCorporations(ctx)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int64]) int64 {
+			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
 				return x.ID
 			}))
 			want := set.Of(ec1.Corporation.ID)

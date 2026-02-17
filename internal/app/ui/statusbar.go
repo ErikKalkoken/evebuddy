@@ -134,7 +134,7 @@ func (a *statusBar) start() {
 		a.updateCharacterCount()
 		a.updateUpdateStatus()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 		a.updateCharacterCount()
 		a.updateUpdateStatus()
 	})

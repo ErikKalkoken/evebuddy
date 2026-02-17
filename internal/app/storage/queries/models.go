@@ -153,6 +153,13 @@ type CharacterJumpCloneImplant struct {
 	EveTypeID int64
 }
 
+type CharacterLoyaltyPointEntry struct {
+	ID            int64
+	CharacterID   int64
+	CorporationID int64
+	LoyaltyPoints int64
+}
+
 type CharacterMail struct {
 	ID          int64
 	Body        string

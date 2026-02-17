@@ -794,9 +794,15 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 		if err != nil {
 			return nil, err
 		}
-		attributes = append(attributes, newAttributeItem("Home", c.Home))
-		attributes = append(attributes, newAttributeItem("Location", c.Location))
-		attributes = append(attributes, newAttributeItem("Last Login", c.LastLoginAt.ValueOrZero()))
+		if v, ok := c.Home.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Home", v))
+		}
+		if v, ok := c.Location.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Location", v))
+		}
+		if v, ok := c.LastLoginAt.Value(); ok {
+			attributes = append(attributes, newAttributeItem("Last Login", v))
+		}
 	}
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)

@@ -173,30 +173,30 @@ func (st *Storage) ListOrphanedCorporationIDs(ctx context.Context) (set.Set[int6
 }
 
 // ListCorporationsShort returns all corporations ordered by name.
-func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list corporations short: %w", err)
 
 	}
-	cc := make([]*app.EntityShort[int64], 0)
+	cc := make([]*app.EntityShort, 0)
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort[int64]{ID:r.ID, Name: r.Name})
+		cc = append(cc, &app.EntityShort{ID:r.ID, Name: r.Name})
 	}
 	return cc, nil
 }
 
 // ListPrivilegedCorporationsShort returns a list of corporations
 // where a user has at least one character exist with a role from requiredRoles.
-func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, requiredRoles set.Set[app.Role]) ([]*app.EntityShort[int64], error) {
+func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, requiredRoles set.Set[app.Role]) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListPrivilegedCorporationsShort(ctx, slices.Collect(roles2names(requiredRoles).All()))
 	if err != nil {
 		return nil, fmt.Errorf("ListPrivilegedCorporationsShort: %w", err)
 
 	}
-	cc := make([]*app.EntityShort[int64], 0)
+	cc := make([]*app.EntityShort, 0)
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort[int64]{ID:r.ID, Name: r.Name})
+		cc = append(cc, &app.EntityShort{ID:r.ID, Name: r.Name})
 	}
 	return cc, nil
 }

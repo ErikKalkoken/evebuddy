@@ -61,12 +61,12 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 }
 
 // ListCorporationsShort returns all corporations in short form.
-func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort, error) {
 	return s.st.ListCorporationsShort(ctx)
 }
 
 // ListPrivilegedCorporations returns all corporations with privileged access.
-func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	var roles set.Set[app.Role]
 	for _, s := range []app.CorporationSection{app.CorporationSectionWalletJournal(app.Division1)} {
 		roles.AddSeq(s.Roles().All())

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -27,7 +28,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		t1 := factory.CreateEveType()
 		t2 := factory.CreateEveType()
@@ -42,17 +43,15 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			Section:     app.SectionCharacterImplants,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListCharacterImplants(ctx, c.ID)
-			if assert.NoError(t, err) {
-				got := set.Of[int64]()
-				for _, o := range oo {
-					got.Add(o.EveType.ID)
-				}
-				want := set.Of(t1.ID, t2.ID)
-				xassert.Equal(t, want, got)
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCharacterImplants(ctx, c.ID)
+		require.NoError(t, err)
+		got := set.Of[int64]()
+		for _, o := range oo {
+			got.Add(o.EveType.ID)
 		}
+		want := set.Of(t1.ID, t2.ID)
+		xassert.Equal(t, want, got)
 	})
 }

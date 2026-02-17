@@ -49,32 +49,32 @@ func TestInit(t *testing.T) {
 		if assert.NoError(t, err) {
 			x2, ok := sc.CharacterSection(c.ID, section1)
 			assert.True(t, ok)
-		xassert.Equal(t, x1.CharacterID, x2.EntityID)
-		xassert.Equal(t, x1.Section.String(), x2.SectionID)
-		xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
-		xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
-		xassert.Equal(t, x1.StartedAt, x2.StartedAt)
-		xassert.Equal(t, "Bruce", x2.EntityName)
-		xassert.Equal(t, section1.Timeout(), x2.Timeout)
+			xassert.Equal(t, x1.CharacterID, x2.EntityID)
+			xassert.Equal(t, x1.Section.String(), x2.SectionID)
+			xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
+			xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
+			xassert.Equal(t, x1.StartedAt, x2.StartedAt)
+			xassert.Equal(t, "Bruce", x2.EntityName)
+			xassert.Equal(t, section1.Timeout(), x2.Timeout)
 
 			y2, ok := sc.GeneralSection(section2)
 			assert.True(t, ok)
-		xassert.Equal(t, int64(app.GeneralSectionEntityID), y2.EntityID)
-		xassert.Equal(t, y1.Section.String(), y2.SectionID)
-		xassert.Equal(t, y1.CompletedAt, y2.CompletedAt)
-		xassert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
-		xassert.Equal(t, y1.StartedAt, y2.StartedAt)
-		xassert.Equal(t, section2.Timeout(), y2.Timeout)
+			xassert.Equal(t, int64(app.GeneralSectionEntityID), y2.EntityID)
+			xassert.Equal(t, y1.Section.String(), y2.SectionID)
+			xassert.Equal(t, y1.CompletedAt, y2.CompletedAt)
+			xassert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
+			xassert.Equal(t, y1.StartedAt, y2.StartedAt)
+			xassert.Equal(t, section2.Timeout(), y2.Timeout)
 
 			z2, ok := sc.CorporationSection(r.ID, section3)
 			assert.True(t, ok)
-		xassert.Equal(t, z1.CorporationID, z2.EntityID)
-		xassert.Equal(t, z1.Section.String(), z2.SectionID)
-		xassert.Equal(t, z1.CompletedAt, z2.CompletedAt)
-		xassert.Equal(t, z1.ErrorMessage, z2.ErrorMessage)
-		xassert.Equal(t, z1.StartedAt, z2.StartedAt)
-		xassert.Equal(t, "Alpha", z2.EntityName)
-		xassert.Equal(t, section3.Timeout(), z2.Timeout)
+			xassert.Equal(t, z1.CorporationID, z2.EntityID)
+			xassert.Equal(t, z1.Section.String(), z2.SectionID)
+			xassert.Equal(t, z1.CompletedAt, z2.CompletedAt)
+			xassert.Equal(t, z1.ErrorMessage, z2.ErrorMessage)
+			xassert.Equal(t, z1.StartedAt, z2.StartedAt)
+			xassert.Equal(t, "Alpha", z2.EntityName)
+			xassert.Equal(t, section3.Timeout(), z2.Timeout)
 		}
 	})
 }
@@ -130,7 +130,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusOK, ss.Status())
+		xassert.Equal(t, app.StatusOK, ss.Status())
 	})
 	t.Run("should report when a character section has an error", func(t *testing.T) {
 		// given
@@ -187,9 +187,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusError, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 1, ss.Errors)
+		xassert.Equal(t, app.StatusError, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 1, ss.Errors)
 	})
 	t.Run("corporation section has an error", func(t *testing.T) {
 		// given
@@ -246,9 +246,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusError, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 1, ss.Errors)
+		xassert.Equal(t, app.StatusError, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 1, ss.Errors)
 	})
 	t.Run("should report when a general section has an error", func(t *testing.T) {
 		// given
@@ -301,9 +301,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		sc.SetGeneralSection(o)
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusError, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 1, ss.Errors)
+		xassert.Equal(t, app.StatusError, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 1, ss.Errors)
 
 	})
 	t.Run("should report when a character section is missing", func(t *testing.T) {
@@ -352,9 +352,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusWorking, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 0, ss.Errors)
+		xassert.Equal(t, app.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report when a corporation section is missing", func(t *testing.T) {
 		// given
@@ -400,9 +400,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusWorking, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 0, ss.Errors)
+		xassert.Equal(t, app.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report when a general section is missing", func(t *testing.T) {
 		// given
@@ -437,9 +437,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusWorking, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 0, ss.Errors)
+		xassert.Equal(t, app.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report current progress when a character section is stale", func(t *testing.T) {
 		// given
@@ -483,9 +483,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusWorking, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 0, ss.Errors)
+		xassert.Equal(t, app.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report current progress when a general section is stale", func(t *testing.T) {
 		// given
@@ -526,9 +526,9 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-	xassert.Equal(t, app.StatusWorking, ss.Status())
-		assert.Less(t, ss.ProgressP(), float32(1.0))
-	xassert.Equal(t, 0, ss.Errors)
+		xassert.Equal(t, app.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), 1.0)
+		xassert.Equal(t, 0, ss.Errors)
 	})
 }
 
@@ -550,8 +550,8 @@ func TestCharacter(t *testing.T) {
 		// then
 		got := sc.ListCharacters()
 		assert.Len(t, got, 1)
-	xassert.Equal(t, c.ID, got[0].ID)
-	xassert.Equal(t, c.EveCharacter.Name, got[0].Name)
+		xassert.Equal(t, c.ID, got[0].ID)
+		xassert.Equal(t, c.EveCharacter.Name, got[0].Name)
 	})
 	t.Run("list character IDs", func(t *testing.T) {
 		// given
@@ -589,8 +589,8 @@ func TestCorporations(t *testing.T) {
 		// then
 		xx := sc.ListCorporations()
 		assert.Len(t, xx, 1)
-	xassert.Equal(t, c.ID, xx[0].ID)
-	xassert.Equal(t, "Alpha", xx[0].Name)
+		xassert.Equal(t, c.ID, xx[0].ID)
+		xassert.Equal(t, "Alpha", xx[0].Name)
 	})
 }
 
@@ -615,12 +615,12 @@ func TestCharacterSections(t *testing.T) {
 		x2, ok := sc.CharacterSection(c.ID, section)
 		// then
 		assert.True(t, ok)
-	xassert.Equal(t, x1.CharacterID, x2.EntityID)
-	xassert.Equal(t, x1.Section.String(), x2.SectionID)
-	xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
-	xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
-	xassert.Equal(t, x1.StartedAt, x2.StartedAt)
-	xassert.Equal(t, section.Timeout(), x2.Timeout)
+		xassert.Equal(t, x1.CharacterID, x2.EntityID)
+		xassert.Equal(t, x1.Section.String(), x2.SectionID)
+		xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
+		xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
+		xassert.Equal(t, x1.StartedAt, x2.StartedAt)
+		xassert.Equal(t, section.Timeout(), x2.Timeout)
 	})
 	t.Run("can report whether a character section exists", func(t *testing.T) {
 		// given
@@ -710,13 +710,13 @@ func TestCorporationSections(t *testing.T) {
 		x2, ok := sc.CorporationSection(c.ID, section)
 		// then
 		assert.True(t, ok)
-	xassert.Equal(t, x1.CorporationID, x2.EntityID)
-	xassert.Equal(t, x1.Section.String(), x2.SectionID)
-	xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
-	xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
-	xassert.Equal(t, x1.StartedAt, x2.StartedAt)
-	xassert.Equal(t, section.Timeout(), x2.Timeout)
-	xassert.Equal(t, x1.Comment, x2.Comment)
+		xassert.Equal(t, x1.CorporationID, x2.EntityID)
+		xassert.Equal(t, x1.Section.String(), x2.SectionID)
+		xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
+		xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
+		xassert.Equal(t, x1.StartedAt, x2.StartedAt)
+		xassert.Equal(t, section.Timeout(), x2.Timeout)
+		xassert.Equal(t, x1.Comment, x2.Comment)
 	})
 	t.Run("can report whether a corporation section exists", func(t *testing.T) {
 		// given
@@ -796,11 +796,11 @@ func TestGeneralSections(t *testing.T) {
 		sc.SetGeneralSection(x1)
 		x2, ok := sc.GeneralSection(section)
 		assert.True(t, ok)
-	xassert.Equal(t, int64(app.GeneralSectionEntityID), x2.EntityID)
-	xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
-	xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
-	xassert.Equal(t, x1.StartedAt, x2.StartedAt)
-	xassert.Equal(t, section.Timeout(), x2.Timeout)
+		xassert.Equal(t, int64(app.GeneralSectionEntityID), x2.EntityID)
+		xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
+		xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
+		xassert.Equal(t, x1.StartedAt, x2.StartedAt)
+		xassert.Equal(t, section.Timeout(), x2.Timeout)
 	})
 	t.Run("can report whether a general section exists 1", func(t *testing.T) {
 		// given
@@ -887,7 +887,7 @@ func TestCharacterSectionSummary(t *testing.T) {
 		IsRunning: true,
 		Total:     len(app.CharacterSections),
 	}
-xassert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 }
 
 func TestCorporationSectionSummary(t *testing.T) {
@@ -913,7 +913,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 		IsRunning: false,
 		Total:     len(app.CorporationSections),
 	}
-xassert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 }
 func TestGeneralSectionSummary(t *testing.T) {
 	sc := statuscacheservice.New(nil)
@@ -946,5 +946,5 @@ func TestGeneralSectionSummary(t *testing.T) {
 		IsRunning: true,
 		Total:     5,
 	}
-xassert.Equal(t, want, got)
+	xassert.Equal(t, want, got)
 }

@@ -689,7 +689,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			updateCharacterCount()
 			updateUpdateStatus()
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 			updateCharacterCount()
 			updateUpdateStatus()
 		})
@@ -901,6 +901,13 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
+		iwidget.NewListItemWithIcon(
+			"Loyalty Points",
+			theme.NewThemedResource(icons.HandHeartSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
+			},
+		),
 		iwidget.NewListItemWithIcon(
 			"Market Orders",
 			theme.NewThemedResource(icons.ChartAreasplineSvg),

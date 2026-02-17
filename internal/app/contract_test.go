@@ -64,10 +64,10 @@ func TestContractNameDisplay(t *testing.T) {
 			"normal courier",
 			&app.CharacterContract{
 				Type: app.ContractTypeCourier,
-				StartSolarSystem: optional.New(&app.EntityShort[int64]{
+				StartSolarSystem: optional.New(&app.EntityShort{
 					Name: "start",
 				}),
-				EndSolarSystem: optional.New(&app.EntityShort[int64]{
+				EndSolarSystem: optional.New(&app.EntityShort{
 					Name: "end",
 				}),
 				Volume: optional.New[float64](42),
@@ -134,8 +134,8 @@ func TestCharacterContractDisplayName(t *testing.T) {
 			&app.CharacterContract{
 				Type:             app.ContractTypeCourier,
 				Volume:           optional.New[float64](10),
-				StartSolarSystem: optional.New(&app.EntityShort[int64]{Name: "Start"}),
-				EndSolarSystem:   optional.New(&app.EntityShort[int64]{Name: "End"}),
+				StartSolarSystem: optional.New(&app.EntityShort{Name: "Start"}),
+				EndSolarSystem:   optional.New(&app.EntityShort{Name: "End"}),
 			},
 			"Start >> End (10 m3)",
 		},

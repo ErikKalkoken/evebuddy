@@ -132,7 +132,7 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		Activity:            app.IndustryActivity(arg.cij.ActivityID),
 		BlueprintID:         arg.cij.BlueprintID,
 		BlueprintLocationID: arg.cij.BlueprintLocationID,
-		BlueprintType: &app.EntityShort[int64]{
+		BlueprintType: &app.EntityShort{
 			ID:   arg.cij.BlueprintTypeID,
 			Name: arg.blueprintTypeName,
 		},
@@ -167,7 +167,7 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		})
 	}
 	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
-		o2.ProductType = optional.New(&app.EntityShort[int64]{
+		o2.ProductType = optional.New(&app.EntityShort{
 			ID:   arg.cij.ProductTypeID.Int64,
 			Name: arg.productTypeName.String,
 		})

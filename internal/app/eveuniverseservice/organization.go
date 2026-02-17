@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/evesde"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -117,17 +118,28 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 	return o, nil
 }
 
-func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, id int64) (*app.EveCorporation, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", id), func() (any, error) {
-		r, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationId(ctx, id).Execute()
+func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", corporationID), func() (any, error) {
+		r, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationId(ctx, corporationID).Execute()
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(id, r.CeoId, r.CreatorId)
-		for _, x := range []*int64{r.AllianceId, r.FactionId, r.HomeStationId} {
+		ids := set.Of(corporationID, r.CeoId, r.CreatorId)
+		for _, x := range []*int64{r.AllianceId, r.HomeStationId} {
 			if x != nil {
 				ids.Add(*x)
 			}
+		}
+		var factionID optional.Optional[int64]
+		if app.IsNPCCorporation(corporationID) {
+			if id, ok := evesde.NPCCorporationFactionID(corporationID); ok {
+				factionID = optional.New(id)
+			}
+		} else {
+			factionID = optional.FromPtr(r.FactionId)
+		}
+		if id, ok := factionID.Value(); ok {
+			ids.Add(id)
 		}
 		ids.Delete(0, 1)
 		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
@@ -139,15 +151,15 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			}
 			return optional.New(v)
 		}
-		arg := storage.UpdateOrCreateEveCorporationParams{
+		if err := s.st.UpdateOrCreateEveCorporation(ctx, storage.UpdateOrCreateEveCorporationParams{
 			AllianceID:    optional.FromPtr(r.AllianceId),
 			CeoID:         optionalFromSpecialEntityID(r.CeoId),
 			CreatorID:     optionalFromSpecialEntityID(r.CreatorId),
-			FactionID:     optional.FromPtr(r.FactionId),
+			FactionID:     factionID,
 			DateFounded:   optional.FromPtr(r.DateFounded),
 			Description:   optional.FromPtr(r.Description),
 			HomeStationID: optional.FromPtr(r.HomeStationId),
-			ID:            id,
+			ID:            corporationID,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,
 			Shares:        optional.FromPtr(r.Shares),
@@ -155,12 +167,11 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			Ticker:        r.Ticker,
 			URL:           optional.FromPtr(r.Url),
 			WarEligible:   optional.FromPtr(r.WarEligible),
-		}
-		if err := s.st.UpdateOrCreateEveCorporation(ctx, arg); err != nil {
+		}); err != nil {
 			return nil, err
 		}
-		slog.Info("Stored updated eve corporation", "ID", id)
-		return s.st.GetEveCorporation(ctx, id)
+		slog.Info("Stored updated eve corporation", "ID", corporationID)
+		return s.st.GetEveCorporation(ctx, corporationID)
 	})
 	if err != nil {
 		return nil, err

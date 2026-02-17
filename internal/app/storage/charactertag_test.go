@@ -122,7 +122,7 @@ func TestReplaceTags(t *testing.T) {
 		for _, tag := range tags {
 			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			require.NoError(t, err)
-			got := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
+			got := xslices.Map(cc, func(x *app.EntityShort) int64 {
 				return x.ID
 			})
 			switch tag.Name {
@@ -158,7 +158,7 @@ func TestReplaceTags(t *testing.T) {
 		tag := tags[0]
 		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 		require.NoError(t, err)
-		gotIDs := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
+		gotIDs := xslices.Map(cc, func(x *app.EntityShort) int64 {
 			return x.ID
 		})
 		assert.ElementsMatch(t, []int64{c1.ID}, gotIDs)
@@ -186,7 +186,7 @@ func TestCharacterTag(t *testing.T) {
 			if assert.NoError(t, err) {
 				xassert.Equal(
 					t,
-					[]*app.EntityShort[int64]{
+					[]*app.EntityShort{
 						{
 							ID:   character1.ID,
 							Name: character1.EveCharacter.Name,
@@ -227,7 +227,7 @@ func TestCharacterTag(t *testing.T) {
 			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(character2.ID)
-				got := set.Of(xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
+				got := set.Of(xslices.Map(cc, func(x *app.EntityShort) int64 {
 					return x.ID
 				})...)
 				xassert.Equal(t, want, got)

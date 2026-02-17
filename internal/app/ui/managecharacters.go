@@ -373,7 +373,7 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 							go a.mc.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 					}
-					go a.mc.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int64]{
+					go a.mc.u.characterRemoved.Emit(context.Background(), &app.EntityShort{
 						ID:   r.characterID,
 						Name: r.characterName,
 					})
@@ -398,7 +398,7 @@ type characterTags struct {
 
 	addCharactersButton *widget.Button
 	characterList       *widget.List
-	characters          []*app.EntityShort[int64]
+	characters          []*app.EntityShort
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *iwidget.AppBar
@@ -410,7 +410,7 @@ type characterTags struct {
 
 func newCharacterTags(mc *manageCharacters) *characterTags {
 	a := &characterTags{
-		characters: make([]*app.EntityShort[int64], 0),
+		characters: make([]*app.EntityShort, 0),
 		mc:         mc,
 		tags:       make([]*app.CharacterTag, 0),
 	}
@@ -430,7 +430,7 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort[int64]) {
+	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
 		a.update()
 		a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 	})
@@ -603,7 +603,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		_, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters", err)
-			a.characters = make([]*app.EntityShort[int64], 0)
+			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		if len(others) == 0 {
@@ -753,7 +753,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						}
 						a.tagList.UnselectAll()
 						a.selectedTag = nil
-						a.characters = make([]*app.EntityShort[int64], 0)
+						a.characters = make([]*app.EntityShort, 0)
 						a.addCharactersButton.Disable()
 						a.characterList.Refresh()
 						a.addCharactersButton.Disable()
@@ -840,7 +840,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 func (a *characterTags) setCharacters(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		a.characters = make([]*app.EntityShort[int64], 0)
+		a.characters = make([]*app.EntityShort, 0)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -850,7 +850,7 @@ func (a *characterTags) setCharacters(tag *app.CharacterTag) {
 	tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 	if err != nil {
 		a.mc.reportError("Failed to list characters for "+tag.Name, err)
-		a.characters = make([]*app.EntityShort[int64], 0)
+		a.characters = make([]*app.EntityShort, 0)
 		return
 	}
 	a.characters = tagged
@@ -955,7 +955,7 @@ func newCharacterTraining(mc *manageCharacters) *characterTraining {
 	a.mc.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.mc.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+	a.mc.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 		a.update()
 	})
 	return a

@@ -46,9 +46,9 @@ type CharacterMarketOrder struct {
 	Owner         *EveEntity
 	Price         float64
 	Range         string
-	Region        *EntityShort[int64]
+	Region        *EntityShort
 	State         MarketOrderState
-	Type          *EntityShort[int64]
+	Type          *EntityShort
 	VolumeRemains int64
 	VolumeTotal   int64
 }

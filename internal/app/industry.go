@@ -164,7 +164,7 @@ type CharacterIndustryJob struct {
 	Activity           IndustryActivity
 	BlueprintID        int64
 	BlueprintLocation  *EveLocationShort
-	BlueprintType      *EntityShort[int64]
+	BlueprintType      *EntityShort
 	CharacterID        int64
 	CompletedCharacter optional.Optional[*EveEntity]
 	CompletedDate      optional.Optional[time.Time]
@@ -179,7 +179,7 @@ type CharacterIndustryJob struct {
 	OutputLocation     *EveLocationShort
 	PauseDate          optional.Optional[time.Time]
 	Probability        optional.Optional[float32]
-	ProductType        optional.Optional[*EntityShort[int64]]
+	ProductType        optional.Optional[*EntityShort]
 	Runs               int
 	StartDate          time.Time
 	Station            *EveLocationShort
@@ -198,7 +198,7 @@ type CorporationIndustryJob struct {
 	Activity            IndustryActivity
 	BlueprintID         int64
 	BlueprintLocationID int64 // can be a corp hanger or container. not supported.
-	BlueprintType       *EntityShort[int64]
+	BlueprintType       *EntityShort
 	CorporationID       int64
 	CompletedCharacter  optional.Optional[*EveEntity]
 	CompletedDate       optional.Optional[time.Time]
@@ -213,7 +213,7 @@ type CorporationIndustryJob struct {
 	OutputLocationID    int64 // can be a corp hanger or container. not supported.
 	PauseDate           optional.Optional[time.Time]
 	Probability         optional.Optional[float32]
-	ProductType         optional.Optional[*EntityShort[int64]]
+	ProductType         optional.Optional[*EntityShort]
 	Runs                int
 	StartDate           time.Time
 	Location            *EveLocationShort

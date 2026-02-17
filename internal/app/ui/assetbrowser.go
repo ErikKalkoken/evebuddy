@@ -522,7 +522,6 @@ func (a *assetBrowserNavigation) filterLocations() {
 		}
 		fyne.Do(func() {
 			a.locations.UnselectAll()
-			a.locations.CloseAllBranches()
 			a.locations.Set(td)
 			a.ab.Selected.clear()
 			a.setTop(top, widget.MediumImportance)
@@ -779,7 +778,7 @@ type assetBrowserLocation struct {
 func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocation {
 	a := &assetBrowserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
-		info:        iwidget.NewTappableIcon(theme.InfoIcon(), nil),
+		info:        iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
 	}
 	a.ExtendBaseWidget(a)

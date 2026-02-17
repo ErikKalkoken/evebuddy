@@ -54,7 +54,7 @@ const (
 type industryJobRow struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
-	blueprintType      *app.EntityShort[int64]
+	blueprintType      *app.EntityShort
 	completedCharacter optional.Optional[*app.EveEntity]
 	completedDate      optional.Optional[time.Time]
 	cost               optional.Optional[float64]
@@ -69,7 +69,7 @@ type industryJobRow struct {
 	owner              *app.EveEntity
 	pauseDate          optional.Optional[time.Time]
 	probability        optional.Optional[float32]
-	productType        optional.Optional[*app.EntityShort[int64]]
+	productType        optional.Optional[*app.EntityShort]
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
@@ -334,7 +334,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			a.update()
 		})
-		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 			a.update()
 		})
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
@@ -639,7 +639,7 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 		}
 		tagsPerCharacter[c.ID] = tags
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int64]) int64 {
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
 		return c.ID
 	})...)
 	characterJobs := make([]industryJobRow, 0)
@@ -727,7 +727,7 @@ func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int64]) int64 {
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
 		return c.ID
 	})...)
 	jobs := make([]industryJobRow, 0)

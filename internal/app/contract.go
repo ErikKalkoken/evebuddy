@@ -205,7 +205,7 @@ type CharacterContract struct {
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
 	EndLocation       optional.Optional[*EveLocationShort]
-	EndSolarSystem    optional.Optional[*EntityShort[int64]]
+	EndSolarSystem    optional.Optional[*EntityShort]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
@@ -213,7 +213,7 @@ type CharacterContract struct {
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
 	StartLocation     optional.Optional[*EveLocationShort]
-	StartSolarSystem  optional.Optional[*EntityShort[int64]]
+	StartSolarSystem  optional.Optional[*EntityShort]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]
@@ -274,7 +274,7 @@ type CorporationContract struct {
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
 	EndLocation       optional.Optional[*EveLocationShort]
-	EndSolarSystem    optional.Optional[*EntityShort[int64]]
+	EndSolarSystem    optional.Optional[*EntityShort]
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
@@ -282,7 +282,7 @@ type CorporationContract struct {
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
 	StartLocation     optional.Optional[*EveLocationShort]
-	StartSolarSystem  optional.Optional[*EntityShort[int64]]
+	StartSolarSystem  optional.Optional[*EntityShort]
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]
@@ -337,12 +337,12 @@ func contractHasIssue(status ContractStatus, expired time.Time) bool {
 func contractIsExpired(expired time.Time) bool {
 	return expired.Before(time.Now())
 }
-func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort[int64]], volume optional.Optional[float64], items []string) string {
+func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {
-		startName := optional.Map(start, "?", func(v *EntityShort[int64]) string {
+		startName := optional.Map(start, "?", func(v *EntityShort) string {
 			return v.Name
 		})
-		endName := optional.Map(end, "?", func(v *EntityShort[int64]) string {
+		endName := optional.Map(end, "?", func(v *EntityShort) string {
 			return v.Name
 		})
 		s := fmt.Sprintf("%s >> %s", startName, endName)

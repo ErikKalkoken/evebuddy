@@ -160,7 +160,7 @@ func (st *Storage) DeleteCharactersCharacterTag(ctx context.Context, arg CreateC
 	})
 }
 
-func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int64) ([]*app.EntityShort[int64], error) {
+func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int64) ([]*app.EntityShort, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharactersForCharacterTag: %d: %w", tagID, err)
 	}
@@ -172,9 +172,9 @@ func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int6
 		return nil, wrapErr(err)
 
 	}
-	cc := make([]*app.EntityShort[int64], 0)
+	cc := make([]*app.EntityShort, 0)
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort[int64]{
+		cc = append(cc, &app.EntityShort{
 			ID:  r.ID,
 			Name: r.Name,
 		})

@@ -388,13 +388,13 @@ func characterContractFromDBModel(arg characterContractFromDBModelParams) *app.C
 		})
 	}
 	if arg.endSolarSystemID.Valid && arg.endSolarSystemName.Valid {
-		o2.EndSolarSystem = optional.New(&app.EntityShort[int64]{
+		o2.EndSolarSystem = optional.New(&app.EntityShort{
 			ID:   arg.endSolarSystemID.Int64,
 			Name: arg.endSolarSystemName.String,
 		})
 	}
 	if arg.startSolarSystemID.Valid && arg.startSolarSystemName.Valid {
-		o2.StartSolarSystem = optional.New(&app.EntityShort[int64]{
+		o2.StartSolarSystem = optional.New(&app.EntityShort{
 			ID:   arg.startSolarSystemID.Int64,
 			Name: arg.startSolarSystemName.String,
 		})

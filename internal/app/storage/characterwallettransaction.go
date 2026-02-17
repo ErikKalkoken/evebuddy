@@ -157,7 +157,7 @@ func characterWalletTransactionFromDBModel(
 		UnitPrice:     o.UnitPrice,
 	}
 	if regionID.Valid && regionName.Valid {
-		o2.Region = &app.EntityShort[int64]{
+		o2.Region = &app.EntityShort{
 			ID:  regionID.Int64,
 			Name: regionName.String,
 		}
