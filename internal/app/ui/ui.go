@@ -157,6 +157,7 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
+	loyaltyPoints           *loyaltyPoints
 	manageCharacters        *manageCharacters
 	marketOrdersBuy         *marketOrders
 	marketOrdersSell        *marketOrders
@@ -470,15 +471,16 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobsForOverview(u)
-	u.marketOrdersSell = newMarketOrders(u, false)
+	u.loyaltyPoints = newLoyaltyPoints(u)
+	u.manageCharacters = newManageCharacters(u)
 	u.marketOrdersBuy = newMarketOrders(u, true)
-	u.snackbar = iwidget.NewSnackbar(u.window)
+	u.marketOrdersSell = newMarketOrders(u, false)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
+	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
-	u.manageCharacters = newManageCharacters(u)
 
 	u.MainWindow().SetMaster()
 
@@ -832,13 +834,16 @@ func (u *baseUI) setAnyCorporation() error {
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
-		"characterOverview":  u.characterOverview.update,
-		"assetSearchAll":     u.assetSearchAll.update,
-		"augmentations":      u.augmentations.update,
-		"contracts":          u.contracts.update,
-		"clones":             u.clones.update,
-		"colonies":           u.colonies.update,
-		"industryJobs":       u.industryJobs.update,
+		"characterOverview": u.characterOverview.update,
+		"assetSearchAll":    u.assetSearchAll.update,
+		"augmentations":     u.augmentations.update,
+		"contracts":         u.contracts.update,
+		"clones":            u.clones.update,
+		"colonies":          u.colonies.update,
+		"industryJobs":      u.industryJobs.update,
+		"loyaltyPoints": func() {
+			u.loyaltyPoints.update(context.Background())
+		},
 		"marketOrdersSell":   u.marketOrdersSell.update,
 		"marketOrdersBuy":    u.marketOrdersBuy.update,
 		"slotsManufacturing": u.slotsManufacturing.update,

@@ -22,7 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type loyaltyPointsRow struct {
+type characterLoyaltyPointsRow struct {
 	characterID     int64
 	corporationID   int64
 	corporationName string
@@ -37,10 +37,10 @@ type characterLoyaltyPoints struct {
 
 	bottom        *widget.Label
 	character     atomic.Pointer[app.Character]
-	columnSorter  *iwidget.ColumnSorter[loyaltyPointsRow]
+	columnSorter  *iwidget.ColumnSorter[characterLoyaltyPointsRow]
 	list          *widget.List
-	rows          []loyaltyPointsRow
-	rowsFiltered  []loyaltyPointsRow
+	rows          []characterLoyaltyPointsRow
+	rowsFiltered  []characterLoyaltyPointsRow
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *iwidget.SortButton
@@ -49,30 +49,30 @@ type characterLoyaltyPoints struct {
 }
 
 const (
-	loyaltyPointsColCorporation = iota + 1
-	loyaltyPointsColPoints
+	characterLoyaltyPointsColCorporation = iota + 1
+	characterLoyaltyPointsColPoints
 )
 
 func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[loyaltyPointsRow]{{
-		ID:    loyaltyPointsColCorporation,
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[characterLoyaltyPointsRow]{{
+		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
-		Sort: func(a, b loyaltyPointsRow) int {
+		Sort: func(a, b characterLoyaltyPointsRow) int {
 			return strings.Compare(a.corporationName, b.corporationName)
 		},
 	}, {
-		ID:    loyaltyPointsColPoints,
+		ID:    characterLoyaltyPointsColPoints,
 		Label: "Points",
-		Sort: func(a, b loyaltyPointsRow) int {
+		Sort: func(a, b characterLoyaltyPointsRow) int {
 			return cmp.Compare(a.points, b.points)
 		},
 	}}),
-		loyaltyPointsColCorporation,
+		characterLoyaltyPointsColCorporation,
 		iwidget.SortAsc,
 	)
 	a := &characterLoyaltyPoints{
 		columnSorter: columnSorter,
-		rows:         make([]loyaltyPointsRow, 0),
+		rows:         make([]characterLoyaltyPointsRow, 0),
 		top:          widget.NewLabel(""),
 		bottom:       widget.NewLabel(""),
 		u:            u,
@@ -138,18 +138,18 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
-				icons.Corporationplaceholder64Png,
+			icon1 := iwidget.NewImageFromResource(icons.Corporationplaceholder64Png,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
+			icon2 := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateEllipsis
 			points := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
 				nil,
-				icon,
-				points,
+				icon1,
+				container.NewHBox(points, icon2),
 				name,
 			)
 		},
@@ -160,23 +160,23 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			r := a.rowsFiltered[id]
 			box := co.(*fyne.Container).Objects
 			name := box[0].(*widget.Label)
-			icon := box[1].(*canvas.Image)
+			icon1 := box[1].(*canvas.Image)
 			a.u.eis.CorporationLogoAsync(r.corporationID, app.IconPixelSize, func(r fyne.Resource) {
-				icon.Resource = r
-				icon.Refresh()
+				icon1.Resource = r
+				icon1.Refresh()
 			})
 			name.SetText(r.corporationName)
-			points := box[2].(*widget.Label)
+			hbox := box[2].(*fyne.Container).Objects
+			points := hbox[0].(*widget.Label)
 			points.SetText(ihumanize.Comma(r.points))
+			icon2 := hbox[1].(*iwidget.TappableIcon)
+			icon2.OnTapped = func() {
+				a.u.ShowInfoWindow(app.EveEntityCorporation, r.corporationID)
+			}
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.rowsFiltered) {
-			return
-		}
-		r := a.rowsFiltered[id]
-		a.u.ShowEveEntityInfoWindow(&app.EveEntity{ID: r.corporationID, Category: app.EveEntityCorporation})
 	}
 	return l
 }
@@ -190,16 +190,16 @@ func (a *characterLoyaltyPoints) filterRows() {
 
 	go func() {
 		if faction != "" {
-			rows = slices.DeleteFunc(rows, func(r loyaltyPointsRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 				return r.factionName != faction
 			})
 		}
 		if len(search) > 1 {
-			rows = slices.DeleteFunc(rows, func(r loyaltyPointsRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		factionOptions := xslices.Map(rows, func(r loyaltyPointsRow) string {
+		factionOptions := xslices.Map(rows, func(r characterLoyaltyPointsRow) string {
 			return r.factionName
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
@@ -261,14 +261,14 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 	})
 }
 
-func (a *characterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]loyaltyPointsRow, error) {
+func (a *characterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]characterLoyaltyPointsRow, error) {
 	oo, err := a.u.cs.ListLoyaltyPointEntries(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	var rows []loyaltyPointsRow
+	var rows []characterLoyaltyPointsRow
 	for _, o := range oo {
-		r := loyaltyPointsRow{
+		r := characterLoyaltyPointsRow{
 			characterID:     characterID,
 			corporationID:   o.Corporation.ID,
 			corporationName: o.Corporation.Name,

@@ -217,6 +217,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		contracts,
 		overviewColonies,
 		industry,
+		iwidget.NewNavPage(
+			"Loyalty Points",
+			theme.NewThemedResource(icons.HandHeartSvg),
+			newContentPage("Loyalty Points", u.loyaltyPoints),
+		),
 		marketOrders,
 		training,
 		wealth,

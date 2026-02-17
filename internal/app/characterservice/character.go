@@ -86,6 +86,18 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Enti
 	return s.st.ListCharactersShort(ctx)
 }
 
+func (s *CharacterService) CharacterNames(ctx context.Context) (map[int64]string, error) {
+	oo, err := s.st.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int64]string)
+	for _, o := range oo {
+		m[o.ID] = o.Name
+	}
+	return m, nil
+}
+
 // ListCharacterCorporationIDs returns the corporation IDs of the characters.
 func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListCharacterCorporationIDs(ctx)

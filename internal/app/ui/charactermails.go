@@ -285,8 +285,6 @@ func (a *characterMails) updateAsync() {
 		a.compose.Enable()
 		a.folderStatus.Hide()
 		a.folders.Set(td)
-		a.folders.UnselectAll()
-		a.folders.ScrollToTop()
 		a.folders.SelectNode(folderAll)
 		a.setCurrentFolder(folderAll)
 	})

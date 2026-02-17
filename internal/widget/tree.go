@@ -102,8 +102,11 @@ func (w *Tree[T]) Data() TreeData[T] {
 
 // Set replaces the tree's data.
 func (w *Tree[T]) Set(data TreeData[T]) {
+	w.UnselectAll()
+	w.CloseAllBranches()
 	w.td = data
 	w.Refresh()
+	w.ScrollToTop()
 }
 
 // Wrappers below
@@ -218,6 +221,8 @@ func (td *TreeData[T]) Add(parent *T, node *T, isBranch bool) error {
 	td.isBranch[uid] = isBranch
 	return nil
 }
+
+// TODO: Convert to iterator
 
 // Children returns a new slice with the direct children of node parent.
 // The children are returned in the same order as they were added.

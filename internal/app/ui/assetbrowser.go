@@ -522,7 +522,6 @@ func (a *assetBrowserNavigation) filterLocations() {
 		}
 		fyne.Do(func() {
 			a.locations.UnselectAll()
-			a.locations.CloseAllBranches()
 			a.locations.Set(td)
 			a.ab.Selected.clear()
 			a.setTop(top, widget.MediumImportance)

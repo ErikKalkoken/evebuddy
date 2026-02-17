@@ -288,6 +288,13 @@ var GroupSvg = &fyne.StaticResource{
 	StaticContent: GroupSvgData,
 }
 
+//go:embed hand-heart.svg
+var HandHeartSvgData []byte
+var HandHeartSvg = &fyne.StaticResource{
+	StaticName:    "hand-heart.svg",
+	StaticContent: HandHeartSvgData,
+}
+
 //go:embed head-snowflake.svg
 var HeadSnowflakeSvgData []byte
 var HeadSnowflakeSvg = &fyne.StaticResource{
