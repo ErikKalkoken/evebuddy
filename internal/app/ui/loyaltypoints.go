@@ -138,14 +138,13 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 
 func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHScroll(container.NewHBox(
-		a.collapseBranches,
 		a.selectFaction,
 		a.selectCharacter,
 		a.selectTag,
 		a.sortButton,
 	))
 	c := container.NewBorder(
-		container.NewVBox(a.top, filter, a.searchBox),
+		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchBox)),
 		a.bottom,
 		nil,
 		nil,

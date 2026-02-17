@@ -902,6 +902,13 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
+			"Loyalty Points",
+			theme.NewThemedResource(icons.HandHeartSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
+			},
+		),
+		iwidget.NewListItemWithIcon(
 			"Market Orders",
 			theme.NewThemedResource(icons.ChartAreasplineSvg),
 			func() {

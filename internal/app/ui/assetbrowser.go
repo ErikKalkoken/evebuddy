@@ -778,7 +778,7 @@ type assetBrowserLocation struct {
 func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocation {
 	a := &assetBrowserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
-		info:        iwidget.NewTappableIcon(theme.InfoIcon(), nil),
+		info:        iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
 	}
 	a.ExtendBaseWidget(a)
