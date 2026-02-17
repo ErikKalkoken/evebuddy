@@ -127,7 +127,7 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort[int64]) {
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {

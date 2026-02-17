@@ -111,7 +111,7 @@ type characterLoyaltyPointEntryFromDBModelParams struct {
 func characterLoyaltyPointEntryFromDBModel(arg characterLoyaltyPointEntryFromDBModelParams) *app.CharacterLoyaltyPointEntry {
 	o2 := &app.CharacterLoyaltyPointEntry{
 		CharacterID: arg.entry.CharacterID,
-		Corporation: &app.EntityShort[int64]{
+		Corporation: &app.EntityShort{
 			ID:   arg.entry.CorporationID,
 			Name: arg.corporationName,
 		},

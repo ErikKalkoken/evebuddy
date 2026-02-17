@@ -196,11 +196,11 @@ type CharacterJumpClone struct {
 	CloneID     int64
 	Location    *EveLocationShort
 	Name        optional.Optional[string]
-	Region      *EntityShort[int64]
+	Region      *EntityShort
 }
 
 type CharacterJumpClone2 struct {
-	Character     *EntityShort[int64]
+	Character     *EntityShort
 	ImplantsCount int
 	ID            int64
 	CloneID       int64
@@ -216,7 +216,7 @@ type CharacterJumpCloneImplant struct {
 type CharacterLoyaltyPointEntry struct {
 	ID            int64
 	CharacterID   int64
-	Corporation   *EntityShort[int64]
+	Corporation   *EntityShort
 	Faction       optional.Optional[*EveEntity]
 	LoyaltyPoints int64
 }
@@ -333,8 +333,8 @@ func (pp PlanetPin) IsProducing() bool {
 }
 
 type CharacterShipAbility struct {
-	Type   EntityShort[int64]
-	Group  EntityShort[int64]
+	Type   EntityShort
+	Group  EntityShort
 	CanFly bool
 }
 
@@ -369,7 +369,7 @@ type CharacterWalletTransaction struct {
 	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EveLocationShort
-	Region        *EntityShort[int64]
+	Region        *EntityShort
 	Quantity      int64
 	TransactionID int64
 	Type          *EveType

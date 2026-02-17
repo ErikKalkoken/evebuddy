@@ -113,7 +113,7 @@ type CorporationWalletTransaction struct {
 	IsBuy         bool
 	JournalRefID  int64
 	Location      *EveLocationShort
-	Region        *EntityShort[int64]
+	Region        *EntityShort
 	Quantity      int64
 	TransactionID int64
 	Type          *EveType

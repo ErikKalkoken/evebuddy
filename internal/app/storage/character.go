@@ -170,27 +170,27 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 }
 
 // ListCharactersShort returns all characters in short form and ordered by name.
-func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list short characters: %w", err)
 
 	}
-	cc := make([]*app.EntityShort[int64], len(rows))
+	cc := make([]*app.EntityShort, len(rows))
 	for i, row := range rows {
-		cc[i] = &app.EntityShort[int64]{ID: row.ID, Name: row.Name}
+		cc[i] = &app.EntityShort{ID: row.ID, Name: row.Name}
 	}
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListCharacterCorporations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterCorporations: %w", err)
 	}
-	cc := make([]*app.EntityShort[int64], len(rows))
+	cc := make([]*app.EntityShort, len(rows))
 	for i, row := range rows {
-		cc[i] = &app.EntityShort[int64]{ID: row.ID, Name: row.Name}
+		cc[i] = &app.EntityShort{ID: row.ID, Name: row.Name}
 	}
 	return cc, nil
 }

@@ -689,7 +689,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			updateCharacterCount()
 			updateUpdateStatus()
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 			updateCharacterCount()
 			updateUpdateStatus()
 		})

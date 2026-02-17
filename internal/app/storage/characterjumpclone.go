@@ -117,7 +117,7 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 			ID:            r.ID,
 			ImplantsCount: int(r.ImplantsCount),
 			CloneID:      r.JumpCloneID,
-			Character:     &app.EntityShort[int64]{ID:r.CharacterID, Name: r.CharacterName},
+			Character:     &app.EntityShort{ID:r.CharacterID, Name: r.CharacterName},
 			Location:      el,
 		})
 	}
@@ -233,7 +233,7 @@ func characterJumpCloneFromDBModel(arg characterJumpCloneFromDBModelParams) *app
 		Name: optional.FromZeroValue(arg.jc.Name),
 	}
 	if arg.regionID.Valid && arg.regionName.Valid {
-		o2.Region = &app.EntityShort[int64]{ID: arg.regionID.Int64, Name: arg.regionName.String}
+		o2.Region = &app.EntityShort{ID: arg.regionID.Int64, Name: arg.regionName.String}
 	}
 	return o2
 }

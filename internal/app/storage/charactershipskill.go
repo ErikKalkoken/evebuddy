@@ -23,8 +23,8 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	oo := make([]*app.CharacterShipAbility, 0)
 	for _, row := range rows {
 		oo = append(oo, &app.CharacterShipAbility{
-			Group:  app.EntityShort[int64]{ID:row.GroupID, Name: row.GroupName},
-			Type:   app.EntityShort[int64]{ID:row.TypeID, Name: row.TypeName},
+			Group:  app.EntityShort{ID:row.GroupID, Name: row.GroupName},
+			Type:   app.EntityShort{ID:row.TypeID, Name: row.TypeName},
 			CanFly: row.CanFly,
 		})
 	}

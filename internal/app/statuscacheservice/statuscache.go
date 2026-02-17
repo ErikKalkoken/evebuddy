@@ -250,18 +250,18 @@ func (sc *StatusCacheService) CharacterName(characterID int64) string {
 
 // ListCharacterIDs returns the user's character IDs.
 func (sc *StatusCacheService) ListCharacterIDs() set.Set[int64] {
-	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort[int64]) int64 {
+	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
 }
 
 // ListCharacters returns the user's characters in alphabetical order.
-func (sc *StatusCacheService) ListCharacters() []*app.EntityShort[int64] {
+func (sc *StatusCacheService) ListCharacters() []*app.EntityShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
 	}
-	return x.([]*app.EntityShort[int64])
+	return x.([]*app.EntityShort)
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
@@ -269,7 +269,7 @@ func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort, error) {
 	cc, err := sc.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -396,12 +396,12 @@ func (sc *StatusCacheService) CorporationName(corporationID int64) string {
 }
 
 // ListCorporations returns the user's corporations in alphabetical order.
-func (sc *StatusCacheService) ListCorporations() []*app.EntityShort[int64] {
+func (sc *StatusCacheService) ListCorporations() []*app.EntityShort {
 	x, ok := sc.cache.Get(keyCorporations)
 	if !ok {
 		return nil
 	}
-	return x.([]*app.EntityShort[int64])
+	return x.([]*app.EntityShort)
 }
 
 func (sc *StatusCacheService) UpdateCorporations(ctx context.Context) error {
@@ -409,7 +409,7 @@ func (sc *StatusCacheService) UpdateCorporations(ctx context.Context) error {
 	return err
 }
 
-func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.EntityShort[int64], error) {
+func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	cc, err := sc.st.ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err

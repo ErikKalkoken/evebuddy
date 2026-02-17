@@ -176,7 +176,7 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 			Name:           optional.New(arg.blueprintLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.blueprintLocationSecurity),
 		},
-		BlueprintType: &app.EntityShort[int64]{
+		BlueprintType: &app.EntityShort{
 			ID:   arg.cij.BlueprintTypeID,
 			Name: arg.blueprintTypeName,
 		},
@@ -219,7 +219,7 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 		})
 	}
 	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
-		o2.ProductType = optional.New(&app.EntityShort[int64]{
+		o2.ProductType = optional.New(&app.EntityShort{
 			ID:   arg.cij.ProductTypeID.Int64,
 			Name: arg.productTypeName.String,
 		})

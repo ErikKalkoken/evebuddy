@@ -103,7 +103,7 @@ func TestListCorporations(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int64]) int64 {
+			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
 				return x.ID
 			}))
 			xassert.Equal(t, want, got)
@@ -121,7 +121,7 @@ func TestListCorporations(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(corp1.ID)
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int64]) int64 {
+			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
 				return x.ID
 			}))
 			xassert.Equal(t, want, got)

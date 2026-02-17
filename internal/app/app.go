@@ -26,8 +26,8 @@ const (
 )
 
 // EntityShort is a short representation of an entity.
-type EntityShort[T comparable] struct {
-	ID   T
+type EntityShort struct {
+	ID   int64
 	Name string
 }
 

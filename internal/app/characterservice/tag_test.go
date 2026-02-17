@@ -81,7 +81,7 @@ func TestImportTags(t *testing.T) {
 		tag := tags[0]
 		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 		require.NoError(t, err)
-		got2 := xslices.Map(cc, func(x *app.EntityShort[int64]) int64 {
+		got2 := xslices.Map(cc, func(x *app.EntityShort) int64 {
 			return x.ID
 		})
 		assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, got2)

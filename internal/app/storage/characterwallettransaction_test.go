@@ -72,7 +72,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 				xassert.Equal(t, 123.45, i.UnitPrice)
 				xassert.Equal(t, location.ID, i.Location.ID)
 				xassert.Equal(t,
-					&app.EntityShort[int64]{
+					&app.EntityShort{
 						ID:   region.ID,
 						Name: region.Name,
 					},

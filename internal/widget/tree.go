@@ -100,7 +100,7 @@ func (w *Tree[T]) Data() TreeData[T] {
 	return w.td
 }
 
-// Set replaces the tree's data.
+// Set replaces the tree's data, resets and refreshes it.
 func (w *Tree[T]) Set(data TreeData[T]) {
 	w.UnselectAll()
 	w.CloseAllBranches()
@@ -162,6 +162,7 @@ func (w *Tree[T]) callWhenFound(n *T, f func(widget.TreeNodeID)) {
 
 // TreeData represents the data for rendering a [Tree] widget
 // and provides operations for querying and modifying the tree.
+// It is optimized for fast widget rendering.
 //
 // A tree is constructed by adding nodes to a virtual root node.
 // The root node always exists and is represented by the nil node.
@@ -221,8 +222,6 @@ func (td *TreeData[T]) Add(parent *T, node *T, isBranch bool) error {
 	td.isBranch[uid] = isBranch
 	return nil
 }
-
-// TODO: Convert to iterator
 
 // Children returns a new slice with the direct children of node parent.
 // The children are returned in the same order as they were added.

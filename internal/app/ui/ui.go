@@ -174,7 +174,7 @@ type baseUI struct {
 	// A character was added.
 	characterAdded signals.Signal[*app.Character]
 	// A character was removed.
-	characterRemoved signals.Signal[*app.EntityShort[int64]]
+	characterRemoved signals.Signal[*app.EntityShort]
 	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
 	// A character section has been updated from ESI.
@@ -259,7 +259,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		app:                         arg.App,
 		characterAdded:              signals.New[*app.Character](),
 		characterChanged:            signals.New[int64](),
-		characterRemoved:            signals.New[*app.EntityShort[int64]](),
+		characterRemoved:            signals.New[*app.EntityShort](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		characterSectionUpdated:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
@@ -376,7 +376,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		updateStatus()
 	})
-	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 		updateStatus()
 	})
 
@@ -557,7 +557,7 @@ func (u *baseUI) Start() bool {
 		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 			updateCharactersMissingScope()
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 			updateCharactersMissingScope()
 		})
 		updateCharactersMissingScope()
@@ -921,7 +921,7 @@ func (u *baseUI) updateMailIndicator() {
 	}
 }
 
-func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int64], error) {
+func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {
 	if u.settings.HideLimitedCorporations() {
 		return u.rs.ListPrivilegedCorporations(context.Background())
 	}
@@ -1184,7 +1184,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		it.Disabled = true
 		return append(items, it)
 	}
-	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int64]) int64 {
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
 	currentID := u.currentCorporationID()

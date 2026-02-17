@@ -144,12 +144,12 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		Owner:     eveEntityFromDBModel(arg.owner),
 		Price:     arg.cmo.Price,
 		Range:     arg.cmo.Range,
-		Region: &app.EntityShort[int64]{
+		Region: &app.EntityShort{
 			ID:   arg.cmo.RegionID,
 			Name: arg.regionName,
 		},
 		State: orderStatusFromDBValue[arg.cmo.State],
-		Type: &app.EntityShort[int64]{
+		Type: &app.EntityShort{
 			ID:   arg.cmo.TypeID,
 			Name: arg.typeName,
 		},

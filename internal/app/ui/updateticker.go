@@ -220,7 +220,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	defer cancel()
 
 	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
-	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int64]) {
+	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 		if c != nil && c.ID == characterID {
 			cancel() // abort updates when the character is removed
 		}
@@ -310,7 +310,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
-			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int64]) {
+			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 				if c != nil && c.ID == characterID {
 					cancel() // abort updates when the character is removed
 				}

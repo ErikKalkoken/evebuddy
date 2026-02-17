@@ -84,7 +84,7 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
 		a.update()
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int64]) {
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
 		a.update()
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {

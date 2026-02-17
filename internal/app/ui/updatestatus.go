@@ -138,7 +138,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort[int64]) {
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
 	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
