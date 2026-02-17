@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"fyne.io/fyne/v2/widget"
@@ -55,8 +56,8 @@ type StatusSummary struct {
 	Total     int
 }
 
-func (ss StatusSummary) ProgressP() float32 {
-	return float32(ss.Current+ss.Skipped) / float32(ss.Total)
+func (ss StatusSummary) ProgressP() float64 {
+	return float64(ss.Current+ss.Skipped) / float64(ss.Total)
 }
 
 func (ss StatusSummary) Status() Status {
@@ -95,7 +96,7 @@ func (ss StatusSummary) display(isShort bool) string {
 	case StatusPartial:
 		return "Partial"
 	case StatusWorking:
-		return fmt.Sprintf("%.0f%%", ss.ProgressP()*100)
+		return fmt.Sprintf("%d%%", int(math.Floor(ss.ProgressP()*100)))
 	}
 	return "?"
 }
