@@ -76,15 +76,15 @@ func newWealth(u *baseUI) *wealth {
 	a.totalSplit.SetTitleStyle(ts)
 	a.characterSplit.SetTitleStyle(ts)
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		if arg.section == app.SectionEveMarketPrices {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -136,8 +136,8 @@ func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *wealth) update() {
-	rows, characters, err := a.compileData(a.u.services())
+func (a *wealth) update(ctx context.Context) {
+	rows, characters, err := a.fetchData(ctx, a.u.services())
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -172,15 +172,15 @@ func (a *wealth) update() {
 		a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
 	}
 
-	a.updateAssetDetail(rows, totalAssets)
-	a.updateAssetSplit(rows, totalAssets)
-	a.updateCharacterSplit(rows, totalAssets, totalWallet)
-	a.updateTotalSplit(totalAssets, totalWallet)
-	a.updateWalletDetail(rows, totalWallet)
-	a.updateWalletSplit(rows, totalWallet)
+	a.updateAssetDetail(ctx, rows, totalAssets)
+	a.updateAssetSplit(ctx, rows, totalAssets)
+	a.updateCharacterSplit(ctx, rows, totalAssets, totalWallet)
+	a.updateTotalSplit(ctx, totalAssets, totalWallet)
+	a.updateWalletDetail(ctx, rows, totalWallet)
+	a.updateWalletSplit(ctx, rows, totalWallet)
 }
 
-func (a *wealth) updateAssetDetail(rows []wealthRow, totalAssets float64) {
+func (a *wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
 		return data.CategoricalPoint{
@@ -189,13 +189,14 @@ func (a *wealth) updateAssetDetail(rows []wealthRow, totalAssets float64) {
 		}
 	})
 	d = reduceCategoricalPoints(d, wealthMaxCharacters)
-	s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
-	if err != nil {
-		slog.Error("wealth: asset details", "error", err)
-		return
-	}
+
 	fyne.Do(func() {
 		a.assetDetail.RemoveSeries("Characters")
+		s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
+		if err != nil {
+			slog.Error("wealth: asset details", "error", err)
+			return
+		}
 		err = a.assetDetail.AddBarSeries(s)
 		if err != nil {
 			slog.Error("wealth: asset details", "error", err)
@@ -205,7 +206,7 @@ func (a *wealth) updateAssetDetail(rows []wealthRow, totalAssets float64) {
 	})
 }
 
-func (a *wealth) updateAssetSplit(rows []wealthRow, totalAssets float64) {
+func (a *wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -215,13 +216,13 @@ func (a *wealth) updateAssetSplit(rows []wealthRow, totalAssets float64) {
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
-	s, err := prop.NewSeries("Characters", d)
-	if err != nil {
-		slog.Error("wealth: asset split", "error", err)
-		return
-	}
 	fyne.Do(func() {
 		a.assetSplit.RemoveSeries("Characters")
+		s, err := prop.NewSeries("Characters", d)
+		if err != nil {
+			slog.Error("wealth: asset split", "error", err)
+			return
+		}
 		err = a.assetSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: asset split", "error", err)
@@ -231,7 +232,7 @@ func (a *wealth) updateAssetSplit(rows []wealthRow, totalAssets float64) {
 	})
 }
 
-func (a *wealth) updateCharacterSplit(rows []wealthRow, totalAssets float64, totalWallet float64) {
+func (a *wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -241,13 +242,13 @@ func (a *wealth) updateCharacterSplit(rows []wealthRow, totalAssets float64, tot
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
-	s, err := prop.NewSeries("Characters", d)
-	if err != nil {
-		slog.Error("wealth: character split", "error", err)
-		return
-	}
 	fyne.Do(func() {
 		a.characterSplit.RemoveSeries("Characters")
+		s, err := prop.NewSeries("Characters", d)
+		if err != nil {
+			slog.Error("wealth: character split", "error", err)
+			return
+		}
 		err = a.characterSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: character split", "error", err)
@@ -257,22 +258,23 @@ func (a *wealth) updateCharacterSplit(rows []wealthRow, totalAssets float64, tot
 	})
 }
 
-func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
+func (a *wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
-	s, err := prop.NewSeries("", []data.ProportionalPoint{
-		{
+	fyne.Do(func() {
+		a.totalSplit.RemoveSeries("")
+		s, err := prop.NewSeries("", []data.ProportionalPoint{{
 			C:       "Assets combined",
 			Val:     totalAssets,
 			ColName: colors.next(),
-		},
-		{
+		}, {
 			C:       "Wallets combined",
 			Val:     totalWallet,
 			ColName: colors.next(),
-		},
-	})
-	fyne.Do(func() {
-		a.totalSplit.RemoveSeries("")
+		}})
+		if err != nil {
+			slog.Error("wealth: total split", "error", err)
+			return
+		}
 		err = a.totalSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: total split", "error", err)
@@ -282,7 +284,7 @@ func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
 	})
 }
 
-func (a *wealth) updateWalletDetail(rows []wealthRow, totalWallet float64) {
+func (a *wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
 		return data.CategoricalPoint{
@@ -291,13 +293,13 @@ func (a *wealth) updateWalletDetail(rows []wealthRow, totalWallet float64) {
 		}
 	})
 	d = reduceCategoricalPoints(d, wealthMaxCharacters)
-	s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
-	if err != nil {
-		slog.Error("wealth: wallet details", "error", err)
-		return
-	}
 	fyne.Do(func() {
 		a.walletDetail.RemoveSeries("Characters")
+		s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
+		if err != nil {
+			slog.Error("wealth: wallet details", "error", err)
+			return
+		}
 		err = a.walletDetail.AddBarSeries(s)
 		if err != nil {
 			slog.Error("wealth: wallet details", "error", err)
@@ -307,7 +309,7 @@ func (a *wealth) updateWalletDetail(rows []wealthRow, totalWallet float64) {
 	})
 }
 
-func (a *wealth) updateWalletSplit(rows []wealthRow, totalWallet float64) {
+func (a *wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -317,13 +319,13 @@ func (a *wealth) updateWalletSplit(rows []wealthRow, totalWallet float64) {
 		}
 	})
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
-	s, err := prop.NewSeries("Characters", d)
-	if err != nil {
-		slog.Error("wealth: wallet split", "error", err)
-		return
-	}
 	fyne.Do(func() {
 		a.walletSplit.RemoveSeries("Characters")
+		s, err := prop.NewSeries("Characters", d)
+		if err != nil {
+			slog.Error("wealth: wallet split", "error", err)
+			return
+		}
 		err = a.walletSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: wallet split", "error", err)
@@ -391,8 +393,7 @@ type wealthRow struct {
 	total     float64
 }
 
-func (*wealth) compileData(s services) ([]wealthRow, int, error) {
-	ctx := context.Background()
+func (*wealth) fetchData(ctx context.Context, s services) ([]wealthRow, int, error) {
 	cc, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
