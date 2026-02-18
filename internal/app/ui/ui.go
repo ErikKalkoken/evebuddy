@@ -850,8 +850,10 @@ func (u *baseUI) initHome() {
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
 		"training":           u.training.update,
-		"wealth":             u.wealth.update,
-		"manageCharacters":   u.manageCharacters.update,
+		"wealth": func() {
+			u.wealth.update(context.Background())
+		},
+		"manageCharacters": u.manageCharacters.update,
 	}
 	myLog := slog.With("title", "startup")
 	myLog.Debug("started")
