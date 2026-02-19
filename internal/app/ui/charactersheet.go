@@ -44,12 +44,15 @@ type characterSheet struct {
 
 func newCharacterSheet(u *baseUI) *characterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
-		return widget.NewHyperlink("?", nil)
+		x := widget.NewHyperlink("?", nil)
+		x.Truncation = fyne.TextTruncateEllipsis
+		return x
 	}
 	makeLabel := func() *widget.Label {
-		l := widget.NewLabel("?")
-		l.Selectable = true
-		return l
+		x := widget.NewLabel("?")
+		x.Selectable = true
+		x.Truncation = fyne.TextTruncateEllipsis
+		return x
 	}
 	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)

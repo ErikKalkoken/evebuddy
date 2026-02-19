@@ -348,23 +348,32 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	var selections *fyne.Container
+	var filter *fyne.Container
 	if a.forCorporation {
-		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
+		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
 	} else {
-		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
+		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
 	}
 	if a.u.isMobile {
-		selections.Add(a.sortButton)
+		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(
-		container.NewBorder(
+	var topBox *fyne.Container
+	if a.u.isMobile {
+		topBox = container.NewVBox(
+			a.search,
+			container.NewHScroll(filter),
+		)
+	} else {
+		topBox = container.NewBorder(
 			nil,
-			container.NewHScroll(selections),
 			nil,
+			filter,
 			nil,
 			a.search,
-		),
+		)
+	}
+	c := container.NewBorder(
+		topBox,
 		a.footer,
 		nil,
 		nil,

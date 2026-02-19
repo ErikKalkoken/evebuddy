@@ -41,24 +41,32 @@ type corporationSheet struct {
 }
 
 func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
-	roles := widget.NewLabel("")
-	roles.Truncation = fyne.TextTruncateEllipsis
-	roles.Selectable = true
 	logo := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
+	makeHyperLink := func() *widget.Hyperlink {
+		x := widget.NewHyperlink("?", nil)
+		x.Truncation = fyne.TextTruncateEllipsis
+		return x
+	}
+	makeLabel := func() *widget.Label {
+		x := iwidget.NewLabelWithSelection("?")
+		x.Selectable = true
+		x.Truncation = fyne.TextTruncateEllipsis
+		return x
+	}
 	a := &corporationSheet{
-		alliance:   widget.NewHyperlink("", nil),
-		ceo:        widget.NewHyperlink("", nil),
-		faction:    widget.NewHyperlink("", nil),
-		home:       widget.NewHyperlink("", nil),
+		alliance:   makeHyperLink(),
+		ceo:        makeHyperLink(),
+		faction:    makeHyperLink(),
+		home:       makeHyperLink(),
 		isCorpMode: isCorpMode,
 		logo:       logo,
-		members:    iwidget.NewLabelWithSelection(""),
-		name:       widget.NewHyperlink("", nil),
-		roles:      roles,
-		taxRate:    iwidget.NewLabelWithSelection(""),
-		ticker:     iwidget.NewLabelWithSelection(""),
+		members:    makeLabel(),
+		name:       makeHyperLink(),
+		roles:      makeLabel(),
+		taxRate:    makeLabel(),
+		ticker:     makeLabel(),
 		u:          u,
 	}
 	a.ExtendBaseWidget(a)

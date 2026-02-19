@@ -123,7 +123,6 @@ type marketOrders struct {
 	columnSorter *iwidget.ColumnSorter[marketOrderRow]
 	footer       *widget.Label
 	isBuyOrders  bool
-	issue        *widget.Label
 	main         fyne.CanvasObject
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
@@ -231,7 +230,6 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
 		footer:       newLabelWithTruncation(),
 		isBuyOrders:  isBuyOrders,
-		issue:        newLabelWithWrapping(),
 		rows:         make([]marketOrderRow, 0),
 		rowsFiltered: make([]marketOrderRow, 0),
 		u:            u,
@@ -310,7 +308,7 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	}
 	p := theme.Padding()
 	c := container.NewBorder(
-		container.NewVBox(container.NewHScroll(filter), a.issue),
+		container.NewHScroll(filter),
 		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.footer),
 		nil,
 		nil,
