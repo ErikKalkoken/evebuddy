@@ -5,14 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -239,8 +237,8 @@ func newTraining(u *baseUI) *training {
 			},
 		}})
 	a := &training{
-		footer:       widget.NewLabel(""),
 		columnSorter: iwidget.NewColumnSorter(columns, trainingColCharacter, iwidget.SortAsc),
+		footer:       widget.NewLabel(""),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),
@@ -296,19 +294,19 @@ func newTraining(u *baseUI) *training {
 			a.updateItem(ctx, arg.characterID)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -321,12 +319,18 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(
-		container.NewVBox(
+	var topBox *fyne.Container
+	if a.u.isMobile {
+		topBox = container.NewVBox(
 			a.search,
 			container.NewHScroll(filter),
-		),
-		nil,
+		)
+	} else {
+		topBox = container.NewBorder(nil, nil, filter, nil, a.search)
+	}
+	c := container.NewBorder(
+		topBox,
+		a.footer,
 		nil,
 		nil,
 		a.main,
@@ -351,8 +355,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			totalSP := widget.NewLabel("Template")
 			totalSP.Truncation = fyne.TextTruncateClip
 			unallocatedSP := widget.NewLabel("Template")
-			spacer := canvas.NewRectangle(color.Transparent)
-			spacer.SetMinSize(fyne.NewSize(1, 4*p))
+			spacer := newSpacer(fyne.NewSize(1, 4*p))
 			tags := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
@@ -421,6 +424,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 }
 
 func (a *training) filterRows(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
 	selectTag := a.selectTag.Selected
@@ -457,8 +461,12 @@ func (a *training) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		// Queue UI changes
+		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.main.Refresh()
@@ -466,39 +474,21 @@ func (a *training) filterRows(sortCol int) {
 	}()
 }
 
-func (a *training) update() {
-	ctx := context.Background()
-	rows := make([]trainingRow, 0)
-	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(ctx)
-		if err != nil {
-			return "", 0, err
-		}
-		if len(cc) == 0 {
-			return "No characters", widget.LowImportance, nil
-		}
-		rows = cc
-		return "", widget.MediumImportance, nil
-	}()
+func (a *training) update(ctx context.Context) {
+	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
-	}
-	fyne.Do(func() {
-		if t != "" {
-			a.footer.Text = t
-			a.footer.Importance = i
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
-			a.footer.Show()
-		} else {
-			a.footer.Hide()
-		}
-	})
+		})
+		return
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
-		a.updateOnUpdate()
+		a.refreshOnUpdate()
 	})
 }
 
@@ -524,12 +514,12 @@ func (a *training) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.updateOnUpdate()
+		a.refreshOnUpdate()
 		a.filterRows(-1)
 	})
 }
 
-func (a *training) updateOnUpdate() {
+func (a *training) refreshOnUpdate() {
 	var expired int
 	for _, r := range a.rows {
 		if !r.isActive && r.isWatched {
@@ -546,7 +536,7 @@ func (a *training) fetchRows(ctx context.Context) ([]trainingRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]trainingRow, 0)
+	var rows []trainingRow
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrInvalid) {

@@ -59,7 +59,7 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.training.update()
+	ui.training.update(t.Context())
 
 	test.AssertImageMatches(t, "training/active.png", w.Canvas().Capture())
 }
@@ -98,7 +98,7 @@ func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.training.update()
+	ui.training.update(t.Context())
 
 	test.AssertImageMatches(t, "training/inactive.png", w.Canvas().Capture())
 }
@@ -121,7 +121,7 @@ func TestTraining_CanRenderWithoutData(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.training.update()
+	ui.training.update(t.Context())
 
 	test.AssertImageMatches(t, "training/minimal.png", w.Canvas().Capture())
 }
@@ -167,7 +167,7 @@ func TestTraining_Filter(t *testing.T) {
 	factory.AddCharacterToTag(tag, character2)
 	factory.CreateCharacterTag()
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-	ui.training.update()
+	ui.training.update(t.Context())
 
 	t.Run("no filter", func(t *testing.T) {
 		ui.training.selectStatus.SetSelected("")

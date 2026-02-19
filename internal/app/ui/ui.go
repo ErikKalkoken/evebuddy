@@ -873,7 +873,9 @@ func (u *baseUI) initHome() {
 		"slotsResearch": func() {
 			u.slotsResearch.update(context.Background())
 		},
-		"training": u.training.update,
+		"training": func() {
+			u.training.update(context.Background())
+		},
 		"wealth": func() {
 			u.wealth.update(context.Background())
 		},
