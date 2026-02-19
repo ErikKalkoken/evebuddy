@@ -65,18 +65,16 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Detail = newCommunicationDetail(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character.Store(c)
-			a.update()
-		},
-	)
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.character.Store(c)
+		a.update(ctx)
+	})
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterNotifications {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -112,7 +110,7 @@ func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%s)", ihumanize.OptionalWithComma(f.Unread, "?"))
 		}
 		it := fyne.NewMenuItem(s, func() {
-			a.setCurrentFolder(f.group)
+			go a.setCurrentFolder(context.Background(), f.group)
 		})
 		items2 = append(items2, it)
 	}
@@ -160,7 +158,7 @@ func (a *characterCommunications) makeFolderList() *widget.List {
 		}
 		o := a.folders[id]
 		a.clearDetail()
-		a.setCurrentFolder(o.group)
+		go a.setCurrentFolder(context.Background(), o.group)
 	}
 	return l
 }
@@ -203,7 +201,10 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	err := a.Detail.set(n, a.u.cs.NotificationRecipient(n))
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
-		return // TODO: Show to user
+		fyne.Do(func() {
+			a.Detail.setError(a.u.humanizeError(err))
+		})
+		return
 	}
 	a.current = n
 	a.Toolbar.Show()
@@ -261,14 +262,14 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *characterCommunications) update() {
+func (a *characterCommunications) update(ctx context.Context) {
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
-	groups := make([]notificationFolder, 0)
+	var groups []notificationFolder
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
-		groupCounts, err2 := a.u.cs.CountNotifications(context.Background(), characterID)
+		groupCounts, err2 := a.u.cs.CountNotifications(ctx, characterID)
 		if err2 != nil {
 			slog.Error("communications update", "error", err)
 			err = err2
@@ -309,7 +310,7 @@ func (a *characterCommunications) update() {
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?")), widget.MediumImportance
 	})
-	a.resetCurrentFolder()
+	a.resetCurrentFolder(ctx)
 	fyne.Do(func() {
 		a.clearDetail()
 		a.folders = groups
@@ -323,22 +324,21 @@ func (a *characterCommunications) update() {
 	}
 }
 
-func (a *characterCommunications) resetCurrentFolder() {
-	a.setCurrentFolder(app.GroupUnread)
+func (a *characterCommunications) resetCurrentFolder(ctx context.Context) {
+	a.setCurrentFolder(ctx, app.GroupUnread)
 	fyne.Do(func() {
 		a.notificationList.UnselectAll()
 	})
 }
 
-func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
+func (a *characterCommunications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
-	notifications := make([]*app.CharacterNotification, 0)
+	var notifications []*app.CharacterNotification
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification
-		ctx := context.Background()
 		switch nc {
 		case app.GroupAll:
 			n, err2 = a.u.cs.ListNotificationsAll(ctx, characterID)
@@ -431,8 +431,18 @@ func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.E
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown for notification %+v: %w", n, err)
 	}
-	w.body.SetText(b.StringFunc("[This notification type is not fully supported yet]", func(v string) string {
+	w.body.Text = b.StringFunc("[This notification type is not fully supported yet]", func(v string) string {
 		return v
-	}))
+	})
+	w.body.Importance = widget.MediumImportance
+	w.body.Refresh()
 	return nil
+}
+
+func (w *communicationDetail) setError(text string) {
+	w.subject.SetText("ERROR")
+	w.header.Clear()
+	w.body.Text = text
+	w.body.Importance = widget.DangerImportance
+	w.body.Refresh()
 }

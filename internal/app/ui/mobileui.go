@@ -606,8 +606,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		go u.characterMails.resetCurrentFolder(context.Background())
-		go u.characterCommunications.resetCurrentFolder()
+		ctx := context.Background()
+		go u.characterMails.resetCurrentFolder(ctx)
+		go u.characterCommunications.resetCurrentFolder(ctx)
 	}
 	u.onShowCharacter = func() {
 		navBar.Select(1)
