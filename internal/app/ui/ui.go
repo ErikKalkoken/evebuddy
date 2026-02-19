@@ -411,14 +411,14 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			}
 		case app.SectionEveCorporations:
 			if arg.changed.Contains(u.currentCorporationID()) {
-				u.corporationSheet.update()
+				u.corporationSheet.update(ctx)
 			}
 			c := u.currentCharacter()
 			if c == nil {
 				break
 			}
 			if arg.changed.Contains(c.EveCharacter.Corporation.ID) {
-				u.characterCorporation.update()
+				u.characterCorporation.update(ctx)
 			}
 			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
 			if err != nil {

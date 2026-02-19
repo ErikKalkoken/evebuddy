@@ -64,31 +64,31 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	a.ExtendBaseWidget(a)
 
 	if isCorpMode {
-		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.update()
+			a.update(ctx)
 		})
-		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
 			}
 			if arg.section == app.SectionEveCorporations && arg.changed.Contains(corporationID) {
-				a.update()
+				a.update(ctx)
 			}
 		})
 	} else {
-		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.update()
+			a.update(ctx)
 		})
-		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
 				return
 			}
 			if arg.section == app.SectionEveCorporations && arg.changed.Contains(c.EveCharacter.Corporation.ID) {
-				a.update()
+				a.update(ctx)
 			}
 		})
 	}
@@ -125,9 +125,8 @@ func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationSheet) update() {
+func (a *corporationSheet) update(ctx context.Context) {
 	var corporation *app.EveCorporation
-	ctx := context.Background()
 	if a.isCorpMode {
 		if c := a.corporation.Load(); c != nil {
 			corporation = c.EveCorporation
@@ -139,7 +138,7 @@ func (a *corporationSheet) update() {
 			oo, err := a.u.cs.ListRoles(ctx, character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
-				roles = "?"
+				roles = "ERROR: " + a.u.humanizeError(err)
 			} else {
 				x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
 					return x.Granted
