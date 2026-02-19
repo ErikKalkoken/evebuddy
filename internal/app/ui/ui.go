@@ -834,7 +834,9 @@ func (u *baseUI) setAnyCorporation() error {
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
-		"characterOverview": u.characterOverview.update,
+		"characterOverview": func() {
+			u.characterOverview.update(context.Background())
+		},
 		"assetSearchAll": func() {
 			u.assetSearchAll.update(context.Background())
 		},

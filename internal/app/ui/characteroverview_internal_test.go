@@ -75,7 +75,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.characterOverview.update()
+			ui.characterOverview.update(t.Context())
 
 			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -119,7 +119,7 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.characterOverview.update()
+			ui.characterOverview.update(t.Context())
 
 			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
 		})

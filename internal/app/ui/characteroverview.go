@@ -71,8 +71,9 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
+	bottom            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[characterOverviewRow]
-	info              *widget.Label
+	loadInfo          *widget.Label
 	main              fyne.CanvasObject
 	onUpdate          func(characters int)
 	rows              []characterOverviewRow
@@ -84,7 +85,6 @@ type characterOverview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
-	top               *widget.Label
 	u                 *baseUI
 }
 
@@ -154,12 +154,12 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
+		bottom:       newLabelWithWrap(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
-		info:         info,
+		loadInfo:     info,
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
-		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -209,14 +209,14 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			}
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
@@ -250,16 +250,19 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTag,
 		a.sortButton,
 	)
+	topBox := container.NewVBox()
+	if a.u.isMobile {
+		topBox.Add(a.search)
+		topBox.Add(container.NewHScroll(filters))
+	} else {
+		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.search))
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			a.search,
-			container.NewHScroll(filters),
-		),
+		topBox,
+		a.bottom,
 		nil,
 		nil,
-		nil,
-		container.NewStack(a.info, a.main),
+		container.NewStack(a.loadInfo, a.main),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -347,6 +350,7 @@ func (a *characterOverview) makeList() *widget.List {
 
 func (a *characterOverview) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
+	total := len(rows)
 	alliance := a.selectAlliance.Selected
 	corporation := a.selectCorporation.Selected
 	region := a.selectRegion.Selected
@@ -405,7 +409,17 @@ func (a *characterOverview) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
+		var bottom string
+		if total > 0 {
+			bottom = fmt.Sprintf("Showing %d / %d characters", len(rows), total)
+		} else {
+			bottom = ""
+		}
+
 		fyne.Do(func() {
+			a.bottom.Text = bottom
+			a.bottom.Importance = widget.MediumImportance
+			a.bottom.Refresh()
 			a.selectAlliance.SetOptions(allianceOptions)
 			a.selectCorporation.SetOptions(corporationOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -417,36 +431,33 @@ func (a *characterOverview) filterRows(sortCol int) {
 	}()
 }
 
-func (a *characterOverview) update() {
-	var rows []characterOverviewRow
-	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(context.Background())
-		if err != nil {
-			return "", 0, err
-		}
-		if a.onUpdate != nil {
-			a.onUpdate(len(cc))
-		}
-		if len(cc) == 0 {
-			return "No characters", widget.LowImportance, nil
-		}
-		rows = cc
-		s := fmt.Sprintf("%d characters", len(cc))
-		return s, widget.MediumImportance, nil
-	}()
+func (a *characterOverview) update(ctx context.Context) {
+	clear := func() {
+		fyne.Do(func() {
+			clear(a.rows)
+			a.filterRows(-1)
+		})
+	}
+	setBottom := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.bottom.Text = s
+			a.bottom.Importance = i
+			a.bottom.Refresh()
+		})
+	}
+	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		clear()
+		setBottom("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
+		return
+	}
+	if a.onUpdate != nil {
+		a.onUpdate(len(rows))
 	}
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
 		a.rows = rows
-		a.info.Hide()
+		a.loadInfo.Hide()
 		a.filterRows(-1)
 	})
 }

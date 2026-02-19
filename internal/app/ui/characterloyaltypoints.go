@@ -203,6 +203,7 @@ func (a *characterLoyaltyPoints) filterRows() {
 			return r.factionName
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+
 		var bottom string
 		if total > 0 {
 			bottom = fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
