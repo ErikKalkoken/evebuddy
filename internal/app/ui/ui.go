@@ -833,62 +833,33 @@ func (u *baseUI) setAnyCorporation() error {
 
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome() {
-	ff := map[string]func(){
-		"characterOverview": func() {
-			u.characterOverview.update(context.Background())
-		},
-		"assetSearchAll": func() {
-			u.assetSearchAll.update(context.Background())
-		},
-		"augmentations": func() {
-			u.augmentations.update(context.Background())
-		},
-		"contracts": func() {
-			u.contracts.update(context.Background())
-		},
-		"clones": func() {
-			u.clones.update(context.Background())
-		},
-		"colonies": func() {
-			u.colonies.update(context.Background())
-		},
-		"industryJobs": func() {
-			u.industryJobs.update(context.Background())
-		},
-		"loyaltyPoints": func() {
-			u.loyaltyPoints.update(context.Background())
-		},
-		"marketOrdersSell": func() {
-			u.marketOrdersSell.update(context.Background())
-		},
-		"marketOrdersBuy": func() {
-			u.marketOrdersBuy.update(context.Background())
-		},
-		"slotsManufacturing": func() {
-			u.slotsManufacturing.update(context.Background())
-		},
-		"slotsReactions": func() {
-			u.slotsReactions.update(context.Background())
-		},
-		"slotsResearch": func() {
-			u.slotsResearch.update(context.Background())
-		},
-		"training": func() {
-			u.training.update(context.Background())
-		},
-		"wealth": func() {
-			u.wealth.update(context.Background())
-		},
-		"manageCharacters": u.manageCharacters.update,
+	ff := map[string]func(context.Context){
+		"characterOverview":  u.characterOverview.update,
+		"assetSearchAll":     u.assetSearchAll.update,
+		"augmentations":      u.augmentations.update,
+		"contracts":          u.contracts.update,
+		"clones":             u.clones.update,
+		"colonies":           u.colonies.update,
+		"industryJobs":       u.industryJobs.update,
+		"loyaltyPoints":      u.loyaltyPoints.update,
+		"marketOrdersSell":   u.marketOrdersSell.update,
+		"marketOrdersBuy":    u.marketOrdersBuy.update,
+		"slotsManufacturing": u.slotsManufacturing.update,
+		"slotsReactions":     u.slotsReactions.update,
+		"slotsResearch":      u.slotsResearch.update,
+		"training":           u.training.update,
+		"wealth":             u.wealth.update,
+		"manageCharacters":   u.manageCharacters.update,
 	}
 	myLog := slog.With("title", "startup")
 	myLog.Debug("started")
 	g := new(errgroup.Group)
 	g.SetLimit(u.concurrencyLimit)
+	ctx := context.Background()
 	for name, f := range ff {
 		g.Go(func() error {
 			start2 := time.Now()
-			f()
+			f(ctx)
 			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 			return nil
 		})

@@ -98,11 +98,17 @@ func (a *manageCharacters) unsetWindow() {
 	a.sb.Stop()
 }
 
-func (a *manageCharacters) update() {
+func (a *manageCharacters) update(ctx context.Context) {
 	var wg sync.WaitGroup
-	wg.Go(a.characterAdmin.update)
-	wg.Go(a.characterTags.update)
-	wg.Go(a.characterTraining.update)
+	wg.Go(func() {
+		a.characterAdmin.update(ctx)
+	})
+	wg.Go(func() {
+		a.characterTags.update(ctx)
+	})
+	wg.Go(func() {
+		a.characterTraining.update(ctx)
+	})
 	wg.Wait()
 }
 
@@ -226,8 +232,8 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *characterAdmin) update() {
-	characters, err := a.fetchRows()
+func (a *characterAdmin) update(ctx context.Context) {
+	characters, err := a.fetchRows(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to update characters", err)
 		return
@@ -239,9 +245,8 @@ func (a *characterAdmin) update() {
 	})
 }
 
-func (a *characterAdmin) fetchRows() ([]characterAdminRow, error) {
-	ctx := context.Background()
-	rows := make([]characterAdminRow, 0)
+func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, error) {
+	var rows []characterAdminRow
 	cc, err := a.mc.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return rows, err
@@ -307,7 +312,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			fyne.Do(func() {
 				infoText.SetText("Adding new character...")
 			})
-			a.update()
+			a.update(context.Background())
 			if !a.mc.u.hasCharacter() {
 				a.mc.u.loadCharacter(character.ID)
 			}
@@ -355,7 +360,7 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 					if err != nil {
 						return err
 					}
-					a.update()
+					a.update(ctx)
 					if a.mc.u.currentCharacterID() == r.characterID {
 						a.mc.u.setAnyCharacter()
 					}
@@ -431,7 +436,7 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 
 	// Signals
 	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
-		a.update()
+		a.update(ctx)
 		a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
@@ -485,7 +490,7 @@ func (a *characterTags) deleteTags() {
 					if err != nil {
 						return err
 					}
-					a.update()
+					a.update(ctx)
 					go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 					return nil
 				},
@@ -557,7 +562,7 @@ func (a *characterTags) importTags() {
 				if err != nil {
 					return err
 				}
-				a.update()
+				a.update(ctx)
 				go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 				slog.Info("Tags imported from file", "uri", reader.URI())
 				return nil
@@ -685,7 +690,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 						return
 					}
 				}
-				a.setCharacters(a.selectedTag)
+				a.setCharactersAsync(a.selectedTag)
 				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
 			},
 			a.mc.w,
@@ -740,13 +745,14 @@ func (a *characterTags) makeTagList() *widget.List {
 						if !confirmed {
 							return
 						}
-						err := a.mc.u.cs.DeleteTag(context.Background(), tag.ID)
+						ctx := context.Background()
+						err := a.mc.u.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
 							a.mc.u.showErrorDialog("Failed to delete tag", err, a.mc.w)
 							return
 						}
-						a.update()
-						go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
+						a.update(ctx)
+						go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
 							return
@@ -770,7 +776,7 @@ func (a *characterTags) makeTagList() *widget.List {
 			return
 		}
 		tag := a.tags[id]
-		a.setCharacters(tag)
+		a.setCharactersAsync(tag)
 	}
 	return tagList
 }
@@ -825,7 +831,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					a.mc.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
 					return
 				}
-				a.setCharacters(a.selectedTag)
+				a.setCharactersAsync(a.selectedTag)
 				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
@@ -837,34 +843,38 @@ func (a *characterTags) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *characterTags) setCharacters(tag *app.CharacterTag) {
+func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		a.characters = make([]*app.EntityShort, 0)
+		clear(a.characters)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
 	}
 	a.manageCharacters.SetTitle("Tag: " + tag.Name)
 	a.manageCharacters.Show()
-	tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
-	if err != nil {
-		a.mc.reportError("Failed to list characters for "+tag.Name, err)
-		a.characters = make([]*app.EntityShort, 0)
-		return
-	}
-	a.characters = tagged
-	a.characterList.Refresh()
-	if len(others) > 0 {
-		a.addCharactersButton.Enable()
-	} else {
-		a.addCharactersButton.Disable()
-	}
-	if len(tagged) > 0 {
-		a.emptyCharactersHint.Hide()
-	} else {
-		a.emptyCharactersHint.Show()
-	}
+	go func() {
+		tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
+		if err != nil {
+			a.mc.reportError("Failed to list characters for "+tag.Name, err)
+			clear(a.characters)
+			return
+		}
+		fyne.Do(func() {
+			a.characters = tagged
+			a.characterList.Refresh()
+			if len(others) > 0 {
+				a.addCharactersButton.Enable()
+			} else {
+				a.addCharactersButton.Disable()
+			}
+			if len(tagged) > 0 {
+				a.emptyCharactersHint.Hide()
+			} else {
+				a.emptyCharactersHint.Show()
+			}
+		})
+	}()
 }
 
 func (a *characterTags) modifyTag(title, confirm string, execute func(name string) error) {
@@ -893,8 +903,9 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				a.mc.u.showErrorDialog("Failed to modify tag", err, a.mc.w)
 				return
 			}
-			a.update()
-			go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
+			ctx := context.Background()
+			a.update(ctx)
+			go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
 		}, a.mc.w,
 	)
 	a.mc.u.ModifyShortcutsForDialog(d, a.mc.w)
@@ -913,11 +924,11 @@ func (a *characterTags) selectTagByName(name string) {
 	}
 }
 
-func (a *characterTags) update() {
-	tags, err := a.mc.u.cs.ListTagsByName(context.Background())
+func (a *characterTags) update(ctx context.Context) {
+	tags, err := a.mc.u.cs.ListTagsByName(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to list tags", err)
-		a.tags = make([]*app.CharacterTag, 0)
+		clear(a.tags)
 		return
 	}
 	fyne.Do(func() {
@@ -927,10 +938,10 @@ func (a *characterTags) update() {
 		if len(tags) > 0 {
 			a.emptyTagsHint.Hide()
 			a.selectTagByName(tags[0].Name)
-			a.setCharacters(tags[0])
+			a.setCharactersAsync(tags[0])
 		} else {
 			a.emptyTagsHint.Show()
-			a.setCharacters(nil)
+			a.setCharactersAsync(nil)
 		}
 	})
 }
@@ -952,11 +963,11 @@ func newCharacterTraining(mc *manageCharacters) *characterTraining {
 	a.list = a.makeList()
 
 	// Signals
-	a.mc.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.mc.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.mc.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	return a
 }
@@ -1072,10 +1083,11 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 	}()
 }
 
-func (a *characterTraining) update() {
-	characters, err := a.mc.u.cs.ListCharacters(context.Background())
+func (a *characterTraining) update(ctx context.Context) {
+	characters, err := a.mc.u.cs.ListCharacters(ctx)
 	if err != nil {
-		panic(err)
+		a.mc.reportError("Failed to update training", err)
+		return
 	}
 	slices.SortFunc(characters, func(a, b *app.Character) int {
 		return strings.Compare(a.EveCharacter.Name, b.EveCharacter.Name)

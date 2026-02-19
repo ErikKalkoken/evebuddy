@@ -39,7 +39,7 @@ func TestCharacterAdmin_CanRenderWithData(t *testing.T) {
 		defer w.Close()
 		w.Resize(fyne.NewSize(600, 300))
 
-		a.update()
+		a.update(t.Context())
 
 		test.AssertImageMatches(t, "managedcharacters/master.png", w.Canvas().Capture())
 	})
