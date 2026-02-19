@@ -74,7 +74,7 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 		columnSorter: columnSorter,
 		rows:         make([]characterLoyaltyPointsRow, 0),
 		top:          widget.NewLabel(""),
-		bottom:       widget.NewLabel(""),
+		bottom:       newLabelWithTruncation(),
 		u:            u,
 	}
 	a.list = a.makeList()

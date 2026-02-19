@@ -228,7 +228,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		},
 	}})
 	a := &industryJobs{
-		bottom:         newLabelWithWrap(),
+		bottom:         newLabelWithWrapping(),
 		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
 		rows:           make([]industryJobRow, 0),
@@ -307,41 +307,41 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}, a.u.window, 6, 7)
 
 	if forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.update()
+			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section == app.SectionCorporationIndustryJobs {
-				a.update()
+				a.update(ctx)
 			}
 		})
 	} else {
 		a.selectInstaller.Selected = industryInstallerMe
-		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 			if arg.section == app.SectionCharacterIndustryJobs {
-				a.update()
+				a.update(ctx)
 			}
 		})
-		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 			if arg.section == app.SectionCorporationIndustryJobs {
-				a.update()
+				a.update(ctx)
 			}
 		})
-		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-			a.update()
+		a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
 		})
-		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-			a.update()
+		a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
 		})
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-			a.update()
+			a.update(ctx)
 		})
 	}
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 		})
@@ -373,104 +373,6 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
-}
-
-// filterRows applies all filters and sorting and freshes the list with the changed rows.
-// A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *industryJobs) filterRows(sortCol int) {
-	rows := slices.Clone(a.rows)
-	installer := a.selectInstaller.Selected
-	activity := a.selectActivity.Selected
-	owner := a.selectOwner.Selected
-	tag := a.selectTag.Selected
-	search := a.search.Text
-	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
-
-	go func() {
-		// filter
-		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
-			status := r.statusCalculated()
-			switch a.selectStatus.Selected {
-			case industryStatusActive:
-				return !status.IsActive()
-			case industryStatusInProgress:
-				return status != app.JobActive
-			case industryStatusReady:
-				return status != app.JobReady
-			case industryStatusHalted:
-				return status != app.JobPaused
-			case industryStatusHistory:
-				return status.IsActive()
-			}
-			return true
-		})
-		if installer != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch installer {
-				case industryInstallerMe:
-					return !r.isInstallerMe
-				case industryInstallerCorpmates:
-					return r.isInstallerMe
-				}
-				return true
-			})
-		}
-		if activity != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch activity {
-				case industryActivityCopying:
-					return r.activity != app.Copying
-				case industryActivityInvention:
-					return r.activity != app.Invention
-				case industryActivityManufacturing:
-					return r.activity != app.Manufacturing
-				case industryActivityMaterialResearch:
-					return r.activity != app.MaterialEfficiencyResearch
-				case industryActivityReaction:
-					return r.activity != app.Reactions1 || r.activity == app.Reactions2
-				case industryActivityTimeResearch:
-					return r.activity != app.TimeEfficiencyResearch
-				}
-				return true
-			})
-		}
-		if owner != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch owner {
-				case industryOwnerCorp:
-					return r.isOwnerMe
-				case industryOwnerMe:
-					return !r.isOwnerMe
-				}
-				return true
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
-		if len(search) > 1 {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
-			})
-		}
-		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		// set data & refresh
-		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
-			return r.tags
-		})...).All())
-
-		fyne.Do(func() {
-			a.selectTag.SetOptions(tagOptions)
-			a.rowsFiltered = rows
-			a.body.Refresh()
-			switch x := a.body.(type) {
-			case *widget.Table:
-				x.ScrollToTop()
-			}
-		})
-	}()
 }
 
 func (a *industryJobs) makeDataList() *iwidget.StripedList {
@@ -572,13 +474,122 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *industryJobs) update() {
+// filterRows applies all filters and sorting and freshes the list with the changed rows.
+// A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
+func (a *industryJobs) filterRows(sortCol int) {
+	total := len(a.rows)
+	rows := slices.Clone(a.rows)
+	installer := a.selectInstaller.Selected
+	activity := a.selectActivity.Selected
+	owner := a.selectOwner.Selected
+	tag := a.selectTag.Selected
+	search := a.search.Text
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
+			status := r.statusCalculated()
+			switch a.selectStatus.Selected {
+			case industryStatusActive:
+				return !status.IsActive()
+			case industryStatusInProgress:
+				return status != app.JobActive
+			case industryStatusReady:
+				return status != app.JobReady
+			case industryStatusHalted:
+				return status != app.JobPaused
+			case industryStatusHistory:
+				return status.IsActive()
+			}
+			return true
+		})
+		if installer != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch installer {
+				case industryInstallerMe:
+					return !r.isInstallerMe
+				case industryInstallerCorpmates:
+					return r.isInstallerMe
+				}
+				return true
+			})
+		}
+		if activity != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch activity {
+				case industryActivityCopying:
+					return r.activity != app.Copying
+				case industryActivityInvention:
+					return r.activity != app.Invention
+				case industryActivityManufacturing:
+					return r.activity != app.Manufacturing
+				case industryActivityMaterialResearch:
+					return r.activity != app.MaterialEfficiencyResearch
+				case industryActivityReaction:
+					return r.activity != app.Reactions1 || r.activity == app.Reactions2
+				case industryActivityTimeResearch:
+					return r.activity != app.TimeEfficiencyResearch
+				}
+				return true
+			})
+		}
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				switch owner {
+				case industryOwnerCorp:
+					return r.isOwnerMe
+				case industryOwnerMe:
+					return !r.isOwnerMe
+				}
+				return true
+			})
+		}
+		if tag != "" {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				return !r.tags.Contains(tag)
+			})
+		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
+				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
+			})
+		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+		// set data & refresh
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		var bottom string
+		if total > 0 {
+			bottom = fmt.Sprintf("Showing %d / %d jobs", len(rows), total)
+		} else {
+			bottom = ""
+		}
+
+		fyne.Do(func() {
+			a.bottom.Text = bottom
+			a.bottom.Importance = widget.MediumImportance
+			a.bottom.Refresh()
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.body.Refresh()
+			switch x := a.body.(type) {
+			case *widget.Table:
+				x.ScrollToTop()
+			}
+		})
+	}()
+}
+
+func (a *industryJobs) update(ctx context.Context) {
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {
-		jobs, err = a.fetchCorporationJobs()
+		jobs, err = a.fetchCorporationJobs(ctx)
 	} else {
-		jobs, err = a.fetchCombinedJobs()
+		jobs, err = a.fetchCombinedJobs(ctx)
 	}
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
@@ -586,7 +597,6 @@ func (a *industryJobs) update() {
 			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
 			a.bottom.Importance = widget.DangerImportance
 			a.bottom.Refresh()
-			a.bottom.Show()
 		})
 	}
 	var readyCount int
@@ -599,15 +609,12 @@ func (a *industryJobs) update() {
 		a.OnUpdate(readyCount)
 	}
 	fyne.Do(func() {
-		a.search.SetText("")
-		a.bottom.Hide()
 		a.rows = jobs
 		a.filterRows(-1)
 	})
 }
 
-func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
-	ctx := context.Background()
+func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {
 	cj, err := a.u.cs.ListAllCharacterIndustryJob(ctx)
 	if err != nil {
 		return nil, err
@@ -706,12 +713,11 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 	return jobs, nil
 }
 
-func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
+func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}
-	ctx := context.Background()
 	rj, err := a.u.rs.ListCorporationIndustryJobs(ctx, corporationID)
 	if err != nil {
 		return nil, err
@@ -844,7 +850,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			status.Set(r.statusDisplay())
 		})

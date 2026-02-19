@@ -231,7 +231,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
-		issue:        newLabelWithWrap(),
+		issue:        newLabelWithWrapping(),
 		rows:         make([]marketOrderRow, 0),
 		rowsFiltered: make([]marketOrderRow, 0),
 		u:            u,

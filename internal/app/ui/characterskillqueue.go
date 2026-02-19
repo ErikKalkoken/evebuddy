@@ -54,7 +54,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 		skillqueue:           app.NewCharacterSkillqueue(),
 		statusResource:       statusResources,
 		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
-		top:                  newLabelWithWrap(),
+		top:                  newLabelWithWrapping(),
 		u:                    u,
 	}
 	a.ExtendBaseWidget(a)

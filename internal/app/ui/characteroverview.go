@@ -154,7 +154,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
-		bottom:       newLabelWithWrap(),
+		bottom:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
 		loadInfo:     info,
 		rows:         make([]characterOverviewRow, 0),

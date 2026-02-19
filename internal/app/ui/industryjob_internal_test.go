@@ -83,7 +83,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.industryJobs.update()
+			ui.industryJobs.update(t.Context())
 
 			test.AssertImageMatches(t, "industryjobs/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -113,7 +113,7 @@ func TestIndustryJob_CanRenderEmpty(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.industryJobs.update()
+			ui.industryJobs.update(t.Context())
 
 			test.AssertImageMatches(t, "industryjobs/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -141,7 +141,7 @@ func TestIndustryJob_Filter(t *testing.T) {
 		Status:     app.JobReady,
 	})
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-	ui.industryJobs.update()
+	ui.industryJobs.update(t.Context())
 
 	t.Run("no filter", func(t *testing.T) {
 		ui.industryJobs.selectActivity.SetSelected("")
@@ -203,7 +203,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 
 	t.Run("can return all character and relevant corporation jobs", func(t *testing.T) {
 		ui.industryJobs.corporation.Store(corporation)
-		xx, err := ui.industryJobs.fetchCombinedJobs()
+		xx, err := ui.industryJobs.fetchCombinedJobs(t.Context())
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
@@ -216,7 +216,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 
 	t.Run("can return all jobs for current corporation", func(t *testing.T) {
 		ui.corporationIndyJobs.corporation.Store(corporation)
-		xx, err := ui.corporationIndyJobs.fetchCorporationJobs()
+		xx, err := ui.corporationIndyJobs.fetchCorporationJobs(t.Context())
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}

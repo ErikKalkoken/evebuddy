@@ -299,10 +299,10 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	a := &assetSearch{
 		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
-		bottom:         newLabelWithWrap(),
+		bottom:         newLabelWithTruncation(),
 		rowsFiltered:   make([]assetRow, 0),
 		search:         widget.NewEntry(),
-		top:            newLabelWithWrap(),
+		top:            newLabelWithWrapping(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

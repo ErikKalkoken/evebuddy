@@ -55,7 +55,7 @@ type augmentations struct {
 
 func newAugmentations(u *baseUI) *augmentations {
 	a := &augmentations{
-		bottom: newLabelWithWrap(),
+		bottom: newLabelWithTruncation(),
 		u:      u,
 	}
 	a.ExtendBaseWidget(a)

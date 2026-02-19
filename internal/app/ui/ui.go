@@ -849,8 +849,12 @@ func (u *baseUI) initHome() {
 		"clones": func() {
 			u.clones.update(context.Background())
 		},
-		"colonies":     u.colonies.update,
-		"industryJobs": u.industryJobs.update,
+		"colonies": func() {
+			u.colonies.update(context.Background())
+		},
+		"industryJobs": func() {
+			u.industryJobs.update(context.Background())
+		},
 		"loyaltyPoints": func() {
 			u.loyaltyPoints.update(context.Background())
 		},

@@ -43,7 +43,7 @@ type characterAttributes struct {
 func newCharacterAttributes(u *baseUI) *characterAttributes {
 	a := &characterAttributes{
 		attributes: make([]attribute, 0),
-		top:        newLabelWithWrap(),
+		top:        newLabelWithWrapping(),
 		u:          u,
 	}
 	a.list = a.makeAttributeList()

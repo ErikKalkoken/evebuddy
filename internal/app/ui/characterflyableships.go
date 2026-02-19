@@ -81,10 +81,10 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	)
 	a := &characterFlyableShips{
 		columnSorter: columnSorter,
-		bottom:       widget.NewLabel(""),
+		bottom:       newLabelWithTruncation(),
 		rows:         make([]flyableShipRow, 0),
 		rowsFiltered: make([]flyableShipRow, 0),
-		top:          newLabelWithWrap(),
+		top:          newLabelWithWrapping(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

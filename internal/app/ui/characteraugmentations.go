@@ -32,7 +32,7 @@ type characterAugmentations struct {
 func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	a := &characterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      newLabelWithWrap(),
+		top:      newLabelWithWrapping(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)

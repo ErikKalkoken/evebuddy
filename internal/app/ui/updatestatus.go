@@ -84,12 +84,12 @@ func showUpdateStatusWindow(u *baseUI) {
 
 func newUpdateStatus(u *baseUI) *updateStatus {
 	a := &updateStatus{
-		charactersTop:     newLabelWithWrap(),
+		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
-		detailsTop:        newLabelWithWrap(),
+		detailsTop:        newLabelWithWrapping(),
 		sectionEntities:   make([]sectionEntity, 0),
 		sections:          make([]app.CacheSectionStatus, 0),
-		sectionsTop:       newLabelWithWrap(),
+		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		signalKey:         "updateStatus-" + uniqueID(),
