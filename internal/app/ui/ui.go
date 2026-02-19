@@ -843,8 +843,10 @@ func (u *baseUI) initHome() {
 		"augmentations": func() {
 			u.augmentations.update(context.Background())
 		},
-		"contracts":    u.contracts.update,
-		"clones":       u.clones.update,
+		"contracts": u.contracts.update,
+		"clones": func() {
+			u.clones.update(context.Background())
+		},
 		"colonies":     u.colonies.update,
 		"industryJobs": u.industryJobs.update,
 		"loyaltyPoints": func() {

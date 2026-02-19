@@ -39,7 +39,7 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.clones.update()
+	ui.clones.update(t.Context())
 
 	test.AssertImageMatches(t, "clones/empty_location.png", w.Canvas().Capture())
 }
@@ -67,7 +67,7 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.clones.update()
+			ui.clones.update(t.Context())
 
 			test.AssertImageMatches(t, "clones/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -134,7 +134,7 @@ func TestClones_CanRenderFull(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.clones.update()
+			ui.clones.update(t.Context())
 
 			test.AssertImageMatches(t, "clones/"+tc.filename+".png", w.Canvas().Capture())
 		})
