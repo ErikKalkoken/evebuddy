@@ -275,25 +275,25 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case app.SectionCharacterIndustryJobs, app.SectionCharacterSkills:
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if arg.section == app.SectionCorporationIndustryJobs {
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	return a
 }
@@ -349,6 +349,7 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataColumns[industrySlotRo
 }
 
 func (a *industrySlots) filterRows(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
 	tag := a.selectTag.Selected
@@ -374,6 +375,8 @@ func (a *industrySlots) filterRows(sortCol int) {
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+
+		bottom := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 		// add totals
 		var active, ready, free, total int
 		for _, r := range rows {
@@ -389,12 +392,15 @@ func (a *industrySlots) filterRows(sortCol int) {
 			total:     total,
 			isSummary: true,
 		})
-		// set data & refresh
+
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {
 			return r.tags
 		})...).All())
 
 		fyne.Do(func() {
+			a.bottom.Text = bottom
+			a.bottom.Importance = widget.MediumImportance
+			a.bottom.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -402,47 +408,29 @@ func (a *industrySlots) filterRows(sortCol int) {
 	}()
 }
 
-func (a *industrySlots) update() {
-	rows := make([]industrySlotRow, 0)
-	t, i, err := func() (string, widget.Importance, error) {
-		rr, err := a.fetchData(a.u.services(), a.slotType)
-		if err != nil {
-			return "", 0, err
-		}
-		if len(rr) == 0 {
-			return "No characters", widget.LowImportance, nil
-		}
-		rows = rr
-		return "", widget.MediumImportance, nil
-	}()
+func (a *industrySlots) update(ctx context.Context) {
+	rows, err := a.fetchData(ctx, a.slotType)
 	if err != nil {
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
-	}
-	fyne.Do(func() {
-		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
+		fyne.Do(func() {
+			a.bottom.Text = "ERROR: " + a.u.humanizeError(err)
+			a.bottom.Importance = widget.DangerImportance
 			a.bottom.Refresh()
-			a.bottom.Show()
-		} else {
-			a.bottom.Hide()
-		}
-	})
+		})
+		return
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
 	})
 }
 
-func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]industrySlotRow, error) {
-	ctx := context.Background()
-	oo, err := s.cs.ListAllCharactersIndustrySlots(ctx, slotType)
+func (a *industrySlots) fetchData(ctx context.Context, slotType app.IndustryJobType) ([]industrySlotRow, error) {
+	oo, err := a.u.cs.ListAllCharactersIndustrySlots(ctx, slotType)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]industrySlotRow, 0)
+	var rows []industrySlotRow
 	for _, o := range oo {
 		r := industrySlotRow{
 			characterID:   o.CharacterID,
@@ -452,7 +440,7 @@ func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]ind
 			free:          o.Free,
 			total:         o.Total,
 		}
-		tags, err := s.cs.ListTagsForCharacter(ctx, o.CharacterID)
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.CharacterID)
 		if err != nil {
 			return nil, err
 		}

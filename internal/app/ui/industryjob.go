@@ -561,12 +561,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d jobs", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(total))
 
 		fyne.Do(func() {
 			a.bottom.Text = bottom

@@ -374,20 +374,15 @@ func (a *colonies) filterRows(sortCol int) {
 		extractingOptions := slices.Collect(extracting2.All())
 		producingOptions := slices.Collect(producing2.All())
 
-		var bottom string
+		bottom := fmt.Sprintf("Showing %d / %d colonies", len(rows), total)
 		var expired int
-		if total > 0 {
-			for _, r := range rows {
-				if r.isExpired() {
-					expired++
-				}
+		for _, r := range rows {
+			if r.isExpired() {
+				expired++
 			}
-			bottom = fmt.Sprintf("Showing %d / %d colonies", len(rows), total)
-			if expired > 0 {
-				bottom += fmt.Sprintf(" • %d expired", expired)
-			}
-		} else {
-			bottom = ""
+		}
+		if expired > 0 {
+			bottom += fmt.Sprintf(" • %d expired", expired)
 		}
 
 		fyne.Do(func() {

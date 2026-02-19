@@ -342,12 +342,7 @@ func (a *clones) filterRows(sortCol int) {
 			return r.jc.Location.SolarSystemName()
 		})
 
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d clones", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d clones", len(rows), total)
 
 		fyne.Do(func() {
 			a.bottom.SetText(bottom)

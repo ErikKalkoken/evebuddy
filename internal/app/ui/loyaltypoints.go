@@ -84,7 +84,7 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	)
 	a := &loyaltyPoints{
 		columnSorter: columnSorter,
-		bottom:       widget.NewLabel(""),
+		bottom:       newLabelWithTruncation(),
 		top:          top,
 		u:            u,
 	}

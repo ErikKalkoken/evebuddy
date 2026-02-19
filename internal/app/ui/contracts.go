@@ -407,12 +407,7 @@ func (a *contracts) filterRows(sortCol int) {
 			return r.typeName
 		})
 
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d contracts", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d contracts", len(rows), total)
 
 		fyne.Do(func() {
 			a.bottom.Text = bottom

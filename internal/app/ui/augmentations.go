@@ -210,12 +210,7 @@ func (a *augmentations) filterTree() {
 		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *characterAugmentationNode) set.Set[string] {
 			return n.tags
 		})...).All())
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
 		fyne.Do(func() {
 			a.bottom.SetText(bottom)
 			a.selectTag.SetOptions(tagOptions)

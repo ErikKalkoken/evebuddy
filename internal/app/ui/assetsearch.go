@@ -563,22 +563,13 @@ func (a *assetSearch) filterRows(sortCol int) {
 			return r.locationName
 		})
 
-		var bottom string
-		if totalRows > 0 {
-			var value optional.Optional[float64]
-			for _, r := range rows {
-				value = optional.Sum(value, r.total)
-			}
-			bottom = fmt.Sprintf(
-				"Showing %s / %s items",
-				ihumanize.Comma(len(rows)),
-				ihumanize.Comma(totalRows),
-			)
-			if v, ok := value.Value(); ok {
-				bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
-			}
-		} else {
-			bottom = ""
+		bottom := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+		var value optional.Optional[float64]
+		for _, r := range rows {
+			value = optional.Sum(value, r.total)
+		}
+		if v, ok := value.Value(); ok {
+			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {

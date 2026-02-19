@@ -204,12 +204,7 @@ func (a *characterLoyaltyPoints) filterRows() {
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
 		fyne.Do(func() {
 			a.bottom.SetText(bottom)
 			a.selectFaction.SetOptions(factionOptions)

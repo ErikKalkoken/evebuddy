@@ -220,12 +220,7 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 			}
 			return flyableCanNot
 		})
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d ships", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d ships", len(rows), total)
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {

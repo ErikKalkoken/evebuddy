@@ -858,12 +858,22 @@ func (u *baseUI) initHome() {
 		"loyaltyPoints": func() {
 			u.loyaltyPoints.update(context.Background())
 		},
-		"marketOrdersSell":   u.marketOrdersSell.update,
-		"marketOrdersBuy":    u.marketOrdersBuy.update,
-		"slotsManufacturing": u.slotsManufacturing.update,
-		"slotsReactions":     u.slotsReactions.update,
-		"slotsResearch":      u.slotsResearch.update,
-		"training":           u.training.update,
+		"marketOrdersSell": func() {
+			u.marketOrdersSell.update(context.Background())
+		},
+		"marketOrdersBuy": func() {
+			u.marketOrdersBuy.update(context.Background())
+		},
+		"slotsManufacturing": func() {
+			u.slotsManufacturing.update(context.Background())
+		},
+		"slotsReactions": func() {
+			u.slotsReactions.update(context.Background())
+		},
+		"slotsResearch": func() {
+			u.slotsResearch.update(context.Background())
+		},
+		"training": u.training.update,
 		"wealth": func() {
 			u.wealth.update(context.Background())
 		},

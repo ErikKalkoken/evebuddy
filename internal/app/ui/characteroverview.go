@@ -248,13 +248,13 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		a.selectRegion,
 		a.selectSolarSystem,
 		a.selectTag,
+		a.sortButton,
 	)
 	var topBox *fyne.Container
 	if a.u.isMobile {
-		filters.Add(a.sortButton)
 		topBox = container.NewVBox(a.search, container.NewHScroll(filters))
 	} else {
-		topBox = container.NewBorder(nil, nil, filters, a.sortButton, a.search)
+		topBox = container.NewBorder(nil, nil, filters, nil, a.search)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -408,12 +408,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d characters", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		bottom := fmt.Sprintf("Showing %d / %d characters", len(rows), total)
 
 		fyne.Do(func() {
 			a.bottom.Text = bottom
