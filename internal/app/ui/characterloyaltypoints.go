@@ -35,7 +35,7 @@ type characterLoyaltyPointsRow struct {
 type characterLoyaltyPoints struct {
 	widget.BaseWidget
 
-	bottom        *widget.Label
+	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *iwidget.ColumnSorter[characterLoyaltyPointsRow]
 	list          *widget.List
@@ -74,7 +74,7 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 		columnSorter: columnSorter,
 		rows:         make([]characterLoyaltyPointsRow, 0),
 		top:          widget.NewLabel(""),
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
 	a.list = a.makeList()
@@ -124,7 +124,7 @@ func (a *characterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 			container.NewHBox(a.selectFaction, a.sortButton),
 			a.searchBox,
 		),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.list,
@@ -204,9 +204,12 @@ func (a *characterLoyaltyPoints) filterRows() {
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
-		bottom := fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
+
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectFaction.SetOptions(factionOptions)
 			a.rowsFiltered = rows
 			a.list.Refresh()

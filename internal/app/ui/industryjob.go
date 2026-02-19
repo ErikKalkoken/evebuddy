@@ -107,7 +107,7 @@ type industryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
-	bottom          *widget.Label
+	footer          *widget.Label
 	columnSorter    *iwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
@@ -228,7 +228,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		},
 	}})
 	a := &industryJobs{
-		bottom:         newLabelWithWrapping(),
+		footer:         newLabelWithWrapping(),
 		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
 		rows:           make([]industryJobRow, 0),
@@ -367,7 +367,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			a.search,
 		),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -561,12 +561,12 @@ func (a *industryJobs) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		bottom := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(total))
+		footer := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(total))
 
 		fyne.Do(func() {
-			a.bottom.Text = bottom
-			a.bottom.Importance = widget.MediumImportance
-			a.bottom.Refresh()
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -589,9 +589,9 @@ func (a *industryJobs) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 	}
 	var readyCount int

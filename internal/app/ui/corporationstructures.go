@@ -73,7 +73,7 @@ type corporationStructures struct {
 
 	OnUpdate func(count int)
 
-	bottom            *widget.Label
+	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[corporationStructureRow]
 	corporation       atomic.Pointer[app.Corporation]
 	main              fyne.CanvasObject
@@ -150,7 +150,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
-		bottom:       newLabelWithWrapping(),
+		footer:       newLabelWithWrapping(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -246,7 +246,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.main)
+	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -348,12 +348,12 @@ func (a *corporationStructures) update() {
 	}
 	fyne.Do(func() {
 		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.footer.Text = t
+			a.footer.Importance = i
+			a.footer.Refresh()
+			a.footer.Show()
 		} else {
-			a.bottom.Hide()
+			a.footer.Hide()
 		}
 	})
 	if a.OnUpdate != nil {

@@ -90,7 +90,7 @@ type industrySlots struct {
 	widget.BaseWidget
 
 	body            fyne.CanvasObject
-	bottom          *widget.Label
+	footer          *widget.Label
 	columnSorter    *iwidget.ColumnSorter[industrySlotRow]
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
@@ -205,7 +205,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		},
 	}})
 	a := &industrySlots{
-		bottom:       newLabelWithWrapping(),
+		footer:       newLabelWithWrapping(),
 		columnSorter: iwidget.NewColumnSorter(columns, industrySlotsColCharacter, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
@@ -303,7 +303,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
+	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -376,7 +376,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
-		bottom := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
+		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 		// add totals
 		var active, ready, free, total int
 		for _, r := range rows {
@@ -398,9 +398,9 @@ func (a *industrySlots) filterRows(sortCol int) {
 		})...).All())
 
 		fyne.Do(func() {
-			a.bottom.Text = bottom
-			a.bottom.Importance = widget.MediumImportance
-			a.bottom.Refresh()
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -413,9 +413,9 @@ func (a *industrySlots) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = "ERROR: " + a.u.humanizeError(err)
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}

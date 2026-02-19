@@ -114,7 +114,7 @@ type training struct {
 
 	onUpdate func(expired int)
 
-	bottom       *widget.Label
+	footer       *widget.Label
 	columnSorter *iwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
 	rows         []trainingRow
@@ -239,7 +239,7 @@ func newTraining(u *baseUI) *training {
 			},
 		}})
 	a := &training{
-		bottom:       widget.NewLabel(""),
+		footer:       widget.NewLabel(""),
 		columnSorter: iwidget.NewColumnSorter(columns, trainingColCharacter, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
@@ -487,12 +487,12 @@ func (a *training) update() {
 	}
 	fyne.Do(func() {
 		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.footer.Text = t
+			a.footer.Importance = i
+			a.footer.Refresh()
+			a.footer.Show()
 		} else {
-			a.bottom.Hide()
+			a.footer.Hide()
 		}
 	})
 	fyne.Do(func() {

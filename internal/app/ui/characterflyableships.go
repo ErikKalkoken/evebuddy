@@ -48,7 +48,7 @@ type flyableShipRow struct {
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	bottom        *widget.Label
+	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *iwidget.ColumnSorter[flyableShipRow]
 	grid          *widget.GridWrap
@@ -81,7 +81,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	)
 	a := &characterFlyableShips{
 		columnSorter: columnSorter,
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		rows:         make([]flyableShipRow, 0),
 		rowsFiltered: make([]flyableShipRow, 0),
 		top:          newLabelWithWrapping(),
@@ -146,7 +146,7 @@ func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 			a.search,
 			container.NewHScroll(container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)),
 		),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.grid,
@@ -220,14 +220,16 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 			}
 			return flyableCanNot
 		})
-		bottom := fmt.Sprintf("Showing %d / %d ships", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d ships", len(rows), total)
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {
 			a.selectGroup.SetOptions(groupOptions)
 			a.selectFlyable.SetOptions(flyableOptions)
 			a.rowsFiltered = rows
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.grid.Refresh()
 			a.grid.ScrollToTop()
 		})

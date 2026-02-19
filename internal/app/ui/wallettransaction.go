@@ -62,7 +62,7 @@ type walletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
-	bottom         *widget.Label
+	footer         *widget.Label
 	character      atomic.Pointer[app.Character]
 	columnSorter   *iwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
@@ -204,7 +204,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		},
 	}})
 	a := &walletTransactions{
-		bottom:       widget.NewLabel(""),
+		footer:       widget.NewLabel(""),
 		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
@@ -287,7 +287,7 @@ func (a *walletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -461,12 +461,12 @@ func (a *walletTransactions) updateCharacter() {
 	t, i := a.u.makeTopText(characterID, hasData, err, nil)
 	fyne.Do(func() {
 		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.footer.Text = t
+			a.footer.Importance = i
+			a.footer.Refresh()
+			a.footer.Show()
 		} else {
-			a.bottom.Hide()
+			a.footer.Hide()
 		}
 	})
 	fyne.Do(func() {
@@ -536,12 +536,12 @@ func (a *walletTransactions) updateCorporation() {
 	t, i := a.u.makeTopText(corporationID, hasData, err, nil)
 	fyne.Do(func() {
 		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.footer.Text = t
+			a.footer.Importance = i
+			a.footer.Refresh()
+			a.footer.Show()
 		} else {
-			a.bottom.Hide()
+			a.footer.Hide()
 		}
 	})
 	fyne.Do(func() {

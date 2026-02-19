@@ -68,7 +68,7 @@ type colonies struct {
 	OnUpdate func(total, expired int)
 
 	body              fyne.CanvasObject
-	bottom            *widget.Label
+	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[colonyRow]
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
@@ -161,7 +161,7 @@ func newColonies(u *baseUI) *colonies {
 		},
 	}})
 	a := &colonies{
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
@@ -280,7 +280,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -374,7 +374,7 @@ func (a *colonies) filterRows(sortCol int) {
 		extractingOptions := slices.Collect(extracting2.All())
 		producingOptions := slices.Collect(producing2.All())
 
-		bottom := fmt.Sprintf("Showing %d / %d colonies", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), total)
 		var expired int
 		for _, r := range rows {
 			if r.isExpired() {
@@ -382,13 +382,13 @@ func (a *colonies) filterRows(sortCol int) {
 			}
 		}
 		if expired > 0 {
-			bottom += fmt.Sprintf(" • %d expired", expired)
+			footer += fmt.Sprintf(" • %d expired", expired)
 		}
 
 		fyne.Do(func() {
-			a.bottom.Text = bottom
-			a.bottom.Importance = widget.MediumImportance
-			a.bottom.Refresh()
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -407,9 +407,9 @@ func (a *colonies) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh colony UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = "ERROR: " + a.u.humanizeError(err)
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 	}
 	fyne.Do(func() {

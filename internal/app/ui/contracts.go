@@ -62,7 +62,7 @@ type contracts struct {
 	OnUpdate func(active int)
 
 	body           fyne.CanvasObject
-	bottom         *widget.Label
+	footer         *widget.Label
 	columnSorter   *iwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
@@ -171,7 +171,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		forCorporation: forCorporation,
 		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
 		rows:           make([]contractRow, 0),
-		bottom:         newLabelWithTruncation(),
+		footer:         newLabelWithTruncation(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -276,7 +276,7 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewVBox(container.NewHScroll(filter)),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -407,12 +407,12 @@ func (a *contracts) filterRows(sortCol int) {
 			return r.typeName
 		})
 
-		bottom := fmt.Sprintf("Showing %d / %d contracts", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d contracts", len(rows), total)
 
 		fyne.Do(func() {
-			a.bottom.Text = bottom
-			a.bottom.Importance = widget.MediumImportance
-			a.bottom.Refresh()
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectIssuer.SetOptions(issueOptions)
 			a.selectAssignee.SetOptions(assigneeOptions)
@@ -435,9 +435,9 @@ func (a *contracts) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}

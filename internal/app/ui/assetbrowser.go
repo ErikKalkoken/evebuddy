@@ -567,7 +567,7 @@ type assetBrowserContainer struct {
 	widget.BaseWidget
 
 	ab            *assetBrowser
-	bottom        *widget.Label
+	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
@@ -578,7 +578,7 @@ type assetBrowserContainer struct {
 func newAssetBrowserContainer(ab *assetBrowser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
 		ab:            ab,
-		bottom:        newLabelWithTruncation(),
+		footer:        newLabelWithTruncation(),
 		items:         make([]containerItem, 0),
 		itemsFiltered: make([]containerItem, 0),
 		search:        widget.NewEntry(),
@@ -608,7 +608,7 @@ func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			a.search,
 		),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.grid,
@@ -728,15 +728,17 @@ func (a *assetBrowserContainer) filterItems() {
 				value = optional.Sum(value, optional.New(as.Price.ValueOrZero()*float64(as.Quantity)))
 			}
 		}
-		bottom := fmt.Sprintf("%s items", humanize.Comma(itemCount))
+		footer := fmt.Sprintf("%s items", humanize.Comma(itemCount))
 		if v, ok := value.Value(); ok {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
+			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {
 			a.itemsFiltered = items
 			a.grid.Refresh()
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 		})
 	}()
 }
@@ -744,7 +746,7 @@ func (a *assetBrowserContainer) filterItems() {
 func (a *assetBrowserContainer) clear() {
 	a.location.clear()
 	a.search.Hide()
-	a.bottom.SetText("")
+	a.footer.SetText("")
 	a.items = make([]containerItem, 0)
 	a.filterItems()
 }

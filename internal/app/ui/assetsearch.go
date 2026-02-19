@@ -182,7 +182,7 @@ type assetSearch struct {
 	onUpdate func(int, string)
 
 	body           fyne.CanvasObject
-	bottom         *widget.Label
+	footer         *widget.Label
 	columnSorter   *iwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
@@ -299,7 +299,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	a := &assetSearch{
 		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
-		bottom:         newLabelWithTruncation(),
+		footer:         newLabelWithTruncation(),
 		rowsFiltered:   make([]assetRow, 0),
 		search:         widget.NewEntry(),
 		top:            newLabelWithWrapping(),
@@ -422,7 +422,7 @@ func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.search))
 	}
-	c := container.NewBorder(topBox, a.bottom, nil, nil, a.body)
+	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -563,17 +563,19 @@ func (a *assetSearch) filterRows(sortCol int) {
 			return r.locationName
 		})
 
-		bottom := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+		footer := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 		var value optional.Optional[float64]
 		for _, r := range rows {
 			value = optional.Sum(value, r.total)
 		}
 		if v, ok := value.Value(); ok {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
+			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectCategory.SetOptions(categoryOptions)
 			a.selectGroup.SetOptions(groupOptions)

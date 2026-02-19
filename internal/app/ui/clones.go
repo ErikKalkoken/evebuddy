@@ -69,7 +69,7 @@ type clones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
-	bottom            *widget.Label
+	footer            *widget.Label
 	changeOrigin      *widget.Button
 	columnSorter      *iwidget.ColumnSorter[cloneRow]
 	origin            *app.EveSolarSystem
@@ -156,7 +156,7 @@ func newClones(u *baseUI) *clones {
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -288,7 +288,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -342,10 +342,12 @@ func (a *clones) filterRows(sortCol int) {
 			return r.jc.Location.SolarSystemName()
 		})
 
-		bottom := fmt.Sprintf("Showing %d / %d clones", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d clones", len(rows), total)
 
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -361,9 +363,9 @@ func (a *clones) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = "ERROR: " + a.u.humanizeError(err)
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 			clear(a.rows)
 			a.filterRows(-1)
 		})

@@ -44,7 +44,7 @@ func (n loyaltyPointsNode) IsTop() bool {
 type loyaltyPoints struct {
 	widget.BaseWidget
 
-	bottom           *widget.Label
+	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *iwidget.ColumnSorter[*loyaltyPointsNode]
 	data             map[*loyaltyPointsNode][]*loyaltyPointsNode
@@ -84,7 +84,7 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	)
 	a := &loyaltyPoints{
 		columnSorter: columnSorter,
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		top:          top,
 		u:            u,
 	}
@@ -145,7 +145,7 @@ func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	))
 	c := container.NewBorder(
 		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchBox)),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.tree,
@@ -294,7 +294,9 @@ func (a *loyaltyPoints) filterTree() {
 		}
 
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = bottom
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectCharacter.SetOptions(characterOptions)
 			a.selectFaction.SetOptions(factionOptions)
 			a.selectTag.SetOptions(tagOptions)

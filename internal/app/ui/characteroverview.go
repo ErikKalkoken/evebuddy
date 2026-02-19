@@ -71,7 +71,7 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
-	bottom            *widget.Label
+	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[characterOverviewRow]
 	loadInfo          *widget.Label
 	main              fyne.CanvasObject
@@ -154,7 +154,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
-		bottom:       newLabelWithTruncation(),
+		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
 		loadInfo:     info,
 		rows:         make([]characterOverviewRow, 0),
@@ -258,7 +258,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		container.NewStack(a.loadInfo, a.main),
@@ -408,12 +408,12 @@ func (a *characterOverview) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		bottom := fmt.Sprintf("Showing %d / %d characters", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), total)
 
 		fyne.Do(func() {
-			a.bottom.Text = bottom
-			a.bottom.Importance = widget.MediumImportance
-			a.bottom.Refresh()
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectAlliance.SetOptions(allianceOptions)
 			a.selectCorporation.SetOptions(corporationOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -432,17 +432,17 @@ func (a *characterOverview) update(ctx context.Context) {
 			a.filterRows(-1)
 		})
 	}
-	setBottom := func(s string, i widget.Importance) {
+	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.bottom.Text = s
-			a.bottom.Importance = i
-			a.bottom.Refresh()
+			a.footer.Text = s
+			a.footer.Importance = i
+			a.footer.Refresh()
 		})
 	}
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		clear()
-		setBottom("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		setFooter("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
 		return
 	}

@@ -44,7 +44,7 @@ const (
 type augmentations struct {
 	widget.BaseWidget
 
-	bottom           *widget.Label
+	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
@@ -55,7 +55,7 @@ type augmentations struct {
 
 func newAugmentations(u *baseUI) *augmentations {
 	a := &augmentations{
-		bottom: newLabelWithTruncation(),
+		footer: newLabelWithTruncation(),
 		u:      u,
 	}
 	a.ExtendBaseWidget(a)
@@ -93,7 +93,7 @@ func newAugmentations(u *baseUI) *augmentations {
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
-	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.tree)
+	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -210,9 +210,12 @@ func (a *augmentations) filterTree() {
 		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *characterAugmentationNode) set.Set[string] {
 			return n.tags
 		})...).All())
-		bottom := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
+		footer := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
+
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.tree.Set(td)
 		})
@@ -224,9 +227,9 @@ func (a *augmentations) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh augmentations UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = "ERROR: " + a.u.humanizeError(err)
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}
