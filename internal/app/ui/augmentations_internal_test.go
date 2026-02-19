@@ -47,7 +47,7 @@ func TestAugmentations_CanRenderWithData(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))
 
-	a.update()
+	a.update(t.Context())
 	time.Sleep(50 * time.Millisecond)
 
 	a.tree.OpenAllBranches()

@@ -840,11 +840,13 @@ func (u *baseUI) initHome() {
 		"assetSearchAll": func() {
 			u.assetSearchAll.update(context.Background())
 		},
-		"augmentations": u.augmentations.update,
-		"contracts":     u.contracts.update,
-		"clones":        u.clones.update,
-		"colonies":      u.colonies.update,
-		"industryJobs":  u.industryJobs.update,
+		"augmentations": func() {
+			u.augmentations.update(context.Background())
+		},
+		"contracts":    u.contracts.update,
+		"clones":       u.clones.update,
+		"colonies":     u.colonies.update,
+		"industryJobs": u.industryJobs.update,
 		"loyaltyPoints": func() {
 			u.loyaltyPoints.update(context.Background())
 		},
