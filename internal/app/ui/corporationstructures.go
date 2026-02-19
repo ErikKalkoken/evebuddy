@@ -220,22 +220,22 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		a.filterRows(-1)
 	})
 
-	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section != app.SectionCorporationStructures {
 			return
 		}
-		a.update()
+		a.update(ctx)
 	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.update()
+			a.update(ctx)
 		})
 	})
 	return a
@@ -251,6 +251,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *corporationStructures) filterRows(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
@@ -316,7 +317,12 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			return r.typeName
 		})
 
+		footer := fmt.Sprintf("Showing %s / %s structures", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectRegion.SetOptions(selectOptions)
 			a.selectSolarSystem.SetOptions(solarSystemOptions)
 			a.selectState.SetOptions(stateOptions)
@@ -328,34 +334,29 @@ func (a *corporationStructures) filterRows(sortCol int) {
 	}()
 }
 
-func (a *corporationStructures) update() {
-	rows := make([]corporationStructureRow, 0)
-	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchData(corporationIDOrZero(a.corporation.Load()))
-		if err != nil {
-			return "", 0, err
-		}
-		if len(cc) == 0 {
-			return "No structures", widget.LowImportance, nil
-		}
-		rows = cc
-		return "", widget.MediumImportance, nil
-	}()
+func (a *corporationStructures) update(ctx context.Context) {
+	clear := func() {
+		fyne.Do(func() {
+			clear(a.rows)
+			a.filterRows(-1)
+		})
+	}
+	corporationID := corporationIDOrZero(a.corporation.Load())
+	if corporationID == 0 {
+		clear()
+		return
+	}
+	rows, err := a.fetchData(ctx, corporationID)
 	if err != nil {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
-	}
-	fyne.Do(func() {
-		if t != "" {
-			a.footer.Text = t
-			a.footer.Importance = i
+		clear()
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
-			a.footer.Show()
-		} else {
-			a.footer.Hide()
-		}
-	})
+		})
+		return
+	}
 	if a.OnUpdate != nil {
 		var reinforceCount int
 		for _, r := range rows {
@@ -371,11 +372,11 @@ func (a *corporationStructures) update() {
 	})
 }
 
-func (a *corporationStructures) fetchData(corporationID int64) ([]corporationStructureRow, error) {
+func (a *corporationStructures) fetchData(ctx context.Context, corporationID int64) ([]corporationStructureRow, error) {
 	if corporationID == 0 {
 		return []corporationStructureRow{}, nil
 	}
-	structures, err := a.u.rs.ListStructures(context.Background(), corporationID)
+	structures, err := a.u.rs.ListStructures(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
