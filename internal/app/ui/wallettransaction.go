@@ -20,6 +20,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -81,16 +82,16 @@ type walletTransactions struct {
 
 func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletTransactions {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -98,18 +99,16 @@ func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 
 func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransactions {
 	a := newWalletTransaction(u, d)
-	a.u.currentCorporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
-			a.corporation.Store(c)
-			a.update()
-		},
-	)
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.corporation.Store(c)
+		a.update(ctx)
+	})
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section == app.CorporationSectionWalletTransactions(d) {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -204,7 +203,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		},
 	}})
 	a := &walletTransactions{
-		footer:       widget.NewLabel(""),
+		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
@@ -360,6 +359,7 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 }
 
 func (a *walletTransactions) filterRows(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
 	client := a.selectClient.Selected
@@ -423,8 +423,10 @@ func (a *walletTransactions) filterRows(sortCol int) {
 		typeOptions := xslices.Map(rows, func(r walletTransactionRow) string {
 			return r.typeName
 		})
+		footer := fmt.Sprintf("Showing %s / %s transactions", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			a.footer.Text = footer
 			a.selectCategory.SetOptions(categoryOptions)
 			a.selectClient.SetOptions(clientOptions)
 			a.selectLocation.SetOptions(locationOPtions)
@@ -436,21 +438,21 @@ func (a *walletTransactions) filterRows(sortCol int) {
 	}()
 }
 
-func (a *walletTransactions) update() {
+func (a *walletTransactions) update(ctx context.Context) {
 	if a.isCorporation() {
-		a.updateCorporation()
+		a.updateCorporation(ctx)
 	} else {
-		a.updateCharacter()
+		a.updateCharacter(ctx)
 	}
 }
 
-func (a *walletTransactions) updateCharacter() {
+func (a *walletTransactions) updateCharacter(ctx context.Context) {
 	var err error
-	rows := make([]walletTransactionRow, 0)
+	var rows []walletTransactionRow
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
-		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
+		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
 			err = err2
@@ -464,9 +466,6 @@ func (a *walletTransactions) updateCharacter() {
 			a.footer.Text = t
 			a.footer.Importance = i
 			a.footer.Refresh()
-			a.footer.Show()
-		} else {
-			a.footer.Hide()
 		}
 	})
 	fyne.Do(func() {
@@ -475,13 +474,13 @@ func (a *walletTransactions) updateCharacter() {
 	})
 }
 
-func (a *walletTransactions) fetchCharacterRows(characterID int64, s services) ([]walletTransactionRow, error) {
-	entries, err := s.cs.ListWalletTransactions(context.Background(), characterID)
+func (a *walletTransactions) fetchCharacterRows(ctx context.Context, characterID int64) ([]walletTransactionRow, error) {
+	entries, err := a.u.cs.ListWalletTransactions(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletTransactionRow, len(entries))
-	for i, o := range entries {
+	var rows []walletTransactionRow
+	for _, o := range entries {
 		total := o.Total()
 		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
@@ -514,18 +513,18 @@ func (a *walletTransactions) fetchCharacterRows(characterID int64, s services) (
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
-		rows[i] = r
+		rows = append(rows, r)
 	}
 	return rows, nil
 }
 
-func (a *walletTransactions) updateCorporation() {
+func (a *walletTransactions) updateCorporation(ctx context.Context) {
 	var err error
 	rows := make([]walletTransactionRow, 0)
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
 	if hasData {
-		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())
+		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
 			err = err2
@@ -550,13 +549,13 @@ func (a *walletTransactions) updateCorporation() {
 	})
 }
 
-func (a *walletTransactions) fetchCorporationRows(corporationID int64, division app.Division, s services) ([]walletTransactionRow, error) {
-	entries, err := s.rs.ListWalletTransactions(context.Background(), corporationID, division)
+func (a *walletTransactions) fetchCorporationRows(ctx context.Context, corporationID int64, division app.Division) ([]walletTransactionRow, error) {
+	entries, err := a.u.rs.ListWalletTransactions(ctx, corporationID, division)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletTransactionRow, len(entries))
-	for i, o := range entries {
+	var rows []walletTransactionRow
+	for _, o := range entries {
 		total := o.Total()
 		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
@@ -590,7 +589,7 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int64, division 
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
-		rows[i] = r
+		rows = append(rows, r)
 	}
 	return rows, nil
 }

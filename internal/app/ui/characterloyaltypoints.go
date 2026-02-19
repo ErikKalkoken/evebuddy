@@ -44,7 +44,6 @@ type characterLoyaltyPoints struct {
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *iwidget.SortButton
-	top           *widget.Label
 	u             *baseUI
 }
 
@@ -73,7 +72,6 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 	a := &characterLoyaltyPoints{
 		columnSorter: columnSorter,
 		rows:         make([]characterLoyaltyPointsRow, 0),
-		top:          widget.NewLabel(""),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
@@ -118,12 +116,23 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 }
 
 func (a *characterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
+	var topBox *fyne.Container
+	if a.u.isMobile {
+		topBox = container.NewVBox(
 			container.NewHBox(a.selectFaction, a.sortButton),
 			a.searchBox,
-		),
+		)
+	} else {
+		topBox = container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(a.selectFaction, a.sortButton),
+			nil,
+			a.searchBox,
+		)
+	}
+	c := container.NewBorder(
+		topBox,
 		a.footer,
 		nil,
 		nil,
@@ -225,36 +234,34 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 			a.filterRows()
 		})
 	}
-	showTop := func(s string, i widget.Importance) {
+	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.top.Text = s
-			a.top.Importance = i
-			a.top.Refresh()
-			a.top.Show()
+			a.footer.Text = s
+			a.footer.Importance = i
+			a.footer.Refresh()
 		})
 	}
 
 	character := a.character.Load()
 	if character == nil {
 		clear()
-		showTop("No character", widget.LowImportance)
+		setFooter("No character", widget.LowImportance)
 		return
 	}
 
 	if !a.u.scs.HasCharacterSection(character.ID, app.SectionCharacterLoyaltyPoints) {
 		clear()
-		showTop("Loading data...", widget.WarningImportance)
+		setFooter("Loading data...", widget.WarningImportance)
 		return
 	}
 
 	rows, err := a.fetchRows(ctx, character.ID)
 	if err != nil {
 		clear()
-		showTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		setFooter("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {
-		a.top.Hide()
 		a.rows = rows
 		a.filterRows()
 	})

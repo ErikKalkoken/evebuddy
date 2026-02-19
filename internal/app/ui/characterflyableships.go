@@ -140,12 +140,16 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 }
 
 func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
+	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)
+	topBox := container.NewVBox(a.top)
+	if a.u.isMobile {
+		topBox.Add(a.search)
+		topBox.Add(container.NewHScroll(buttons))
+	} else {
+		topBox.Add(container.NewBorder(nil, nil, buttons, nil, a.search))
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			a.search,
-			container.NewHScroll(container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)),
-		),
+		topBox,
 		a.footer,
 		nil,
 		nil,
@@ -224,12 +228,12 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {
-			a.selectGroup.SetOptions(groupOptions)
-			a.selectFlyable.SetOptions(flyableOptions)
-			a.rowsFiltered = rows
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
+			a.selectGroup.SetOptions(groupOptions)
+			a.selectFlyable.SetOptions(flyableOptions)
+			a.rowsFiltered = rows
 			a.grid.Refresh()
 			a.grid.ScrollToTop()
 		})

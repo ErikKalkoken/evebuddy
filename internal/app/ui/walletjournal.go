@@ -20,6 +20,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -60,6 +61,7 @@ type walletJournal struct {
 	columnSorter *iwidget.ColumnSorter[walletJournalRow]
 	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
+	footer       *widget.Label
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
@@ -70,16 +72,16 @@ type walletJournal struct {
 
 func newCharacterWalletJournal(u *baseUI) *walletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletJournal {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -88,17 +90,17 @@ func newCharacterWalletJournal(u *baseUI) *walletJournal {
 func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 	a := newWalletJournal(u, d)
 	a.u.currentCorporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
+		func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.update()
+			a.update(ctx)
 		},
 	)
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section == app.CorporationSectionWalletJournal(d) {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -166,8 +168,9 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	a := &walletJournal{
 		columnSorter: iwidget.NewColumnSorter(columns, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
+		footer:       newLabelWithTruncation(),
 		rows:         make([]walletJournalRow, 0),
-		top:          newLabelWithWrapping(),
+		top:          newLabelWithTruncation(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -210,7 +213,7 @@ func (a *walletJournal) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),
-		nil,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -282,24 +285,27 @@ func (a *walletJournal) makeDataList() *iwidget.StripedList {
 }
 
 func (a *walletJournal) filterRows(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	type_ := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		// filter
 		if type_ != "" {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
 				return r.refTypeDisplay != type_
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		// update filters
 		typeOptions := xslices.Map(rows, func(r walletJournalRow) string {
 			return r.refTypeDisplay
 		})
+		footer := fmt.Sprintf("Showing %s / %s entries", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectType.SetOptions(typeOptions)
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -307,21 +313,21 @@ func (a *walletJournal) filterRows(sortCol int) {
 	}()
 }
 
-func (a *walletJournal) update() {
+func (a *walletJournal) update(ctx context.Context) {
 	if a.isCorporation() {
-		a.updateCorporation()
+		a.updateCorporation(ctx)
 	} else {
-		a.updateCharacter()
+		a.updateCharacter(ctx)
 	}
 }
 
-func (a *walletJournal) updateCharacter() {
+func (a *walletJournal) updateCharacter(ctx context.Context) {
 	var err error
-	rows := make([]walletJournalRow, 0)
+	var rows []walletJournalRow
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
-		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
+		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
@@ -343,13 +349,13 @@ func (a *walletJournal) updateCharacter() {
 	})
 }
 
-func (a *walletJournal) updateCorporation() {
+func (a *walletJournal) updateCorporation(ctx context.Context) {
 	var err error
-	rows := make([]walletJournalRow, 0)
+	var rows []walletJournalRow
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
 	if hasData {
-		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())
+		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
@@ -371,12 +377,12 @@ func (a *walletJournal) updateCorporation() {
 	})
 }
 
-func (*walletJournal) fetchCharacterRows(characterID int64, s services) ([]walletJournalRow, error) {
-	entries, err := s.cs.ListWalletJournalEntries(context.Background(), characterID)
+func (a *walletJournal) fetchCharacterRows(ctx context.Context, characterID int64) ([]walletJournalRow, error) {
+	entries, err := a.u.cs.ListWalletJournalEntries(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletJournalRow, 0)
+	var rows []walletJournalRow
 	for _, o := range entries {
 		r := walletJournalRow{
 			amount: o.Amount,
@@ -408,13 +414,12 @@ func (*walletJournal) fetchCharacterRows(characterID int64, s services) ([]walle
 	return rows, nil
 }
 
-func (*walletJournal) fetchCorporationRows(corporationID int64, division app.Division, s services) ([]walletJournalRow, error) {
-	ctx := context.Background()
-	entries, err := s.rs.ListWalletJournalEntries(ctx, corporationID, division)
+func (a *walletJournal) fetchCorporationRows(ctx context.Context, corporationID int64, division app.Division) ([]walletJournalRow, error) {
+	entries, err := a.u.rs.ListWalletJournalEntries(ctx, corporationID, division)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]walletJournalRow, 0)
+	var rows []walletJournalRow
 	for _, o := range entries {
 		r := walletJournalRow{
 			amount: o.Amount,
