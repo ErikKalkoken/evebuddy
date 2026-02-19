@@ -80,15 +80,6 @@ type eveImageService interface {
 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
-// services represents a wrapper for passing the main services to functions.
-type services struct {
-	cs  *characterservice.CharacterService
-	eis eveImageService
-	eus *eveuniverseservice.EveUniverseService
-	rs  *corporationservice.CorporationService
-	scs *statuscacheservice.StatusCacheService
-}
-
 type characterSectionUpdated struct {
 	characterID  int64
 	section      app.CharacterSection
@@ -347,7 +338,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				u.reloadCurrentCharacter()
 			}
 		case app.SectionCharacterMailHeaders:
-			u.updateMailIndicator()
+			u.updateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
 			updateStatus()
 			if isShown {
@@ -593,16 +584,6 @@ func (u *baseUI) ShowAndRun() {
 	slog.Info("App terminated")
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
-	}
-}
-
-func (u *baseUI) services() services {
-	return services{
-		cs:  u.cs,
-		eis: u.eis,
-		eus: u.eus,
-		rs:  u.rs,
-		scs: u.scs,
 	}
 }
 
@@ -901,14 +882,14 @@ func (u *baseUI) setColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
 }
 
-func (u *baseUI) updateMailIndicator() {
+func (u *baseUI) updateMailIndicator(ctx context.Context) {
 	if u.showMailIndicator == nil || u.hideMailIndicator == nil {
 		return
 	}
 	if !u.settings.SysTrayEnabled() {
 		return
 	}
-	n, err := u.cs.GetAllMailUnreadCount(context.Background())
+	n, err := u.cs.GetAllMailUnreadCount(ctx)
 	if err != nil {
 		slog.Error("update mail indicator", "error", err)
 		return

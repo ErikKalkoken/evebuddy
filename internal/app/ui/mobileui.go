@@ -606,7 +606,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		go u.characterMails.resetCurrentFolder()
+		go u.characterMails.resetCurrentFolder(context.Background())
 		go u.characterCommunications.resetCurrentFolder()
 	}
 	u.onShowCharacter = func() {

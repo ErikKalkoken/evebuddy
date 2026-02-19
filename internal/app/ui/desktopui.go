@@ -643,7 +643,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onAppFirstStarted = func() {
 		u.enableShortcuts()
-		go u.updateMailIndicator()
+		go u.updateMailIndicator(context.Background())
 		go statusBar.start()
 	}
 	u.onAppStopped = func() {
