@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"sync/atomic"
@@ -105,8 +104,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			main := ttwidget.NewRichText()
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			spacer := canvas.NewRectangle(color.Transparent)
-			spacer.SetMinSize(fyne.NewSize(40, 10))
+			spacer := newSpacer(fyne.NewSize(40, 10))
 			prefix := widget.NewLabel("-9.9")
 			return container.NewBorder(
 				nil,

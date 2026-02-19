@@ -381,7 +381,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 }
 
 func (a *marketOrders) filterRows(sortCol int) {
-	total := len(a.rows)
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	owner := a.selectOwner.Selected
@@ -436,7 +436,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 			return r.typeName
 		})
 
-		footer := fmt.Sprintf("Showing %d / %d orders", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d orders", len(rows), totalRows)
 		var value float64
 		for _, r := range rows {
 			value += r.price * float64(r.volumeRemain)

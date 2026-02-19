@@ -85,8 +85,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		})
 	}
 
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(a.updatingIndicator.MinSize())
+	spacer := newSpacer(a.updatingIndicator.MinSize())
 	a.updateStatus = newStatusBarItemWithTrailing(
 		theme.NewThemedResource(icons.UpdateSvg),
 		container.NewStack(spacer, a.updatingIndicator),

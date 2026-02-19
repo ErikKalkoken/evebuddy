@@ -347,7 +347,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 }
 
 func (a *contracts) filterRows(sortCol int) {
-	total := len(a.rows)
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
 	assignee := a.selectAssignee.Selected
@@ -407,7 +407,7 @@ func (a *contracts) filterRows(sortCol int) {
 			return r.typeName
 		})
 
-		footer := fmt.Sprintf("Showing %d / %d contracts", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d contracts", len(rows), totalRows)
 
 		fyne.Do(func() {
 			a.footer.Text = footer

@@ -289,7 +289,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *colonies) filterRows(sortCol int) {
-	total := len(a.rows)
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
 	owner := a.selectOwner.Selected
@@ -374,7 +374,7 @@ func (a *colonies) filterRows(sortCol int) {
 		extractingOptions := slices.Collect(extracting2.All())
 		producingOptions := slices.Collect(producing2.All())
 
-		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
 		var expired int
 		for _, r := range rows {
 			if r.isExpired() {

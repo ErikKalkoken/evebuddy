@@ -297,7 +297,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *clones) filterRows(sortCol int) {
-	total := len(a.rows)
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
 	region := a.selectRegion.Selected
@@ -342,7 +342,7 @@ func (a *clones) filterRows(sortCol int) {
 			return r.jc.Location.SolarSystemName()
 		})
 
-		footer := fmt.Sprintf("Showing %d / %d clones", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d clones", len(rows), totalRows)
 
 		fyne.Do(func() {
 			a.footer.Text = footer

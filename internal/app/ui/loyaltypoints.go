@@ -286,13 +286,7 @@ func (a *loyaltyPoints) filterTree() {
 		}
 		tagOptions := slices.Collect(tags.All())
 
-		var bottom string
-		if total := len(data); total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d corporations", len(corporations), total)
-		} else {
-			bottom = ""
-		}
-
+		bottom := fmt.Sprintf("Showing %d / %d corporations", len(corporations), len(data))
 		fyne.Do(func() {
 			a.footer.Text = bottom
 			a.footer.Importance = widget.MediumImportance

@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"path/filepath"
 	"slices"
@@ -993,8 +992,7 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 
 func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(w.button.MinSize())
+	spacer := newSpacer(w.button.MinSize())
 	c := container.NewHBox(
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
 		w.title,

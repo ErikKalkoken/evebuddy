@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -406,8 +404,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 			p := theme.Padding()
 			activityIcon := widget.NewIcon(icons.BlankSvg)
 			statusIcon := widget.NewIcon(icons.BlankSvg)
-			spacer := canvas.NewRectangle(color.Transparent)
-			spacer.SetMinSize(fyne.NewSize(1, p))
+			spacer := newSpacer(fyne.NewSize(1, p))
 			return container.NewBorder(
 				nil,
 				nil,
@@ -477,7 +474,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 // filterRows applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *industryJobs) filterRows(sortCol int) {
-	total := len(a.rows)
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
 	activity := a.selectActivity.Selected
@@ -561,7 +558,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
-		footer := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(total))
+		footer := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
 			a.footer.Text = footer
