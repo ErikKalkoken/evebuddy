@@ -351,7 +351,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		case app.SectionCharacterRoles:
 			updateStatus()
 			if isShown {
-				go u.characterSheet.update()
+				go u.characterSheet.update(ctx)
 			}
 			character, err := u.cs.GetCharacter(ctx, arg.characterID)
 			if err != nil {

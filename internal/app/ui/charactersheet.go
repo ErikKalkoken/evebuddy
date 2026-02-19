@@ -74,11 +74,11 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	a.ExtendBaseWidget(a)
 
 	// Signals
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
@@ -89,10 +89,10 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 			app.SectionCharacterShip,
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		c := a.character.Load()
 		if c == nil {
 			return
@@ -101,14 +101,14 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		switch arg.section {
 		case app.SectionEveCharacters:
 			if arg.changed.Contains(characterID) {
-				a.update()
+				a.update(ctx)
 			}
 		case app.SectionEveCorporations:
 			if arg.changed.Contains(c.EveCharacter.Corporation.ID) {
-				a.update()
+				a.update(ctx)
 			}
 		case app.SectionEveMarketPrices:
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
@@ -149,19 +149,24 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterSheet) update() {
-	c := a.character.Load()
-	if c == nil || c.EveCharacter == nil {
+func (a *characterSheet) update(ctx context.Context) {
+	setName := func(s string) {
 		fyne.Do(func() {
-			a.name.Text = "No character..."
+			a.name.Text = s
 			a.name.OnTapped = nil
 			a.name.Refresh()
 		})
+	}
+	c := a.character.Load()
+	if c == nil || c.EveCharacter == nil {
+		setName("No character...")
 		return
 	}
-	c2, err := a.u.cs.GetCharacter(context.Background(), c.ID)
+	c2, err := a.u.cs.GetCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("Failed to fetch character for sheet", "err", err)
+		setName("ERROR: " + a.u.humanizeError(err))
+		return
 	} else {
 		a.character.Store(c2)
 		c = c2
@@ -246,7 +251,7 @@ func (a *characterSheet) update() {
 	})
 
 	var s string
-	tags, err := a.u.cs.ListTagsForCharacter(context.Background(), c.ID)
+	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("character sheet: update", "characterID", c.ID, "error", "err")
 		s = "?"

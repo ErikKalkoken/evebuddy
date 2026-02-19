@@ -28,7 +28,7 @@ func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))
 
-	ui.characterBiography.update()
+	ui.characterBiography.update(t.Context())
 
 	test.AssertImageMatches(t, "characterbiography/master.png", w.Canvas().Capture())
 }
