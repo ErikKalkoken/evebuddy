@@ -248,14 +248,13 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		a.selectRegion,
 		a.selectSolarSystem,
 		a.selectTag,
-		a.sortButton,
 	)
-	topBox := container.NewVBox()
+	var topBox *fyne.Container
 	if a.u.isMobile {
-		topBox.Add(a.search)
-		topBox.Add(container.NewHScroll(filters))
+		filters.Add(a.sortButton)
+		topBox = container.NewVBox(a.search, container.NewHScroll(filters))
 	} else {
-		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.search))
+		topBox = container.NewBorder(nil, nil, filters, a.sortButton, a.search)
 	}
 	c := container.NewBorder(
 		topBox,
