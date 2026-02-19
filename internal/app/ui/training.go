@@ -608,13 +608,13 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 		return
 	}
 	sq := newCharacterSkillQueueWithCharacter(a.u, c)
-	sq.update()
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
 		sq.stop()
 	})
+	go sq.update(context.Background())
 	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
 	setDetailWindow(detailWindowParams{
 		content:        sq,

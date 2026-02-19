@@ -63,18 +63,18 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 
 	// Signals
 	if a.showCurrentCharacter {
-		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.update()
+			a.update(ctx)
 		}, a.signalKey)
 	}
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		switch arg.section {
 		case app.SectionCharacterSkillqueue:
-			a.update()
+			a.update(ctx)
 		}
 	}, a.signalKey)
 	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
@@ -87,11 +87,11 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 			return
 		}
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	}, a.signalKey)
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.update()
+			a.update(ctx)
 		})
 	}, a.signalKey)
 	return a
@@ -166,7 +166,7 @@ func (a *characterSkillQueue) stop() {
 	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
 }
 
-func (a *characterSkillQueue) update() {
+func (a *characterSkillQueue) update(ctx context.Context) {
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			a.top.Text = s
@@ -194,7 +194,7 @@ func (a *characterSkillQueue) update() {
 		clear()
 		return
 	}
-	err := a.skillqueue.Update(context.Background(), a.u.cs, c.ID)
+	err := a.skillqueue.Update(ctx, a.u.cs, c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
@@ -211,6 +211,7 @@ func (a *characterSkillQueue) update() {
 	} else {
 		setTop("Training not active", widget.MediumImportance)
 	}
+
 	fyne.Do(func() {
 		var r fyne.Resource
 		var s string
@@ -227,8 +228,6 @@ func (a *characterSkillQueue) update() {
 		a.status.SetResource(r)
 		a.status.SetToolTip(s)
 		a.status.Show()
-	})
-	if a.OnUpdate != nil {
 		var s1, s2 string
 		if isActive {
 			if c := a.skillqueue.CompletionP(); c.ValueOrZero() < 1 {
@@ -239,8 +238,10 @@ func (a *characterSkillQueue) update() {
 			s1 = "!"
 			s2 = "No skill in training"
 		}
-		a.OnUpdate(s1, s2)
-	}
+		if a.OnUpdate != nil {
+			go a.OnUpdate(s1, s2)
+		}
+	})
 
 	fyne.Do(func() {
 		if a.skillqueue.Size() == 0 {
