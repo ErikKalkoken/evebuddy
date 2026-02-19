@@ -86,7 +86,7 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			n, _ := a.tree.Data().ChildrenCount(nil)
+			n := a.tree.Data().ChildrenCount(nil)
 			a.refreshTop(n)
 		})
 	})
@@ -195,7 +195,7 @@ func (a *characterJumpClones) updateAsync() {
 		return
 	}
 	fyne.Do(func() {
-		n, _ := td.ChildrenCount(nil)
+		n := td.ChildrenCount(nil)
 		a.refreshTop(n)
 		a.tree.Set(td)
 	})

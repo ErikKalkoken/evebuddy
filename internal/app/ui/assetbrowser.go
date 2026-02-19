@@ -507,8 +507,7 @@ func (a *assetBrowserNavigation) filterLocations() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	var td iwidget.TreeData[assetContainerNode]
 	ft := a.filteredTrees[filter]
-	count, _ := ft.td.ChildrenCount(nil)
-	top := fmt.Sprintf("%d locations", count)
+	top := fmt.Sprintf("%d locations", ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.search.Text)
 
 	go func() {

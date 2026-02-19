@@ -223,8 +223,7 @@ func TestTreeData_ChildrenCount(t *testing.T) {
 		td.Add(nil, branch2, true)
 		td.Add(branch2, &Node{"Alpha2"}, false)
 		td.Add(branch2, &Node{"Bravo2"}, false)
-		got, ok := td.ChildrenCount(branch1)
-		require.True(t, ok)
+		got := td.ChildrenCount(branch1)
 		assert.Equal(t, 2, got)
 	})
 	t.Run("can return count for a root node2", func(t *testing.T) {
@@ -235,21 +234,19 @@ func TestTreeData_ChildrenCount(t *testing.T) {
 		branch2 := &Node{"Branch2"}
 		td.Add(nil, branch2, true)
 		td.Add(branch2, &Node{"Alpha2"}, false)
-		got, ok := td.ChildrenCount(nil)
-		require.True(t, ok)
+		got := td.ChildrenCount(nil)
 		assert.Equal(t, 2, got)
 	})
 	t.Run("can return the count for of an empty td", func(t *testing.T) {
 		var td iwidget.TreeData[Node]
-		got, ok := td.ChildrenCount(nil)
-		require.True(t, ok)
+		got := td.ChildrenCount(nil)
 		assert.Equal(t, 0, got)
 	})
 	t.Run("should return error when node was not found", func(t *testing.T) {
 		var td iwidget.TreeData[Node]
 		invalid := &Node{}
-		_, ok := td.ChildrenCount(invalid)
-		assert.False(t, ok)
+		got := td.ChildrenCount(invalid)
+		assert.Equal(t, 0, got)
 	})
 }
 

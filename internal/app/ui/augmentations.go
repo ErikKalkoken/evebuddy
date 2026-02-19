@@ -165,7 +165,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 }
 
 func (a *augmentations) filterTree() {
-	total, _ := a.treeData.ChildrenCount(nil)
+	total := a.treeData.ChildrenCount(nil)
 	tag := a.selectTag.Selected
 	implants := a.selectImplants.Selected
 	td := a.treeData.Clone()
@@ -212,8 +212,7 @@ func (a *augmentations) filterTree() {
 		})...).All())
 		var bottom string
 		if total > 0 {
-			count, _ := td.ChildrenCount(nil)
-			bottom = fmt.Sprintf("Showing %d / %d characters", count, total)
+			bottom = fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
 		} else {
 			bottom = ""
 		}
