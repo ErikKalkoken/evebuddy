@@ -427,6 +427,8 @@ func (a *walletTransactions) filterRows(sortCol int) {
 
 		fyne.Do(func() {
 			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectCategory.SetOptions(categoryOptions)
 			a.selectClient.SetOptions(clientOptions)
 			a.selectLocation.SetOptions(locationOPtions)

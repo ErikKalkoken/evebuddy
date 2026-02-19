@@ -191,8 +191,8 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 }
 
 func (a *characterLoyaltyPoints) filterRows() {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	total := len(rows)
 	search := strings.ToLower(a.searchBox.Text)
 	faction := a.selectFaction.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
@@ -213,7 +213,7 @@ func (a *characterLoyaltyPoints) filterRows() {
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
-		footer := fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
+		footer := fmt.Sprintf("Showing %d / %d corporations", len(rows), totalRows)
 
 		fyne.Do(func() {
 			a.footer.Text = footer
