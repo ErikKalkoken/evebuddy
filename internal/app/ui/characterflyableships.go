@@ -84,7 +84,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		bottom:       widget.NewLabel(""),
 		rows:         make([]flyableShipRow, 0),
 		rowsFiltered: make([]flyableShipRow, 0),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

@@ -156,7 +156,7 @@ func newClones(u *baseUI) *clones {
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

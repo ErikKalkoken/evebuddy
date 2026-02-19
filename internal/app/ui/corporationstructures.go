@@ -150,7 +150,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
-		bottom:       makeTopLabel(),
+		bottom:       newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

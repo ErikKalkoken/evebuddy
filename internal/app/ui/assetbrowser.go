@@ -225,7 +225,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		filteredTrees: make(map[assetFilter]filteredTree),
 		filters:       make([]assetFilter, 0),
 		search:        widget.NewEntry(),
-		top:           makeTopLabel(),
+		top:           newLabelWithWrap(),
 	}
 	a.ExtendBaseWidget(a)
 

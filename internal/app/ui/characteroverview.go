@@ -159,7 +159,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

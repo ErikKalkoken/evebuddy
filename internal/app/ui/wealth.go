@@ -48,7 +48,7 @@ func newWealth(u *baseUI) *wealth {
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),
 		characterSplit: prop.NewPieChart(""),
-		top:            makeTopLabel(),
+		top:            newLabelWithWrap(),
 		totalSplit:     prop.NewPieChart(""),
 		u:              u,
 		walletDetail:   coord.NewCartesianCategoricalChart(""),

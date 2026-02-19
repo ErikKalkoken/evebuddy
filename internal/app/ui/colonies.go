@@ -164,7 +164,7 @@ func newColonies(u *baseUI) *colonies {
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

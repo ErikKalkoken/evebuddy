@@ -167,7 +167,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		columnSorter: iwidget.NewColumnSorter(columns, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrap(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

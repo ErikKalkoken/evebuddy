@@ -835,12 +835,14 @@ func (u *baseUI) setAnyCorporation() error {
 func (u *baseUI) initHome() {
 	ff := map[string]func(){
 		"characterOverview": u.characterOverview.update,
-		"assetSearchAll":    u.assetSearchAll.update,
-		"augmentations":     u.augmentations.update,
-		"contracts":         u.contracts.update,
-		"clones":            u.clones.update,
-		"colonies":          u.colonies.update,
-		"industryJobs":      u.industryJobs.update,
+		"assetSearchAll": func() {
+			u.assetSearchAll.update(context.Background())
+		},
+		"augmentations": u.augmentations.update,
+		"contracts":     u.contracts.update,
+		"clones":        u.clones.update,
+		"colonies":      u.colonies.update,
+		"industryJobs":  u.industryJobs.update,
 		"loyaltyPoints": func() {
 			u.loyaltyPoints.update(context.Background())
 		},

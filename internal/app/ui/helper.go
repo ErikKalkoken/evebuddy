@@ -42,8 +42,8 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 	return w
 }
 
-// makeTopLabel returns a new empty label meant for the top bar on a screen.
-func makeTopLabel() *widget.Label {
+// newLabelWithWrap returns a new empty label meant for the top bar on a screen.
+func newLabelWithWrap() *widget.Label {
 	l := widget.NewLabel("")
 	l.Wrapping = fyne.TextWrapWord
 	return l

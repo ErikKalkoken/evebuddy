@@ -59,7 +59,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          makeTopLabel(),
+		total:          newLabelWithWrap(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
