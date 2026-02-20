@@ -223,7 +223,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			nil,
 		)
 	} else {
@@ -266,13 +266,13 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		slotsFreeSome,
 		slotsFreeNone,
 	}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
@@ -348,7 +348,7 @@ func (a *industrySlots) makeDataTable(headers iwidget.DataColumns[industrySlotRo
 	return w
 }
 
-func (a *industrySlots) filterRows(sortCol int) {
+func (a *industrySlots) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
@@ -421,7 +421,7 @@ func (a *industrySlots) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

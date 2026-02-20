@@ -246,7 +246,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r marketOrderRow) {
+			a.filterRowsAsync, func(_ int, r marketOrderRow) {
 				showMarketOrderWindow(a.u, r)
 			})
 	} else {
@@ -254,27 +254,27 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("", []string{
 		marketOrderStateActive,
 		marketOrderStateHistory,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectState.Selected = marketOrderStateActive
 	a.selectState.SortDisabled = true
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -378,7 +378,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *marketOrders) filterRows(sortCol int) {
+func (a *marketOrders) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -470,7 +470,7 @@ func (a *marketOrders) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

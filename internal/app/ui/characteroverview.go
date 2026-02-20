@@ -166,10 +166,10 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search character names"
 	if !a.u.isMobile {
@@ -179,22 +179,22 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}
 
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -347,7 +347,7 @@ func (a *characterOverview) makeList() *widget.List {
 	return l
 }
 
-func (a *characterOverview) filterRows(sortCol int) {
+func (a *characterOverview) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	alliance := a.selectAlliance.Selected
@@ -429,7 +429,7 @@ func (a *characterOverview) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			clear(a.rows)
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
@@ -449,7 +449,7 @@ func (a *characterOverview) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.loadInfo.Hide()
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if a.onUpdate != nil {
 			a.onUpdate(len(rows))
 		}
@@ -478,7 +478,7 @@ func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

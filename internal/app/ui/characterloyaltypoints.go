@@ -87,14 +87,14 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 		if len(s) == 1 {
 			return
 		}
-		a.filterRows()
+		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
 	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
-		a.filterRows()
+		a.filterRowsAsync()
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows()
+		a.filterRowsAsync()
 	}, a.u.window)
 
 	// signals
@@ -190,7 +190,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 	return l
 }
 
-func (a *characterLoyaltyPoints) filterRows() {
+func (a *characterLoyaltyPoints) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchBox.Text)
@@ -231,7 +231,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 		fyne.Do(func() {
 			clear(a.rowsFiltered)
 			clear(a.rows)
-			a.filterRows()
+			a.filterRowsAsync()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
@@ -263,7 +263,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows()
+		a.filterRowsAsync()
 	})
 }
 

@@ -247,7 +247,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r industryJobRow) {
+			a.filterRowsAsync, func(_ int, r industryJobRow) {
 				a.showIndustryJobWindow(r)
 			})
 	}
@@ -255,19 +255,19 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
 	a.search.OnChanged = func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -277,7 +277,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
 	a.selectStatus.SortDisabled = true
@@ -290,18 +290,18 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window, 6, 7)
 
 	if forCorporation {
@@ -480,9 +480,9 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-// filterRows applies all filters and sorting and freshes the list with the changed rows.
+// filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *industryJobs) filterRows(sortCol int) {
+func (a *industryJobs) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
@@ -608,7 +608,7 @@ func (a *industryJobs) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = jobs
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if a.OnUpdate != nil {
 			a.OnUpdate(readyCount)
 		}

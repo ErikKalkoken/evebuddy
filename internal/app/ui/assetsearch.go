@@ -306,10 +306,10 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	a.ExtendBaseWidget(a)
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search items"
 
@@ -324,25 +324,25 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
-			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
+			a.columnSorter, a.filterRowsAsync, func(_ int, r assetRow) {
 				showAssetDetailWindow(u, r)
 			})
 	}
 
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
@@ -351,14 +351,14 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			assetsTotalNo,
 		},
 		func(s string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 	)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -478,7 +478,7 @@ func (a *assetSearch) focus() {
 	a.u.MainWindow().Canvas().Focus(a.search)
 }
 
-func (a *assetSearch) filterRows(sortCol int) {
+func (a *assetSearch) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -594,7 +594,7 @@ func (a *assetSearch) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			clear(a.rows)
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -626,7 +626,7 @@ func (a *assetSearch) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.top.Hide()
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

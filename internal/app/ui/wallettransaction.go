@@ -222,7 +222,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(_ int, r walletTransactionRow) {
 				if a.isCorporation() {
 					showCorporationWalletTransactionWindow(a.u, r.corporationID, r.division, r.transactionID)
@@ -238,16 +238,16 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		marketTransactionActivityBuy,
 		marketTransactionActivitySell,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
 		"Client",
 		[]string{},
 		func(_ string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 		a.u.window,
 	)
@@ -255,7 +255,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		"Location",
 		[]string{},
 		func(_ string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 		a.u.window,
 	)
@@ -263,18 +263,18 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		"Type",
 		[]string{},
 		func(_ string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 		a.u.window,
 	)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
 		[]string{}, func(string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 		a.u.window,
 	)
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	return a
 }
@@ -358,7 +358,7 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *walletTransactions) filterRows(sortCol int) {
+func (a *walletTransactions) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -472,7 +472,7 @@ func (a *walletTransactions) updateCharacter(ctx context.Context) {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 
@@ -547,7 +547,7 @@ func (a *walletTransactions) updateCorporation(ctx context.Context) {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

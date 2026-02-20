@@ -179,7 +179,7 @@ func newColonies(u *baseUI) *colonies {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r colonyRow) {
+			a.filterRowsAsync, func(_ int, r colonyRow) {
 				a.showColonyWindow(r)
 			})
 	} else {
@@ -210,34 +210,34 @@ func newColonies(u *baseUI) *colonies {
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusOffline,
 	}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -288,7 +288,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *colonies) filterRows(sortCol int) {
+func (a *colonies) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
@@ -414,7 +414,7 @@ func (a *colonies) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		a.setOnUpdate()
 	})
 }

@@ -93,21 +93,21 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a.search.SetPlaceHolder("Search type and class names")
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.grid = a.makeShipsGrid()
 
@@ -185,7 +185,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *characterFlyableShips) filterRows(sortCol int) {
+func (a *characterFlyableShips) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	group := a.selectGroup.Selected
@@ -248,7 +248,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 			a.search.SetText("")
 			a.selectGroup.SetOptions([]string{})
 			a.selectFlyable.SetOptions([]string{})
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -326,7 +326,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.search.Enable()
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

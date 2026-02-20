@@ -61,7 +61,7 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		if len(s) == 1 {
 			return
 		}
-		a.filterRows()
+		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
 	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
@@ -145,7 +145,7 @@ func (a *corporationMember) makeList() *widget.List {
 	return l
 }
 
-func (a *corporationMember) filterRows() {
+func (a *corporationMember) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchBox.Text)
@@ -201,7 +201,7 @@ func (a *corporationMember) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows()
+		a.filterRowsAsync()
 	})
 }
 

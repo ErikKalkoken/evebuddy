@@ -164,7 +164,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r corporationStructureRow) {
+			a.filterRowsAsync, func(_ int, r corporationStructureRow) {
 				showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
 			},
 		)
@@ -196,28 +196,28 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
@@ -250,7 +250,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationStructures) filterRows(sortCol int) {
+func (a *corporationStructures) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -338,7 +338,7 @@ func (a *corporationStructures) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			clear(a.rows)
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}
 	corporationID := corporationIDOrZero(a.corporation.Load())
@@ -365,7 +365,7 @@ func (a *corporationStructures) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if a.OnUpdate != nil {
 			a.OnUpdate(reinforceCount)
 		}

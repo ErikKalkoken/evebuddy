@@ -280,7 +280,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategoryOther,
 			assetCategoryAll,
 		}, func(string) {
-			a.filterLocations()
+			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = assetCategoryOffice
 		a.selectCategory.SortDisabled = true
@@ -299,7 +299,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategorySafety,
 			assetCategoryAll,
 		}, func(string) {
-			a.filterLocations()
+			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = assetCategoryPersonal
 		a.selectCategory.SortDisabled = true
@@ -310,11 +310,11 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a.collapseAll.SetToolTip("Collapse branches")
 
 	a.search.OnChanged = func(s string) {
-		a.filterLocations()
+		a.filterLocationsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterLocations()
+		a.filterLocationsAsync()
 	})
 	a.search.PlaceHolder = "Search locations"
 	return a
@@ -358,7 +358,7 @@ func (a *assetBrowserNavigation) update(ctx context.Context, trees []*asset.Node
 	}
 	fyne.Do(func() {
 		a.filteredTrees = filteredTrees
-		a.filterLocations()
+		a.filterLocationsAsync()
 	})
 }
 
@@ -503,7 +503,7 @@ var assetFilterLookup = map[string]assetFilter{
 	assetCategorySafety:     assetSafety,
 }
 
-func (a *assetBrowserNavigation) filterLocations() {
+func (a *assetBrowserNavigation) filterLocationsAsync() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	var td iwidget.TreeData[assetContainerNode]
 	ft := a.filteredTrees[filter]

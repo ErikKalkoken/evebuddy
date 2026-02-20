@@ -91,17 +91,17 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
 	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterTree()
+		a.filterTreeAsync()
 	}, a.u.window)
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Search corporations")
@@ -112,10 +112,10 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 		if len(s) == 1 {
 			return
 		}
-		a.filterTree()
+		a.filterTreeAsync()
 	}
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 
 	// signals
@@ -213,7 +213,7 @@ func (a *loyaltyPoints) makeTree() *iwidget.Tree[loyaltyPointsNode] {
 	return t
 }
 
-func (a *loyaltyPoints) filterTree() {
+func (a *loyaltyPoints) filterTreeAsync() {
 	data := maps.Clone(a.data)
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
@@ -315,7 +315,7 @@ func (a *loyaltyPoints) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.data = data
-		a.filterTree()
+		a.filterTreeAsync()
 		a.top.Hide()
 	})
 }

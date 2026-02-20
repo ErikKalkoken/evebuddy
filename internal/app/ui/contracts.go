@@ -188,7 +188,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(column int, r contractRow) {
 				if a.forCorporation {
 					showCorporationContractWindow(a.u, r.corporationID, r.contractID)
@@ -200,13 +200,13 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	}
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -216,15 +216,15 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		contractStatusHasIssue,
 		contractStatusHistory,
 	}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectStatus.Selected = contractStatusAllActive
 	a.selectStatus.SortDisabled = true
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -346,7 +346,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *contracts) filterRows(sortCol int) {
+func (a *contracts) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
@@ -443,7 +443,7 @@ func (a *contracts) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if a.OnUpdate != nil {
 			a.OnUpdate(activeCount)
 		}

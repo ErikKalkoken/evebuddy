@@ -174,7 +174,7 @@ func newClones(u *baseUI) *clones {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(c int, r cloneRow) {
 				switch c {
 				case 0:
@@ -228,21 +228,21 @@ func newClones(u *baseUI) *clones {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// signals
@@ -296,7 +296,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *clones) filterRows(sortCol int) {
+func (a *clones) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
@@ -367,13 +367,13 @@ func (a *clones) update(ctx context.Context) {
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 			clear(a.rows)
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 		return
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if len(rows) > 0 && a.origin != nil {
 			a.updateRoutesAsync()
 		}
@@ -446,7 +446,7 @@ func (a *clones) updateRoutesAsync() {
 				a.rows[i].route = m[solarSystem.ID]
 			}
 			a.columnSorter.Set(clonesColJumps, iwidget.SortAsc)
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}()
 }

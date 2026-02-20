@@ -64,10 +64,10 @@ func newAugmentations(u *baseUI) *augmentations {
 		augmentationsImplantsNone,
 		augmentationsImplantsSome,
 	}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
@@ -164,7 +164,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 	return t
 }
 
-func (a *augmentations) filterTree() {
+func (a *augmentations) filterTreeAsync() {
 	total := a.treeData.ChildrenCount(nil)
 	tag := a.selectTag.Selected
 	implants := a.selectImplants.Selected
@@ -235,7 +235,7 @@ func (a *augmentations) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.treeData = td
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 }
 

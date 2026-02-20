@@ -247,10 +247,10 @@ func newTraining(u *baseUI) *training {
 	a.ExtendBaseWidget(a)
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
 	if a.u.isMobile {
@@ -265,7 +265,7 @@ func newTraining(u *baseUI) *training {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(_ int, r trainingRow) {
 				a.showTrainingQueueWindow(r)
 			},
@@ -277,14 +277,14 @@ func newTraining(u *baseUI) *training {
 			trainingStatusActive,
 			trainingStatusInActive,
 		}, func(string) {
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		},
 	)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -423,7 +423,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *training) filterRows(sortCol int) {
+func (a *training) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
@@ -487,7 +487,7 @@ func (a *training) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		a.refreshOnUpdate()
 	})
 }
@@ -514,7 +514,7 @@ func (a *training) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		a.refreshOnUpdate()
 	})
 }
