@@ -114,7 +114,7 @@ type baseUI struct {
 	onShowAndRun                    func()
 	onUpdateCorporationWalletTotals func(balance float64, ok bool)
 	onUpdateMissingScope            func(characterCount int)
-	onUpdateStatus                  func()
+	onUpdateStatus                  func(ctx context.Context)
 	showMailIndicator               func()
 	showManageCharacters            func()
 
@@ -304,17 +304,17 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 
 	// updateStatus refreshes all status pages and dynamic menus.
-	updateStatus := func() {
+	updateStatus := func(ctx context.Context) {
 		if u.onUpdateStatus == nil {
 			return
 		}
-		u.onUpdateStatus()
+		u.onUpdateStatus(ctx)
 	}
 
 	// Signal logging and base listeners
-	u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: characterExchanged", "characterID", characterIDOrZero(c))
-		updateStatus()
+		updateStatus(ctx)
 	})
 	u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		slog.Debug("Signal: characterSectionChanged", "arg", arg)
@@ -340,7 +340,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		case app.SectionCharacterMailHeaders:
 			u.updateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
-			updateStatus()
+			updateStatus(ctx)
 			if isShown {
 				go u.characterSheet.update(ctx)
 			}
@@ -364,28 +364,28 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
-	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		updateStatus()
+	u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		updateStatus(ctx)
 	})
-	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		updateStatus()
+	u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		updateStatus(ctx)
 	})
 
-	u.corporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
-		updateStatus()
+	u.corporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		updateStatus(ctx)
 	})
-	u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
-		updateStatus()
-		u.updateCorporationWalletTotal()
+		updateStatus(ctx)
+		u.updateCorporationWalletTotal(ctx)
 	})
-	u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		slog.Debug("Signal: corporationSectionChanged", "arg", arg)
 		if u.currentCorporationID() != arg.corporationID {
 			return
 		}
 		if arg.section == app.SectionCorporationWalletBalances {
-			u.updateCorporationWalletTotal()
+			u.updateCorporationWalletTotal(ctx)
 		}
 	})
 
@@ -398,7 +398,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			}
 			characters := u.scs.ListCharacterIDs()
 			if characters.ContainsAny(arg.changed.All()) {
-				updateStatus()
+				updateStatus(ctx)
 			}
 		case app.SectionEveCorporations:
 			if arg.changed.Contains(u.currentCorporationID()) {
@@ -417,7 +417,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				return
 			}
 			if arg.changed.ContainsAny(corporationIDs.All()) {
-				updateStatus()
+				updateStatus(ctx)
 			}
 		case app.SectionEveMarketPrices:
 			for _, c := range u.scs.ListCharacters() {
@@ -915,16 +915,13 @@ func (u *baseUI) sendDesktopNotification(title, content string) {
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
-func (u *baseUI) updateCorporationWalletTotal() {
-	if u.onUpdateCorporationWalletTotals == nil {
-		return
-	}
+func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 	v, ok := func() (float64, bool) {
 		corporationID := u.currentCorporationID()
 		if corporationID == 0 {
 			return 0, false
 		}
-		hasRole, err := u.rs.PermittedSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
+		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
 			return 0, false
@@ -932,17 +929,16 @@ func (u *baseUI) updateCorporationWalletTotal() {
 		if !hasRole {
 			return 0, false
 		}
-		b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
+		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
 		if err != nil {
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
 			return 0, false
 		}
-		if b.IsEmpty() {
-			return 0, false
-		}
-		return b.ValueOrZero(), true
+		return b.Value()
 	}()
-	u.onUpdateCorporationWalletTotals(v, ok)
+	fyne.Do(func() {
+		u.onUpdateCorporationWalletTotals(v, ok)
+	})
 }
 
 func (u *baseUI) availableUpdate() (github.VersionInfo, error) {

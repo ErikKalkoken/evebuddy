@@ -444,10 +444,10 @@ func (a *contracts) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
+		if a.OnUpdate != nil {
+			a.OnUpdate(activeCount)
+		}
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(activeCount)
-	}
 }
 
 func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {

@@ -446,13 +446,13 @@ func (a *characterOverview) update(ctx context.Context) {
 		slog.Error("Failed to refresh overview UI", "err", err)
 		return
 	}
-	if a.onUpdate != nil {
-		a.onUpdate(len(rows))
-	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.loadInfo.Hide()
 		a.filterRows(-1)
+		if a.onUpdate != nil {
+			a.onUpdate(len(rows))
+		}
 	})
 }
 

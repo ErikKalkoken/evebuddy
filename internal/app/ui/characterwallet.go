@@ -114,13 +114,13 @@ func (a *characterWallet) updateBalance(ctx context.Context) {
 		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
 		return s, widget.MediumImportance
 	})
-	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(balance)
-	}
-	if a.onTopUpdate != nil {
-		a.onTopUpdate(t)
-	}
 	fyne.Do(func() {
+		if a.onTopUpdate != nil {
+			a.onTopUpdate(t)
+		}
+		if a.onBalanceUpdate != nil {
+			a.onBalanceUpdate(balance)
+		}
 		a.balance.Text = t
 		a.balance.Importance = i
 		a.balance.Refresh()

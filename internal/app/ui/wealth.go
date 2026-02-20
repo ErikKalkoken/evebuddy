@@ -167,17 +167,18 @@ func (a *wealth) update(ctx context.Context) {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
-	// totals
-	if a.onUpdate != nil {
-		a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
-	}
-
 	a.updateAssetDetail(ctx, rows, totalAssets)
 	a.updateAssetSplit(ctx, rows, totalAssets)
 	a.updateCharacterSplit(ctx, rows, totalAssets, totalWallet)
 	a.updateTotalSplit(ctx, totalAssets, totalWallet)
 	a.updateWalletDetail(ctx, rows, totalWallet)
 	a.updateWalletSplit(ctx, rows, totalWallet)
+
+	fyne.Do(func() {
+		if a.onUpdate != nil {
+			a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
+		}
+	})
 }
 
 func (a *wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {

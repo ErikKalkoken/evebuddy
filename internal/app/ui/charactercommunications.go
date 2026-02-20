@@ -318,10 +318,10 @@ func (a *characterCommunications) update(ctx context.Context) {
 		a.foldersTop.Refresh()
 		a.folderList.Refresh()
 		a.folderList.UnselectAll()
+		if a.OnUpdate != nil {
+			a.OnUpdate(unreadCount)
+		}
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(unreadCount)
-	}
 }
 
 func (a *characterCommunications) resetCurrentFolder(ctx context.Context) {

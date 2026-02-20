@@ -179,8 +179,6 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 type assetSearch struct {
 	widget.BaseWidget
 
-	onUpdate func(int, string)
-
 	body           fyne.CanvasObject
 	footer         *widget.Label
 	columnSorter   *iwidget.ColumnSorter[assetRow]
@@ -594,9 +592,6 @@ func (a *assetSearch) filterRows(sortCol int) {
 
 func (a *assetSearch) update(ctx context.Context) {
 	clear := func() {
-		if a.onUpdate != nil {
-			a.onUpdate(0, "")
-		}
 		fyne.Do(func() {
 			clear(a.rows)
 			a.filterRows(-1)
@@ -628,9 +623,6 @@ func (a *assetSearch) update(ctx context.Context) {
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
-	// if a.onUpdate != nil {
-	// 	a.onUpdate(quantity, top)
-	// }
 	fyne.Do(func() {
 		a.top.Hide()
 		a.rows = rows

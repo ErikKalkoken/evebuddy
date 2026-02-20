@@ -357,18 +357,18 @@ func (a *corporationStructures) update(ctx context.Context) {
 		})
 		return
 	}
-	if a.OnUpdate != nil {
-		var reinforceCount int
-		for _, r := range rows {
-			if r.isReinforced {
-				reinforceCount++
-			}
+	var reinforceCount int
+	for _, r := range rows {
+		if r.isReinforced {
+			reinforceCount++
 		}
-		a.OnUpdate(reinforceCount)
 	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
+		if a.OnUpdate != nil {
+			a.OnUpdate(reinforceCount)
+		}
 	})
 }
 

@@ -117,16 +117,16 @@ func (a *corporationWallet) updateBalance(ctx context.Context) {
 		}
 		return s, widget.MediumImportance
 	})
-	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(balance)
-	}
-	if a.onTopUpdate != nil {
-		a.onTopUpdate(t)
-	}
 	fyne.Do(func() {
 		a.balance.Text = t
 		a.balance.Importance = i
 		a.balance.Refresh()
+		if a.onBalanceUpdate != nil {
+			a.onBalanceUpdate(balance)
+		}
+		if a.onTopUpdate != nil {
+			a.onTopUpdate(t)
+		}
 	})
 }
 

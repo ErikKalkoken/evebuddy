@@ -290,7 +290,9 @@ func (a *characterMails) update(ctx context.Context) {
 	})
 	a.unreadCount.Store(int64(folderAll.UnreadCount))
 	a.updateDownloaded(ctx)
-	a.callOnUpdate()
+	fyne.Do(func() {
+		a.callOnUpdate()
+	})
 }
 
 func (a *characterMails) callOnUpdate() {
@@ -334,8 +336,8 @@ func (a *characterMails) updateDownloaded(ctx context.Context) {
 		a.folderDownloaded.SetText(downloaded)
 		a.folderDownloaded.SetToolTip(hint)
 		a.folderDownloaded.Show()
+		a.callOnUpdate()
 	})
-	a.callOnUpdate()
 }
 
 func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
@@ -465,8 +467,8 @@ func (a *characterMails) updateUnreadCounts(ctx context.Context) {
 	a.unreadCount.Store(int64(unread))
 	fyne.Do(func() {
 		a.folders.Set(td)
+		a.callOnUpdate()
 	})
-	a.callOnUpdate()
 }
 
 func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int64, td iwidget.TreeData[mailFolderNode]) (int, error) {

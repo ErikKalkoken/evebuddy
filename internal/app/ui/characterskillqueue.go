@@ -239,7 +239,7 @@ func (a *characterSkillQueue) update(ctx context.Context) {
 			s2 = "No skill in training"
 		}
 		if a.OnUpdate != nil {
-			go a.OnUpdate(s1, s2)
+			a.OnUpdate(s1, s2)
 		}
 	})
 

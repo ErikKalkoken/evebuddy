@@ -606,12 +606,12 @@ func (a *industryJobs) update(ctx context.Context) {
 			readyCount++
 		}
 	}
-	if a.OnUpdate != nil {
-		a.OnUpdate(readyCount)
-	}
 	fyne.Do(func() {
 		a.rows = jobs
 		a.filterRows(-1)
+		if a.OnUpdate != nil {
+			a.OnUpdate(readyCount)
+		}
 	})
 }
 

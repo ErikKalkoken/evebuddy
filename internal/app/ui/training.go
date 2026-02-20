@@ -514,8 +514,8 @@ func (a *training) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.refreshOnUpdate()
 		a.filterRows(-1)
+		a.refreshOnUpdate()
 	})
 }
 
