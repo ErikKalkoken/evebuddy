@@ -123,7 +123,6 @@ type marketOrders struct {
 	columnSorter *iwidget.ColumnSorter[marketOrderRow]
 	footer       *widget.Label
 	isBuyOrders  bool
-	issue        *widget.Label
 	main         fyne.CanvasObject
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
@@ -229,9 +228,8 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		}})
 	a := &marketOrders{
 		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
-		footer:       widget.NewLabel(""),
+		footer:       newLabelWithTruncation(),
 		isBuyOrders:  isBuyOrders,
-		issue:        makeTopLabel(),
 		rows:         make([]marketOrderRow, 0),
 		rowsFiltered: make([]marketOrderRow, 0),
 		u:            u,
@@ -248,7 +246,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r marketOrderRow) {
+			a.filterRowsAsync, func(_ int, r marketOrderRow) {
 				showMarketOrderWindow(a.u, r)
 			})
 	} else {
@@ -256,46 +254,46 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("", []string{
 		marketOrderStateActive,
 		marketOrderStateHistory,
 	}, func(_ string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectState.Selected = marketOrderStateActive
 	a.selectState.SortDisabled = true
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
 		case app.SectionCharacterMarketOrders:
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -310,7 +308,7 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	}
 	p := theme.Padding()
 	c := container.NewBorder(
-		container.NewVBox(container.NewHScroll(filter), a.issue),
+		container.NewHScroll(filter),
 		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.footer),
 		nil,
 		nil,
@@ -380,7 +378,8 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *marketOrders) filterRows(sortCol int) {
+func (a *marketOrders) filterRowsAsync(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	owner := a.selectOwner.Selected
@@ -435,61 +434,48 @@ func (a *marketOrders) filterRows(sortCol int) {
 			return r.typeName
 		})
 
-		var total float64
+		footer := fmt.Sprintf("Showing %d / %d orders", len(rows), totalRows)
+		var value float64
 		for _, r := range rows {
-			total += r.price * float64(r.volumeRemain)
+			value += r.price * float64(r.volumeRemain)
 		}
-		footerText := fmt.Sprintf("Orders total: %s ISK", ihumanize.NumberF(total, 1))
+		if value > 0 {
+			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(value)))
+		}
 
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectRegion.SetOptions(regionOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectTag.SetOptions(tagOptions)
 			a.selectType.SetOptions(typeOptions)
 			a.rowsFiltered = rows
 			a.main.Refresh()
-			a.footer.SetText(footerText)
 		})
 	}()
 }
 
-func (a *marketOrders) update() {
-	rows := make([]marketOrderRow, 0)
-	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(a.u.services(), a.isBuyOrders)
-		if err != nil {
-			return "", 0, err
-		}
-		if len(cc) == 0 {
-			return "No characters", widget.LowImportance, nil
-		}
-		rows = cc
-		return "", widget.MediumImportance, nil
-	}()
+func (a *marketOrders) update(ctx context.Context) {
+	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
+		})
+		return
 	}
 	fyne.Do(func() {
-		if t != "" {
-			a.issue.Text = t
-			a.issue.Importance = i
-			a.issue.Refresh()
-			a.issue.Show()
-		} else {
-			a.issue.Hide()
-		}
-	})
-	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 
-func (*marketOrders) fetchRows(s services, isBuyOrders bool) ([]marketOrderRow, error) {
-	ctx := context.Background()
-	orders, err := s.cs.ListAllMarketOrder(ctx, isBuyOrders)
+func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marketOrderRow, error) {
+	orders, err := a.u.cs.ListAllMarketOrder(ctx, isBuyOrders)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +483,7 @@ func (*marketOrders) fetchRows(s services, isBuyOrders bool) ([]marketOrderRow, 
 	for _, o := range orders {
 		r := marketOrderRow{
 			characterID:   o.CharacterID,
-			characterName: s.scs.CharacterName(o.CharacterID),
+			characterName: a.u.scs.CharacterName(o.CharacterID),
 			escrow:        o.Escrow,
 			expires:       o.Issued.Add(time.Duration(o.Duration) * time.Hour * 24),
 			IsBuyOrder:    o.IsBuyOrder,
@@ -521,7 +507,7 @@ func (*marketOrders) fetchRows(s services, isBuyOrders bool) ([]marketOrderRow, 
 			volumeRemain:  o.VolumeRemains,
 			volumeTotal:   o.VolumeTotal,
 		}
-		tags, err := s.cs.ListTagsForCharacter(ctx, o.CharacterID)
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.CharacterID)
 		if err != nil {
 			return nil, err
 		}

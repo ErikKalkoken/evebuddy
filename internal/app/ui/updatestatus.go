@@ -72,24 +72,28 @@ func showUpdateStatusWindow(u *baseUI) {
 		return
 	}
 	a := newUpdateStatus(u)
-	a.update(context.Background())
-	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	w.SetOnClosed(func() {
-		a.stop()
-		onClosed()
-	})
-	w.Show()
+	go func() {
+		a.update(context.Background())
+		fyne.Do(func() {
+			w.SetContent(a)
+			w.Resize(fyne.Size{Width: 1100, Height: 500})
+			w.SetOnClosed(func() {
+				a.stop()
+				onClosed()
+			})
+			w.Show()
+		})
+	}()
 }
 
 func newUpdateStatus(u *baseUI) *updateStatus {
 	a := &updateStatus{
-		charactersTop:     makeTopLabel(),
+		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
-		detailsTop:        makeTopLabel(),
+		detailsTop:        newLabelWithWrapping(),
 		sectionEntities:   make([]sectionEntity, 0),
 		sections:          make([]app.CacheSectionStatus, 0),
-		sectionsTop:       makeTopLabel(),
+		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		signalKey:         "updateStatus-" + uniqueID(),
@@ -313,7 +317,7 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 }
 
 func (a *updateStatus) update(ctx context.Context) {
-	entities, count := a.updateEntityList(ctx, a.u.services())
+	entities, count := a.updateEntityList(ctx)
 
 	fyne.Do(func() {
 		a.sectionEntities = entities
@@ -324,15 +328,15 @@ func (a *updateStatus) update(ctx context.Context) {
 	})
 }
 
-func (*updateStatus) updateEntityList(_ context.Context, s services) ([]sectionEntity, int) {
+func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int) {
 	var count int
-	entities := make([]sectionEntity, 0)
-	cc := s.scs.ListCharacters()
+	var entities []sectionEntity
+	cc := a.u.scs.ListCharacters()
 	if len(cc) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
 		count += len(cc)
 		for _, c := range cc {
-			ss := s.scs.CharacterSectionSummary(c.ID)
+			ss := a.u.scs.CharacterSectionSummary(c.ID)
 			o := sectionEntity{
 				category: sectionCharacter,
 				id:       c.ID,
@@ -342,12 +346,12 @@ func (*updateStatus) updateEntityList(_ context.Context, s services) ([]sectionE
 			entities = append(entities, o)
 		}
 	}
-	rr := s.scs.ListCorporations()
+	rr := a.u.scs.ListCorporations()
 	if len(rr) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
 		count += len(rr)
 		for _, r := range rr {
-			ss := s.scs.CorporationSectionSummary(r.ID)
+			ss := a.u.scs.CorporationSectionSummary(r.ID)
 			o := sectionEntity{
 				category: sectionCorporation,
 				id:       r.ID,
@@ -358,7 +362,7 @@ func (*updateStatus) updateEntityList(_ context.Context, s services) ([]sectionE
 		}
 	}
 	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
-	ss := s.scs.GeneralSectionSummary()
+	ss := a.u.scs.GeneralSectionSummary()
 	o := sectionEntity{
 		category: sectionGeneral,
 		id:       app.GeneralSectionEntityID,

@@ -48,7 +48,7 @@ type flyableShipRow struct {
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	bottom        *widget.Label
+	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *iwidget.ColumnSorter[flyableShipRow]
 	grid          *widget.GridWrap
@@ -81,10 +81,10 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	)
 	a := &characterFlyableShips{
 		columnSorter: columnSorter,
-		bottom:       widget.NewLabel(""),
+		footer:       newLabelWithTruncation(),
 		rows:         make([]flyableShipRow, 0),
 		rowsFiltered: make([]flyableShipRow, 0),
-		top:          makeTopLabel(),
+		top:          newLabelWithWrapping(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -93,21 +93,21 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a.search.SetPlaceHolder("Search type and class names")
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.grid = a.makeShipsGrid()
 
@@ -140,13 +140,17 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 }
 
 func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
+	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)
+	topBox := container.NewVBox(a.top)
+	if a.u.isMobile {
+		topBox.Add(a.search)
+		topBox.Add(container.NewHScroll(buttons))
+	} else {
+		topBox.Add(container.NewBorder(nil, nil, buttons, nil, a.search))
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			a.search,
-			container.NewHScroll(container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)),
-		),
-		a.bottom,
+		topBox,
+		a.footer,
 		nil,
 		nil,
 		a.grid,
@@ -181,7 +185,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *characterFlyableShips) filterRows(sortCol int) {
+func (a *characterFlyableShips) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	group := a.selectGroup.Selected
@@ -220,19 +224,16 @@ func (a *characterFlyableShips) filterRows(sortCol int) {
 			}
 			return flyableCanNot
 		})
-		var bottom string
-		if total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d ships", len(rows), total)
-		} else {
-			bottom = ""
-		}
+		footer := fmt.Sprintf("Showing %d / %d ships", len(rows), total)
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectGroup.SetOptions(groupOptions)
 			a.selectFlyable.SetOptions(flyableOptions)
 			a.rowsFiltered = rows
-			a.bottom.SetText(bottom)
 			a.grid.Refresh()
 			a.grid.ScrollToTop()
 		})
@@ -247,7 +248,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 			a.search.SetText("")
 			a.selectGroup.SetOptions([]string{})
 			a.selectFlyable.SetOptions([]string{})
-			a.filterRows(-1)
+			a.filterRowsAsync(-1)
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -325,7 +326,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.search.Enable()
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

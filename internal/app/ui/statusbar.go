@@ -31,6 +31,7 @@ import (
 
 const (
 	clockUpdateTicker = 2 * time.Second
+	versionTicker     = 3600 * time.Second
 )
 
 type eveStatus uint
@@ -75,18 +76,15 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
 	a.u.onUpdateMissingScope = func(characterCount int) {
-		fyne.Do(func() {
-			if characterCount > 0 {
-				warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))
-				warningIcon.Show()
-			} else {
-				warningIcon.Hide()
-			}
-		})
+		if characterCount > 0 {
+			warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))
+			warningIcon.Show()
+		} else {
+			warningIcon.Hide()
+		}
 	}
 
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(a.updatingIndicator.MinSize())
+	spacer := newSpacer(a.updatingIndicator.MinSize())
 	a.updateStatus = newStatusBarItemWithTrailing(
 		theme.NewThemedResource(icons.UpdateSvg),
 		container.NewStack(spacer, a.updatingIndicator),
@@ -130,22 +128,22 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *statusBar) start() {
 	// signals
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.updateCharacterCount()
-		a.updateUpdateStatus()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.updateCharacterCount(ctx)
+		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.updateCharacterCount()
-		a.updateUpdateStatus()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.updateCharacterCount(ctx)
+		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterSectionUpdated.AddListener(func(_ context.Context, _ characterSectionUpdated) {
-		a.updateUpdateStatus()
+	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+		a.updateUpdateStatus(ctx)
 	})
-	a.u.corporationSectionUpdated.AddListener(func(_ context.Context, _ corporationSectionUpdated) {
-		a.updateUpdateStatus()
+	a.u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+		a.updateUpdateStatus(ctx)
 	})
-	a.u.generalSectionUpdated.AddListener(func(_ context.Context, _ generalSectionUpdated) {
-		a.updateUpdateStatus()
+	a.u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+		a.updateUpdateStatus(ctx)
 	})
 
 	var mu sync.Mutex
@@ -180,11 +178,10 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	fyne.Do(func() {
-		a.updateCharacterCount()
-		a.updateUpdateStatus()
-		a.refreshEveStatus()
-	})
+	ctx := context.Background()
+	a.updateCharacterCount(ctx)
+	a.updateUpdateStatus(ctx)
+	a.updateEveStatus(ctx)
 
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
@@ -204,76 +201,76 @@ func (a *statusBar) start() {
 	}
 
 	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
-		a.refreshEveStatus()
+		a.updateEveStatus(ctx)
 	})
 
+	tickerNewVersion := time.NewTicker(versionTicker)
 	go func() {
-		v, err := a.u.availableUpdate()
-		if err != nil {
-			slog.Error("fetch latest github version for download hint", "err", err)
-			return
+		for {
+			func() {
+				v, err := a.u.availableUpdate(ctx)
+				if err != nil {
+					slog.Error("fetch latest github version for download hint", "err", err)
+					return
+				}
+				if !v.IsRemoteNewer {
+					return
+				}
+				fyne.Do(func() {
+					a.updateHint.set(v)
+					a.updateHint.Show()
+				})
+			}()
+			<-tickerNewVersion.C
 		}
-		if !v.IsRemoteNewer {
-			return
-		}
-		fyne.Do(func() {
-			a.updateHint.set(v)
-			a.updateHint.Show()
-		})
 	}()
 }
 
-func (a *statusBar) refreshEveStatus() {
-	var t, errorMessage string
-	var s eveStatus
+func (a *statusBar) updateEveStatus(ctx context.Context) {
+	set := func(status eveStatus, title string, errorMessage string) {
+		fyne.Do(func() {
+			a.setEveStatus(status, title, errorMessage)
+		})
+	}
 	if a.u.ess.IsDailyDowntime() {
-		s = eveStatusOffline
-		t = "OFFLINE"
-		errorMessage = fmt.Sprintf(
+		s := fmt.Sprintf(
 			"Offline during planned daily downtime:\n%s",
 			a.u.ess.DailyDowntime(),
 		)
-	} else {
-		x, err := a.u.ess.Fetch(context.Background())
-		if err != nil {
-			slog.Error("Failed to fetch ESI status", "err", err)
-			errorMessage = a.u.humanizeError(err)
-			s = eveStatusError
-			t = "ERROR"
-		} else if !x.IsOK() {
-			errorMessage = x.ErrorMessage
-			s = eveStatusOffline
-			t = "OFFLINE"
-		} else {
-			arg := message.NewPrinter(language.English)
-			t = arg.Sprintf("%d players", x.PlayerCount)
-			s = eveStatusOnline
-		}
+		set(eveStatusOffline, "OFFLINE", s)
+		return
 	}
-	fyne.Do(func() {
-		a.setEveStatus(s, t, errorMessage)
-	})
+	x, err := a.u.ess.Fetch(ctx)
+	if err != nil {
+		slog.Error("Failed to fetch ESI status", "err", err)
+		set(eveStatusError, "ERROR", a.u.humanizeError(err))
+		return
+	}
+	if !x.IsOK() {
+		set(eveStatusOffline, "OFFLINE", x.ErrorMessage)
+		return
+	}
+	p := message.NewPrinter(language.English)
+	set(eveStatusOnline, p.Sprintf("%d players", x.PlayerCount), "")
 }
 
-func (a *statusBar) updateCharacterCount() {
+func (a *statusBar) updateCharacterCount(_ context.Context) {
 	s := strconv.Itoa(len(a.u.scs.ListCharacters()))
 	fyne.Do(func() {
 		a.characterCount.SetText(s)
 	})
 }
 
-func (a *statusBar) updateUpdateStatus() {
-	var s string
-	var i widget.Importance
+func (a *statusBar) updateUpdateStatus(_ context.Context) {
 	if a.u.isUpdateDisabled.Load() || a.u.ess.IsDailyDowntime() {
-		s = "Off"
-	} else {
-		x := a.u.scs.Summary()
-		s = x.DisplayShort()
-		i = x.Status().ToImportance()
+		fyne.Do(func() {
+			a.updateStatus.SetTextAndImportance("OFF", widget.MediumImportance)
+		})
+		return
 	}
+	x := a.u.scs.Summary()
 	fyne.Do(func() {
-		a.updateStatus.SetTextAndImportance(s, i)
+		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
 }
 
@@ -478,6 +475,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 		c := container.NewVBox(
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
+			newStandardSpacer(),
 		)
 		u := w.u.websiteRootURL().JoinPath("releases")
 		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {

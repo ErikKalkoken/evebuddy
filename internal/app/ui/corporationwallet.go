@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -45,19 +45,19 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
-	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		switch arg.section {
 		case app.SectionCorporationWalletBalances:
-			a.updateBalance()
+			a.updateBalance(ctx)
 		case app.SectionCorporationDivisions:
-			a.updateName()
+			a.updateName(ctx)
 		}
 	})
 	return a
@@ -77,34 +77,30 @@ func (a *corporationWallet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationWallet) update() {
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		a.journal.update()
-		return nil
+func (a *corporationWallet) update(ctx context.Context) {
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		a.journal.update(ctx)
 	})
-	g.Go(func() error {
-		a.transactions.update()
-		return nil
+	wg.Go(func() {
+		a.transactions.update(ctx)
 	})
-	g.Go(func() error {
-		a.updateBalance()
-		return nil
+	wg.Go(func() {
+		a.updateBalance(ctx)
 	})
-	g.Go(func() error {
-		a.updateName()
-		return nil
+	wg.Go(func() {
+		a.updateName(ctx)
 	})
-	g.Wait()
+	wg.Wait()
 }
 
-func (a *corporationWallet) updateBalance() {
+func (a *corporationWallet) updateBalance(ctx context.Context) {
 	var err error
 	var balance float64
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if hasData {
-		b, err2 := a.u.rs.GetWalletBalance(context.Background(), corporationID, a.division)
+		b, err2 := a.u.rs.GetWalletBalance(ctx, corporationID, a.division)
 		if errors.Is(err2, app.ErrNotFound) {
 			hasData = false
 		} else if err2 != nil {
@@ -121,26 +117,26 @@ func (a *corporationWallet) updateBalance() {
 		}
 		return s, widget.MediumImportance
 	})
-	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(balance)
-	}
-	if a.onTopUpdate != nil {
-		a.onTopUpdate(t)
-	}
 	fyne.Do(func() {
 		a.balance.Text = t
 		a.balance.Importance = i
 		a.balance.Refresh()
+		if a.onBalanceUpdate != nil {
+			a.onBalanceUpdate(balance)
+		}
+		if a.onTopUpdate != nil {
+			a.onTopUpdate(t)
+		}
 	})
 }
 
-func (a *corporationWallet) updateName() {
+func (a *corporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
-		n, err2 := a.u.rs.GetWalletName(context.Background(), corporationID, a.division)
+		n, err2 := a.u.rs.GetWalletName(ctx, corporationID, a.division)
 		if errors.Is(err2, app.ErrNotFound) {
 			hasData = false
 		} else if err2 != nil {

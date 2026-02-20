@@ -44,7 +44,7 @@ func (n loyaltyPointsNode) IsTop() bool {
 type loyaltyPoints struct {
 	widget.BaseWidget
 
-	bottom           *widget.Label
+	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *iwidget.ColumnSorter[*loyaltyPointsNode]
 	data             map[*loyaltyPointsNode][]*loyaltyPointsNode
@@ -84,24 +84,24 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	)
 	a := &loyaltyPoints{
 		columnSorter: columnSorter,
-		bottom:       widget.NewLabel(""),
+		footer:       newLabelWithTruncation(),
 		top:          top,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
 	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterTree()
+		a.filterTreeAsync()
 	}, a.u.window)
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Search corporations")
@@ -112,10 +112,10 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 		if len(s) == 1 {
 			return
 		}
-		a.filterTree()
+		a.filterTreeAsync()
 	}
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 
 	// signals
@@ -145,7 +145,7 @@ func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	))
 	c := container.NewBorder(
 		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchBox)),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.tree,
@@ -213,7 +213,7 @@ func (a *loyaltyPoints) makeTree() *iwidget.Tree[loyaltyPointsNode] {
 	return t
 }
 
-func (a *loyaltyPoints) filterTree() {
+func (a *loyaltyPoints) filterTreeAsync() {
 	data := maps.Clone(a.data)
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
@@ -286,15 +286,11 @@ func (a *loyaltyPoints) filterTree() {
 		}
 		tagOptions := slices.Collect(tags.All())
 
-		var bottom string
-		if total := len(data); total > 0 {
-			bottom = fmt.Sprintf("Showing %d / %d corporations", len(corporations), total)
-		} else {
-			bottom = ""
-		}
-
+		bottom := fmt.Sprintf("Showing %d / %d corporations", len(corporations), len(data))
 		fyne.Do(func() {
-			a.bottom.SetText(bottom)
+			a.footer.Text = bottom
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectCharacter.SetOptions(characterOptions)
 			a.selectFaction.SetOptions(factionOptions)
 			a.selectTag.SetOptions(tagOptions)
@@ -319,7 +315,7 @@ func (a *loyaltyPoints) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.data = data
-		a.filterTree()
+		a.filterTreeAsync()
 		a.top.Hide()
 	})
 }

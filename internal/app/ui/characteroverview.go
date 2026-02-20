@@ -71,8 +71,9 @@ func (r characterOverviewRow) shipName() string {
 type characterOverview struct {
 	widget.BaseWidget
 
+	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[characterOverviewRow]
-	info              *widget.Label
+	loadInfo          *widget.Label
 	main              fyne.CanvasObject
 	onUpdate          func(characters int)
 	rows              []characterOverviewRow
@@ -84,7 +85,6 @@ type characterOverview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
-	top               *widget.Label
 	u                 *baseUI
 }
 
@@ -154,22 +154,22 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &characterOverview{
+		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
-		info:         info,
+		loadInfo:     info,
 		rows:         make([]characterOverviewRow, 0),
 		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
-		top:          makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.search.OnChanged = func(s string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search character names"
 	if !a.u.isMobile {
@@ -179,22 +179,22 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}
 
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
@@ -209,14 +209,14 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			}
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		switch arg.section {
@@ -250,16 +250,18 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTag,
 		a.sortButton,
 	)
+	var topBox *fyne.Container
+	if a.u.isMobile {
+		topBox = container.NewVBox(a.search, container.NewHScroll(filters))
+	} else {
+		topBox = container.NewBorder(nil, nil, filters, nil, a.search)
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			a.search,
-			container.NewHScroll(filters),
-		),
+		topBox,
+		a.footer,
 		nil,
 		nil,
-		nil,
-		container.NewStack(a.info, a.main),
+		container.NewStack(a.loadInfo, a.main),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -345,8 +347,9 @@ func (a *characterOverview) makeList() *widget.List {
 	return l
 }
 
-func (a *characterOverview) filterRows(sortCol int) {
+func (a *characterOverview) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
+	total := len(rows)
 	alliance := a.selectAlliance.Selected
 	corporation := a.selectCorporation.Selected
 	region := a.selectRegion.Selected
@@ -405,7 +408,12 @@ func (a *characterOverview) filterRows(sortCol int) {
 			return r.tags
 		})...).All())
 
+		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), total)
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectAlliance.SetOptions(allianceOptions)
 			a.selectCorporation.SetOptions(corporationOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -417,37 +425,34 @@ func (a *characterOverview) filterRows(sortCol int) {
 	}()
 }
 
-func (a *characterOverview) update() {
-	var rows []characterOverviewRow
-	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchRows(context.Background())
-		if err != nil {
-			return "", 0, err
-		}
-		if a.onUpdate != nil {
-			a.onUpdate(len(cc))
-		}
-		if len(cc) == 0 {
-			return "No characters", widget.LowImportance, nil
-		}
-		rows = cc
-		s := fmt.Sprintf("%d characters", len(cc))
-		return s, widget.MediumImportance, nil
-	}()
+func (a *characterOverview) update(ctx context.Context) {
+	clear := func() {
+		fyne.Do(func() {
+			a.rows = make([]characterOverviewRow, 0)
+			a.filterRowsAsync(-1)
+		})
+	}
+	setFooter := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text = s
+			a.footer.Importance = i
+			a.footer.Refresh()
+		})
+	}
+	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		clear()
+		setFooter("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
+		return
 	}
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
 		a.rows = rows
-		a.info.Hide()
-		a.filterRows(-1)
+		a.loadInfo.Hide()
+		a.filterRowsAsync(-1)
+		if a.onUpdate != nil {
+			a.onUpdate(len(rows))
+		}
 	})
 }
 
@@ -473,7 +478,7 @@ func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 }
 

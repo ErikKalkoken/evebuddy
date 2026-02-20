@@ -32,27 +32,23 @@ type characterAugmentations struct {
 func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	a := &characterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      makeTopLabel(),
+		top:      newLabelWithWrapping(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character.Store(c)
-			a.update()
-		},
-	)
-	a.u.characterSectionChanged.AddListener(
-		func(_ context.Context, arg characterSectionUpdated) {
-			if characterIDOrZero(a.character.Load()) != arg.characterID {
-				return
-			}
-			if arg.section == app.SectionCharacterImplants {
-				a.update()
-			}
-		},
-	)
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.character.Store(c)
+		a.update(ctx)
+	})
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterImplants {
+			a.update(ctx)
+		}
+	})
 	return a
 }
 
@@ -117,13 +113,13 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *characterAugmentations) update() {
+func (a *characterAugmentations) update(ctx context.Context) {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterImplants)
 	if hasData {
-		implants2, err2 := a.u.cs.ListImplants(context.Background(), characterID)
+		implants2, err2 := a.u.cs.ListImplants(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh implants UI", "err", err)
 			err = err2

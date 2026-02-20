@@ -19,9 +19,10 @@ const (
 type toolbar struct {
 	widget.BaseWidget
 
-	searchBar *widget.Entry
-	hamburger *iwidget.TappableIcon
-	u         *DesktopUI
+	searchBar  *widget.Entry
+	searchIcon *iwidget.TappableIcon
+	hamburger  *iwidget.TappableIcon
+	u          *DesktopUI
 }
 
 func newToolbar(u *DesktopUI) *toolbar {
@@ -37,6 +38,12 @@ func newToolbar(u *DesktopUI) *toolbar {
 	})
 	clearSearch.SetToolTip("Clear search bar")
 	searchBar.ActionItem = container.NewPadded(clearSearch)
+
+	searchIcon := iwidget.NewTappableIcon(theme.SearchIcon(), func() {
+		u.showAdvancedSearch(searchBar.Text)
+	})
+	searchIcon.SetToolTip("Advanced search")
+
 	makeMenuItem := func(title string, sc shortcutDef) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
 			sc.handler(sc.shortcut)
@@ -66,9 +73,10 @@ func newToolbar(u *DesktopUI) *toolbar {
 	hamburger := iwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)
 	hamburger.SetToolTip("Main menu")
 	a := &toolbar{
-		u:         u,
-		searchBar: searchBar,
-		hamburger: hamburger,
+		hamburger:  hamburger,
+		searchBar:  searchBar,
+		searchIcon: searchIcon,
+		u:          u,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -86,14 +94,10 @@ func (a *toolbar) ToogleSearchBar(enabled bool) {
 
 func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	searchIcon := iwidget.NewTappableIcon(theme.SearchIcon(), func() {
-		a.u.showAdvancedSearch()
-	})
-	searchIcon.SetToolTip("Advanced search")
 	x := container.NewGridWithColumns(
 		3,
 		container.NewHBox(),
-		container.NewBorder(nil, nil, nil, searchIcon,
+		container.NewBorder(nil, nil, nil, a.searchIcon,
 			a.searchBar,
 		),
 		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),

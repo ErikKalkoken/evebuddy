@@ -89,7 +89,7 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.slotsManufacturing.update()
+			ui.slotsManufacturing.update(t.Context())
 
 			test.AssertImageMatches(t, "industryslot/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -119,7 +119,7 @@ func TestIndustrySlot_CanRenderEmpty(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.slotsManufacturing.update()
+			ui.slotsManufacturing.update(t.Context())
 
 			test.AssertImageMatches(t, "industryslot/"+tc.filename+".png", w.Canvas().Capture())
 		})

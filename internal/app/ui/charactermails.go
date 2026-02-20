@@ -146,11 +146,11 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.updateAsync()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
@@ -159,11 +159,11 @@ func newCharacterMails(u *baseUI) *characterMails {
 			app.SectionCharacterMailLabels,
 			app.SectionCharacterMailLists,
 			app.SectionCharacterMailHeaders:
-			a.updateAsync()
+			a.update(ctx)
 		}
 	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		a.updateDownloadedAsync()
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+		a.updateDownloaded(ctx)
 	})
 	return a
 }
@@ -230,12 +230,12 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 			return
 		}
 		a.lastFolder = n
-		a.setCurrentFolder(n)
+		go a.setCurrentFolder(context.Background(), n)
 	}
 	return t
 }
 
-func (a *characterMails) updateAsync() {
+func (a *characterMails) update(ctx context.Context) {
 	clearAll := func() {
 		fyne.Do(func() {
 			a.folders.Clear()
@@ -269,28 +269,30 @@ func (a *characterMails) updateAsync() {
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
 		return
 	}
-	td, folderAll, err := a.fetchFoldersAsync(a.u.services(), characterID)
+	td, folderAll, err := a.fetchFolders(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 		setStatus("Error: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
-	unread, err := a.updateCountsInTreeAsync(a.u.services(), characterID, td)
+	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
 	} else {
 		folderAll.UnreadCount = unread
 	}
+	a.setCurrentFolder(ctx, folderAll)
 	fyne.Do(func() {
 		a.compose.Enable()
 		a.folderStatus.Hide()
 		a.folders.Set(td)
 		a.folders.SelectNode(folderAll)
-		a.setCurrentFolder(folderAll)
 	})
 	a.unreadCount.Store(int64(folderAll.UnreadCount))
-	a.updateDownloadedAsync()
-	a.callOnUpdate()
+	a.updateDownloaded(ctx)
+	fyne.Do(func() {
+		a.callOnUpdate()
+	})
 }
 
 func (a *characterMails) callOnUpdate() {
@@ -300,7 +302,7 @@ func (a *characterMails) callOnUpdate() {
 	a.onUpdate(int(a.unreadCount.Load()), int(a.missingPercent.Load()))
 }
 
-func (a *characterMails) updateDownloadedAsync() {
+func (a *characterMails) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
 	func() {
@@ -308,7 +310,7 @@ func (a *characterMails) updateDownloadedAsync() {
 		if characterID == 0 {
 			return
 		}
-		total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
+		total, missing, err := a.u.cs.DownloadedBodiesPercentage(ctx, characterID)
 		if err != nil {
 			slog.Error("updateDownloaded", "error", err)
 			total2 = "ERROR"
@@ -334,11 +336,11 @@ func (a *characterMails) updateDownloadedAsync() {
 		a.folderDownloaded.SetText(downloaded)
 		a.folderDownloaded.SetToolTip(hint)
 		a.folderDownloaded.Show()
+		a.callOnUpdate()
 	})
-	a.callOnUpdate()
 }
 
-func (*characterMails) fetchFoldersAsync(s services, characterID int64) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
+func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
 	var td iwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return td, nil, nil
@@ -381,8 +383,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int64) (iwidget
 	}
 
 	// Add custom labels
-	ctx := context.Background()
-	labels, err := s.cs.ListMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.cs.ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return td, nil, err
 	}
@@ -412,7 +413,7 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int64) (iwidget
 	}
 
 	// Add mailing lists
-	lists, err := s.cs.ListMailLists(ctx, characterID)
+	lists, err := a.u.cs.ListMailLists(ctx, characterID)
 	if err != nil {
 		return td, nil, err
 	}
@@ -455,10 +456,10 @@ func (*characterMails) fetchFoldersAsync(s services, characterID int64) (iwidget
 	return td, folderAll, nil
 }
 
-func (a *characterMails) updateUnreadCounts() {
+func (a *characterMails) updateUnreadCounts(ctx context.Context) {
 	td := a.folders.Data()
 	characterID := characterIDOrZero(a.character.Load())
-	unread, err := a.updateCountsInTreeAsync(a.u.services(), characterID, td)
+	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
@@ -466,20 +467,19 @@ func (a *characterMails) updateUnreadCounts() {
 	a.unreadCount.Store(int64(unread))
 	fyne.Do(func() {
 		a.folders.Set(td)
+		a.callOnUpdate()
 	})
-	a.callOnUpdate()
 }
 
-func (*characterMails) updateCountsInTreeAsync(s services, characterID int64, td iwidget.TreeData[mailFolderNode]) (int, error) {
+func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int64, td iwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}
-	ctx := context.Background()
-	labelUnreadCounts, err := s.cs.GetMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.cs.GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
-	listUnreadCounts, err := s.cs.GetMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.cs.GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
@@ -533,7 +533,7 @@ func (a *characterMails) makeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			a.setCurrentFolder(f)
+			go a.setCurrentFolder(context.Background(), f)
 		})
 		// if f == current {
 		// 	it.Disabled = true
@@ -568,7 +568,7 @@ func (a *characterMails) makeHeaderList() *widget.List {
 			return
 		}
 		r := a.headers[id]
-		a.loadMail(r.MailID)
+		go a.loadMail(context.Background(), r.MailID)
 		a.lastSelected = id
 		if a.onSelected != nil {
 			a.onSelected()
@@ -578,14 +578,14 @@ func (a *characterMails) makeHeaderList() *widget.List {
 	return l
 }
 
-func (a *characterMails) resetCurrentFolder() {
-	a.setCurrentFolder(a.folderDefault)
+func (a *characterMails) resetCurrentFolder(ctx context.Context) {
+	a.setCurrentFolder(ctx, a.folderDefault)
 }
 
-func (a *characterMails) setCurrentFolder(folder *mailFolderNode) {
+func (a *characterMails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 	a.currentFolder.Store(folder)
 
-	a.headerUpdate()
+	a.headerUpdate(ctx)
 	fyne.Do(func() {
 		a.headerList.ScrollToTop()
 		a.headerList.UnselectAll()
@@ -593,7 +593,7 @@ func (a *characterMails) setCurrentFolder(folder *mailFolderNode) {
 	})
 }
 
-func (a *characterMails) headerUpdate() {
+func (a *characterMails) headerUpdate(ctx context.Context) {
 	clearHeaders := func() {
 		fyne.Do(func() {
 			a.headers = make([]*app.CharacterMailHeader, 0)
@@ -622,7 +622,7 @@ func (a *characterMails) headerUpdate() {
 		return
 	}
 
-	headers, err := a.fetchHeaders(folder, a.u.services())
+	headers, err := a.fetchHeaders(ctx, folder)
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
@@ -641,15 +641,14 @@ func (a *characterMails) headerUpdate() {
 	})
 }
 
-func (*characterMails) fetchHeaders(f *mailFolderNode, s services) ([]*app.CharacterMailHeader, error) {
-	ctx := context.Background()
+func (a *characterMails) fetchHeaders(ctx context.Context, f *mailFolderNode) ([]*app.CharacterMailHeader, error) {
 	var h []*app.CharacterMailHeader
 	var err error
 	switch f.Category {
 	case nodeCategoryLabel:
-		h, err = s.cs.ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
+		h, err = a.u.cs.ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
 	case nodeCategoryList:
-		h, err = s.cs.ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
+		h, err = a.u.cs.ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
 	}
 	return h, err
 }
@@ -681,16 +680,17 @@ func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 				if !confirmed {
 					return
 				}
+				ctx := context.Background()
 				m := kxmodal.NewProgressInfinite(
 					"Deleting mail...",
 					"",
 					func() error {
-						return a.u.cs.DeleteMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
+						return a.u.cs.DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
 					},
 					a.u.MainWindow(),
 				)
 				m.OnSuccess = func() {
-					a.headerUpdate()
+					a.headerUpdate(ctx)
 					if onSuccess != nil {
 						onSuccess()
 					}
@@ -743,52 +743,65 @@ func (a *characterMails) clearMail() {
 	a.toolbar.Hide()
 }
 
-func (a *characterMails) loadMail(mailID int64) {
-	ctx := context.TODO()
+func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 	characterID := characterIDOrZero(a.character.Load())
-	var err error
-	a.mail, err = a.u.cs.GetMail(ctx, characterID, mailID)
-	if err != nil {
-		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
-		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
+	if characterID == 0 {
 		return
 	}
-	if !a.u.IsOffline() && !a.u.isUpdateDisabled.Load() {
-		if a.mail.Body.IsEmpty() {
-			go func() {
-				a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
-					body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, a.mail.MailID)
-					if err != nil {
-						slog.Error("Failed to update mail body", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-						fyne.Do(func() {
-							a.Detail.SetBody("Failed to load: " + a.u.humanizeError(err))
-						})
-						return nil, nil
-					}
+	mail, err := a.u.cs.GetMail(ctx, characterID, mailID)
+	if err != nil {
+		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
+		fyne.Do(func() {
+			a.Detail.SetBody("ERROR: Failed to load: " + a.u.humanizeError(err))
+		})
+		return
+	}
+	fyne.Do(func() {
+		a.mail = mail
+		a.Detail.SetMail(mail)
+		a.toolbar.Show()
+	})
+
+	// try to fetch mail body if missing
+	if !a.u.IsOffline() && !a.u.isUpdateDisabled.Load() && mail.Body.IsEmpty() {
+		go func() {
+			a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
+				body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, mail.MailID)
+				if err != nil {
+					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
 					fyne.Do(func() {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
-						a.mail.Body.Set(body)
-						a.Detail.SetBody(a.mail.BodyPlain())
+						a.Detail.SetBody("ERROR: Failed to load: " + a.u.humanizeError(err))
 					})
 					return nil, nil
+				}
+				fyne.Do(func() {
+					if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+						return
+					}
+					a.mail.Body.Set(body)
+					a.Detail.SetBody(a.mail.BodyPlain())
 				})
-			}()
-		}
-		if !a.mail.IsRead.ValueOrZero() {
+				return nil, nil
+			})
+		}()
+
+		// try to update mail as read if unread
+		if mail.IsRead.ValueOrZero() {
 			go func() {
 				a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
-					err := a.u.cs.UpdateMailRead(ctx, characterID, a.mail.MailID, true)
+					err := a.u.cs.UpdateMailRead(ctx, characterID, mail.MailID, true)
 					if err != nil {
-						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + a.mail.Subject.ValueOrZero())
+						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
+						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
 						return nil, nil
 					}
-					a.updateUnreadCounts()
-					a.headerUpdate()
+					a.updateUnreadCounts(ctx)
+					a.headerUpdate(ctx)
 					a.u.characterOverview.updateItem(ctx, characterID)
-					a.u.updateMailIndicator()
+					a.u.updateMailIndicator(ctx)
 					fyne.Do(func() {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
@@ -800,8 +813,6 @@ func (a *characterMails) loadMail(mailID int64) {
 			}()
 		}
 	}
-	a.Detail.SetMail(a.mail)
-	a.toolbar.Show()
 }
 
 type mailDetail struct {

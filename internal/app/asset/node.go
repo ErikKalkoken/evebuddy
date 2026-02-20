@@ -88,6 +88,9 @@ type Node struct {
 }
 
 func newLocationNode(location *app.EveLocation) *Node {
+	if location == nil {
+		panic("must provide a location")
+	}
 	return &Node{
 		category:    NodeLocation,
 		location:    location,
@@ -117,7 +120,7 @@ func newAssetNode(it Item) *Node {
 func newCustomNode(category NodeCategory) *Node {
 	switch category {
 	case NodeAsset, NodeLocation, NodeUndefined:
-		panic("invalid category for custom node: ")
+		panic("invalid category for custom node: " + category.String())
 	}
 	return &Node{
 		category:    category,
@@ -155,7 +158,7 @@ func (n *Node) All() iter.Seq[*Node] {
 
 // all returns a new slices with all nodes in a breath first order.
 func (n *Node) all() []*Node {
-	s := make([]*Node, 0)
+	var s []*Node
 	s = append(s, n)
 	for _, c := range n.children {
 		if c.isExcluded {
@@ -168,7 +171,7 @@ func (n *Node) all() []*Node {
 
 // AncestorCount returns the number of ancestors of a node.
 func (n *Node) AncestorCount() int {
-	if n.parent == nil {
+	if n == nil || n.parent == nil {
 		return 0
 	}
 	if n.parent.parent == nil {
@@ -179,7 +182,7 @@ func (n *Node) AncestorCount() int {
 
 // Asset tries to return the asset of a node and reports whether it was successful.
 func (n *Node) Asset() (app.Asset, bool) {
-	if n.item == nil {
+	if n == nil || n.item == nil {
 		return app.Asset{}, false
 	}
 	return n.item.Unwrap(), true
@@ -187,13 +190,16 @@ func (n *Node) Asset() (app.Asset, bool) {
 
 // Category returns the category of a node.
 func (n *Node) Category() NodeCategory {
+	if n == nil {
+		return NodeUndefined
+	}
 	return n.category
 }
 
 // CharacterAsset tries to return the current item as character asset
 // and reports whether it was found.
 func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
-	if n.item == nil {
+	if n == nil || n.item == nil {
 		return nil, false
 	}
 	x, ok := n.item.(*app.CharacterAsset)
@@ -206,7 +212,7 @@ func (n *Node) CharacterAsset() (*app.CharacterAsset, bool) {
 // CorporationAsset tries to return the current item as corporation asset
 // and reports whether it was found.
 func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
-	if n.item == nil {
+	if n == nil || n.item == nil {
 		return nil, false
 	}
 	x, ok := n.item.(*app.CorporationAsset)
@@ -218,12 +224,18 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 
 // Children returns a new slice containing the unfiltered children of a node.
 func (n *Node) Children() []*Node {
+	if n == nil {
+		return nil
+	}
 	return xslices.Filter(n.children, func(x *Node) bool {
 		return !x.isExcluded
 	})
 }
 
 func (n *Node) ChildrenCount() int {
+	if n == nil {
+		return 0
+	}
 	var count int
 	for _, n := range n.children {
 		if !n.isExcluded {
@@ -236,6 +248,9 @@ func (n *Node) ChildrenCount() int {
 // ID returns the ID of the node. This is the item ID or the location ID.
 // Returns 0 when node has no ID.
 func (n *Node) ID() int64 {
+	if n == nil {
+		return 0
+	}
 	if n.item != nil {
 		return n.item.ID()
 	}
@@ -247,17 +262,23 @@ func (n *Node) ID() int64 {
 
 // IsContainer reports whether this node is a container
 func (n *Node) IsContainer() bool {
+	if n == nil {
+		return false
+	}
 	return n.isContainer
 }
 
 // IsShip reports whether this node is a ship
 func (n *Node) IsShip() bool {
+	if n == nil {
+		return false
+	}
 	return n.isShip
 }
 
 // Location returns the location for a node and reports whether the node is a location.
 func (n *Node) Location() (*app.EveLocation, bool) {
-	if n.location == nil {
+	if n == nil || n.location == nil {
 		return nil, false
 	}
 	return n.location, true
@@ -266,6 +287,9 @@ func (n *Node) Location() (*app.EveLocation, bool) {
 // Path returns the path from the root to this node.
 // The path includes the root and the node itself.
 func (n *Node) Path() []*Node {
+	if n == nil {
+		return nil
+	}
 	nodes := make([]*Node, 0)
 	nodes = append(nodes, n)
 	current := n
@@ -281,6 +305,9 @@ func (n *Node) Path() []*Node {
 // Nodes are expected to implement the stringer interface.
 // The nil node represents the root.
 func (n *Node) AllPaths() [][]string {
+	if n == nil {
+		return nil
+	}
 	all := make([][]string, 0)
 	for n := range n.All() {
 		if c := n.ChildrenCount(); c == 0 {
@@ -301,6 +328,9 @@ func (n *Node) Parent() *Node {
 
 // String returns a string representation of the node which is usually it's name.
 func (n *Node) String() string {
+	if n == nil {
+		return ""
+	}
 	switch n.category {
 	case NodeLocation:
 		el, ok := n.Location()

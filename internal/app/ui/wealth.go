@@ -48,7 +48,7 @@ func newWealth(u *baseUI) *wealth {
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),
 		characterSplit: prop.NewPieChart(""),
-		top:            makeTopLabel(),
+		top:            newLabelWithWrapping(),
 		totalSplit:     prop.NewPieChart(""),
 		u:              u,
 		walletDetail:   coord.NewCartesianCategoricalChart(""),
@@ -137,7 +137,7 @@ func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *wealth) update(ctx context.Context) {
-	rows, characters, err := a.fetchData(ctx, a.u.services())
+	rows, characters, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -167,17 +167,18 @@ func (a *wealth) update(ctx context.Context) {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
-	// totals
-	if a.onUpdate != nil {
-		a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
-	}
-
 	a.updateAssetDetail(ctx, rows, totalAssets)
 	a.updateAssetSplit(ctx, rows, totalAssets)
 	a.updateCharacterSplit(ctx, rows, totalAssets, totalWallet)
 	a.updateTotalSplit(ctx, totalAssets, totalWallet)
 	a.updateWalletDetail(ctx, rows, totalWallet)
 	a.updateWalletSplit(ctx, rows, totalWallet)
+
+	fyne.Do(func() {
+		if a.onUpdate != nil {
+			a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
+		}
+	})
 }
 
 func (a *wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {
@@ -393,22 +394,22 @@ type wealthRow struct {
 	total     float64
 }
 
-func (*wealth) fetchData(ctx context.Context, s services) ([]wealthRow, int, error) {
-	cc, err := s.cs.ListCharacters(ctx)
+func (a *wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
+	cc, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-	selected := make([]*app.Character, 0)
+	var selected []*app.Character
 	for _, c := range cc {
-		hasAssets := s.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
-		hasWallet := s.scs.HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
+		hasAssets := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
+		hasWallet := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
 	}
-	rows := make([]wealthRow, 0)
+	var rows []wealthRow
 	for _, c := range selected {
-		assetTotal, err := s.cs.AssetTotalValue(ctx, c.ID)
+		assetTotal, err := a.u.cs.AssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

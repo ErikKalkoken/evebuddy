@@ -117,14 +117,14 @@ func (a *assetBrowser) update(ctx context.Context) {
 			a.Selected.clear()
 		})
 	}
-	setTop := func(s string, i widget.Importance) {
+	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.Navigation.setTop(s, i)
+			a.Navigation.setFooter(s, i)
 		})
 	}
 	reportError := func(err error) {
 		slog.Error("Failed to update asset browser", "error", err)
-		setTop(a.u.humanizeError(err), widget.DangerImportance)
+		setFooter(a.u.humanizeError(err), widget.DangerImportance)
 	}
 	el, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
@@ -141,7 +141,7 @@ func (a *assetBrowser) update(ctx context.Context) {
 		hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationAssets)
 		if !hasData {
 			clear()
-			setTop("Waiting for data to be loaded...", widget.WarningImportance)
+			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
 		assets, err := a.u.rs.ListAssets(ctx, corporationID)
@@ -159,7 +159,7 @@ func (a *assetBrowser) update(ctx context.Context) {
 		hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAssets)
 		if !hasData {
 			clear()
-			setTop("Waiting for data to be loaded...", widget.WarningImportance)
+			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
 		assets, err := a.u.cs.ListAssets(ctx, characterID)
@@ -216,7 +216,7 @@ type assetBrowserNavigation struct {
 	locations      *iwidget.Tree[assetContainerNode]
 	search         *widget.Entry
 	selectCategory *kxwidget.FilterChipSelect
-	top            *widget.Label
+	footer         *widget.Label
 }
 
 func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
@@ -225,7 +225,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		filteredTrees: make(map[assetFilter]filteredTree),
 		filters:       make([]assetFilter, 0),
 		search:        widget.NewEntry(),
-		top:           makeTopLabel(),
+		footer:        newLabelWithWrapping(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -280,7 +280,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategoryOther,
 			assetCategoryAll,
 		}, func(string) {
-			a.filterLocations()
+			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = assetCategoryOffice
 		a.selectCategory.SortDisabled = true
@@ -299,7 +299,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 			assetCategorySafety,
 			assetCategoryAll,
 		}, func(string) {
-			a.filterLocations()
+			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = assetCategoryPersonal
 		a.selectCategory.SortDisabled = true
@@ -310,11 +310,11 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a.collapseAll.SetToolTip("Collapse branches")
 
 	a.search.OnChanged = func(s string) {
-		a.filterLocations()
+		a.filterLocationsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterLocations()
+		a.filterLocationsAsync()
 	})
 	a.search.PlaceHolder = "Search locations"
 	return a
@@ -329,7 +329,7 @@ func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			a.search,
 		),
-		a.top,
+		a.footer,
 		nil,
 		nil,
 		a.locations,
@@ -339,7 +339,7 @@ func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 func (a *assetBrowserNavigation) clear() {
 	a.locations.Clear()
 	a.locations.UnselectAll()
-	a.top.SetText("")
+	a.footer.SetText("")
 }
 
 func (a *assetBrowserNavigation) update(ctx context.Context, trees []*asset.Node) {
@@ -358,7 +358,7 @@ func (a *assetBrowserNavigation) update(ctx context.Context, trees []*asset.Node
 	}
 	fyne.Do(func() {
 		a.filteredTrees = filteredTrees
-		a.filterLocations()
+		a.filterLocationsAsync()
 	})
 }
 
@@ -503,15 +503,14 @@ var assetFilterLookup = map[string]assetFilter{
 	assetCategorySafety:     assetSafety,
 }
 
-func (a *assetBrowserNavigation) filterLocations() {
+func (a *assetBrowserNavigation) filterLocationsAsync() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
-	var td iwidget.TreeData[assetContainerNode]
 	ft := a.filteredTrees[filter]
-	count, _ := ft.td.ChildrenCount(nil)
-	top := fmt.Sprintf("%d locations", count)
+	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.search.Text)
 
 	go func() {
+		var td iwidget.TreeData[assetContainerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *assetContainerNode) bool {
@@ -521,10 +520,11 @@ func (a *assetBrowserNavigation) filterLocations() {
 			td = ft.td
 		}
 		fyne.Do(func() {
+			footer := fmt.Sprintf("%s / %s locations", ihumanize.Comma(td.ChildrenCount(nil)), totalItems)
+			a.setFooter(footer, widget.MediumImportance)
 			a.locations.UnselectAll()
 			a.locations.Set(td)
 			a.ab.Selected.clear()
-			a.setTop(top, widget.MediumImportance)
 		})
 	}()
 }
@@ -542,10 +542,10 @@ func (a *assetBrowserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode,
 	return cn, true
 }
 
-func (a *assetBrowserNavigation) setTop(s string, i widget.Importance) {
-	a.top.Text = s
-	a.top.Importance = i
-	a.top.Refresh()
+func (a *assetBrowserNavigation) setFooter(s string, i widget.Importance) {
+	a.footer.Text = s
+	a.footer.Importance = i
+	a.footer.Refresh()
 }
 
 func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
@@ -568,7 +568,7 @@ type assetBrowserContainer struct {
 	widget.BaseWidget
 
 	ab            *assetBrowser
-	bottom        *widget.Label
+	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
@@ -579,7 +579,7 @@ type assetBrowserContainer struct {
 func newAssetBrowserContainer(ab *assetBrowser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
 		ab:            ab,
-		bottom:        widget.NewLabel(""),
+		footer:        newLabelWithTruncation(),
 		items:         make([]containerItem, 0),
 		itemsFiltered: make([]containerItem, 0),
 		search:        widget.NewEntry(),
@@ -589,11 +589,11 @@ func newAssetBrowserContainer(ab *assetBrowser) *assetBrowserContainer {
 	a.location = newAssetBrowserLocation(a)
 
 	a.search.OnChanged = func(s string) {
-		a.filterItems()
+		a.filterItemsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
-		a.filterItems()
+		a.filterItemsAsync()
 	})
 	a.search.PlaceHolder = "Search items"
 	a.search.Hide()
@@ -609,7 +609,7 @@ func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			a.search,
 		),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.grid,
@@ -685,14 +685,25 @@ func (a *assetBrowserContainer) set(cn *assetContainerNode) {
 			a.items = items
 			a.location.set(cn)
 			a.search.Show()
-			a.filterItems()
+			a.filterItemsAsync()
 		})
 	}()
 }
 
-func (a *assetBrowserContainer) filterItems() {
+func (a *assetBrowserContainer) clear() {
+	a.location.clear()
+	a.search.Hide()
+	a.footer.SetText("")
+	a.items = make([]containerItem, 0)
+	a.itemsFiltered = make([]containerItem, 0)
+	a.grid.Refresh()
+}
+
+func (a *assetBrowserContainer) filterItemsAsync() {
+	totalItems := len(a.items)
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.search.Text)
+
 	go func() {
 		if len(search) > 1 {
 			items = slices.DeleteFunc(items, func(ci containerItem) bool {
@@ -729,25 +740,19 @@ func (a *assetBrowserContainer) filterItems() {
 				value = optional.Sum(value, optional.New(as.Price.ValueOrZero()*float64(as.Quantity)))
 			}
 		}
-		bottom := fmt.Sprintf("%s items", humanize.Comma(itemCount))
+		footer := fmt.Sprintf("%s / %s items", ihumanize.Comma(itemCount), ihumanize.Comma(totalItems))
 		if v, ok := value.Value(); ok {
-			bottom += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
+			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
 		}
 
 		fyne.Do(func() {
 			a.itemsFiltered = items
 			a.grid.Refresh()
-			a.bottom.SetText(bottom)
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 		})
 	}()
-}
-
-func (a *assetBrowserContainer) clear() {
-	a.location.clear()
-	a.search.Hide()
-	a.bottom.SetText("")
-	a.items = make([]containerItem, 0)
-	a.filterItems()
 }
 
 func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
@@ -887,6 +892,13 @@ func (w *assetItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *assetItem) Set(n *asset.Node) {
+	if n == nil {
+		w.badge.Hide()
+		w.icon.Resource = icons.QuestionmarkSvg
+		w.icon.Refresh()
+		w.label.SetText("???")
+		return
+	}
 	defer w.Refresh()
 	showFolder := func(w *assetItem) {
 		fyne.Do(func() {

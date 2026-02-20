@@ -58,6 +58,6 @@ func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.update()
+	a.update(t.Context())
 	test.AssertImageMatches(t, "corporationwallets/master.png", w.Canvas().Capture())
 }

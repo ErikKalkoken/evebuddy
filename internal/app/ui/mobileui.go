@@ -191,10 +191,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		if missing > 0 {
 			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))
 		}
-		fyne.Do(func() {
-			navItemMail.Supporting = strings.Join(s, " • ")
-			characterList.Refresh()
-		})
+		navItemMail.Supporting = strings.Join(s, " • ")
+		characterList.Refresh()
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -204,24 +202,18 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		} else if count.ValueOrZero() > 0 {
 			s = "?"
 		}
-		fyne.Do(func() {
-			navItemCommunications.Supporting = s
-			characterList.Refresh()
-		})
+		navItemCommunications.Supporting = s
+		characterList.Refresh()
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
-		fyne.Do(func() {
-			navItemSkills.Supporting = status
-			characterList.Refresh()
-		})
+		navItemSkills.Supporting = status
+		characterList.Refresh()
 	}
 
 	u.characterWallet.onTopUpdate = func(b string) {
-		fyne.Do(func() {
-			navItemWallet.Supporting = b
-			characterList.Refresh()
-		})
+		navItemWallet.Supporting = b
+		characterList.Refresh()
 	}
 
 	characterPage := newCharacterAppBar("Characters", characterList)
@@ -357,30 +349,24 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		if count > 0 {
 			badge = fmt.Sprintf("%d contracts active", count)
 		}
-		fyne.Do(func() {
-			corpContractsNav.Supporting = badge
-			corpList.Refresh()
-		})
+		corpContractsNav.Supporting = badge
+		corpList.Refresh()
 	}
 	u.corporationIndyJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
 			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
 		}
-		fyne.Do(func() {
-			corpIndustryNav.Supporting = badge
-			corpList.Refresh()
-		})
+		corpIndustryNav.Supporting = badge
+		corpList.Refresh()
 	}
 	u.corporationStructures.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
 			badge = fmt.Sprintf("%s structures reinforced", ihumanize.Comma(count))
 		}
-		fyne.Do(func() {
-			corpStructuresNav.Supporting = badge
-			corpList.Refresh()
-		})
+		corpStructuresNav.Supporting = badge
+		corpList.Refresh()
 	}
 	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
 		var s string
@@ -392,10 +378,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
 			}
 		}
-		fyne.Do(func() {
-			corpWalletNav.Supporting = s
-			corpList.Refresh()
-		})
+		corpWalletNav.Supporting = s
+		corpList.Refresh()
 	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
@@ -538,7 +522,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.onUpdateStatus = func() {
+	u.onUpdateStatus = func(_ context.Context) {
 		go togglePermittedSections()
 		go func() {
 			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
@@ -606,8 +590,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		go u.characterMails.resetCurrentFolder()
-		go u.characterCommunications.resetCurrentFolder()
+		ctx := context.Background()
+		go u.characterMails.resetCurrentFolder(ctx)
+		go u.characterCommunications.resetCurrentFolder(ctx)
 	}
 	u.onShowCharacter = func() {
 		navBar.Select(1)
@@ -710,7 +695,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
-				v, err := u.availableUpdate()
+				v, err := u.availableUpdate(context.Background())
 				if err != nil {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
@@ -774,10 +759,8 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 	u.colonies.OnUpdate = func(_, expired int) {
-		fyne.Do(func() {
-			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-			homeList.Refresh()
-		})
+		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+		homeList.Refresh()
 	}
 
 	navItemIndustry := iwidget.NewListItemWithIcon(
@@ -801,10 +784,8 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		if count > 0 {
 			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
 		}
-		fyne.Do(func() {
-			navItemIndustry.Supporting = badge
-			homeList.Refresh()
-		})
+		navItemIndustry.Supporting = badge
+		homeList.Refresh()
 	}
 
 	navItemContracts := iwidget.NewListItemWithIcon(
@@ -819,10 +800,8 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		if count > 0 {
 			badge = fmt.Sprintf("%d contracts active", count)
 		}
-		fyne.Do(func() {
-			navItemContracts.Supporting = badge
-			homeList.Refresh()
-		})
+		navItemContracts.Supporting = badge
+		homeList.Refresh()
 	}
 
 	navItemWealth := iwidget.NewListItemWithIcon(
@@ -835,11 +814,9 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 	u.wealth.onUpdate = func(wallet, assets float64) {
-		fyne.Do(func() {
-			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
-			navItemWealth.Supporting = s
-			homeList.Refresh()
-		})
+		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
+		navItemWealth.Supporting = s
+		homeList.Refresh()
 	}
 
 	navItemAssets := iwidget.NewListItemWithIcon(
@@ -850,12 +827,6 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			u.assetSearchAll.focus()
 		},
 	)
-	u.assetSearchAll.onUpdate = func(_ int, s string) {
-		fyne.Do(func() {
-			navItemAssets.Supporting = s
-			homeList.Refresh()
-		})
-	}
 
 	navItemCharacters := iwidget.NewListItemWithIcon(
 		"Character Overview",
@@ -865,10 +836,8 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 	u.characterOverview.onUpdate = func(characters int) {
-		fyne.Do(func() {
-			navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
-			homeList.Refresh()
-		})
+		navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
+		homeList.Refresh()
 	}
 
 	navItemTraining := iwidget.NewListItemWithIcon(
@@ -879,10 +848,8 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		},
 	)
 	u.training.onUpdate = func(expired int) {
-		fyne.Do(func() {
-			navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
-			homeList.Refresh()
-		})
+		navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
+		homeList.Refresh()
 	}
 
 	homeList = iwidget.NewNavList(

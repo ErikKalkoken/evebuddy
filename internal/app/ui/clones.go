@@ -69,6 +69,7 @@ type clones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
+	footer            *widget.Label
 	changeOrigin      *widget.Button
 	columnSorter      *iwidget.ColumnSorter[cloneRow]
 	origin            *app.EveSolarSystem
@@ -81,7 +82,6 @@ type clones struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
-	top               *widget.Label
 	u                 *baseUI
 }
 
@@ -156,12 +156,12 @@ func newClones(u *baseUI) *clones {
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
-		top:          makeTopLabel(),
+		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.originLabel.Wrapping = fyne.TextWrapWord
-	a.changeOrigin = widget.NewButton("Route from", func() {
+	a.originLabel.Truncation = fyne.TextTruncateClip
+	a.changeOrigin = widget.NewButton("Origin", func() {
 		a.setOrigin(a.u.MainWindow())
 	})
 	if !a.u.isMobile {
@@ -174,7 +174,7 @@ func newClones(u *baseUI) *clones {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(c int, r cloneRow) {
 				switch c {
 				case 0:
@@ -228,42 +228,43 @@ func newClones(u *baseUI) *clones {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	// signals
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterJumpClones {
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	return a
 }
 
 func (a *clones) CreateRenderer() fyne.WidgetRenderer {
-	route := container.NewBorder(
+	origin := container.NewBorder(
 		nil,
 		nil,
 		a.changeOrigin,
@@ -279,13 +280,15 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		filters.Add(a.sortButton)
 	}
+	var topBox *fyne.Container
+	if a.u.isMobile {
+		topBox = container.NewVBox(origin, container.NewHScroll(filters))
+	} else {
+		topBox = container.New(iwidget.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			route,
-			container.NewHScroll(filters),
-		),
-		nil,
+		topBox,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -293,7 +296,8 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *clones) filterRows(sortCol int) {
+func (a *clones) filterRowsAsync(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
 	region := a.selectRegion.Selected
@@ -338,7 +342,12 @@ func (a *clones) filterRows(sortCol int) {
 			return r.jc.Location.SolarSystemName()
 		})
 
+		footer := fmt.Sprintf("Showing %d / %d clones", len(rows), totalRows)
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -349,42 +358,30 @@ func (a *clones) filterRows(sortCol int) {
 	}()
 }
 
-func (a *clones) update() {
-	rows := make([]cloneRow, 0)
-	t, i, err := func() (string, widget.Importance, error) {
-		rows2, err := a.fetchRows(a.u.services())
-		if err != nil {
-			return "", 0, err
-		}
-		if len(rows2) == 0 {
-			return "No clones", widget.LowImportance, nil
-		}
-		rows = rows2
-		s := fmt.Sprintf("%d clones", len(rows2))
-		return s, widget.MediumImportance, nil
-	}()
+func (a *clones) update(ctx context.Context) {
+	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
-		t = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
+			a.rows = make([]cloneRow, 0)
+			a.filterRowsAsync(-1)
+		})
+		return
 	}
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 		if len(rows) > 0 && a.origin != nil {
 			a.updateRoutesAsync()
 		}
 	})
 }
 
-func (*clones) fetchRows(s services) ([]cloneRow, error) {
-	ctx := context.Background()
-	oo, err := s.cs.ListAllJumpClones(ctx)
+func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
+	oo, err := a.u.cs.ListAllJumpClones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +391,7 @@ func (*clones) fetchRows(s services) ([]cloneRow, error) {
 	rows := make([]cloneRow, 0)
 	for _, o := range oo {
 		r := cloneRow{jc: o}
-		tags, err := s.cs.ListTagsForCharacter(ctx, o.Character.ID)
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.Character.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -448,8 +445,8 @@ func (a *clones) updateRoutesAsync() {
 				}
 				a.rows[i].route = m[solarSystem.ID]
 			}
-			a.columnSorter.Set(4, iwidget.SortOff)
-			a.filterRows(4)
+			a.columnSorter.Set(clonesColJumps, iwidget.SortAsc)
+			a.filterRowsAsync(-1)
 		})
 	}()
 }

@@ -2,14 +2,18 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/hashicorp/go-version"
 )
+
+const timeout = time.Second * 3
 
 var ErrHTTPError = errors.New("HTTP error")
 
@@ -31,16 +35,16 @@ func NormalizeVersion(v string) (string, error) {
 }
 
 // AvailableUpdate return the version of the latest release and reports whether the update is newer.
-func AvailableUpdate(gitHubOwner, githubRepo, localVersion string) (VersionInfo, error) {
-	return availableUpdate(gitHubOwner, githubRepo, localVersion, fetchGitHubLatest)
+func AvailableUpdate(ctx context.Context, gitHubOwner, githubRepo, localVersion string) (VersionInfo, error) {
+	return availableUpdate(ctx, gitHubOwner, githubRepo, localVersion, fetchGitHubLatest)
 }
 
-func availableUpdate(owner, repo, localVersion string, githubLatest func(owner, repo string) (string, error)) (VersionInfo, error) {
+func availableUpdate(ctx context.Context, owner, repo, localVersion string, githubLatest func(ctx context.Context, owner, repo string) (string, error)) (VersionInfo, error) {
 	local, err := version.NewVersion(localVersion)
 	if err != nil {
 		return VersionInfo{}, err
 	}
-	r, err := githubLatest(owner, repo)
+	r, err := githubLatest(ctx, owner, repo)
 	if err != nil {
 		return VersionInfo{}, err
 	}
@@ -66,9 +70,16 @@ type githubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-func fetchGitHubLatest(owner, repo string) (string, error) {
+func fetchGitHubLatest(ctx context.Context, owner, repo string) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-	r, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	r, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}

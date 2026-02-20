@@ -68,19 +68,19 @@ type colonies struct {
 	OnUpdate func(total, expired int)
 
 	body              fyne.CanvasObject
+	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[colonyRow]
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
-	selectStatus      *kxwidget.FilterChipSelect
 	selectExtracting  *kxwidget.FilterChipSelect
 	selectOwner       *kxwidget.FilterChipSelect
+	selectPlanetType  *kxwidget.FilterChipSelect
 	selectProducing   *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
-	selectPlanetType  *kxwidget.FilterChipSelect
+	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
-	top               *widget.Label
 	u                 *baseUI
 }
 
@@ -161,10 +161,10 @@ func newColonies(u *baseUI) *colonies {
 		},
 	}})
 	a := &colonies{
+		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
-		top:          makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -179,7 +179,7 @@ func newColonies(u *baseUI) *colonies {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r colonyRow) {
+			a.filterRowsAsync, func(_ int, r colonyRow) {
 				a.showColonyWindow(r)
 			})
 	} else {
@@ -210,56 +210,56 @@ func newColonies(u *baseUI) *colonies {
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusOffline,
 	}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
+			a.setOnUpdate()
 		})
-		a.setOnUpdate(a.rows)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterPlanets {
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	return a
 }
@@ -279,11 +279,8 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			container.NewHScroll(filter),
-		),
-		nil,
+		container.NewHScroll(filter),
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -291,7 +288,8 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *colonies) filterRows(sortCol int) {
+func (a *colonies) filterRowsAsync(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
 	owner := a.selectOwner.Selected
@@ -376,7 +374,21 @@ func (a *colonies) filterRows(sortCol int) {
 		extractingOptions := slices.Collect(extracting2.All())
 		producingOptions := slices.Collect(producing2.All())
 
+		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
+		var expired int
+		for _, r := range rows {
+			if r.isExpired() {
+				expired++
+			}
+		}
+		if expired > 0 {
+			footer += fmt.Sprintf(" • %d expired", expired)
+		}
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectRegion.SetOptions(regionOptions)
@@ -390,35 +402,26 @@ func (a *colonies) filterRows(sortCol int) {
 	}()
 }
 
-func (a *colonies) update() {
-	var s string
-	var i widget.Importance
-	rows, expired, err := a.fetchRows(a.u.services())
+func (a *colonies) update(ctx context.Context) {
+	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh colony UI", "err", err)
-		s = "ERROR: " + a.u.humanizeError(err)
-		i = widget.DangerImportance
-	} else {
-		s = fmt.Sprintf("%d colonies", len(rows))
-		if expired > 0 {
-			s += fmt.Sprintf(" • %d expired", expired)
-		}
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
+		})
 	}
 	fyne.Do(func() {
-		a.top.Text = s
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
+		a.setOnUpdate()
 	})
-	a.setOnUpdate(rows)
 }
 
-func (a *colonies) setOnUpdate(rows []colonyRow) {
+func (a *colonies) setOnUpdate() {
 	var expired int
-	for _, r := range rows {
+	for _, r := range a.rows {
 		if r.isExpired() {
 			expired++
 		}
@@ -428,15 +431,13 @@ func (a *colonies) setOnUpdate(rows []colonyRow) {
 	}
 }
 
-func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
-	var expired int
-	rows := make([]colonyRow, 0)
-	ctx := context.Background()
-
-	planets, err := s.cs.ListAllPlanets(ctx)
+func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
+	planets, err := a.u.cs.ListAllPlanets(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
+
+	var rows []colonyRow
 	for _, p := range planets {
 		extracting := p.ExtractedTypeNames()
 		producing := p.ProducedSchematicNames()
@@ -465,17 +466,14 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 		} else {
 			r.producingText = strings.Join(producing, ", ")
 		}
-		tags, err := s.cs.ListTagsForCharacter(ctx, p.CharacterID)
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, p.CharacterID)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if r.isExpired() {
-			expired++
-		}
 	}
-	return rows, expired, nil
+	return rows, nil
 }
 
 // showColonyWindow shows the details of a colony in a window.

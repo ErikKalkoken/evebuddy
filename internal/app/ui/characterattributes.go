@@ -36,35 +36,35 @@ type characterAttributes struct {
 	attributes []attribute
 	character  atomic.Pointer[app.Character]
 	list       *widget.List
-	top        *widget.Label
+	footer     *widget.Label
 	u          *baseUI
 }
 
 func newCharacterAttributes(u *baseUI) *characterAttributes {
 	a := &characterAttributes{
 		attributes: make([]attribute, 0),
-		top:        makeTopLabel(),
+		footer:     newLabelWithTruncation(),
 		u:          u,
 	}
 	a.list = a.makeAttributeList()
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterAttributes {
-			a.update()
+			a.update(ctx)
 		}
 	})
 	return a
 }
 
 func (a *characterAttributes) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.list)
+	c := container.NewBorder(a.footer, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -112,14 +112,14 @@ func (a *characterAttributes) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *characterAttributes) update() {
+func (a *characterAttributes) update(ctx context.Context) {
 	var err error
 	var total int64
 	attributes := make([]attribute, 0)
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
-		total2, attributes2, err2 := a.fetchData(characterID, a.u.services())
+		total2, attributes2, err2 := a.fetchData(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh attributes UI", "err", err)
 			err = err2
@@ -132,8 +132,8 @@ func (a *characterAttributes) update() {
 		return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 	})
 	fyne.Do(func() {
-		a.top.Text, a.top.Importance = t, i
-		a.top.Refresh()
+		a.footer.Text, a.footer.Importance = t, i
+		a.footer.Refresh()
 	})
 	fyne.Do(func() {
 		a.attributes = attributes
@@ -141,12 +141,12 @@ func (a *characterAttributes) update() {
 	})
 }
 
-func (*characterAttributes) fetchData(characterID int64, s services) (int64, []attribute, error) {
+func (a *characterAttributes) fetchData(ctx context.Context, characterID int64) (int64, []attribute, error) {
 	attributes := make([]attribute, 0, 6)
 	if characterID == 0 {
 		return 0, attributes, nil
 	}
-	ca, err := s.cs.GetAttributes(context.Background(), characterID)
+	ca, err := a.u.cs.GetAttributes(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return 0, attributes, nil
 	} else if err != nil {
@@ -184,7 +184,9 @@ func (*characterAttributes) fetchData(characterID int64, s services) (int64, []a
 		points: ca.Charisma,
 	}
 	attributes[5] = attribute{
-		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps.ValueOrZero()),
+		name: fmt.Sprintf("Bonus Remaps Available: %s", ca.BonusRemaps.StringFunc("?", func(v int64) string {
+			return fmt.Sprint(v)
+		})),
 	}
 	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
 	return total, attributes, nil

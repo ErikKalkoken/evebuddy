@@ -42,7 +42,7 @@ func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))
 
-	ui.characterAugmentations.update()
+	ui.characterAugmentations.update(t.Context())
 
 	test.AssertImageMatches(t, "characteraugmentations/master.png", w.Canvas().Capture())
 }

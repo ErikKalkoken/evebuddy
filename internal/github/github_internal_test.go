@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestAvailableUpdateInternal(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			u, err := availableUpdate("owner", "repo", tc.local, func(owner, repo string) (string, error) {
+			u, err := availableUpdate(t.Context(), "owner", "repo", tc.local, func(context.Context, string, string) (string, error) {
 				return tc.remote, nil
 			})
 			if tc.hasError {
@@ -48,7 +49,7 @@ func TestFetchGithubLatest(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"tag_name": "v0.2.0",
 			}))
-		r, err := fetchGitHubLatest("ErikKalkoken", "janice")
+		r, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
 		if assert.NoError(t, err) {
 			assert.Equal(t, "v0.2.0", r)
 		}
@@ -57,7 +58,7 @@ func TestFetchGithubLatest(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{}))
-		r, err := fetchGitHubLatest("ErikKalkoken", "janice")
+		r, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", r)
 		}
@@ -66,21 +67,21 @@ func TestFetchGithubLatest(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewErrorResponder(fmt.Errorf("some error")))
-		_, err := fetchGitHubLatest("ErikKalkoken", "janice")
+		_, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
 		assert.Error(t, err)
 	})
 	t.Run("should report error when no release found", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"message": "Not found"}))
-		_, err := fetchGitHubLatest("ErikKalkoken", "janice")
+		_, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
 		assert.ErrorIs(t, err, ErrHTTPError)
 	})
 	t.Run("should report error when json unmarshaling failed", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewStringResponder(200, "invalid"))
-		_, err := fetchGitHubLatest("ErikKalkoken", "janice")
+		_, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
 		assert.Error(t, err)
 	})
 }

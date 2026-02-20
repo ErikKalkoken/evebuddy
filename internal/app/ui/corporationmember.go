@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -34,19 +35,19 @@ type corporationMember struct {
 	widget.BaseWidget
 
 	corporation  atomic.Pointer[app.Corporation]
+	footer       *widget.Label
+	list         *widget.List
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
-	list         *widget.List
 	searchBox    *widget.Entry
-	top          *widget.Label
 	u            *baseUI
 }
 
 func newCorporationMember(u *baseUI) *corporationMember {
 	a := &corporationMember{
-		rows: make([]corporationMemberRow, 0),
-		top:  widget.NewLabel(""),
-		u:    u,
+		rows:   make([]corporationMemberRow, 0),
+		footer: newLabelWithTruncation(),
+		u:      u,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
@@ -60,29 +61,29 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		if len(s) == 1 {
 			return
 		}
-		a.filterRows()
+		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section != app.SectionCorporationMembers {
 			return
 		}
-		a.update()
+		a.update(ctx)
 	})
 	return a
 }
 
 func (a *corporationMember) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewVBox(a.top, a.searchBox),
-		nil,
+		a.searchBox,
+		a.footer,
 		nil,
 		nil,
 		a.list,
@@ -144,12 +145,12 @@ func (a *corporationMember) makeList() *widget.List {
 	return l
 }
 
-func (a *corporationMember) filterRows() {
+func (a *corporationMember) filterRowsAsync() {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchBox.Text)
 
 	go func() {
-		// search filter
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -159,14 +160,19 @@ func (a *corporationMember) filterRows() {
 			return strings.Compare(a.name, b.name)
 		})
 
+		footer := fmt.Sprintf("Showing %s / %s members", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
 	}()
 }
 
-func (a *corporationMember) update() {
+func (a *corporationMember) update(ctx context.Context) {
 	var corporationID, ceoID int64
 	if c := a.corporation.Load(); c != nil {
 		corporationID = c.ID
@@ -178,7 +184,7 @@ func (a *corporationMember) update() {
 	var err error
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationMembers)
 	if hasData {
-		rows2, err2 := a.fetchRows(corporationID, ceoID)
+		rows2, err2 := a.fetchRows(ctx, corporationID, ceoID)
 		if err2 != nil {
 			err = err2
 		} else {
@@ -186,21 +192,20 @@ func (a *corporationMember) update() {
 			hasData = len(rows2) > 0
 		}
 	}
-	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
-		return fmt.Sprintf("Members: %d", len(rows)), widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.top.Text, a.top.Importance = t, i
-		a.top.Refresh()
-	})
+	t, i := a.u.makeTopText(corporationID, hasData, err, nil)
+	if t != "" {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = t, i
+			a.footer.Refresh()
+		})
+	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRows()
+		a.filterRowsAsync()
 	})
 }
 
-func (a *corporationMember) fetchRows(corporationID, ceoID int64) ([]corporationMemberRow, error) {
-	ctx := context.Background()
+func (a *corporationMember) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]corporationMemberRow, error) {
 	cc, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
@@ -215,7 +220,7 @@ func (a *corporationMember) fetchRows(corporationID, ceoID int64) ([]corporation
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]corporationMemberRow, 0)
+	var rows []corporationMemberRow
 	for _, o := range oo {
 		rows = append(rows, corporationMemberRow{
 			id:           o.Character.ID,

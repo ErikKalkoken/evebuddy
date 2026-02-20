@@ -41,16 +41,16 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletBalance {
-			a.updateBalance()
+			a.updateBalance(ctx)
 		}
 	})
 	return a
@@ -71,24 +71,30 @@ func (a *characterWallet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWallet) update() {
+func (a *characterWallet) update(ctx context.Context) {
 	var wg sync.WaitGroup
-	wg.Go(a.journal.update)
-	wg.Go(a.transactions.update)
 	wg.Go(func() {
-		a.loyaltyPoints.update(context.Background())
+		a.journal.update(ctx)
 	})
-	wg.Go(a.updateBalance)
+	wg.Go(func() {
+		a.transactions.update(ctx)
+	})
+	wg.Go(func() {
+		a.loyaltyPoints.update(ctx)
+	})
+	wg.Go(func() {
+		a.updateBalance(ctx)
+	})
 	wg.Wait()
 }
 
-func (a *characterWallet) updateBalance() {
+func (a *characterWallet) updateBalance(ctx context.Context) {
 	var err error
 	var balance float64
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if hasData {
-		c, err2 := a.u.cs.GetCharacter(context.Background(), characterID)
+		c, err2 := a.u.cs.GetCharacter(ctx, characterID)
 		if errors.Is(err2, app.ErrNotFound) {
 			hasData = false
 		} else if err2 != nil {
@@ -108,13 +114,13 @@ func (a *characterWallet) updateBalance() {
 		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
 		return s, widget.MediumImportance
 	})
-	if a.onBalanceUpdate != nil {
-		a.onBalanceUpdate(balance)
-	}
-	if a.onTopUpdate != nil {
-		a.onTopUpdate(t)
-	}
 	fyne.Do(func() {
+		if a.onTopUpdate != nil {
+			a.onTopUpdate(t)
+		}
+		if a.onBalanceUpdate != nil {
+			a.onBalanceUpdate(balance)
+		}
 		a.balance.Text = t
 		a.balance.Importance = i
 		a.balance.Refresh()

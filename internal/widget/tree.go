@@ -238,14 +238,14 @@ func (td TreeData[T]) Children(parent *T) []*T {
 	return nodes
 }
 
-// ChildrenCount returns the number of direct children of node parent
-// and reports whether the node was found.
-func (td TreeData[T]) ChildrenCount(parent *T) (int, bool) {
+// ChildrenCount returns the number of direct children of node parent.
+// It returns 0 when the node is not found.
+func (td TreeData[T]) ChildrenCount(parent *T) int {
 	uid, found := td.UID(parent)
 	if !found {
-		return 0, false
+		return 0
 	}
-	return len(td.children[uid]), true
+	return len(td.children[uid])
 }
 
 // Clear removes all nodes.
@@ -420,7 +420,7 @@ func (td TreeData[T]) Path(parent, n *T) []*T {
 func (td TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string {
 	all := make([][]string, 0)
 	td.Walk(parent, func(n *T) bool {
-		if k, ok := td.ChildrenCount(n); ok && k == 0 {
+		if td.ChildrenCount(n) == 0 {
 			p := make([]string, 0)
 			for _, x := range td.Path(parent, n) {
 				p = append(p, stringify(x))

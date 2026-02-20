@@ -44,21 +44,19 @@ const (
 type augmentations struct {
 	widget.BaseWidget
 
+	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	top              *widget.Label
-	treeData         iwidget.TreeData[characterAugmentationNode]
 	tree             *iwidget.Tree[characterAugmentationNode]
+	treeData         iwidget.TreeData[characterAugmentationNode]
 	u                *baseUI
 }
 
 func newAugmentations(u *baseUI) *augmentations {
-	top := widget.NewLabel("")
-	top.Wrapping = fyne.TextWrapWord
 	a := &augmentations{
-		top: top,
-		u:   u,
+		footer: newLabelWithTruncation(),
+		u:      u,
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
@@ -66,36 +64,36 @@ func newAugmentations(u *baseUI) *augmentations {
 		augmentationsImplantsNone,
 		augmentationsImplantsSome,
 	}, func(_ string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterTree()
+		a.filterTreeAsync()
 	})
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if arg.section == app.SectionCharacterImplants {
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-		a.update()
+	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-		a.update()
+	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-		a.update()
+		a.update(ctx)
 	})
 	return a
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
-	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
+	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -103,57 +101,55 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewRichText()
-			info := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			main := ttwidget.NewLabel("Template")
+			main.Truncation = fyne.TextTruncateEllipsis
+			implants := widget.NewLabel("9 implants")
+			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			return container.NewBorder(
 				nil,
 				nil,
 				iconMain,
-				info,
+				container.NewHBox(implants, iconInfo),
 				main,
 			)
 		},
 		func(n *characterAugmentationNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*ttwidget.RichText)
-			main.Truncation = fyne.TextTruncateEllipsis
+			main := border[0].(*ttwidget.Label)
 			iconMain := border[1].(*canvas.Image)
-			info := border[2].(*iwidget.TappableIcon)
+			hbox := border[2].(*fyne.Container).Objects
+			implants := hbox[0].(*widget.Label)
+			iconInfo := hbox[1].(*iwidget.TappableIcon)
 			if n.IsTop() {
-				go a.u.setCharacterAvatar(n.characterID, func(r fyne.Resource) {
-					fyne.Do(func() {
-						iconMain.Resource = r
-						iconMain.Refresh()
-					})
+				a.u.eis.CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
+					iconMain.Resource = r
+					iconMain.CornerRadius = app.IconUnitSize / 2
+					iconMain.Refresh()
 				})
-				var implants string
 				if n.implantCount > 0 {
-					implants = fmt.Sprintf("     %d implants", n.implantCount)
+					implants.SetText(fmt.Sprintf("%d implants", n.implantCount))
+					implants.Show()
+				} else {
+					implants.Hide()
 				}
-				main.Segments = slices.Concat(
-					iwidget.RichTextSegmentsFromText(n.characterName, widget.RichTextStyle{
-						Inline: true,
-					}),
-					iwidget.RichTextSegmentsFromText(implants, widget.RichTextStyle{
-						TextStyle: fyne.TextStyle{Italic: true},
-					}),
-				)
+				main.SetText(n.characterName)
 				main.Refresh()
 				main.SetToolTip("")
-				info.SetToolTip("Show character")
-				info.OnTapped = func() {
+				iconInfo.SetToolTip("Show character")
+				iconInfo.OnTapped = func() {
 					a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
 				}
 			} else {
 				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
 					iconMain.Resource = r
+					iconMain.CornerRadius = 0
 					iconMain.Refresh()
 				})
-				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
-				main.Refresh()
+				main.SetText(n.implantTypeName)
 				main.SetToolTip(n.implantTypeDescription)
-				info.SetToolTip("Show implant")
-				info.OnTapped = func() {
+				implants.Hide()
+				iconInfo.SetToolTip("Show implant")
+				iconInfo.OnTapped = func() {
 					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, n.characterID)
 				}
 			}
@@ -168,12 +164,8 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 	return t
 }
 
-func (a *augmentations) filterTree() {
-	if a.treeData.IsEmpty() {
-		a.tree.Set(a.treeData)
-		return
-	}
-
+func (a *augmentations) filterTreeAsync() {
+	total := a.treeData.ChildrenCount(nil)
 	tag := a.selectTag.Selected
 	implants := a.selectImplants.Selected
 	td := a.treeData.Clone()
@@ -218,36 +210,37 @@ func (a *augmentations) filterTree() {
 		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *characterAugmentationNode) set.Set[string] {
 			return n.tags
 		})...).All())
+		footer := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
 
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.tree.Set(td)
 		})
 	}()
 }
 
-func (a *augmentations) update() {
-	td, err := a.updateTreeData()
+func (a *augmentations) update(ctx context.Context) {
+	td, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh augmentations UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = "ERROR: " + a.u.humanizeError(err)
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
 		a.treeData = td
-		a.filterTree()
-		a.top.Hide()
+		a.filterTreeAsync()
 	})
 }
 
-func (a *augmentations) updateTreeData() (iwidget.TreeData[characterAugmentationNode], error) {
+func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[characterAugmentationNode], error) {
 	var td iwidget.TreeData[characterAugmentationNode]
-	ctx := context.Background()
 	characters, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return td, err

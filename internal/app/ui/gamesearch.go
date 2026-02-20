@@ -80,7 +80,7 @@ func newGameSearch(u *baseUI) *gameSearch {
 	})
 	a.entry.PlaceHolder = "Search New Eden"
 	a.entry.OnSubmitted = func(s string) {
-		go a.doSearch2(s)
+		go a.doSearch(context.Background(), s)
 	}
 	a.indicator.Hide()
 
@@ -125,16 +125,15 @@ func newGameSearch(u *baseUI) *gameSearch {
 		nil,
 		a.recent,
 	)
-	a.init()
 	return a
 }
 
-func (a *gameSearch) init() {
+func (a *gameSearch) init(ctx context.Context) {
 	ids := a.u.settings.RecentSearches()
 	if len(ids) == 0 {
 		return
 	}
-	ee, err := a.u.eus.ListEntitiesForIDs(context.Background(), ids)
+	ee, err := a.u.eus.ListEntitiesForIDs(ctx, ids)
 	if errors.Is(err, app.ErrNotFound) {
 		ee = make([]*app.EveEntity, 0)
 		fyne.Do(func() {
@@ -174,11 +173,6 @@ func (a *gameSearch) updateSearchOptionsTitle() {
 	}
 	a.searchOptions.Items[0].Title = s
 	a.searchOptions.Refresh()
-}
-
-func (a *gameSearch) doSearch(s string) {
-	a.entry.SetText(s)
-	go a.doSearch2(s)
 }
 
 func (a *gameSearch) toogleOptions(enabled bool) {
@@ -321,7 +315,11 @@ func (a *gameSearch) showRecent() {
 	a.recentPage.Show()
 }
 
-func (a *gameSearch) doSearch2(search string) {
+func (a *gameSearch) setEntry(s string) {
+	a.entry.SetText(s)
+}
+
+func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.u.ShowInformationDialog(
@@ -352,7 +350,7 @@ func (a *gameSearch) doSearch2(search string) {
 		return option2searchCategory(o)
 	})
 	results, total, err := a.u.cs.SearchESI(
-		context.Background(),
+		ctx,
 		search,
 		categories,
 		a.strict.On,

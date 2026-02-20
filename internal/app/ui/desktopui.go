@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"path/filepath"
 	"slices"
@@ -137,9 +136,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if count > 0 {
 			s += ihumanize.Comma(count)
 		}
-		fyne.Do(func() {
-			homeNav.SetItemBadge(contracts, s)
-		})
+		homeNav.SetItemBadge(contracts, s)
 	}
 
 	overviewColonies := iwidget.NewNavPage(
@@ -152,9 +149,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if expired > 0 {
 			s = fmt.Sprint(expired)
 		}
-		fyne.Do(func() {
-			homeNav.SetItemBadge(overviewColonies, s)
-		})
+		homeNav.SetItemBadge(overviewColonies, s)
 	}
 
 	industry := iwidget.NewNavPage(
@@ -174,9 +169,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		fyne.Do(func() {
-			homeNav.SetItemBadge(industry, badge)
-		})
+		homeNav.SetItemBadge(industry, badge)
 	}
 
 	marketOrders := iwidget.NewNavPage(
@@ -198,9 +191,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if expired > 0 {
 			badge = ihumanize.Comma(expired)
 		}
-		fyne.Do(func() {
-			homeNav.SetItemBadge(training, badge)
-		})
+		homeNav.SetItemBadge(training, badge)
 	}
 
 	homeNav = iwidget.NewNavDrawer(
@@ -242,9 +233,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		newContentPage("Mail", u.characterMails),
 	)
 	u.characterMails.onUpdate = func(unread, _ int) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
-		})
+		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 	}
 	u.characterMails.onSendMessage = u.showSendMailWindow
 
@@ -260,9 +249,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		} else if v > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterCommunicationsNav, s)
-		})
+		characterNav.SetItemBadge(characterCommunicationsNav, s)
 	}
 
 	characterSkillsNav := iwidget.NewNavPage(
@@ -279,9 +266,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterSkillsNav, status)
-		})
+		characterNav.SetItemBadge(characterSkillsNav, status)
 	}
 
 	characterWalletNav := iwidget.NewNavPage("Wallet",
@@ -314,10 +299,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	characterNav.MinWidth = navDrawerMinWidth
 	u.characterWallet.onBalanceUpdate = func(balance float64) {
-		s := ihumanize.NumberF(balance, 1)
-		fyne.Do(func() {
-			characterNav.SetItemBadge(characterWalletNav, s)
-		})
+		characterNav.SetItemBadge(characterWalletNav, ihumanize.NumberF(balance, 1))
 	}
 	// u.characterAssets.OnUpdate = func(s string) {
 	// 	fyne.Do(func() {
@@ -361,9 +343,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		fyne.Do(func() {
-			corporationNav.SetItemBadge(corpContractsItem, badge)
-		})
+		corporationNav.SetItemBadge(corpContractsItem, badge)
 	}
 
 	corpIndustryItem := iwidget.NewNavPage(
@@ -376,9 +356,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		fyne.Do(func() {
-			corporationNav.SetItemBadge(corpIndustryItem, badge)
-		})
+		corporationNav.SetItemBadge(corpIndustryItem, badge)
 	}
 
 	corpStructuresItem := iwidget.NewNavPage(
@@ -391,9 +369,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		fyne.Do(func() {
-			corporationNav.SetItemBadge(corpStructuresItem, badge)
-		})
+		corporationNav.SetItemBadge(corpStructuresItem, badge)
 	}
 
 	corpSheetItem := iwidget.NewNavPage(
@@ -420,9 +396,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	for _, d := range app.Divisions {
 		u.corporationWallets[d].onBalanceUpdate = func(balance float64) {
 			s := ihumanize.NumberF(balance, 1)
-			fyne.Do(func() {
-				corporationNav.SetItemBadge(corporationWalletNavs[d], s)
-			})
+			corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 		}
 		u.corporationWallets[d].onNameUpdate = func(name string) {
 			fyne.Do(func() {
@@ -438,10 +412,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		} else {
 			s = ihumanize.NumberF(balance, 1)
 		}
-		fyne.Do(func() {
-			corporationNav.SetItemBadge(walletsNav, s)
-			corporationNav.Refresh()
-		})
+		corporationNav.SetItemBadge(walletsNav, s)
+		corporationNav.Refresh()
 	}
 
 	// Make overall UI
@@ -644,13 +616,13 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onAppFirstStarted = func() {
 		u.enableShortcuts()
-		go u.updateMailIndicator()
+		go u.updateMailIndicator(context.Background())
 		go statusBar.start()
 	}
 	u.onAppStopped = func() {
 		u.saveAppState()
 	}
-	u.onUpdateStatus = func() {
+	u.onUpdateStatus = func(_ context.Context) {
 		go func() {
 			items := u.makeCharacterSwitchMenu(func() {
 				characterHeader.Refresh()
@@ -732,12 +704,14 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.resetOptions()
 	u.gameSearch.toogleOptions(false)
-	u.gameSearch.doSearch(s)
+	u.gameSearch.setEntry(s)
+	go u.gameSearch.doSearch(context.Background(), s)
 	u.showSearchWindow()
 }
 
-func (u *DesktopUI) showAdvancedSearch() {
+func (u *DesktopUI) showAdvancedSearch(s string) {
 	u.gameSearch.toogleOptions(true)
+	u.gameSearch.setEntry(s)
 	u.showSearchWindow()
 }
 
@@ -993,8 +967,7 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 
 func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(w.button.MinSize())
+	spacer := newSpacer(w.button.MinSize())
 	c := container.NewHBox(
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
 		w.title,

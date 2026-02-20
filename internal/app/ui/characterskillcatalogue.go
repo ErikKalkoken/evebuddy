@@ -59,36 +59,35 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          makeTopLabel(),
+		total:          newLabelWithWrapping(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
 
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	// signals
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterSkills {
-			a.update()
+			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(
-		func(_ context.Context, arg generalSectionUpdated) {
-			characterID := characterIDOrZero(a.character.Load())
-			if characterID == 0 {
-				return
-			}
-			if arg.section == app.SectionEveTypes {
-				a.update()
-			}
-		},
-	)
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+		characterID := characterIDOrZero(a.character.Load())
+		if characterID == 0 {
+			return
+		}
+		if arg.section == app.SectionEveTypes {
+			a.update(ctx)
+		}
+	})
 	return a
 }
 
@@ -215,14 +214,14 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.isMobile, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *characterSkillCatalogue) update() {
+func (a *characterSkillCatalogue) update(ctx context.Context) {
 	var err error
-	groups := make([]skillGroupProgress, 0)
+	var groups []skillGroupProgress
 	c := a.character.Load()
 	characterID := characterIDOrZero(c)
 	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if hasData {
-		groups2, err2 := a.updateGroups(characterID, a.u.services())
+		groups2, err2 := a.updateGroups(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh skill catalogue UI", "err", err)
 			err = err2
@@ -256,19 +255,19 @@ func (a *characterSkillCatalogue) update() {
 	})
 }
 
-func (*characterSkillCatalogue) updateGroups(characterID int64, s services) ([]skillGroupProgress, error) {
-	gg, err := s.cs.ListSkillGroupsProgress(context.TODO(), characterID)
+func (a *characterSkillCatalogue) updateGroups(ctx context.Context, characterID int64) ([]skillGroupProgress, error) {
+	gg, err := a.u.cs.ListSkillGroupsProgress(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	groups := make([]skillGroupProgress, len(gg))
-	for i, g := range gg {
-		groups[i] = skillGroupProgress{
+	var groups []skillGroupProgress
+	for _, g := range gg {
+		groups = append(groups, skillGroupProgress{
 			trained: g.Trained,
 			id:      g.GroupID,
 			name:    g.GroupName,
 			total:   g.Total,
-		}
+		})
 	}
 	return groups, nil
 }

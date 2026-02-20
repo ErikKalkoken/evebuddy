@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -64,7 +65,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	defer w.Close()
 	w.Resize(fyne.NewSize(1400, 300))
 
-	ui.assetSearchAll.update()
+	ui.assetSearchAll.update(context.Background())
 
 	test.AssertImageMatches(t, "assets/master.png", w.Canvas().Capture())
 }

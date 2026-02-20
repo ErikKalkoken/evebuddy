@@ -29,23 +29,19 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character.Store(c)
-			a.update()
-		},
-	)
-	a.u.generalSectionChanged.AddListener(
-		func(_ context.Context, arg generalSectionUpdated) {
-			characterID := characterIDOrZero(a.character.Load())
-			if characterID == 0 {
-				return
-			}
-			if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
-				a.update()
-			}
-		},
-	)
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.character.Store(c)
+		a.update(ctx)
+	})
+	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+		characterID := characterIDOrZero(a.character.Load())
+		if characterID == 0 {
+			return
+		}
+		if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+			a.update(ctx)
+		}
+	})
 	return a
 }
 
@@ -54,7 +50,7 @@ func (a *characterBiography) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterBiography) update() {
+func (a *characterBiography) update(_ context.Context) {
 	c := a.character.Load()
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {

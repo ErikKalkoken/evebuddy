@@ -67,7 +67,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 		w.Resize(fyne.NewSize(1700, 300))
 
 		a.character.Store(character)
-		a.update()
+		a.update(t.Context())
 
 		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
 	})
@@ -127,7 +127,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 		w.Resize(fyne.NewSize(1700, 300))
 
 		ui.setCorporation(corporation)
-		x.update()
+		x.update(t.Context())
 
 		// fmt.Println(testutil.DumpTables(db))
 		test.AssertImageMatches(t, "wallettransactions/corporation.png", w.Canvas().Capture())

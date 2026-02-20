@@ -49,6 +49,6 @@ func TestCorporationMember_CanRenderWithData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.update()
+	a.update(t.Context())
 	test.AssertImageMatches(t, "corporationmembers/master.png", w.Canvas().Capture())
 }

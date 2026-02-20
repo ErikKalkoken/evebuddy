@@ -3,9 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
-	"slices"
 	"sync/atomic"
 	"time"
 
@@ -86,7 +84,7 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			n, _ := a.tree.Data().ChildrenCount(nil)
+			n := a.tree.Data().ChildrenCount(nil)
 			a.refreshTop(n)
 		})
 	})
@@ -102,31 +100,38 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewRichText()
+			main := ttwidget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			spacer := canvas.NewRectangle(color.Transparent)
-			spacer.SetMinSize(fyne.NewSize(40, 10))
+			implants := widget.NewLabel("9")
+			spacer := newSpacer(fyne.NewSize(40, 10))
 			prefix := widget.NewLabel("-9.9")
+			prefix.Alignment = fyne.TextAlignTrailing
 			return container.NewBorder(
 				nil,
 				nil,
 				container.NewHBox(iconMain, container.NewStack(spacer, prefix)),
-				iconInfo,
+				container.NewHBox(implants, iconInfo),
 				main,
 			)
 		},
 		func(n *jumpCloneNode, _ bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*ttwidget.RichText)
-			hbox := border[1].(*fyne.Container).Objects
-			iconMain := hbox[0].(*canvas.Image)
-			spacer := hbox[1].(*fyne.Container).Objects[0]
-			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
-			iconInfo := border[2].(*iwidget.TappableIcon)
+			main := border[0].(*ttwidget.Label)
+			hbox1 := border[1].(*fyne.Container).Objects
+			iconMain := hbox1[0].(*canvas.Image)
+			spacer := hbox1[1].(*fyne.Container).Objects[0]
+			prefix := hbox1[1].(*fyne.Container).Objects[1].(*widget.Label)
+			hbox2 := border[2].(*fyne.Container).Objects
+			implants := hbox2[0].(*widget.Label)
+			iconInfo := hbox2[1].(*iwidget.TappableIcon)
 			if n.isTop() {
-				iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
-				iconMain.Refresh()
+				if a.u.isMobile {
+					iconMain.Hide()
+				} else {
+					iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
+					iconMain.Refresh()
+				}
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
@@ -140,29 +145,26 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					prefix.Importance = widget.LowImportance
 					iconInfo.Hide()
 				}
-				var implants string
 				if n.implantCount > 0 {
-					implants = fmt.Sprintf("     %d implants", n.implantCount)
+					implants.SetText(fmt.Sprint(n.implantCount))
+					implants.Show()
+				} else {
+					implants.Hide()
 				}
-				main.Segments = slices.Concat(
-					iwidget.RichTextSegmentsFromText(n.locationName, widget.RichTextStyle{
-						Inline: true,
-					}),
-					iwidget.RichTextSegmentsFromText(implants, widget.RichTextStyle{
-						TextStyle: fyne.TextStyle{Italic: true},
-					}),
-				)
-				main.Refresh()
+				main.SetText(n.locationName)
 				main.SetToolTip("")
 				prefix.Show()
 				spacer.Show()
 			} else {
+				if a.u.isMobile {
+					iconMain.Show()
+				}
+				implants.Hide()
 				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
 					iconMain.Resource = r
 					iconMain.Refresh()
 				})
-				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
-				main.Refresh()
+				main.SetText(n.implantTypeName)
 				main.SetToolTip(n.implantTypeDescription)
 				prefix.Hide()
 				spacer.Hide()
@@ -195,7 +197,7 @@ func (a *characterJumpClones) updateAsync() {
 		return
 	}
 	fyne.Do(func() {
-		n, _ := td.ChildrenCount(nil)
+		n := td.ChildrenCount(nil)
 		a.refreshTop(n)
 		a.tree.Set(td)
 	})

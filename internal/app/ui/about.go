@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -42,10 +43,17 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	discordURL, _ := url.Parse(discordServerURL)
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
 	support.Wrapping = fyne.TextWrapWord
-	updateAvailable := widget.NewHyperlink("Update available", u.websiteRootURL().JoinPath("releases"))
-	updateAvailable.Hide()
+
+	updateAvailableLink := widget.NewHyperlink("Download", u.websiteRootURL().JoinPath("releases"))
+	updateAvailableRow := container.NewHBox(
+		widget.NewLabelWithStyle("Update available", fyne.TextAlignLeading, fyne.TextStyle{
+			Bold: true,
+		}),
+		updateAvailableLink,
+	)
+	updateAvailableRow.Hide()
 	go func() {
-		v, err := u.availableUpdate()
+		v, err := u.availableUpdate(context.Background())
 		if err != nil {
 			slog.Error("Failed to fetch available updates")
 			return
@@ -53,14 +61,16 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		if !v.IsRemoteNewer {
 			return
 		}
-		updateAvailable.URL = u.websiteRootURL().JoinPath("releases", "tag", "v"+v.Latest)
-		updateAvailable.Show()
+		fyne.Do(func() {
+			updateAvailableLink.URL = u.websiteRootURL().JoinPath("releases", "tag", "v"+v.Latest)
+			updateAvailableRow.Show()
+		})
 	}()
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
 		title,
 		container.NewHBox(currentVersion, releaseNotes),
-		updateAvailable,
+		updateAvailableRow,
 		techInfos,
 		support,
 		container.NewHBox(
@@ -69,7 +79,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 			widget.NewHyperlink("Discord", discordURL),
 		),
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
-		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
+		widget.NewLabel("(c) 2024-26 Erik Kalkoken"),
 	)
 	return c
 }

@@ -62,7 +62,7 @@ type contracts struct {
 	OnUpdate func(active int)
 
 	body           fyne.CanvasObject
-	bottom         *widget.Label
+	footer         *widget.Label
 	columnSorter   *iwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
@@ -171,7 +171,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		forCorporation: forCorporation,
 		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
 		rows:           make([]contractRow, 0),
-		bottom:         widget.NewLabel(""),
+		footer:         newLabelWithTruncation(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -188,7 +188,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 				return x
 			},
 			a.columnSorter,
-			a.filterRows,
+			a.filterRowsAsync,
 			func(column int, r contractRow) {
 				if a.forCorporation {
 					showCorporationContractWindow(a.u, r.corporationID, r.contractID)
@@ -200,13 +200,13 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	}
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -216,46 +216,46 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 		contractStatusHasIssue,
 		contractStatusHistory,
 	}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.selectStatus.Selected = contractStatusAllActive
 	a.selectStatus.SortDisabled = true
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
 	}, a.u.window)
 
 	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.update()
+			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section != app.SectionCorporationContracts {
 				return
 			}
-			a.update()
+			a.update(ctx)
 		})
 	} else {
-		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 			if arg.section == app.SectionCharacterContracts {
-				a.update()
+				a.update(ctx)
 			}
 		})
-		a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-			a.update()
+		a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
 		})
-		a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-			a.update()
+		a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
 		})
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
-			a.update()
+			a.update(ctx)
 		})
 	}
 	return a
@@ -276,7 +276,7 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewVBox(container.NewHScroll(filter)),
-		a.bottom,
+		a.footer,
 		nil,
 		nil,
 		a.body,
@@ -346,7 +346,8 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *contracts) filterRows(sortCol int) {
+func (a *contracts) filterRowsAsync(sortCol int) {
+	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
 	assignee := a.selectAssignee.Selected
@@ -406,7 +407,12 @@ func (a *contracts) filterRows(sortCol int) {
 			return r.typeName
 		})
 
+		footer := fmt.Sprintf("Showing %d / %d contracts", len(rows), totalRows)
+
 		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
 			a.selectIssuer.SetOptions(issueOptions)
 			a.selectAssignee.SetOptions(assigneeOptions)
@@ -417,46 +423,43 @@ func (a *contracts) filterRows(sortCol int) {
 	}()
 }
 
-func (a *contracts) update() {
+func (a *contracts) update(ctx context.Context) {
 	var activeCount int
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
-		rows, activeCount, err = a.fetchRowsCorporation()
+		rows, activeCount, err = a.fetchRowsCorporation(ctx)
 	} else {
-		rows, activeCount, err = a.fetchRowsOverview()
+		rows, activeCount, err = a.fetchRowsOverview(ctx)
 	}
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.bottom.Importance = widget.DangerImportance
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
-		a.bottom.Hide()
 		a.rows = rows
-		a.filterRows(-1)
+		a.filterRowsAsync(-1)
+		if a.OnUpdate != nil {
+			a.OnUpdate(activeCount)
+		}
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(activeCount)
-	}
 }
 
-func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
+func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
-		return []contractRow{}, 0, nil
+		return nil, 0, nil
 	}
-	ctx := context.Background()
 	oo, err := a.u.rs.ListCorporationContracts(ctx, corporationID)
 	if err != nil {
 		return nil, 0, err
 	}
-	rows := make([]contractRow, 0)
+	var rows []contractRow
 	var activeCount int
 	for _, c := range oo {
 		r := contractRow{
@@ -497,8 +500,7 @@ func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
 	return rows, activeCount, nil
 }
 
-func (a *contracts) fetchRowsOverview() ([]contractRow, int, error) {
-	ctx := context.Background()
+func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
 	oo, err := a.u.cs.ListAllContracts(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -511,7 +513,7 @@ func (a *contracts) fetchRowsOverview() ([]contractRow, int, error) {
 			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
 			a.DateIssued.Equal(b.DateIssued)
 	})
-	rows := make([]contractRow, 0)
+	var rows []contractRow
 	var activeCount int
 	for _, c := range oo2 {
 		r := contractRow{

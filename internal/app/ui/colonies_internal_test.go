@@ -36,7 +36,7 @@ func TestColonies_CanRenderEmpty(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.colonies.update()
+			ui.colonies.update(t.Context())
 
 			test.AssertImageMatches(t, "colonies/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -122,7 +122,7 @@ func TestColonies_CanRenderFull(t *testing.T) {
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.colonies.update()
+			ui.colonies.update(t.Context())
 
 			test.AssertImageMatches(t, "colonies/"+tc.filename+".png", w.Canvas().Capture())
 		})
