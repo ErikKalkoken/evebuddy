@@ -529,32 +529,35 @@ func (u *baseUI) Start() bool {
 	}
 	u.snackbar.Start()
 	go func() {
+		ctx := context.Background()
 		var wg sync.WaitGroup
 		wg.Go(u.initHome)
 		wg.Go(u.initCharacter)
 		wg.Go(u.initCorporation)
 		wg.Go(func() {
-			u.gameSearch.init(context.Background())
+			u.gameSearch.init(ctx)
 		})
 		wg.Wait()
 
-		updateCharactersMissingScope := func() {
-			cc, err := u.cs.CharactersWithMissingScopes(context.Background())
+		updateCharactersMissingScope := func(ctx context.Context) {
+			cc, err := u.cs.CharactersWithMissingScopes(ctx)
 			if err != nil {
 				slog.Error("Failed to fetch characters with missing scopes", "error", err)
 				return
 			}
 			if u.onUpdateMissingScope != nil {
-				u.onUpdateMissingScope(len(cc))
+				fyne.Do(func() {
+					u.onUpdateMissingScope(len(cc))
+				})
 			}
 		}
-		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-			updateCharactersMissingScope()
+		u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			updateCharactersMissingScope(ctx)
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-			updateCharactersMissingScope()
+		u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			updateCharactersMissingScope(ctx)
 		})
-		updateCharactersMissingScope()
+		updateCharactersMissingScope(ctx)
 
 		u.isStartupCompleted.Store(true)
 		go func() {
