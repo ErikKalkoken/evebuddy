@@ -25,7 +25,7 @@ func TestCharacterSkill(t *testing.T) {
 		eveType := factory.CreateEveType()
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			ActiveSkillLevel:   3,
-			EveTypeID:          eveType.ID,
+			TypeID:          eveType.ID,
 			CharacterID:        c.ID,
 			SkillPointsInSkill: 99,
 			TrainedSkillLevel:  5,
@@ -34,7 +34,7 @@ func TestCharacterSkill(t *testing.T) {
 		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := st.GetCharacterSkill(ctx, c.ID, arg.EveTypeID)
+			x, err := st.GetCharacterSkill(ctx, c.ID, arg.TypeID)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, 3, x.ActiveSkillLevel)
 				xassert.Equal(t, eveType, x.EveType)
@@ -55,7 +55,7 @@ func TestCharacterSkill(t *testing.T) {
 		})
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:        c.ID,
-			EveTypeID:          o1.EveType.ID,
+			TypeID:          o1.EveType.ID,
 			ActiveSkillLevel:   4,
 			TrainedSkillLevel:  4,
 			SkillPointsInSkill: 99,
@@ -120,7 +120,7 @@ func TestCharacterSkillLists(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c.ID,
-			EveTypeID:         myType.ID,
+			TypeID:         myType.ID,
 			TrainedSkillLevel: 5,
 		})
 		// when
@@ -138,7 +138,7 @@ func TestCharacterSkillLists(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c.ID,
-			EveTypeID:         myType.ID,
+			TypeID:         myType.ID,
 			TrainedSkillLevel: 5,
 		})
 		// when
@@ -163,19 +163,19 @@ func TestListCharactersActiveSkillLevels(t *testing.T) {
 		skill2 := factory.CreateEveType()
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
-			EveTypeID:         skill1.ID,
+			TypeID:         skill1.ID,
 			ActiveSkillLevel:  3,
 			TrainedSkillLevel: 5,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c2.ID,
-			EveTypeID:         skill1.ID,
+			TypeID:         skill1.ID,
 			ActiveSkillLevel:  4,
 			TrainedSkillLevel: 5,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
-			EveTypeID:         skill2.ID,
+			TypeID:         skill2.ID,
 			ActiveSkillLevel:  5,
 			TrainedSkillLevel: 5,
 		})

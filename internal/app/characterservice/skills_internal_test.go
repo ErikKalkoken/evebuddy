@@ -159,11 +159,11 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			EveTypeID:   41,
+			TypeID:   41,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			EveTypeID:   42,
+			TypeID:   42,
 		})
 		data := map[string]any{
 			"skills": []map[string]any{

@@ -207,7 +207,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				}
 				arg := storage.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
-					EveTypeID:          o.SkillId,
+					TypeID:          o.SkillId,
 					ActiveSkillLevel:   o.ActiveSkillLevel,
 					TrainedSkillLevel:  o.TrainedSkillLevel,
 					SkillPointsInSkill: o.SkillpointsInSkill,

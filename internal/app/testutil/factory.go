@@ -760,9 +760,9 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
-	if arg.EveTypeID == 0 {
+	if arg.TypeID == 0 {
 		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
+		arg.TypeID = x.ID
 	}
 	if arg.TrainedSkillLevel == 0 {
 		arg.TrainedSkillLevel = rand.Int64N(5) + 1
@@ -777,7 +777,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.st.GetCharacterSkill(ctx, arg.CharacterID, arg.EveTypeID)
+	o, err := f.st.GetCharacterSkill(ctx, arg.CharacterID, arg.TypeID)
 	if err != nil {
 		panic(err)
 	}

@@ -26,19 +26,19 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 	industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		CharacterID:      character1.ID,
-		EveTypeID:        industry.ID,
+		TypeID:        industry.ID,
 		ActiveSkillLevel: 5,
 	})
 	massProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassProduction})
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		CharacterID:      character1.ID,
-		EveTypeID:        massProduction.ID,
+		TypeID:        massProduction.ID,
 		ActiveSkillLevel: 5,
 	})
 	advancedMassProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedMassProduction})
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		CharacterID:      character1.ID,
-		EveTypeID:        advancedMassProduction.ID,
+		TypeID:        advancedMassProduction.ID,
 		ActiveSkillLevel: 3,
 	})
 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
@@ -69,7 +69,7 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		CharacterID:      character2.ID,
-		EveTypeID:        industry.ID,
+		TypeID:        industry.ID,
 		ActiveSkillLevel: 3,
 	})
 	cases := []struct {

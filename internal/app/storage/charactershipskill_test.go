@@ -25,7 +25,7 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,
-		EveTypeID:        s1.SkillTypeID,
+		TypeID:        s1.SkillTypeID,
 	})
 	// when
 	x, err := st.ListCharacterShipsAbilities(ctx, c.ID)
@@ -58,7 +58,7 @@ func TestListCharacterShipsSkills(t *testing.T) {
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,
-		EveTypeID:        ss.SkillTypeID,
+		TypeID:        ss.SkillTypeID,
 	})
 	// when
 	x, err := st.ListCharacterShipSkills(ctx, c.ID, shipType.ID)

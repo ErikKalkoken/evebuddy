@@ -477,7 +477,7 @@ func (b *CharacterBuilder) createSkills() {
 		})
 		b.f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: b.character.ID,
-			EveTypeID:   et.ID,
+			TypeID:   et.ID,
 		})
 		printProgress("skills", skills*b.Factor, i)
 	}
