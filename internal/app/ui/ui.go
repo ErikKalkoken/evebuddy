@@ -533,6 +533,9 @@ func (u *baseUI) Start() bool {
 		wg.Go(u.initHome)
 		wg.Go(u.initCharacter)
 		wg.Go(u.initCorporation)
+		wg.Go(func() {
+			u.gameSearch.init(context.Background())
+		})
 		wg.Wait()
 
 		updateCharactersMissingScope := func() {

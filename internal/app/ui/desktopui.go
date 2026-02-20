@@ -704,12 +704,14 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.resetOptions()
 	u.gameSearch.toogleOptions(false)
-	u.gameSearch.doSearch(s)
+	u.gameSearch.setEntry(s)
+	go u.gameSearch.doSearch(context.Background(), s)
 	u.showSearchWindow()
 }
 
-func (u *DesktopUI) showAdvancedSearch() {
+func (u *DesktopUI) showAdvancedSearch(s string) {
 	u.gameSearch.toogleOptions(true)
+	u.gameSearch.setEntry(s)
 	u.showSearchWindow()
 }
 
