@@ -31,6 +31,7 @@ import (
 
 const (
 	clockUpdateTicker = 2 * time.Second
+	versionTicker     = 3600 * time.Second
 )
 
 type eveStatus uint
@@ -157,7 +158,7 @@ func (a *statusBar) start() {
 		}
 		a.updateStatus.Refresh()
 	}
-	a.u.updateStarted.AddListener(func(ctx context.Context, id string) {
+	a.u.updateStarted.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Add(id)
@@ -167,7 +168,7 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	a.u.updateStopped.AddListener(func(ctx context.Context, id string) {
+	a.u.updateStopped.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Delete(id)
@@ -203,19 +204,25 @@ func (a *statusBar) start() {
 		a.updateEveStatus(ctx)
 	})
 
+	tickerNewVersion := time.NewTicker(versionTicker)
 	go func() {
-		v, err := a.u.availableUpdate(ctx)
-		if err != nil {
-			slog.Error("fetch latest github version for download hint", "err", err)
-			return
+		for {
+			func() {
+				v, err := a.u.availableUpdate(ctx)
+				if err != nil {
+					slog.Error("fetch latest github version for download hint", "err", err)
+					return
+				}
+				if !v.IsRemoteNewer {
+					return
+				}
+				fyne.Do(func() {
+					a.updateHint.set(v)
+					a.updateHint.Show()
+				})
+			}()
+			<-tickerNewVersion.C
 		}
-		if !v.IsRemoteNewer {
-			return
-		}
-		fyne.Do(func() {
-			a.updateHint.set(v)
-			a.updateHint.Show()
-		})
 	}()
 }
 
@@ -255,17 +262,15 @@ func (a *statusBar) updateCharacterCount(_ context.Context) {
 }
 
 func (a *statusBar) updateUpdateStatus(_ context.Context) {
-	var s string
-	var i widget.Importance
 	if a.u.isUpdateDisabled.Load() || a.u.ess.IsDailyDowntime() {
-		s = "Off"
-	} else {
-		x := a.u.scs.Summary()
-		s = x.DisplayShort()
-		i = x.Status().ToImportance()
+		fyne.Do(func() {
+			a.updateStatus.SetTextAndImportance("OFF", widget.MediumImportance)
+		})
+		return
 	}
+	x := a.u.scs.Summary()
 	fyne.Do(func() {
-		a.updateStatus.SetTextAndImportance(s, i)
+		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
 }
 
@@ -470,6 +475,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 		c := container.NewVBox(
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
+			newStandardSpacer(),
 		)
 		u := w.u.websiteRootURL().JoinPath("releases")
 		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
