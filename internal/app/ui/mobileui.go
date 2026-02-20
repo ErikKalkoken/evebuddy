@@ -522,7 +522,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.onUpdateStatus = func(_ context.Context) {
+	u.onUpdateStatus = func(ctx context.Context) {
 		go togglePermittedSections()
 		go func() {
 			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
@@ -627,6 +627,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			navBar.HideBadge(4)
 		}
 	}
+
 	u.onShowAndRun = func() {
 		if u.isFakeMobile {
 			u.MainWindow().Resize(fyne.NewSize(340, 700))
@@ -634,7 +635,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
-	updateCharacterCount := func() {
+	updateCharacterCount := func(_ context.Context) {
 		s := fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
 		fyne.Do(func() {
 			navItemManageCharacters.Supporting = s
@@ -642,84 +643,92 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	updateUpdateStatus := func() {
-		var icon fyne.Resource
-		var s string
+	updateUpdateStatus := func(_ context.Context) {
+		set := func(s string, icon fyne.Resource) {
+			fyne.Do(func() {
+				refreshMoreBadge()
+				navItemUpdateStatus.Supporting = s
+				navItemUpdateStatus.Trailing = icon
+				moreList.Refresh()
+			})
+		}
+
 		if u.ess.IsDailyDowntime() {
 			isOffline.Store(true)
-			icon = theme.NewWarningThemedResource(theme.WarningIcon())
-			s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
-		} else {
-			isOffline.Store(false)
-			status := u.scs.Summary()
-			if status.Errors > 0 {
-				icon = theme.NewErrorThemedResource(theme.WarningIcon())
-				hasUpdateError.Store(true)
-			} else {
-				hasUpdateError.Store(false)
-			}
-			s = status.Display()
+			set(
+				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
+				theme.NewWarningThemedResource(theme.WarningIcon()),
+			)
+			return
 		}
-		fyne.Do(func() {
-			refreshMoreBadge()
-			navItemUpdateStatus.Supporting = s
-			navItemUpdateStatus.Trailing = icon
-			moreList.Refresh()
-		})
+		isOffline.Store(false)
+		status := u.scs.Summary()
+		var icon fyne.Resource
+		if status.Errors > 0 {
+			icon = theme.NewErrorThemedResource(theme.WarningIcon())
+			hasUpdateError.Store(true)
+		} else {
+			hasUpdateError.Store(false)
+		}
+		set(status.Display(), icon)
 	}
 
 	u.onAppFirstStarted = func() {
 		// signals
-		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
-			updateCharacterCount()
-			updateUpdateStatus()
+		u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			updateCharacterCount(ctx)
+			updateUpdateStatus(ctx)
 		})
-		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
-			updateCharacterCount()
-			updateUpdateStatus()
+		u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			updateCharacterCount(ctx)
+			updateUpdateStatus(ctx)
 		})
-		u.characterSectionUpdated.AddListener(func(_ context.Context, _ characterSectionUpdated) {
-			updateUpdateStatus()
+		u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+			updateUpdateStatus(ctx)
 		})
-		u.corporationSectionUpdated.AddListener(func(_ context.Context, _ corporationSectionUpdated) {
-			updateUpdateStatus()
+		u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+			updateUpdateStatus(ctx)
 		})
-		u.generalSectionUpdated.AddListener(func(_ context.Context, _ generalSectionUpdated) {
-			updateUpdateStatus()
+		u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+			updateUpdateStatus(ctx)
 		})
-		fyne.Do(func() {
-			updateCharacterCount()
-			updateUpdateStatus()
-		})
+
+		ctx := context.Background()
+		updateCharacterCount(ctx)
+		updateUpdateStatus(ctx)
 
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
-				v, err := u.availableUpdate(context.Background())
-				if err != nil {
-					slog.Error("fetch github version for menu info", "error", err)
-				} else {
-					fyne.Do(func() {
-						if v.IsRemoteNewer {
-							hasUpdate.Store(true)
+				func() {
+					v, err := u.availableUpdate(ctx)
+					if err != nil {
+						slog.Error("fetch github version for menu info", "error", err)
+						return
+					}
+					if v.IsRemoteNewer {
+						hasUpdate.Store(true)
+						fyne.Do(func() {
 							refreshMoreBadge()
 							navItemAbout.Supporting = "Update available"
 							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
-						} else {
-							hasUpdate.Store(false)
+							moreList.Refresh()
+						})
+					} else {
+						hasUpdate.Store(false)
+						fyne.Do(func() {
 							refreshMoreBadge()
 							navItemAbout.Supporting = ""
 							navItemAbout.Trailing = nil
-						}
-					})
-				}
-				fyne.Do(func() {
-					moreList.Refresh()
-				})
+							moreList.Refresh()
+						})
+					}
+				}()
 				<-tickerNewVersion.C
 			}
 		}()
 	}
+
 	u.onUpdateMissingScope = func(characterCount int) {
 		var icon fyne.Resource
 		if characterCount > 0 {

@@ -531,9 +531,15 @@ func (u *baseUI) Start() bool {
 	go func() {
 		ctx := context.Background()
 		var wg sync.WaitGroup
-		wg.Go(u.initHome)
-		wg.Go(u.initCharacter)
-		wg.Go(u.initCorporation)
+		wg.Go(func() {
+			u.initHome(ctx)
+		})
+		wg.Go(func() {
+			u.initCharacter(ctx)
+		})
+		wg.Go(func() {
+			u.initCorporation(ctx)
+		})
 		wg.Go(func() {
 			u.gameSearch.init(ctx)
 		})
@@ -632,10 +638,9 @@ func (u *baseUI) humanizeError(err error) string {
 //////////////////
 // Current character
 
-func (u *baseUI) initCharacter() {
+func (u *baseUI) initCharacter(ctx context.Context) {
 	var c *app.Character
 	var err error
-	ctx := context.Background()
 	if cID := u.settings.LastCharacterID(); cID != 0 {
 		c, err = u.cs.GetCharacter(ctx, int64(cID))
 		if err != nil {
@@ -731,10 +736,9 @@ func (u *baseUI) setAnyCharacter() error {
 //////////////////
 // Current corporation
 
-func (u *baseUI) initCorporation() {
+func (u *baseUI) initCorporation(ctx context.Context) {
 	var c *app.Corporation
 	var err error
-	ctx := context.Background()
 	if cID := u.settings.LastCorporationID(); cID != 0 {
 		c, err = u.rs.GetCorporation(ctx, int64(cID))
 		if err != nil {
@@ -819,7 +823,7 @@ func (u *baseUI) setAnyCorporation() error {
 // Home
 
 // initHome performs an initial load of all pages under the home tab.
-func (u *baseUI) initHome() {
+func (u *baseUI) initHome(ctx context.Context) {
 	ff := map[string]func(context.Context){
 		"characterOverview":  u.characterOverview.update,
 		"assetSearchAll":     u.assetSearchAll.update,
@@ -842,7 +846,6 @@ func (u *baseUI) initHome() {
 	myLog.Debug("started")
 	g := new(errgroup.Group)
 	g.SetLimit(u.concurrencyLimit)
-	ctx := context.Background()
 	for name, f := range ff {
 		g.Go(func() error {
 			start2 := time.Now()
@@ -853,36 +856,6 @@ func (u *baseUI) initHome() {
 	}
 	g.Wait()
 }
-
-// showInfoWhileExecuting shows a modal to the user while the functions ff are being executed.
-// Optionally runs onCompleted after all functions have been run.
-// func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
-// 	go func() {
-// 		myLog := slog.With("title", title)
-// 		myLog.Debug("started")
-// 		key := fmt.Sprintf("%s-%d", title, time.Now().UnixMicro())
-// 		fyne.Do(func() {
-// 			u.statusText.Set(key, title)
-// 		})
-// 		g := new(errgroup.Group)
-// 		g.SetLimit(u.concurrencyLimit)
-// 		for name, f := range ff {
-// 			g.Go(func() error {
-// 				start2 := time.Now()
-// 				f()
-// 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-// 				return nil
-// 			})
-// 		}
-// 		g.Wait()
-// 		if onCompleted != nil {
-// 			onCompleted()
-// 		}
-// 		fyne.Do(func() {
-// 			u.statusText.Unset(key)
-// 		})
-// 	}()
-// }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
@@ -900,11 +873,13 @@ func (u *baseUI) updateMailIndicator(ctx context.Context) {
 		slog.Error("update mail indicator", "error", err)
 		return
 	}
-	if n > 0 {
-		u.showMailIndicator()
-	} else {
-		u.hideMailIndicator()
-	}
+	fyne.Do(func() {
+		if n > 0 {
+			u.showMailIndicator()
+		} else {
+			u.hideMailIndicator()
+		}
+	})
 }
 
 func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {

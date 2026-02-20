@@ -341,6 +341,9 @@ func (a *loyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][
 	if err != nil {
 		return nil, err
 	}
+	entries = slices.DeleteFunc(entries, func(x *app.CharacterLoyaltyPointEntry) bool {
+		return x.LoyaltyPoints == 0
+	})
 
 	var corporations []*loyaltyPointsNode
 	corporationEntries := make(map[int64][]*app.CharacterLoyaltyPointEntry)

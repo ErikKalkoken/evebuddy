@@ -65,14 +65,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.showMailIndicator = func() {
-		fyne.Do(func() {
-			deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
-		})
+		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 	}
 	u.hideMailIndicator = func() {
-		fyne.Do(func() {
-			deskApp.SetSystemTrayIcon(icons.IconPng)
-		})
+		deskApp.SetSystemTrayIcon(icons.IconPng)
 	}
 	u.enableMenuShortcuts = u.enableShortcuts
 	u.disableMenuShortcuts = u.disableShortcuts

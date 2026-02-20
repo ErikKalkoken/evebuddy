@@ -267,12 +267,16 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 }
 
 func (a *characterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]characterLoyaltyPointsRow, error) {
-	oo, err := a.u.cs.ListLoyaltyPointEntries(ctx, characterID)
+	entries, err := a.u.cs.ListLoyaltyPointEntries(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
+	entries = slices.DeleteFunc(entries, func(x *app.CharacterLoyaltyPointEntry) bool {
+		return x.LoyaltyPoints == 0
+	})
+
 	var rows []characterLoyaltyPointsRow
-	for _, o := range oo {
+	for _, o := range entries {
 		r := characterLoyaltyPointsRow{
 			characterID:     characterID,
 			corporationID:   o.Corporation.ID,

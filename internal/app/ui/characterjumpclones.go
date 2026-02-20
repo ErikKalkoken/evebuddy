@@ -70,16 +70,17 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
 
-	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	// Signals
+	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.updateAsync()
+		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterJumpClones {
-			a.updateAsync()
+			a.update(ctx)
 		}
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -185,8 +186,19 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *characterJumpClones) updateAsync() {
-	td, err := a.fetchDataAsync()
+func (a *characterJumpClones) update(ctx context.Context) {
+	characterID := characterIDOrZero(a.character.Load())
+	if characterID == 0 {
+		fyne.Do(func() {
+			a.top.SetWithText("No character", widget.RichTextStyle{
+				ColorName: theme.ColorNameDisabled,
+			})
+			a.tree.Clear()
+		})
+		return
+	}
+
+	td, err := a.fetchData(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
@@ -196,6 +208,7 @@ func (a *characterJumpClones) updateAsync() {
 		})
 		return
 	}
+
 	fyne.Do(func() {
 		n := td.ChildrenCount(nil)
 		a.refreshTop(n)
@@ -203,13 +216,11 @@ func (a *characterJumpClones) updateAsync() {
 	})
 }
 
-func (a *characterJumpClones) fetchDataAsync() (iwidget.TreeData[jumpCloneNode], error) {
+func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (iwidget.TreeData[jumpCloneNode], error) {
 	var td iwidget.TreeData[jumpCloneNode]
-	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		return td, nil
 	}
-	ctx := context.Background()
 	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
 	if err != nil {
 		return td, err
