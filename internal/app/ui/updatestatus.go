@@ -72,14 +72,18 @@ func showUpdateStatusWindow(u *baseUI) {
 		return
 	}
 	a := newUpdateStatus(u)
-	a.update(context.Background())
-	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	w.SetOnClosed(func() {
-		a.stop()
-		onClosed()
-	})
-	w.Show()
+	go func() {
+		a.update(context.Background())
+		fyne.Do(func() {
+			w.SetContent(a)
+			w.Resize(fyne.Size{Width: 1100, Height: 500})
+			w.SetOnClosed(func() {
+				a.stop()
+				onClosed()
+			})
+			w.Show()
+		})
+	}()
 }
 
 func newUpdateStatus(u *baseUI) *updateStatus {
