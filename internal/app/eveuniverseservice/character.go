@@ -61,6 +61,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		}
 		af := affiliations[0]
 		if af.CharacterId != characterID {
+			slog.Warn("affiliations mismatch", "characterID", characterID, "affiliations", affiliations)
 			return false, fmt.Errorf("wrong character %d in affiliations. Expected %d", af.CharacterId, characterID)
 		}
 		arg := storage.CreateEveCharacterParams{

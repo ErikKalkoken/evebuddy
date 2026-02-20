@@ -366,7 +366,7 @@ func (a *clones) update(ctx context.Context) {
 			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
-			clear(a.rows)
+			a.rows = make([]cloneRow, 0)
 			a.filterRowsAsync(-1)
 		})
 		return

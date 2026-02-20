@@ -337,7 +337,7 @@ func (a *corporationStructures) filterRowsAsync(sortCol int) {
 func (a *corporationStructures) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			clear(a.rows)
+			a.rows = make([]corporationStructureRow, 0)
 			a.filterRowsAsync(-1)
 		})
 	}

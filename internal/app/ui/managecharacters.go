@@ -846,7 +846,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		clear(a.characters)
+		a.characters = make([]*app.EntityShort, 0)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -857,7 +857,7 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 		tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters for "+tag.Name, err)
-			clear(a.characters)
+			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		fyne.Do(func() {
@@ -928,7 +928,7 @@ func (a *characterTags) update(ctx context.Context) {
 	tags, err := a.mc.u.cs.ListTagsByName(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to list tags", err)
-		clear(a.tags)
+		a.tags = make([]*app.CharacterTag, 0)
 		return
 	}
 	fyne.Do(func() {

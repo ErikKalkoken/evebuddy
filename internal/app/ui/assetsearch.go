@@ -593,7 +593,7 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 func (a *assetSearch) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			clear(a.rows)
+			a.rows = make([]assetRow, 0)
 			a.filterRowsAsync(-1)
 		})
 	}

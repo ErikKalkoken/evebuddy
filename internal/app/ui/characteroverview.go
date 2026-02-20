@@ -428,7 +428,7 @@ func (a *characterOverview) filterRowsAsync(sortCol int) {
 func (a *characterOverview) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			clear(a.rows)
+			a.rows = make([]characterOverviewRow, 0)
 			a.filterRowsAsync(-1)
 		})
 	}
