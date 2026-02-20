@@ -31,6 +31,7 @@ func (g skillGroupProgress) completionP() float64 {
 type skillTrained struct {
 	activeLevel  int64
 	description  string
+	groupID      int64
 	groupName    string
 	id           int64
 	name         string
@@ -48,7 +49,7 @@ type characterSkillCatalogue struct {
 	levelUnTrained *theme.DisabledResource
 	skills         []skillTrained
 	skillsGrid     fyne.CanvasObject
-	total          *widget.Label
+	top            *widget.Label
 	u              *baseUI
 }
 
@@ -59,7 +60,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          newLabelWithWrapping(),
+		top:            newLabelWithWrapping(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -93,7 +94,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 
 func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
-	c := container.NewBorder(a.total, nil, nil, nil, s)
+	c := container.NewBorder(a.top, nil, nil, nil, s)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -142,31 +143,40 @@ func (a *characterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			group := a.groups[id]
-			if a.character.Load() == nil {
+			characterID := characterIDOrZero(a.character.Load())
+			if characterID == 0 {
 				unselectAll()
 				return
 			}
-			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), characterIDOrZero(a.character.Load()), group.id,
-			)
-			if err != nil {
-				slog.Error("Failed to fetch skill group data", "err", err)
-				unselectAll()
-				return
-			}
-			skills := make([]skillTrained, len(oo))
-			for i, o := range oo {
-				skills[i] = skillTrained{
-					activeLevel:  o.ActiveSkillLevel,
-					description:  o.TypeDescription,
-					groupName:    group.name,
-					id:           o.TypeID,
-					name:         o.TypeName,
-					trainedLevel: o.TrainedSkillLevel,
+			ctx := context.Background()
+			go func() {
+				oo, err := a.u.cs.ListSkillProgress(ctx, characterID, group.id)
+				if err != nil {
+					slog.Error("Failed to fetch skill group data", "err", err)
+					fyne.Do(func() {
+						unselectAll()
+					})
+					return
 				}
-			}
-			a.skills = skills
-			a.skillsGrid.Refresh()
+
+				var skills []skillTrained
+				for _, o := range oo {
+					skills = append(skills, skillTrained{
+						activeLevel:  o.ActiveSkillLevel,
+						description:  o.TypeDescription,
+						groupID:      group.id,
+						groupName:    group.name,
+						id:           o.TypeID,
+						name:         o.TypeName,
+						trainedLevel: o.TrainedSkillLevel,
+					})
+				}
+
+				fyne.Do(func() {
+					a.skills = skills
+					a.skillsGrid.Refresh()
+				})
+			}()
 		}
 	}
 	return makeGridOrList(a.u.isMobile, length, makeCreateItem, updateItem, makeOnSelected)
@@ -215,44 +225,66 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 }
 
 func (a *characterSkillCatalogue) update(ctx context.Context) {
-	var err error
-	var groups []skillGroupProgress
+	setTop := func(t string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text = t
+			a.top.Importance = i
+			a.top.Refresh()
+		})
+	}
+	unselectTasks := func() {
+		fyne.Do(func() {
+			switch x := a.groupsGrid.(type) {
+			case *widget.GridWrap:
+				x.UnselectAll()
+			case *widget.List:
+				x.UnselectAll()
+			}
+		})
+	}
+
+	clear := func() {
+		fyne.Do(func() {
+			a.skills = make([]skillTrained, 0)
+			a.groups = make([]skillGroupProgress, 0)
+			a.groupsGrid.Refresh()
+		})
+		unselectTasks()
+	}
 	c := a.character.Load()
+	if c == nil {
+		clear()
+		setTop("No character", widget.LowImportance)
+		return
+	}
 	characterID := characterIDOrZero(c)
 	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
-	if hasData {
-		groups2, err2 := a.updateGroups(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh skill catalogue UI", "err", err)
-			err = err2
-		} else {
-			groups = groups2
-		}
+	if !hasData {
+		clear()
+		setTop("No data yet", widget.WarningImportance)
+		return
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		var total, unallocated string
-		if c != nil {
-			total = ihumanize.Optional(c.TotalSP, "?")
-			unallocated = ihumanize.Optional(c.UnallocatedSP, "?")
-		}
-		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.total.Text = t
-		a.total.Importance = i
-		a.total.Refresh()
-	})
+	groups, err := a.updateGroups(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to refresh skill catalogue UI", "err", err)
+		clear()
+		setTop("No data yet", widget.WarningImportance)
+		return
+	}
+	top := fmt.Sprintf("%s Total SP (%s Unallocated)",
+		c.TotalSP.StringFunc("?", func(v int64) string {
+			return ihumanize.Comma(v)
+		}), c.UnallocatedSP.StringFunc("?", func(v int64) string {
+			return ihumanize.Comma(v)
+		}),
+	)
+	setTop(top, widget.MediumImportance)
 	fyne.Do(func() {
 		a.skills = make([]skillTrained, 0)
 		a.groups = groups
 		a.groupsGrid.Refresh()
-		switch x := a.groupsGrid.(type) {
-		case *widget.GridWrap:
-			x.UnselectAll()
-		case *widget.List:
-			x.UnselectAll()
-		}
 	})
+	unselectTasks()
 }
 
 func (a *characterSkillCatalogue) updateGroups(ctx context.Context, characterID int64) ([]skillGroupProgress, error) {
@@ -270,4 +302,25 @@ func (a *characterSkillCatalogue) updateGroups(ctx context.Context, characterID 
 		})
 	}
 	return groups, nil
+}
+
+// makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
+//
+// This allows the grid items to render nicely as list on mobile and also enable truncation.
+func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc fyne.TextTruncation) func() fyne.CanvasObject, updateItem func(id int, co fyne.CanvasObject), makeOnSelected func(unselectAll func()) func(int)) fyne.CanvasObject {
+	var w fyne.CanvasObject
+	if isMobile {
+		w = widget.NewList(length, makeCreateItem(fyne.TextTruncateEllipsis), updateItem)
+		l := w.(*widget.List)
+		l.OnSelected = makeOnSelected(func() {
+			l.UnselectAll()
+		})
+	} else {
+		w = widget.NewGridWrap(length, makeCreateItem(fyne.TextTruncateOff), updateItem)
+		g := w.(*widget.GridWrap)
+		g.OnSelected = makeOnSelected(func() {
+			g.UnselectAll()
+		})
+	}
+	return w
 }
