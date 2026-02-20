@@ -172,8 +172,8 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 			PlanetID:        p.PlanetId,
 		}
 	})
-	ids := slices.Concat([]int64{solarSystemID, system.ConstellationId}, system.Stations)
-	_, err = s.AddMissingEntities(ctx, set.Of(ids...))
+	ids := set.Union(set.Collect(slices.Values(system.Stations)), set.Of(solarSystemID, system.ConstellationId))
+	_, err = s.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return z, nil, nil, nil, nil, err
 	}

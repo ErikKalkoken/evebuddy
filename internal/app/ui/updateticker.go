@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
@@ -237,7 +238,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	// updateGroup starts a sequential update of group and removes them from sections.
 	// It skips all updates for group if one of the group's sections has not been registered for update.
 	updateGroup := func(group []app.CharacterSection) {
-		mySections := set.Intersection(sections, set.Of(group...))
+		mySections := set.Intersection(sections, set.Collect(slices.Values(group)))
 		if mySections.Size() > 0 {
 			wg.Go(func() {
 				for _, s := range group {

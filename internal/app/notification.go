@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -509,7 +510,7 @@ var supportedTypes = []EveNotificationType{
 
 // NotificationTypesSupported returns all supported notification types.
 func NotificationTypesSupported() set.Set[EveNotificationType] {
-	return set.Of(supportedTypes...)
+	return set.Collect(slices.Values(supportedTypes))
 }
 
 // notificationGroups maps all known types to their group.

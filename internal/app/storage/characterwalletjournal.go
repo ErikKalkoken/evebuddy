@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -97,7 +98,7 @@ func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, chara
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int64) ([]*app.CharacterWalletJournalEntry, error) {

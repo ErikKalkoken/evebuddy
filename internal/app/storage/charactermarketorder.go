@@ -95,7 +95,7 @@ func (st *Storage) ListCharacterMarketOrderIDs(ctx context.Context, characterID 
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListCharacterMarketOrderIDs for character %d: %w", characterID, err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID int64) ([]*app.CharacterMarketOrder, error) {

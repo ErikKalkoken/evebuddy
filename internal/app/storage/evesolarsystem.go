@@ -58,7 +58,7 @@ func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int64], e
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {

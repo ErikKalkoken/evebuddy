@@ -74,7 +74,7 @@ func (st *Storage) ListEveLocationIDs(ctx context.Context) (set.Set[int64], erro
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list eve locations: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int64) ([]*app.EveLocation, error) {

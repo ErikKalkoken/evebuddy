@@ -70,7 +70,7 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, set.Union(set.Of(ids...), set.Of(allianceID)))
+	_, err = s.AddMissingEntities(ctx, set.Union(set.Collect(slices.Values(ids)), set.Of(allianceID)))
 	if err != nil {
 		return nil, err
 	}

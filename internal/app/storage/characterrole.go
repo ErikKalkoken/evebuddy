@@ -94,7 +94,7 @@ func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int64, 
 	if err != nil {
 		return err
 	}
-	current := set.Of(s...)
+	current := set.Collect(slices.Values(s))
 	added := set.Difference(incoming, current)
 	for s := range added.All() {
 		arg := queries.CreateCharacterRoleParams{

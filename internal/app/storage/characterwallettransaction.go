@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -97,7 +98,7 @@ func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, charac
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int64) ([]*app.CharacterWalletTransaction, error) {

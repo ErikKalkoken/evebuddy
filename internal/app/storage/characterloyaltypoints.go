@@ -79,7 +79,7 @@ func (st *Storage) ListCharacterLoyaltyPointEntryIDs(ctx context.Context, charac
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListCharacterLoyaltyPointEntryIDs for character %d: %w", characterID, err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, characterID int64) ([]*app.CharacterLoyaltyPointEntry, error) {

@@ -200,7 +200,7 @@ func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int64], error) {
