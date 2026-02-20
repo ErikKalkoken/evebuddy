@@ -947,9 +947,9 @@ func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 	})
 }
 
-func (u *baseUI) availableUpdate() (github.VersionInfo, error) {
+func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error) {
 	current := u.app.Metadata().Version
-	v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+	v, err := github.AvailableUpdate(ctx, githubOwner, githubRepo, current)
 	if err != nil {
 		return github.VersionInfo{}, err
 	}

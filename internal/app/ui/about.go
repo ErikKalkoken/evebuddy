@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -45,7 +46,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	updateAvailable := widget.NewHyperlink("Update available", u.websiteRootURL().JoinPath("releases"))
 	updateAvailable.Hide()
 	go func() {
-		v, err := u.availableUpdate()
+		v, err := u.availableUpdate(context.Background())
 		if err != nil {
 			slog.Error("Failed to fetch available updates")
 			return

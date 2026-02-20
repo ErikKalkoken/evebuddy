@@ -204,7 +204,7 @@ func (a *statusBar) start() {
 	})
 
 	go func() {
-		v, err := a.u.availableUpdate()
+		v, err := a.u.availableUpdate(ctx)
 		if err != nil {
 			slog.Error("fetch latest github version for download hint", "err", err)
 			return

@@ -695,7 +695,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
-				v, err := u.availableUpdate()
+				v, err := u.availableUpdate(context.Background())
 				if err != nil {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
