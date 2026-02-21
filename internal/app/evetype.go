@@ -59,6 +59,13 @@ type EveGroup struct {
 	Name        string
 }
 
+// EveSkillGroup is a specialized group for skills.
+type EveSkillGroup struct {
+	ID         int64
+	Name       string
+	SkillCount int
+}
+
 const (
 	EveTypeAdvancedLaboratoryOperation = 24624
 	EveTypeAdvancedMassProduction      = 24625
@@ -169,9 +176,21 @@ func (et EveType) EveEntity() *EveEntity {
 	return &EveEntity{ID: et.ID, Name: et.Name, Category: EveEntityInventoryType}
 }
 
+type EveRequiredSkill struct {
+	Type  *EveType
+	Level int
+}
+
+type EveSkill struct {
+	Rank         optional.Optional[int]    // Rank of this skill
+	Requirements map[int]*EveRequiredSkill // the map index denotes the rank with 0 = primary, 1 = secondary, etc.
+	Skillpoints  optional.Optional[int]    // Total skillpoints needed to train this skill
+	Type         *EveType
+}
+
 type EveTypeDogmaAttribute struct {
-	EveType        *EveType
 	DogmaAttribute *EveDogmaAttribute
+	Type           *EveType
 	Value          float64
 }
 

@@ -1,70 +1,135 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type skillGroupProgress struct {
-	id      int64
-	name    string
-	trained float64
-	total   float64
-}
+const (
+	skillsAllSkill          = "All skills"
+	skillsMySkill           = "My skills"
+	skillsHavePrerequisites = "Have prerequisites for"
+	skillsQueued            = "Queued"
+	skillsFullyTrained      = "Fully trained"
+)
 
-func (g skillGroupProgress) completionP() float64 {
-	return g.trained / g.total
-}
-
-type skillTrained struct {
-	activeLevel  int64
-	description  string
-	groupName    string
-	id           int64
-	name         string
-	trainedLevel int64
+type skillRow struct {
+	description      string
+	groupID          int64
+	groupName        string
+	hasPrerequisites bool
+	levelActive      int64
+	levelQueued      int64
+	levelTrained     int64
+	name             string
+	searchTarget     string
+	spMax            optional.Optional[int]
+	spTrained        int
+	typeID           int64
 }
 
 type characterSkillCatalogue struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
-	groups         []skillGroupProgress
-	groupsGrid     fyne.CanvasObject
+	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
-	skills         []skillTrained
-	skillsGrid     fyne.CanvasObject
-	total          *widget.Label
+	rows           []skillRow
+	rowsFiltered   []skillRow
+	search         *widget.Entry
+	selectGroup    *kxwidget.FilterChipSelect
+	selectMain     *kxwidget.FilterChipSelect
+	skills         fyne.CanvasObject
+	top            *widget.Label
 	u              *baseUI
+	sortButton     *iwidget.SortButton
+	columnSorter   *iwidget.ColumnSorter[skillRow]
 }
 
 func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[skillRow]{{
+		ID:    1,
+		Label: "Name",
+		Sort: func(a, b skillRow) int {
+			return strings.Compare(a.name, b.name)
+		},
+	}, {
+		ID:    2,
+		Label: "Level trained",
+		Sort: func(a, b skillRow) int {
+			return cmp.Compare(a.levelTrained, b.levelTrained)
+		},
+	}, {
+		ID:    3,
+		Label: "Skillpoints trained",
+		Sort: func(a, b skillRow) int {
+			return cmp.Compare(a.spTrained, b.spTrained)
+		},
+	}}),
+		1,
+		iwidget.SortAsc,
+	)
 	a := &characterSkillCatalogue{
-		groups:         make([]skillGroupProgress, 0),
+		columnSorter:   columnSorter,
+		footer:         newLabelWithTruncation(),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
-		skills:         make([]skillTrained, 0),
-		total:          newLabelWithWrapping(),
+		rows:           make([]skillRow, 0),
+		rowsFiltered:   make([]skillRow, 0),
+		search:         widget.NewEntry(),
+		top:            newLabelWithWrapping(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.groupsGrid = a.makeGroupsGrid()
-	a.skillsGrid = a.makeSkillsGrid()
+	a.skills = a.makeSkillsGrid()
+
+	a.search.OnChanged = func(s string) {
+		a.filterRowsAsync()
+	}
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRowsAsync()
+	})
+	a.search.PlaceHolder = "Search skills"
+
+	a.selectGroup = kxwidget.NewFilterChipSelect("Group", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectMain = kxwidget.NewFilterChipSelect("", []string{
+		skillsAllSkill,
+		skillsMySkill,
+		skillsHavePrerequisites,
+		skillsQueued,
+		skillsFullyTrained,
+	}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectMain.Selected = skillsAllSkill
+	a.selectMain.SortDisabled = true
+	a.sortButton = a.columnSorter.NewSortButton(func() {
+		a.filterRowsAsync()
+	}, a.u.window)
 
 	// signals
 	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -92,93 +157,31 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 }
 
 func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
-	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
-	c := container.NewBorder(a.total, nil, nil, nil, s)
+	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
+	topBox := container.NewVBox(a.top)
+	if a.u.isMobile {
+		topBox.Add(a.search)
+		topBox.Add(container.NewHScroll(filter))
+	} else {
+		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
+	}
+	c := container.NewBorder(
+		topBox,
+		a.footer,
+		nil,
+		nil,
+		a.skills,
+	)
 	return widget.NewSimpleRenderer(c)
-}
-
-func (a *characterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
-	length := func() int {
-		return len(a.groups)
-	}
-	makeCreateItem := func(trunc fyne.TextTruncation) func() fyne.CanvasObject {
-		return func() fyne.CanvasObject {
-			pb := widget.NewProgressBar()
-			pb.TextFormatter = func() string {
-				return ""
-			}
-			title := widget.NewLabel("Corporation Management")
-			title.Truncation = trunc
-			row := container.NewPadded(container.NewStack(
-				pb,
-				container.NewBorder(
-					nil,
-					nil,
-					nil,
-					widget.NewLabel("99"),
-					title,
-				)))
-			return row
-		}
-	}
-	updateItem := func(id int, co fyne.CanvasObject) {
-		if id >= len(a.groups) {
-			return
-		}
-		group := a.groups[id]
-		row := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
-		c := row[1].(*fyne.Container).Objects
-		name := c[0].(*widget.Label)
-		total := c[1].(*widget.Label)
-		pb := row[0].(*widget.ProgressBar)
-		pb.SetValue(group.completionP())
-		name.SetText(group.name)
-		total.SetText(humanize.Comma(int64(group.total)))
-	}
-	makeOnSelected := func(unselectAll func()) func(int) {
-		return func(id int) {
-			if id >= len(a.groups) {
-				unselectAll()
-				return
-			}
-			group := a.groups[id]
-			if a.character.Load() == nil {
-				unselectAll()
-				return
-			}
-			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), characterIDOrZero(a.character.Load()), group.id,
-			)
-			if err != nil {
-				slog.Error("Failed to fetch skill group data", "err", err)
-				unselectAll()
-				return
-			}
-			skills := make([]skillTrained, len(oo))
-			for i, o := range oo {
-				skills[i] = skillTrained{
-					activeLevel:  o.ActiveSkillLevel,
-					description:  o.TypeDescription,
-					groupName:    group.name,
-					id:           o.TypeID,
-					name:         o.TypeName,
-					trainedLevel: o.TrainedSkillLevel,
-				}
-			}
-			a.skills = skills
-			a.skillsGrid.Refresh()
-		}
-	}
-	return makeGridOrList(a.u.isMobile, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	length := func() int {
-		return len(a.skills)
+		return len(a.rowsFiltered)
 	}
 	makeCreateItem := func(trunc fyne.TextTruncation) func() fyne.CanvasObject {
 		return func() fyne.CanvasObject {
-			title := widget.NewLabel("Capital Shipboard Compression Technology")
+			title := ttwidget.NewLabel("Capital Shipboard Compression Technology")
 			title.Truncation = trunc
 			c := container.NewBorder(
 				nil,
@@ -191,83 +194,210 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		}
 	}
 	updateItem := func(id int, co fyne.CanvasObject) {
-		if id >= len(a.skills) {
+		if id >= len(a.rowsFiltered) {
 			return
 		}
-		skill := a.skills[id]
+		r := a.rowsFiltered[id]
 		row := co.(*fyne.Container).Objects
-		label := row[0].(*widget.Label)
-		label.SetText(skill.name)
+		label := row[0].(*ttwidget.Label)
+		label.SetText(r.name)
+
+		tt := r.description + "\n\n"
+		var levelText string
+		if r.levelTrained > 0 {
+			levelText = fmt.Sprintf("Level %s", ihumanize.RomanLetter(r.levelTrained))
+		} else {
+			tt += "Not trained"
+		}
+		tt += fmt.Sprintf(
+			"%s    %s / %s skillpoints",
+			levelText,
+			ihumanize.Comma(r.spTrained),
+			r.spMax.StringFunc("?", func(v int) string {
+				return ihumanize.Comma(v)
+			}),
+		)
+		label.SetToolTip(tt)
+
 		level := row[1].(*skillLevel)
-		level.Set(skill.activeLevel, skill.trainedLevel, 0)
+		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
-		unselectAll()
 		return func(id int) {
-			if id >= len(a.skills) {
+			defer unselectAll()
+			if id >= len(a.rowsFiltered) {
 				return
 			}
-			skill := a.skills[id]
-			a.u.ShowTypeInfoWindowWithCharacter(skill.id, characterIDOrZero(a.character.Load()))
+			r := a.rowsFiltered[id]
+			a.u.ShowTypeInfoWindowWithCharacter(r.typeID, characterIDOrZero(a.character.Load()))
 		}
 	}
 	return makeGridOrList(a.u.isMobile, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
+func (a *characterSkillCatalogue) filterRowsAsync() {
+	total := len(a.rows)
+	rows := slices.Clone(a.rows)
+	group := a.selectGroup.Selected
+	main := a.selectMain.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+
+	go func() {
+		switch main {
+		case skillsMySkill:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.levelTrained == 0
+			})
+		case skillsHavePrerequisites:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return !r.hasPrerequisites || r.levelActive == 5
+			})
+		case skillsQueued:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.levelQueued == 0
+			})
+		case skillsFullyTrained:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.levelActive < 5
+			})
+		}
+		if group != "" {
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.groupName != group
+			})
+		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+
+		slices.SortFunc(rows, func(a, b skillRow) int {
+			return strings.Compare(a.name, b.name)
+		})
+
+		groupOptions := xslices.Map(rows, func(r skillRow) string {
+			return r.groupName
+		})
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+		footer := fmt.Sprintf("Showing %d / %d skills", len(rows), total)
+
+		fyne.Do(func() {
+			a.footer.SetText(footer)
+			a.selectGroup.SetOptions(groupOptions)
+			a.rowsFiltered = rows
+			a.skills.Refresh()
+		})
+	}()
+}
+
 func (a *characterSkillCatalogue) update(ctx context.Context) {
-	var err error
-	var groups []skillGroupProgress
-	c := a.character.Load()
-	characterID := characterIDOrZero(c)
-	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
-	if hasData {
-		groups2, err2 := a.updateGroups(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh skill catalogue UI", "err", err)
-			err = err2
-		} else {
-			groups = groups2
-		}
+	setTop := func(t string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text = t
+			a.top.Importance = i
+			a.top.Refresh()
+		})
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		var total, unallocated string
-		if c != nil {
-			total = ihumanize.Optional(c.TotalSP, "?")
-			unallocated = ihumanize.Optional(c.UnallocatedSP, "?")
-		}
-		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
-	})
+
+	clear := func() {
+		fyne.Do(func() {
+			clear(a.rows)
+			clear(a.rowsFiltered)
+		})
+	}
+
+	if !a.u.scs.HasGeneralSection(app.SectionEveTypes) {
+		clear()
+		setTop("No data yet", widget.WarningImportance)
+		return
+	}
+
+	c := a.character.Load()
+	if c == nil {
+		clear()
+		setTop("No character", widget.LowImportance)
+		return
+	}
+	characterID := characterIDOrZero(c)
+	if !a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills) {
+		clear()
+		setTop("No data yet", widget.WarningImportance)
+		return
+	}
+	skills, err := a.u.cs.ListSkills(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch skills for UI", "err", err)
+		clear()
+		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+
+	sq := app.NewCharacterSkillqueue()
+	err = sq.Update(ctx, a.u.cs, c.ID)
+	if err != nil {
+		slog.Error("Failed to update skill queue", "err", err)
+		clear()
+		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+
+	queued := make(map[int64]int64)
+	for it := range sq.All() {
+		queued[it.SkillID] = max(queued[it.SkillID], it.FinishedLevel)
+	}
+
+	var rows []skillRow
+	for _, o := range skills {
+		rows = append(rows, skillRow{
+			description:      o.Skill.Type.DescriptionPlain(),
+			groupID:          o.Skill.Type.Group.ID,
+			groupName:        o.Skill.Type.Group.Name,
+			hasPrerequisites: o.HasPrerequisites,
+			levelActive:      o.ActiveSkillLevel,
+			levelQueued:      queued[o.Skill.Type.ID],
+			levelTrained:     o.TrainedSkillLevel,
+			name:             o.Skill.Type.Name,
+			searchTarget:     strings.ToLower(o.Skill.Type.Name),
+			spMax:            o.Skill.Skillpoints,
+			spTrained:        int(o.SkillPointsInSkill),
+			typeID:           o.Skill.Type.ID,
+		})
+	}
+
+	top := fmt.Sprintf("%s Total SP (%s Unallocated)",
+		c.TotalSP.StringFunc("?", func(v int64) string {
+			return ihumanize.Comma(v)
+		}), c.UnallocatedSP.StringFunc("?", func(v int64) string {
+			return ihumanize.Comma(v)
+		}),
+	)
+	setTop(top, widget.MediumImportance)
+
 	fyne.Do(func() {
-		a.total.Text = t
-		a.total.Importance = i
-		a.total.Refresh()
-	})
-	fyne.Do(func() {
-		a.skills = make([]skillTrained, 0)
-		a.groups = groups
-		a.groupsGrid.Refresh()
-		switch x := a.groupsGrid.(type) {
-		case *widget.GridWrap:
-			x.UnselectAll()
-		case *widget.List:
-			x.UnselectAll()
-		}
+		a.rows = rows
+		a.filterRowsAsync()
 	})
 }
 
-func (a *characterSkillCatalogue) updateGroups(ctx context.Context, characterID int64) ([]skillGroupProgress, error) {
-	gg, err := a.u.cs.ListSkillGroupsProgress(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	var groups []skillGroupProgress
-	for _, g := range gg {
-		groups = append(groups, skillGroupProgress{
-			trained: g.Trained,
-			id:      g.GroupID,
-			name:    g.GroupName,
-			total:   g.Total,
+// makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
+//
+// This allows the grid items to render nicely as list on mobile and also enable truncation.
+func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc fyne.TextTruncation) func() fyne.CanvasObject, updateItem func(id int, co fyne.CanvasObject), makeOnSelected func(unselectAll func()) func(int)) fyne.CanvasObject {
+	var w fyne.CanvasObject
+	if isMobile {
+		w = widget.NewList(length, makeCreateItem(fyne.TextTruncateEllipsis), updateItem)
+		l := w.(*widget.List)
+		l.OnSelected = makeOnSelected(func() {
+			l.UnselectAll()
+		})
+	} else {
+		w = widget.NewGridWrap(length, makeCreateItem(fyne.TextTruncateOff), updateItem)
+		g := w.(*widget.GridWrap)
+		g.OnSelected = makeOnSelected(func() {
+			g.UnselectAll()
 		})
 	}
-	return groups, nil
+	return w
 }

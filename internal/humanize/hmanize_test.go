@@ -14,7 +14,7 @@ import (
 func TestNumberF(t *testing.T) {
 	var cases = []struct {
 		value    float64
-		decimals int
+		decimals uint
 		want     string
 	}{
 		{99, 2, "99.00"},
@@ -37,18 +37,12 @@ func TestNumberF(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-
-	t.Run("should panic when called with undefined decimals", func(t *testing.T) {
-		assert.Panics(t, func() {
-			humanize.NumberF(99.0, 7)
-		})
-	})
 }
 
 func TestNumber(t *testing.T) {
 	var cases = []struct {
 		value    int
-		decimals int
+		decimals uint
 		want     string
 	}{
 		{99, 2, "99"},
@@ -70,12 +64,6 @@ func TestNumber(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-
-	t.Run("should panic when called with undefined decimals", func(t *testing.T) {
-		assert.Panics(t, func() {
-			humanize.NumberF(99.0, 7)
-		})
-	})
 }
 
 func TestDuration(t *testing.T) {
@@ -137,6 +125,8 @@ func TestRomanLetters(t *testing.T) {
 		{4, "IV"},
 		{5, "V"},
 		{5, "V"},
+		{0, ""},
+		{6, ""},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Can return correct roman letter: %d", tc.value), func(t *testing.T) {
@@ -144,12 +134,6 @@ func TestRomanLetters(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-
-	t.Run("should panic when called for undefined numbers", func(t *testing.T) {
-		assert.Panics(t, func() {
-			humanize.RomanLetter(99)
-		})
-	})
 }
 
 func TestOptional(t *testing.T) {

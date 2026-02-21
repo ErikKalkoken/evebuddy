@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -404,7 +405,7 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, characterID int64, types set.Set[app.EveNotificationType]) ([]*app.CharacterNotification, error) {

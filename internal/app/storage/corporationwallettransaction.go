@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -121,7 +122,7 @@ func (st *Storage) ListCorporationWalletTransactionIDs(ctx context.Context, arg 
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg CorporationDivision) ([]*app.CorporationWalletTransaction, error) {

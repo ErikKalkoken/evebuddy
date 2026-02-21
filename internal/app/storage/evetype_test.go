@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestEveType(t *testing.T) {
@@ -143,5 +144,22 @@ func TestEveType(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, set.Of[int64](9).Equal(x))
+	})
+	t.Run("can list skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		o1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		factory.CreateEveType()
+		// when
+		oo, err := st.ListEveTypes(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of(o1.ID)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.EveType) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 }

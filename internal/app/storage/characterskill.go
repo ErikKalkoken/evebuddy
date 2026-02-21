@@ -11,133 +11,128 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int64, eveTypeIDs set.Set[int64]) error {
-	arg := queries.DeleteCharacterSkillsParams{
-		CharacterID: characterID,
-		EveTypeIds:  slices.Collect(eveTypeIDs.All()),
+func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int64, typeIDs set.Set[int64]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterSkills: %d %v: %w", characterID, typeIDs, err)
 	}
-	err := st.qRW.DeleteCharacterSkills(ctx, arg)
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteCharacterSkills(ctx, queries.DeleteCharacterSkillsParams{
+		CharacterID: characterID,
+		EveTypeIds:  slices.Collect(typeIDs.All()),
+	})
 	if err != nil {
-		return fmt.Errorf("delete skills for character %d: %w", characterID, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
 func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int64, typeID int64) (*app.CharacterSkill, error) {
-	arg := queries.GetCharacterSkillParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterSkill: %d %d: %w", characterID, typeID, err)
+	}
+	if characterID == 0 || typeID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRO.GetCharacterSkill(ctx, queries.GetCharacterSkillParams{
 		CharacterID: characterID,
 		EveTypeID:   typeID,
-	}
-	r, err := st.qRO.GetCharacterSkill(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get skill %d for character %d: %w", typeID, characterID, convertGetError(err))
+		return nil, wrapErr(convertGetError(err))
 	}
 	t2 := characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	return t2, nil
 }
 
+func (st *Storage) ListCharacterSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterSkills: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterSkills(ctx, characterID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	var oo []*app.CharacterSkill
+	for _, r := range rows {
+		oo = append(oo, characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory))
+	}
+	return oo, nil
+}
 func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeID int64) ([]app.CharacterActiveSkillLevel, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListAllCharactersActiveSkillLevels: %d: %w", typeID, err)
+	}
+	if typeID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	rows, err := st.qRO.ListCharactersActiveSkillLevels(ctx, typeID)
 	if err != nil {
-		return nil, fmt.Errorf("ListCharactersActiveSkillLevels for type ID: %d: %w", typeID, err)
+		return nil, wrapErr(err)
 	}
-	oo := make([]app.CharacterActiveSkillLevel, len(rows))
-	for i, r := range rows {
-		oo[i] = app.CharacterActiveSkillLevel{
+	var oo []app.CharacterActiveSkillLevel
+	for _, r := range rows {
+		oo = append(oo, app.CharacterActiveSkillLevel{
 			CharacterID: r.CharacterID,
 			Level:       int(r.Level),
 			TypeID:      typeID,
-		}
+		})
 	}
 	return oo, nil
 
 }
 
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterSkillIDs: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
+	}
 	ids, err := st.qRO.ListCharacterSkillIDs(ctx, characterID)
 	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
-}
-
-func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {
-	arg := queries.ListCharacterSkillProgressParams{
-		CharacterID: characterID,
-		EveGroupID:  eveGroupID,
-	}
-	rows, err := st.qRO.ListCharacterSkillProgress(ctx, arg)
-	if err != nil {
-		return nil, fmt.Errorf("list skill progress for character %d: %w", characterID, err)
-	}
-	oo := make([]app.ListSkillProgress, len(rows))
-	for i, r := range rows {
-		oo[i] = app.ListSkillProgress{
-			ActiveSkillLevel:  r.ActiveSkillLevel.Int64,
-			TypeDescription:   r.Description,
-			TypeID:            r.ID,
-			TypeName:          r.Name,
-			TrainedSkillLevel: r.TrainedSkillLevel.Int64,
-		}
-	}
-	return oo, nil
-}
-
-func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int64) ([]app.ListCharacterSkillGroupProgress, error) {
-	arg := queries.ListCharacterSkillGroupsProgressParams{
-		CharacterID:   characterID,
-		EveCategoryID: app.EveCategorySkill,
-	}
-	rows, err := st.qRO.ListCharacterSkillGroupsProgress(ctx, arg)
-	if err != nil {
-		return nil, fmt.Errorf("list skill groups progress for character %d: %w", characterID, err)
-	}
-	oo := make([]app.ListCharacterSkillGroupProgress, len(rows))
-	for i, r := range rows {
-		o := app.ListCharacterSkillGroupProgress{
-			GroupID:   r.EveGroupID,
-			GroupName: r.EveGroupName,
-			Total:     float64(r.Total),
-		}
-		if r.Trained.Valid {
-			o.Trained = r.Trained.Float64
-		}
-		oo[i] = o
-	}
-	return oo, nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 type UpdateOrCreateCharacterSkillParams struct {
 	ActiveSkillLevel   int64
-	EveTypeID          int64
+	TypeID             int64
 	SkillPointsInSkill int64
 	CharacterID        int64
 	TrainedSkillLevel  int64
 }
 
 func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateOrCreateCharacterSkillParams) error {
-	arg2 := queries.UpdateOrCreateCharacterSkillParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCharacterSkill: %v: %w", arg, err)
+	}
+	if arg.CharacterID == 0 || arg.TypeID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateOrCreateCharacterSkill(ctx, queries.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel:   arg.ActiveSkillLevel,
-		EveTypeID:          arg.EveTypeID,
+		EveTypeID:          arg.TypeID,
 		SkillPointsInSkill: arg.SkillPointsInSkill,
 		CharacterID:        arg.CharacterID,
 		TrainedSkillLevel:  arg.TrainedSkillLevel,
-	}
-	if err := st.qRW.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create character skill for character %d: %w", arg.CharacterID, err)
+	})
+	if err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }
 
 func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.CharacterSkill {
-	if o.CharacterID == 0 {
-		panic("missing character ID")
-	}
 	return &app.CharacterSkill{
 		ActiveSkillLevel:   o.ActiveSkillLevel,
 		CharacterID:        o.CharacterID,
-		EveType:            eveTypeFromDBModel(t, g, c),
-		ID:                 o.ID,
+		Type:               eveTypeFromDBModel(t, g, c),
 		SkillPointsInSkill: o.SkillPointsInSkill,
 		TrainedSkillLevel:  o.TrainedSkillLevel,
 	}

@@ -145,7 +145,7 @@ func (st *Storage) ListCorporationStructureIDs(ctx context.Context, corporationI
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 type corporationStructureFromDBModelParams struct {

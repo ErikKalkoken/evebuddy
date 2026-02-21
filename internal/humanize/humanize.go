@@ -13,19 +13,19 @@ import (
 )
 
 // NumberF returns a humanized float number, e.g. 1234 becomes 1.23K
-func NumberF[T constraints.Float](value T, decimals int) string {
+func NumberF[T constraints.Float](value T, decimals uint) string {
 	return number(float64(value), decimals)
 }
 
 // Number returns a humanized int number, e.g. 1234 becomes 1.23K
-func Number[T constraints.Integer](value T, decimals int) string {
+func Number[T constraints.Integer](value T, decimals uint) string {
 	if v := int(value); v > -1000 && v < 1000 {
 		return fmt.Sprint(value)
 	}
 	return number(float64(value), decimals)
 }
 
-func number(value float64, decimals int) string {
+func number(value float64, decimals uint) string {
 	var s int
 	var a string
 	v2 := math.Abs(value)
@@ -46,20 +46,8 @@ func number(value float64, decimals int) string {
 		s = 0
 		a = ""
 	}
+	f := fmt.Sprintf("%%.%df%%s", decimals)
 	x := value / math.Pow10(s)
-	var f string
-	switch decimals {
-	case 3:
-		f = "%.3f%s"
-	case 2:
-		f = "%.2f%s"
-	case 1:
-		f = "%.1f%s"
-	case 0:
-		f = "%.0f%s"
-	default:
-		panic(fmt.Sprintf("Undefined decimals: %d", decimals))
-	}
 	r := fmt.Sprintf(f, x, a)
 	return r
 }
@@ -160,7 +148,7 @@ func OptionalWithComma[T constraints.Integer](o optional.Optional[T], fallback s
 	return humanize.Comma(int64(v))
 }
 
-func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
+func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals uint, fallback string) string {
 	v, ok := o.Value()
 	if !ok {
 		return fallback
@@ -169,6 +157,7 @@ func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals 
 }
 
 // RomanLetter returns a number as roman letters.
+// Returns an empty string if v can not be resolved.
 func RomanLetter[T constraints.Integer](v T) string {
 	m := map[int]string{
 		1: "I",
@@ -179,7 +168,7 @@ func RomanLetter[T constraints.Integer](v T) string {
 	}
 	r, ok := m[int(v)]
 	if !ok {
-		panic(fmt.Sprintf("invalid value: %d", v))
+		return ""
 	}
 	return r
 }

@@ -15,46 +15,69 @@ type CreateEveTypeDogmaAttributeParams struct {
 }
 
 func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
-	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
-		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, app.ErrInvalid)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, err)
 	}
-	arg2 := queries.CreateEveTypeDogmaAttributeParams{
+	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.CreateEveTypeDogmaAttribute(ctx, queries.CreateEveTypeDogmaAttributeParams{
 		DogmaAttributeID: arg.DogmaAttributeID,
 		EveTypeID:        arg.EveTypeID,
 		Value:            arg.Value,
-	}
-	err := st.qRW.CreateEveTypeDogmaAttribute(ctx, arg2)
+	})
 	if err != nil {
-		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogmaAttributeID int64) (float64, error) {
+func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, typeID, dogmaAttributeID int64) (float64, error) {
 	arg := queries.GetEveTypeDogmaAttributeParams{
 		DogmaAttributeID: dogmaAttributeID,
-		EveTypeID:        eveTypeID,
+		EveTypeID:        typeID,
+	}
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetEveTypeDogmaAttribute: %+v: %w", arg, err)
+	}
+	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
 	}
 	row, err := st.qRO.GetEveTypeDogmaAttribute(ctx, arg)
 	if err != nil {
-		return 0, fmt.Errorf("get EveTypeDogmaAttribute for %+v: %w", arg, convertGetError(err))
+		return 0, wrapErr(convertGetError(err))
 	}
 	return row.Value, nil
 }
 
 func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error) {
-	rows, err := st.qRO.ListEveTypeDogmaAttributesForType(ctx,typeID)
+	rows, err := st.qRO.ListEveTypeDogmaAttributesForType(ctx, typeID)
 	if err != nil {
 		return nil, fmt.Errorf("list dogma attributes for type %d: %w", typeID, err)
 	}
-	oo := make([]*app.EveTypeDogmaAttribute, len(rows))
-	for i, r := range rows {
-		o := &app.EveTypeDogmaAttribute{
+	var oo []*app.EveTypeDogmaAttribute
+	for _, r := range rows {
+		oo = append(oo, &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
-			EveType:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
+			Type:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          r.Value,
-		}
-		oo[i] = o
+		})
+	}
+	return oo, nil
+}
+
+func (st *Storage) ListEveTypeDogmaAttributesForSkills(ctx context.Context) ([]*app.EveTypeDogmaAttribute, error) {
+	rows, err := st.qRO.ListEveTypeDogmaAttributesForSkills(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListEveTypeDogmaAttributesForSkills: %w", err)
+	}
+	var oo []*app.EveTypeDogmaAttribute
+	for _, r := range rows {
+		oo = append(oo, &app.EveTypeDogmaAttribute{
+			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
+			Type:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
+			Value:          r.Value,
+		})
 	}
 	return oo, nil
 }

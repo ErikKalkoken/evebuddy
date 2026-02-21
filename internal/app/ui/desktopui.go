@@ -254,8 +254,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		newContentPage(
 			"Skills",
 			container.NewAppTabs(
-				container.NewTabItem("Training Queue", u.characterSkillQueue),
-				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
+				container.NewTabItem("Catalogue", u.characterSkillCatalogue),
+				container.NewTabItem("Training", u.characterSkillQueue),
 				container.NewTabItem("Ships", u.characterShips),
 			),
 		),

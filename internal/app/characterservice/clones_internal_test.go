@@ -131,7 +131,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			EveTypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 3,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
@@ -172,7 +172,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			EveTypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
@@ -187,7 +187,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			EveTypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)

@@ -2510,6 +2510,8 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 				}
 			case int:
 				s = humanize.Comma(int64(x))
+			case float64:
+				s = humanize.Ftoa(x)
 			case bool:
 				if x {
 					s = "yes"

@@ -140,8 +140,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				newCharacterAppBar(
 					"Skills",
 					container.NewAppTabs(
-						container.NewTabItem("Training", u.characterSkillQueue),
 						container.NewTabItem("Catalogue", u.characterSkillCatalogue),
+						container.NewTabItem("Training", u.characterSkillQueue),
 						container.NewTabItem("Ships", u.characterShips),
 					),
 				))

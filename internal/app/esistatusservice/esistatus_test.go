@@ -45,7 +45,7 @@ func TestFetch(t *testing.T) {
 				PlayerCount:  12345,
 				ErrorMessage: "",
 			}
-		xassert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return general error message when ESI returns unexpected error code", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestFetch(t *testing.T) {
 			want := &app.ESIStatus{
 				ErrorMessage: "418 I'm a teapot: custom error message",
 			}
-		xassert.Equal(t, want, got)
+			xassert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return error when a technical error occurred", func(t *testing.T) {
@@ -90,7 +90,6 @@ func TestFetchSwaggerErrors(t *testing.T) {
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})
 	es := esistatusservice.New(client)
-	ctx := context.TODO()
 	statusCodes := []int{400, 420, 500, 503, 504}
 	for _, code := range statusCodes {
 		t.Run(fmt.Sprintf("should return extracted error message when ESI returns status %d", code), func(t *testing.T) {
@@ -103,7 +102,7 @@ func TestFetchSwaggerErrors(t *testing.T) {
 					"error": "custom error message",
 				}))
 			// when
-			got, err := es.Fetch(ctx)
+			got, err := es.Fetch(t.Context())
 			// then
 			if assert.NoError(t, err) {
 				assert.True(t, strings.HasPrefix(got.ErrorMessage, fmt.Sprint(code)))

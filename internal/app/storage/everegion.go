@@ -55,7 +55,7 @@ func (st *Storage) ListEveRegionIDs(ctx context.Context) (set.Set[int64], error)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("ListEveRegionIDs: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) MissingEveRegions(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {

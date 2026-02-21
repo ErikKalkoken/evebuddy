@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 const cacheKeyTrainingNotified = "expired-training-notified"
@@ -164,12 +165,45 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	return rows, nil
 }
 
-func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {
-	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
-}
-
-func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characterID int64) ([]app.ListCharacterSkillGroupProgress, error) {
-	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
+func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill2, error) {
+	oo, err := s.st.ListCharacterSkills(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	skills := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterSkill) (int64, *app.CharacterSkill) {
+		return x.Type.ID, x
+	}))
+	eveSkills, err := s.eus.ListSkills(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var skills2 []*app.CharacterSkill2
+	for _, es := range eveSkills {
+		o := &app.CharacterSkill2{
+			CharacterID: characterID,
+			Skill:       es,
+		}
+		if s, ok := skills[es.Type.ID]; ok {
+			o.ActiveSkillLevel = s.ActiveSkillLevel
+			o.TrainedSkillLevel = s.TrainedSkillLevel
+			o.SkillPointsInSkill = s.SkillPointsInSkill
+		}
+		hasPrerequisites := true
+		for _, r := range es.Requirements {
+			s2, ok := skills[r.Type.ID]
+			if !ok {
+				hasPrerequisites = false
+				break
+			}
+			if r.Level > int(s2.ActiveSkillLevel) {
+				hasPrerequisites = false
+				break
+			}
+		}
+		o.HasPrerequisites = hasPrerequisites
+		skills2 = append(skills2, o)
+	}
+	return skills2, nil
 }
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
@@ -207,7 +241,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				}
 				arg := storage.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
-					EveTypeID:          o.SkillId,
+					TypeID:             o.SkillId,
 					ActiveSkillLevel:   o.ActiveSkillLevel,
 					TrainedSkillLevel:  o.TrainedSkillLevel,
 					SkillPointsInSkill: o.SkillpointsInSkill,

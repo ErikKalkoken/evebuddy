@@ -233,7 +233,7 @@ func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID in
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list corporation asset IDs: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 type UpdateCorporationAssetParams struct {

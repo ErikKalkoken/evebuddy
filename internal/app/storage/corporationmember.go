@@ -103,7 +103,7 @@ func (st *Storage) ListCorporationMemberIDs(ctx context.Context, corporationID i
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func corporationMemberFromDBModel(o queries.CorporationMember, ee queries.EveEntity) *app.CorporationMember {

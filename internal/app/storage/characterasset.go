@@ -198,7 +198,7 @@ func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int64)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character asset IDs: %w", err)
 	}
-	return set.Of(ids...), nil
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {

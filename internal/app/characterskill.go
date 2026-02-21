@@ -4,11 +4,13 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -16,8 +18,16 @@ import (
 type CharacterSkill struct {
 	ActiveSkillLevel   int64
 	CharacterID        int64
-	EveType            *EveType
-	ID                 int64
+	SkillPointsInSkill int64
+	TrainedSkillLevel  int64
+	Type               *EveType
+}
+
+type CharacterSkill2 struct {
+	ActiveSkillLevel   int64
+	CharacterID        int64
+	HasPrerequisites   bool
+	Skill              *EveSkill
 	SkillPointsInSkill int64
 	TrainedSkillLevel  int64
 }
@@ -31,21 +41,6 @@ type CharacterActiveSkillLevel struct {
 	CharacterID int64
 	Level       int
 	TypeID      int64
-}
-
-type ListCharacterSkillGroupProgress struct {
-	GroupID   int64
-	GroupName string
-	Total     float64
-	Trained   float64
-}
-
-type ListSkillProgress struct {
-	ActiveSkillLevel  int64
-	TrainedSkillLevel int64
-	TypeID            int64
-	TypeDescription   string
-	TypeName          string
 }
 
 type CharacterShipSkill struct {
@@ -78,6 +73,12 @@ type CharacterSkillqueue struct {
 func NewCharacterSkillqueue() *CharacterSkillqueue {
 	sq := &CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
 	return sq
+}
+
+func (sq *CharacterSkillqueue) All() iter.Seq[*CharacterSkillqueueItem] {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
+	return slices.Values(sq.items)
 }
 
 // CharacterID returns the character ID related to a queue.
@@ -210,6 +211,9 @@ func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServi
 	items, err := cs.ListSkillqueueItems(ctx, characterID)
 	if err != nil {
 		return nil, err
+	}
+	for _, o := range items {
+		o.SkillDescription = evehtml.ToPlain(o.SkillDescription)
 	}
 	slices.SortFunc(items, func(a, b *CharacterSkillqueueItem) int {
 		return cmp.Compare(a.QueuePosition, b.QueuePosition)

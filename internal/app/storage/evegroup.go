@@ -28,8 +28,8 @@ func createEveGroup(ctx context.Context, q *queries.Queries, arg CreateEveGroupP
 		return wrapErr(app.ErrInvalid)
 	}
 	err := q.CreateEveGroup(ctx, queries.CreateEveGroupParams{
-		ID:           arg.ID,
-		EveCategoryID:arg.CategoryID,
+		ID:            arg.ID,
+		EveCategoryID: arg.CategoryID,
 		IsPublished:   arg.IsPublished,
 		Name:          arg.Name,
 	})
@@ -44,7 +44,7 @@ func (st *Storage) GetEveGroup(ctx context.Context, id int64) (*app.EveGroup, er
 }
 
 func getEveGroup(ctx context.Context, q *queries.Queries, id int64) (*app.EveGroup, error) {
-	row, err := q.GetEveGroup(ctx,id)
+	row, err := q.GetEveGroup(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("GetEveGroup for id %d: %w", id, convertGetError(err))
 	}
@@ -83,10 +83,37 @@ func (st *Storage) GetOrCreateEveGroup(ctx context.Context, arg CreateEveGroupPa
 	return o, nil
 }
 
+func (st *Storage) ListEveGroupsForCategory(ctx context.Context, categoryID int64) ([]*app.EveGroup, error) {
+	rows, err := st.qRO.ListEveGroupsForCategory(ctx, categoryID)
+	if err != nil {
+		return nil, fmt.Errorf("ListEveGroupsForCategory: %d: %w", categoryID, err)
+	}
+	var oo []*app.EveGroup
+	for _, r := range rows {
+		oo = append(oo, eveGroupFromDBModel(r.EveGroup, r.EveCategory))
+	}
+	return oo, nil
+}
+
+func (st *Storage) ListEveSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
+	rows, err := st.qRO.ListEveSkillGroups(ctx, app.EveCategorySkill)
+	if err != nil {
+		return nil, fmt.Errorf("ListEveSkillGroups: %w", err)
+	}
+	var oo []*app.EveSkillGroup
+	for _, r := range rows {
+		oo = append(oo, &app.EveSkillGroup{
+			ID:         r.EveGroupID,
+			Name:       r.EveGroupName,
+			SkillCount: int(r.SkillCount),
+		})
+	}
+	return oo, nil
+}
 func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) *app.EveGroup {
 	return &app.EveGroup{
 		Category:    eveCategoryFromDBModel(c),
-		ID:         g.ID,
+		ID:          g.ID,
 		IsPublished: g.IsPublished,
 		Name:        g.Name,
 	}

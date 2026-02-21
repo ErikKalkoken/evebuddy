@@ -206,6 +206,153 @@ func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogma
 	return i, err
 }
 
+const listEveSkills = `-- name: ListEveSkills :many
+SELECT
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    eve_types et
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    ec.id = 16
+    AND et.is_published = true
+`
+
+type ListEveSkillsRow struct {
+	EveType     EveType
+	EveGroup    EveGroup
+	EveCategory EveCategory
+}
+
+func (q *Queries) ListEveSkills(ctx context.Context) ([]ListEveSkillsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveSkills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveSkillsRow
+	for rows.Next() {
+		var i ListEveSkillsRow
+		if err := rows.Scan(
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveTypeDogmaAttributesForSkills = `-- name: ListEveTypeDogmaAttributesForSkills :many
+SELECT
+    eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
+    etda.value
+FROM
+    eve_dogma_attributes eda
+    JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
+    join eve_types et ON et.id = etda.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    ec.id = 16
+    AND et.is_published = true
+`
+
+type ListEveTypeDogmaAttributesForSkillsRow struct {
+	EveDogmaAttribute EveDogmaAttribute
+	EveType           EveType
+	EveGroup          EveGroup
+	EveCategory       EveCategory
+	Value             float64
+}
+
+func (q *Queries) ListEveTypeDogmaAttributesForSkills(ctx context.Context) ([]ListEveTypeDogmaAttributesForSkillsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveTypeDogmaAttributesForSkills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveTypeDogmaAttributesForSkillsRow
+	for rows.Next() {
+		var i ListEveTypeDogmaAttributesForSkillsRow
+		if err := rows.Scan(
+			&i.EveDogmaAttribute.ID,
+			&i.EveDogmaAttribute.DefaultValue,
+			&i.EveDogmaAttribute.Description,
+			&i.EveDogmaAttribute.DisplayName,
+			&i.EveDogmaAttribute.IconID,
+			&i.EveDogmaAttribute.Name,
+			&i.EveDogmaAttribute.IsHighGood,
+			&i.EveDogmaAttribute.IsPublished,
+			&i.EveDogmaAttribute.IsStackable,
+			&i.EveDogmaAttribute.UnitID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEveTypeDogmaAttributesForType = `-- name: ListEveTypeDogmaAttributesForType :many
 SELECT
     eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id,
