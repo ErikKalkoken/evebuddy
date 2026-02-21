@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"slices"
 	"strings"
 	"sync"
@@ -71,6 +72,12 @@ type CharacterSkillqueue struct {
 func NewCharacterSkillqueue() *CharacterSkillqueue {
 	sq := &CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
 	return sq
+}
+
+func (sq *CharacterSkillqueue) All() iter.Seq[*CharacterSkillqueueItem] {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
+	return slices.Values(sq.items)
 }
 
 // CharacterID returns the character ID related to a queue.

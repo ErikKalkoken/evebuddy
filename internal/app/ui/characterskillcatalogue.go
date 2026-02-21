@@ -27,20 +27,22 @@ const (
 	skillsAllSkill          = "All skills"
 	skillsMySkill           = "My skills"
 	skillsHavePrerequisites = "Have prerequisites for"
+	skillsQueued            = "Queued"
 	skillsFullyTrained      = "Fully trained"
 )
 
 type skillRow struct {
-	activeLevel      int64
 	description      string
 	groupID          int64
 	groupName        string
 	hasPrerequisites bool
+	levelActive      int64
+	levelQueued      int64
+	levelTrained     int64
 	name             string
 	searchTarget     string
 	spMax            optional.Optional[int]
 	spTrained        int
-	trainedLevel     int64
 	typeID           int64
 }
 
@@ -75,7 +77,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		ID:    2,
 		Label: "Level trained",
 		Sort: func(a, b skillRow) int {
-			return cmp.Compare(a.trainedLevel, b.trainedLevel)
+			return cmp.Compare(a.levelTrained, b.levelTrained)
 		},
 	}, {
 		ID:    3,
@@ -95,8 +97,8 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		rows:           make([]skillRow, 0),
 		rowsFiltered:   make([]skillRow, 0),
-		top:            newLabelWithWrapping(),
 		search:         widget.NewEntry(),
+		top:            newLabelWithWrapping(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -118,6 +120,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		skillsAllSkill,
 		skillsMySkill,
 		skillsHavePrerequisites,
+		skillsQueued,
 		skillsFullyTrained,
 	}, func(string) {
 		a.filterRowsAsync()
@@ -201,8 +204,8 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 
 		tt := r.description + "\n\n"
 		var levelText string
-		if r.trainedLevel > 0 {
-			levelText = fmt.Sprintf("Level %s", ihumanize.RomanLetter(r.trainedLevel))
+		if r.levelTrained > 0 {
+			levelText = fmt.Sprintf("Level %s", ihumanize.RomanLetter(r.levelTrained))
 		} else {
 			tt += "Not trained"
 		}
@@ -217,7 +220,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		label.SetToolTip(tt)
 
 		level := row[1].(*skillLevel)
-		level.Set(r.activeLevel, r.trainedLevel, 0)
+		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
 		return func(id int) {
@@ -244,15 +247,19 @@ func (a *characterSkillCatalogue) filterRowsAsync() {
 		switch main {
 		case skillsMySkill:
 			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
-				return r.trainedLevel == 0
+				return r.levelTrained == 0
 			})
 		case skillsHavePrerequisites:
 			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
-				return !r.hasPrerequisites || r.activeLevel == 5
+				return !r.hasPrerequisites || r.levelActive == 5
+			})
+		case skillsQueued:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.levelQueued == 0
 			})
 		case skillsFullyTrained:
 			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
-				return r.activeLevel < 5
+				return r.levelActive < 5
 			})
 		}
 		if group != "" {
@@ -321,25 +328,40 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 	}
 	skills, err := a.u.cs.ListSkills(ctx, characterID)
 	if err != nil {
-		slog.Error("Failed to refresh skill catalogue UI", "err", err)
+		slog.Error("Failed to fetch skills for UI", "err", err)
 		clear()
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
 
+	sq := app.NewCharacterSkillqueue()
+	err = sq.Update(ctx, a.u.cs, c.ID)
+	if err != nil {
+		slog.Error("Failed to update skill queue", "err", err)
+		clear()
+		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+
+	queued := make(map[int64]int64)
+	for it := range sq.All() {
+		queued[it.SkillID] = max(queued[it.SkillID], it.FinishedLevel)
+	}
+
 	var rows []skillRow
 	for _, o := range skills {
 		rows = append(rows, skillRow{
-			activeLevel:      o.ActiveSkillLevel,
-			description:      o.Skill.Type.Description,
+			description:      o.Skill.Type.DescriptionPlain(),
 			groupID:          o.Skill.Type.Group.ID,
 			groupName:        o.Skill.Type.Group.Name,
 			hasPrerequisites: o.HasPrerequisites,
+			levelActive:      o.ActiveSkillLevel,
+			levelQueued:      queued[o.Skill.Type.ID],
+			levelTrained:     o.TrainedSkillLevel,
 			name:             o.Skill.Type.Name,
 			searchTarget:     strings.ToLower(o.Skill.Type.Name),
 			spMax:            o.Skill.Skillpoints,
 			spTrained:        int(o.SkillPointsInSkill),
-			trainedLevel:     o.TrainedSkillLevel,
 			typeID:           o.Skill.Type.ID,
 		})
 	}

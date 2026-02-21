@@ -15,11 +15,12 @@ import (
 // It can also show which level is required.
 type skillLevel struct {
 	widget.BaseWidget
-	dots          []*canvas.Image
-	levelBlocked  fyne.Resource
-	levelRequired fyne.Resource
-	levelTrained  fyne.Resource
-	levelDisabled fyne.Resource
+
+	blocked  fyne.Resource
+	disabled fyne.Resource
+	dots     []*canvas.Image
+	queued   fyne.Resource
+	trained  fyne.Resource
 }
 
 func newSkillLevel() *skillLevel {
@@ -32,29 +33,29 @@ func newSkillLevel() *skillLevel {
 		dots[i] = dot
 	}
 	w := &skillLevel{
-		dots:          dots,
-		levelBlocked:  theme.NewWarningThemedResource(theme.MediaStopIcon()),
-		levelRequired: theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
-		levelTrained:  theme.NewThemedResource(theme.MediaStopIcon()),
-		levelDisabled: untrainedIcon,
+		blocked:  theme.NewWarningThemedResource(theme.MediaStopIcon()),
+		disabled: untrainedIcon,
+		dots:     dots,
+		queued:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
+		trained:  theme.NewThemedResource(theme.MediaStopIcon()),
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 // Set updates the widget to show a skill level.
-// requiredLevel is optional and will be ignored when zero valued
-func (w *skillLevel) Set(activeLevel, trainedLevel, requiredLevel int64) {
+// queued is optional and will be ignored when zero.
+func (w *skillLevel) Set(active, trained, queued int64) {
 	for i := range int64(5) {
 		y := w.dots[i]
-		if activeLevel > i {
-			y.Resource = w.levelTrained
-		} else if trainedLevel > i {
-			y.Resource = w.levelBlocked
-		} else if requiredLevel > i {
-			y.Resource = w.levelRequired
+		if active > i {
+			y.Resource = w.trained
+		} else if trained > i {
+			y.Resource = w.blocked
+		} else if queued > i {
+			y.Resource = w.queued
 		} else {
-			y.Resource = w.levelDisabled
+			y.Resource = w.disabled
 		}
 		y.Refresh()
 	}
