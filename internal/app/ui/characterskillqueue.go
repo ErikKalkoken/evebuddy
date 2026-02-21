@@ -129,21 +129,21 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 			c[0].(*skillQueueItem).Set(qi)
 
 			level := c[1].(*skillLevel)
-			var active, trained, required int64
+			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel
 				trained = qi.FinishedLevel
-				required = qi.FinishedLevel
+				queued = qi.FinishedLevel
 			} else if qi.IsActive() {
 				active = qi.FinishedLevel - 1
 				trained = qi.FinishedLevel - 1
-				required = 0
+				queued = 0
 			} else {
 				active = qi.FinishedLevel - 1
 				trained = qi.FinishedLevel - 1
-				required = qi.FinishedLevel
+				queued = qi.FinishedLevel
 			}
-			level.Set(active, trained, required)
+			level.Set(active, trained, queued)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -334,7 +334,7 @@ type skillQueueItem struct {
 
 	duration *widget.Label
 	isMobile bool
-	name     *widget.Label
+	name     *ttwidget.Label
 	progress *widget.ProgressBar
 }
 
@@ -347,7 +347,7 @@ func newSkillQueueItem(isMobile bool) *skillQueueItem {
 		isMobile:    isMobile,
 	}
 	w.ExtendBaseWidget(w)
-	w.name = widget.NewLabel(w.Placeholder)
+	w.name = ttwidget.NewLabel(w.Placeholder)
 	w.name.Truncation = fyne.TextTruncateEllipsis
 	pb.Hide()
 	if w.isMobile {
@@ -391,6 +391,7 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 	w.name.Importance = importance
 	w.name.Text = name
 	w.name.Refresh()
+	w.name.SetToolTip(qi.SkillDescription)
 	w.duration.Text = s
 	w.duration.Importance = importance
 	w.duration.Refresh()

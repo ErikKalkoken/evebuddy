@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -348,83 +349,83 @@ type formatDogmaValueParams struct {
 
 func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string, int64) {
 	defaultFormatter := func(v float64) string {
-		return humanize.CommafWithDigits(v, 2)
+		return humanize.Ftoa(v)
 	}
 	now := time.Now()
-	value := args.value
+	v := args.value
 	switch args.unitID {
 	case app.EveUnitAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", value*100), 0
+		return fmt.Sprintf("%.0f%%", v*100), 0
 	case app.EveUnitAcceleration:
-		return fmt.Sprintf("%s m/s²", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s m/s²", defaultFormatter(v)), 0
 	case app.EveUnitAttributeID:
-		da, err := args.getDogmaAttribute(ctx, int64(value))
+		da, err := args.getDogmaAttribute(ctx, int64(v))
 		if err != nil {
 			go func() {
-				_, err := args.getOrCreateDogmaAttributeESI(ctx, int64(value))
+				_, err := args.getOrCreateDogmaAttributeESI(ctx, int64(v))
 				if err != nil {
-					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
+					slog.Error("Failed to fetch dogma attribute from ESI", "ID", v, "err", err)
 				}
 			}()
 			return "?", 0
 		}
 		return da.DisplayName.ValueOrZero(), da.IconID.ValueOrZero()
 	case app.EveUnitAttributePoints:
-		return fmt.Sprintf("%s points", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s points", defaultFormatter(v)), 0
 	case app.EveUnitCapacitorUnits:
-		return fmt.Sprintf("%s GJ", humanize.FormatFloat("#,###.#", float64(value))), 0
+		return fmt.Sprintf("%s GJ", humanize.FormatFloat("#,###.#", float64(v))), 0
 	case app.EveUnitDroneBandwidth:
-		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s Mbit/s", defaultFormatter(v)), 0
 	case app.EveUnitHitpoints:
-		return fmt.Sprintf("%s HP", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s HP", defaultFormatter(v)), 0
 	case app.EveUnitInverseAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", (1-value)*100), 0
+		return fmt.Sprintf("%.0f%%", (1-v)*100), 0
 	case app.EveUnitLength:
-		if value > 1000 {
-			return fmt.Sprintf("%s km", defaultFormatter(value/1000)), 0
+		if v > 1000 {
+			return fmt.Sprintf("%s km", defaultFormatter(v/1000)), 0
 		} else {
-			return fmt.Sprintf("%s m", defaultFormatter(value)), 0
+			return fmt.Sprintf("%s m", defaultFormatter(v)), 0
 		}
 	case app.EveUnitLevel:
-		return fmt.Sprintf("Level %s", defaultFormatter(value)), 0
+		return fmt.Sprintf("Level %s", defaultFormatter(v)), 0
 	case app.EveUnitLightYear:
-		return fmt.Sprintf("%.1f LY", value), 0
+		return fmt.Sprintf("%.1f LY", v), 0
 	case app.EveUnitMass:
-		return fmt.Sprintf("%s kg", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s kg", defaultFormatter(v)), 0
 	case app.EveUnitMegaWatts:
-		return fmt.Sprintf("%s MW", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s MW", defaultFormatter(v)), 0
 	case app.EveUnitMillimeters:
-		return fmt.Sprintf("%s mm", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s mm", defaultFormatter(v)), 0
 	case app.EveUnitMilliseconds:
-		return strings.TrimSpace(humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")), 0
+		return strings.TrimSpace(humanize.RelTime(now, now.Add(time.Duration(v)*time.Millisecond), "", "")), 0
 	case app.EveUnitMultiplier:
-		return fmt.Sprintf("%.3f x", value), 0
+		return fmt.Sprintf("%s x", humanize.Ftoa(v)), 0
 	case app.EveUnitPercentage:
-		return fmt.Sprintf("%.0f%%", value*100), 0
+		return fmt.Sprintf("%.0f%%", v*100), 0
 	case app.EveUnitTeraflops:
-		return fmt.Sprintf("%s tf", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s tf", defaultFormatter(v)), 0
 	case app.EveUnitVolume:
-		return fmt.Sprintf("%s m3", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s m3", ihumanize.Comma(int64(v))), 0
 	case app.EveUnitWarpSpeed:
-		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s AU/s", defaultFormatter(v)), 0
 	case app.EveUnitTypeID:
-		et, err := args.getType(ctx, int64(value))
+		et, err := args.getType(ctx, int64(v))
 		if err != nil {
 			go func() {
-				_, err := args.getOrCreateTypeESI(ctx, int64(value))
+				_, err := args.getOrCreateTypeESI(ctx, int64(v))
 				if err != nil {
-					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
+					slog.Error("Failed to fetch type from ESI", "typeID", v, "err", err)
 				}
 			}()
 			return "?", 0
 		}
 		return et.Name, et.IconID.ValueOrZero()
 	case app.EveUnitUnits:
-		return fmt.Sprintf("%s units", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s units", defaultFormatter(v)), 0
 	case app.EveUnitNone, app.EveUnitHardpoints, app.EveUnitFittingSlots, app.EveUnitSlot:
-		return defaultFormatter(value), 0
+		return defaultFormatter(v), 0
 	}
-	return fmt.Sprintf("%s ???", defaultFormatter(value)), 0
+	return fmt.Sprintf("%s ???", defaultFormatter(v)), 0
 }
 
 func (s *EveUniverseService) ListTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error) {

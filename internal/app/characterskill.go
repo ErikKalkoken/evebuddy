@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -210,6 +211,9 @@ func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServi
 	items, err := cs.ListSkillqueueItems(ctx, characterID)
 	if err != nil {
 		return nil, err
+	}
+	for _, o := range items {
+		o.SkillDescription = evehtml.ToPlain(o.SkillDescription)
 	}
 	slices.SortFunc(items, func(a, b *CharacterSkillqueueItem) int {
 		return cmp.Compare(a.QueuePosition, b.QueuePosition)
