@@ -18,6 +18,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -38,6 +39,8 @@ type skillRow struct {
 	hasPrerequisites bool
 	name             string
 	searchTarget     string
+	spMax            optional.Optional[int]
+	spTrained        int
 	trainedLevel     int64
 	typeID           int64
 }
@@ -164,7 +167,24 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*ttwidget.Label)
 		label.SetText(r.name)
-		label.SetToolTip(r.description)
+
+		tt := r.description + "\n\n"
+		var levelText string
+		if r.trainedLevel > 0 {
+			levelText = fmt.Sprintf("Level %s", ihumanize.RomanLetter(r.trainedLevel))
+		} else {
+			tt += "Not trained"
+		}
+		tt += fmt.Sprintf(
+			"%s    %s / %s skillpoints",
+			levelText,
+			ihumanize.Comma(r.spTrained),
+			r.spMax.StringFunc("?", func(v int) string {
+				return ihumanize.Comma(v)
+			}),
+		)
+		label.SetToolTip(tt)
+
 		level := row[1].(*skillLevel)
 		level.Set(r.activeLevel, r.trainedLevel, 0)
 	}
@@ -281,11 +301,13 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 			description:      o.Skill.Type.Description,
 			groupID:          o.Skill.Type.Group.ID,
 			groupName:        o.Skill.Type.Group.Name,
+			hasPrerequisites: o.HasPrerequisites,
 			name:             o.Skill.Type.Name,
 			searchTarget:     strings.ToLower(o.Skill.Type.Name),
+			spMax:            o.Skill.Skillpoints,
+			spTrained:        int(o.SkillPointsInSkill),
 			trainedLevel:     o.TrainedSkillLevel,
 			typeID:           o.Skill.Type.ID,
-			hasPrerequisites: o.HasPrerequisites,
 		})
 	}
 

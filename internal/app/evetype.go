@@ -182,13 +182,15 @@ type EveRequiredSkill struct {
 }
 
 type EveSkill struct {
-	Type         *EveType
+	Rank         optional.Optional[int]    // Rank of this skill
 	Requirements map[int]*EveRequiredSkill // the map index denotes the rank with 0 = primary, 1 = secondary, etc.
+	Skillpoints  optional.Optional[int]    // Total skillpoints needed to train this skill
+	Type         *EveType
 }
 
 type EveTypeDogmaAttribute struct {
-	Type           *EveType
 	DogmaAttribute *EveDogmaAttribute
+	Type           *EveType
 	Value          float64
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func (s *EveUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
@@ -35,19 +36,26 @@ func (s *EveUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 	if err != nil {
 		return nil, err
 	}
-	attributes := make(map[int64]map[int64]int64)
+	attributes := make(map[int64]map[int64]float64)
 	for _, o := range da {
 		if attributes[o.Type.ID] == nil {
-			attributes[o.Type.ID] = make(map[int64]int64)
+			attributes[o.Type.ID] = make(map[int64]float64)
 		}
-		attributes[o.Type.ID][o.DogmaAttribute.ID] = int64(o.Value)
+		attributes[o.Type.ID][o.DogmaAttribute.ID] = o.Value
 	}
 
 	var skills []*app.EveSkill
 	for _, et := range types {
+		var sp, rank optional.Optional[int]
+		if x, ok := attributes[et.ID][app.EveDogmaAttributeTrainingTimeMultiplier]; ok {
+			rank.Set(int(x))
+			sp.Set(256_000 * int(x))
+		}
 		skill := &app.EveSkill{
-			Type:         et,
+			Rank:         rank,
 			Requirements: make(map[int]*app.EveRequiredSkill),
+			Skillpoints:  sp,
+			Type:         et,
 		}
 		for rank, x := range skillDogmaAttributes {
 			typeID, ok := attributes[et.ID][x.typeID]
@@ -59,7 +67,7 @@ func (s *EveUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 				continue
 			}
 			skill.Requirements[rank] = &app.EveRequiredSkill{
-				Type:  types[typeID],
+				Type:  types[int64(typeID)],
 				Level: int(level),
 			}
 		}
