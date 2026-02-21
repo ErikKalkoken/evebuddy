@@ -346,7 +346,7 @@ A special case are Upwell structures. Access to structures depends on in-game do
 You can find EVE Buddy mentions on other web sites:
 
 - [EVE Forum](https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40)
-- [EVE Developer site](https://developers.eveonline.com/docs/community/evebuddy/)
+- [EVE Developer site](https://developers.eveonline.com/docs/community/eve-buddy/)
 - [Reddit: Initial](https://www.reddit.com/r/Eve/comments/1go4iee/eve_buddy_a_new_companion_app_for_eve_online/)
 - [Reddit: Update](https://www.reddit.com/r/Eve/comments/1mjwn79/update_eve_buddy_a_companion_app_for_eve_online/)
 
