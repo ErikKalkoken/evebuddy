@@ -165,30 +165,45 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	return rows, nil
 }
 
-func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill, error) {
+func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill2, error) {
 	oo, err := s.st.ListCharacterSkills(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	existing := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
-		return x.Type.ID
+	skills := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterSkill) (int64, *app.CharacterSkill) {
+		return x.Type.ID, x
 	}))
-	skills, err := s.st.ListEveSkills(ctx)
+	eveSkills, err := s.eus.ListSkills(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for _, et := range skills {
-		if !existing.Contains(et.ID) {
-			oo = append(oo, &app.CharacterSkill{
-				ActiveSkillLevel:   0,
-				CharacterID:        characterID,
-				SkillPointsInSkill: 0,
-				TrainedSkillLevel:  0,
-				Type:               et,
-			})
+	var skills2 []*app.CharacterSkill2
+	for _, es := range eveSkills {
+		o := &app.CharacterSkill2{
+			CharacterID: characterID,
+			Skill:       es,
 		}
+		if s, ok := skills[es.Type.ID]; ok {
+			o.ActiveSkillLevel = s.ActiveSkillLevel
+			o.TrainedSkillLevel = s.TrainedSkillLevel
+			o.SkillPointsInSkill = s.SkillPointsInSkill
+		}
+		hasPrerequisites := true
+		for _, r := range es.Requirements {
+			s2, ok := skills[r.Type.ID]
+			if !ok {
+				hasPrerequisites = false
+				break
+			}
+			if r.Level > int(s2.ActiveSkillLevel) {
+				hasPrerequisites = false
+				break
+			}
+		}
+		o.HasPrerequisites = hasPrerequisites
+		skills2 = append(skills2, o)
 	}
-	return oo, nil
+	return skills2, nil
 }
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {

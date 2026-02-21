@@ -105,3 +105,20 @@ FROM
     JOIN eve_categories ec ON ec.id = eg.eve_category_id
 WHERE
     etda.eve_type_id = ?;
+
+-- name: ListEveTypeDogmaAttributesForSkills :many
+SELECT
+    sqlc.embed(eda),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec),
+    etda.value
+FROM
+    eve_dogma_attributes eda
+    JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
+    join eve_types et ON et.id = etda.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    ec.id = 16
+    AND et.is_published = true;

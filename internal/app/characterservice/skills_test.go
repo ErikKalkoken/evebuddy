@@ -2,9 +2,11 @@ package characterservice_test
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
@@ -122,26 +124,123 @@ func TestCharacterService_ListSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
-	t.Run("should return list of skills", func(t *testing.T) {
+	t.Run("should return character skill for all existing eve skill", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
-		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		es1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			TypeID:      skill1.ID,
+			TypeID:      es1.ID,
 		})
-		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		es2 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		// when
 		oo, err := cs.ListSkills(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		want := set.Of(skill1.ID, skill2.ID)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
-			return x.Type.ID
+		want := set.Of(es1.ID, es2.ID)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill2) int64 {
+			return x.Skill.Type.ID
 		}))
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should report true when rerequisites are met", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		es1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		es2 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		primarySkillType := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillID,
+		})
+		primarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillLevel,
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        es1.ID,
+			DogmaAttributeID: primarySkillType.ID,
+			Value:            float64(es2.ID),
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        es1.ID,
+			DogmaAttributeID: primarySkillLevel.ID,
+			Value:            float64(2),
+		})
+
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			TypeID:      es1.ID,
+		})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           es2.ID,
+			ActiveSkillLevel: 3,
+		})
+		// when
+		oo, err := cs.ListSkills(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		m := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterSkill2) (int64, *app.CharacterSkill2) {
+			return x.Skill.Type.ID, x
+		}))
+		want := set.Of(es1.ID, es2.ID)
+		got := set.Collect(maps.Keys(m))
+		xassert.Equal(t, want, got)
+
+		o1 := m[es1.ID]
+		assert.True(t, o1.HasPrerequisites)
+	})
+	t.Run("should report false when rerequisites are not met", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		es1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		es2 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		primarySkillType := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillID,
+		})
+		primarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillLevel,
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        es1.ID,
+			DogmaAttributeID: primarySkillType.ID,
+			Value:            float64(es2.ID),
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        es1.ID,
+			DogmaAttributeID: primarySkillLevel.ID,
+			Value:            float64(2),
+		})
+
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			TypeID:      es1.ID,
+		})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           es2.ID,
+			ActiveSkillLevel: 1,
+		})
+		// when
+		oo, err := cs.ListSkills(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		m := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterSkill2) (int64, *app.CharacterSkill2) {
+			return x.Skill.Type.ID, x
+		}))
+		want := set.Of(es1.ID, es2.ID)
+		got := set.Collect(maps.Keys(m))
+		xassert.Equal(t, want, got)
+
+		o1 := m[es1.ID]
+		assert.False(t, o1.HasPrerequisites)
 	})
 }

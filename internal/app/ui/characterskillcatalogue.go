@@ -23,15 +23,23 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
+const (
+	skillsAllSkill          = "All skills"
+	skillsMySkill           = "My skills"
+	skillsHavePrerequisites = "Have prerequisites for"
+	skillsFullyTrained      = "Fully trained"
+)
+
 type skillRow struct {
-	activeLevel  int64
-	description  string
-	groupID      int64
-	groupName    string
-	name         string
-	searchTarget string
-	trainedLevel int64
-	typeID       int64
+	activeLevel      int64
+	description      string
+	groupID          int64
+	groupName        string
+	hasPrerequisites bool
+	name             string
+	searchTarget     string
+	trainedLevel     int64
+	typeID           int64
 }
 
 type characterSkillCatalogue struct {
@@ -46,6 +54,7 @@ type characterSkillCatalogue struct {
 	rowsFiltered   []skillRow
 	search         *widget.Entry
 	selectGroup    *kxwidget.FilterChipSelect
+	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
 	top            *widget.Label
 	u              *baseUI
@@ -78,6 +87,16 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.selectGroup = kxwidget.NewFilterChipSelect("Group", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
+	a.selectMain = kxwidget.NewFilterChipSelect("", []string{
+		skillsAllSkill,
+		skillsMySkill,
+		skillsHavePrerequisites,
+		skillsFullyTrained,
+	}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectMain.Selected = skillsAllSkill
+	a.selectMain.SortDisabled = true
 
 	// signals
 	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -105,10 +124,11 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 }
 
 func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(a.selectGroup, a.selectMain)
 	c := container.NewBorder(
 		container.NewVBox(
 			a.top,
-			container.NewBorder(nil, nil, a.selectGroup, nil, a.search),
+			container.NewBorder(nil, nil, filter, nil, a.search),
 		),
 		a.footer,
 		nil,
@@ -165,9 +185,24 @@ func (a *characterSkillCatalogue) filterRowsAsync() {
 	total := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
+	main := a.selectMain.Selected
 	search := strings.ToLower(a.search.Text)
 
 	go func() {
+		switch main {
+		case skillsMySkill:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.trainedLevel == 0
+			})
+		case skillsHavePrerequisites:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return !r.hasPrerequisites || r.activeLevel == 5
+			})
+		case skillsFullyTrained:
+			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+				return r.activeLevel < 5
+			})
+		}
 		if group != "" {
 			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
 				return r.groupName != group
@@ -231,7 +266,7 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		setTop("No data yet", widget.WarningImportance)
 		return
 	}
-	oo, err := a.u.cs.ListSkills(ctx, characterID)
+	skills, err := a.u.cs.ListSkills(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh skill catalogue UI", "err", err)
 		clear()
@@ -240,16 +275,17 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 	}
 
 	var rows []skillRow
-	for _, o := range oo {
+	for _, o := range skills {
 		rows = append(rows, skillRow{
-			activeLevel:  o.ActiveSkillLevel,
-			description:  o.Type.Description,
-			groupID:      o.Type.Group.ID,
-			groupName:    o.Type.Group.Name,
-			name:         o.Type.Name,
-			searchTarget: strings.ToLower(o.Type.Name),
-			trainedLevel: o.TrainedSkillLevel,
-			typeID:       o.Type.ID,
+			activeLevel:      o.ActiveSkillLevel,
+			description:      o.Skill.Type.Description,
+			groupID:          o.Skill.Type.Group.ID,
+			groupName:        o.Skill.Type.Group.Name,
+			name:             o.Skill.Type.Name,
+			searchTarget:     strings.ToLower(o.Skill.Type.Name),
+			trainedLevel:     o.TrainedSkillLevel,
+			typeID:           o.Skill.Type.ID,
+			hasPrerequisites: o.HasPrerequisites,
 		})
 	}
 

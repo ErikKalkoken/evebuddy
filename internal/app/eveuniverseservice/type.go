@@ -112,10 +112,6 @@ func (s *EveUniverseService) ListGroupsForCategory(ctx context.Context, category
 	return s.st.ListEveGroupsForCategory(ctx, categoryID)
 }
 
-func (s *EveUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
-	return s.st.ListEveSkillGroups(ctx)
-}
-
 func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (any, error) {
 		o, err := s.st.GetEveType(ctx, id)
@@ -431,10 +427,7 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 	return fmt.Sprintf("%s ???", defaultFormatter(value)), 0
 }
 
-func (s *EveUniverseService) ListTypeDogmaAttributesForType(
-	ctx context.Context,
-	typeID int64,
-) ([]*app.EveTypeDogmaAttribute, error) {
+func (s *EveUniverseService) ListTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error) {
 	return s.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
 }
 
@@ -504,8 +497,6 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 	return x.(set.Set[int64]), err
 }
 
-// TODO: Add updating of all types
-
 // updateTypes updates all existing type from ESI
 // and returns the IDs of added types if there were any.
 func (s *EveUniverseService) updateTypes(ctx context.Context) (set.Set[int64], error) {
@@ -532,8 +523,4 @@ func (s *EveUniverseService) updateTypes(ctx context.Context) (set.Set[int64], e
 	}
 	added := set.Difference(current, old)
 	return added, nil
-}
-
-func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
-	return s.st.UpdateEveShipSkills(ctx)
 }

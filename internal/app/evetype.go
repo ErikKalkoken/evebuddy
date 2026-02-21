@@ -176,8 +176,18 @@ func (et EveType) EveEntity() *EveEntity {
 	return &EveEntity{ID: et.ID, Name: et.Name, Category: EveEntityInventoryType}
 }
 
+type EveRequiredSkill struct {
+	Type  *EveType
+	Level int
+}
+
+type EveSkill struct {
+	Type         *EveType
+	Requirements map[int]*EveRequiredSkill // the map index denotes the rank with 0 = primary, 1 = secondary, etc.
+}
+
 type EveTypeDogmaAttribute struct {
-	EveType        *EveType
+	Type           *EveType
 	DogmaAttribute *EveDogmaAttribute
 	Value          float64
 }

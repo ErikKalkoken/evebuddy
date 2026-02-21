@@ -21,6 +21,15 @@ type CharacterSkill struct {
 	Type               *EveType
 }
 
+type CharacterSkill2 struct {
+	ActiveSkillLevel   int64
+	CharacterID        int64
+	HasPrerequisites   bool
+	Skill              *EveSkill
+	SkillPointsInSkill int64
+	TrainedSkillLevel  int64
+}
+
 func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }

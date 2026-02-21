@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -29,14 +30,12 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 		// when
 		err := st.CreateEveTypeDogmaAttribute(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			v, err := st.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 123.45, v)
-			}
-		}
+		require.NoError(t, err)
+		v, err := st.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 123.45, v)
 	})
-	t.Run("can list", func(t *testing.T) {
+	t.Run("can list for type", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		et := factory.CreateEveType()
@@ -50,8 +49,28 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 		// when
 		oo, err := st.ListEveTypeDogmaAttributesForType(ctx, et.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.EveTypeDogmaAttribute{o1, o2}, oo)
-		}
+		require.NoError(t, err)
+		// want := set.Of()
+		assert.ElementsMatch(t, []*app.EveTypeDogmaAttribute{o1, o2}, oo)
+	})
+	t.Run("can list for skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		skill := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		o1 := factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID: skill.ID,
+		})
+		o2 := factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID: skill.ID,
+		})
+		factory.CreateEveTypeDogmaAttribute()
+		// when
+		oo, err := st.ListEveTypeDogmaAttributesForSkills(ctx)
+		// then
+		require.NoError(t, err)
+		// want := set.Of()
+		assert.ElementsMatch(t, []*app.EveTypeDogmaAttribute{o1, o2}, oo)
 	})
 }

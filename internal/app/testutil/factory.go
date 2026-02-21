@@ -2282,7 +2282,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 		panic(err)
 	}
 	o := &app.EveTypeDogmaAttribute{
-		EveType:        et,
+		Type:        et,
 		DogmaAttribute: da,
 		Value:          v,
 	}
