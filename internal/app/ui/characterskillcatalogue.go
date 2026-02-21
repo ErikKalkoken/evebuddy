@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -12,16 +13,14 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 const (
@@ -61,10 +60,35 @@ type characterSkillCatalogue struct {
 	skills         fyne.CanvasObject
 	top            *widget.Label
 	u              *baseUI
+	sortButton     *iwidget.SortButton
+	columnSorter   *iwidget.ColumnSorter[skillRow]
 }
 
 func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
+	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[skillRow]{{
+		ID:    1,
+		Label: "Name",
+		Sort: func(a, b skillRow) int {
+			return strings.Compare(a.name, b.name)
+		},
+	}, {
+		ID:    2,
+		Label: "Level trained",
+		Sort: func(a, b skillRow) int {
+			return cmp.Compare(a.trainedLevel, b.trainedLevel)
+		},
+	}, {
+		ID:    3,
+		Label: "Skillpoints trained",
+		Sort: func(a, b skillRow) int {
+			return cmp.Compare(a.spTrained, b.spTrained)
+		},
+	}}),
+		1,
+		iwidget.SortAsc,
+	)
 	a := &characterSkillCatalogue{
+		columnSorter:   columnSorter,
 		footer:         newLabelWithTruncation(),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
@@ -100,6 +124,9 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	})
 	a.selectMain.Selected = skillsAllSkill
 	a.selectMain.SortDisabled = true
+	a.sortButton = a.columnSorter.NewSortButton(func() {
+		a.filterRowsAsync()
+	}, a.u.window)
 
 	// signals
 	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -127,12 +154,16 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 }
 
 func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectGroup, a.selectMain)
+	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
+	topBox := container.NewVBox(a.top)
+	if a.u.isMobile {
+		topBox.Add(a.search)
+		topBox.Add(container.NewHScroll(filter))
+	} else {
+		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
+	}
 	c := container.NewBorder(
-		container.NewVBox(
-			a.top,
-			container.NewBorder(nil, nil, filter, nil, a.search),
-		),
+		topBox,
 		a.footer,
 		nil,
 		nil,
@@ -207,6 +238,7 @@ func (a *characterSkillCatalogue) filterRowsAsync() {
 	group := a.selectGroup.Selected
 	main := a.selectMain.Selected
 	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {
 		switch main {
@@ -241,6 +273,7 @@ func (a *characterSkillCatalogue) filterRowsAsync() {
 		groupOptions := xslices.Map(rows, func(r skillRow) string {
 			return r.groupName
 		})
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		footer := fmt.Sprintf("Showing %d / %d skills", len(rows), total)
 
 		fyne.Do(func() {
