@@ -10,15 +10,10 @@ import (
 )
 
 const createEveGroup = `-- name: CreateEveGroup :exec
-INSERT INTO eve_groups (
-    id,
-    eve_category_id,
-    name,
-    is_published
-)
-VALUES (
-    ?, ?, ?, ?
-)
+INSERT INTO
+    eve_groups (id, eve_category_id, name, is_published)
+VALUES
+    (?, ?, ?, ?)
 `
 
 type CreateEveGroupParams struct {
@@ -39,10 +34,14 @@ func (q *Queries) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) 
 }
 
 const getEveGroup = `-- name: GetEveGroup :one
-SELECT eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
-FROM eve_groups
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-WHERE eve_groups.id = ?
+SELECT
+    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
+    eve_categories.id, eve_categories.name, eve_categories.is_published
+FROM
+    eve_groups
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+WHERE
+    eve_groups.id = ?
 `
 
 type GetEveGroupRow struct {
@@ -63,4 +62,96 @@ func (q *Queries) GetEveGroup(ctx context.Context, id int64) (GetEveGroupRow, er
 		&i.EveCategory.IsPublished,
 	)
 	return i, err
+}
+
+const listEveGroupsForCategory = `-- name: ListEveGroupsForCategory :many
+SELECT
+    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
+    eve_categories.id, eve_categories.name, eve_categories.is_published
+FROM
+    eve_groups
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+WHERE
+    eve_groups.eve_category_id = ?
+`
+
+type ListEveGroupsForCategoryRow struct {
+	EveGroup    EveGroup
+	EveCategory EveCategory
+}
+
+func (q *Queries) ListEveGroupsForCategory(ctx context.Context, eveCategoryID int64) ([]ListEveGroupsForCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveGroupsForCategory, eveCategoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveGroupsForCategoryRow
+	for rows.Next() {
+		var i ListEveGroupsForCategoryRow
+		if err := rows.Scan(
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveSkillGroups = `-- name: ListEveSkillGroups :many
+SELECT
+    eve_groups.id as eve_group_id,
+    eve_groups.name as eve_group_name,
+    COUNT(eve_types.id) as skill_count
+FROM
+    eve_types
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    AND eve_groups.is_published IS TRUE
+WHERE
+    eve_groups.eve_category_id = ?
+    AND eve_types.is_published IS TRUE
+GROUP BY
+    eve_groups.name
+`
+
+type ListEveSkillGroupsRow struct {
+	EveGroupID   int64
+	EveGroupName string
+	SkillCount   int64
+}
+
+func (q *Queries) ListEveSkillGroups(ctx context.Context, eveCategoryID int64) ([]ListEveSkillGroupsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveSkillGroups, eveCategoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveSkillGroupsRow
+	for rows.Next() {
+		var i ListEveSkillGroupsRow
+		if err := rows.Scan(&i.EveGroupID, &i.EveGroupName, &i.SkillCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

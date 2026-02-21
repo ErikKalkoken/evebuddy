@@ -46,6 +46,23 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int64, typ
 	return t2, nil
 }
 
+func (st *Storage) ListCharacterSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterSkills: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterSkills(ctx, characterID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	var oo []*app.CharacterSkill
+	for _, r := range rows {
+		oo = append(oo, characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory))
+	}
+	return oo, nil
+}
 func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeID int64) ([]app.CharacterActiveSkillLevel, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListAllCharactersActiveSkillLevels: %d: %w", typeID, err)
@@ -83,50 +100,6 @@ func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int64)
 	return set.Collect(slices.Values(ids)), nil
 }
 
-func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {
-	rows, err := st.qRO.ListCharacterSkillProgress(ctx, queries.ListCharacterSkillProgressParams{
-		CharacterID: characterID,
-		EveGroupID:  eveGroupID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list skill progress for character %d: %w", characterID, err)
-	}
-	oo := make([]app.ListSkillProgress, len(rows))
-	for i, r := range rows {
-		oo[i] = app.ListSkillProgress{
-			ActiveSkillLevel:  r.ActiveSkillLevel.Int64,
-			TypeDescription:   r.Description,
-			TypeID:            r.ID,
-			TypeName:          r.Name,
-			TrainedSkillLevel: r.TrainedSkillLevel.Int64,
-		}
-	}
-	return oo, nil
-}
-
-func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int64) ([]app.ListCharacterSkillGroupProgress, error) {
-	rows, err := st.qRO.ListCharacterSkillGroupsProgress(ctx, queries.ListCharacterSkillGroupsProgressParams{
-		CharacterID:   characterID,
-		EveCategoryID: app.EveCategorySkill,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list skill groups progress for character %d: %w", characterID, err)
-	}
-	oo := make([]app.ListCharacterSkillGroupProgress, len(rows))
-	for i, r := range rows {
-		o := app.ListCharacterSkillGroupProgress{
-			GroupID:   r.EveGroupID,
-			GroupName: r.EveGroupName,
-			Total:     float64(r.Total),
-		}
-		if r.Trained.Valid {
-			o.Trained = r.Trained.Float64
-		}
-		oo[i] = o
-	}
-	return oo, nil
-}
-
 type UpdateOrCreateCharacterSkillParams struct {
 	ActiveSkillLevel   int64
 	TypeID             int64
@@ -159,8 +132,7 @@ func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g qu
 	return &app.CharacterSkill{
 		ActiveSkillLevel:   o.ActiveSkillLevel,
 		CharacterID:        o.CharacterID,
-		EveType:            eveTypeFromDBModel(t, g, c),
-		ID:                 o.ID,
+		Type:               eveTypeFromDBModel(t, g, c),
 		SkillPointsInSkill: o.SkillPointsInSkill,
 		TrainedSkillLevel:  o.TrainedSkillLevel,
 	}

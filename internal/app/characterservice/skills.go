@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 const cacheKeyTrainingNotified = "expired-training-notified"
@@ -164,12 +165,30 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	return rows, nil
 }
 
-func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int64) ([]app.ListSkillProgress, error) {
-	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
-}
-
-func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characterID int64) ([]app.ListCharacterSkillGroupProgress, error) {
-	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
+func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill, error) {
+	oo, err := s.st.ListCharacterSkills(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	existing := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
+		return x.Type.ID
+	}))
+	skills, err := s.st.ListEveSkills(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, et := range skills {
+		if !existing.Contains(et.ID) {
+			oo = append(oo, &app.CharacterSkill{
+				ActiveSkillLevel:   0,
+				CharacterID:        characterID,
+				SkillPointsInSkill: 0,
+				TrainedSkillLevel:  0,
+				Type:               et,
+			})
+		}
+	}
+	return oo, nil
 }
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
@@ -207,7 +226,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				}
 				arg := storage.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
-					TypeID:          o.SkillId,
+					TypeID:             o.SkillId,
 					ActiveSkillLevel:   o.ActiveSkillLevel,
 					TrainedSkillLevel:  o.TrainedSkillLevel,
 					SkillPointsInSkill: o.SkillpointsInSkill,

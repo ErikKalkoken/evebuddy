@@ -59,6 +59,13 @@ type EveGroup struct {
 	Name        string
 }
 
+// EveSkillGroup is a specialized group for skills.
+type EveSkillGroup struct {
+	ID         int64
+	Name       string
+	SkillCount int
+}
+
 const (
 	EveTypeAdvancedLaboratoryOperation = 24624
 	EveTypeAdvancedMassProduction      = 24625

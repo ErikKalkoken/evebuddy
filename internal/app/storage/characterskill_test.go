@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestCharacterSkill(t *testing.T) {
@@ -25,7 +27,7 @@ func TestCharacterSkill(t *testing.T) {
 		eveType := factory.CreateEveType()
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			ActiveSkillLevel:   3,
-			TypeID:          eveType.ID,
+			TypeID:             eveType.ID,
 			CharacterID:        c.ID,
 			SkillPointsInSkill: 99,
 			TrainedSkillLevel:  5,
@@ -33,15 +35,13 @@ func TestCharacterSkill(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterSkill(ctx, c.ID, arg.TypeID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 3, x.ActiveSkillLevel)
-				xassert.Equal(t, eveType, x.EveType)
-				xassert.Equal(t, 99, x.SkillPointsInSkill)
-				xassert.Equal(t, 5, x.TrainedSkillLevel)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterSkill(ctx, c.ID, arg.TypeID)
+		require.NoError(t, err)
+		xassert.Equal(t, 3, x.ActiveSkillLevel)
+		xassert.Equal(t, eveType, x.Type)
+		xassert.Equal(t, 99, x.SkillPointsInSkill)
+		xassert.Equal(t, 5, x.TrainedSkillLevel)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -55,7 +55,7 @@ func TestCharacterSkill(t *testing.T) {
 		})
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:        c.ID,
-			TypeID:          o1.EveType.ID,
+			TypeID:             o1.Type.ID,
 			ActiveSkillLevel:   4,
 			TrainedSkillLevel:  4,
 			SkillPointsInSkill: 99,
@@ -63,15 +63,33 @@ func TestCharacterSkill(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o2, err := st.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 4, o2.ActiveSkillLevel)
-				xassert.Equal(t, 4, o2.TrainedSkillLevel)
-				xassert.Equal(t, 99, o2.SkillPointsInSkill)
-			}
-		}
+		require.NoError(t, err)
+		o2, err := st.GetCharacterSkill(ctx, c.ID, o1.Type.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 4, o2.ActiveSkillLevel)
+		xassert.Equal(t, 4, o2.TrainedSkillLevel)
+		xassert.Equal(t, 99, o2.SkillPointsInSkill)
 	})
+	t.Run("can delete excluded skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		// when
+		err := st.DeleteCharacterSkills(ctx, c.ID, set.Of(x2.Type.ID))
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(x1.Type.ID), ids)
+	})
+}
+
+func TestCharacterSkillLists(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
 	t.Run("can list skill IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -85,67 +103,29 @@ func TestCharacterSkill(t *testing.T) {
 		// when
 		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, set.Of(o1.EveType.ID, o2.EveType.ID), ids)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o1.Type.ID, o2.Type.ID), ids)
 	})
-	t.Run("can delete excluded skills", func(t *testing.T) {
+	t.Run("can list skills", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
-		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			TypeID:      skill1.ID,
+		})
 		// when
-		err := st.DeleteCharacterSkills(ctx, c.ID, set.Of(x2.EveType.ID))
+		oo, err := st.ListCharacterSkills(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) {
-			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, set.Of(x1.EveType.ID), ids)
-			}
-		}
-	})
-}
-
-func TestCharacterSkillLists(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	ctx := context.Background()
-	t.Run("should return list of skill groups with progress", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
-		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:         myType.ID,
-			TrainedSkillLevel: 5,
-		})
-		// when
-		xx, err := st.ListCharacterSkillGroupsProgress(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
-	})
-	t.Run("should return list of skill groups with progress", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
-		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:         myType.ID,
-			TrainedSkillLevel: 5,
-		})
-		// when
-		xx, err := st.ListCharacterSkillProgress(ctx, c.ID, group.ID)
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
+		require.NoError(t, err)
+		want := set.Of(o1.Type.ID)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
+			return x.Type.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -163,43 +143,39 @@ func TestListCharactersActiveSkillLevels(t *testing.T) {
 		skill2 := factory.CreateEveType()
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
-			TypeID:         skill1.ID,
+			TypeID:            skill1.ID,
 			ActiveSkillLevel:  3,
 			TrainedSkillLevel: 5,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c2.ID,
-			TypeID:         skill1.ID,
+			TypeID:            skill1.ID,
 			ActiveSkillLevel:  4,
 			TrainedSkillLevel: 5,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
-			TypeID:         skill2.ID,
+			TypeID:            skill2.ID,
 			ActiveSkillLevel:  5,
 			TrainedSkillLevel: 5,
 		})
 		// when
 		got, err := st.ListAllCharactersActiveSkillLevels(ctx, skill1.ID)
-		if assert.NoError(t, err) {
-			want := []app.CharacterActiveSkillLevel{
-				{
-					CharacterID: c1.ID,
-					TypeID:      skill1.ID,
-					Level:       3,
-				},
-				{
-					CharacterID: c2.ID,
-					TypeID:      skill1.ID,
-					Level:       4,
-				},
-				{
-					CharacterID: c3.ID,
-					TypeID:      skill1.ID,
-					Level:       0,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
-		}
+		// then
+		require.NoError(t, err)
+		want := []app.CharacterActiveSkillLevel{{
+			CharacterID: c1.ID,
+			TypeID:      skill1.ID,
+			Level:       3,
+		}, {
+			CharacterID: c2.ID,
+			TypeID:      skill1.ID,
+			Level:       4,
+		}, {
+			CharacterID: c3.ID,
+			TypeID:      skill1.ID,
+			Level:       0,
+		}}
+		assert.ElementsMatch(t, want, got)
 	})
 }

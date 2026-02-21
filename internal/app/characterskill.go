@@ -16,10 +16,9 @@ import (
 type CharacterSkill struct {
 	ActiveSkillLevel   int64
 	CharacterID        int64
-	EveType            *EveType
-	ID                 int64
 	SkillPointsInSkill int64
 	TrainedSkillLevel  int64
+	Type               *EveType
 }
 
 func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
@@ -31,21 +30,6 @@ type CharacterActiveSkillLevel struct {
 	CharacterID int64
 	Level       int
 	TypeID      int64
-}
-
-type ListCharacterSkillGroupProgress struct {
-	GroupID   int64
-	GroupName string
-	Total     float64
-	Trained   float64
-}
-
-type ListSkillProgress struct {
-	ActiveSkillLevel  int64
-	TrainedSkillLevel int64
-	TypeID            int64
-	TypeDescription   string
-	TypeName          string
 }
 
 type CharacterShipSkill struct {

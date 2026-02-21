@@ -108,6 +108,14 @@ func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) 
 	return x.(*app.EveGroup), nil
 }
 
+func (s *EveUniverseService) ListGroupsForCategory(ctx context.Context, categoryID int64) ([]*app.EveGroup, error) {
+	return s.st.ListEveGroupsForCategory(ctx, categoryID)
+}
+
+func (s *EveUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
+	return s.st.ListEveSkillGroups(ctx)
+}
+
 func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (any, error) {
 		o, err := s.st.GetEveType(ctx, id)
@@ -192,7 +200,7 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 	return x.(*app.EveType), nil
 }
 
-func (s *EveUniverseService) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
+func (s *EveUniverseService) ListTypeIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListEveTypeIDs(ctx)
 }
 
@@ -452,7 +460,7 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 		if err != nil {
 			return set.Set[int64]{}, err
 		}
-		knownTypes, err := s.ListEveTypeIDs(ctx)
+		knownTypes, err := s.ListTypeIDs(ctx)
 		if err != nil {
 			return set.Set[int64]{}, err
 		}

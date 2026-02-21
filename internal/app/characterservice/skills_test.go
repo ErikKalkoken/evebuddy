@@ -7,11 +7,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/go-set"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestIsTrainingActive(t *testing.T) {
@@ -33,7 +37,7 @@ func TestIsTrainingActive(t *testing.T) {
 		got, err := cs.IsTrainingActive(ctx, character.ID)
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, true, got)
+		xassert.Equal(t, true, got)
 	})
 	t.Run("should return false when training is inactive", func(t *testing.T) {
 		// given
@@ -43,7 +47,7 @@ func TestIsTrainingActive(t *testing.T) {
 		got, err := cs.IsTrainingActive(ctx, character.ID)
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, false, got)
+		xassert.Equal(t, false, got)
 	})
 }
 
@@ -63,7 +67,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, sendCount, 1)
+		xassert.Equal(t, sendCount, 1)
 	})
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
@@ -77,7 +81,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, sendCount, 0)
+		xassert.Equal(t, sendCount, 0)
 	})
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
@@ -92,7 +96,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, sendCount, 0)
+		xassert.Equal(t, sendCount, 0)
 	})
 	t.Run("should only send one notification", func(t *testing.T) {
 		// given
@@ -110,6 +114,34 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		 xassert.Equal(t, sendCount, 1)
+		xassert.Equal(t, sendCount, 1)
+	})
+}
+
+func TestCharacterService_ListSkills(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := characterservice.NewFake(st)
+	t.Run("should return list of skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			TypeID:      skill1.ID,
+		})
+		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		// when
+		oo, err := cs.ListSkills(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		want := set.Of(skill1.ID, skill2.ID)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
+			return x.Type.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 }
