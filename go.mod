@@ -8,7 +8,7 @@ tool (
 )
 
 require (
-	fyne.io/fyne/v2 v2.7.2
+	fyne.io/fyne/v2 v2.7.3
 	github.com/ErikKalkoken/eveauth v0.1.1
 	github.com/ErikKalkoken/fyne-kx v0.7.2
 	github.com/ErikKalkoken/go-set v0.3.0
