@@ -363,8 +363,9 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 		completionP float64
 		importance  widget.Importance
 		isActive    bool
-		s           string
+		duration    string
 		name        string
+		description string
 	)
 	if qi == nil {
 		name = w.Placeholder
@@ -374,25 +375,26 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 		isCompleted := qi.IsCompleted()
 		if isCompleted {
 			importance = widget.LowImportance
-			s = "Completed"
+			duration = "Completed"
 		} else if isActive {
 			importance = widget.MediumImportance
-			s = ihumanize.Optional(qi.Remaining(), "?")
+			duration = ihumanize.Optional(qi.Remaining(), "?")
 		} else {
 			importance = widget.MediumImportance
-			s = ihumanize.Optional(qi.Duration(), "?")
+			duration = ihumanize.Optional(qi.Duration(), "?")
 		}
 		if w.isMobile {
 			name = qi.StringShortened()
 		} else {
 			name = qi.String()
 		}
+		description = qi.SkillDescription
 	}
 	w.name.Importance = importance
 	w.name.Text = name
 	w.name.Refresh()
-	w.name.SetToolTip(qi.SkillDescription)
-	w.duration.Text = s
+	w.name.SetToolTip(description)
+	w.duration.Text = duration
 	w.duration.Importance = importance
 	w.duration.Refresh()
 	if isActive {

@@ -417,7 +417,8 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			queueRemaining.Refresh()
 
 			b3 := vbox[4].(*fyne.Container).Objects
-			b3[0].(*widget.Label).SetText(r.trainedSPDisplay + " SP")
+			total := b3[0].(*widget.Label)
+			total.SetText(r.totalSPDisplay + " SP")
 			unallocated := b3[1].(*widget.Label)
 			if r.unallocatedSP.ValueOrZero() == 0 {
 				unallocated.Text = ""
