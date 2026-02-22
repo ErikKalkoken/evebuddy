@@ -75,22 +75,22 @@ type industryJobRow struct {
 	tags               set.Set[string]
 }
 
-func (j industryJobRow) remaining() time.Duration {
-	return time.Until(j.endDate)
+func (r industryJobRow) remaining() time.Duration {
+	return time.Until(r.endDate)
 }
 
 // statusCalculated returns the status as ready when the timer has elapsed.
-func (j industryJobRow) statusCalculated() app.IndustryJobStatus {
-	if j.status == app.JobActive && !j.endDate.IsZero() && j.endDate.Before(time.Now()) {
+func (r industryJobRow) statusCalculated() app.IndustryJobStatus {
+	if r.status == app.JobActive && !r.endDate.IsZero() && r.endDate.Before(time.Now()) {
 		return app.JobReady
 	}
-	return j.status
+	return r.status
 }
 
-func (j industryJobRow) statusDisplay() []widget.RichTextSegment {
-	status := j.statusCalculated()
+func (r industryJobRow) statusDisplay() []widget.RichTextSegment {
+	status := r.statusCalculated()
 	if status == app.JobActive {
-		return iwidget.RichTextSegmentsFromText(ihumanize.Duration(j.remaining()), widget.RichTextStyle{
+		return iwidget.RichTextSegmentsFromText(ihumanize.Duration(r.remaining()), widget.RichTextStyle{
 			ColorName: theme.ColorNameForeground,
 		})
 	}

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -16,6 +18,8 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -28,7 +32,7 @@ const (
 
 type colonyRow struct {
 	characterID     int64
-	due             time.Time
+	endDate         time.Time
 	extracting      set.Set[string]
 	extractingText  string
 	name            string
@@ -45,21 +49,27 @@ type colonyRow struct {
 	tags            set.Set[string]
 }
 
-func (r colonyRow) isExpired() bool {
-	if r.due.IsZero() {
-		return false
-	}
-	return r.due.Before(time.Now())
+func (r colonyRow) remaining() time.Duration {
+	return time.Until(r.endDate)
 }
 
-func (r colonyRow) DueRichText() []widget.RichTextSegment {
+func (r colonyRow) isExpired() bool {
+	if r.endDate.IsZero() {
+		return false
+	}
+	return r.endDate.Before(time.Now())
+}
+
+func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 	if r.isExpired() {
 		return iwidget.RichTextSegmentsFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
 	}
-	if r.due.IsZero() {
+	if r.endDate.IsZero() {
 		return iwidget.RichTextSegmentsFromText("-")
 	}
-	return iwidget.RichTextSegmentsFromText(r.due.Format(app.DateTimeFormat))
+	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(r.remaining()), widget.RichTextStyle{
+		ColorName: theme.ColorNameForeground,
+	})
 }
 
 type colonies struct {
@@ -86,9 +96,9 @@ type colonies struct {
 
 const (
 	coloniesColPlanet = iota + 1
-	coloniesColType
+	coloniesColStatus
 	coloniesColExtracting
-	coloniesColDue
+	coloniesColEndDate
 	coloniesColProducing
 	coloniesColRegion
 	coloniesColCharacter
@@ -98,71 +108,77 @@ func newColonies(u *baseUI) *colonies {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",
-		Width: 150,
+		Width: 200,
 		Sort: func(a, b colonyRow) int {
 			return strings.Compare(a.name, b.name)
 		},
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.nameDisplay)
-		},
-	}, {
-		ID:    coloniesColType,
-		Label: "Type",
-		Width: 100,
-		Sort: func(a, b colonyRow) int {
-			return strings.Compare(a.planetTypeName, b.planetTypeName)
-		},
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.planetTypeName)
-		},
-	}, {
-		ID:    coloniesColExtracting,
-		Label: "Extracting",
-		Width: 200,
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.extractingText)
-		},
-	}, {
-		ID:    coloniesColDue,
-		Label: "Due",
-		Width: columnWidthDateTime,
-		Sort: func(a, b colonyRow) int {
-			return a.due.Compare(b.due)
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.BlankSvg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := iwidget.NewRichText()
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.DueRichText())
+			border := co.(*fyne.Container).Objects
+			border[0].(*iwidget.RichText).Set(r.nameDisplay)
+			x := border[1].(*canvas.Image)
+			u.eis.InventoryTypeIconAsync(r.planetTypeID, app.IconPixelSize, func(r fyne.Resource) {
+				x.Resource = r
+				x.Refresh()
+			})
 		},
-	}, {
-		ID:    coloniesColProducing,
-		Label: "Producing",
-		Width: 200,
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.producingText)
-		},
-	}, {
-		ID:    coloniesColRegion,
-		Label: "Region",
-		Width: 150,
-		Sort: func(a, b colonyRow) int {
-			return strings.Compare(a.regionName, b.regionName)
-		},
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.regionName)
-		},
-	}, {
-		ID:    coloniesColCharacter,
-		Label: "Character",
-		Width: columnWidthEntity,
-		Sort: func(a, b colonyRow) int {
-			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-		},
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.ownerName)
-		},
-	}})
+	},
+		{
+			ID:    coloniesColStatus,
+			Label: "Status",
+			Width: 100,
+			Sort: func(a, b colonyRow) int {
+				return cmp.Compare(a.remaining(), b.remaining())
+			},
+			Update: func(r colonyRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).Set(r.statusDisplay())
+			},
+		}, {
+			ID:    coloniesColExtracting,
+			Label: "Extracting",
+			Width: 200,
+			Update: func(r colonyRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.extractingText)
+			},
+		}, {
+			ID:    coloniesColEndDate,
+			Label: "End data",
+			Width: columnWidthDateTime,
+			Sort: func(a, b colonyRow) int {
+				return a.endDate.Compare(b.endDate)
+			},
+			Update: func(r colonyRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
+			},
+		}, {
+			ID:    coloniesColProducing,
+			Label: "Producing",
+			Width: 200,
+			Update: func(r colonyRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.producingText)
+			},
+		}, {
+			ID:    coloniesColCharacter,
+			Label: "Character",
+			Width: columnWidthEntity,
+			Sort: func(a, b colonyRow) int {
+				return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+			},
+			Update: func(r colonyRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.ownerName)
+			},
+		}})
 	a := &colonies{
 		footer:       newLabelWithTruncation(),
-		columnSorter: iwidget.NewColumnSorter(columns, coloniesColDue, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, coloniesColEndDate, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		u:            u,
@@ -190,12 +206,12 @@ func newColonies(u *baseUI) *colonies {
 				switch col {
 				case coloniesColPlanet:
 					return r.nameDisplay
-				case coloniesColType:
+				case coloniesColStatus:
 					return iwidget.RichTextSegmentsFromText(r.planetTypeName)
 				case coloniesColExtracting:
 					return iwidget.RichTextSegmentsFromText(r.extractingText)
-				case coloniesColDue:
-					return r.DueRichText()
+				case coloniesColEndDate:
+					return r.statusDisplay()
 				case coloniesColProducing:
 					return iwidget.RichTextSegmentsFromText(r.producingText)
 				case coloniesColRegion:
@@ -218,9 +234,9 @@ func newColonies(u *baseUI) *colonies {
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
-	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
@@ -261,6 +277,12 @@ func newColonies(u *baseUI) *colonies {
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
+	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.body.Refresh()
+		})
+	})
+
 	return a
 }
 
@@ -443,7 +465,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		producing := p.ProducedSchematicNames()
 		r := colonyRow{
 			characterID:     p.CharacterID,
-			due:             p.ExtractionsExpiryTime(),
+			endDate:         p.ExtractionsExpiryTime(),
 			extracting:      set.Of(extracting...),
 			name:            p.EvePlanet.Name,
 			nameDisplay:     p.NameRichText(),
