@@ -120,7 +120,7 @@ func (o Optional[T]) StringFunc(fallback string, mapper func(v T) string) string
 	if !o.isPresent {
 		return fallback
 	}
-	return mapper(o.ValueOrZero())
+	return mapper(o.value)
 }
 
 // Value returns the value of an Optional and reports whether the value exists.
@@ -249,6 +249,14 @@ func EqualFunc[T any](a, b Optional[T], eq func(a2, b2 T) bool) bool {
 func Map[X, Y any](o Optional[X], fallback Y, mapper func(v X) Y) Y {
 	if !o.isPresent {
 		return fallback
+	}
+	return mapper(o.value)
+}
+
+// FlatMap returns another optional with is the result of applying mapper on o.
+func FlatMap[X, Y any](o Optional[X], mapper func(v X) Optional[Y]) Optional[Y] {
+	if !o.isPresent {
+		return Optional[Y]{}
 	}
 	return mapper(o.value)
 }

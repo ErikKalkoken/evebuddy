@@ -56,6 +56,7 @@ type assetRow struct {
 	regionName      string
 	searchTarget    string
 	tags            set.Set[string]
+	tagsDisplay     string
 	total           optional.Optional[float64]
 	totalDisplay    string
 	typeID          int64
@@ -206,6 +207,7 @@ const (
 	assetsColQuantity
 	assetsColTotal
 	assetsColOwner
+	assetsColTags
 )
 
 func newAssetSearchForCharacters(u *baseUI) *assetSearch {
@@ -217,7 +219,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[assetRow]{{
+	cols := []iwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
 		Label: "Item",
 		Width: 300,
@@ -283,17 +285,28 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, {
-		ID:    assetsColOwner,
-		Label: "Owner",
-		Width: columnWidthEntity,
-		Sort: func(a, b assetRow) int {
-			return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
-		},
-		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.owner.Name)
-		},
-	}})
+	}}
+	if !forCorporation {
+		cols = slices.Concat(cols, []iwidget.DataColumn[assetRow]{{
+			ID:    assetsColOwner,
+			Label: "Owner",
+			Width: columnWidthEntity,
+			Sort: func(a, b assetRow) int {
+				return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
+			},
+			Update: func(r assetRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.owner.Name)
+			},
+		}, {
+			ID:    assetsColTags,
+			Label: "Tags",
+			Width: columnWidthEntity,
+			Update: func(r assetRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.tagsDisplay)
+			},
+		}})
+	}
+	columns := iwidget.NewDataColumns(cols)
 	a := &assetSearch{
 		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
@@ -666,6 +679,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 		})
 		r.searchTarget = strings.ToLower(r.name)
 		r.tags = tagsPerCharacter[ca.CharacterID]
+		r.tagsDisplay = strings.Join(slices.Sorted(r.tags.All()), ", ")
 		rows = append(rows, r)
 	}
 	return rows, nil
