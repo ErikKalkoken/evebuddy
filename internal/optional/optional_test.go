@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -375,7 +376,56 @@ func TestEqualFunc(t *testing.T) {
 	}
 }
 
-func TestMapOrFallback(t *testing.T) {
+func TestFlatMap(t *testing.T) {
+	t.Run("should map present value to another optional", func(t *testing.T) {
+		// given
+		input := optional.New(42)
+		mapper := func(v int) optional.Optional[string] {
+			return optional.New("Value: " + strconv.Itoa(v))
+		}
+
+		// when
+		result := optional.FlatMap(input, mapper)
+
+		// then
+		assert.False(t, result.IsEmpty())
+		assert.Equal(t, "Value: 42", result.MustValue())
+	})
+
+	t.Run("should return empty optional when input is empty", func(t *testing.T) {
+		// given
+		input := optional.Optional[int]{}
+		mapper := func(v int) optional.Optional[string] {
+			return optional.New(strconv.Itoa(v))
+		}
+
+		// when
+		result := optional.FlatMap(input, mapper)
+
+		// then
+		assert.True(t, result.IsEmpty())
+	})
+
+	t.Run("should allow mapper to return empty optional", func(t *testing.T) {
+		// given
+		input := optional.New("invalid_number")
+		mapper := func(v string) optional.Optional[int] {
+			i, err := strconv.Atoi(v)
+			if err != nil {
+				return optional.Optional[int]{} // Return empty on error
+			}
+			return optional.New(i)
+		}
+
+		// when
+		result := optional.FlatMap(input, mapper)
+
+		// then
+		assert.True(t, result.IsEmpty(), "Result should be empty because string conversion failed")
+	})
+}
+
+func TestMap(t *testing.T) {
 	t.Run("should return applied value when set", func(t *testing.T) {
 		x := optional.New(12)
 		got := optional.Map(x, "nope", func(x int) string {
