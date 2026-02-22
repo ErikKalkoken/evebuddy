@@ -162,7 +162,7 @@ func newColonies(u *baseUI) *colonies {
 	}})
 	a := &colonies{
 		footer:       newLabelWithTruncation(),
-		columnSorter: iwidget.NewColumnSorter(columns, coloniesColPlanet, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(columns, coloniesColDue, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		u:            u,
