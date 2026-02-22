@@ -580,15 +580,15 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
 		isWatched:     c.IsTrainingWatched,
 		tags:          tags,
-		trainedSP:     c.TotalSP,
-		trainedSPDisplay: c.TotalSP.StringFunc("?", func(v int64) string {
+		trainedSP:     c.TrainedSP,
+		trainedSPDisplay: c.TrainedSP.StringFunc("?", func(v int64) string {
 			return humanize.Comma(v)
 		}),
 		unallocatedSP: c.UnallocatedSP,
 		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int64) string {
 			return humanize.Comma(v)
 		}),
-		totalSP: optional.Sum(c.TotalSP, c.UnallocatedSP),
+		totalSP: optional.Sum(c.TrainedSP, c.UnallocatedSP),
 	}
 	r.totalSPDisplay = r.totalSP.StringFunc("?", func(v int64) string {
 		return humanize.Comma(v)

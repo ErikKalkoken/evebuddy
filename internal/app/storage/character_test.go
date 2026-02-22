@@ -44,7 +44,7 @@ func TestCharacter(t *testing.T) {
 			xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
 			xassert.Equal(t, c1.Location, c2.Location)
 			xassert.Equal(t, c1.Ship, c2.Ship)
-			xassert.Equal(t, c1.TotalSP, c2.TotalSP)
+			xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
 			xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
 			xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 		}
@@ -161,7 +161,7 @@ func TestCharacterCreate(t *testing.T) {
 				xassert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
 				xassert.Equal(t, location, r.Location.MustValue())
 				xassert.Equal(t, ship, r.Ship.MustValue())
-				xassert.Equal(t, 123, r.TotalSP.ValueOrZero())
+				xassert.Equal(t, 123, r.TrainedSP.ValueOrZero())
 				xassert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
 				xassert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
 			}
@@ -230,7 +230,7 @@ func TestListCharacters(t *testing.T) {
 				xassert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
 				xassert.Equal(t, c1.Ship, c2.Ship)
 				xassert.Equal(t, c1.Location, c2.Location)
-				xassert.Equal(t, c1.TotalSP, c2.TotalSP)
+				xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
 				xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 				xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
 				xassert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
@@ -438,7 +438,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		if assert.NoError(t, err) {
 			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, totalSP, c2.TotalSP)
+				xassert.Equal(t, totalSP, c2.TrainedSP)
 				xassert.Equal(t, unallocatedSP, c2.UnallocatedSP)
 			}
 		}

@@ -514,7 +514,7 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		location:      c.Location,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
 		ship:          c.Ship,
-		skillpoints:   c.TotalSP,
+		skillpoints:   c.TrainedSP,
 		walletBalance: c.WalletBalance,
 	}
 	if el, ok := c.Location.Value(); ok {

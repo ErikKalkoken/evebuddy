@@ -366,8 +366,9 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		})
 	}
 
+	totalSP := optional.Sum(c.TrainedSP, c.UnallocatedSP)
 	top := fmt.Sprintf("%s Total SP (%s Unallocated)",
-		c.TotalSP.StringFunc("?", func(v int64) string {
+		totalSP.StringFunc("?", func(v int64) string {
 			return ihumanize.Comma(v)
 		}), c.UnallocatedSP.StringFunc("?", func(v int64) string {
 			return ihumanize.Comma(v)
