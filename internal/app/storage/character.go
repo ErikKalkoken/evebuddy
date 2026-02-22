@@ -335,7 +335,7 @@ func (st *Storage) characterFromDBModel(
 		IsTrainingWatched: character.IsTrainingWatched,
 		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
-		TotalSP:           optional.FromNullInt64(character.TotalSp),
+		TrainedSP:           optional.FromNullInt64(character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
 	}

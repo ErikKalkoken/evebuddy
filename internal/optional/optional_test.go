@@ -1,6 +1,7 @@
 package optional_test
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -242,6 +243,85 @@ func TestFromPointerOptional(t *testing.T) {
 
 	x = nil
 	xassert.Equal(t, optional.Optional[int]{}, optional.FromPtr(x))
+}
+
+func TestCompare(t *testing.T) {
+	empty := optional.Optional[int]{}
+	tests := []struct {
+		name     string
+		a        optional.Optional[int]
+		b        optional.Optional[int]
+		expected int
+	}{
+		{
+			name:     "both empty",
+			a:        empty,
+			b:        empty,
+			expected: 0,
+		},
+		{
+			name:     "left empty",
+			a:        empty,
+			b:        optional.New(10),
+			expected: -1,
+		},
+		{
+			name:     "right empty",
+			a:        optional.New(10),
+			b:        empty,
+			expected: 1,
+		},
+		{
+			name:     "both present - equal",
+			a:        optional.New(42),
+			b:        optional.New(42),
+			expected: 0,
+		},
+		{
+			name:     "both present - less than",
+			a:        optional.New(5),
+			b:        optional.New(10),
+			expected: -1,
+		},
+		{
+			name:     "both present - greater than",
+			a:        optional.New(100),
+			b:        optional.New(50),
+			expected: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := optional.Compare(tt.a, tt.b)
+			xassert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestCompareFunc(t *testing.T) {
+	empty := optional.Optional[int]{}
+
+	tests := []struct {
+		name     string
+		o1       optional.Optional[int]
+		o2       optional.Optional[int]
+		expected int
+	}{
+		{"Both empty", empty, empty, 0},
+		{"Left empty", empty, optional.New(10), -1},
+		{"Right empty", optional.New(10), empty, 1},
+		{"Both present - equal", optional.New(5), optional.New(5), 0},
+		{"Both present - left smaller", optional.New(1), optional.New(10), -1},
+		{"Both present - left larger", optional.New(100), optional.New(50), 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := optional.CompareFunc(tt.o1, tt.o2, cmp.Compare[int])
+			xassert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestEqual(t *testing.T) {

@@ -26,7 +26,7 @@ type Character struct {
 	LastLoginAt       optional.Optional[time.Time]
 	Location          optional.Optional[*EveLocation]
 	Ship              optional.Optional[*EveType]
-	TotalSP           optional.Optional[int64]
+	TrainedSP           optional.Optional[int64]
 	UnallocatedSP     optional.Optional[int64]
 	WalletBalance     optional.Optional[float64]
 	// Calculated fields

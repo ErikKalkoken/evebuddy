@@ -133,7 +133,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			c2, err := st.GetCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, 90000, c2.TotalSP.ValueOrZero())
+				xassert.Equal(t, 90000, c2.TrainedSP.ValueOrZero())
 			}
 			o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
 			if assert.NoError(t, err) {

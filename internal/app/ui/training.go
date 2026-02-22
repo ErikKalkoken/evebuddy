@@ -46,10 +46,12 @@ type trainingRow struct {
 	totalFinishDate            optional.Optional[time.Time]
 	totalRemainingCount        optional.Optional[int]
 	totalRemainingCountDisplay string
-	totalSP                    optional.Optional[int64]
-	totalSPDisplay             string
+	trainedSP                  optional.Optional[int64]
+	trainedSPDisplay           string
 	unallocatedSP              optional.Optional[int64]
 	unallocatedSPDisplay       string
+	totalSP                    optional.Optional[int64]
+	totalSPDisplay             string
 }
 
 func (r trainingRow) CharacterID() int64 {
@@ -131,8 +133,9 @@ const (
 	trainingColCurrentRemaining
 	trainingColQueuedCount
 	trainingColQueuedRemaining
-	trainingColSkillpoints
+	trainingColTrainedSP
 	trainingColUnallocatedSP
+	trainingColTotalSP
 )
 
 func newTraining(u *baseUI) *training {
@@ -200,7 +203,7 @@ func newTraining(u *baseUI) *training {
 				co.(*iwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
 			},
 			Sort: func(a, b trainingRow) int {
-				return cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
+				return optional.Compare(a.totalRemainingCount, b.totalRemainingCount)
 			},
 		}, {
 			ID:    trainingColQueuedRemaining,
@@ -209,23 +212,23 @@ func newTraining(u *baseUI) *training {
 				co.(*iwidget.RichText).SetWithText(r.totalRemainingTimeString())
 			},
 			Sort: func(a, b trainingRow) int {
-				return cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
+				return optional.Compare(a.totalRemainingTime(), b.totalRemainingTime())
 			},
 		}, {
-			ID:    trainingColSkillpoints,
-			Label: "SP",
+			ID:    trainingColTrainedSP,
+			Label: "Trained SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
+				co.(*iwidget.RichText).SetWithText(r.trainedSPDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 			},
 			Sort: func(a, b trainingRow) int {
-				return cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
+				return optional.Compare(a.trainedSP, b.trainedSP)
 			},
 		}, {
 			ID:    trainingColUnallocatedSP,
-			Label: "Unall.",
+			Label: "Unall. SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*iwidget.RichText).SetWithText(r.unallocatedSPDisplay, widget.RichTextStyle{
@@ -233,7 +236,19 @@ func newTraining(u *baseUI) *training {
 				})
 			},
 			Sort: func(a, b trainingRow) int {
-				return cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
+				return optional.Compare(a.unallocatedSP, b.unallocatedSP)
+			},
+		}, {
+			ID:    trainingColTotalSP,
+			Label: "Total SP",
+			Width: 100,
+			Update: func(r trainingRow, co fyne.CanvasObject) {
+				co.(*iwidget.RichText).SetWithText(r.totalSPDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
+			},
+			Sort: func(a, b trainingRow) int {
+				return optional.Compare(a.totalSP, b.totalSP)
 			},
 		}})
 	a := &training{
@@ -402,7 +417,8 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			queueRemaining.Refresh()
 
 			b3 := vbox[4].(*fyne.Container).Objects
-			b3[0].(*widget.Label).SetText(r.totalSPDisplay + " SP")
+			total := b3[0].(*widget.Label)
+			total.SetText(r.totalSPDisplay + " SP")
 			unallocated := b3[1].(*widget.Label)
 			if r.unallocatedSP.ValueOrZero() == 0 {
 				unallocated.Text = ""
@@ -565,15 +581,19 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
 		isWatched:     c.IsTrainingWatched,
 		tags:          tags,
-		totalSP:       c.TotalSP,
-		totalSPDisplay: c.TotalSP.StringFunc("?", func(v int64) string {
+		trainedSP:     c.TrainedSP,
+		trainedSPDisplay: c.TrainedSP.StringFunc("?", func(v int64) string {
 			return humanize.Comma(v)
 		}),
 		unallocatedSP: c.UnallocatedSP,
 		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int64) string {
 			return humanize.Comma(v)
 		}),
+		totalSP: optional.Sum(c.TrainedSP, c.UnallocatedSP),
 	}
+	r.totalSPDisplay = r.totalSP.StringFunc("?", func(v int64) string {
+		return humanize.Comma(v)
+	})
 	queue := app.NewCharacterSkillqueue()
 	if err := queue.Update(ctx, a.u.cs, c.ID); err != nil {
 		return z, err

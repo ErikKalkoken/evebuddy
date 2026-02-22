@@ -235,7 +235,7 @@ func (a *characterSheet) update(ctx context.Context) {
 		}
 	})
 	fyne.Do(func() {
-		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TotalSP, "?"))
+		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TrainedSP, "?"))
 		v := optional.Sum(c.AssetValue, c.WalletBalance)
 		a.wealth.SetText(v.StringFunc("?", func(v float64) string {
 			return humanize.Comma(int64(v))
