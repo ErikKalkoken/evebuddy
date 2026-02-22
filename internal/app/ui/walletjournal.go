@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -140,7 +139,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Label: "Amount",
 		Width: 200,
 		Sort: func(a, b walletJournalRow) int {
-			return cmp.Compare(a.amount.ValueOrZero(), b.amount.ValueOrZero())
+			return optional.Compare(a.amount, b.amount)
 		},
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).Set(r.amountDisplay)

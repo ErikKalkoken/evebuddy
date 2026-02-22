@@ -4,6 +4,7 @@
 package optional
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -172,6 +173,38 @@ func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
 	return New(Y(o.value))
 }
 
+// Compare compares the optional a with b.
+// If a is less then b, it returns -1;
+// if a is greater then b, it returns +1;
+// if they're the same, it returns 0;
+// An empty optional is less then a non-empty optional.
+func Compare[T cmp.Ordered](a, b Optional[T]) int {
+	if !a.isPresent && !b.isPresent {
+		return 0
+	}
+	if !a.isPresent {
+		return -1
+	}
+	if !b.isPresent {
+		return 1
+	}
+	return cmp.Compare(a.value, b.value)
+}
+
+// CompareFunc compares the optional a with b by applying the compare function.
+func CompareFunc[T any](a, b Optional[T], comparer func(T, T) int) int {
+	if !a.isPresent && !b.isPresent {
+		return 0
+	}
+	if !a.isPresent {
+		return -1
+	}
+	if !b.isPresent {
+		return 1
+	}
+	return comparer(a.value, b.value)
+}
+
 // Equal reports whether two optionals with comparable values are equal.
 func Equal[T comparable](a, b Optional[T]) bool {
 	if a.isPresent != b.isPresent {
@@ -211,6 +244,15 @@ func EqualFunc[T any](a, b Optional[T], eq func(a2, b2 T) bool) bool {
 	return eq(a.value, b.value)
 }
 
+// Map returns the result of applying mapper on the value of o
+// or fallback if o is empty.
+func Map[X, Y any](o Optional[X], fallback Y, mapper func(v X) Y) Y {
+	if !o.isPresent {
+		return fallback
+	}
+	return mapper(o.value)
+}
+
 // Sum returns the sum of values v.
 // Empty values are added with their zero value (e.g. 0).
 // When all values are empty it returns an empty value.
@@ -227,13 +269,4 @@ func Sum[T Numeric](v ...Optional[T]) Optional[T] {
 		return Optional[T]{}
 	}
 	return New(s)
-}
-
-// Map returns the result of applying mapper on the value of o
-// or fallback if o is empty.
-func Map[X, Y any](o Optional[X], fallback Y, mapper func(v X) Y) Y {
-	if !o.isPresent {
-		return fallback
-	}
-	return mapper(o.value)
 }

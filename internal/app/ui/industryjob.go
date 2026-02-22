@@ -199,7 +199,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Label: "Location",
 		Width: columnWidthLocation,
 		Sort: func(a, b industryJobRow) int {
-			return strings.Compare(a.location.Name.ValueOrZero(), b.location.Name.ValueOrZero())
+			return optional.Compare(a.location.Name, b.location.Name)
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.location.Name.ValueOrZero())

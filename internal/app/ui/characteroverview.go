@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -122,7 +121,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		ID:    overviewColMail,
 		Label: "Unread",
 		Sort: func(a, b characterOverviewRow) int {
-			return cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
+			return optional.Compare(a.unreadCount, b.unreadCount)
 		},
 	}, {
 		ID:    overviewColRegion,
@@ -134,7 +133,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		ID:    overviewColSkillpoints,
 		Label: "Skillpoints",
 		Sort: func(a, b characterOverviewRow) int {
-			return cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
+			return optional.Compare(a.skillpoints, b.skillpoints)
 		},
 	}, {
 		ID:    overviewColSolarSystem,
@@ -146,7 +145,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		ID:    overviewColWallet,
 		Label: "Wallet",
 		Sort: func(a, b characterOverviewRow) int {
-			return cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
+			return optional.Compare(a.walletBalance, b.walletBalance)
 		},
 	}})
 

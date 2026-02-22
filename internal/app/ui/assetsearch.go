@@ -276,7 +276,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		Label: "Total",
 		Width: 150,
 		Sort: func(a, b assetRow) int {
-			return cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
+			return optional.Compare(a.total, b.total)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
