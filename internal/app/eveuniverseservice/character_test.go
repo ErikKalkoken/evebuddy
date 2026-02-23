@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -34,9 +35,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		x1, changed, err := s.GetOrCreateCharacterESI(ctx, c.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 		xassert.Equal(t, c.ID, x1.ID)
 	})
@@ -73,9 +72,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		x1, changed, err := s.GetOrCreateCharacterESI(ctx, characterID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		xassert.Empty(t, x1.Alliance)
 		xassert.Empty(t, x1.Faction)
@@ -89,9 +86,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		assert.Empty(t, x1.Title)
 		assert.InDelta(t, -9.9, x1.SecurityStatus.ValueOrZero(), 0.01)
 		x2, err := st.GetEveCharacter(ctx, characterID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should fetch full character from ESI and create it", func(t *testing.T) {
@@ -135,9 +130,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		x1, changed, err := s.GetOrCreateCharacterESI(ctx, characterID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		xassert.Equal(t, characterID, x1.ID)
 		xassert.Equal(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
@@ -151,9 +144,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Equal(t, "All round pretty awesome guy", x1.Title.ValueOrZero())
 		assert.InDelta(t, -9.9, x1.SecurityStatus.ValueOrZero(), 0.01)
 		x2, err := st.GetEveCharacter(ctx, characterID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
 }
@@ -199,9 +190,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, characterID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		xassert.Empty(t, x1.Alliance)
 		xassert.Empty(t, x1.Faction)
@@ -215,9 +204,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		assert.Empty(t, x1.Title)
 		assert.InDelta(t, -9.9, x1.SecurityStatus.ValueOrZero(), 0.01)
 		x2, err := st.GetEveCharacter(ctx, characterID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should update existing character from ESI", func(t *testing.T) {
@@ -256,9 +243,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		xassert.Equal(t, alliance, x1.Alliance.MustValue())
 		xassert.Empty(t, x1.Faction)
@@ -267,9 +252,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Equal(t, "super chad", x1.Title.ValueOrZero())
 		assert.InDelta(t, -9.9, x1.SecurityStatus.ValueOrZero(), 0.01)
 		x2, err := st.GetEveCharacter(ctx, character.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, x1.Equal(x2), "got %q, wanted %q", x1, x2)
 	})
 	t.Run("should report when character was not changed", func(t *testing.T) {
@@ -307,9 +290,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		// when
 		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 	})
 	t.Run("should report specific error when character does not exist on ESI", func(t *testing.T) {
@@ -326,6 +307,80 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		_, _, err := s.UpdateOrCreateCharacterESI(ctx, 42)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("should abort when there is a mismatch in the response", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		const characterID = 95465499
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		factory.CreateEveRace(app.EveRace{ID: 2})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/characters/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"corporation_id":  109299958,
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   666,
+					"corporation_id": 109299958,
+				}}),
+		)
+		// when
+		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, characterID)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should report error when there is more then one response", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		const characterID = 95465499
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		factory.CreateEveRace(app.EveRace{ID: 2})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/characters/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"corporation_id":  109299958,
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"character_id":   characterID,
+				"corporation_id": 109299958,
+			}, {
+				"character_id":   666,
+				"corporation_id": 109299958,
+			}}),
+		)
+		// when
+		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, characterID)
+		// then
+		assert.Error(t, err)
+		assert.False(t, changed)
 	})
 }
 
@@ -375,15 +430,11 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		// when
 		got, err := s.UpdateAllCharactersESI(ctx)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](characterID)
 		xassert.Equal(t, want, got)
 		ec2, err := st.GetEveCharacter(ctx, characterID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, "CCP Bartender", ec2.Name)
 		xassert.Equal(t, alliance, ec2.Alliance.MustValue())
 		xassert.Equal(t, corporation, ec2.Corporation)
@@ -391,9 +442,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		assert.InDelta(t, -9.9, ec2.SecurityStatus.ValueOrZero(), 0.01)
 		xassert.Equal(t, "All round pretty awesome guy", ec2.Title.ValueOrZero())
 		ee, err := st.GetEveEntity(ctx, characterID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, "CCP Bartender", ee.Name)
 		xassert.Equal(t, app.EveEntityCharacter, ee.Category)
 	})
@@ -414,9 +463,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		// when
 		got, err := s.UpdateAllCharactersESI(ctx)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](characterID)
 		xassert.Equal(t, want, got)
 		_, err2 := st.GetEveCharacter(ctx, characterID)
