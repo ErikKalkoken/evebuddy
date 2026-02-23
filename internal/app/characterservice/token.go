@@ -132,24 +132,33 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 }
 
 type tokenSource struct {
-	ensureValid func(context.Context, *app.CharacterToken) (bool, error)
+	refresher func(context.Context, *app.CharacterToken) (bool, error)
 
 	sfg   singleflight.Group
 	token *app.CharacterToken
 }
 
-func newTokenSource(token *app.CharacterToken, ensureValid func(context.Context, *app.CharacterToken) (bool, error)) *tokenSource {
+func newTokenSource(token *app.CharacterToken, refresher func(context.Context, *app.CharacterToken) (bool, error)) *tokenSource {
+	if token == nil {
+		panic("Missing token")
+	}
+	if refresher == nil {
+		panic("Missing refresher func")
+	}
 	ts := &tokenSource{
-		token:       token,
-		ensureValid: ensureValid,
+		token:     token,
+		refresher: refresher,
 	}
 	return ts
 }
 
 func (ts *tokenSource) Token() (*oauth2.Token, error) {
+	if ts.token == nil {
+		return nil, fmt.Errorf("tokenSource: no token defined")
+	}
 	o, err, _ := xsingleflight.Do(&ts.sfg, "KEY", func() (*oauth2.Token, error) {
 		if time.Now().After(ts.token.ExpiresAt) {
-			_, err := ts.ensureValid(context.Background(), ts.token)
+			_, err := ts.refresher(context.Background(), ts.token)
 			if err != nil {
 				return nil, err
 			}
