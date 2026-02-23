@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -244,7 +245,7 @@ func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context
 }
 
 func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int64) (*app.EveRegion, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRegionESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRegionESI-%d", id), func() (*app.EveRegion, error) {
 		o1, err := s.st.GetEveRegion(ctx, id)
 		if err == nil {
 			return o1, err
@@ -270,11 +271,11 @@ func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int64)
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveRegion), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id int64) (*app.EveConstellation, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateConstellationESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateConstellationESI-%d", id), func() (*app.EveConstellation, error) {
 		o, err := s.st.GetEveConstellation(ctx, id)
 		if err == nil {
 			return o, err
@@ -303,11 +304,11 @@ func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveConstellation), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateSolarSystemESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateSolarSystemESI-%d", id), func() (*app.EveSolarSystem, error) {
 		o, err := s.st.GetEveSolarSystem(ctx, id)
 		if err == nil {
 			return o, err
@@ -337,11 +338,11 @@ func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id i
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveSolarSystem), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreatePlanetESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreatePlanetESI-%d", id), func() (*app.EvePlanet, error) {
 		o, err := s.st.GetEvePlanet(ctx, id)
 		if err == nil {
 			return o, err
@@ -375,11 +376,11 @@ func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EvePlanet), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateMoonESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateMoonESI-%d", id), func() (*app.EveMoon, error) {
 		o, err := s.st.GetEveMoon(ctx, id)
 		if err == nil {
 			return o, err
@@ -408,7 +409,7 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int64) (
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveMoon), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int64) (int64, error) {

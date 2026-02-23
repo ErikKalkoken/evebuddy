@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // HasSection reports whether a section exists at all for a character.
@@ -99,14 +100,13 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.Section, arg.CharacterID)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
+	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
 		s.recordUpdateFailed(ctx, arg, err)
 		return false, fmt.Errorf("update character section from ESI for %+v: %w", arg, err)
 	}
-	hasChanged := x.(bool)
 	slog.Info(
 		"Character section update completed",
 		"characterID", arg.CharacterID,

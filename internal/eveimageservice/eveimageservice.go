@@ -13,6 +13,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // cache timeouts per image category
@@ -51,7 +53,7 @@ type EveImageService struct {
 	cache      CacheService
 	httpClient *http.Client
 	isOffline  bool
-	sfg        *singleflight.Group
+	sfg        singleflight.Group
 }
 
 // New returns a new EveImageService.
@@ -67,7 +69,6 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 		cache:      cache,
 		httpClient: httpClient,
 		isOffline:  isOffline,
-		sfg:        new(singleflight.Group),
 	}
 	return s
 }
@@ -301,7 +302,7 @@ func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
 	}
 	arg.setter(resourceBlank32Png)
 	go func() {
-		x, err, _ := s.sfg.Do(key, func() (any, error) {
+		dat, err, _ := xsingleflight.Do(&s.sfg, key, func() ([]byte, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
 			if err != nil {
 				return nil, err
@@ -316,7 +317,6 @@ func (s *EveImageService) loadImageAsync(arg loadImageAsyncParams) {
 			})
 			return
 		}
-		dat = x.([]byte)
 		fyne.Do(func() {
 			arg.setter(fyne.NewStaticResource(key, dat))
 		})
@@ -332,7 +332,7 @@ func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 		if s.isOffline {
 			return resourceQuestionmark32Png, nil
 		}
-		x, err, _ := s.sfg.Do(key, func() (any, error) {
+		v, err, _ := xsingleflight.Do(&s.sfg, key, func() ([]byte, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
 			if err != nil {
 				return nil, err
@@ -343,7 +343,7 @@ func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 		if err != nil {
 			return nil, err
 		}
-		dat = x.([]byte)
+		dat = v
 	}
 	r := fyne.NewStaticResource(key, dat)
 	return r, nil

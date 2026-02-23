@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
@@ -40,7 +41,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 	} else if err != nil {
 		return nil, false, err
 	}
-	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
+	c2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (*app.EveCharacter, error) {
 		ec, r, err := s.esiClient.CharacterAPI.GetCharactersCharacterId(ctx, characterID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
@@ -100,8 +101,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 	if err != nil {
 		return nil, false, fmt.Errorf("UpdateOrCreateCharacterESI %d: %w", characterID, err)
 	}
-	c2, ok := x.(*app.EveCharacter)
-	if !ok {
+	if c2 == nil {
 		return nil, false, nil
 	}
 	changed := c1 == nil || c1.Hash() != c2.Hash()

@@ -10,27 +10,27 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // ESIStatusService provides information about the current status of the ESI API.
 type ESIStatusService struct {
 	esiClient *esi.APIClient
-	sfg       *singleflight.Group
+	sfg       singleflight.Group
 }
 
 // New creates and returns a new instance of an ESI service.
 func New(client *esi.APIClient) *ESIStatusService {
 	ess := &ESIStatusService{
 		esiClient: client,
-		sfg:       new(singleflight.Group),
 	}
 	return ess
 }
 
-func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
-	x, err, _ := ess.sfg.Do("Fetch", func() (any, error) {
+func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-		status, _, err := ess.esiClient.StatusAPI.GetStatus(ctx).Execute()
+		status, _, err := s.esiClient.StatusAPI.GetStatus(ctx).Execute()
 		if err != nil {
 			if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
 				msg := swaggerErr.Error()
@@ -47,7 +47,7 @@ func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) 
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.ESIStatus), nil
+	return o, nil
 }
 
 // func extractErrorMessage(err esi.GenericOpenAPIError) string {
@@ -69,12 +69,12 @@ func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) 
 // 	return fmt.Sprintf("%s: %s", err.Error(), detail)
 // }
 
-func (ess *ESIStatusService) DailyDowntime() string {
+func (s *ESIStatusService) DailyDowntime() string {
 	const timeOnly = "15:04"
 	start, finish := xgoesi.DailyDowntime()
 	return fmt.Sprintf("%s - %s", start.Format(timeOnly), finish.Format(timeOnly))
 }
 
-func (ess *ESIStatusService) IsDailyDowntime() bool {
+func (s *ESIStatusService) IsDailyDowntime() bool {
 	return xgoesi.IsDailyDowntime()
 }

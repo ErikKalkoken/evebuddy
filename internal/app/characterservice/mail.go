@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -224,7 +225,7 @@ func (s *CharacterService) UpdateMailBodyESI(ctx context.Context, characterID in
 }
 
 func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID int64, mailID int64) (string, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBodyESI-%d-%d", characterID, mailID), func() (any, error) {
+	v, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateMailBodyESI-%d-%d", characterID, mailID), func() (string, error) {
 		ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 		if err != nil {
 			return "", err
@@ -245,7 +246,7 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 	if err != nil {
 		return "", err
 	}
-	return x.(string), nil
+	return v, nil
 }
 
 // DownloadMissingMailBodies downloads missing mail bodies for a character

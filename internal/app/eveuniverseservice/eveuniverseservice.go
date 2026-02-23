@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
@@ -26,7 +27,7 @@ type EveUniverseService struct {
 	concurrencyLimit int
 	esiClient        *esi.APIClient
 	scs              *statuscacheservice.StatusCacheService
-	sfg              *singleflight.Group
+	sfg              singleflight.Group
 	st               *storage.Storage
 }
 
@@ -46,7 +47,6 @@ func New(arg Params) *EveUniverseService {
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
 		scs:              arg.StatusCacheService,
-		sfg:              new(singleflight.Group),
 		st:               arg.Storage,
 		Now: func() time.Time {
 			return time.Now().UTC()
@@ -58,7 +58,7 @@ func New(arg Params) *EveUniverseService {
 	return s
 }
 func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (*app.EveRace, error) {
 		o, err := s.st.GetEveRace(ctx, id)
 		if err == nil {
 			return o, err
@@ -89,11 +89,11 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveRace), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int64) (*app.EveSchematic, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (*app.EveSchematic, error) {
 		o, err := s.st.GetEveSchematic(ctx, id)
 		if err == nil {
 			return o, err
@@ -118,7 +118,7 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveSchematic), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {

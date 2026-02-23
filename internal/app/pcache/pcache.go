@@ -15,11 +15,12 @@ import (
 )
 
 // PCache is a persistent cache.
-// It stores all items in the provided storage and also keeps a copy in a synced memory cache for faster retrival.
+// It stores all items in the provided storage and also keeps a copy
+// in a synced memory cache for faster retrieval.
 type PCache struct {
 	closeC chan struct{}
 	mc     *memcache.Cache
-	sfg    *singleflight.Group
+	sfg    singleflight.Group
 	st     *storage.Storage
 }
 
@@ -34,7 +35,6 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	c := &PCache{
 		closeC: make(chan struct{}),
 		mc:     memcache.NewWithTimeout(0),
-		sfg:    new(singleflight.Group),
 		st:     st,
 	}
 	if cleanUpTimeout > 0 {

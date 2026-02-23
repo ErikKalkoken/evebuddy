@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -177,7 +178,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
+	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
@@ -196,7 +197,6 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		s.scs.SetCorporationSection(o)
 		return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
 	}
-	hasChanged := x.(bool)
 	slog.Info(
 		"Corporation section update completed",
 		"corporationID", arg.CorporationID,
