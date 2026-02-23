@@ -99,7 +99,8 @@ func (n *Navigator) showNavBarWhenRequired() {
 	}
 	v, err := n.hideNavBar.Peek()
 	if err != nil {
-		panic(err)
+		fyne.LogError("showNavBarWhenRequired: peek failed", err)
+		return
 	}
 	if !v {
 		n.NavBar.ShowBar()

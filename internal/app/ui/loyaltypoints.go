@@ -269,7 +269,8 @@ func (a *loyaltyPoints) filterTreeAsync() {
 		for _, c := range corporations {
 			err := td.Add(nil, c, true)
 			if err != nil {
-				panic(err)
+				slog.Error("loyaltypoints: Add corporation", "corporation", c, "error", err)
+				continue
 			}
 			factionOptions = append(factionOptions, c.factionName)
 			slices.SortFunc(data2[c], func(a, b *loyaltyPointsNode) int {
@@ -278,7 +279,8 @@ func (a *loyaltyPoints) filterTreeAsync() {
 			for _, o := range data2[c] {
 				err := td.Add(c, o, false)
 				if err != nil {
-					panic(err)
+					slog.Error("loyaltypoints: Add character", "character", o, "error", err)
+					continue
 				}
 				characterOptions = append(characterOptions, o.characterName)
 				tags.AddSeq(o.tags.All())
