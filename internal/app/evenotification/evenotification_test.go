@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -29,13 +30,10 @@ type notification struct {
 
 func TestShouldRenderAllNotifications(t *testing.T) {
 	data, err := os.ReadFile("testdata/notifications.json")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	notifications := make([]notification, 0)
-	if err := json.Unmarshal(data, &notifications); err != nil {
-		panic(err)
-	}
+	err = json.Unmarshal(data, &notifications)
+	require.NoError(t, err)
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
@@ -135,13 +133,10 @@ func TestRenderESIErrorHandling(t *testing.T) {
 
 func TestEntityIDsSupportedNotifications(t *testing.T) {
 	data, err := os.ReadFile("testdata/notifications.json")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	notifications := make([]notification, 0)
-	if err := json.Unmarshal(data, &notifications); err != nil {
-		panic(err)
-	}
+	err = json.Unmarshal(data, &notifications)
+	require.NoError(t, err)
 	notifTypes := app.NotificationTypesSupported()
 	en := evenotification.New(nil)
 	for _, n := range notifications {

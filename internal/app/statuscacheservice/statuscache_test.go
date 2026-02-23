@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -559,9 +560,8 @@ func TestCharacter(t *testing.T) {
 		sc.Clear()
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
-		if err := sc.UpdateCharacters(ctx); err != nil {
-			panic(err)
-		}
+		err := sc.UpdateCharacters(ctx)
+		require.NoError(t, err)
 		// when
 		got := sc.ListCharacterIDs()
 		// then

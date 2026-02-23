@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -35,12 +36,11 @@ func TestCharacterRole(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
-			panic(err)
-		}
+		err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager))
+		require.NoError(t, err)
 		want := set.Of(app.RoleDiplomat, app.RoleBrandManager)
 		// when
-		err := st.UpdateCharacterRoles(ctx, c.ID, want)
+		err = st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
@@ -53,12 +53,11 @@ func TestCharacterRole(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
-			panic(err)
-		}
+		err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager))
+		require.NoError(t, err)
 		want := set.Of(app.RoleDiplomat)
 		// when
-		err := st.UpdateCharacterRoles(ctx, c.ID, want)
+		err = st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
