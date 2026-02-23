@@ -54,15 +54,15 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		}
 		affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		if len(affiliations) != 1 {
-			return false, fmt.Errorf("affiliations mismatch")
+			return nil, fmt.Errorf("affiliations mismatch")
 		}
 		af := affiliations[0]
 		if af.CharacterId != characterID {
 			slog.Warn("affiliations mismatch", "characterID", characterID, "affiliations", affiliations)
-			return false, nil // FIXME: Temporary workaround
+			return nil, nil // FIXME: Temporary workaround
 		}
 		arg := storage.CreateEveCharacterParams{
 			AllianceID:     optional.FromPtr(af.AllianceId),
@@ -100,7 +100,10 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 	if err != nil {
 		return nil, false, fmt.Errorf("UpdateOrCreateCharacterESI %d: %w", characterID, err)
 	}
-	c2 := x.(*app.EveCharacter)
+	c2, ok := x.(*app.EveCharacter)
+	if !ok {
+		return nil, false, nil
+	}
 	changed := c1 == nil || c1.Hash() != c2.Hash()
 	slog.Info("Updated eve character", "ID", characterID, "changed", changed)
 	if c1 != nil && changed && c1.Name != c2.Name {
