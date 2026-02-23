@@ -26,7 +26,7 @@ type EveUniverseService struct {
 	concurrencyLimit int
 	esiClient        *esi.APIClient
 	scs              *statuscacheservice.StatusCacheService
-	sfg              *singleflight.Group
+	sfg              singleflight.Group
 	st               *storage.Storage
 }
 
@@ -46,7 +46,6 @@ func New(arg Params) *EveUniverseService {
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
 		scs:              arg.StatusCacheService,
-		sfg:              new(singleflight.Group),
 		st:               arg.Storage,
 		Now: func() time.Time {
 			return time.Now().UTC()

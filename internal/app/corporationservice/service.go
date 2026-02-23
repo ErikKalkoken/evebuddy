@@ -35,7 +35,7 @@ type CorporationService struct {
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
-	sfg              *singleflight.Group
+	sfg              singleflight.Group
 	st               *storage.Storage
 }
 
@@ -64,7 +64,6 @@ func New(arg Params) *CorporationService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
-		sfg:              new(singleflight.Group),
 		st:               arg.Storage,
 	}
 	if arg.HTTPClient == nil {

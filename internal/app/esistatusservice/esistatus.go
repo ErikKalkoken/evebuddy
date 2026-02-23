@@ -15,14 +15,13 @@ import (
 // ESIStatusService provides information about the current status of the ESI API.
 type ESIStatusService struct {
 	esiClient *esi.APIClient
-	sfg       *singleflight.Group
+	sfg       singleflight.Group
 }
 
 // New creates and returns a new instance of an ESI service.
 func New(client *esi.APIClient) *ESIStatusService {
 	ess := &ESIStatusService{
 		esiClient: client,
-		sfg:       new(singleflight.Group),
 	}
 	return ess
 }

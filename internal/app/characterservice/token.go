@@ -134,7 +134,7 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 type tokenSource struct {
 	ensureValid func(context.Context, *app.CharacterToken) (bool, error)
 
-	sfg   *singleflight.Group
+	sfg   singleflight.Group
 	token *app.CharacterToken
 }
 
@@ -142,7 +142,6 @@ func newTokenSource(token *app.CharacterToken, ensureValid func(context.Context,
 	ts := &tokenSource{
 		token:       token,
 		ensureValid: ensureValid,
-		sfg:         new(singleflight.Group),
 	}
 	return ts
 }

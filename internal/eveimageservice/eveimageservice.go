@@ -51,7 +51,7 @@ type EveImageService struct {
 	cache      CacheService
 	httpClient *http.Client
 	isOffline  bool
-	sfg        *singleflight.Group
+	sfg        singleflight.Group
 }
 
 // New returns a new EveImageService.
@@ -67,7 +67,6 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 		cache:      cache,
 		httpClient: httpClient,
 		isOffline:  isOffline,
-		sfg:        new(singleflight.Group),
 	}
 	return s
 }

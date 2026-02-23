@@ -41,7 +41,7 @@ type CharacterService struct {
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
-	sfg              *singleflight.Group
+	sfg              singleflight.Group
 	sig              *singleinstance.Group
 	st               *storage.Storage
 }
@@ -73,7 +73,6 @@ func New(arg Params) *CharacterService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
-		sfg:              new(singleflight.Group),
 		sig:              singleinstance.NewGroup(),
 		st:               arg.Storage,
 	}

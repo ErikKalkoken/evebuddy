@@ -50,13 +50,12 @@ type DesktopUI struct {
 	*baseUI
 
 	shortcuts map[string]shortcutDef
-	sfg       *singleflight.Group
+	sfg       singleflight.Group
 }
 
 // NewDesktopUI build the UI and returns it.
 func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u := &DesktopUI{
-		sfg:    new(singleflight.Group),
 		baseUI: bu,
 	}
 	deskApp, ok := u.App().(desktop.App)
