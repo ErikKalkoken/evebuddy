@@ -19,6 +19,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
@@ -46,7 +47,7 @@ func (s *EveUniverseService) GetType(ctx context.Context, id int64) (*app.EveTyp
 }
 
 func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int64) (*app.EveCategory, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCategoryESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateCategoryESI-%d", id), func() (*app.EveCategory, error) {
 		o1, err := s.st.GetEveCategory(ctx, id)
 		if err == nil {
 			return o1, err
@@ -72,11 +73,11 @@ func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int6
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveCategory), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) (*app.EveGroup, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateGroupESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateGroupESI-%d", id), func() (*app.EveGroup, error) {
 		o, err := s.st.GetEveGroup(ctx, id)
 		if err == nil {
 			return o, err
@@ -106,7 +107,7 @@ func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) 
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveGroup), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) ListGroupsForCategory(ctx context.Context, categoryID int64) ([]*app.EveGroup, error) {
@@ -114,7 +115,7 @@ func (s *EveUniverseService) ListGroupsForCategory(ctx context.Context, category
 }
 
 func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (*app.EveType, error) {
 		o, err := s.st.GetEveType(ctx, id)
 		if err == nil {
 			return o, err
@@ -194,7 +195,7 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveType), nil
+	return o, nil
 }
 
 func (s *EveUniverseService) ListTypeIDs(ctx context.Context) (set.Set[int64], error) {
@@ -286,7 +287,7 @@ func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int64) (*
 }
 
 func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int64) (*app.EveDogmaAttribute, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("createDogmaAttributeFromESI-%d", id), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("createDogmaAttributeFromESI-%d", id), func() (*app.EveDogmaAttribute, error) {
 		o1, err := s.st.GetEveDogmaAttribute(ctx, id)
 		if err == nil {
 			return o1, err
@@ -323,7 +324,7 @@ func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, i
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveDogmaAttribute), nil
+	return o, nil
 }
 
 // FormatDogmaValue returns a formatted value.
@@ -449,7 +450,7 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int64) (opt
 // updateMarketPricesESI updates all market prices from ESI and reports which have changed.
 // Will only reports changes on prices for known types.
 func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
-	x, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
+	v, err, _ := xsingleflight.Do(&s.sfg, "updateMarketPricesESI", func() (set.Set[int64], error) {
 		prices, _, err := s.esiClient.MarketAPI.GetMarketsPrices(ctx).Execute()
 		if err != nil {
 			return set.Set[int64]{}, err
@@ -495,7 +496,7 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 		}
 		return changed, nil
 	})
-	return x.(set.Set[int64]), err
+	return v, err
 }
 
 // updateTypes updates all existing type from ESI

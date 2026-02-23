@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -95,7 +96,7 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 		return false, nil
 	}
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-	x, err, _ := s.sfg.Do(fmt.Sprintf("ensureValidToken-%d", token.ID), func() (any, error) {
+	token2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("ensureValidToken-%d", token.ID), func() (*app.CharacterToken, error) {
 		token2, err := s.st.GetCharacterToken(ctx, token.CharacterID)
 		if err != nil {
 			return nil, err
@@ -126,7 +127,6 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 	if err != nil {
 		return false, err
 	}
-	token2 := x.(*app.CharacterToken)
 	*token = *token2
 	return true, err
 }
@@ -147,7 +147,7 @@ func newTokenSource(token *app.CharacterToken, ensureValid func(context.Context,
 }
 
 func (ts *tokenSource) Token() (*oauth2.Token, error) {
-	x, err, _ := ts.sfg.Do("KEY", func() (any, error) {
+	o, err, _ := xsingleflight.Do(&ts.sfg, "KEY", func() (*oauth2.Token, error) {
 		if time.Now().After(ts.token.ExpiresAt) {
 			_, err := ts.ensureValid(context.Background(), ts.token)
 			if err != nil {
@@ -156,5 +156,5 @@ func (ts *tokenSource) Token() (*oauth2.Token, error) {
 		}
 		return ts.token.OauthToken(), nil
 	})
-	return x.(*oauth2.Token), err
+	return o, err
 }

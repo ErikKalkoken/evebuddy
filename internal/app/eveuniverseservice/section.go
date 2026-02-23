@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // HasSection reports whether a section exists at all.
@@ -59,7 +60,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	default:
 		slog.Warn("encountered unknown section", "section", arg.Section)
 	}
-	x, err, _ := s.sfg.Do(fmt.Sprintf("update-general-section-%s", arg.Section), func() (any, error) {
+	changed, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("update-general-section-%s", arg.Section), func() (set.Set[int64], error) {
 		slog.Debug("Started updating eveuniverse section", "section", arg.Section)
 		startedAt := optional.New(time.Now())
 		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
@@ -67,7 +68,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			StartedAt: &startedAt,
 		})
 		if err != nil {
-			return false, err
+			return set.Set[int64]{}, err
 		}
 		s.scs.SetGeneralSection(o)
 		changed, err := f(ctx)
@@ -89,7 +90,6 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		s.scs.SetGeneralSection(o)
 		return zero, err
 	}
-	changed := x.(set.Set[int64])
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}

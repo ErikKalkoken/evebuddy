@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evesde"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -119,7 +120,7 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 }
 
 func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", corporationID), func() (any, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", corporationID), func() (*app.EveCorporation, error) {
 		r, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationId(ctx, corporationID).Execute()
 		if err != nil {
 			return nil, err
@@ -176,7 +177,7 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	return x.(*app.EveCorporation), nil
+	return o, nil
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.
