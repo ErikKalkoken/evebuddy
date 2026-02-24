@@ -63,7 +63,7 @@
                 "required": true,
                 "schema": {
                     "enum": [
-                        "2025-11-06"
+                        "2025-12-16"
                     ],
                     "format": "date",
                     "type": "string"
@@ -97,6 +97,47 @@
             }
         },
         "schemas": {
+            "AllianceDetail": {
+                "properties": {
+                    "creator_corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Alliance's creator corporation ID"
+                    },
+                    "creator_id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Alliance's creator ID"
+                    },
+                    "date_founded": {
+                        "description": "Alliance's founding date",
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "executor_corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Alliance's executor corporation ID"
+                    },
+                    "faction_id": {
+                        "$ref": "#/components/schemas/FactionID",
+                        "description": "Alliance's faction ID"
+                    },
+                    "name": {
+                        "description": "Alliance's name",
+                        "type": "string"
+                    },
+                    "ticker": {
+                        "description": "Alliance's ticker",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "creator_corporation_id",
+                    "creator_id",
+                    "date_founded",
+                    "name",
+                    "ticker"
+                ],
+                "type": "object"
+            },
             "AllianceID": {
                 "examples": [
                     99000001
@@ -171,50 +212,6 @@
                 "type": "array",
                 "uniqueItems": true
             },
-            "AlliancesAllianceIdGet": {
-                "properties": {
-                    "creator_corporation_id": {
-                        "description": "ID of the corporation that created the alliance",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "creator_id": {
-                        "description": "ID of the character that created the alliance",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "date_founded": {
-                        "format": "date-time",
-                        "type": "string"
-                    },
-                    "executor_corporation_id": {
-                        "description": "the executor corporation ID, if this alliance is not closed",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "faction_id": {
-                        "description": "Faction ID this alliance is fighting for, if this alliance is enlisted in factional warfare",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "name": {
-                        "description": "the full name of the alliance",
-                        "type": "string"
-                    },
-                    "ticker": {
-                        "description": "the short name of the alliance",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "name",
-                    "creator_id",
-                    "creator_corporation_id",
-                    "ticker",
-                    "date_founded"
-                ],
-                "type": "object"
-            },
             "AlliancesAllianceIdIconsGet": {
                 "properties": {
                     "px128x128": {
@@ -245,6 +242,14 @@
             "AttributeID": {
                 "examples": [
                     209
+                ],
+                "format": "int64",
+                "type": "integer",
+                "x-common-model": "true"
+            },
+            "BloodlineID": {
+                "examples": [
+                    1
                 ],
                 "format": "int64",
                 "type": "integer",
@@ -1484,68 +1489,6 @@
                 "required": [
                     "kills",
                     "victory_points"
-                ],
-                "type": "object"
-            },
-            "CharactersCharacterIdGet": {
-                "properties": {
-                    "alliance_id": {
-                        "description": "The character's alliance ID",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "birthday": {
-                        "description": "Creation date of the character",
-                        "format": "date-time",
-                        "type": "string"
-                    },
-                    "bloodline_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "corporation_id": {
-                        "description": "The character's corporation ID",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "description": {
-                        "type": "string"
-                    },
-                    "faction_id": {
-                        "description": "ID of the faction the character is fighting for, if the character is enlisted in Factional Warfare",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "gender": {
-                        "enum": [
-                            "female",
-                            "male"
-                        ],
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "race_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "security_status": {
-                        "format": "double",
-                        "type": "number"
-                    },
-                    "title": {
-                        "description": "The individual title of the character",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "corporation_id",
-                    "birthday",
-                    "name",
-                    "gender",
-                    "race_id",
-                    "bloodline_id"
                 ],
                 "type": "object"
             },
@@ -3308,102 +3251,6 @@
                 ],
                 "type": "object"
             },
-            "CharactersCharacterIdSkillqueueGet": {
-                "items": {
-                    "properties": {
-                        "finish_date": {
-                            "description": "Date on which training of the skill will complete. Omitted if the skill queue is paused.",
-                            "format": "date-time",
-                            "type": "string"
-                        },
-                        "finished_level": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "level_end_sp": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "level_start_sp": {
-                            "description": "Amount of SP that was in the skill when it started training it's current level. Used to calculate % of current level complete.",
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "queue_position": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "skill_id": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "start_date": {
-                            "format": "date-time",
-                            "type": "string"
-                        },
-                        "training_start_sp": {
-                            "format": "int64",
-                            "type": "integer"
-                        }
-                    },
-                    "required": [
-                        "skill_id",
-                        "finished_level",
-                        "queue_position"
-                    ],
-                    "type": "object"
-                },
-                "type": "array"
-            },
-            "CharactersCharacterIdSkillsGet": {
-                "properties": {
-                    "skills": {
-                        "items": {
-                            "description": "skill object",
-                            "properties": {
-                                "active_skill_level": {
-                                    "format": "int64",
-                                    "type": "integer"
-                                },
-                                "skill_id": {
-                                    "format": "int64",
-                                    "type": "integer"
-                                },
-                                "skillpoints_in_skill": {
-                                    "format": "int64",
-                                    "type": "integer"
-                                },
-                                "trained_skill_level": {
-                                    "format": "int64",
-                                    "type": "integer"
-                                }
-                            },
-                            "required": [
-                                "skill_id",
-                                "skillpoints_in_skill",
-                                "trained_skill_level",
-                                "active_skill_level"
-                            ],
-                            "type": "object"
-                        },
-                        "type": "array"
-                    },
-                    "total_sp": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "unallocated_sp": {
-                        "description": "Skill points available to be assigned",
-                        "format": "int64",
-                        "type": "integer"
-                    }
-                },
-                "required": [
-                    "skills",
-                    "total_sp"
-                ],
-                "type": "object"
-            },
             "CharactersCharacterIdStandingsGet": {
                 "items": {
                     "properties": {
@@ -3762,6 +3609,239 @@
                     "type": "object"
                 },
                 "type": "array"
+            },
+            "CharactersDetail": {
+                "properties": {
+                    "alliance_id": {
+                        "$ref": "#/components/schemas/AllianceID",
+                        "description": "Character's alliance ID"
+                    },
+                    "birthday": {
+                        "description": "Character's creation date",
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "bloodline_id": {
+                        "$ref": "#/components/schemas/BloodlineID",
+                        "description": "Character's bloodline ID"
+                    },
+                    "corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Character's corporation ID"
+                    },
+                    "description": {
+                        "description": "Character's description (biography)",
+                        "type": "string"
+                    },
+                    "faction_id": {
+                        "$ref": "#/components/schemas/FactionID",
+                        "description": "Character's faction ID"
+                    },
+                    "gender": {
+                        "description": "Character's gender",
+                        "enum": [
+                            "male",
+                            "female"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "Male",
+                            "Female"
+                        ]
+                    },
+                    "name": {
+                        "description": "Character's name",
+                        "type": "string"
+                    },
+                    "race_id": {
+                        "$ref": "#/components/schemas/RaceID",
+                        "description": "Character's race ID"
+                    },
+                    "security_status": {
+                        "description": "Character's security status",
+                        "format": "double",
+                        "type": "number"
+                    },
+                    "title": {
+                        "description": "Character's corporation title",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "birthday",
+                    "bloodline_id",
+                    "corporation_id",
+                    "gender",
+                    "name",
+                    "race_id"
+                ],
+                "type": "object"
+            },
+            "CharactersFreelanceJobsListing": {
+                "properties": {
+                    "freelance_jobs": {
+                        "description": "List of freelance jobs",
+                        "items": {
+                            "$ref": "#/components/schemas/FreelanceJobsDetailFreelancejob"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "freelance_jobs"
+                ],
+                "type": "object"
+            },
+            "CharactersFreelanceJobsParticipation": {
+                "properties": {
+                    "contributed": {
+                        "description": "Your contribution",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "last_modified": {
+                        "description": "Moment this information was last modified",
+                        "examples": [
+                            "2025-11-01T00:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "state": {
+                        "description": "Your participation status",
+                        "enum": [
+                            "Unspecified",
+                            "Committed",
+                            "Kicked",
+                            "Resigned"
+                        ],
+                        "examples": [
+                            "Committed"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Active and accepting contributions",
+                            "Kicked from the project",
+                            "Resigned from the project"
+                        ]
+                    }
+                },
+                "required": [
+                    "state",
+                    "contributed",
+                    "last_modified"
+                ],
+                "type": "object"
+            },
+            "CharactersSkillqueueSkill": {
+                "properties": {
+                    "finish_date": {
+                        "description": "The date the skill training will finish",
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "finished_level": {
+                        "description": "The level the skill is training for",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "level_end_sp": {
+                        "description": "The Skill Points at the end of the level",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "level_start_sp": {
+                        "description": "The Skill Points at the start of the level",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "queue_position": {
+                        "description": "The position of the skill in the queue",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "skill_id": {
+                        "$ref": "#/components/schemas/TypeID",
+                        "description": "The TypeID of the skill"
+                    },
+                    "start_date": {
+                        "description": "The date the skill training will start/continue",
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "training_start_sp": {
+                        "description": "The Skill Points at the start of training",
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "queue_position",
+                    "skill_id",
+                    "finished_level"
+                ],
+                "type": "object"
+            },
+            "CharactersSkills": {
+                "properties": {
+                    "skills": {
+                        "description": "The trained skills",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersSkillsSkill"
+                        },
+                        "type": "array"
+                    },
+                    "total_sp": {
+                        "description": "The total Skill Points spent on skills",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "unallocated_sp": {
+                        "description": "The amount of unallocated Skill Points",
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "skills",
+                    "total_sp"
+                ],
+                "type": "object"
+            },
+            "CharactersSkillsSkill": {
+                "properties": {
+                    "active_skill_level": {
+                        "description": "The active skill level (can differ from trained due to alpha status and/or active expert systems)",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "skill_id": {
+                        "description": "The Type ID of the skill",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "skillpoints_in_skill": {
+                        "description": "The amount of Skill Points in the skill",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "trained_skill_level": {
+                        "description": "The trained skill level",
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "skill_id",
+                    "trained_skill_level",
+                    "active_skill_level",
+                    "skillpoints_in_skill"
+                ],
+                "type": "object"
             },
             "CompatibilityDate": {
                 "examples": [
@@ -5239,73 +5319,6 @@
                 "required": [
                     "kills",
                     "victory_points"
-                ],
-                "type": "object"
-            },
-            "CorporationsCorporationIdGet": {
-                "properties": {
-                    "alliance_id": {
-                        "description": "ID of the alliance that corporation is a member of, if any",
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "ceo_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "creator_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "date_founded": {
-                        "format": "date-time",
-                        "type": "string"
-                    },
-                    "description": {
-                        "type": "string"
-                    },
-                    "faction_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "home_station_id": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "member_count": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "name": {
-                        "description": "the full name of the corporation",
-                        "type": "string"
-                    },
-                    "shares": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "tax_rate": {
-                        "format": "double",
-                        "type": "number"
-                    },
-                    "ticker": {
-                        "description": "the short name of the corporation",
-                        "type": "string"
-                    },
-                    "url": {
-                        "type": "string"
-                    },
-                    "war_eligible": {
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "name",
-                    "ticker",
-                    "member_count",
-                    "ceo_id",
-                    "tax_rate",
-                    "creator_id"
                 ],
                 "type": "object"
             },
@@ -7779,6 +7792,164 @@
                 },
                 "type": "array"
             },
+            "CorporationsDetail": {
+                "properties": {
+                    "alliance_id": {
+                        "$ref": "#/components/schemas/AllianceID",
+                        "description": "Corporation's alliance ID"
+                    },
+                    "ceo_id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Corporation's CEO ID"
+                    },
+                    "creator_id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Corporation's creator ID"
+                    },
+                    "date_founded": {
+                        "description": "Corporation's founding date",
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "description": {
+                        "description": "Corporation's description",
+                        "type": "string"
+                    },
+                    "faction_id": {
+                        "$ref": "#/components/schemas/FactionID",
+                        "description": "Corporation's faction ID"
+                    },
+                    "home_station_id": {
+                        "$ref": "#/components/schemas/StationID",
+                        "description": "Corporation's home station ID"
+                    },
+                    "member_count": {
+                        "description": "Corporation's member count",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "Corporation's name",
+                        "type": "string"
+                    },
+                    "shares": {
+                        "description": "Corporation's shares",
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "tax_rate": {
+                        "description": "Corporation's tax rate",
+                        "format": "double",
+                        "type": "number"
+                    },
+                    "ticker": {
+                        "description": "Corporation's short name",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "Corporation's URL",
+                        "type": "string"
+                    },
+                    "war_eligible": {
+                        "description": "Corporation's war eligible",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ceo_id",
+                    "creator_id",
+                    "member_count",
+                    "name",
+                    "tax_rate",
+                    "ticker"
+                ],
+                "type": "object"
+            },
+            "CorporationsFreelanceJobsListing": {
+                "properties": {
+                    "cursor": {
+                        "$ref": "#/components/schemas/Cursor"
+                    },
+                    "freelance_jobs": {
+                        "description": "List of freelance jobs",
+                        "items": {
+                            "$ref": "#/components/schemas/FreelanceJobsDetailFreelancejob"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "freelance_jobs"
+                ],
+                "type": "object"
+            },
+            "CorporationsFreelanceJobsParticipants": {
+                "properties": {
+                    "cursor": {
+                        "$ref": "#/components/schemas/Cursor"
+                    },
+                    "participants": {
+                        "description": "List of participants",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsFreelanceJobsParticipantsParticipant"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "participants"
+                ],
+                "type": "object"
+            },
+            "CorporationsFreelanceJobsParticipantsParticipant": {
+                "properties": {
+                    "contributed": {
+                        "description": "Participant's contributed progress",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Participant's character ID"
+                    },
+                    "name": {
+                        "description": "Participant's name",
+                        "examples": [
+                            "Participant Name"
+                        ],
+                        "type": "string"
+                    },
+                    "state": {
+                        "description": "Participant's state",
+                        "enum": [
+                            "Unspecified",
+                            "Committed",
+                            "Kicked",
+                            "Resigned"
+                        ],
+                        "examples": [
+                            "Committed"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Active and accepting contributions",
+                            "Kicked from the project",
+                            "Resigned from the project"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "state",
+                    "contributed"
+                ],
+                "type": "object"
+            },
             "CorporationsNpccorpsGet": {
                 "items": {
                     "format": "int64",
@@ -10087,6 +10258,625 @@
                 ],
                 "type": "object"
             },
+            "FreelanceJobsDetail": {
+                "properties": {
+                    "access_and_visibility": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailAccessandvisibility",
+                        "description": "Job's access and visibility"
+                    },
+                    "configuration": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailConfiguration",
+                        "description": "Job's configuration"
+                    },
+                    "contribution": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailContribution",
+                        "description": "Job's contribution settings"
+                    },
+                    "details": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailDetails",
+                        "description": "Job's details"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/UUID",
+                        "description": "Job's ID"
+                    },
+                    "last_modified": {
+                        "description": "Job's last modified",
+                        "examples": [
+                            "2025-11-01T00:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Job's name",
+                        "examples": [
+                            "Freelance Job Name"
+                        ],
+                        "type": "string"
+                    },
+                    "progress": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailProgress",
+                        "description": "Job's progress"
+                    },
+                    "reward": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailReward",
+                        "description": "Job's reward"
+                    },
+                    "state": {
+                        "description": "Job's state",
+                        "enum": [
+                            "Unspecified",
+                            "Active",
+                            "Closed",
+                            "Completed",
+                            "Expired",
+                            "Deleted"
+                        ],
+                        "examples": [
+                            "Active"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Active and accepting contributions",
+                            "Closed",
+                            "Completed",
+                            "Expired",
+                            "Deleted and the details are no longer available"
+                        ]
+                    }
+                },
+                "required": [
+                    "details",
+                    "configuration",
+                    "access_and_visibility",
+                    "id",
+                    "name",
+                    "state",
+                    "last_modified",
+                    "progress"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailAccessandvisibility": {
+                "properties": {
+                    "acl_protected": {
+                        "description": "Whether the job is protected by an ACL",
+                        "examples": [
+                            false
+                        ],
+                        "type": "boolean"
+                    },
+                    "broadcast_locations": {
+                        "description": "Solar systems where the job is broadcast",
+                        "items": {
+                            "$ref": "#/components/schemas/FreelanceJobsDetailBroadcastlocations"
+                        },
+                        "type": "array"
+                    },
+                    "restrictions": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailRestrictions",
+                        "description": "Restrictions on who can participate"
+                    }
+                },
+                "required": [
+                    "acl_protected"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailBroadcastlocations": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Solar system ID"
+                    },
+                    "name": {
+                        "description": "Solar system name",
+                        "examples": [
+                            "Jita"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailConfiguration": {
+                "properties": {
+                    "method": {
+                        "description": "Contribution method (see SDE for valid values)",
+                        "examples": [
+                            "BoostShield"
+                        ],
+                        "type": "string"
+                    },
+                    "parameters": {
+                        "additionalProperties": {
+                            "oneOf": [
+                                {
+                                    "properties": {
+                                        "matcher": {
+                                            "$ref": "#/components/schemas/FreelanceJobsDetailParametermatcher",
+                                            "description": "Parameter that matches a type"
+                                        }
+                                    },
+                                    "title": "matcher",
+                                    "type": "object"
+                                },
+                                {
+                                    "properties": {
+                                        "options": {
+                                            "$ref": "#/components/schemas/FreelanceJobsDetailParameteroptions",
+                                            "description": "Parameter that has one or more selected values"
+                                        }
+                                    },
+                                    "title": "options",
+                                    "type": "object"
+                                },
+                                {
+                                    "properties": {
+                                        "boolean": {
+                                            "$ref": "#/components/schemas/FreelanceJobsDetailParameterboolean",
+                                            "description": "Parameter that can be toggled"
+                                        }
+                                    },
+                                    "title": "boolean",
+                                    "type": "object"
+                                },
+                                {
+                                    "properties": {
+                                        "corporation_item_delivery": {
+                                            "$ref": "#/components/schemas/FreelanceJobsDetailParametercorporationitemdelivery",
+                                            "description": "Parameter for delivering items to a corporation"
+                                        }
+                                    },
+                                    "title": "corporation_item_delivery",
+                                    "type": "object"
+                                }
+                            ]
+                        },
+                        "description": "Parameter values (see SDE for parameter definition)",
+                        "type": "object"
+                    },
+                    "version": {
+                        "description": "Version of parameter definition used",
+                        "examples": [
+                            1
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "version",
+                    "parameters",
+                    "method"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailContribution": {
+                "properties": {
+                    "contribution_per_participant_limit": {
+                        "description": "Limit on the contribution of the individual participant",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "max_committed_participants": {
+                        "description": "Maximum number of participants that can commit to this job",
+                        "examples": [
+                            10000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "reward_per_contribution": {
+                        "description": "ISK reward per contribution",
+                        "examples": [
+                            123.5
+                        ],
+                        "format": "double",
+                        "type": "number"
+                    },
+                    "submission_limit": {
+                        "description": "Limit on amount of contribution per submission",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "submission_multiplier": {
+                        "description": "Multiplier towards progress per contribution",
+                        "examples": [
+                            1.5
+                        ],
+                        "format": "double",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "max_committed_participants"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailCreator": {
+                "properties": {
+                    "character": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailCreatorcharacter",
+                        "description": "Character that created the job"
+                    },
+                    "corporation": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailCreatorcorporation",
+                        "description": "Corporation that created the job"
+                    }
+                },
+                "required": [
+                    "character",
+                    "corporation"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailCreatorcharacter": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Character ID"
+                    },
+                    "name": {
+                        "description": "Character name",
+                        "examples": [
+                            "Creator Name"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailCreatorcorporation": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Corporation ID"
+                    },
+                    "name": {
+                        "description": "Corporation name",
+                        "examples": [
+                            "Creator Corporation"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailDetails": {
+                "properties": {
+                    "career": {
+                        "description": "Assigned career path",
+                        "enum": [
+                            "Unspecified",
+                            "Explorer",
+                            "Industrialist",
+                            "Enforcer",
+                            "Soldier of Fortune"
+                        ],
+                        "examples": [
+                            "Explorer"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified career",
+                            "Explorer career",
+                            "Industrialist career",
+                            "Enforcer career",
+                            "Soldier of Fortune career"
+                        ]
+                    },
+                    "created": {
+                        "description": "Moment this freelance job was created",
+                        "examples": [
+                            "2025-11-01T00:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "creator": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailCreator",
+                        "description": "Creator"
+                    },
+                    "description": {
+                        "description": "Description",
+                        "examples": [
+                            "Freelance Job Description"
+                        ],
+                        "type": "string"
+                    },
+                    "expires": {
+                        "description": "Moment this freelance job expires",
+                        "examples": [
+                            "2025-11-01T00:01:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "finished": {
+                        "description": "Moment this freelance job transitioned to a non-active state",
+                        "examples": [
+                            "2025-11-01T00:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "description",
+                    "career",
+                    "created",
+                    "creator"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailFreelancejob": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/UUID",
+                        "description": "Job's ID"
+                    },
+                    "last_modified": {
+                        "description": "Job's last modified",
+                        "examples": [
+                            "2025-11-01T00:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Job's name",
+                        "examples": [
+                            "Freelance Job Name"
+                        ],
+                        "type": "string"
+                    },
+                    "progress": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailProgress",
+                        "description": "Job's progress"
+                    },
+                    "reward": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailReward",
+                        "description": "Job's reward"
+                    },
+                    "state": {
+                        "description": "Job's state",
+                        "enum": [
+                            "Unspecified",
+                            "Active",
+                            "Closed",
+                            "Completed",
+                            "Expired",
+                            "Deleted"
+                        ],
+                        "examples": [
+                            "Active"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Active and accepting contributions",
+                            "Closed",
+                            "Completed",
+                            "Expired",
+                            "Deleted and the details are no longer available"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "state",
+                    "last_modified",
+                    "progress"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailParameterboolean": {
+                "properties": {
+                    "value": {
+                        "description": "Boolean value",
+                        "examples": [
+                            true
+                        ],
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "value"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailParametercorporationitemdelivery": {
+                "properties": {
+                    "corporation_office_location": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailParametermatcher",
+                        "description": "Location for delivery"
+                    },
+                    "item_type": {
+                        "$ref": "#/components/schemas/FreelanceJobsDetailParametermatcher",
+                        "description": "Item(s) to be delivered"
+                    }
+                },
+                "required": [
+                    "item_type",
+                    "corporation_office_location"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailParametermatcher": {
+                "properties": {
+                    "values": {
+                        "description": "Value type(s) and their value(s)",
+                        "items": {
+                            "$ref": "#/components/schemas/FreelanceJobsDetailParametermatchervalue"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "values"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailParametermatchervalue": {
+                "properties": {
+                    "value_type": {
+                        "description": "Type of the value(s)",
+                        "examples": [
+                            "solarsystem"
+                        ],
+                        "type": "string"
+                    },
+                    "values": {
+                        "description": "Value(s) of this type",
+                        "examples": [
+                            [
+                                "30001401"
+                            ]
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "value_type",
+                    "values"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailParameteroptions": {
+                "properties": {
+                    "selected": {
+                        "description": "Selected value(s)",
+                        "examples": [
+                            [
+                                "self",
+                                "corporation"
+                            ]
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "selected"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailProgress": {
+                "properties": {
+                    "current": {
+                        "description": "Current progress",
+                        "examples": [
+                            50
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "desired": {
+                        "description": "Desired progress",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "current",
+                    "desired"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsDetailRestrictions": {
+                "properties": {
+                    "maximum_age": {
+                        "description": "Maximum age of the participant, in days",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "minimum_age": {
+                        "description": "Minimum age of the participant, in days",
+                        "examples": [
+                            10
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "FreelanceJobsDetailReward": {
+                "properties": {
+                    "initial": {
+                        "description": "Original amount of ISK that was reserved for this freelance job",
+                        "examples": [
+                            12345.5
+                        ],
+                        "format": "double",
+                        "type": "number"
+                    },
+                    "remaining": {
+                        "description": "Remaining ISK to be awarded",
+                        "examples": [
+                            5432.1
+                        ],
+                        "format": "double",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "initial",
+                    "remaining"
+                ],
+                "type": "object"
+            },
+            "FreelanceJobsListing": {
+                "properties": {
+                    "cursor": {
+                        "$ref": "#/components/schemas/Cursor"
+                    },
+                    "freelance_jobs": {
+                        "description": "List of freelance jobs",
+                        "items": {
+                            "$ref": "#/components/schemas/FreelanceJobsDetailFreelancejob"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "freelance_jobs"
+                ],
+                "type": "object"
+            },
             "FwLeaderboardsCharactersGet": {
                 "properties": {
                     "kills": {
@@ -11603,6 +12393,14 @@
                     "status"
                 ],
                 "type": "object"
+            },
+            "RaceID": {
+                "examples": [
+                    1
+                ],
+                "format": "int64",
+                "type": "integer",
+                "x-common-model": "true"
             },
             "RegionID": {
                 "examples": [
@@ -13573,7 +14371,7 @@
         },
         "termsOfService": "https://support.eveonline.com/hc/en-us/articles/8414770561948-EVE-Online-Terms-of-Service",
         "title": "EVE Stable Infrastructure (ESI) - tranquility",
-        "version": "2025-11-06"
+        "version": "2025-12-16"
     },
     "openapi": "3.1.0",
     "paths": {
@@ -13593,6 +14391,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -13647,7 +14448,8 @@
                         "name": "alliance_id",
                         "required": true,
                         "schema": {
-                            "$ref": "#/components/schemas/AllianceID"
+                            "$ref": "#/components/schemas/AllianceID",
+                            "description": "The ID of the alliance"
                         }
                     },
                     {
@@ -13661,6 +14463,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -13668,7 +14473,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AlliancesAllianceIdGet"
+                                    "$ref": "#/components/schemas/AllianceDetail"
                                 }
                             }
                         },
@@ -13696,11 +14501,12 @@
                         "description": "Error"
                     }
                 },
-                "summary": "Get alliance information",
+                "summary": "Get alliance's public information",
                 "tags": [
                     "Alliance"
                 ],
                 "x-cache-age": 3600,
+                "x-cache-mode": "ttl-based",
                 "x-compatibility-date": "2020-01-01"
             }
         },
@@ -13739,6 +14545,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -13826,6 +14635,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -13906,6 +14718,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -13974,6 +14789,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14032,6 +14850,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -14104,7 +14925,8 @@
                         "name": "character_id",
                         "required": true,
                         "schema": {
-                            "$ref": "#/components/schemas/CharacterID"
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
                         }
                     },
                     {
@@ -14118,6 +14940,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14125,7 +14950,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CharactersCharacterIdGet"
+                                    "$ref": "#/components/schemas/CharactersDetail"
                                 }
                             }
                         },
@@ -14157,7 +14982,8 @@
                 "tags": [
                     "Character"
                 ],
-                "x-cache-age": 604800,
+                "x-cache-age": 86400,
+                "x-cache-mode": "ttl-based",
                 "x-compatibility-date": "2020-01-01"
             }
         },
@@ -14186,6 +15012,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14276,6 +15105,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14363,6 +15195,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -14460,6 +15295,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -14557,6 +15395,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14647,6 +15488,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14743,6 +15587,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14833,6 +15680,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -14921,6 +15771,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -15027,6 +15880,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15107,6 +15963,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15202,6 +16061,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15282,6 +16144,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15399,6 +16264,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -15525,6 +16393,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -15614,6 +16485,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15704,6 +16578,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15801,6 +16678,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15891,6 +16771,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -15971,6 +16854,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16039,6 +16925,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -16136,6 +17025,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16216,6 +17108,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16294,6 +17189,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -16487,6 +17385,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16559,6 +17460,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16614,6 +17518,186 @@
                 }
             }
         },
+        "/characters/{character_id}/freelance-jobs": {
+            "get": {
+                "description": "Listing of all freelance jobs you are actively participating in.",
+                "operationId": "GetCharactersFreelanceJobsListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersFreelanceJobsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-characters.read_freelance_jobs.v1"
+                        ]
+                    }
+                ],
+                "summary": "List character freelance jobs",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 60,
+                "x-cache-mode": "no-cache",
+                "x-compatibility-date": "2025-12-16",
+                "x-rate-limit": {
+                    "group": "char-freelance-job",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/characters/{character_id}/freelance-jobs/{job_id}/participation": {
+            "get": {
+                "description": "Show your participation in a freelance job.",
+                "operationId": "GetCharactersFreelanceJobsParticipation",
+                "parameters": [
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "description": "The ID of the freelance job",
+                        "in": "path",
+                        "name": "job_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/UUID",
+                            "description": "The ID of the freelance job"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersFreelanceJobsParticipation"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-characters.read_freelance_jobs.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get character freelance job participation",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 60,
+                "x-cache-mode": "no-cache",
+                "x-compatibility-date": "2025-12-16",
+                "x-rate-limit": {
+                    "group": "char-freelance-job",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                }
+            }
+        },
         "/characters/{character_id}/fw/stats": {
             "get": {
                 "description": "Statistical overview of a character involved in faction warfare\n\nThis route expires daily at 11:05",
@@ -16639,6 +17723,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16718,6 +17805,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16806,6 +17896,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16896,6 +17989,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -16983,6 +18079,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17063,6 +18162,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17167,6 +18269,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17245,6 +18350,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -17382,6 +18490,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17460,6 +18571,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -17594,6 +18708,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17666,6 +18783,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17756,6 +18876,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17836,6 +18959,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -17924,6 +19050,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -18023,6 +19152,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18113,6 +19245,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18200,6 +19335,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18280,6 +19418,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18360,6 +19501,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18440,6 +19584,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18525,6 +19672,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18607,6 +19757,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18697,6 +19850,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18777,6 +19933,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18849,6 +20008,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -18976,6 +20138,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19054,6 +20219,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19111,7 +20279,7 @@
         },
         "/characters/{character_id}/skillqueue": {
             "get": {
-                "description": "List the configured skill queue for the given character",
+                "description": "List the configured skill queue for the given character.\n\nEntries that have their finish time in the past are completed, but aren't updated in the \"/skills\" route\nyet. This will happen the next time the character logs in.",
                 "operationId": "GetCharactersCharacterIdSkillqueue",
                 "parameters": [
                     {
@@ -19120,7 +20288,8 @@
                         "name": "character_id",
                         "required": true,
                         "schema": {
-                            "$ref": "#/components/schemas/CharacterID"
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
                         }
                     },
                     {
@@ -19134,6 +20303,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19141,7 +20313,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CharactersCharacterIdSkillqueueGet"
+                                    "items": {
+                                        "$ref": "#/components/schemas/CharactersSkillqueueSkill"
+                                    },
+                                    "type": "array"
                                 }
                             }
                         },
@@ -19180,7 +20355,8 @@
                 "tags": [
                     "Skills"
                 ],
-                "x-cache-age": 120,
+                "x-cache-age": 60,
+                "x-cache-mode": "event-based",
                 "x-compatibility-date": "2020-01-01",
                 "x-rate-limit": {
                     "group": "char-detail",
@@ -19191,7 +20367,7 @@
         },
         "/characters/{character_id}/skills": {
             "get": {
-                "description": "List all trained skills for the given character",
+                "description": "List all trained skills for the given character.\n\nSkills returned by this route can be out-of-date if the character hasn't logged in since one or more skills\ncompleted training. Use the /skillqueue route to check for skills that completed training. Entries that are\nin the past need to be applied on top of this list to get an accurate view of the character's current skills.",
                 "operationId": "GetCharactersCharacterIdSkills",
                 "parameters": [
                     {
@@ -19200,7 +20376,8 @@
                         "name": "character_id",
                         "required": true,
                         "schema": {
-                            "$ref": "#/components/schemas/CharacterID"
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
                         }
                     },
                     {
@@ -19214,6 +20391,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19221,7 +20401,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CharactersCharacterIdSkillsGet"
+                                    "$ref": "#/components/schemas/CharactersSkills"
                                 }
                             }
                         },
@@ -19260,7 +20440,8 @@
                 "tags": [
                     "Skills"
                 ],
-                "x-cache-age": 120,
+                "x-cache-age": 60,
+                "x-cache-mode": "event-based",
                 "x-compatibility-date": "2020-01-01",
                 "x-rate-limit": {
                     "group": "char-detail",
@@ -19294,6 +20475,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19374,6 +20558,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19454,6 +20641,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19544,6 +20734,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19640,6 +20833,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19731,6 +20927,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19826,6 +21025,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -19921,6 +21123,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20006,6 +21211,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20106,6 +21314,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20216,6 +21427,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20297,6 +21511,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20350,7 +21567,8 @@
                         "name": "corporation_id",
                         "required": true,
                         "schema": {
-                            "$ref": "#/components/schemas/CorporationID"
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
                         }
                     },
                     {
@@ -20364,6 +21582,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20371,7 +21592,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CorporationsCorporationIdGet"
+                                    "$ref": "#/components/schemas/CorporationsDetail"
                                 }
                             }
                         },
@@ -20399,11 +21620,12 @@
                         "description": "Error"
                     }
                 },
-                "summary": "Get corporation information",
+                "summary": "Get corporation's public information",
                 "tags": [
                     "Corporation"
                 ],
                 "x-cache-age": 3600,
+                "x-cache-mode": "ttl-based",
                 "x-compatibility-date": "2020-01-01"
             }
         },
@@ -20432,6 +21654,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20510,6 +21735,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20600,6 +21828,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -20700,6 +21931,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -20810,6 +22044,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20910,6 +22147,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -20997,6 +22237,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21087,6 +22330,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21182,6 +22428,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21289,6 +22538,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21386,6 +22638,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21476,6 +22731,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21566,6 +22824,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21649,6 +22910,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21702,6 +22966,260 @@
                 ]
             }
         },
+        "/corporations/{corporation_id}/freelance-jobs": {
+            "get": {
+                "description": "Listing of all freelance jobs for your corporation.",
+                "operationId": "GetCorporationsFreelanceJobsListing",
+                "parameters": [
+                    {
+                        "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "after",
+                        "schema": {
+                            "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "before",
+                        "schema": {
+                            "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "The amount of records to retrieve per request.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "default": 10,
+                            "description": "The amount of records to retrieve per request.",
+                            "format": "int64",
+                            "maximum": 100,
+                            "minimum": 10,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsFreelanceJobsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-corporations.read_freelance_jobs.v1"
+                        ]
+                    }
+                ],
+                "summary": "List corporation freelance jobs",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 0,
+                "x-compatibility-date": "2025-12-16",
+                "x-pagination": "cursor",
+                "x-rate-limit": {
+                    "group": "corp-freelance-job",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
+                "x-required-roles": [
+                    "Project_Manager"
+                ]
+            }
+        },
+        "/corporations/{corporation_id}/freelance-jobs/{job_id}/participants": {
+            "get": {
+                "description": "Listing of all participants of a freelance job.",
+                "operationId": "GetCorporationsFreelanceJobsParticipants",
+                "parameters": [
+                    {
+                        "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "after",
+                        "schema": {
+                            "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "before",
+                        "schema": {
+                            "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "The amount of records to retrieve per request.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "default": 10,
+                            "description": "The amount of records to retrieve per request.",
+                            "format": "int64",
+                            "maximum": 100,
+                            "minimum": 10,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "description": "The ID of the job",
+                        "in": "path",
+                        "name": "job_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/UUID",
+                            "description": "The ID of the job"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsFreelanceJobsParticipants"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-corporations.read_freelance_jobs.v1"
+                        ]
+                    }
+                ],
+                "summary": "List participants of a freelance job",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 0,
+                "x-compatibility-date": "2025-12-16",
+                "x-pagination": "cursor",
+                "x-rate-limit": {
+                    "group": "corp-freelance-job",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
+                "x-required-roles": [
+                    "Project_Manager"
+                ]
+            }
+        },
         "/corporations/{corporation_id}/fw/stats": {
             "get": {
                 "description": "Statistics about a corporation involved in faction warfare\n\nThis route expires daily at 11:05",
@@ -21727,6 +23245,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21806,6 +23327,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21893,6 +23417,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -21993,6 +23520,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22093,6 +23623,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22190,6 +23723,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22280,6 +23816,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22360,6 +23899,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22443,6 +23985,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22526,6 +24071,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22619,6 +24167,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22715,6 +24266,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22855,6 +24409,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22887,18 +24444,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "security": [
@@ -22912,7 +24458,7 @@
                 "tags": [
                     "Corporation Projects"
                 ],
-                "x-cache-age": 31536000,
+                "x-cache-age": 0,
                 "x-compatibility-date": "2025-08-26",
                 "x-pagination": "cursor",
                 "x-rate-limit": {
@@ -22927,9 +24473,6 @@
                 "description": "Get the details of a corporation project.",
                 "operationId": "GetCorporationsProjectsDetail",
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/IfModifiedSince"
-                    },
                     {
                         "description": "The ID of the corporation",
                         "in": "path",
@@ -22961,6 +24504,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -22993,18 +24539,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "security": [
@@ -23018,7 +24553,8 @@
                 "tags": [
                     "Corporation Projects"
                 ],
-                "x-cache-age": 600,
+                "x-cache-age": 60,
+                "x-cache-mode": "no-cache",
                 "x-compatibility-date": "2025-08-26",
                 "x-rate-limit": {
                     "group": "corp-project",
@@ -23032,9 +24568,6 @@
                 "description": "Show your contribution to a corporation project.",
                 "operationId": "GetCorporationsProjectsContribution",
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/IfModifiedSince"
-                    },
                     {
                         "description": "The ID of the corporation",
                         "in": "path",
@@ -23076,6 +24609,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23108,18 +24644,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "security": [
@@ -23133,7 +24658,8 @@
                 "tags": [
                     "Corporation Projects"
                 ],
-                "x-cache-age": 600,
+                "x-cache-age": 60,
+                "x-cache-mode": "no-cache",
                 "x-compatibility-date": "2025-08-26",
                 "x-rate-limit": {
                     "group": "corp-project",
@@ -23212,6 +24738,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23244,18 +24773,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "security": [
@@ -23269,7 +24787,7 @@
                 "tags": [
                     "Corporation Projects"
                 ],
-                "x-cache-age": 31536000,
+                "x-cache-age": 0,
                 "x-compatibility-date": "2025-08-26",
                 "x-pagination": "cursor",
                 "x-rate-limit": {
@@ -23307,6 +24825,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23397,6 +24918,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23497,6 +25021,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23597,6 +25124,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23694,6 +25224,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23799,6 +25332,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23887,6 +25423,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -23975,6 +25514,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24058,6 +25600,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24162,6 +25707,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24272,6 +25820,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24347,6 +25898,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24415,6 +25969,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24491,6 +26048,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24549,6 +26109,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24617,6 +26180,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24685,6 +26251,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24764,6 +26333,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -24857,6 +26429,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -24939,6 +26514,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -25061,6 +26639,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25142,6 +26723,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -25258,6 +26842,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25339,6 +26926,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -25431,6 +27021,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25513,6 +27106,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25603,6 +27199,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25684,6 +27283,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -25786,6 +27388,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25840,6 +27445,196 @@
                 }
             }
         },
+        "/freelance-jobs": {
+            "get": {
+                "description": "Listing of all public freelance jobs.",
+                "operationId": "GetFreelanceJobsListing",
+                "parameters": [
+                    {
+                        "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "after",
+                        "schema": {
+                            "description": "Return records from after this cursor (mutual exclusive with 'before'). '0' to start from the beginning.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "before",
+                        "schema": {
+                            "description": "Return records from before this cursor (mutual exclusive with 'after'). '0' to start from the end.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "The amount of records to retrieve per request.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "default": 10,
+                            "description": "The amount of records to retrieve per request.",
+                            "format": "int64",
+                            "maximum": 100,
+                            "minimum": 10,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Filter on corporation ID",
+                        "explode": false,
+                        "in": "query",
+                        "name": "corporation_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "Filter on corporation ID"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FreelanceJobsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "summary": "List freelance jobs",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 0,
+                "x-compatibility-date": "2025-12-16",
+                "x-pagination": "cursor",
+                "x-rate-limit": {
+                    "group": "freelance-job",
+                    "max-tokens": 900,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/freelance-jobs/{job_id}": {
+            "get": {
+                "description": "Get the details of a freelance job.\n\nJobs without an ACL (public jobs) does not require authentication.\n\nJobs with an ACL requires authentication, and requires that the character is:\n- An active participant of the job, or\n- A freelance job manager for the corporation that owns the job.",
+                "operationId": "GetFreelanceJobsDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the freelance job",
+                        "in": "path",
+                        "name": "job_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/UUID",
+                            "description": "The ID of the freelance job"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FreelanceJobsDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "summary": "Get freelance job details",
+                "tags": [
+                    "Freelance Jobs"
+                ],
+                "x-cache-age": 60,
+                "x-cache-mode": "no-cache",
+                "x-compatibility-date": "2025-12-16",
+                "x-rate-limit": {
+                    "group": "freelance-job",
+                    "max-tokens": 900,
+                    "window-size": "15m"
+                }
+            }
+        },
         "/fw/leaderboards": {
             "get": {
                 "description": "Top 4 leaderboard of factions for kills and victory points separated by total, last week and yesterday\n\nThis route expires daily at 11:05",
@@ -25856,6 +27651,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25919,6 +27717,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -25982,6 +27783,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26045,6 +27849,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26108,6 +27915,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26172,6 +27982,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26235,6 +28048,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26299,6 +28115,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26363,6 +28182,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26427,6 +28249,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26513,6 +28338,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26586,6 +28414,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26644,6 +28475,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26712,6 +28546,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26773,6 +28610,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26852,6 +28692,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -26945,6 +28788,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27047,6 +28893,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27094,7 +28943,12 @@
                     "Market"
                 ],
                 "x-cache-age": 300,
-                "x-compatibility-date": "2020-01-01"
+                "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "market-order",
+                    "max-tokens": 12000,
+                    "window-size": "15m"
+                }
             }
         },
         "/markets/{region_id}/types": {
@@ -27133,6 +28987,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27199,6 +29056,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27231,18 +29091,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "summary": "Get changelog",
@@ -27273,6 +29122,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27305,18 +29157,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "summary": "Get compatibility dates",
@@ -27347,6 +29188,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27379,18 +29223,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "summary": "Get health status",
@@ -27441,6 +29274,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -27483,18 +29319,7 @@
                                 }
                             }
                         },
-                        "description": "Error",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
+                        "description": "Error"
                     }
                 },
                 "summary": "Get route between two systems",
@@ -27525,6 +29350,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27589,6 +29417,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27653,6 +29484,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27717,6 +29551,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27811,6 +29648,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27884,6 +29724,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -27957,6 +29800,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28030,6 +29876,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28093,6 +29942,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -28200,6 +30052,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28270,6 +30125,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28328,6 +30186,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28389,6 +30250,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28457,6 +30321,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28518,6 +30385,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28585,6 +30455,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28646,6 +30519,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28707,6 +30583,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28774,6 +30653,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28842,6 +30724,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28917,6 +30802,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -28978,6 +30866,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -29067,6 +30958,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29125,6 +31019,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "requestBody": {
@@ -29210,6 +31107,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29268,6 +31168,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29329,6 +31232,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29396,6 +31302,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29467,6 +31376,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29535,6 +31447,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29602,6 +31517,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29669,6 +31587,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29739,6 +31660,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29808,6 +31732,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29874,6 +31801,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29933,6 +31863,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -29992,6 +31925,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30059,6 +31995,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30130,6 +32069,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30205,6 +32147,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30275,6 +32220,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30349,6 +32297,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30433,6 +32384,9 @@
                     },
                     {
                         "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
                     }
                 ],
                 "responses": {
@@ -30533,6 +32487,9 @@
         },
         {
             "name": "Fleets"
+        },
+        {
+            "name": "Freelance Jobs"
         },
         {
             "name": "Incursions"
