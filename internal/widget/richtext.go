@@ -56,7 +56,7 @@ func AlignRichTextSegments(align fyne.TextAlign, segments ...[]widget.RichTextSe
 	return segs2
 }
 
-func ModifyRichTextSegments(modify func(x *widget.TextSegment), segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
+func ModifyRichTextStyle(modify func(x *widget.RichTextStyle), segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
 	segs2 := make([]widget.RichTextSegment, 0)
 	segs := slices.Concat(segments...)
 	for _, x := range segs {
@@ -64,7 +64,7 @@ func ModifyRichTextSegments(modify func(x *widget.TextSegment), segments ...[]wi
 		if !ok {
 			continue
 		}
-		modify(t)
+		modify(&t.Style)
 		segs2 = append(segs2, t)
 	}
 	return segs2

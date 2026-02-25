@@ -31,8 +31,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// TODO: Add custom mobile view for list of colonies
-
 const (
 	colonyStatusExtracting = "Active"
 	colonyStatusAllIdle    = "Idle"
@@ -47,6 +45,7 @@ type colonyRow struct {
 	extractingText    string
 	name              string
 	nameDisplay       []widget.RichTextSegment
+	titleDisplay      []widget.RichTextSegment
 	ownerName         string
 	planetID          int64
 	planetName        string
@@ -218,7 +217,9 @@ func newColonies(u *baseUI) *colonies {
 	}
 	a.ExtendBaseWidget(a)
 
-	if !a.u.isMobile {
+	if a.u.isMobile {
+		a.body = a.makeDataList()
+	} else {
 		a.body = iwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -231,31 +232,6 @@ func newColonies(u *baseUI) *colonies {
 			a.filterRowsAsync, func(_ int, r colonyRow) {
 				a.showColonyDetailsWindow(r)
 			})
-	} else {
-		a.body = iwidget.MakeDataList(
-			columns,
-			&a.rowsFiltered,
-			func(col int, r colonyRow) []widget.RichTextSegment {
-				switch col {
-				case coloniesColPlanet:
-					return r.nameDisplay
-				case coloniesColStatus:
-					return iwidget.RichTextSegmentsFromText(r.planetTypeName)
-				case coloniesColExtracting:
-					return iwidget.RichTextSegmentsFromText(r.extractingText)
-				case coloniesColEndDate:
-					return r.statusDisplay()
-				case coloniesColProducing:
-					return iwidget.RichTextSegmentsFromText(r.producingText)
-				case coloniesColRegion:
-					return iwidget.RichTextSegmentsFromText(r.regionName)
-				case coloniesColCharacter:
-					return iwidget.RichTextSegmentsFromText(r.ownerName)
-				}
-				return iwidget.RichTextSegmentsFromText("?")
-			},
-			a.showColonyDetailsWindow,
-		)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
@@ -336,6 +312,106 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *colonies) makeDataList() *iwidget.StripedList {
+	l := iwidget.NewStripedList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			return newColonyListItem()
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			co.(*colonyListItem).set(a.rowsFiltered[id])
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		a.showColonyDetailsWindow(a.rowsFiltered[id])
+	}
+	return l
+}
+
+type colonyListItem struct {
+	widget.BaseWidget
+
+	character  *widget.Label
+	extracting *widget.Label
+	producing  *widget.Label
+	status     *iwidget.RichText
+	title      *iwidget.RichText
+}
+
+func newColonyListItem() *colonyListItem {
+	character := widget.NewLabel("Template")
+	character.Truncation = fyne.TextTruncateClip
+	extracting := widget.NewLabel("Template")
+	extracting.Truncation = fyne.TextTruncateClip
+	producing := widget.NewLabel("Template")
+	producing.Truncation = fyne.TextTruncateClip
+	status := iwidget.NewRichText()
+	w := &colonyListItem{
+		character:  character,
+		extracting: extracting,
+		producing:  producing,
+		status:     status,
+		title:      iwidget.NewRichText(),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.New(layout.NewCustomPaddedVBoxLayout(-p),
+		w.title,
+		container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(
+				newSpacer(fyne.NewSize(p/2, 1)),
+				widget.NewIcon(eveicon.FromName(eveicon.PIExtractor)),
+			),
+			w.status,
+			w.extracting,
+		),
+		container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(
+				newSpacer(fyne.NewSize(p/2, 1)),
+				widget.NewIcon(eveicon.FromName(eveicon.PIProcessor)),
+			),
+			nil,
+			w.producing,
+		),
+		container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(
+				newSpacer(fyne.NewSize(p/2, 1)),
+				widget.NewIcon(theme.AccountIcon()),
+			),
+			nil,
+			w.character,
+		),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *colonyListItem) set(r colonyRow) {
+	w.character.SetText(r.ownerName)
+	w.extracting.SetText(r.extractingText)
+	w.title.Set(r.titleDisplay)
+	w.producing.SetText(r.producingText)
+	w.status.Set(r.statusDisplay())
 }
 
 func (a *colonies) filterRowsAsync(sortCol int) {
@@ -491,6 +567,9 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	for _, p := range planets {
 		extracting := p.ExtractedTypeNames()
 		producing := p.ProducedSchematicNames()
+		titleDisplay := iwidget.ModifyRichTextStyle(func(x *widget.RichTextStyle) {
+			x.SizeName = theme.SizeNameSubHeadingText
+		}, p.NameRichText())
 		r := colonyRow{
 			characterID:       p.CharacterID,
 			extractorExpiries: p.ExtractionsExpiryTimes(),
@@ -506,6 +585,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			solarSystemName:   p.EvePlanet.SolarSystem.Name,
 			planetTypeName:    p.EvePlanet.TypeDisplay(),
 			planetTypeID:      p.EvePlanet.Type.ID,
+			titleDisplay:      titleDisplay,
 		}
 		if len(extracting) == 0 {
 			r.extractingText = "-"
