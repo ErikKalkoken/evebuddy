@@ -29,7 +29,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// TODO: Make content in showWindow into a widget and add update subscription for colonies
 // TODO: Add status "Partially idle" when some extractors are running out with amber level
 // TODO: Add custom mobile view for list of colonies
 
@@ -73,13 +72,18 @@ func (r colonyRow) isExpired() bool {
 }
 
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
-	if r.isExpired() {
+	return colonyStatusDisplay(r.endDate)
+}
+
+func colonyStatusDisplay(endDate time.Time) []widget.RichTextSegment {
+	isExpired := endDate.Before(time.Now())
+	if isExpired {
 		return iwidget.RichTextSegmentsFromText(colonyIdle, widget.RichTextStyle{ColorName: theme.ColorNameError})
 	}
-	if r.endDate.IsZero() {
+	if endDate.IsZero() {
 		return iwidget.RichTextSegmentsFromText("-")
 	}
-	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(r.remaining()), widget.RichTextStyle{
+	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(endDate)), widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	})
 }
@@ -208,7 +212,7 @@ func newColonies(u *baseUI) *colonies {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r colonyRow) {
-				a.showColonyWindow(r)
+				a.showColonyDetailsWindow(r)
 			})
 	} else {
 		a.body = iwidget.MakeDataList(
@@ -233,7 +237,7 @@ func newColonies(u *baseUI) *colonies {
 				}
 				return iwidget.RichTextSegmentsFromText("?")
 			},
-			a.showColonyWindow,
+			a.showColonyDetailsWindow,
 		)
 	}
 
@@ -288,11 +292,6 @@ func newColonies(u *baseUI) *colonies {
 	})
 	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
-	})
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.body.Refresh()
-		})
 	})
 
 	return a
@@ -510,8 +509,8 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	return rows, nil
 }
 
-// showColonyWindow shows the details of a colony in a window.
-func (a *colonies) showColonyWindow(r colonyRow) {
+// showColonyDetailsWindow shows the details of a colony in a window.
+func (a *colonies) showColonyDetailsWindow(r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
 	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(key, title, r.ownerName)
@@ -520,145 +519,239 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		return
 	}
 
-	var refreshContent func()
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		if refreshContent != nil {
-			fyne.Do(func() {
-				refreshContent()
-			})
-		}
-	}, key)
+	b := newColonyDetails(a.u, r.characterID, r.planetID)
+	err := b.update(context.Background())
+	if err != nil {
+		slog.Error("Failed to show colony details", "characterID", r.characterID, "planetID", r.planetID, "error", err)
+		a.u.showErrorDialog("Failed to show colony details", err, a.u.MainWindow())
+		return
+	}
+
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
-		a.u.refreshTickerExpired.RemoveListener(key)
+		b.stop()
 	})
 
-	go func() {
-		cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
-		if err != nil {
-			a.u.showErrorDialog("Failed to show colony", err, a.u.window)
+	setDetailWindow(detailWindowParams{
+		content: b,
+		title:   title,
+		window:  w,
+	})
+	w.Show()
+}
+
+type colonyDetails struct {
+	widget.BaseWidget
+
+	characterID   int64
+	cp            *app.CharacterPlanet
+	icon          *iwidget.TappableImage
+	infos         *widget.Form
+	installations *widget.List
+	issue         *widget.Label
+	planetID      int64
+	signalKey     string
+	status        *iwidget.RichText
+	u             *baseUI
+}
+
+func newColonyDetails(u *baseUI, characterID, planetID int64) *colonyDetails {
+	if characterID == 0 || planetID == 0 {
+		panic(app.ErrInvalid)
+	}
+	issue := widget.NewLabel("")
+	issue.Wrapping = fyne.TextWrapWord
+	issue.Importance = widget.DangerImportance
+	issue.Hide()
+	a := &colonyDetails{
+		characterID: characterID,
+		infos:       widget.NewForm(),
+		issue:       issue,
+		planetID:    planetID,
+		signalKey:   fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
+		status:      iwidget.NewRichText(),
+		u:           u,
+	}
+	a.ExtendBaseWidget(a)
+
+	a.infos.Orientation = widget.Adaptive
+
+	a.icon = iwidget.NewTappableImage(icons.BlankSvg, func() {
+		if a.cp == nil {
 			return
 		}
+		a.u.ShowTypeInfoWindow(a.cp.EvePlanet.Type.ID)
+	})
+	a.icon.SetFillMode(canvas.ImageFillContain)
+	a.icon.SetMinSize(fyne.NewSquareSize(64))
+
+	list := widget.NewList(
+		func() int {
+			if a.cp == nil {
+				return 0
+			}
+			return len(a.cp.Pins)
+		},
+		func() fyne.CanvasObject {
+			return newColonyPinItem()
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if a.cp == nil || id >= len(a.cp.Pins) {
+				return
+			}
+			co.(*colonyPinItem).Set(a.cp, a.cp.Pins[id])
+		},
+	)
+	list.HideSeparators = true
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
+		if id >= len(a.cp.Pins) {
+			return
+		}
+		a.u.ShowTypeInfoWindow(a.cp.Pins[id].Type.ID)
+	}
+	a.installations = list
+
+	// signals
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			fi := []*widget.FormItem{
-				widget.NewFormItem("Owner", makeLinkLabel(r.ownerName, func() {
-					a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
-				})),
-				widget.NewFormItem("Location", container.NewHBox(
-					makeLinkLabel(cp.EvePlanet.Name, func() {
-						a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.EveEntity())
-					}),
-					widget.NewLabel(fmt.Sprintf(
-						"(%s)",
-						cp.EvePlanet.SolarSystem.Constellation.Region.Name,
-					)),
-				)),
-				widget.NewFormItem("Type", makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
-					a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.EveEntity())
-				})),
-				widget.NewFormItem("Status", iwidget.NewRichText(r.statusDisplay()...)),
-			}
-			infos := widget.NewForm(fi...)
-			infos.Orientation = widget.Adaptive
-
-			slices.SortFunc(cp.Pins, func(a, b *app.PlanetPin) int {
-				return strings.Compare(a.Type.Group.Name, b.Type.Group.Name)
-			})
-
-			list := widget.NewList(
-				func() int {
-					return len(cp.Pins)
-				},
-				func() fyne.CanvasObject {
-					return newColonyPinItem(cp)
-				},
-				func(id widget.ListItemID, co fyne.CanvasObject) {
-					if id >= len(cp.Pins) {
-						return
-					}
-					co.(*colonyPinItem).Set(cp.Pins[id])
-				},
-			)
-			list.HideSeparators = true
-			list.OnSelected = func(id widget.ListItemID) {
-				defer list.UnselectAll()
-				if id >= len(cp.Pins) {
-					return
-				}
-				a.u.ShowTypeInfoWindow(cp.Pins[id].Type.ID)
-			}
-
-			installations := container.NewBorder(
-				widget.NewLabelWithStyle("Installations", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-				nil,
-				nil,
-				nil,
-				list,
-			)
-
-			icon := iwidget.NewTappableImage(icons.BlankSvg, func() {
-				a.u.ShowTypeInfoWindow(cp.EvePlanet.Type.ID)
-			})
-			icon.SetFillMode(canvas.ImageFillContain)
-			icon.SetMinSize(fyne.NewSquareSize(64))
-			a.u.eis.InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
-				icon.SetResource(res)
-			})
-			image2 := container.NewPadded(container.NewVBox((icon)))
-
-			content := container.NewBorder(
-				container.NewBorder(
-					nil,
-					newStandardSpacer(),
-					nil,
-					image2,
-					infos,
-				),
-				nil,
-				nil,
-				nil,
-				installations,
-			)
-
-			setDetailWindow(detailWindowParams{
-				content: content,
-				title:   title,
-				window:  w,
-			})
-			w.Show()
-			refreshContent = func() {
-				content.Refresh()
-			}
+			a.Refresh()
 		})
-	}()
+	}, a.signalKey)
+	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
+		if arg.characterID == a.characterID && arg.section == app.SectionCharacterPlanets {
+			err := a.update(ctx)
+			if err != nil {
+				slog.Error("failed to update colony installations", "error", err)
+				fyne.Do(func() {
+					a.cp = nil
+					a.setIssue("ERROR: " + a.u.humanizeError(err))
+					a.Refresh()
+				})
+			}
+		}
+	})
+	a.u.characterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
+		if o.ID == a.characterID {
+			fyne.Do(func() {
+				a.cp = nil
+				a.setIssue("Character has been removed")
+				a.Refresh()
+			})
+		}
+	})
+	return a
+}
+
+func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
+	installations := container.NewBorder(
+		widget.NewLabelWithStyle("Installations", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		nil,
+		nil,
+		nil,
+		a.installations,
+	)
+	infos := container.NewBorder(
+		a.issue,
+		newStandardSpacer(),
+		nil,
+		container.NewPadded(container.NewVBox((a.icon))),
+		a.infos,
+	)
+	content := container.NewBorder(
+		infos,
+		nil,
+		nil,
+		nil,
+		installations,
+	)
+	return widget.NewSimpleRenderer(content)
+}
+
+func (a *colonyDetails) stop() {
+	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
+}
+
+func (a *colonyDetails) setIssue(s string) {
+	a.issue.SetText(s)
+	a.issue.Show()
+}
+
+func (a *colonyDetails) Refresh() {
+	if a.cp != nil {
+		a.status.Set(colonyStatusDisplay(a.cp.ExtractionsExpiryTime()))
+	}
+	a.infos.Refresh()
+	a.BaseWidget.Refresh()
+}
+
+func (a *colonyDetails) update(ctx context.Context) error {
+	cp, err := a.u.cs.GetPlanet(context.Background(), a.characterID, a.planetID)
+	if err != nil {
+		return err
+	}
+
+	ownerName := a.u.scs.CharacterName(a.characterID)
+
+	fyne.Do(func() {
+		a.issue.Hide()
+		a.cp = cp
+
+		a.u.eis.InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
+			a.icon.SetResource(res)
+		})
+
+		p := theme.Padding()
+		location := container.New(layout.NewCustomPaddedHBoxLayout(-2*p),
+			iwidget.NewRichText(cp.EvePlanet.SolarSystem.SecurityStatusRichText()...),
+			makeLinkLabel(cp.EvePlanet.Name, func() {
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, cp.EvePlanet.SolarSystem.ID)
+			}),
+			widget.NewLabel(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name)),
+		)
+		fi := []*widget.FormItem{
+			widget.NewFormItem("Owner", makeLinkLabel(ownerName, func() {
+				a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
+			})),
+			widget.NewFormItem("Planet", location),
+			widget.NewFormItem("Type", container.NewHBox(
+				makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
+					a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.EveEntity())
+				}),
+			)),
+			widget.NewFormItem("Status", a.status),
+		}
+		a.infos.Items = fi
+
+		slices.SortFunc(cp.Pins, func(a, b *app.PlanetPin) int {
+			return strings.Compare(a.Type.Group.Name, b.Type.Group.Name)
+		})
+		a.Refresh()
+	})
+	return nil
 }
 
 type colonyPinItem struct {
 	widget.BaseWidget
 
-	name         *widget.Label
-	output       *widget.Label
-	prefix       string
-	status       *widget.Label
-	symbol       *planetPinSymbol
-	upgradeLevel int64
+	name   *widget.Label
+	output *widget.Label
+	status *widget.Label
+	symbol *planetPinSymbol
 }
 
-func newColonyPinItem(cp *app.CharacterPlanet) *colonyPinItem {
+func newColonyPinItem() *colonyPinItem {
 	status := widget.NewLabel("Template")
 	status.Alignment = fyne.TextAlignTrailing
-	prefix := cp.EvePlanet.TypeDisplay() + " "
 	name := widget.NewLabel("Template")
 	name.TextStyle.Bold = true
 	w := &colonyPinItem{
-		name:         name,
-		output:       widget.NewLabel("Template"),
-		status:       status,
-		symbol:       newPlanetPin(),
-		prefix:       prefix,
-		upgradeLevel: cp.UpgradeLevel,
+		name:   name,
+		output: widget.NewLabel("Template"),
+		status: status,
+		symbol: newPlanetPin(),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -687,8 +780,9 @@ var installationShortNames = map[string]string{
 	"Storage Facility":           "Storage",
 }
 
-func (w *colonyPinItem) Set(p *app.PlanetPin) {
-	name, _ := strings.CutPrefix(p.Type.Name, w.prefix)
+func (w *colonyPinItem) Set(cp *app.CharacterPlanet, p *app.PlanetPin) {
+	prefix := cp.EvePlanet.TypeDisplay() + " "
+	name, _ := strings.CutPrefix(p.Type.Name, prefix)
 	if short, ok := installationShortNames[name]; ok {
 		name = short
 	}
@@ -743,7 +837,7 @@ func (w *colonyPinItem) Set(p *app.PlanetPin) {
 			return v.Name
 		})
 	case app.EveGroupCommandCenters:
-		output = fmt.Sprintf("Level %d", w.upgradeLevel)
+		output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
 	}
 	w.output.SetText(output)
 
