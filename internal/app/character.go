@@ -26,7 +26,7 @@ type Character struct {
 	LastLoginAt       optional.Optional[time.Time]
 	Location          optional.Optional[*EveLocation]
 	Ship              optional.Optional[*EveType]
-	TrainedSP           optional.Optional[int64]
+	TrainedSP         optional.Optional[int64]
 	UnallocatedSP     optional.Optional[int64]
 	WalletBalance     optional.Optional[float64]
 	// Calculated fields
@@ -261,24 +261,22 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 	})
 }
 
-// ExtractionsExpiryTime returns the final expiry time for all extractions.
-// When no expiry data is found it will return a zero time.
-func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
+// ExtractionsExpiryTime returns the earliest expiry time of all extractions.
+// When no expiry data is found it will return empty.
+func (cp CharacterPlanet) ExtractionsExpiryTime() optional.Optional[time.Time] {
 	expireTimes := make([]time.Time, 0)
 	for pp := range cp.ActiveExtractors() {
-		v, ok := pp.ExpiryTime.Value()
-		if !ok {
-			continue
+		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
+			expireTimes = append(expireTimes, v)
 		}
-		expireTimes = append(expireTimes, v)
 	}
 	if len(expireTimes) == 0 {
-		return time.Time{}
+		return optional.Optional[time.Time]{}
 	}
-	slices.SortFunc(expireTimes, func(a, b time.Time) int {
-		return b.Compare(a) // sort descending
+	earliest := slices.MinFunc(expireTimes, func(a, b time.Time) int {
+		return a.Compare(b)
 	})
-	return expireTimes[0]
+	return optional.New(earliest)
 }
 
 func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {

@@ -45,8 +45,8 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 		}
 		var expired []string
 		for _, p := range planets {
-			expiration := p.ExtractionsExpiryTime()
-			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
+			expiration, ok := p.ExtractionsExpiryTime().Value()
+			if !ok || expiration.After(time.Now()) || expiration.Before(earliest) {
 				continue
 			}
 			if p.LastNotified.ValueOrZero().Equal(expiration) {

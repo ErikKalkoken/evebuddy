@@ -23,13 +23,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// TODO: Add status "Partially idle" when some extractors are running out with amber level
 // TODO: Add custom mobile view for list of colonies
 
 const (
@@ -43,7 +43,7 @@ const (
 
 type colonyRow struct {
 	characterID     int64
-	endDate         time.Time
+	extractorExpiry optional.Optional[time.Time]
 	extracting      set.Set[string]
 	extractingText  string
 	name            string
@@ -61,29 +61,29 @@ type colonyRow struct {
 }
 
 func (r colonyRow) remaining() time.Duration {
-	return time.Until(r.endDate)
+	if v, ok := r.extractorExpiry.Value(); ok {
+		return time.Until(v)
+	}
+	return 0
 }
 
 func (r colonyRow) isExpired() bool {
-	if r.endDate.IsZero() {
-		return false
-	}
-	return r.endDate.Before(time.Now())
+	return r.remaining() <= 0
 }
 
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
-	return colonyStatusDisplay(r.endDate)
+	return colonyStatusDisplay(r.extractorExpiry)
 }
 
-func colonyStatusDisplay(endDate time.Time) []widget.RichTextSegment {
-	isExpired := endDate.Before(time.Now())
-	if isExpired {
-		return iwidget.RichTextSegmentsFromText(colonyIdle, widget.RichTextStyle{ColorName: theme.ColorNameError})
-	}
-	if endDate.IsZero() {
+func colonyStatusDisplay(extractorExpiry optional.Optional[time.Time]) []widget.RichTextSegment {
+	v, ok := extractorExpiry.Value()
+	if !ok {
 		return iwidget.RichTextSegmentsFromText("-")
 	}
-	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(endDate)), widget.RichTextStyle{
+	if v.Before(time.Now()) {
+		return iwidget.RichTextSegmentsFromText(colonyIdle, widget.RichTextStyle{ColorName: theme.ColorNameError})
+	}
+	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(v)), widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	})
 }
@@ -169,10 +169,14 @@ func newColonies(u *baseUI) *colonies {
 			Label: "End data",
 			Width: columnWidthDateTime,
 			Sort: func(a, b colonyRow) int {
-				return a.endDate.Compare(b.endDate)
+				return optional.CompareFunc(a.extractorExpiry, b.extractorExpiry, func(x, y time.Time) int {
+					return x.Compare(y)
+				})
 			},
 			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
+				co.(*iwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
+					return v.Format(app.DateTimeFormat)
+				}))
 			},
 		}, {
 			ID:    coloniesColProducing,
@@ -476,7 +480,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		producing := p.ProducedSchematicNames()
 		r := colonyRow{
 			characterID:     p.CharacterID,
-			endDate:         p.ExtractionsExpiryTime(),
+			extractorExpiry: p.ExtractionsExpiryTime(),
 			extracting:      set.Of(extracting...),
 			name:            p.EvePlanet.Name,
 			nameDisplay:     p.NameRichText(),
@@ -736,6 +740,7 @@ func (a *colonyDetails) update(ctx context.Context) error {
 type colonyPinItem struct {
 	widget.BaseWidget
 
+	info   *widget.Label
 	name   *widget.Label
 	output *widget.Label
 	status *widget.Label
@@ -743,13 +748,14 @@ type colonyPinItem struct {
 }
 
 func newColonyPinItem() *colonyPinItem {
-	status := widget.NewLabel("Template")
+	status := widget.NewLabel("")
 	status.Alignment = fyne.TextAlignTrailing
-	name := widget.NewLabel("Template")
+	name := widget.NewLabel("")
 	name.TextStyle.Bold = true
 	w := &colonyPinItem{
+		info:   widget.NewLabel(""),
 		name:   name,
-		output: widget.NewLabel("Template"),
+		output: widget.NewLabel(""),
 		status: status,
 		symbol: newPlanetPin(),
 	}
@@ -766,7 +772,7 @@ func (w *colonyPinItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-p),
 			container.NewHBox(w.name, layout.NewSpacer(), w.status),
-			w.output,
+			container.NewHBox(w.output, layout.NewSpacer(), w.info),
 		),
 	)
 	return widget.NewSimpleRenderer(c)
@@ -841,22 +847,24 @@ func (w *colonyPinItem) Set(cp *app.CharacterPlanet, p *app.PlanetPin) {
 	}
 	w.output.SetText(output)
 
-	var s string
+	var status, endDate string
 	var i widget.Importance
 	if p.Type.Group.ID == app.EveGroupExtractorControlUnits {
 		if v, ok := p.ExpiryTime.Value(); !ok {
-			s = "-"
+			status = "-"
 			i = widget.LowImportance
 		} else {
+			endDate = v.Format(app.DateTimeFormat)
 			if time.Now().After(v) {
-				s = colonyIdle
+				status = colonyIdle
 				i = widget.DangerImportance
 			} else {
-				s = ihumanize.Duration(time.Until(v))
+				status = ihumanize.Duration(time.Until(v))
 			}
 		}
 	}
-	w.status.Text, w.status.Importance = s, i
+	w.status.Text, w.status.Importance = status, i
+	w.info.SetText(endDate)
 	w.Refresh()
 }
 
