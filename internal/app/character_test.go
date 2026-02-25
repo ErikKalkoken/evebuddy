@@ -153,7 +153,7 @@ func TestCharacterPlanet_ExtractionsExpire(t *testing.T) {
 			processorPin,
 		}}
 		// when
-		x := cp.ExtractionsExpiryTime()
+		x := cp.ExtractionsExpiry()
 		// then
 		xassert.Equal(t, et1, x.MustValue())
 	})
@@ -166,7 +166,7 @@ func TestCharacterPlanet_ExtractionsExpire(t *testing.T) {
 			processorPin,
 		}}
 		// when
-		x := cp.ExtractionsExpiryTime()
+		x := cp.ExtractionsExpiry()
 		// then
 		assert.True(t, x.IsEmpty())
 	})

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -33,31 +34,29 @@ import (
 // TODO: Add custom mobile view for list of colonies
 
 const (
-	colonyStatusExtracting = "Extracting"
-	colonyStatusOffline    = "Offline"
-)
-
-const (
-	colonyIdle = "Idle"
+	colonyStatusExtracting = "Active"
+	colonyStatusAllIdle    = "Idle"
+	colonyStatusSomeIdle   = "Some idle"
 )
 
 type colonyRow struct {
-	characterID     int64
-	extractorExpiry optional.Optional[time.Time]
-	extracting      set.Set[string]
-	extractingText  string
-	name            string
-	nameDisplay     []widget.RichTextSegment
-	ownerName       string
-	planetID        int64
-	planetName      string
-	planetTypeID    int64
-	planetTypeName  string
-	producing       set.Set[string]
-	producingText   string
-	regionName      string
-	solarSystemName string
-	tags            set.Set[string]
+	characterID       int64
+	extractorExpiries []time.Time
+	extractorExpiry   optional.Optional[time.Time]
+	extracting        set.Set[string]
+	extractingText    string
+	name              string
+	nameDisplay       []widget.RichTextSegment
+	ownerName         string
+	planetID          int64
+	planetName        string
+	planetTypeID      int64
+	planetTypeName    string
+	producing         set.Set[string]
+	producingText     string
+	regionName        string
+	solarSystemName   string
+	tags              set.Set[string]
 }
 
 func (r colonyRow) remaining() time.Duration {
@@ -72,18 +71,33 @@ func (r colonyRow) isExpired() bool {
 }
 
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
-	return colonyStatusDisplay(r.extractorExpiry)
+	return colonyStatusDisplay(r.extractorExpiries)
 }
 
-func colonyStatusDisplay(extractorExpiry optional.Optional[time.Time]) []widget.RichTextSegment {
-	v, ok := extractorExpiry.Value()
-	if !ok {
+func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment {
+	if len(extractorExpiries) == 0 {
 		return iwidget.RichTextSegmentsFromText("-")
 	}
-	if v.Before(time.Now()) {
-		return iwidget.RichTextSegmentsFromText(colonyIdle, widget.RichTextStyle{ColorName: theme.ColorNameError})
+	var expired int
+	for _, v := range extractorExpiries {
+		if v.Before(time.Now()) {
+			expired++
+		}
 	}
-	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(v)), widget.RichTextStyle{
+	if expired == len(extractorExpiries) {
+		return iwidget.RichTextSegmentsFromText(colonyStatusAllIdle, widget.RichTextStyle{
+			ColorName: theme.ColorNameError,
+		})
+	}
+	if expired > 0 {
+		return iwidget.RichTextSegmentsFromText(colonyStatusSomeIdle, widget.RichTextStyle{
+			ColorName: theme.ColorNameWarning,
+		})
+	}
+	earliest := slices.MinFunc(extractorExpiries, func(a, b time.Time) int {
+		return a.Compare(b)
+	})
+	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(earliest)), widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	})
 }
@@ -146,56 +160,55 @@ func newColonies(u *baseUI) *colonies {
 				x.Refresh()
 			})
 		},
-	},
-		{
-			ID:    coloniesColStatus,
-			Label: "Status",
-			Width: 100,
-			Sort: func(a, b colonyRow) int {
-				return cmp.Compare(a.remaining(), b.remaining())
-			},
-			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).Set(r.statusDisplay())
-			},
-		}, {
-			ID:    coloniesColExtracting,
-			Label: "Extracting",
-			Width: 200,
-			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.extractingText)
-			},
-		}, {
-			ID:    coloniesColEndDate,
-			Label: "End data",
-			Width: columnWidthDateTime,
-			Sort: func(a, b colonyRow) int {
-				return optional.CompareFunc(a.extractorExpiry, b.extractorExpiry, func(x, y time.Time) int {
-					return x.Compare(y)
-				})
-			},
-			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
-					return v.Format(app.DateTimeFormat)
-				}))
-			},
-		}, {
-			ID:    coloniesColProducing,
-			Label: "Producing",
-			Width: 200,
-			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.producingText)
-			},
-		}, {
-			ID:    coloniesColCharacter,
-			Label: "Character",
-			Width: columnWidthEntity,
-			Sort: func(a, b colonyRow) int {
-				return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
-			},
-			Update: func(r colonyRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.ownerName)
-			},
-		}})
+	}, {
+		ID:    coloniesColStatus,
+		Label: "Status",
+		Width: 100,
+		Sort: func(a, b colonyRow) int {
+			return cmp.Compare(a.remaining(), b.remaining())
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).Set(r.statusDisplay())
+		},
+	}, {
+		ID:    coloniesColExtracting,
+		Label: "Extracting",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.extractingText)
+		},
+	}, {
+		ID:    coloniesColEndDate,
+		Label: "End data",
+		Width: columnWidthDateTime,
+		Sort: func(a, b colonyRow) int {
+			return optional.CompareFunc(a.extractorExpiry, b.extractorExpiry, func(x, y time.Time) int {
+				return x.Compare(y)
+			})
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
+				return v.Format(app.DateTimeFormat)
+			}))
+		},
+	}, {
+		ID:    coloniesColProducing,
+		Label: "Producing",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.producingText)
+		},
+	}, {
+		ID:    coloniesColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+		Sort: func(a, b colonyRow) int {
+			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.ownerName)
+		},
+	}})
 	a := &colonies{
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColEndDate, iwidget.SortAsc),
@@ -262,7 +275,7 @@ func newColonies(u *baseUI) *colonies {
 	}, a.u.window)
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
-		colonyStatusOffline,
+		colonyStatusAllIdle,
 	}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -370,7 +383,7 @@ func (a *colonies) filterRowsAsync(sortCol int) {
 				switch status {
 				case colonyStatusExtracting:
 					return r.isExpired()
-				case colonyStatusOffline:
+				case colonyStatusAllIdle:
 					return !r.isExpired()
 				}
 				return true
@@ -479,19 +492,20 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		extracting := p.ExtractedTypeNames()
 		producing := p.ProducedSchematicNames()
 		r := colonyRow{
-			characterID:     p.CharacterID,
-			extractorExpiry: p.ExtractionsExpiryTime(),
-			extracting:      set.Of(extracting...),
-			name:            p.EvePlanet.Name,
-			nameDisplay:     p.NameRichText(),
-			ownerName:       a.u.scs.CharacterName(p.CharacterID),
-			planetID:        p.EvePlanet.ID,
-			planetName:      p.EvePlanet.Name,
-			producing:       set.Of(producing...),
-			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
-			solarSystemName: p.EvePlanet.SolarSystem.Name,
-			planetTypeName:  p.EvePlanet.TypeDisplay(),
-			planetTypeID:    p.EvePlanet.Type.ID,
+			characterID:       p.CharacterID,
+			extractorExpiries: p.ExtractionsExpiryTimes(),
+			extractorExpiry:   p.ExtractionsExpiry(),
+			extracting:        set.Of(extracting...),
+			name:              p.EvePlanet.Name,
+			nameDisplay:       p.NameRichText(),
+			ownerName:         a.u.scs.CharacterName(p.CharacterID),
+			planetID:          p.EvePlanet.ID,
+			planetName:        p.EvePlanet.Name,
+			producing:         set.Of(producing...),
+			regionName:        p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			solarSystemName:   p.EvePlanet.SolarSystem.Name,
+			planetTypeName:    p.EvePlanet.TypeDisplay(),
+			planetTypeID:      p.EvePlanet.Type.ID,
 		}
 		if len(extracting) == 0 {
 			r.extractingText = "-"
@@ -549,13 +563,13 @@ func (a *colonies) showColonyDetailsWindow(r colonyRow) {
 type colonyDetails struct {
 	widget.BaseWidget
 
-	characterID   int64
+	characterID   atomic.Int64
 	cp            *app.CharacterPlanet
 	icon          *iwidget.TappableImage
 	infos         *widget.Form
 	installations *widget.List
 	issue         *widget.Label
-	planetID      int64
+	planetID      atomic.Int64
 	signalKey     string
 	status        *iwidget.RichText
 	u             *baseUI
@@ -570,16 +584,16 @@ func newColonyDetails(u *baseUI, characterID, planetID int64) *colonyDetails {
 	issue.Importance = widget.DangerImportance
 	issue.Hide()
 	a := &colonyDetails{
-		characterID: characterID,
-		infos:       widget.NewForm(),
-		issue:       issue,
-		planetID:    planetID,
-		signalKey:   fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
-		status:      iwidget.NewRichText(),
-		u:           u,
+		infos:     widget.NewForm(),
+		issue:     issue,
+		signalKey: fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
+		status:    iwidget.NewRichText(),
+		u:         u,
 	}
 	a.ExtendBaseWidget(a)
 
+	a.characterID.Store(characterID)
+	a.planetID.Store(planetID)
 	a.infos.Orientation = widget.Adaptive
 
 	a.icon = iwidget.NewTappableImage(icons.BlankSvg, func() {
@@ -625,7 +639,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64) *colonyDetails {
 		})
 	}, a.signalKey)
 	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if arg.characterID == a.characterID && arg.section == app.SectionCharacterPlanets {
+		if arg.characterID == a.characterID.Load() && arg.section == app.SectionCharacterPlanets {
 			err := a.update(ctx)
 			if err != nil {
 				slog.Error("failed to update colony installations", "error", err)
@@ -636,16 +650,16 @@ func newColonyDetails(u *baseUI, characterID, planetID int64) *colonyDetails {
 				})
 			}
 		}
-	})
+	}, a.signalKey)
 	a.u.characterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
-		if o.ID == a.characterID {
+		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.cp = nil
 				a.setIssue("Character has been removed")
 				a.Refresh()
 			})
 		}
-	})
+	}, a.signalKey)
 	return a
 }
 
@@ -676,6 +690,8 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *colonyDetails) stop() {
 	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
+	a.u.characterSectionChanged.RemoveListener(a.signalKey)
+	a.u.characterRemoved.RemoveListener(a.signalKey)
 }
 
 func (a *colonyDetails) setIssue(s string) {
@@ -685,19 +701,19 @@ func (a *colonyDetails) setIssue(s string) {
 
 func (a *colonyDetails) Refresh() {
 	if a.cp != nil {
-		a.status.Set(colonyStatusDisplay(a.cp.ExtractionsExpiryTime()))
+		a.status.Set(colonyStatusDisplay(a.cp.ExtractionsExpiryTimes()))
 	}
 	a.infos.Refresh()
 	a.BaseWidget.Refresh()
 }
 
 func (a *colonyDetails) update(ctx context.Context) error {
-	cp, err := a.u.cs.GetPlanet(context.Background(), a.characterID, a.planetID)
+	cp, err := a.u.cs.GetPlanet(ctx, a.characterID.Load(), a.planetID.Load())
 	if err != nil {
 		return err
 	}
 
-	ownerName := a.u.scs.CharacterName(a.characterID)
+	ownerName := a.u.scs.CharacterName(a.characterID.Load())
 
 	fyne.Do(func() {
 		a.issue.Hide()
@@ -752,12 +768,15 @@ func newColonyPinItem() *colonyPinItem {
 	status.Alignment = fyne.TextAlignTrailing
 	name := widget.NewLabel("")
 	name.TextStyle.Bold = true
+	name.Truncation = fyne.TextTruncateClip
+	output := widget.NewLabel("")
+	output.Truncation = fyne.TextTruncateClip
 	w := &colonyPinItem{
 		info:   widget.NewLabel(""),
 		name:   name,
-		output: widget.NewLabel(""),
+		output: output,
 		status: status,
-		symbol: newPlanetPin(),
+		symbol: newPlanetPinSymbol(),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -771,8 +790,8 @@ func (w *colonyPinItem) CreateRenderer() fyne.WidgetRenderer {
 		container.NewCenter(w.symbol),
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-p),
-			container.NewHBox(w.name, layout.NewSpacer(), w.status),
-			container.NewHBox(w.output, layout.NewSpacer(), w.info),
+			container.NewBorder(nil, nil, nil, w.status, w.name),
+			container.NewBorder(nil, nil, nil, w.info, w.output),
 		),
 	)
 	return widget.NewSimpleRenderer(c)
@@ -856,7 +875,7 @@ func (w *colonyPinItem) Set(cp *app.CharacterPlanet, p *app.PlanetPin) {
 		} else {
 			endDate = v.Format(app.DateTimeFormat)
 			if time.Now().After(v) {
-				status = colonyIdle
+				status = colonyStatusAllIdle
 				i = widget.DangerImportance
 			} else {
 				status = ihumanize.Duration(time.Until(v))
@@ -868,7 +887,7 @@ func (w *colonyPinItem) Set(cp *app.CharacterPlanet, p *app.PlanetPin) {
 	w.Refresh()
 }
 
-var planetPinCache xsync.Map[string, fyne.Resource]
+var planetPinSymbolCache xsync.Map[string, fyne.Resource]
 
 type planetPinSymbol struct {
 	widget.BaseWidget
@@ -878,7 +897,7 @@ type planetPinSymbol struct {
 	statusColor fyne.ThemeColorName
 }
 
-func newPlanetPin() *planetPinSymbol {
+func newPlanetPinSymbol() *planetPinSymbol {
 	w := &planetPinSymbol{
 		icon:        icons.BlankSvg,
 		iconColor:   theme.ColorNameForeground,
@@ -890,14 +909,14 @@ func newPlanetPin() *planetPinSymbol {
 
 func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName) {
 	key := icon.Name() + string(iconColor)
-	icon2, ok := planetPinCache.Load(key)
+	icon2, ok := planetPinSymbolCache.Load(key)
 	if !ok {
 		r, err := fynetools.ThemedPNG(icon, theme.Color(iconColor))
 		if err != nil {
 			fyne.LogError("Failed theme PNG", err)
 			icon2 = icons.BlankSvg
 		} else {
-			planetPinCache.Store(key, r)
+			planetPinSymbolCache.Store(key, r)
 			icon2 = r
 		}
 	}

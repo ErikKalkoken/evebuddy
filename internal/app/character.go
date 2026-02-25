@@ -261,22 +261,29 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 	})
 }
 
-// ExtractionsExpiryTime returns the earliest expiry time of all extractions.
+// ExtractionsExpiry returns the earliest expiry time of all extractions.
 // When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsExpiryTime() optional.Optional[time.Time] {
-	expireTimes := make([]time.Time, 0)
-	for pp := range cp.ActiveExtractors() {
-		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
-			expireTimes = append(expireTimes, v)
-		}
-	}
-	if len(expireTimes) == 0 {
+func (cp CharacterPlanet) ExtractionsExpiry() optional.Optional[time.Time] {
+	times := cp.ExtractionsExpiryTimes()
+	if len(times) == 0 {
 		return optional.Optional[time.Time]{}
 	}
-	earliest := slices.MinFunc(expireTimes, func(a, b time.Time) int {
+	earliest := slices.MinFunc(times, func(a, b time.Time) int {
 		return a.Compare(b)
 	})
 	return optional.New(earliest)
+}
+
+// ExtractionsExpiryTimes returns the expiry times for all extractions.
+// When no expiry data is found it will return empty.
+func (cp CharacterPlanet) ExtractionsExpiryTimes() []time.Time {
+	s := make([]time.Time, 0)
+	for pp := range cp.ActiveExtractors() {
+		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
+			s = append(s, v)
+		}
+	}
+	return s
 }
 
 func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
