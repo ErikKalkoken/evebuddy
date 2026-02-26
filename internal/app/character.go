@@ -255,15 +255,9 @@ func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
 	})
 }
 
-func (cp CharacterPlanet) ExtractedTypeNames() []string {
-	return extractedStringsSorted(cp.ExtractedTypes(), func(a *EveType) string {
-		return a.Name
-	})
-}
-
-// ExtractionsExpiry returns the earliest expiry time of all extractions.
+// ExtractionsEarliestExpiry returns the earliest expiry time of all extractions.
 // When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsExpiry() optional.Optional[time.Time] {
+func (cp CharacterPlanet) ExtractionsEarliestExpiry() optional.Optional[time.Time] {
 	times := cp.ExtractionsExpiryTimes()
 	if len(times) == 0 {
 		return optional.Optional[time.Time]{}
@@ -301,21 +295,6 @@ func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 		}
 	}
 	return slices.Collect(maps.Values(schematics))
-}
-
-func (cp CharacterPlanet) ProducedSchematicNames() []string {
-	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
-		return a.Name
-	})
-}
-
-func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
-	s2 := make([]string, 0)
-	for _, x := range s {
-		s2 = append(s2, extract(x))
-	}
-	slices.Sort(s2)
-	return s2
 }
 
 type PlanetPin struct {

@@ -24,6 +24,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
@@ -50,6 +51,7 @@ type colonyRow struct {
 	producing         set.Set[string]
 	producingText     string
 	regionName        string
+	searchTarget      string
 	solarSystemName   string
 	tags              set.Set[string]
 	titleDisplay      []widget.RichTextSegment
@@ -101,13 +103,13 @@ func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment
 type colonies struct {
 	widget.BaseWidget
 
-	OnUpdate func(total, expired int)
-
 	body              fyne.CanvasObject
-	footer            *widget.Label
 	columnSorter      *iwidget.ColumnSorter[colonyRow]
+	footer            *widget.Label
+	onUpdate          func(total, expired int)
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
+	search            *widget.Entry
 	selectExtracting  *kxwidget.FilterChipSelect
 	selectOwner       *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
@@ -210,6 +212,7 @@ func newColonies(u *baseUI) *colonies {
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColEndDate, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
+		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -261,6 +264,14 @@ func newColonies(u *baseUI) *colonies {
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRowsAsync(-1)
+	})
+	a.search.OnChanged = func(s string) {
+		a.filterRowsAsync(-1)
+	}
+	a.search.PlaceHolder = "Search systems & output"
 
 	// Signals
 	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
@@ -301,8 +312,17 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		filter.Add(a.sortButton)
 	}
+	var top *fyne.Container
+	if a.u.isMobile {
+		top = container.NewVBox(
+			a.search,
+			container.NewHScroll(filter),
+		)
+	} else {
+		top = container.NewBorder(nil, nil, filter, nil, a.search)
+	}
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		top,
 		a.footer,
 		nil,
 		nil,
@@ -422,10 +442,10 @@ func (a *colonies) filterRowsAsync(sortCol int) {
 	status := a.selectStatus.Selected
 	planetType := a.selectPlanetType.Selected
 	tag := a.selectTag.Selected
+	search := strings.ToLower(a.search.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		// filter
 		if extracting != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
 				return !r.extracting.Contains(extracting)
@@ -472,8 +492,13 @@ func (a *colonies) filterRowsAsync(sortCol int) {
 				return !r.tags.Contains(tag)
 			})
 		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		// set data & refresh
+
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
 			return r.tags
 		})...).All())
@@ -549,8 +574,8 @@ func (a *colonies) setOnUpdate() {
 			expired++
 		}
 	}
-	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.rows), expired)
+	if a.onUpdate != nil {
+		a.onUpdate(len(a.rows), expired)
 	}
 }
 
@@ -562,37 +587,44 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 
 	var rows []colonyRow
 	for _, p := range planets {
-		extracting := p.ExtractedTypeNames()
-		producing := p.ProducedSchematicNames()
+		extracting := set.Collect(xiter.MapSlice(p.ExtractedTypes(), func(x *app.EveType) string {
+			return x.Name
+		}))
+		producing := set.Collect(xiter.MapSlice(p.ProducedSchematics(), func(x *app.EveSchematic) string {
+			return x.Name
+		}))
 		titleDisplay := iwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
 			x.SizeName = theme.SizeNameSubHeadingText
 		})
+		name := p.EvePlanet.Name
+		searchTargets := slices.Collect(xiter.Map(set.Union(set.Of(name), extracting, producing).All(), strings.ToLower))
 		r := colonyRow{
 			characterID:       p.CharacterID,
 			extractorExpiries: p.ExtractionsExpiryTimes(),
-			extractorExpiry:   p.ExtractionsExpiry(),
-			extracting:        set.Of(extracting...),
-			name:              p.EvePlanet.Name,
+			extractorExpiry:   p.ExtractionsEarliestExpiry(),
+			extracting:        extracting,
+			name:              name,
 			nameDisplay:       p.NameRichText(),
 			ownerName:         a.u.scs.CharacterName(p.CharacterID),
 			planetID:          p.EvePlanet.ID,
 			planetName:        p.EvePlanet.Name,
-			producing:         set.Of(producing...),
+			producing:         producing,
 			regionName:        p.EvePlanet.SolarSystem.Constellation.Region.Name,
 			solarSystemName:   p.EvePlanet.SolarSystem.Name,
 			planetTypeName:    p.EvePlanet.TypeDisplay(),
 			planetTypeID:      p.EvePlanet.Type.ID,
 			titleDisplay:      titleDisplay,
+			searchTarget:      strings.Join(searchTargets, "~"),
 		}
-		if len(extracting) == 0 {
+		if extracting.Size() == 0 {
 			r.extractingText = "-"
 		} else {
-			r.extractingText = strings.Join(extracting, ", ")
+			r.extractingText = strings.Join(slices.Sorted(extracting.All()), ", ")
 		}
-		if len(producing) == 0 {
+		if producing.Size() == 0 {
 			r.producingText = "-"
 		} else {
-			r.producingText = strings.Join(producing, ", ")
+			r.producingText = strings.Join(slices.Sorted(producing.All()), ", ")
 		}
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, p.CharacterID)
 		if err != nil {

@@ -139,7 +139,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.EarthSvg),
 		newContentPage("Colonies", u.colonies),
 	)
-	u.colonies.OnUpdate = func(_, expired int) {
+	u.colonies.onUpdate = func(_, expired int) {
 		var s string
 		if expired > 0 {
 			s = fmt.Sprint(expired)

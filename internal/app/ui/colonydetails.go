@@ -36,6 +36,7 @@ type colonyDetailsRow struct {
 	groupName         string
 	name              string
 	output            string
+	searchTarget      string
 	status            []widget.RichTextSegment
 	symbolIconColor   fyne.ThemeColorName
 	symbolIconName    eveicon.Name
@@ -59,6 +60,7 @@ type colonyDetails struct {
 	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
+	search        *widget.Entry
 	security      *iwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
@@ -149,6 +151,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 		planet:       planet,
 		planetType:   makeHyperLink(),
 		region:       widget.NewLabel(""),
+		search:       widget.NewEntry(),
 		security:     iwidget.NewRichText(),
 		signalKey:    fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
 		status:       iwidget.NewRichText(),
@@ -190,6 +193,14 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
 	}, w)
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRowsAsync()
+	})
+	a.search.OnChanged = func(s string) {
+		a.filterRowsAsync()
+	}
+	a.search.PlaceHolder = "Search"
 
 	// signals
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -229,13 +240,19 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	)
 	// infos.Orientation = widget.Adaptive
 
-	filter := container.NewHBox(a.selectType2, a.sortButton)
+	filter := container.NewBorder(
+		nil,
+		nil,
+		container.NewHBox(a.selectType2, a.sortButton),
+		nil,
+		a.search,
+	)
 
 	installations := container.NewBorder(
 		container.NewVBox(
 			widget.NewSeparator(),
 			newStandardSpacer(),
-			container.NewHScroll(filter),
+			filter,
 		),
 		a.footer,
 		nil,
@@ -273,6 +290,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	type2 := a.selectType2.Selected
+	search := strings.ToLower(a.search.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {
@@ -281,6 +299,12 @@ func (a *colonyDetails) filterRowsAsync() {
 				return r.name != type2
 			})
 		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+
 		typeOptions := xslices.Map(rows, func(r colonyDetailsRow) string {
 			return r.name
 		})
@@ -375,6 +399,9 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 			pinType = pinTypeUnknown
 		}
 
+		name := string(pinType)
+		searchTargets := []string{strings.ToLower(name)}
+
 		var iconColor, statusColor fyne.ThemeColorName
 		var iconName eveicon.Name
 		switch pinType {
@@ -419,13 +446,19 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 		var output string
 		switch p.Type.Group.ID {
 		case app.EveGroupExtractorControlUnits:
-			output = p.ExtractorProductType.StringFunc("-", func(v *app.EveType) string {
-				return v.Name
-			})
+			if v, ok := p.ExtractorProductType.Value(); ok {
+				output = v.Name
+				searchTargets = append(searchTargets, strings.ToLower(v.Name))
+			} else {
+				output = "-"
+			}
 		case app.EveGroupProcessors:
-			output = p.Schematic.StringFunc("-", func(v *app.EveSchematic) string {
-				return v.Name
-			})
+			if v, ok := p.Schematic.Value(); ok {
+				output = v.Name
+				searchTargets = append(searchTargets, strings.ToLower(v.Name))
+			} else {
+				output = "-"
+			}
 		case app.EveGroupCommandCenters:
 			output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
 		}
@@ -457,13 +490,14 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 			expiryTime:        p.ExpiryTime,
 			groupID:           p.Type.Group.ID,
 			groupName:         p.Type.Group.Name,
-			name:              string(pinType),
+			name:              name,
 			output:            output,
 			status:            status,
 			symbolIconColor:   iconColor,
 			symbolIconName:    iconName,
 			symbolStatusColor: statusColor,
 			typeID:            p.Type.ID,
+			searchTarget:      strings.Join(searchTargets, "~"),
 		})
 	}
 	return cp, rows, nil
