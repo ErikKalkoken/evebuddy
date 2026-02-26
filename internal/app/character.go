@@ -26,7 +26,7 @@ type Character struct {
 	LastLoginAt       optional.Optional[time.Time]
 	Location          optional.Optional[*EveLocation]
 	Ship              optional.Optional[*EveType]
-	TrainedSP           optional.Optional[int64]
+	TrainedSP         optional.Optional[int64]
 	UnallocatedSP     optional.Optional[int64]
 	WalletBalance     optional.Optional[float64]
 	// Calculated fields
@@ -255,30 +255,29 @@ func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
 	})
 }
 
-func (cp CharacterPlanet) ExtractedTypeNames() []string {
-	return extractedStringsSorted(cp.ExtractedTypes(), func(a *EveType) string {
-		return a.Name
+// ExtractionsEarliestExpiry returns the earliest expiry time of all extractions.
+// When no expiry data is found it will return empty.
+func (cp CharacterPlanet) ExtractionsEarliestExpiry() optional.Optional[time.Time] {
+	times := cp.ExtractionsExpiryTimes()
+	if len(times) == 0 {
+		return optional.Optional[time.Time]{}
+	}
+	earliest := slices.MinFunc(times, func(a, b time.Time) int {
+		return a.Compare(b)
 	})
+	return optional.New(earliest)
 }
 
-// ExtractionsExpiryTime returns the final expiry time for all extractions.
-// When no expiry data is found it will return a zero time.
-func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
-	expireTimes := make([]time.Time, 0)
+// ExtractionsExpiryTimes returns the expiry times for all extractions.
+// When no expiry data is found it will return empty.
+func (cp CharacterPlanet) ExtractionsExpiryTimes() []time.Time {
+	s := make([]time.Time, 0)
 	for pp := range cp.ActiveExtractors() {
-		v, ok := pp.ExpiryTime.Value()
-		if !ok {
-			continue
+		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
+			s = append(s, v)
 		}
-		expireTimes = append(expireTimes, v)
 	}
-	if len(expireTimes) == 0 {
-		return time.Time{}
-	}
-	slices.SortFunc(expireTimes, func(a, b time.Time) int {
-		return b.Compare(a) // sort descending
-	})
-	return expireTimes[0]
+	return s
 }
 
 func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
@@ -296,21 +295,6 @@ func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 		}
 	}
 	return slices.Collect(maps.Values(schematics))
-}
-
-func (cp CharacterPlanet) ProducedSchematicNames() []string {
-	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
-		return a.Name
-	})
-}
-
-func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
-	s2 := make([]string, 0)
-	for _, x := range s {
-		s2 = append(s2, extract(x))
-	}
-	slices.Sort(s2)
-	return s2
 }
 
 type PlanetPin struct {

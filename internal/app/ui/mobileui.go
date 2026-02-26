@@ -767,7 +767,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	u.colonies.OnUpdate = func(_, expired int) {
+	u.colonies.onUpdate = func(_, expired int) {
 		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		homeList.Refresh()
 	}

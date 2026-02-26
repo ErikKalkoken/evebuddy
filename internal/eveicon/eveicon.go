@@ -27,6 +27,11 @@ const (
 	Officer
 	OxygenIsotopes
 	Perception
+	PICommandCenter
+	PIExtractor
+	PIProcessor
+	PILaunchpad
+	PIStorage
 	StarMap
 	Storyline
 	Structure
@@ -38,27 +43,32 @@ const (
 )
 
 var namedIcons = map[Name]*fyne.StaticResource{
-	Undefined:     resource76415Png,
-	Amarr:         resource881284Png,
-	Caldari:       resource881281Png,
-	Charisma:      resource22321Png,
-	CloningCenter: resource127641Png,
-	Deadspace:     resource7316247Png,
-	Faction:       resource7316246Png,
-	Gallente:      resource881283Png,
-	Intelligence:  resource22323Png,
-	Memory:        resource22324Png,
-	Minmatar:      resource881282Png,
-	Officer:       resource7316248Png,
-	Perception:    resource22325Png,
-	StarMap:       resource7644Png,
-	Storyline:     resource7316245Png,
-	Structure:     resource2649Png,
-	Tech1:         resource7316241Png,
-	Tech2:         resource7316242Png,
-	Tech3:         resource7316243Png,
-	Tech4:         resource7316244Png,
-	Willpower:     resource22322Png,
+	Undefined:       resource76415Png,
+	Amarr:           resource881284Png,
+	Caldari:         resource881281Png,
+	Charisma:        resource22321Png,
+	CloningCenter:   resource127641Png,
+	Deadspace:       resource7316247Png,
+	Faction:         resource7316246Png,
+	Gallente:        resource881283Png,
+	Intelligence:    resource22323Png,
+	Memory:          resource22324Png,
+	Minmatar:        resource881282Png,
+	Officer:         resource7316248Png,
+	Perception:      resource22325Png,
+	PICommandCenter: resource773229Png,
+	PIExtractor:     resource773226Png,
+	PIProcessor:       resource773230Png,
+	PILaunchpad:     resource773227Png,
+	PIStorage:       resource773225Png,
+	StarMap:         resource7644Png,
+	Storyline:       resource7316245Png,
+	Structure:       resource2649Png,
+	Tech1:           resource7316241Png,
+	Tech2:           resource7316242Png,
+	Tech3:           resource7316243Png,
+	Tech4:           resource7316244Png,
+	Willpower:       resource22322Png,
 }
 
 // FromID returns an Eve Online icon by icon ID and reports if it was found.

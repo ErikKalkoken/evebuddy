@@ -39,6 +39,7 @@ const (
 	EveGroupCapitalIndustrialShip   = 883
 	EveGroupCargoContainer          = 12
 	EveGroupCarrier                 = 547
+	EveGroupCommandCenters          = 1027
 	EveGroupDreadnought             = 485
 	EveGroupExtractorControlUnits   = 1063
 	EveGroupForceAuxiliary          = 1538
@@ -47,6 +48,8 @@ const (
 	EveGroupPlanet                  = 7
 	EveGroupProcessors              = 1028
 	EveGroupSecureCargoContainer    = 340
+	EveGroupSpaceports              = 1030
+	EveGroupStorageFacilities       = 1029
 	EveGroupSuperCarrier            = 659
 	EveGroupTitan                   = 30
 )

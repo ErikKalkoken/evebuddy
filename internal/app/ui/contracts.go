@@ -314,7 +314,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 			main[0].(*widget.Label).SetText(r.name)
 			box := main[1].(*fyne.Container).Objects
 			box[0].(*widget.Label).SetText(r.typeName)
-			(box[2].(*iwidget.RichText).Set(r.status.DisplayRichText()))
+			box[2].(*iwidget.RichText).Set(r.status.DisplayRichText())
 
 			main[2].(*widget.Label).SetText("From " + r.issuerName)
 			assignee := "To "

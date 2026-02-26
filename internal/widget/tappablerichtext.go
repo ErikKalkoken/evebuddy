@@ -9,7 +9,7 @@ import (
 
 // TappableRichText is a variant of the RichText widget which runs a function when tapped.
 type TappableRichText struct {
-	widget.RichText
+	RichText
 
 	// The function that is called when the label is tapped.
 	OnTapped func()
