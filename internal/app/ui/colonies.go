@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -22,14 +21,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
+
+// TODO: Add filter to colony details
 
 const (
 	colonyStatusExtracting = "Active"
@@ -39,13 +38,12 @@ const (
 
 type colonyRow struct {
 	characterID       int64
-	extractorExpiries []time.Time
-	extractorExpiry   optional.Optional[time.Time]
 	extracting        set.Set[string]
 	extractingText    string
+	extractorExpiries []time.Time
+	extractorExpiry   optional.Optional[time.Time]
 	name              string
 	nameDisplay       []widget.RichTextSegment
-	titleDisplay      []widget.RichTextSegment
 	ownerName         string
 	planetID          int64
 	planetName        string
@@ -56,6 +54,7 @@ type colonyRow struct {
 	regionName        string
 	solarSystemName   string
 	tags              set.Set[string]
+	titleDisplay      []widget.RichTextSegment
 }
 
 func (r colonyRow) remaining() time.Duration {
@@ -230,7 +229,7 @@ func newColonies(u *baseUI) *colonies {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r colonyRow) {
-				a.showColonyDetailsWindow(r)
+				showColonyDetailsWindow(a.u, r)
 			})
 	}
 
@@ -334,7 +333,7 @@ func (a *colonies) makeDataList() *iwidget.StripedList {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		a.showColonyDetailsWindow(a.rowsFiltered[id])
+		showColonyDetailsWindow(a.u, a.rowsFiltered[id])
 	}
 	return l
 }
@@ -606,473 +605,3 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	}
 	return rows, nil
 }
-
-// showColonyDetailsWindow shows the details of a colony in a window.
-func (a *colonies) showColonyDetailsWindow(r colonyRow) {
-	title := fmt.Sprintf("Colony %s", r.planetName)
-	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
-	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(key, title, r.ownerName)
-	if !ok {
-		w.Show()
-		return
-	}
-
-	b := newColonyDetails(a.u, r.characterID, r.planetID)
-	err := b.update(context.Background())
-	if err != nil {
-		slog.Error("Failed to show colony details", "characterID", r.characterID, "planetID", r.planetID, "error", err)
-		a.u.showErrorDialog("Failed to show colony details", err, a.u.MainWindow())
-		return
-	}
-
-	w.SetOnClosed(func() {
-		if onClosed != nil {
-			onClosed()
-		}
-		b.stop()
-	})
-
-	setDetailWindow(detailWindowParams{
-		content: b,
-		title:   title,
-		window:  w,
-	})
-	w.Show()
-}
-
-type colonyDetails struct {
-	widget.BaseWidget
-
-	characterID   atomic.Int64
-	cp            *app.CharacterPlanet
-	icon          *iwidget.TappableImage
-	infos         *widget.Form
-	installations *widget.List
-	issue         *widget.Label
-	planetID      atomic.Int64
-	signalKey     string
-	status        *iwidget.RichText
-	u             *baseUI
-}
-
-func newColonyDetails(u *baseUI, characterID, planetID int64) *colonyDetails {
-	if characterID == 0 || planetID == 0 {
-		panic(app.ErrInvalid)
-	}
-	issue := widget.NewLabel("")
-	issue.Wrapping = fyne.TextWrapWord
-	issue.Importance = widget.DangerImportance
-	issue.Hide()
-	a := &colonyDetails{
-		infos:     widget.NewForm(),
-		issue:     issue,
-		signalKey: fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
-		status:    iwidget.NewRichText(),
-		u:         u,
-	}
-	a.ExtendBaseWidget(a)
-
-	a.characterID.Store(characterID)
-	a.planetID.Store(planetID)
-	a.infos.Orientation = widget.Adaptive
-
-	a.icon = iwidget.NewTappableImage(icons.BlankSvg, func() {
-		if a.cp == nil {
-			return
-		}
-		a.u.ShowTypeInfoWindow(a.cp.EvePlanet.Type.ID)
-	})
-	a.icon.SetFillMode(canvas.ImageFillContain)
-	a.icon.SetMinSize(fyne.NewSquareSize(64))
-
-	list := widget.NewList(
-		func() int {
-			if a.cp == nil {
-				return 0
-			}
-			return len(a.cp.Pins)
-		},
-		func() fyne.CanvasObject {
-			return newColonyPinItem()
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if a.cp == nil || id >= len(a.cp.Pins) {
-				return
-			}
-			co.(*colonyPinItem).Set(a.cp, a.cp.Pins[id])
-		},
-	)
-	list.HideSeparators = true
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if id >= len(a.cp.Pins) {
-			return
-		}
-		a.u.ShowTypeInfoWindow(a.cp.Pins[id].Type.ID)
-	}
-	a.installations = list
-
-	// signals
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.Refresh()
-		})
-	}, a.signalKey)
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if arg.characterID == a.characterID.Load() && arg.section == app.SectionCharacterPlanets {
-			err := a.update(ctx)
-			if err != nil {
-				slog.Error("failed to update colony installations", "error", err)
-				fyne.Do(func() {
-					a.cp = nil
-					a.setIssue("ERROR: " + a.u.humanizeError(err))
-					a.Refresh()
-				})
-			}
-		}
-	}, a.signalKey)
-	a.u.characterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
-		if o.ID == a.characterID.Load() {
-			fyne.Do(func() {
-				a.cp = nil
-				a.setIssue("Character has been removed")
-				a.Refresh()
-			})
-		}
-	}, a.signalKey)
-	return a
-}
-
-func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
-	installations := container.NewBorder(
-		widget.NewLabelWithStyle("Installations", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		nil,
-		nil,
-		nil,
-		a.installations,
-	)
-	infos := container.NewBorder(
-		a.issue,
-		newStandardSpacer(),
-		nil,
-		container.NewPadded(container.NewVBox((a.icon))),
-		a.infos,
-	)
-	content := container.NewBorder(
-		infos,
-		nil,
-		nil,
-		nil,
-		installations,
-	)
-	return widget.NewSimpleRenderer(content)
-}
-
-func (a *colonyDetails) stop() {
-	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
-	a.u.characterSectionChanged.RemoveListener(a.signalKey)
-	a.u.characterRemoved.RemoveListener(a.signalKey)
-}
-
-func (a *colonyDetails) setIssue(s string) {
-	a.issue.SetText(s)
-	a.issue.Show()
-}
-
-func (a *colonyDetails) Refresh() {
-	if a.cp != nil {
-		a.status.Set(colonyStatusDisplay(a.cp.ExtractionsExpiryTimes()))
-	}
-	a.infos.Refresh()
-	a.BaseWidget.Refresh()
-}
-
-func (a *colonyDetails) update(ctx context.Context) error {
-	cp, err := a.u.cs.GetPlanet(ctx, a.characterID.Load(), a.planetID.Load())
-	if err != nil {
-		return err
-	}
-
-	ownerName := a.u.scs.CharacterName(a.characterID.Load())
-
-	fyne.Do(func() {
-		a.issue.Hide()
-		a.cp = cp
-
-		a.u.eis.InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
-			a.icon.SetResource(res)
-		})
-
-		p := theme.Padding()
-		location := container.New(layout.NewCustomPaddedHBoxLayout(-2*p),
-			iwidget.NewRichText(cp.EvePlanet.SolarSystem.SecurityStatusRichText()...),
-			makeLinkLabel(cp.EvePlanet.Name, func() {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, cp.EvePlanet.SolarSystem.ID)
-			}),
-			widget.NewLabel(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name)),
-		)
-		fi := []*widget.FormItem{
-			widget.NewFormItem("Owner", makeLinkLabel(ownerName, func() {
-				a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
-			})),
-			widget.NewFormItem("Planet", location),
-			widget.NewFormItem("Type", container.NewHBox(
-				makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
-					a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.EveEntity())
-				}),
-			)),
-			widget.NewFormItem("Status", a.status),
-		}
-		a.infos.Items = fi
-
-		slices.SortFunc(cp.Pins, func(a, b *app.PlanetPin) int {
-			return strings.Compare(a.Type.Group.Name, b.Type.Group.Name)
-		})
-		a.Refresh()
-	})
-	return nil
-}
-
-type colonyPinItem struct {
-	widget.BaseWidget
-
-	info   *widget.Label
-	name   *widget.Label
-	output *widget.Label
-	status *widget.Label
-	symbol *planetPinSymbol
-}
-
-func newColonyPinItem() *colonyPinItem {
-	status := widget.NewLabel("")
-	status.Alignment = fyne.TextAlignTrailing
-	name := widget.NewLabel("")
-	name.TextStyle.Bold = true
-	name.Truncation = fyne.TextTruncateClip
-	output := widget.NewLabel("")
-	output.Truncation = fyne.TextTruncateClip
-	w := &colonyPinItem{
-		info:   widget.NewLabel(""),
-		name:   name,
-		output: output,
-		status: status,
-		symbol: newPlanetPinSymbol(),
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *colonyPinItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	c := container.NewBorder(
-		nil,
-		nil,
-		container.NewCenter(w.symbol),
-		nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(-p),
-			container.NewBorder(nil, nil, nil, w.status, w.name),
-			container.NewBorder(nil, nil, nil, w.info, w.output),
-		),
-	)
-	return widget.NewSimpleRenderer(c)
-}
-
-var installationShortNames = map[string]string{
-	"Extractor Control Unit":     "Extractor",
-	"Basic Industry Facility":    "Basic Processor",
-	"Advanced Industry Facility": "Advanced Processor",
-	"High-Tech Production Plant": "High-Tech Processor",
-	"Storage Facility":           "Storage",
-}
-
-func (w *colonyPinItem) Set(cp *app.CharacterPlanet, p *app.PlanetPin) {
-	prefix := cp.EvePlanet.TypeDisplay() + " "
-	name, _ := strings.CutPrefix(p.Type.Name, prefix)
-	if short, ok := installationShortNames[name]; ok {
-		name = short
-	}
-	w.name.SetText(name)
-
-	var iconColor, statusColor fyne.ThemeColorName
-	var iconName eveicon.Name
-	switch p.Type.Group.ID {
-	case app.EveGroupCommandCenters:
-		iconName = eveicon.PICommandCenter
-		iconColor = colorNameInfo
-		statusColor = iconColor
-	case app.EveGroupExtractorControlUnits:
-		iconName = eveicon.PIExtractor
-		iconColor = colorNameSystem
-		if v, ok := p.ExpiryTime.Value(); ok && time.Now().After(v) {
-			statusColor = theme.ColorNameError
-		} else {
-			statusColor = iconColor
-		}
-	case app.EveGroupProcessors:
-		iconName = eveicon.PIProcessor
-		if strings.Contains(name, "Advanced") {
-			iconColor = colorNameAttention
-		} else {
-			iconColor = theme.ColorNameWarning
-		}
-		statusColor = iconColor
-	case app.EveGroupSpaceports:
-		iconName = eveicon.PILaunchpad
-		iconColor = theme.ColorNamePrimary
-		statusColor = iconColor
-	case app.EveGroupStorageFacilities:
-		iconName = eveicon.PIStorage
-		iconColor = theme.ColorNamePrimary
-		statusColor = iconColor
-	default:
-		iconName = eveicon.Undefined
-		iconColor = theme.ColorNameDisabled
-		statusColor = iconColor
-	}
-	w.symbol.Set(eveicon.FromName(iconName), iconColor, statusColor)
-
-	var output string
-	switch p.Type.Group.ID {
-	case app.EveGroupExtractorControlUnits:
-		output = p.ExtractorProductType.StringFunc("-", func(v *app.EveType) string {
-			return v.Name
-		})
-	case app.EveGroupProcessors:
-		output = p.Schematic.StringFunc("-", func(v *app.EveSchematic) string {
-			return v.Name
-		})
-	case app.EveGroupCommandCenters:
-		output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
-	}
-	w.output.SetText(output)
-
-	var status, endDate string
-	var i widget.Importance
-	if p.Type.Group.ID == app.EveGroupExtractorControlUnits {
-		if v, ok := p.ExpiryTime.Value(); !ok {
-			status = "-"
-			i = widget.LowImportance
-		} else {
-			endDate = v.Format(app.DateTimeFormat)
-			if time.Now().After(v) {
-				status = colonyStatusAllIdle
-				i = widget.DangerImportance
-			} else {
-				status = ihumanize.Duration(time.Until(v))
-			}
-		}
-	}
-	w.status.Text, w.status.Importance = status, i
-	w.info.SetText(endDate)
-	w.Refresh()
-}
-
-var planetPinSymbolCache xsync.Map[string, fyne.Resource]
-
-type planetPinSymbol struct {
-	widget.BaseWidget
-
-	icon        fyne.Resource
-	iconColor   fyne.ThemeColorName
-	statusColor fyne.ThemeColorName
-}
-
-func newPlanetPinSymbol() *planetPinSymbol {
-	w := &planetPinSymbol{
-		icon:        icons.BlankSvg,
-		iconColor:   theme.ColorNameForeground,
-		statusColor: theme.ColorNameDisabled,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName) {
-	key := icon.Name() + string(iconColor)
-	icon2, ok := planetPinSymbolCache.Load(key)
-	if !ok {
-		r, err := fynetools.ThemedPNG(icon, theme.Color(iconColor))
-		if err != nil {
-			fyne.LogError("Failed theme PNG", err)
-			icon2 = icons.BlankSvg
-		} else {
-			planetPinSymbolCache.Store(key, r)
-			icon2 = r
-		}
-	}
-	w.icon = icon2
-	w.iconColor = iconColor
-	w.statusColor = statusColor
-	w.Refresh()
-}
-
-func (w *planetPinSymbol) CreateRenderer() fyne.WidgetRenderer {
-	c1 := canvas.NewCircle(theme.Color(w.iconColor))               // Outer
-	c2 := canvas.NewCircle(theme.Color(theme.ColorNameBackground)) // Middle
-	c3 := canvas.NewCircle(theme.Color(theme.ColorNameSeparator))  // Inner
-
-	ic := canvas.NewImageFromResource(w.icon)
-	ic.FillMode = canvas.ImageFillContain
-
-	return &tripleCircleRenderer{
-		circles: []*canvas.Circle{c1, c2, c3},
-		icon:    ic,
-		widget:  w,
-	}
-}
-
-type tripleCircleRenderer struct {
-	widget  *planetPinSymbol
-	circles []*canvas.Circle
-	icon    *canvas.Image
-}
-
-func (r *tripleCircleRenderer) Layout(size fyne.Size) {
-	center := fyne.NewPos(size.Width/2, size.Height/2)
-	diameter := fyne.Min(size.Width, size.Height)
-
-	diameters := []float32{
-		1.0 * diameter,
-		0.85 * diameter,
-		0.6 * diameter,
-	}
-
-	// Layout circles
-	for i, circle := range r.circles {
-		currentDim := diameters[i]
-
-		circle.Resize(fyne.NewSize(currentDim, currentDim))
-		circle.Move(fyne.NewPos(
-			center.X-(currentDim/2),
-			center.Y-(currentDim/2),
-		))
-	}
-
-	// Layout the Icon in the center of the smallest circle
-	innerCircleDim := diameters[2]
-	iconDim := innerCircleDim * 0.7
-
-	r.icon.Resize(fyne.NewSize(iconDim, iconDim))
-	r.icon.Move(fyne.NewPos(
-		center.X-(iconDim/2),
-		center.Y-(iconDim/2),
-	))
-}
-
-func (r *tripleCircleRenderer) MinSize() fyne.Size {
-	return fyne.NewSquareSize(50)
-}
-
-func (r *tripleCircleRenderer) Refresh() {
-	r.circles[0].FillColor = theme.Color(r.widget.statusColor)
-	r.circles[0].Refresh()
-	r.icon.Resource = r.widget.icon
-	r.icon.Refresh()
-	canvas.Refresh(r.widget)
-}
-
-func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.circles[0], r.circles[1], r.circles[2], r.icon}
-}
-
-func (r *tripleCircleRenderer) Destroy() {}
