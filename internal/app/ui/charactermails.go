@@ -594,7 +594,7 @@ func (a *characterMails) setCurrentFolder(ctx context.Context, folder *mailFolde
 }
 
 func (a *characterMails) headerUpdate(ctx context.Context) {
-	clearHeaders := func() {
+	clear := func() {
 		fyne.Do(func() {
 			a.headers = make([]*app.CharacterMailHeader, 0)
 			a.headerList.Refresh()
@@ -612,13 +612,13 @@ func (a *characterMails) headerUpdate(ctx context.Context) {
 	}
 	folder := a.currentFolder.Load()
 	if folder == nil {
-		clearHeaders()
+		clear()
 		return
 	}
 	hasData := a.u.scs.HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
-		clearHeaders()
+		clear()
 		return
 	}
 
@@ -626,7 +626,7 @@ func (a *characterMails) headerUpdate(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
-		clearHeaders()
+		clear()
 		return
 	}
 
@@ -637,7 +637,6 @@ func (a *characterMails) headerUpdate(ctx context.Context) {
 		a.headerTop.SetText(s)
 		a.headers = headers
 		a.headerList.Refresh()
-		a.clearMail()
 	})
 }
 
@@ -762,8 +761,12 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 		a.toolbar.Show()
 	})
 
+	if a.u.IsOffline() || a.u.isUpdateDisabled.Load() {
+		return
+	}
+
 	// try to fetch mail body if missing
-	if !a.u.IsOffline() && !a.u.isUpdateDisabled.Load() && mail.Body.IsEmpty() {
+	if mail.Body.IsEmpty() {
 		go func() {
 			a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
 				body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, mail.MailID)
@@ -787,31 +790,31 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 				return nil, nil
 			})
 		}()
+	}
 
-		// try to update mail as read if unread
-		if mail.IsRead.ValueOrZero() {
-			go func() {
-				a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
-					err := a.u.cs.UpdateMailRead(ctx, characterID, mail.MailID, true)
-					if err != nil {
-						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
-						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
-						return nil, nil
-					}
-					a.updateUnreadCounts(ctx)
-					a.headerUpdate(ctx)
-					a.u.characterOverview.updateItem(ctx, characterID)
-					a.u.updateMailIndicator(ctx)
-					fyne.Do(func() {
-						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
-							return
-						}
-						a.mail.IsRead.Set(true)
-					})
+	// try to update mail as read if unread
+	if !mail.IsRead.ValueOrZero() {
+		go func() {
+			a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
+				err := a.u.cs.UpdateMailRead(ctx, characterID, mail.MailID, true)
+				if err != nil {
+					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
+					a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
 					return nil, nil
+				}
+				a.updateUnreadCounts(ctx)
+				a.headerUpdate(ctx)
+				a.u.characterOverview.updateItem(ctx, characterID)
+				a.u.updateMailIndicator(ctx)
+				fyne.Do(func() {
+					if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+						return
+					}
+					a.mail.IsRead.Set(true)
 				})
-			}()
-		}
+				return nil, nil
+			})
+		}()
 	}
 }
 
