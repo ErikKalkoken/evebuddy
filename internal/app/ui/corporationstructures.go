@@ -165,7 +165,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r corporationStructureRow) {
-				go showCorporationStructureWindow(context.Background(), a.u, r.corporationID, r.structureID)
+				go showCorporationStructureWindowAsync(context.Background(), a.u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	} else {
@@ -190,7 +190,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 				return iwidget.RichTextSegmentsFromText("?")
 			},
 			func(r corporationStructureRow) {
-				go showCorporationStructureWindow(context.Background(), a.u, r.corporationID, r.structureID)
+				go showCorporationStructureWindowAsync(context.Background(), a.u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	}
@@ -427,113 +427,116 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 	return rows, nil
 }
 
-func showCorporationStructureWindow(ctx context.Context, u *baseUI, corporationID int64, structureID int64) {
-	structure, err := u.rs.GetStructure(ctx, corporationID, structureID)
-	if err != nil {
-		u.showErrorDialog("Failed to fetch structure", err, u.MainWindow())
+func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corporationID int64, structureID int64, title string) {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
+		title,
+	)
+	if !created {
+		w.Show()
 		return
 	}
-	corporationName := u.scs.CorporationName(corporationID)
-	fyne.Do(func() {
-		w, created := u.getOrCreateWindow(
-			fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
-			structure.DisplayName(),
-		)
-		if !created {
-			w.Show()
+
+	go func() {
+		structure, err := u.rs.GetStructure(ctx, corporationID, structureID)
+		if err != nil {
+			u.showErrorDialog("Failed to fetch structure", err, u.MainWindow())
 			return
 		}
-		var services []widget.RichTextSegment
-		if len(structure.Services) == 0 {
-			services = iwidget.RichTextSegmentsFromText("-")
-		} else {
-			slices.SortFunc(structure.Services, func(a, b *app.StructureService) int {
-				return strings.Compare(a.Name, b.Name)
-			})
-			for _, x := range structure.Services {
-				var color fyne.ThemeColorName
-				name := x.Name
-				if x.State == app.StructureServiceStateOnline {
-					color = theme.ColorNameForeground
-				} else {
-					color = theme.ColorNameDisabled
-					name += " [offline]"
+		corporationName := u.scs.CorporationName(corporationID)
+		fyne.Do(func() {
+			var services []widget.RichTextSegment
+			if len(structure.Services) == 0 {
+				services = iwidget.RichTextSegmentsFromText("-")
+			} else {
+				slices.SortFunc(structure.Services, func(a, b *app.StructureService) int {
+					return strings.Compare(a.Name, b.Name)
+				})
+				for _, x := range structure.Services {
+					var color fyne.ThemeColorName
+					name := x.Name
+					if x.State == app.StructureServiceStateOnline {
+						color = theme.ColorNameForeground
+					} else {
+						color = theme.ColorNameDisabled
+						name += " [offline]"
+					}
+					services = slices.Concat(services, iwidget.RichTextSegmentsFromText(name, widget.RichTextStyle{
+						ColorName: color,
+					}))
 				}
-				services = slices.Concat(services, iwidget.RichTextSegmentsFromText(name, widget.RichTextStyle{
-					ColorName: color,
-				}))
 			}
-		}
 
-		var fuelText, powerText string
-		var powerColor fyne.ThemeColorName
-		if v, ok := structure.FuelExpires.Value(); ok {
-			powerText = "Full Power"
-			powerColor = theme.ColorNameSuccess
-			fuelText = v.Format(app.DateTimeFormat)
-		} else {
-			powerText = "Low Power / Abandoned"
-			powerColor = theme.ColorNameWarning
-			fuelText = "N/A"
-		}
+			var fuelText, powerText string
+			var powerColor fyne.ThemeColorName
+			if v, ok := structure.FuelExpires.Value(); ok {
+				powerText = "Full Power"
+				powerColor = theme.ColorNameSuccess
+				fuelText = v.Format(app.DateTimeFormat)
+			} else {
+				powerText = "Low Power / Abandoned"
+				powerColor = theme.ColorNameWarning
+				fuelText = "N/A"
+			}
 
-		fi := []*widget.FormItem{
-			widget.NewFormItem("Owner", makeCorporationActionLabel(
-				corporationID,
-				corporationName,
-				u.ShowEveEntityInfoWindow,
-			)),
-			widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
-			widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
-				u.ShowTypeInfoWindow(structure.Type.ID)
-			})),
-			widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.ShowEveEntityInfoWindow)),
-			widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
-				u.ShowInfoWindow(app.EveEntityRegion, structure.System.Constellation.Region.ID)
-			})),
-			widget.NewFormItem("Services", widget.NewRichText(services...)),
-			widget.NewFormItem("Fuel Expires", widget.NewRichText(iwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
-				ColorName: powerColor,
-			})...)),
-			widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(structure.State.Display(), widget.RichTextStyle{
-				ColorName: structure.State.Color(),
-			})...)),
-			widget.NewFormItem("Power Mode", widget.NewRichText(iwidget.RichTextSegmentsFromText(powerText, widget.RichTextStyle{
-				ColorName: powerColor,
-			})...)),
-			widget.NewFormItem("Timer Start", widget.NewLabel(structure.StateTimerStart.StringFunc("-", func(v time.Time) string {
-				return v.Format(app.DateTimeFormat)
-			}))),
-			widget.NewFormItem("Timer End", widget.NewLabel(structure.StateTimerEnd.StringFunc("-", func(v time.Time) string {
-				return v.Format(app.DateTimeFormat)
-			}))),
-			widget.NewFormItem("Unanchor At", widget.NewLabel(structure.UnanchorsAt.StringFunc("-", func(v time.Time) string {
-				return v.Format(app.DateTimeFormat)
-			}))),
-			widget.NewFormItem("Reinforce Hour", widget.NewLabel(structure.ReinforceHour.StringFunc("-", func(v int64) string {
-				return fmt.Sprintf("%d:00", v)
-			}))),
-			widget.NewFormItem("Next Reinforce Apply", widget.NewLabel(structure.NextReinforceApply.StringFunc("-", func(v time.Time) string {
-				return v.Format(app.DateTimeFormat)
-			}))),
-			widget.NewFormItem("Next Reinforce Hour", widget.NewLabel(structure.NextReinforceHour.StringFunc("-", func(v int64) string {
-				return fmt.Sprintf("%d:00", v)
-			}))),
-		}
+			fi := []*widget.FormItem{
+				widget.NewFormItem("Owner", makeCorporationActionLabel(
+					corporationID,
+					corporationName,
+					u.ShowEveEntityInfoWindow,
+				)),
+				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
+				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
+					u.ShowTypeInfoWindow(structure.Type.ID)
+				})),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.ShowEveEntityInfoWindow)),
+				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
+					u.ShowInfoWindow(app.EveEntityRegion, structure.System.Constellation.Region.ID)
+				})),
+				widget.NewFormItem("Services", widget.NewRichText(services...)),
+				widget.NewFormItem("Fuel Expires", widget.NewRichText(iwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
+					ColorName: powerColor,
+				})...)),
+				widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(structure.State.Display(), widget.RichTextStyle{
+					ColorName: structure.State.Color(),
+				})...)),
+				widget.NewFormItem("Power Mode", widget.NewRichText(iwidget.RichTextSegmentsFromText(powerText, widget.RichTextStyle{
+					ColorName: powerColor,
+				})...)),
+				widget.NewFormItem("Timer Start", widget.NewLabel(structure.StateTimerStart.StringFunc("-", func(v time.Time) string {
+					return v.Format(app.DateTimeFormat)
+				}))),
+				widget.NewFormItem("Timer End", widget.NewLabel(structure.StateTimerEnd.StringFunc("-", func(v time.Time) string {
+					return v.Format(app.DateTimeFormat)
+				}))),
+				widget.NewFormItem("Unanchor At", widget.NewLabel(structure.UnanchorsAt.StringFunc("-", func(v time.Time) string {
+					return v.Format(app.DateTimeFormat)
+				}))),
+				widget.NewFormItem("Reinforce Hour", widget.NewLabel(structure.ReinforceHour.StringFunc("-", func(v int64) string {
+					return fmt.Sprintf("%d:00", v)
+				}))),
+				widget.NewFormItem("Next Reinforce Apply", widget.NewLabel(structure.NextReinforceApply.StringFunc("-", func(v time.Time) string {
+					return v.Format(app.DateTimeFormat)
+				}))),
+				widget.NewFormItem("Next Reinforce Hour", widget.NewLabel(structure.NextReinforceHour.StringFunc("-", func(v int64) string {
+					return fmt.Sprintf("%d:00", v)
+				}))),
+			}
 
-		f := widget.NewForm(fi...)
-		f.Orientation = widget.Adaptive
-		setDetailWindow(detailWindowParams{
-			content: f,
-			imageAction: func() {
-				u.ShowTypeInfoWindow(structure.Type.ID)
-			},
-			imageLoader: func(setter func(r fyne.Resource)) {
-				u.eis.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
-			},
-			title:  structure.DisplayName(),
-			window: w,
+			f := widget.NewForm(fi...)
+			f.Orientation = widget.Adaptive
+			setDetailWindow(detailWindowParams{
+				content: f,
+				imageAction: func() {
+					u.ShowTypeInfoWindow(structure.Type.ID)
+				},
+				imageLoader: func(setter func(r fyne.Resource)) {
+					u.eis.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
+				},
+				title:  structure.DisplayName(),
+				window: w,
+			})
+			w.Show()
 		})
-		w.Show()
-	})
+	}()
 }
