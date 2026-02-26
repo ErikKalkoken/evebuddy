@@ -28,12 +28,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
-// TODO: Add filter to colony details
-
 const (
 	colonyStatusExtracting = "Active"
 	colonyStatusAllIdle    = "Idle"
-	colonyStatusSomeIdle   = "Some idle"
+	colonyStatusSomeIdle   = "Partially idle"
 )
 
 type colonyRow struct {
@@ -566,9 +564,9 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	for _, p := range planets {
 		extracting := p.ExtractedTypeNames()
 		producing := p.ProducedSchematicNames()
-		titleDisplay := iwidget.ModifyRichTextStyle(func(x *widget.RichTextStyle) {
+		titleDisplay := iwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
 			x.SizeName = theme.SizeNameSubHeadingText
-		}, p.NameRichText())
+		})
 		r := colonyRow{
 			characterID:       p.CharacterID,
 			extractorExpiries: p.ExtractionsExpiryTimes(),
