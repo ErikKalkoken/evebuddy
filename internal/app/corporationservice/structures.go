@@ -39,7 +39,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			}
 			return structures, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 			structures := data.([]esi.CorporationsCorporationIdStructuresGetInner)
 
 			structureStateFromESIValue := map[string]app.StructureState{
@@ -70,12 +70,12 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			}))
 			current, err := s.st.ListCorporationStructureIDs(ctx, arg.CorporationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			removed := set.Difference(current, incoming)
 			if removed.Size() > 0 {
 				if err := s.st.DeleteCorporationStructures(ctx, arg.CorporationID, removed); err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Removed vanished corporation structures", "corporationID", arg.CorporationID, "count", removed.Size())
 			}
@@ -94,7 +94,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 				return s.eus.AddMissingSolarSystems(ctx, systemIDs)
 			})
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			for _, o := range structures {
 				state, ok := structureStateFromESIValue[o.State]
@@ -125,10 +125,10 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					UnanchorsAt:        optional.FromPtr(o.UnanchorsAt),
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Updated corporation structures", "corporationID", arg.CorporationID, "count", len(structures))
-			return nil
+			return true, nil
 		})
 }

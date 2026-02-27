@@ -105,7 +105,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			slog.Debug("Received contracts from ESI", "corporationID", arg.CorporationID, "count", len(contracts))
 			return contracts, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 			contracts := data.([]esi.CorporationsCorporationIdContractsGetInner)
 			// filter out unwanted contracts
 			contracts = slices.DeleteFunc(contracts, func(x esi.CorporationsCorporationIdContractsGetInner) bool {
@@ -122,12 +122,12 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
-				return err
+				return false, err
 			}
 			// identify new contracts
 			current, err := s.st.ListCorporationContracts(ctx, arg.CorporationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CorporationContract) int64 {
 				return x.ContractID
@@ -189,9 +189,9 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			}))
 			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
 			if err := s.st.DeleteCorporationContracts(ctx, arg.CorporationID, staleIDs); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 

@@ -31,9 +31,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -64,9 +64,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -97,9 +97,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -130,9 +130,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {

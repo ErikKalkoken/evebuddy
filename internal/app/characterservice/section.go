@@ -170,9 +170,9 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 	slog.Debug(
 		"Has section changed",
-		"characterID", arg.CharacterID,
-		"section", arg.Section,
-		"hasChanged", hasChanged || arg.ForceUpdate,
+		slog.Any("characterID", arg.CharacterID),
+		slog.Any("section", arg.Section),
+		slog.Any("hasChanged", hasChanged || arg.ForceUpdate),
 	)
 	return hasChanged, nil
 }

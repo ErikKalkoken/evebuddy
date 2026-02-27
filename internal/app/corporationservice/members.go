@@ -30,14 +30,14 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 			}
 			return members, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 			incoming := set.Of(data.([]int64)...)
 			current, err := s.st.ListCorporationMemberIDs(ctx, arg.CorporationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if _, err := s.eus.AddMissingEntities(ctx, incoming); err != nil {
-				return err
+				return false, err
 			}
 			added := set.Difference(incoming, current)
 			for characterID := range added.All() {
@@ -46,12 +46,12 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 					CharacterID:   characterID,
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 			removed := set.Difference(current, incoming)
 			if err := s.st.DeleteCorporationMembers(ctx, arg.CorporationID, removed); err != nil {
-				return err
+				return false, err
 			}
 			slog.Info(
 				"Updated corporation members",
@@ -59,6 +59,6 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 				"added", added.Size(),
 				"removed", removed.Size(),
 			)
-			return nil
+			return true, nil
 		})
 }

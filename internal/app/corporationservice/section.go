@@ -212,8 +212,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 func (s *CorporationService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CorporationSectionUpdateParams,
-	fetch func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error),
-	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error,
+	fetch func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error), // returns data from ESI
+	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error), // reports whether it has changed
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
 	o, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
@@ -226,7 +226,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	}
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
-	var needsUpdate bool
+	var hasChanged bool
 	ts, characterID, err := s.cs.TokenSourceForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
@@ -256,6 +256,7 @@ func (s *CorporationService) updateSectionIfChanged(
 		hash = h
 
 		// identify whether update is needed
+		var needsUpdate bool
 		if arg.ForceUpdate {
 			needsUpdate = true
 		} else if arg.Section.IsSkippingChangeDetection() {
@@ -269,9 +270,11 @@ func (s *CorporationService) updateSectionIfChanged(
 		}
 
 		if needsUpdate {
-			if err := update(ctx, arg, data); err != nil {
+			b, err := update(ctx, arg, data)
+			if err != nil {
 				return false, err
 			}
+			hasChanged = b
 		}
 	}
 
@@ -294,11 +297,11 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	slog.Debug(
 		"Has section changed",
-		"corporationID", arg.CorporationID,
-		"section", arg.Section,
-		"needsUpdate", needsUpdate,
+		slog.Any("corporationID", arg.CorporationID),
+		slog.Any("section", arg.Section),
+		slog.Any("hasChanged", hasChanged),
 	)
-	return needsUpdate, nil
+	return hasChanged, nil
 }
 
 func (s *CorporationService) hasSectionChanged(ctx context.Context, arg app.CorporationSectionUpdateParams, hash string) (bool, error) {
