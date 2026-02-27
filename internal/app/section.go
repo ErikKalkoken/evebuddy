@@ -102,7 +102,7 @@ func (cs CharacterSection) DisplayName() string {
 
 func (cs CharacterSection) IsSkippingChangeDetection() bool {
 	switch cs {
-	case SectionCharacterIndustryJobs:
+	case SectionCharacterIndustryJobs, SectionCharacterLoyaltyPoints:
 		return true
 	}
 	return false

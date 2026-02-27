@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
@@ -11,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func (s *CharacterService) ListAllLoyaltyPointEntries(ctx context.Context) ([]*app.CharacterLoyaltyPointEntry, error) {
@@ -38,44 +38,78 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 			return rows, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			rows := data.([]esi.CharactersCharacterIdLoyaltyPointsGetInner)
-			incoming := set.Collect(xiter.MapSlice(rows, func(x esi.CharactersCharacterIdLoyaltyPointsGetInner) int64 {
-				return x.CorporationId
-			}))
-			for id := range incoming.All() {
-				_, err := s.eus.GetOrCreateCorporationESI(ctx, id)
-				if err != nil {
-					return false, err
+			incoming := make(map[int64]int64)
+			for _, r := range data.([]esi.CharactersCharacterIdLoyaltyPointsGetInner) {
+				incoming[r.CorporationId] = r.LoyaltyPoints
+			}
+
+			entries, err := s.st.ListCharacterLoyaltyPointEntries(ctx, characterID)
+			if err != nil {
+				return false, err
+			}
+			current := make(map[int64]int64)
+			for _, o := range entries {
+				current[o.Corporation.ID] = o.LoyaltyPoints
+			}
+			if maps.Equal(incoming, current) {
+				return false, nil
+			}
+
+			var added, updated set.Set[int64]
+			for id, points := range incoming {
+				points2, ok := current[id]
+				if !ok {
+					added.Add(id)
+					continue
+				}
+				if points != points2 {
+					updated.Add(id)
+					continue
 				}
 			}
-			for _, r := range rows {
-				err := s.st.UpdateOrCreateCharacterLoyaltyPointEntry(ctx, storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+
+			for id := range added.All() {
+				_, err := s.eus.GetOrCreateCorporationESI(ctx, id)
+				if err != nil {
+					slog.Error("Failed to get corporation for loyalty point entry", "corporationID", id, "error", err)
+					continue
+				}
+				err = s.st.UpdateOrCreateCharacterLoyaltyPointEntry(ctx, storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
 					CharacterID:   characterID,
-					CorporationID: r.CorporationId,
-					LoyaltyPoints: r.LoyaltyPoints,
+					CorporationID: id,
+					LoyaltyPoints: incoming[id],
 				})
 				if err != nil {
 					return false, err
 				}
 			}
-			slog.Info("Stored updated loyalty points", "characterID", characterID, "count", len(rows))
+			slog.Info("Added loyalty points entries", "characterID", characterID, "count", added.Size())
 
-			// Delete obsolete entries
-			if arg.MarketOrderRetention == 0 {
-				return true, nil
-			}
-
-			current, err := s.st.ListCharacterLoyaltyPointEntryIDs(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			obsolete := set.Difference(incoming, current)
-			if obsolete.Size() > 0 {
-				err := s.st.DeleteCharacterLoyaltyPointEntries(ctx, characterID, obsolete)
+			for id := range updated.All() {
+				err = s.st.UpdateOrCreateCharacterLoyaltyPointEntry(ctx, storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+					CharacterID:   characterID,
+					CorporationID: id,
+					LoyaltyPoints: incoming[id],
+				})
 				if err != nil {
 					return false, err
 				}
-				slog.Info("Deleted obsolete loyalty points entries", "characterID", characterID, "count", obsolete.Size())
+			}
+			slog.Info("Updated loyalty points entries", "characterID", characterID, "count", updated.Size())
+
+			// Delete obsolete entries
+			currentIDs, err := s.st.ListCharacterLoyaltyPointEntryIDs(ctx, characterID)
+			if err != nil {
+				return false, err
+			}
+			incomingIDs := set.Collect(maps.Keys(incoming))
+			obsoleteIDs := set.Difference(incomingIDs, currentIDs)
+			if obsoleteIDs.Size() > 0 {
+				err := s.st.DeleteCharacterLoyaltyPointEntries(ctx, characterID, obsoleteIDs)
+				if err != nil {
+					return false, err
+				}
+				slog.Info("Deleted obsolete loyalty points entries", "characterID", characterID, "count", obsoleteIDs.Size())
 			}
 			return true, nil
 		})
