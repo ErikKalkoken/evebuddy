@@ -125,12 +125,9 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(corporationID, r.CeoId, r.CreatorId)
-		for _, x := range []*int64{r.AllianceId, r.HomeStationId} {
-			if x != nil {
-				ids.Add(*x)
-			}
-		}
+
+		ceoID := optionalFromSpecialEntityID(r.CeoId)
+		creatorID := optionalFromSpecialEntityID(r.CreatorId)
 		var factionID optional.Optional[int64]
 		if app.IsNPCCorporation(corporationID) {
 			if id, ok := evesde.NPCCorporationFactionID(corporationID); ok {
@@ -139,27 +136,27 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		} else {
 			factionID = optional.FromPtr(r.FactionId)
 		}
-		if id, ok := factionID.Value(); ok {
-			ids.Add(id)
+		allianceID := optional.FromPtr(r.AllianceId)
+		homeStationID := optional.FromPtr(r.HomeStationId)
+
+		ids := set.Of(corporationID)
+		for _, o := range []optional.Optional[int64]{ceoID, creatorID, factionID, homeStationID} {
+			if v, ok := o.Value(); ok {
+				ids.Add(v)
+			}
 		}
-		ids.Delete(0, 1)
 		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
 			return nil, err
 		}
-		optionalFromSpecialEntityID := func(v int64) optional.Optional[int64] {
-			if v == 0 || v == 1 {
-				return optional.Optional[int64]{}
-			}
-			return optional.New(v)
-		}
+
 		if err := s.st.UpdateOrCreateEveCorporation(ctx, storage.UpdateOrCreateEveCorporationParams{
-			AllianceID:    optional.FromPtr(r.AllianceId),
-			CeoID:         optionalFromSpecialEntityID(r.CeoId),
-			CreatorID:     optionalFromSpecialEntityID(r.CreatorId),
+			AllianceID:    allianceID,
+			CeoID:         ceoID,
+			CreatorID:     creatorID,
 			FactionID:     factionID,
 			DateFounded:   optional.FromPtr(r.DateFounded),
 			Description:   optional.FromPtr(r.Description),
-			HomeStationID: optional.FromPtr(r.HomeStationId),
+			HomeStationID: homeStationID,
 			ID:            corporationID,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,
@@ -178,6 +175,13 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		return nil, err
 	}
 	return o, nil
+}
+
+func optionalFromSpecialEntityID(v int64) optional.Optional[int64] {
+	if v == 0 || v == 1 {
+		return optional.Optional[int64]{}
+	}
+	return optional.New(v)
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.

@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -51,15 +52,14 @@ func TestFetchAlliance(t *testing.T) {
 		// when
 		x, err := s.FetchAlliance(ctx, allianceID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, "C C P Alliance", x.Name)
-			xassert.Equal(t, "<C C P>", x.Ticker)
-			xassert.Equal(t, creator, x.Creator)
-			xassert.Equal(t, creatorCorp, x.CreatorCorporation)
-			xassert.Equal(t, executor, x.ExecutorCorporation.MustValue())
-			xassert.Equal(t, faction, x.Faction.MustValue())
-			xassert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, "C C P Alliance", x.Name)
+		xassert.Equal(t, "<C C P>", x.Ticker)
+		xassert.Equal(t, creator, x.Creator)
+		xassert.Equal(t, creatorCorp, x.CreatorCorporation)
+		xassert.Equal(t, executor, x.ExecutorCorporation.MustValue())
+		xassert.Equal(t, faction, x.Faction.MustValue())
+		xassert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
 	})
 	t.Run("should return nil for undefined entities", func(t *testing.T) {
 		// given
@@ -79,10 +79,9 @@ func TestFetchAlliance(t *testing.T) {
 		// when
 		x, err := s.FetchAlliance(ctx, allianceID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, "C C P Alliance", x.Name)
-			xassert.Empty(t, x.Faction)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, "C C P Alliance", x.Name)
+		xassert.Empty(t, x.Faction)
 	})
 }
 
@@ -110,13 +109,12 @@ func TestFetchAllianceCorporations(t *testing.T) {
 		// when
 		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(oo, func(a *app.EveEntity) int64 {
-				return a.ID
-			})
-			want := []int64{103, 102}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := xslices.Map(oo, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{103, 102}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return empty list when there are no corporations", func(t *testing.T) {
 		// given
@@ -132,9 +130,8 @@ func TestFetchAllianceCorporations(t *testing.T) {
 		// when
 		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 0)
-		}
+		require.NoError(t, err)
+		assert.Len(t, oo, 0)
 	})
 }
 func TestGetOrCreateEveCorporationESI(t *testing.T) {
@@ -175,20 +172,19 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		// when
 		o, err := s.GetOrCreateCorporationESI(ctx, 109299958)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance.MustValue())
-			xassert.Equal(t, creator, o.Creator.MustValue())
-			xassert.Equal(t, ceo, o.Ceo.MustValue())
-			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction.MustValue())
-			xassert.Equal(t, station, o.HomeStation.MustValue())
-			xassert.Equal(t, 656, o.MemberCount)
-			xassert.Equal(t, "C C P", o.Name)
-			xassert.Equal(t, 0.256, o.TaxRate)
-			xassert.Equal(t, "-CCP-", o.Ticker)
-			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, alliance, o.Alliance.MustValue())
+		xassert.Equal(t, creator, o.Creator.MustValue())
+		xassert.Equal(t, ceo, o.Ceo.MustValue())
+		xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+		xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+		xassert.Equal(t, faction, o.Faction.MustValue())
+		xassert.Equal(t, station, o.HomeStation.MustValue())
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 	})
 	t.Run("can handle no CEO and no creator", func(t *testing.T) {
 		// given
@@ -213,18 +209,17 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		// when
 		o, err := s.GetOrCreateCorporationESI(ctx, corporationID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, 656, o.MemberCount)
-			xassert.Equal(t, "C C P", o.Name)
-			xassert.Equal(t, 0.256, o.TaxRate)
-			xassert.Equal(t, "-CCP-", o.Ticker)
-			xassert.Empty(t, o.Ceo)
-			xassert.Empty(t, o.Creator)
-			xassert.Empty(t, o.Alliance)
-			xassert.Empty(t, o.Faction)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+		xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Empty(t, o.Ceo)
+		xassert.Empty(t, o.Creator)
+		xassert.Empty(t, o.Alliance)
+		xassert.Empty(t, o.Faction)
 	})
 }
 
@@ -235,27 +230,97 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
-	t.Run("should create new corporation", func(t *testing.T) {
+	t.Run("should create new minimal corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
-		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
-		station := factory.CreateEveEntity(app.EveEntity{ID: 456, Category: app.EveEntityStation})
-		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
+		c := factory.CreateEveEntityCorporation()
+		ceo := factory.CreateEveEntityCharacter()
 		creator := factory.CreateEveEntityCharacter()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi.evetech.net/corporations/\d+`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"alliance_id":     434243723,
-				"ceo_id":          180548812,
+				"ceo_id":       ceo.ID,
+				"creator_id":   creator.ID,
+				"member_count": 656,
+				"name":         "C C P",
+				"tax_rate":     0.256,
+				"ticker":       "-CCP-",
+			}),
+		)
+		// when
+		o, err := s.UpdateOrCreateCorporationFromESI(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Empty(t, o.Alliance)
+		xassert.Equal(t, ceo, o.Ceo.MustValue())
+		xassert.Equal(t, creator, o.Creator.MustValue())
+		xassert.Empty(t, o.DateFounded)
+		xassert.Equal(t, "", o.Description)
+		xassert.Empty(t, o.Faction)
+		xassert.Empty(t, o.HomeStation)
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Empty(t, o.URL)
+	})
+	t.Run("should create new minimal corporation 2", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateEveEntityCorporation()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"ceo_id":       1,
+				"creator_id":   1,
+				"member_count": 656,
+				"name":         "C C P",
+				"tax_rate":     0.256,
+				"ticker":       "-CCP-",
+			}),
+		)
+		// when
+		o, err := s.UpdateOrCreateCorporationFromESI(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Empty(t, o.Alliance)
+		xassert.Empty(t, o.Ceo)
+		xassert.Empty(t, o.Creator)
+		xassert.Empty(t, o.DateFounded)
+		xassert.Equal(t, "", o.Description)
+		xassert.Empty(t, o.Faction)
+		xassert.Empty(t, o.HomeStation)
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Empty(t, o.URL)
+	})
+	t.Run("should create new full corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateEveEntityCorporation()
+		alliance := factory.CreateEveEntityAlliance()
+		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
+		station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		ceo := factory.CreateEveEntityCharacter()
+		creator := factory.CreateEveEntityCharacter()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"alliance_id":     alliance.ID,
+				"ceo_id":          ceo.ID,
 				"creator_id":      creator.ID,
 				"date_founded":    "2004-11-28T16:42:51Z",
 				"description":     "This is a corporation description, it's basically just a string",
-				"faction_id":      123,
-				"home_station_id": 456,
+				"faction_id":      faction.ID,
+				"home_station_id": station.ID,
 				"member_count":    656,
 				"name":            "C C P",
 				"tax_rate":        0.256,
@@ -264,45 +329,44 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 			}),
 		)
 		// when
-		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
+		o, err := s.UpdateOrCreateCorporationFromESI(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance.MustValue())
-			xassert.Equal(t, creator, o.Creator.MustValue())
-			xassert.Equal(t, ceo, o.Ceo.MustValue())
-			xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
-			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction.MustValue())
-			xassert.Equal(t, station, o.HomeStation.MustValue())
-			xassert.Equal(t, 656, o.MemberCount)
-			xassert.Equal(t, "C C P", o.Name)
-			xassert.Equal(t, 0.256, o.TaxRate)
-			xassert.Equal(t, "-CCP-", o.Ticker)
-			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, alliance, o.Alliance.MustValue())
+		xassert.Equal(t, creator, o.Creator.MustValue())
+		xassert.Equal(t, ceo, o.Ceo.MustValue())
+		xassert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.MustValue().UTC())
+		xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+		xassert.Equal(t, faction, o.Faction.MustValue())
+		xassert.Equal(t, station, o.HomeStation.MustValue())
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 	})
 	t.Run("should update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		orig := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: 109299958})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
-		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
-		station := factory.CreateEveEntity(app.EveEntity{ID: 456, Category: app.EveEntityStation})
-		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
+		c1 := factory.CreateEveCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c1.ID})
+		alliance := factory.CreateEveEntityAlliance()
+		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
+		station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		ceo := factory.CreateEveEntityCharacter()
 		creator := factory.CreateEveEntityCharacter()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi.evetech.net/corporations/\d+`,
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", c1.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"alliance_id":     434243723,
-				"ceo_id":          180548812,
+				"alliance_id":     alliance.ID,
+				"ceo_id":          ceo.ID,
 				"creator_id":      creator.ID,
 				"date_founded":    "2004-11-28T16:42:51Z",
 				"description":     "This is a corporation description, it's basically just a string",
-				"faction_id":      123,
-				"home_station_id": 456,
+				"faction_id":      faction.ID,
+				"home_station_id": station.ID,
 				"member_count":    656,
 				"name":            "C C P",
 				"tax_rate":        0.256,
@@ -311,22 +375,21 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 			}),
 		)
 		// when
-		o, err := s.UpdateOrCreateCorporationFromESI(ctx, 109299958)
+		o, err := s.UpdateOrCreateCorporationFromESI(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, alliance, o.Alliance.MustValue())
-			xassert.Equal(t, orig.Creator, o.Creator)
-			xassert.Equal(t, ceo, o.Ceo.MustValue())
-			xassert.Equal(t, orig.DateFounded.MustValue(), o.DateFounded.MustValue())
-			xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			xassert.Equal(t, faction, o.Faction.MustValue())
-			xassert.Equal(t, station, o.HomeStation.MustValue())
-			xassert.Equal(t, 656, o.MemberCount)
-			xassert.Equal(t, "C C P", o.Name)
-			xassert.Equal(t, 0.256, o.TaxRate)
-			xassert.Equal(t, "-CCP-", o.Ticker)
-			xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, alliance, o.Alliance.MustValue())
+		xassert.Equal(t, c1.Creator, o.Creator)
+		xassert.Equal(t, ceo, o.Ceo.MustValue())
+		xassert.Equal(t, c1.DateFounded.MustValue(), o.DateFounded.MustValue())
+		xassert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
+		xassert.Equal(t, faction, o.Faction.MustValue())
+		xassert.Equal(t, station, o.HomeStation.MustValue())
+		xassert.Equal(t, 656, o.MemberCount)
+		xassert.Equal(t, "C C P", o.Name)
+		xassert.Equal(t, 0.256, o.TaxRate)
+		xassert.Equal(t, "-CCP-", o.Ticker)
+		xassert.Equal(t, "http://www.eveonline.com", o.URL.ValueOrZero())
 	})
 }
 
@@ -368,30 +431,27 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// when
 		got, err := s.UpdateAllCorporationsESI(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64](109299958)
-			xassert.Equal(t, want, got)
-			ec, err := st.GetEveCorporation(ctx, 109299958)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, alliance, ec.Alliance.MustValue())
-				xassert.Equal(t, orig.Creator, ec.Creator)
-				xassert.Equal(t, ceo, ec.Ceo.MustValue())
-				xassert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
-				xassert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
-				xassert.Equal(t, faction, ec.Faction.MustValue())
-				xassert.Equal(t, station, ec.HomeStation.MustValue())
-				xassert.Equal(t, 656, ec.MemberCount)
-				xassert.Equal(t, "C C P", ec.Name)
-				xassert.Equal(t, 0.256, ec.TaxRate)
-				xassert.Equal(t, "-CCP-", ec.Ticker)
-				xassert.Equal(t, "http://www.eveonline.com", ec.URL.ValueOrZero())
-			}
-			ee, err := st.GetEveEntity(ctx, 109299958)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, ec.Name, ee.Name)
-				xassert.Equal(t, app.EveEntityCorporation, ee.Category)
-			}
-		}
+		require.NoError(t, err)
+		want := set.Of[int64](109299958)
+		xassert.Equal(t, want, got)
+		ec, err := st.GetEveCorporation(ctx, 109299958)
+		require.NoError(t, err)
+		xassert.Equal(t, alliance, ec.Alliance.MustValue())
+		xassert.Equal(t, orig.Creator, ec.Creator)
+		xassert.Equal(t, ceo, ec.Ceo.MustValue())
+		xassert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
+		xassert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
+		xassert.Equal(t, faction, ec.Faction.MustValue())
+		xassert.Equal(t, station, ec.HomeStation.MustValue())
+		xassert.Equal(t, 656, ec.MemberCount)
+		xassert.Equal(t, "C C P", ec.Name)
+		xassert.Equal(t, 0.256, ec.TaxRate)
+		xassert.Equal(t, "-CCP-", ec.Ticker)
+		xassert.Equal(t, "http://www.eveonline.com", ec.URL.ValueOrZero())
+		ee, err := st.GetEveEntity(ctx, 109299958)
+		require.NoError(t, err)
+		xassert.Equal(t, ec.Name, ee.Name)
+		xassert.Equal(t, app.EveEntityCorporation, ee.Category)
 	})
 	t.Run("can report when not changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -439,9 +499,8 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// when
 		got, err := s.UpdateAllCorporationsESI(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64]()
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64]()
+		xassert.Equal(t, want, got)
 	})
 }
