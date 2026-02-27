@@ -559,6 +559,8 @@ func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	return rows, activeCount, nil
 }
 
+// FIXME: Remove DB access from main go routine
+
 // showCharacterContractWindow shows the details of a character contract in a window.
 func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	ctx := context.Background()
@@ -737,6 +739,8 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	})
 	w.Show()
 }
+
+// FIXME: Remove DB access from main go routine
 
 // showCorporationContractWindow shows the details of a corporation contract in a window.
 func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {

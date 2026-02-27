@@ -62,6 +62,7 @@ type assetRow struct {
 	typeID          int64
 	typeName        string
 	variant         app.InventoryTypeVariant
+	state           string
 }
 
 func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int64) string) assetRow {
@@ -144,6 +145,24 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 			r.locationPath = xslices.Map(p[:len(p)-1], func(x *asset.Node) string {
 				return x.String()
 			})
+			if len(p) > 1 {
+				switch p[1].Category() {
+				case asset.NodeAssetSafetyCharacter, asset.NodeAssetSafetyCorporation:
+					r.state = "Asset Safety"
+				case asset.NodeDeliveries:
+					r.state = "Deliveries"
+				case asset.NodeImpounded:
+					r.state = "Impounded"
+				case asset.NodeInSpace:
+					r.state = "In Space"
+				case asset.NodeItemHangar, asset.NodeShipHangar:
+					r.state = "Personal"
+				case asset.NodeOfficeFolder:
+					r.state = "Office"
+				default:
+					r.state = "Other"
+				}
+			}
 		}
 	}
 	if v, ok := el.SolarSystem.Value(); ok {
@@ -181,9 +200,9 @@ type assetSearch struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
-	footer         *widget.Label
 	columnSorter   *iwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
+	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
 	rowsFiltered   []assetRow
@@ -193,6 +212,7 @@ type assetSearch struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
+	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *iwidget.SortButton
@@ -204,13 +224,14 @@ const (
 	assetsColItem = iota + 1
 	assetsColGroup
 	assetsColLocation
+	assetsColState
 	assetsColQuantity
 	assetsColTotal
 	assetsColOwner
 	assetsColTags
 )
 
-func newAssetSearchForCharacters(u *baseUI) *assetSearch {
+func newCombinedAssetSearch(u *baseUI) *assetSearch {
 	return newAssetSearch(u, false)
 }
 
@@ -219,6 +240,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 }
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
+	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []iwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
 		Label: "Item",
@@ -262,6 +284,16 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			co.(*iwidget.RichText).Set(r.locationDisplay)
 		},
 	}, {
+		ID:    assetsColState,
+		Label: "State",
+		Width: 90,
+		Sort: func(a, b assetRow) int {
+			return strings.Compare(a.locationName, b.locationName)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*iwidget.RichText).SetWithText(r.state)
+		},
+	}, {
 		ID:    assetsColQuantity,
 		Label: "Qty.",
 		Width: 100,
@@ -290,12 +322,25 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		cols = slices.Concat(cols, []iwidget.DataColumn[assetRow]{{
 			ID:    assetsColOwner,
 			Label: "Owner",
-			Width: columnWidthEntity,
+			Width: 250,
 			Sort: func(a, b assetRow) int {
 				return xstrings.CompareIgnoreCase(a.owner.Name, b.owner.Name)
 			},
+			Create: func() fyne.CanvasObject {
+				icon := widget.NewIcon(icons.BlankSvg)
+				name := widget.NewLabel("Template")
+				name.Truncation = fyne.TextTruncateClip
+				return container.NewBorder(nil, nil, icon, nil, name)
+			},
 			Update: func(r assetRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.owner.Name)
+				border := co.(*fyne.Container).Objects
+				border[0].(*widget.Label).SetText(r.owner.Name)
+				icon := border[1].(*widget.Icon)
+				if r.owner.IsCharacter() {
+					icon.SetResource(theme.AccountIcon())
+				} else {
+					icon.SetResource(corporationIcon)
+				}
 			},
 		}, {
 			ID:    assetsColTags,
@@ -317,14 +362,6 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
-		a.filterRowsAsync(-1)
-	})
-	a.search.OnChanged = func(s string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search items"
 
 	if a.u.isMobile {
 		a.body = a.makeDataList()
@@ -342,22 +379,33 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			})
 	}
 
+	// filters
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRowsAsync(-1)
+	})
+	a.search.OnChanged = func(s string) {
+		a.filterRowsAsync(-1)
+	}
+	a.search.PlaceHolder = "Search items"
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelectWithSearch("Owner", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	})
+	}, a.u.window)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
 	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.window)
-
+	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
+		a.filterRowsAsync(-1)
+	})
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
 			assetsTotalYes,
@@ -404,6 +452,11 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
+		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
+			if arg.section == app.SectionCorporationAssets {
+				a.update(ctx)
+			}
+		})
 	}
 	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
 		if arg.section == app.SectionEveMarketPrices {
@@ -419,6 +472,7 @@ func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 		a.selectGroup,
 		a.selectRegion,
 		a.selectLocation,
+		a.selectState,
 		a.selectTotal,
 	)
 	if !a.forCorporation {
@@ -496,16 +550,21 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
 	group := a.selectGroup.Selected
+	location := a.selectLocation.Selected
 	owner := a.selectOwner.Selected
 	region := a.selectRegion.Selected
-	location := a.selectLocation.Selected
-	total := a.selectTotal.Selected
+	state := a.selectState.Selected
 	tag := a.selectTag.Selected
+	total := a.selectTotal.Selected
 	search := strings.ToLower(a.search.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		// other filters
+		if state != "" {
+			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+				return r.state != state
+			})
+		}
 		if category != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				return r.categoryName != category
@@ -564,14 +623,17 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 		groupOptions := xslices.Map(rows, func(r assetRow) string {
 			return r.groupName
 		})
+		locationOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.locationName
+		})
 		ownerOptions := xslices.Map(rows, func(r assetRow) string {
 			return r.owner.Name
 		})
 		regionOptions := xslices.Map(rows, func(r assetRow) string {
 			return r.regionName
 		})
-		locationOptions := xslices.Map(rows, func(r assetRow) string {
-			return r.locationName
+		stateOptions := xslices.Map(rows, func(r assetRow) string {
+			return r.state
 		})
 
 		footer := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
@@ -587,12 +649,13 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
 			a.selectCategory.SetOptions(categoryOptions)
 			a.selectGroup.SetOptions(groupOptions)
+			a.selectLocation.SetOptions(locationOptions)
 			a.selectOwner.SetOptions(ownerOptions)
 			a.selectRegion.SetOptions(regionOptions)
-			a.selectLocation.SetOptions(locationOptions)
+			a.selectState.SetOptions(stateOptions)
+			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.body.Refresh()
 			switch x := a.body.(type) {
@@ -628,7 +691,7 @@ func (a *assetSearch) update(ctx context.Context) {
 	if a.forCorporation {
 		rows, err = a.fetchRowsForCorporation(ctx)
 	} else {
-		rows, err = a.fetchRowsForCharacters(ctx)
+		rows, err = a.fetchRowsForAll(ctx)
 	}
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
@@ -641,6 +704,18 @@ func (a *assetSearch) update(ctx context.Context) {
 		a.rows = rows
 		a.filterRowsAsync(-1)
 	})
+}
+
+func (a *assetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
+	r1, err := a.fetchRowsForCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	r2, err := a.fetchRowsForCorporations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return slices.Concat(r1, r2), nil
 }
 
 func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
@@ -685,16 +760,39 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	return rows, nil
 }
 
+func (a *assetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
+	assets, err := a.u.rs.ListAllAssets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return a.fetchRowsForCorporations2(ctx, assets)
+}
+
 func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, error) {
 	c := a.corporation.Load()
 	if c == nil {
 		return []assetRow{}, nil
 	}
-	locations, err := a.u.eus.ListLocations(ctx)
+	assets, err := a.u.rs.ListAssets(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	assets, err := a.u.rs.ListAssets(ctx, c.ID)
+	return a.fetchRowsForCorporations2(ctx, assets)
+}
+
+func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
+	cc, err := a.u.rs.ListCorporationsShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(cc) == 0 {
+		return nil, nil
+	}
+	corporationNames := make(map[int64]string)
+	for _, o := range cc {
+		corporationNames[o.ID] = o.Name
+	}
+	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +803,7 @@ func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 		if ca.Type != nil && ca.Type.ID == app.EveTypeOffice {
 			continue // filter out office item
 		}
-		r := newCorporationAssetRow(ca, ac, corporationNameOrZero(c))
+		r := newCorporationAssetRow(ca, ac, corporationNames[ca.CorporationID])
 		r.searchTarget = strings.ToLower(r.name)
 		rows = append(rows, r)
 		value += r.total.ValueOrZero()
@@ -763,7 +861,7 @@ func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, vari
 	)
 }
 
-// showAssetDetailWindow shows the details for a character assets in a new window.
+// showAssetDetailWindow shows the details for an assets in a new window.
 func showAssetDetailWindow(u *baseUI, r assetRow) {
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),

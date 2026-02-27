@@ -431,7 +431,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	u.assetSearchAll = newAssetSearchForCharacters(u)
+	u.assetSearchAll = newCombinedAssetSearch(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
 	u.characterAttributes = newCharacterAttributes(u)

@@ -109,7 +109,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// 	})
 	// }
 
-	const assetsTitle = "Character Assets"
+	const assetsTitle = "Assets"
 	allAssets := iwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),

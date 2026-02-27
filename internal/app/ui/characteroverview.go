@@ -170,7 +170,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.search.OnChanged = func(s string) {
 		a.filterRowsAsync(-1)
 	}
-	a.search.PlaceHolder = "Search character names"
+	a.search.PlaceHolder = "Search characters and systems"
 	if !a.u.isMobile {
 		a.main = a.makeGrid()
 	} else {
@@ -186,9 +186,9 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	})
+	}, a.u.MainWindow())
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -521,6 +521,7 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		if es, ok := el.SolarSystem.Value(); ok {
 			r.regionName = es.Constellation.Region.Name
 			r.solarSystemName = es.Name
+			r.searchTarget += "~" + strings.ToLower(es.Name)
 		}
 	}
 	total, unread, err := a.u.cs.GetMailCounts(ctx, c.ID)
