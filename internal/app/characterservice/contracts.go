@@ -164,7 +164,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			slog.Debug("Received contracts from ESI", "characterID", characterID, "count", len(contracts))
 			return contracts, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			contracts := data.([]esi.CharactersCharacterIdContractsGetInner)
 			// filter out unwanted contracts
 			contracts = slices.DeleteFunc(contracts, func(x esi.CharactersCharacterIdContractsGetInner) bool {
@@ -181,12 +181,12 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
-				return err
+				return false, err
 			}
 			// identify new contracts
 			current, err := s.st.ListCharacterContracts(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CharacterContract) int64 {
 				return x.ContractID
@@ -248,9 +248,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			}))
 			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 

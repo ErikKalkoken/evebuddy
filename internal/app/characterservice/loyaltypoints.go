@@ -37,7 +37,7 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 			slog.Debug("Received loyalty points entries from ESI", "count", len(rows), "characterID", characterID)
 			return rows, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			rows := data.([]esi.CharactersCharacterIdLoyaltyPointsGetInner)
 			incoming := set.Collect(xiter.MapSlice(rows, func(x esi.CharactersCharacterIdLoyaltyPointsGetInner) int64 {
 				return x.CorporationId
@@ -45,7 +45,7 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 			for id := range incoming.All() {
 				_, err := s.eus.GetOrCreateCorporationESI(ctx, id)
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 			for _, r := range rows {
@@ -55,27 +55,28 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 					LoyaltyPoints: r.LoyaltyPoints,
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Stored updated loyalty points", "characterID", characterID, "count", len(rows))
 
 			// Delete obsolete entries
 			if arg.MarketOrderRetention == 0 {
-				return nil
+				return true, nil
 			}
+
 			current, err := s.st.ListCharacterLoyaltyPointEntryIDs(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			obsolete := set.Difference(incoming, current)
 			if obsolete.Size() > 0 {
 				err := s.st.DeleteCharacterLoyaltyPointEntries(ctx, characterID, obsolete)
 				if err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Deleted obsolete loyalty points entries", "characterID", characterID, "count", obsolete.Size())
 			}
-			return nil
+			return true, nil
 		})
 }

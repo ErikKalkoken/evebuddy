@@ -113,7 +113,7 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 			}
 			return roles, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			r := data.(*esi.CharactersCharacterIdRolesGet)
 			var roles set.Set[app.Role]
 			for _, n := range r.Roles {
@@ -123,6 +123,10 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 				}
 				roles.Add(r)
 			}
-			return s.st.UpdateCharacterRoles(ctx, characterID, roles)
+			err := s.st.UpdateCharacterRoles(ctx, characterID, roles)
+			if err != nil {
+				return false, err
+			}
+			return true, nil
 		})
 }

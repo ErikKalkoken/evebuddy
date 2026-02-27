@@ -111,11 +111,11 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			slog.Debug("Received notifications from ESI", "characterID", characterID, "count", len(notifications))
 			return notifications, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			notifications := data.([]esi.CharactersCharacterIdNotificationsGetInner)
 			existingIDs, err := s.st.ListCharacterNotificationIDs(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			var newNotifs []esi.CharactersCharacterIdNotificationsGetInner
 			var existingNotifs []esi.CharactersCharacterIdNotificationsGetInner
@@ -127,7 +127,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				}
 			}
 			if err := s.loadEntitiesForNotifications(ctx, characterID, existingNotifs); err != nil {
-				return err
+				return false, err
 			}
 			var updatedCount int
 			for _, n := range existingNotifs {
@@ -160,7 +160,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				}
 				if arg2 != arg1 {
 					if err := s.st.UpdateCharacterNotification(ctx, arg2); err != nil {
-						return err
+						return false, err
 					}
 					updatedCount++
 				}
@@ -170,17 +170,18 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			}
 			if len(newNotifs) == 0 {
 				slog.Info("No new notifications", "characterID", characterID)
-				return nil
+				return true, nil
 			}
+
 			if err := s.loadEntitiesForNotifications(ctx, characterID, newNotifs); err != nil {
-				return err
+				return false, err
 			}
 			character, err := s.st.GetCharacter(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if _, err := s.eus.AddMissingEntities(ctx, character.EveCharacter.EntityIDs()); err != nil {
-				return err
+				return false, err
 			}
 			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
 			g := new(errgroup.Group)
@@ -236,15 +237,15 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				})
 			}
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			for _, arg := range args {
 				if err := s.st.CreateCharacterNotification(ctx, arg); err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Stored new notifications", "characterID", characterID, "entries", len(newNotifs))
-			return nil
+			return true, nil
 		})
 }
 

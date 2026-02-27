@@ -35,10 +35,10 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 			slog.Debug("Received implants from ESI", "count", len(implants), "characterID", characterID)
 			return implants, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			implants := data.([]int64)
 			if err := s.eus.AddMissingTypes(ctx, set.Of(implants...)); err != nil {
-				return err
+				return false, err
 			}
 			args := make([]storage.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
@@ -48,9 +48,9 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 				}
 			}
 			if err := s.st.ReplaceCharacterImplants(ctx, characterID, args); err != nil {
-				return err
+				return false, err
 			}
 			slog.Info("Stored updated implants", "characterID", characterID, "count", len(implants))
-			return nil
+			return true, nil
 		})
 }

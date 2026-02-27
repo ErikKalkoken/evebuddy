@@ -73,7 +73,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			}
 			return orders, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			orders := data.(map[int64]esi.CharactersCharacterIdOrdersHistoryGetInner)
 			var locationIDs set.Set[int64]
 			var regionIDs, typeIDs set.Set[int64]
@@ -84,7 +84,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			}
 			ec, err := s.st.GetEveCharacter(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			g := new(errgroup.Group)
 			g.Go(func() error {
@@ -101,7 +101,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				return err
 			})
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			for _, o := range orders {
 				var state app.MarketOrderState
@@ -141,7 +141,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 					MinVolume:     optional.FromPtr(o.MinVolume),
 				}
 				if err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, arg); err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Stored updated market orders", "characterID", characterID, "count", len(orders))
@@ -150,7 +150,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			incoming := set.Collect(maps.Keys(orders))
 			current, err := s.st.ListCharacterMarketOrders(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			currentActive := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CharacterMarketOrder) bool {
 				return x.State == app.OrderOpen
@@ -169,18 +169,19 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 					State:       app.OrderUnknown,
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Marked orphaned market orders", "characterID", characterID, "count", orphans.Size())
 			}
 
 			// Delete stale orders
 			if arg.MarketOrderRetention == 0 {
-				return nil
+				return true, nil
 			}
+
 			current2, err := s.st.ListCharacterMarketOrders(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			stale := set.Collect(xiter.Map(xiter.FilterSlice(current2, func(x *app.CharacterMarketOrder) bool {
 				return x.State != app.OrderOpen && time.Since(x.Issued) > arg.MarketOrderRetention
@@ -190,10 +191,10 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			if stale.Size() > 0 {
 				err := s.st.DeleteCharacterMarketOrders(ctx, characterID, stale)
 				if err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
 			}
-			return nil
+			return true, nil
 		})
 }

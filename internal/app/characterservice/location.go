@@ -27,7 +27,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			}
 			return location, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			location := data.(*esi.CharactersCharacterIdLocationGet)
 			var locationID int64
 			if x := location.StructureId; x != nil {
@@ -39,7 +39,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			}
 			el, err := s.eus.GetOrCreateLocationESI(ctx, locationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if el.Variant() == app.EveLocationStructure && el.SolarSystem.IsEmpty() {
 				err := func() error {
@@ -60,9 +60,9 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 				}
 			}
 			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.New(locationID)); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -80,13 +80,13 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 			}
 			return online, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			online := data.(*esi.CharactersCharacterIdOnlineGet)
 			err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.FromPtr(online.LastLogin))
 			if err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -104,15 +104,15 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 			}
 			return ship, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			ship := data.(*esi.CharactersCharacterIdShipGet)
 			_, err := s.eus.GetOrCreateTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.New(ship.ShipTypeId)); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }

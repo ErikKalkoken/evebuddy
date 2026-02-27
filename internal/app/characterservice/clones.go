@@ -74,7 +74,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 			slog.Debug("Received jump clones from ESI", "characterID", characterID, "count", len(clones.JumpClones))
 			return clones, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			clones := data.(*esi.CharactersCharacterIdClonesGet)
 			var locationIDs set.Set[int64]
 			var typeIDs set.Set[int64]
@@ -93,7 +93,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				return s.eus.AddMissingTypes(ctx, typeIDs)
 			})
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
@@ -106,7 +106,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				}
 			}
 			if err := s.st.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
-				return err
+				return false, err
 			}
 			slog.Info("Stored updated jump clones", "characterID", characterID, "count", len(clones.JumpClones))
 
@@ -115,11 +115,11 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				home.Set(*clones.HomeLocation.LocationId)
 			}
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
-				return err
+				return false, err
 			}
 			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.FromPtr(clones.LastCloneJumpDate)); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }

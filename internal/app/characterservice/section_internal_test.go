@@ -37,9 +37,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				tokenSource = ctx.Value(goesi.ContextOAuth2).(oauth2.TokenSource)
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -74,9 +74,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -108,9 +108,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -142,9 +142,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {

@@ -122,8 +122,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CharacterSectionUpdateParams,
-	fetch func(ctx context.Context, characterID int64) (any, error),
-	update func(ctx context.Context, characterID int64, data any) error,
+	fetch func(ctx context.Context, characterID int64) (any, error), // returns data from ESI
+	update func(ctx context.Context, characterID int64, data any) (bool, error), // reports whether it has changed
 ) (bool, error) {
 	err := s.recordUpdateStarted(ctx, arg)
 	if err != nil {
@@ -150,17 +150,20 @@ func (s *CharacterService) updateSectionIfChanged(
 	} else if arg.Section.IsSkippingChangeDetection() {
 		needsUpdate = true
 	} else {
-		hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
+		b, err := s.hasSectionChanged(ctx, arg, hash)
 		if err != nil {
 			return false, err
 		}
-		needsUpdate = hasChanged
+		needsUpdate = b
 	}
 
+	var hasChanged bool
 	if needsUpdate {
-		if err := update(ctx, arg.CharacterID, data); err != nil {
+		b, err := update(ctx, arg.CharacterID, data)
+		if err != nil {
 			return false, err
 		}
+		hasChanged = b
 	}
 	if err := s.recordUpdateSuccessful(ctx, arg, hash); err != nil {
 		return false, err
@@ -169,9 +172,9 @@ func (s *CharacterService) updateSectionIfChanged(
 		"Has section changed",
 		"characterID", arg.CharacterID,
 		"section", arg.Section,
-		"needsUpdate", needsUpdate,
+		"hasChanged", hasChanged || arg.ForceUpdate,
 	)
-	return needsUpdate, nil
+	return hasChanged, nil
 }
 
 func (s *CharacterService) recordUpdateStarted(ctx context.Context, arg app.CharacterSectionUpdateParams) error {
