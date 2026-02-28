@@ -1,11 +1,13 @@
 package corporationservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -65,6 +67,9 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					jobs[i].Status = "ready"
 				}
 			}
+			slices.SortFunc(jobs, func(a, b esi.CorporationsCorporationIdIndustryJobsGetInner) int {
+				return cmp.Compare(a.JobId, b.JobId)
+			})
 			slog.Debug("Received industry jobs from ESI", "corporationID", arg.CorporationID, "count", len(jobs))
 			return jobs, nil
 		},

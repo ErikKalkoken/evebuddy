@@ -1,6 +1,7 @@
 package corporationservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -102,6 +103,9 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(contracts, func(a, b esi.CorporationsCorporationIdContractsGetInner) int {
+				return cmp.Compare(a.ContractId, b.ContractId)
+			})
 			slog.Debug("Received contracts from ESI", "corporationID", arg.CorporationID, "count", len(contracts))
 			return contracts, nil
 		},

@@ -1,6 +1,7 @@
 package corporationservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -188,6 +189,9 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(assets, func(a, b esi.CorporationsCorporationIdAssetsGetInner) int {
+				return cmp.Compare(a.ItemId, b.ItemId)
+			})
 			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.CorporationID)
 			return assets, nil
 		},
@@ -283,10 +287,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, err := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
-			if err != nil {
-				return false, err
-			}
+			names2, _ := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
 			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
 
 			modifyAssetNames(assets2, names2)
@@ -334,9 +335,10 @@ func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) 
 	}
 }
 
-func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, error) {
+func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, bool) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.CharactersCharacterIdAssetsNamesPostInner, 0)
+	var hasError bool
+	var results [][]esi.CharactersCharacterIdAssetsNamesPostInner
 	if len(ids) > 0 {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
@@ -345,6 +347,7 @@ func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporation
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
 				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
+				hasError = true
 			}
 			results = append(results, names)
 		}
@@ -357,5 +360,5 @@ func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporation
 			}
 		}
 	}
-	return m, nil
+	return m, !hasError
 }

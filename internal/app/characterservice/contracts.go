@@ -1,6 +1,7 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -161,6 +162,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(contracts, func(a, b esi.CharactersCharacterIdContractsGetInner) int {
+				return cmp.Compare(a.ContractId, b.ContractId)
+			})
 			slog.Debug("Received contracts from ESI", "characterID", characterID, "count", len(contracts))
 			return contracts, nil
 		},

@@ -1,6 +1,7 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -145,6 +146,9 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(assets, func(a, b esi.CharactersCharacterIdAssetsGetInner) int {
+				return cmp.Compare(a.ItemId, b.ItemId)
+			})
 			slog.Debug("Received assets from ESI", "count", len(assets), "characterID", characterID)
 			return assets, nil
 		},
