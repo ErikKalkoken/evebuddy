@@ -388,15 +388,15 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
-	if arg.EveTypeID == 0 {
+	if arg.TypeID == 0 {
 		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
+		arg.TypeID = x.ID
 	}
 	err := f.st.CreateCharacterImplant(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.st.GetCharacterImplant(ctx, arg.CharacterID, arg.EveTypeID)
+	o, err := f.st.GetCharacterImplant(ctx, arg.CharacterID, arg.TypeID)
 	if err != nil {
 		panic(err)
 	}

@@ -30,12 +30,12 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		t1 := factory.CreateEveType()
-		t2 := factory.CreateEveType()
+		et1 := factory.CreateEveType()
+		et2 := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int64{t1.ID, t2.ID}))
+			httpmock.NewJsonResponderOrPanic(200, []int64{et1.ID, et2.ID}))
 
 		// when
 		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
@@ -45,13 +45,63 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		oo, err := st.ListCharacterImplants(ctx, c.ID)
+		got, err := st.ListCharacterImplantIDs(ctx, c.ID)
 		require.NoError(t, err)
-		got := set.Of[int64]()
-		for _, o := range oo {
-			got.Add(o.EveType.ID)
-		}
-		want := set.Of(t1.ID, t2.ID)
+		want := set.Of(et1.ID, et2.ID)
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should update when implants have changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		ci := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{et.ID, ci.EveType.ID}))
+
+		// when
+		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterImplantIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(et.ID, ci.EveType.ID)
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should do nothing when implants have not changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		ci := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/implants", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int64{ci.EveType.ID}))
+
+		// when
+		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.ListCharacterImplantIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(ci.EveType.ID)
+		xassert.Equal(t, want, got)
+
 	})
 }
