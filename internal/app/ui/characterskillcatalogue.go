@@ -314,21 +314,31 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		return
 	}
 
-	c := a.character.Load()
-	if c == nil {
+	characterID := characterIDOrZero(a.character.Load())
+	if characterID == 0 {
 		clear()
 		setTop("No character", widget.LowImportance)
 		return
 	}
-	characterID := characterIDOrZero(c)
+
 	if !a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills) {
 		clear()
 		setTop("No data yet", widget.WarningImportance)
 		return
 	}
+
+	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		slog.Error("Updating skill catalogue UI", "err", err)
+		clear()
+		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+	a.character.Store(c)
+
 	skills, err := a.u.cs.ListSkills(ctx, characterID)
 	if err != nil {
-		slog.Error("Failed to fetch skills for UI", "err", err)
+		slog.Error("Updating skill catalogue UI", "err", err)
 		clear()
 		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
