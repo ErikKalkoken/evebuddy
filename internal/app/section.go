@@ -22,9 +22,6 @@ type section interface {
 	// DisplayName returns the output friendly name of a section.
 	DisplayName() string
 
-	// IsSkippingChangeDetection reports whether a section is skipping the change detection.
-	IsSkippingChangeDetection() bool
-
 	// Scopes returns the required scopes for fetching data for a section from ESI.
 	Scopes() set.Set[string]
 
@@ -98,12 +95,6 @@ var CharacterSections = []CharacterSection{
 
 func (cs CharacterSection) DisplayName() string {
 	return makeSectionDisplayName(cs)
-}
-
-// TODO: remove
-
-func (cs CharacterSection) IsSkippingChangeDetection() bool {
-	return false
 }
 
 func (cs CharacterSection) Scopes() set.Set[string] {
@@ -280,14 +271,6 @@ func (cs CorporationSection) Division() Division {
 	return m[cs]
 }
 
-func (cs CorporationSection) IsSkippingChangeDetection() bool {
-	switch cs {
-	case SectionCorporationIndustryJobs:
-		return true
-	}
-	return false
-}
-
 func (cs CorporationSection) String() string {
 	return string(cs)
 }
@@ -429,10 +412,6 @@ var generalSectionTimeouts = map[GeneralSection]time.Duration{
 
 func (gs GeneralSection) DisplayName() string {
 	return makeSectionDisplayName(gs)
-}
-
-func (gs GeneralSection) IsSkippingChangeDetection() bool {
-	return false
 }
 
 func (gs GeneralSection) Scopes() set.Set[string] {

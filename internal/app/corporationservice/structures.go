@@ -30,7 +30,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdStructures")
 			structures, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.CorporationID).Execute()

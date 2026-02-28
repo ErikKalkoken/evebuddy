@@ -212,6 +212,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 func (s *CorporationService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CorporationSectionUpdateParams,
+	skipChangeDetection bool,
 	fetch func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error), // returns data from ESI
 	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error), // reports whether it has changed
 ) (bool, error) {
@@ -257,9 +258,7 @@ func (s *CorporationService) updateSectionIfChanged(
 
 		// identify whether update is needed
 		var needsUpdate bool
-		if arg.ForceUpdate {
-			needsUpdate = true
-		} else if arg.Section.IsSkippingChangeDetection() {
+		if arg.ForceUpdate || skipChangeDetection {
 			needsUpdate = true
 		} else {
 			hasChanged, err := s.hasSectionChanged(ctx, arg, hash)

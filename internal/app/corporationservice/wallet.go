@@ -135,7 +135,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg ap
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWallets")
 			wallets, _, err := s.esiClient.WalletAPI.GetCorporationsCorporationIdWallets(ctx, arg.CorporationID).Execute()
@@ -205,7 +205,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 		return false, fmt.Errorf("updateWalletJournalESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
 			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.CorporationID, arg.Section.Division().ID())
@@ -353,7 +353,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 		return false, fmt.Errorf("updateWalletTransactionESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.CorporationID, arg.Section.Division().ID())
 			lastID, found := s.cache.GetInt64(cacheKey)
