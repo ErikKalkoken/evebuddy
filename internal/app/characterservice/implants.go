@@ -25,7 +25,7 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdImplants")
 			implants, _, err := s.esiClient.ClonesAPI.GetCharactersCharacterIdImplants(ctx, characterID).Execute()

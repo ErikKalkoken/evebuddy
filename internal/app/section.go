@@ -100,11 +100,9 @@ func (cs CharacterSection) DisplayName() string {
 	return makeSectionDisplayName(cs)
 }
 
+// TODO: remove
+
 func (cs CharacterSection) IsSkippingChangeDetection() bool {
-	switch cs {
-	case SectionCharacterIndustryJobs, SectionCharacterLoyaltyPoints:
-		return true
-	}
 	return false
 }
 

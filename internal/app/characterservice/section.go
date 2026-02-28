@@ -122,6 +122,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CharacterSectionUpdateParams,
+	skipChangeDetection bool,
 	fetch func(ctx context.Context, characterID int64) (any, error), // returns data from ESI
 	update func(ctx context.Context, characterID int64, data any) (bool, error), // reports whether it has changed
 ) (bool, error) {
@@ -145,9 +146,7 @@ func (s *CharacterService) updateSectionIfChanged(
 
 	// identify whether update is needed
 	var needsUpdate bool
-	if arg.ForceUpdate {
-		needsUpdate = true
-	} else if arg.Section.IsSkippingChangeDetection() {
+	if arg.ForceUpdate || skipChangeDetection {
 		needsUpdate = true
 	} else {
 		b, err := s.hasSectionChanged(ctx, arg, hash)

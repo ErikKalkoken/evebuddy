@@ -31,7 +31,7 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAttributes")
 			attributes, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdAttributes(ctx, characterID).Execute()
@@ -211,7 +211,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
 			skills, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkills(ctx, characterID).Execute()
@@ -358,7 +358,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
 			items, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkillqueue(ctx, characterID).Execute()

@@ -136,7 +136,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
 			assets, err := xgoesi.FetchPages(

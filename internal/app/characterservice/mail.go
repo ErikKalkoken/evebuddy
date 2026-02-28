@@ -331,7 +331,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLabels")
 			ll, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailLabels(ctx, characterID).Execute()
@@ -370,7 +370,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLists")
 			lists, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailLists(ctx, characterID).Execute()
@@ -405,7 +405,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			mail, err := s.fetchMailHeadersESI(ctx, characterID, arg.MaxMails)
 			if err != nil {

@@ -27,7 +27,7 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLoyaltyPoints")
 			rows, _, err := s.esiClient.LoyaltyAPI.GetCharactersCharacterIdLoyaltyPoints(ctx, characterID).Execute()

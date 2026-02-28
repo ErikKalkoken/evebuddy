@@ -104,7 +104,7 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 	}
 
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdRoles")
 			roles, _, err := s.esiClient.CharacterAPI.GetCharactersCharacterIdRoles(ctx, characterID).Execute()

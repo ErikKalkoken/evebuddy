@@ -18,7 +18,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 			location, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdLocation(ctx, characterID).Execute()
@@ -71,7 +71,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOnline")
 			online, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdOnline(ctx, characterID).Execute()
@@ -95,7 +95,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdShip")
 			ship, _, err := s.esiClient.LocationAPI.GetCharactersCharacterIdShip(ctx, characterID).Execute()

@@ -64,7 +64,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdClones")
 			clones, _, err := s.esiClient.ClonesAPI.GetCharactersCharacterIdClones(ctx, characterID).Execute()

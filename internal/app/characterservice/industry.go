@@ -42,7 +42,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdIndustryJobs")
 			jobs, _, err := s.esiClient.IndustryAPI.GetCharactersCharacterIdIndustryJobs(ctx, characterID).IncludeCompleted(true).Execute()

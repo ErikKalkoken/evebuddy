@@ -28,7 +28,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	}
 	const openState = "open"
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
 			open, _, err := s.esiClient.MarketAPI.GetCharactersCharacterIdOrders(ctx, characterID).Execute()
