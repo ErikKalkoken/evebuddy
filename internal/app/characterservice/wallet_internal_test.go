@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestUpdateWalletJournalEntryESI(t *testing.T) {
+func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
@@ -28,7 +28,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		firstParty := factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -80,7 +80,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
@@ -119,12 +119,12 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, 2, ids.Size())
 	})
-	t.Run("should ignore existing", func(t *testing.T) {
+	t.Run("should not update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID: c.ID,
 			RefID:       89,
@@ -150,12 +150,13 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
+		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
+		assert.False(t, changed)
 		x, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
 			CharacterID: c.ID,
 			RefID:       89,
@@ -171,7 +172,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -185,7 +186,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
@@ -196,7 +197,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -264,7 +265,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -321,7 +322,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -376,7 +377,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 }
 
-func TestListWalletJournalEntries(t *testing.T) {
+func TestCharacterService_ListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
@@ -384,7 +385,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -396,7 +397,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 	})
 }
 
-func TestUpdateWalletTransactionESI(t *testing.T) {
+func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
@@ -407,7 +408,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -459,7 +460,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
@@ -512,7 +513,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
 			CharacterID:   c.ID,
 			TransactionID: 1234567890,
@@ -550,7 +551,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -564,7 +565,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
@@ -574,7 +575,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -632,7 +633,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -693,7 +694,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -752,7 +753,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 }
 
-func TestListWalletTransactions(t *testing.T) {
+func TestCharacterService_ListWalletTransactions(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
@@ -760,7 +761,7 @@ func TestListWalletTransactions(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
@@ -772,7 +773,7 @@ func TestListWalletTransactions(t *testing.T) {
 	})
 }
 
-func TestUpdateWalletBalanceESI(t *testing.T) {
+func TestCharacterService_UpdateWalletBalanceESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
@@ -783,7 +784,7 @@ func TestUpdateWalletBalanceESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		const balance = 123.45
 		httpmock.RegisterResponder(

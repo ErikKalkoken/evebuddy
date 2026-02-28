@@ -35,7 +35,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
 			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
@@ -75,7 +75,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
 			if len(newEntries) == 0 {
 				slog.Info("No new wallet journal entries", "characterID", characterID)
-				return true, nil
+				return false, nil
 			}
 
 			var ids set.Set[int64]
@@ -138,7 +138,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
 			lastID, found := s.cache.GetInt64(cacheKey)
@@ -171,7 +171,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
 			if len(newEntries) == 0 {
 				slog.Info("No new wallet transactions", "characterID", characterID)
-				return true, nil
+				return false, nil
 			}
 
 			var entityIDs, typeIDs set.Set[int64]
