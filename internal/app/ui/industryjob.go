@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -53,6 +54,7 @@ type industryJobRow struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
 	blueprintType      *app.EntityShort
+	blueprintTypeName  string
 	completedCharacter optional.Optional[*app.EveEntity]
 	completedDate      optional.Optional[time.Time]
 	cost               optional.Optional[float64]
@@ -141,6 +143,7 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 }
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
+	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
@@ -148,8 +151,23 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
 		},
+		Create: func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.BlankSvg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
+		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.blueprintType.Name)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.blueprintTypeName)
+			x := border[1].(*canvas.Image)
+			u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, app.IconPixelSize, func(r fyne.Resource) {
+				x.Resource = r
+				x.Refresh()
+			})
 		},
 	}, {
 		ID:    industryJobsColStatus,
@@ -207,12 +225,25 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}, {
 		ID:    industryJobsColOwner,
 		Label: "Owner",
-		Width: columnWidthEntity,
+		Width: 250,
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.owner.Name, b.owner.Name)
 		},
+		Create: func() fyne.CanvasObject {
+			icon := widget.NewIcon(icons.BlankSvg)
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(nil, nil, icon, nil, name)
+		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.owner.Name)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.owner.Name)
+			icon := border[1].(*widget.Icon)
+			if r.owner.IsCharacter() {
+				icon.SetResource(theme.AccountIcon())
+			} else {
+				icon.SetResource(corporationIcon)
+			}
 		},
 	}, {
 		ID:    industryJobsColInstaller,
@@ -656,6 +687,7 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
+			blueprintTypeName:  shortenBlueprintName(j.BlueprintType),
 			completedCharacter: j.CompletedCharacter,
 			completedDate:      j.CompletedDate,
 			cost:               j.Cost,
@@ -688,12 +720,15 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
+			blueprintTypeName:  shortenBlueprintName(j.BlueprintType),
 			completedCharacter: j.CompletedCharacter,
 			completedDate:      j.CompletedDate,
 			cost:               j.Cost,
 			duration:           j.Duration,
 			endDate:            j.EndDate,
 			installer:          j.Installer,
+			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
+			isOwnerMe:          false,
 			jobID:              j.JobID,
 			licensedRuns:       j.LicensedRuns,
 			location:           j.Location,
@@ -705,13 +740,16 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			startDate:          j.StartDate,
 			status:             j.Status,
 			successfulRuns:     j.SuccessfulRuns,
-			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
-			isOwnerMe:          false,
 			tags:               tagsPerCharacter[j.Installer.ID],
 		})
 	}
 	jobs := slices.Concat(characterJobs, corporationJobs)
 	return jobs, nil
+}
+
+func shortenBlueprintName(typ *app.EntityShort) string {
+	s, _ := strings.CutSuffix(typ.Name, " Blueprint")
+	return s
 }
 
 func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
@@ -743,12 +781,15 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
+			blueprintTypeName:  shortenBlueprintName(j.BlueprintType),
 			completedCharacter: j.CompletedCharacter,
 			completedDate:      j.CompletedDate,
 			cost:               j.Cost,
 			duration:           j.Duration,
 			endDate:            j.EndDate,
 			installer:          j.Installer,
+			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
+			isOwnerMe:          false,
 			jobID:              j.JobID,
 			licensedRuns:       j.LicensedRuns,
 			location:           j.Location,
@@ -760,8 +801,6 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 			startDate:          j.StartDate,
 			status:             j.Status,
 			successfulRuns:     j.SuccessfulRuns,
-			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
-			isOwnerMe:          false,
 		})
 	}
 	return jobs, nil
