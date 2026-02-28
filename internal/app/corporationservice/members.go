@@ -21,7 +21,7 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdMembers")
 			members, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID).Execute()
@@ -36,6 +36,10 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 			if err != nil {
 				return false, err
 			}
+			if current.Equal(incoming) {
+				return false, nil
+			}
+
 			if _, err := s.eus.AddMissingEntities(ctx, incoming); err != nil {
 				return false, err
 			}

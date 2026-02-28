@@ -205,7 +205,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 		return false, fmt.Errorf("updateWalletJournalESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
 			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.CorporationID, arg.Section.Division().ID())
@@ -258,7 +258,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 					"corporationID", arg.CorporationID,
 					"divisionID", arg.Section.Division(),
 				)
-				return true, nil
+				return false, nil
 			}
 
 			var ids set.Set[int64]
@@ -274,7 +274,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 				return false, err
 			}
 			for _, o := range newEntries {
-				arg := storage.CreateCorporationWalletJournalEntryParams{
+				err := s.st.CreateCorporationWalletJournalEntry(ctx, storage.CreateCorporationWalletJournalEntryParams{
 					Amount:        optional.FromPtr(o.Amount),
 					Balance:       optional.FromPtr(o.Balance),
 					ContextID:     optional.FromPtr(o.ContextId),
@@ -290,8 +290,8 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 					SecondPartyID: optional.FromPtr(o.SecondPartyId),
 					Tax:           optional.FromPtr(o.Tax),
 					TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
-				}
-				if err := s.st.CreateCorporationWalletJournalEntry(ctx, arg); err != nil {
+				})
+				if err != nil {
 					return false, err
 				}
 			}
@@ -353,7 +353,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 		return false, fmt.Errorf("updateWalletTransactionESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.CorporationID, arg.Section.Division().ID())
 			lastID, found := s.cache.GetInt64(cacheKey)
@@ -394,7 +394,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					"corporationID", arg.CorporationID,
 					"divisionID", arg.Section.Division(),
 				)
-				return true, nil
+				return false, nil
 			}
 
 			var entityIDs, typeIDs set.Set[int64]
@@ -419,7 +419,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 				return false, err
 			}
 			for _, o := range newEntries {
-				arg := storage.CreateCorporationWalletTransactionParams{
+				err := s.st.CreateCorporationWalletTransaction(ctx, storage.CreateCorporationWalletTransactionParams{
 					ClientID:      o.ClientId,
 					CorporationID: arg.CorporationID,
 					Date:          o.Date,
@@ -431,8 +431,8 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					Quantity:      o.Quantity,
 					TransactionID: o.TransactionId,
 					UnitPrice:     o.UnitPrice,
-				}
-				if err := s.st.CreateCorporationWalletTransaction(ctx, arg); err != nil {
+				})
+				if err != nil {
 					return false, err
 				}
 			}
