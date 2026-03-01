@@ -35,7 +35,9 @@ func TestAddMissingEveEntities(t *testing.T) {
 			switch id {
 			case 47:
 				results = append(results, map[string]any{
-					"id": 47, "name": "Erik", "category": "character",
+					"id":       47,
+					"name":     "Erik",
+					"category": "character",
 				})
 			default:
 				return httpmock.NewJsonResponse(404, map[string]any{"error": "Invalid ID"})
@@ -264,6 +266,24 @@ func TestAddMissingEveEntities(t *testing.T) {
 		err = r.Scan(&c)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, c)
+	})
+	t.Run("should report error when ESI response is incomplete", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/universe/names",
+			httpmock.NewJsonResponderOrPanic(http.StatusOK, []map[string]any{{
+				"id":       47,
+				"name":     "Erik",
+				"category": "character",
+			}}),
+		)
+		// when
+		_, err := s.AddMissingEntities(ctx, set.Of[int64](47, 12))
+		// then
+		require.Error(t, err)
 	})
 }
 
