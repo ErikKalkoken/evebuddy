@@ -102,12 +102,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.GoldSvg),
 		newContentPage("Wealth", u.wealth),
 	)
-	// u.wealth.onUpdate = func(wallet, assets float64) {
-	// 	fyne.Do(func() {
-	// 		x := ihumanize.Number(wallet+assets, 1)
-	// 		homeNav.SetItemBadge(wealth, x)
-	// 	})
-	// }
 
 	const assetsTitle = "Assets"
 	allAssets := iwidget.NewNavPage(
@@ -115,11 +109,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage(assetsTitle, u.assetSearchAll),
 	)
-	// u.assets.onUpdate = func(quantity int, _ string) {
-	// 	fyne.Do(func() {
-	// 		homeNav.SetItemBadge(allAssets, ihumanize.Number(float64(quantity), 1))
-	// 	})
-	// }
 
 	contracts := iwidget.NewNavPage(
 		"Contracts",
@@ -293,14 +282,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterWalletNav,
 	)
 	characterNav.MinWidth = navDrawerMinWidth
-	u.characterWallet.onBalanceUpdate = func(balance float64) {
-		characterNav.SetItemBadge(characterWalletNav, ihumanize.NumberF(balance, 1))
+	u.characterWallet.onBalanceUpdate = func(balance optional.Optional[float64]) {
+		s := balance.StringFunc("?", func(v float64) string {
+			return ihumanize.NumberF(v, 1)
+		})
+		characterNav.SetItemBadge(characterWalletNav, s)
 	}
-	// u.characterAssets.OnUpdate = func(s string) {
-	// 	fyne.Do(func() {
-	// 		characterNav.SetItemBadge(characterAssetsNav, s)
-	// 	})
-	// }
 
 	// Corporation
 	corpAssetsItem := iwidget.NewNavPage(
@@ -390,16 +377,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	for _, d := range app.Divisions {
 		u.corporationWallets[d].onBalanceUpdate = func(balance optional.Optional[float64]) {
-			s := balance.StringFunc("", func(v float64) string {
+			s := balance.StringFunc("?", func(v float64) string {
 				return ihumanize.NumberF(v, 1)
 			})
 			corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 		}
 		u.corporationWallets[d].onNameUpdate = func(name string) {
-			fyne.Do(func() {
-				corporationNav.SetItemText(corporationWalletNavs[d], name)
-				corporationWalletPages[d].SetTitle(name)
-			})
+			corporationNav.SetItemText(corporationWalletNavs[d], name)
+			corporationWalletPages[d].SetTitle(name)
 		}
 	}
 	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {

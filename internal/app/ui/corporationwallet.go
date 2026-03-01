@@ -97,13 +97,14 @@ func (a *corporationWallet) update(ctx context.Context) {
 
 func (a *corporationWallet) updateBalance(ctx context.Context) {
 	clear := func() {
-		if a.onBalanceUpdate != nil {
-			a.onBalanceUpdate(optional.Optional[float64]{})
-		}
-		if a.onTopUpdate != nil {
-			a.onTopUpdate("")
-		}
-
+		fyne.Do(func() {
+			if a.onBalanceUpdate != nil {
+				a.onBalanceUpdate(optional.Optional[float64]{})
+			}
+			if a.onTopUpdate != nil {
+				a.onTopUpdate("")
+			}
+		})
 	}
 	setBalance := func(s string, i widget.Importance) {
 		fyne.Do(func() {
@@ -177,8 +178,9 @@ func (a *corporationWallet) updateName(ctx context.Context) {
 			a.name.Show()
 		})
 	}
-	if a.onNameUpdate != nil {
-		a.onNameUpdate(name)
-	}
-
+	fyne.Do(func() {
+		if a.onNameUpdate != nil {
+			a.onNameUpdate(name)
+		}
+	})
 }

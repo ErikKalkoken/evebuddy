@@ -267,6 +267,12 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		app.SectionCharacterSkillqueue,
 	})
 
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterWalletBalance,
+		app.SectionCharacterWalletJournal,
+		app.SectionCharacterWalletTransactions,
+	})
+
 	// Other sections
 	for s := range sections.All() {
 		wg.Go(func() {
