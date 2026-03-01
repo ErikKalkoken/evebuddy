@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -22,7 +23,7 @@ type characterWallet struct {
 	widget.BaseWidget
 
 	onTopUpdate     func(top string)
-	onBalanceUpdate func(balance float64)
+	onBalanceUpdate func(balance optional.Optional[float64])
 
 	balance       *widget.Label
 	character     atomic.Pointer[app.Character]
@@ -89,40 +90,66 @@ func (a *characterWallet) update(ctx context.Context) {
 }
 
 func (a *characterWallet) updateBalance(ctx context.Context) {
-	var err error
-	var balance float64
-	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
-	if hasData {
-		c, err2 := a.u.cs.GetCharacter(ctx, characterID)
-		if errors.Is(err2, app.ErrNotFound) {
-			hasData = false
-		} else if err2 != nil {
-			slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err2)
-			err = err2
-		} else {
-			if v, ok := c.WalletBalance.Value(); ok {
-				balance = v
-			} else {
-				hasData = false
+	clear := func() {
+		fyne.Do(func() {
+			if a.onBalanceUpdate != nil {
+				a.onBalanceUpdate(optional.Optional[float64]{})
 			}
-		}
+			if a.onTopUpdate != nil {
+				a.onTopUpdate("")
+			}
+		})
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		b1 := humanize.FormatFloat(app.FloatFormat, balance)
-		b2 := ihumanize.NumberF(balance, 1)
-		s := fmt.Sprintf("%s ISK (%s)", b1, b2)
-		return s, widget.MediumImportance
-	})
+	setBalance := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.balance.Text, a.balance.Importance = s, i
+			a.balance.Refresh()
+		})
+	}
+	characterID := characterIDOrZero(a.character.Load())
+	if characterID == 0 {
+		clear()
+		setBalance("", widget.MediumImportance)
+		return
+	}
+
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
+	if !hasData {
+		clear()
+		setBalance("No data", widget.WarningImportance)
+		return
+	}
+
+	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		clear()
+		setBalance("No data", widget.WarningImportance)
+		return
+	}
+	if err != nil {
+		slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err)
+		clear()
+		setBalance("Error: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+	balance, ok := c.WalletBalance.Value()
+	if !ok {
+		clear()
+		setBalance("No data", widget.WarningImportance)
+		return
+	}
+
+	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+	if balance > 1000 {
+		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
+	}
+	setBalance(s, widget.MediumImportance)
 	fyne.Do(func() {
 		if a.onTopUpdate != nil {
-			a.onTopUpdate(t)
+			a.onTopUpdate(s)
 		}
 		if a.onBalanceUpdate != nil {
-			a.onBalanceUpdate(balance)
+			a.onBalanceUpdate(optional.New(balance))
 		}
-		a.balance.Text = t
-		a.balance.Importance = i
-		a.balance.Refresh()
 	})
 }

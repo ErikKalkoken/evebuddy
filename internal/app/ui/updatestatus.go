@@ -545,13 +545,13 @@ func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
 
 func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
 	layout := kxlayout.NewColumns(100)
-	c := container.NewVBox(
+	c := container.NewVScroll(container.NewVBox(
 		container.New(layout, widget.NewLabel("Status"), w.status),
-		container.New(layout, widget.NewLabel("Issue"), w.issue),
 		container.New(layout, widget.NewLabel("Started"), w.startedAt),
 		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
 		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
 		container.New(layout, widget.NewLabel("Next update"), w.nextUpdate),
-	)
+		container.New(layout, widget.NewLabel("Issue"), w.issue),
+	))
 	return widget.NewSimpleRenderer(c)
 }

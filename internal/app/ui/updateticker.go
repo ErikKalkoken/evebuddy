@@ -267,6 +267,12 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		app.SectionCharacterSkillqueue,
 	})
 
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterWalletBalance,
+		app.SectionCharacterWalletJournal,
+		app.SectionCharacterWalletTransactions,
+	})
+
 	// Other sections
 	for s := range sections.All() {
 		wg.Go(func() {
@@ -426,9 +432,9 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 		// nothing to update
 		return
 	}
-	sections := set.Of(app.CorporationSections...)
+	sections := app.CorporationSections
 	var wg sync.WaitGroup
-	for s := range sections.All() {
+	for _, s := range sections {
 		wg.Go(func() {
 			u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 		})

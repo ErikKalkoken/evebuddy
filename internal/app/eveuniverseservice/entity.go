@@ -110,11 +110,11 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 	var missing set.Set[int64]
 	if ids2.Size() > 0 {
 		// Identify missing IDs
-		ids, err := s.st.MissingEveEntityIDs(ctx, ids2)
+		x, err := s.st.MissingEveEntityIDs(ctx, ids2)
 		if err != nil {
 			return set.Set[int64]{}, wrapErr(err)
 		}
-		missing.AddSeq(ids.All())
+		missing.AddSeq(x.All())
 	}
 	if missing.Size() > 0 {
 		slog.Debug("Trying to resolve missing EveEntity IDs from ESI", "ids", missing)
@@ -138,6 +138,16 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			}
 		}
 		slog.Info("Stored newly resolved EveEntities", "count", len(ee))
+		resolved := set.Collect(xiter.MapSlice(ee, func(x esi.UniverseNamesPostInner) int64 {
+			return x.Id
+		}))
+		requested := set.Difference(missing, bad)
+		unresolved := set.Difference(requested, resolved)
+		if unresolved.Size() > 0 {
+			return set.Set[int64]{}, wrapErr(
+				fmt.Errorf("ESI failed to resolve some IDs: requested %v, unresolved %v", requested, unresolved),
+			)
+		}
 	}
 	if bad.Size() > 0 {
 		// Mark unresolvable IDs
