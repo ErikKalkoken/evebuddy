@@ -10,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 // DeleteCharacter deletes a character and corporations which have become orphaned as a result.
@@ -129,8 +128,28 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		return nil, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
-	setInfo("Fetching character from game server...")
 	characterID := int64(ssoToken.CharacterID)
+
+	// the following order of fetching and creating objects is deliberate
+	// it aims to ensure that a new character is only created
+	// after all the related eve objects are created successfully
+
+	setInfo("Fetching character from game server...")
+	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+
+	setInfo("Fetching corporation from game server...")
+	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
+		return nil, err
+	}
+
+	setInfo("Storing character...")
+	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: characterID})
+	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
+		return nil, err
+	}
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  characterID,
@@ -139,23 +158,10 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		Scopes:       set.Of(ssoToken.Scopes...),
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = xgoesi.NewContextWithAuthStatic(ctx, token.CharacterID, token.AccessToken)
-	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
-	if err != nil {
-		return nil, err
-	}
-	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: token.CharacterID})
-	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
-		return nil, err
-	}
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
 		return nil, err
 	}
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
-		return nil, err
-	}
-	setInfo("Fetching corporation from game server...")
-	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
 		return nil, err
 	}
 	if isNPC, _ := character.Corporation.IsNPC().Value(); !isNPC {
