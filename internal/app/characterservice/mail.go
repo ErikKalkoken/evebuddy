@@ -331,7 +331,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLabels")
 			ll, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailLabels(ctx, characterID).Execute()
@@ -341,7 +341,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 			slog.Debug("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
 			return ll, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			ll := data.(*esi.CharactersCharacterIdMailLabelsGet)
 			labels := ll.Labels
 			for _, o := range labels {
@@ -356,10 +356,10 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 					UnreadCount: optional.FromPtr(o.UnreadCount),
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -370,7 +370,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLists")
 			lists, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailLists(ctx, characterID).Execute()
@@ -379,7 +379,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 			}
 			return lists, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			lists := data.([]esi.CharactersCharacterIdMailListsGetInner)
 			for _, o := range lists {
 				_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
@@ -388,13 +388,13 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 					Category: app.EveEntityMailList,
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 				if err := s.st.CreateCharacterMailList(ctx, characterID, o.MailingListId); err != nil {
-					return err
+					return false, err
 				}
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -405,7 +405,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			mail, err := s.fetchMailHeadersESI(ctx, characterID, arg.MaxMails)
 			if err != nil {
@@ -414,11 +414,11 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 			slog.Debug("Received mail headers from ESI", "characterID", characterID, "count", len(mail))
 			return mail, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			mail := data.([]storage.CreateCharacterMailParams)
 			existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			newMail := make([]storage.CreateCharacterMailParams, 0)
 			existingMail := make([]storage.CreateCharacterMailParams, 0)
@@ -431,12 +431,12 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 			}
 			if len(newMail) > 0 {
 				if err := s.addNewMailsESI(ctx, newMail); err != nil {
-					return err
+					return false, err
 				}
 			}
 			if len(existingMail) > 0 {
 				if err := s.updateExistingMail(ctx, characterID, existingMail); err != nil {
-					return err
+					return false, err
 				}
 			}
 			// TODO: Delete obsolete mail labels and list
@@ -446,7 +446,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 			// if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 			// 	return err
 			// }
-			return nil
+			return false, nil
 		})
 }
 

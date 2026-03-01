@@ -11,13 +11,10 @@ import (
 )
 
 const createCharacterImplant = `-- name: CreateCharacterImplant :exec
-INSERT INTO character_implants (
-    character_id,
-    eve_type_id
-)
-VALUES (
-    ?, ?
-)
+INSERT INTO
+    character_implants (character_id, eve_type_id)
+VALUES
+    (?, ?)
 `
 
 type CreateCharacterImplantParams struct {
@@ -32,7 +29,8 @@ func (q *Queries) CreateCharacterImplant(ctx context.Context, arg CreateCharacte
 
 const deleteCharacterImplants = `-- name: DeleteCharacterImplants :exec
 DELETE FROM character_implants
-WHERE character_id = ?
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) DeleteCharacterImplants(ctx context.Context, characterID int64) error {
@@ -47,13 +45,16 @@ SELECT
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_type_dogma_attributes.value as slot_num
-FROM character_implants
-JOIN eve_types ON eve_types.id = character_implants.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
-WHERE character_id = ?
-AND character_implants.eve_type_id = ?
+FROM
+    character_implants
+    JOIN eve_types ON eve_types.id = character_implants.eve_type_id
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+    LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id
+    AND eve_type_dogma_attributes.dogma_attribute_id = ?
+WHERE
+    character_id = ?
+    AND character_implants.eve_type_id = ?
 `
 
 type GetCharacterImplantParams struct {
@@ -110,11 +111,13 @@ SELECT
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_type_dogma_attributes.value as slot_num
-FROM character_implants
-JOIN eve_types ON eve_types.id = character_implants.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
+FROM
+    character_implants
+    JOIN eve_types ON eve_types.id = character_implants.eve_type_id
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+    LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id
+    AND eve_type_dogma_attributes.dogma_attribute_id = ?
 `
 
 type ListAllCharacterImplantsRow struct {
@@ -174,6 +177,38 @@ func (q *Queries) ListAllCharacterImplants(ctx context.Context, dogmaAttributeID
 	return items, nil
 }
 
+const listCharacterImplantIDs = `-- name: ListCharacterImplantIDs :many
+SELECT
+    eve_type_id
+FROM
+    character_implants
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterImplantIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterImplantIDs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var eve_type_id int64
+		if err := rows.Scan(&eve_type_id); err != nil {
+			return nil, err
+		}
+		items = append(items, eve_type_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterImplants = `-- name: ListCharacterImplants :many
 SELECT
     character_implants.id, character_implants.character_id, character_implants.eve_type_id,
@@ -181,13 +216,17 @@ SELECT
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_type_dogma_attributes.value as slot_num
-FROM character_implants
-JOIN eve_types ON eve_types.id = character_implants.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
-WHERE character_id = ?
-ORDER BY slot_num
+FROM
+    character_implants
+    JOIN eve_types ON eve_types.id = character_implants.eve_type_id
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+    LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id
+    AND eve_type_dogma_attributes.dogma_attribute_id = ?
+WHERE
+    character_id = ?
+ORDER BY
+    slot_num
 `
 
 type ListCharacterImplantsParams struct {

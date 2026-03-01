@@ -32,14 +32,14 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		var tokenSource oauth2.TokenSource
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				tokenSource = ctx.Value(goesi.ContextOAuth2).(oauth2.TokenSource)
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -70,13 +70,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		var hasUpdated bool
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -104,13 +104,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		hasUpdated := false
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {
@@ -123,7 +123,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should update when data has not changed", func(t *testing.T) {
+	t.Run("should update when data has not changed and forced", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
@@ -136,15 +136,19 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CompletedAt: time.Now().Add(-5 * time.Second),
 		})
 		var hasUpdated bool
-		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
+		arg := app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     section,
+			ForceUpdate: true,
+		}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, characterID int64, data any) error {
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
 				hasUpdated = true
-				return nil
+				return true, nil
 			})
 		// then
 		if assert.NoError(t, err) {

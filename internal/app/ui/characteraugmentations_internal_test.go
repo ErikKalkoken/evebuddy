@@ -29,7 +29,7 @@ func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{
 		CharacterID: character.ID,
-		EveTypeID:   et.ID,
+		TypeID:   et.ID,
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,

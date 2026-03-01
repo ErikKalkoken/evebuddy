@@ -1,6 +1,7 @@
 package corporationservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -178,7 +179,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdAssets")
 			assets, err := xgoesi.FetchPages(
@@ -188,10 +189,13 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(assets, func(a, b esi.CorporationsCorporationIdAssetsGetInner) int {
+				return cmp.Compare(a.ItemId, b.ItemId)
+			})
 			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.CorporationID)
 			return assets, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 			assets := data.([]esi.CorporationsCorporationIdAssetsGetInner)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
@@ -213,11 +217,11 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				return s.eus.AddMissingTypes(ctx, typeIDs)
 			})
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			currentIDs, err := s.st.ListCorporationAssetIDs(ctx, arg.CorporationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			var updated, created int
 			for _, a := range assets {
@@ -241,7 +245,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 						Quantity:      a.Quantity,
 					})
 					if err != nil {
-						return err
+						return false, err
 					}
 					updated++
 				} else {
@@ -257,7 +261,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 						Quantity:        a.Quantity,
 					})
 					if err != nil {
-						return err
+						return false, err
 					}
 					created++
 				}
@@ -267,7 +271,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			// remove obsolete assets
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCorporationAssets(ctx, arg.CorporationID, ids); err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.CorporationID, "count", ids.Size())
 			}
@@ -275,7 +279,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			// update names
 			assets2, err := s.st.ListCorporationAssets(ctx, arg.CorporationID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			names := make(map[int64]string)
 			for _, a := range assets2 {
@@ -283,10 +287,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, err := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
-			if err != nil {
-				return err
-			}
+			names2, _ := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
 			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
 
 			modifyAssetNames(assets2, names2)
@@ -304,11 +305,11 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					Name:          names2[id],
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 
-			return nil
+			return true, nil
 		},
 	)
 }
@@ -334,9 +335,10 @@ func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) 
 	}
 }
 
-func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, error) {
+func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, bool) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.CharactersCharacterIdAssetsNamesPostInner, 0)
+	var hasError bool
+	var results [][]esi.CharactersCharacterIdAssetsNamesPostInner
 	if len(ids) > 0 {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
@@ -345,6 +347,7 @@ func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporation
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
 				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
+				hasError = true
 			}
 			results = append(results, names)
 		}
@@ -357,5 +360,5 @@ func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporation
 			}
 		}
 	}
-	return m, nil
+	return m, !hasError
 }

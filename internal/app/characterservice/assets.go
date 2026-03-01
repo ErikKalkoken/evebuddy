@@ -1,6 +1,7 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -135,7 +136,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
 			assets, err := xgoesi.FetchPages(
@@ -145,10 +146,13 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(assets, func(a, b esi.CharactersCharacterIdAssetsGetInner) int {
+				return cmp.Compare(a.ItemId, b.ItemId)
+			})
 			slog.Debug("Received assets from ESI", "count", len(assets), "characterID", characterID)
 			return assets, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			assets := data.([]esi.CharactersCharacterIdAssetsGetInner)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
@@ -170,11 +174,11 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				return s.eus.AddMissingTypes(ctx, typeIDs)
 			})
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			var updated, created int
 			for _, a := range assets {
@@ -189,20 +193,20 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					slog.Warn("Unknown location type encountered", "characterID", characterID, "item", a)
 				}
 				if currentIDs.Contains(a.ItemId) {
-					arg := storage.UpdateCharacterAssetParams{
+					err := s.st.UpdateCharacterAsset(ctx, storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,
 						LocationFlag: locationFlag,
 						LocationID:   a.LocationId,
 						LocationType: locationType,
 						Quantity:     a.Quantity,
-					}
-					if err := s.st.UpdateCharacterAsset(ctx, arg); err != nil {
-						return err
+					})
+					if err != nil {
+						return false, err
 					}
 					updated++
 				} else {
-					arg := storage.CreateCharacterAssetParams{
+					err := s.st.CreateCharacterAsset(ctx, storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,
 						EveTypeID:       a.TypeId,
 						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
@@ -212,9 +216,9 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 						LocationID:      a.LocationId,
 						LocationType:    locationType,
 						Quantity:        a.Quantity,
-					}
-					if err := s.st.CreateCharacterAsset(ctx, arg); err != nil {
-						return err
+					})
+					if err != nil {
+						return false, err
 					}
 					created++
 				}
@@ -224,18 +228,18 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			// Remove obsolete assets
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids); err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
 			}
 			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
-				return err
+				return false, err
 			}
 
 			// update names
 			assets2, err := s.st.ListCharacterAssets(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			names := make(map[int64]string)
 			for _, a := range assets2 {
@@ -243,11 +247,9 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, err := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
-			if err != nil {
-				return err
-			}
+			names2, _ := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
 			slog.Debug("Received character asset names from ESI", "count", len(names2), "characterID", characterID)
+
 			var changed set.Set[int64]
 			for id, name := range names {
 				if names2[id] != name {
@@ -261,18 +263,19 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					Name:        names2[id],
 				})
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 
-			return nil
+			return true, nil
 		},
 	)
 }
 
-func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, error) {
+func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, bool) {
 	const assetNamesMaxIDs = 999
-	results := make([][]esi.CharactersCharacterIdAssetsNamesPostInner, 0)
+	var hasError bool
+	var results [][]esi.CharactersCharacterIdAssetsNamesPostInner
 	if len(ids) > 0 {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
@@ -281,6 +284,7 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
 				slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
+				hasError = true
 			}
 			results = append(results, names)
 		}
@@ -293,7 +297,7 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 			}
 		}
 	}
-	return m, nil
+	return m, !hasError
 }
 
 func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -24,38 +24,30 @@ func TestCharacterImplant(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.CreateCharacterImplantParams{
-			EveTypeID:   eveType.ID,
+			TypeID:      eveType.ID,
 			CharacterID: c.ID,
 		}
 		// when
 		err := st.CreateCharacterImplant(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, eveType, x.EveType)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterImplant(ctx, c.ID, arg.TypeID)
+		require.NoError(t, err)
+		xassert.Equal(t, eveType, x.EveType)
 	})
 	t.Run("can replace implants", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
-		eveType := factory.CreateEveType()
-		arg := storage.CreateCharacterImplantParams{
-			EveTypeID:   eveType.ID,
-			CharacterID: c.ID,
-		}
+		et := factory.CreateEveType()
 		// when
-		err := st.ReplaceCharacterImplants(ctx, c.ID, []storage.CreateCharacterImplantParams{arg})
+		err := st.ReplaceCharacterImplants(ctx, c.ID, set.Of(et.ID))
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, eveType, x.EveType)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterImplant(ctx, c.ID, et.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, et, x.EveType)
 	})
 	t.Run("can list implants for a character", func(t *testing.T) {
 		// given
@@ -66,13 +58,26 @@ func TestCharacterImplant(t *testing.T) {
 		// when
 		oo, err := st.ListCharacterImplants(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
-				return x.EveType.ID
-			}))
-			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
+			return x.EveType.ID
+		}))
+		want := set.Of(x1.EveType.ID, x2.EveType.ID)
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("can list implant IDs for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		// when
+		got, err := st.ListCharacterImplantIDs(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		want := set.Of(x1.EveType.ID, x2.EveType.ID)
+		xassert.Equal(t, want, got)
 	})
 
 	t.Run("can list all implants", func(t *testing.T) {
@@ -83,12 +88,11 @@ func TestCharacterImplant(t *testing.T) {
 		// when
 		oo, err := st.ListAllCharacterImplants(ctx)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
-				return x.EveType.ID
-			}))
-			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
+			return x.EveType.ID
+		}))
+		want := set.Of(x1.EveType.ID, x2.EveType.ID)
+		xassert.Equal(t, want, got)
 	})
 }

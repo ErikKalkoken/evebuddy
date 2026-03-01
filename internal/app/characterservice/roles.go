@@ -104,7 +104,7 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 	}
 
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdRoles")
 			roles, _, err := s.esiClient.CharacterAPI.GetCharactersCharacterIdRoles(ctx, characterID).Execute()
@@ -113,16 +113,28 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 			}
 			return roles, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			r := data.(*esi.CharactersCharacterIdRolesGet)
-			var roles set.Set[app.Role]
+			var incoming set.Set[app.Role]
 			for _, n := range r.Roles {
 				r, ok := roleMap[n]
 				if !ok {
 					slog.Warn("received unknown role from ESI", "characterID", characterID, "role", n)
 				}
-				roles.Add(r)
+				incoming.Add(r)
 			}
-			return s.st.UpdateCharacterRoles(ctx, characterID, roles)
+			current, err := s.st.ListCharacterRoles(ctx, characterID)
+			if err != nil {
+				return false, err
+			}
+			if current.Equal(incoming) {
+				return false, nil
+			}
+
+			err = s.st.UpdateCharacterRoles(ctx, characterID, incoming)
+			if err != nil {
+				return false, err
+			}
+			return true, nil
 		})
 }

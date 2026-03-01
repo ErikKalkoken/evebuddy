@@ -402,45 +402,41 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 		name := string(pinType)
 		searchTargets := []string{strings.ToLower(name)}
 
-		var iconColor, statusColor fyne.ThemeColorName
+		var iconColor fyne.ThemeColorName
 		var iconName eveicon.Name
+		statusColor := theme.ColorNameButton
 		switch pinType {
 		case pinTypeCommandCenter:
 			iconName = eveicon.PICommandCenter
 			iconColor = colorNameInfo
-			statusColor = iconColor
 		case pinTypeExtractor:
 			iconName = eveicon.PIExtractor
 			iconColor = colorNameSystem
-			if v, ok := p.ExpiryTime.Value(); ok && time.Now().After(v) {
-				statusColor = theme.ColorNameError
-			} else {
-				statusColor = iconColor
+			if v, ok := p.ExpiryTime.Value(); ok {
+				if time.Now().Before(v) {
+					statusColor = theme.ColorNameSuccess
+				} else {
+					statusColor = theme.ColorNameError
+				}
 			}
 		case pinTypeBasicProcessor:
 			iconName = eveicon.PIProcessor
 			iconColor = theme.ColorNameWarning
-			statusColor = iconColor
 		case pinTypeAdvancedProcessor:
 			iconName = eveicon.PIProcessor
 			iconColor = colorNameAttention
-			statusColor = iconColor
 		case pinTypeHighTechProcessor:
 			iconName = eveicon.PIProcessor
 			iconColor = colorNameCreative
-			statusColor = iconColor
 		case pinTypeSpacePort:
 			iconName = eveicon.PILaunchpad
 			iconColor = theme.ColorNamePrimary
-			statusColor = iconColor
 		case pinTypeStorage:
 			iconName = eveicon.PIStorage
 			iconColor = theme.ColorNamePrimary
-			statusColor = iconColor
 		default:
 			iconName = eveicon.Undefined
 			iconColor = theme.ColorNameDisabled
-			statusColor = iconColor
 		}
 
 		var output string

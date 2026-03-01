@@ -81,7 +81,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanets")
 			planets, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanets(ctx, characterID).Execute()
@@ -91,11 +91,11 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			slog.Debug("Received planets from ESI", "characterID", characterID, "count", len(planets))
 			return planets, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			// remove obsolete planets
 			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			existing := set.Of[int64]()
 			for _, p := range pp {
@@ -109,7 +109,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			obsolete := set.Difference(existing, incoming)
 			if obsolete.Size() > 0 {
 				if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete); err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Removed obsolete planets", "characterID", characterID, "count", obsolete.Size())
 			}
@@ -181,9 +181,9 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				})
 			}
 			if err := g.Wait(); err != nil {
-				return err
+				return false, err
 			}
 			slog.Info("Stored updated planets", "characterID", characterID, "count", len(planets))
-			return nil
+			return true, nil
 		})
 }

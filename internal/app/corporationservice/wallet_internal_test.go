@@ -176,7 +176,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		firstParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -344,7 +346,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -482,7 +484,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 	})
 	t.Run("should fetch all pages when forced", func(t *testing.T) {
@@ -542,7 +544,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 }
@@ -754,7 +756,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.False(t, changed)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,

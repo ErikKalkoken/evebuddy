@@ -1,6 +1,7 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -150,7 +151,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
 			contracts, err := xgoesi.FetchPages(
@@ -161,10 +162,13 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			if err != nil {
 				return false, err
 			}
+			slices.SortFunc(contracts, func(a, b esi.CharactersCharacterIdContractsGetInner) int {
+				return cmp.Compare(a.ContractId, b.ContractId)
+			})
 			slog.Debug("Received contracts from ESI", "characterID", characterID, "count", len(contracts))
 			return contracts, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			contracts := data.([]esi.CharactersCharacterIdContractsGetInner)
 			// filter out unwanted contracts
 			contracts = slices.DeleteFunc(contracts, func(x esi.CharactersCharacterIdContractsGetInner) bool {
@@ -181,12 +185,12 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
-				return err
+				return false, err
 			}
 			// identify new contracts
 			current, err := s.st.ListCharacterContracts(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CharacterContract) int64 {
 				return x.ContractID
@@ -248,9 +252,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			}))
 			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 

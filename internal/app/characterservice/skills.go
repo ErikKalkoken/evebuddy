@@ -31,7 +31,7 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAttributes")
 			attributes, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdAttributes(ctx, characterID).Execute()
@@ -40,7 +40,7 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 			}
 			return attributes, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			attributes := data.(*esi.CharactersCharacterIdAttributesGet)
 			err := s.st.UpdateOrCreateCharacterAttributes(ctx, storage.UpdateOrCreateCharacterAttributesParams{
 				CharacterID:   characterID,
@@ -53,9 +53,9 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 				Willpower:     attributes.Willpower,
 			})
 			if err != nil {
-				return err
+				return false, err
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -211,7 +211,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
 			skills, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkills(ctx, characterID).Execute()
@@ -221,23 +221,23 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			slog.Debug("Received character skills from ESI", "characterID", characterID, "items", len(skills.Skills))
 			return skills, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			skills := data.(*esi.CharactersSkills)
 			total := optional.New(skills.TotalSp)
 			unallocated := optional.FromPtr(skills.UnallocatedSp)
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
-				return err
+				return false, err
 			}
 			currentSkillIDs, err := s.st.ListCharacterSkillIDs(ctx, characterID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			incomingSkillIDs := set.Of[int64]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)
 				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
-					return err
+					return false, err
 				}
 				arg := storage.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
@@ -248,17 +248,17 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				}
 				err = s.st.UpdateOrCreateCharacterSkill(ctx, arg)
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
 			if ids := set.Difference(currentSkillIDs, incomingSkillIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids); err != nil {
-					return err
+					return false, err
 				}
 				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())
 			}
-			return nil
+			return true, nil
 		})
 }
 
@@ -358,7 +358,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
 			items, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkillqueue(ctx, characterID).Execute()
@@ -368,7 +368,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 			slog.Debug("Received skillqueue from ESI", "characterID", characterID, "items", len(items))
 			return items, nil
 		},
-		func(ctx context.Context, characterID int64, data any) error {
+		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			items := make([]storage.SkillqueueItemParams, 0)
 			for _, o := range data.([]esi.CharactersSkillqueueSkill) {
 				if o.SkillId == 0 || o.FinishedLevel == 0 {
@@ -376,7 +376,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 				}
 				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
-					return err
+					return false, err
 				}
 				items = append(items, storage.SkillqueueItemParams{
 					EveTypeID:       o.SkillId,
@@ -391,10 +391,10 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 				})
 			}
 			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, items); err != nil {
-				return err
+				return false, err
 			}
 			slog.Info("Stored updated skillqueue items", "characterID", characterID, "count", len(items))
-			return nil
+			return true, nil
 		})
 
 }

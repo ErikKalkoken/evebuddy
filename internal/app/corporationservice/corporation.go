@@ -127,7 +127,7 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.Cor
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg,
+		ctx, arg, false,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdDivisions")
 			divisions, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID).Execute()
@@ -136,7 +136,7 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.Cor
 			}
 			return divisions, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
 			divisions := data.(*esi.CorporationsCorporationIdDivisionsGet)
 			for _, w := range divisions.Hangar {
 				if w.Division == nil || w.Name == nil {
@@ -147,7 +147,7 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.Cor
 					DivisionID:    *w.Division,
 					Name:          *w.Name,
 				}); err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Updated corporation hangar names", "corporationID", arg.CorporationID)
@@ -160,10 +160,10 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.Cor
 					DivisionID:    *w.Division,
 					Name:          *w.Name,
 				}); err != nil {
-					return err
+					return false, err
 				}
 			}
 			slog.Info("Updated corporation wallet names", "corporationID", arg.CorporationID)
-			return nil
+			return true, nil
 		})
 }
