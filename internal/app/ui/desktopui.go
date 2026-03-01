@@ -389,8 +389,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = navDrawerMinWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance float64) {
-			s := ihumanize.NumberF(balance, 1)
+		u.corporationWallets[d].onBalanceUpdate = func(balance optional.Optional[float64]) {
+			s := balance.StringFunc("", func(v float64) string {
+				return ihumanize.NumberF(v, 1)
+			})
 			corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 		}
 		u.corporationWallets[d].onNameUpdate = func(name string) {
