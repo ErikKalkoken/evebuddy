@@ -3,8 +3,9 @@ package xstrings_test
 import (
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 func TestCompareIgnoreCase(t *testing.T) {
@@ -50,5 +51,26 @@ func TestTitle(t *testing.T) {
 	for _, tc := range cases {
 		got := xstrings.Title(tc.in)
 		assert.Equal(t, tc.want, got)
+	}
+}
+
+func TestObfuscate(t *testing.T) {
+	cases := []struct {
+		name string
+		s    string
+		n    int
+		want string
+	}{
+		{"normal", "123456789", 4, "XXXXX6789"},
+		{"s too short", "123", 4, "XXX"},
+		{"n is zero", "123456789", 0, "XXXXXXXXX"},
+		{"n is negative", "123456789", -5, "XXXXXXXXX"},
+		{"s is empty", "", 4, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := xstrings.Obfuscate(tc.s, tc.n, "X")
+			assert.Equal(t, tc.want, got)
+		})
 	}
 }
