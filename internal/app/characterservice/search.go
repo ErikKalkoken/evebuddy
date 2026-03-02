@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -16,7 +17,7 @@ import (
 // This method performs a character specific search and needs a token.
 func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int64, search string) (set.Set[int64], error) {
 	var z set.Set[int64]
-	ts, err := s.TokenSource(ctx, characterID, set.Of("esi-search.search_structures.v1"))
+	ts, err := s.TokenSource(ctx, characterID, set.Of(goesi.ScopeSearchSearchStructuresV1))
 	if err != nil {
 		return z, err
 	}
@@ -49,7 +50,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	if err != nil {
 		return nil, 0, err
 	}
-	ts, err := s.TokenSource(ctx, c.ID, set.Of("esi-search.search_structures.v1"))
+	ts, err := s.TokenSource(ctx, c.ID, set.Of(goesi.ScopeSearchSearchStructuresV1))
 	if err != nil {
 		return nil, 0, err
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
@@ -99,28 +100,28 @@ func (cs CharacterSection) DisplayName() string {
 
 func (cs CharacterSection) Scopes() set.Set[string] {
 	m := map[CharacterSection][]string{
-		SectionCharacterAssets:             {"esi-assets.read_assets.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterAttributes:         {"esi-skills.read_skills.v1"},
-		SectionCharacterContracts:          {"esi-contracts.read_character_contracts.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterImplants:           {"esi-clones.read_implants.v1"},
-		SectionCharacterIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterLoyaltyPoints:      {"esi-characters.read_loyalty.v1"},
-		SectionCharacterMailHeaders:        {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
-		SectionCharacterMailLabels:         {"esi-mail.read_mail.v1"},
-		SectionCharacterMailLists:          {"esi-mail.read_mail.v1"},
-		SectionCharacterMarketOrders:       {"esi-markets.read_character_orders.v1"},
-		SectionCharacterNotifications:      {"esi-characters.read_notifications.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterOnline:             {"esi-location.read_online.v1"},
-		SectionCharacterPlanets:            {"esi-planets.manage_planets.v1"},
-		SectionCharacterRoles:              {"esi-characters.read_corporation_roles.v1"},
-		SectionCharacterShip:               {"esi-location.read_ship_type.v1"},
-		SectionCharacterSkillqueue:         {"esi-skills.read_skillqueue.v1"},
-		SectionCharacterSkills:             {"esi-skills.read_skills.v1"},
-		SectionCharacterWalletBalance:      {"esi-wallet.read_character_wallet.v1"},
-		SectionCharacterWalletJournal:      {"esi-wallet.read_character_wallet.v1"},
-		SectionCharacterWalletTransactions: {"esi-wallet.read_character_wallet.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterAssets:             {goesi.ScopeAssetsReadAssetsV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterAttributes:         {goesi.ScopeSkillsReadSkillsV1},
+		SectionCharacterContracts:          {goesi.ScopeContractsReadCharacterContractsV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterImplants:           {goesi.ScopeClonesReadImplantsV1},
+		SectionCharacterIndustryJobs:       {goesi.ScopeIndustryReadCharacterJobsV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterJumpClones:         {goesi.ScopeClonesReadClonesV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterLocation:           {goesi.ScopeLocationReadLocationV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterLoyaltyPoints:      {goesi.ScopeCharactersReadLoyaltyV1},
+		SectionCharacterMailHeaders:        {goesi.ScopeMailOrganizeMailV1, goesi.ScopeMailReadMailV1},
+		SectionCharacterMailLabels:         {goesi.ScopeMailReadMailV1},
+		SectionCharacterMailLists:          {goesi.ScopeMailReadMailV1},
+		SectionCharacterMarketOrders:       {goesi.ScopeMarketsReadCharacterOrdersV1},
+		SectionCharacterNotifications:      {goesi.ScopeCharactersReadNotificationsV1, goesi.ScopeUniverseReadStructuresV1},
+		SectionCharacterOnline:             {goesi.ScopeLocationReadOnlineV1},
+		SectionCharacterPlanets:            {goesi.ScopePlanetsManagePlanetsV1},
+		SectionCharacterRoles:              {goesi.ScopeCharactersReadCorporationRolesV1},
+		SectionCharacterShip:               {goesi.ScopeLocationReadShipTypeV1},
+		SectionCharacterSkillqueue:         {goesi.ScopeSkillsReadSkillqueueV1},
+		SectionCharacterSkills:             {goesi.ScopeSkillsReadSkillsV1},
+		SectionCharacterWalletBalance:      {goesi.ScopeWalletReadCharacterWalletV1},
+		SectionCharacterWalletJournal:      {goesi.ScopeWalletReadCharacterWalletV1},
+		SectionCharacterWalletTransactions: {goesi.ScopeWalletReadCharacterWalletV1, goesi.ScopeUniverseReadStructuresV1},
 	}
 	scopes, ok := m[cs]
 	if !ok {
@@ -348,16 +349,16 @@ func (cs CorporationSection) Roles() set.Set[Role] {
 }
 
 func (cs CorporationSection) Scopes() set.Set[string] {
-	journal := []string{"esi-wallet.read_corporation_wallets.v1"}
-	transactions := []string{"esi-wallet.read_corporation_wallets.v1", "esi-universe.read_structures.v1"}
+	journal := []string{goesi.ScopeWalletReadCorporationWalletsV1}
+	transactions := []string{goesi.ScopeWalletReadCorporationWalletsV1, goesi.ScopeUniverseReadStructuresV1}
 	m := map[CorporationSection][]string{
-		SectionCorporationAssets:              {"esi-assets.read_corporation_assets.v1"},
-		SectionCorporationContracts:           {"esi-contracts.read_corporation_contracts.v1"},
-		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
-		SectionCorporationIndustryJobs:        {"esi-industry.read_corporation_jobs.v1"},
-		SectionCorporationMembers:             {"esi-corporations.read_corporation_membership.v1"},
-		SectionCorporationStructures:          {"esi-corporations.read_structures.v1"},
-		SectionCorporationWalletBalances:      {"esi-wallet.read_corporation_wallets.v1"},
+		SectionCorporationAssets:              {goesi.ScopeAssetsReadCorporationAssetsV1},
+		SectionCorporationContracts:           {goesi.ScopeContractsReadCorporationContractsV1},
+		SectionCorporationDivisions:           {goesi.ScopeCorporationsReadDivisionsV1},
+		SectionCorporationIndustryJobs:        {goesi.ScopeIndustryReadCorporationJobsV1},
+		SectionCorporationMembers:             {goesi.ScopeCorporationsReadCorporationMembershipV1},
+		SectionCorporationStructures:          {goesi.ScopeCorporationsReadStructuresV1},
+		SectionCorporationWalletBalances:      {goesi.ScopeWalletReadCorporationWalletsV1},
 		SectionCorporationWalletJournal1:      journal,
 		SectionCorporationWalletJournal2:      journal,
 		SectionCorporationWalletJournal3:      journal,
@@ -434,9 +435,9 @@ func (gs GeneralSection) Timeout() time.Duration {
 // Scopes returns all required ESI scopes.
 func Scopes() set.Set[string] {
 	scopes := set.Of(
-		"esi-characters.read_contacts.v1", // already requested and for planned feature
-		"esi-mail.send_mail.v1",           // required for sending mail
-		"esi-search.search_structures.v1", // required for new eden search
+		goesi.ScopeCharactersReadContactsV1, // already requested and for planned feature
+		goesi.ScopeMailSendMailV1,           // required for sending mail
+		goesi.ScopeSearchSearchStructuresV1, // required for new eden search
 	)
 	for _, s := range CharacterSections {
 		scopes.AddSeq(s.Scopes().All())
