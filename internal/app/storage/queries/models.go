@@ -57,6 +57,15 @@ type CharacterAttribute struct {
 	Willpower     int64
 }
 
+type CharacterContact struct {
+	ID          int64
+	CharacterID int64
+	ContactID   int64
+	IsBlocked   sql.NullBool
+	IsWatched   sql.NullBool
+	Standing    float64
+}
+
 type CharacterContract struct {
 	ID                  int64
 	AcceptorID          sql.NullInt64

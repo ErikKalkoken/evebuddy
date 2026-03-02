@@ -45,33 +45,35 @@ type CharacterSection string
 var _ section = (*CharacterSection)(nil)
 
 const (
-	SectionCharacterAssets             CharacterSection = "assets"        // char-asset
-	SectionCharacterAttributes         CharacterSection = "attributes"    // char-social
-	SectionCharacterContracts          CharacterSection = "contracts"     // char-contract
-	SectionCharacterImplants           CharacterSection = "implants"      // char-detail
-	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs" // char-industry
-	SectionCharacterJumpClones         CharacterSection = "jump_clones"   // char-location
-	SectionCharacterLocation           CharacterSection = "location"      // char-location
+	SectionCharacterAssets             CharacterSection = "assets"
+	SectionCharacterAttributes         CharacterSection = "attributes"
+	SectionCharacterContacts           CharacterSection = "contacts"
+	SectionCharacterContracts          CharacterSection = "contracts"
+	SectionCharacterImplants           CharacterSection = "implants"
+	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"
+	SectionCharacterJumpClones         CharacterSection = "jump_clones"
+	SectionCharacterLocation           CharacterSection = "location"
 	SectionCharacterLoyaltyPoints      CharacterSection = "loyalty_points"
-	SectionCharacterMailHeaders        CharacterSection = "mail_headers"        // char-social
-	SectionCharacterMailLabels         CharacterSection = "mail_labels"         // char-social
-	SectionCharacterMailLists          CharacterSection = "mail_lists"          // char-social
-	SectionCharacterMarketOrders       CharacterSection = "market_orders"       // char-market
-	SectionCharacterNotifications      CharacterSection = "notifications"       // char-social
-	SectionCharacterOnline             CharacterSection = "online"              // char-location
-	SectionCharacterPlanets            CharacterSection = "planets"             // char-industry
-	SectionCharacterRoles              CharacterSection = "roles"               // char-detail
-	SectionCharacterShip               CharacterSection = "ship"                // char-location
-	SectionCharacterSkillqueue         CharacterSection = "skillqueue"          // char-detail
-	SectionCharacterSkills             CharacterSection = "skills"              // char-detail
-	SectionCharacterWalletBalance      CharacterSection = "wallet_balance"      // char-wallet
-	SectionCharacterWalletJournal      CharacterSection = "wallet_journal"      // char-wallet
-	SectionCharacterWalletTransactions CharacterSection = "wallet_transactions" // char-wallet
+	SectionCharacterMailHeaders        CharacterSection = "mail_headers"
+	SectionCharacterMailLabels         CharacterSection = "mail_labels"
+	SectionCharacterMailLists          CharacterSection = "mail_lists"
+	SectionCharacterMarketOrders       CharacterSection = "market_orders"
+	SectionCharacterNotifications      CharacterSection = "notifications"
+	SectionCharacterOnline             CharacterSection = "online"
+	SectionCharacterPlanets            CharacterSection = "planets"
+	SectionCharacterRoles              CharacterSection = "roles"
+	SectionCharacterShip               CharacterSection = "ship"
+	SectionCharacterSkillqueue         CharacterSection = "skillqueue"
+	SectionCharacterSkills             CharacterSection = "skills"
+	SectionCharacterWalletBalance      CharacterSection = "wallet_balance"
+	SectionCharacterWalletJournal      CharacterSection = "wallet_journal"
+	SectionCharacterWalletTransactions CharacterSection = "wallet_transactions"
 )
 
 var CharacterSections = []CharacterSection{
 	SectionCharacterAssets,
 	SectionCharacterAttributes,
+	SectionCharacterContacts,
 	SectionCharacterContracts,
 	SectionCharacterImplants,
 	SectionCharacterIndustryJobs,
@@ -102,6 +104,7 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 	m := map[CharacterSection][]string{
 		SectionCharacterAssets:             {goesi.ScopeAssetsReadAssetsV1, goesi.ScopeUniverseReadStructuresV1},
 		SectionCharacterAttributes:         {goesi.ScopeSkillsReadSkillsV1},
+		SectionCharacterContacts:           {goesi.ScopeCharactersReadContactsV1},
 		SectionCharacterContracts:          {goesi.ScopeContractsReadCharacterContractsV1, goesi.ScopeUniverseReadStructuresV1},
 		SectionCharacterImplants:           {goesi.ScopeClonesReadImplantsV1},
 		SectionCharacterIndustryJobs:       {goesi.ScopeIndustryReadCharacterJobsV1, goesi.ScopeUniverseReadStructuresV1},
@@ -139,6 +142,7 @@ func (cs CharacterSection) Timeout() time.Duration {
 	var m = map[CharacterSection]time.Duration{
 		SectionCharacterAssets:             3600 * time.Second,
 		SectionCharacterAttributes:         120 * time.Second,
+		SectionCharacterContacts:           300 * time.Second,
 		SectionCharacterContracts:          300 * time.Second,
 		SectionCharacterImplants:           120 * time.Second,
 		SectionCharacterIndustryJobs:       300 * time.Second,

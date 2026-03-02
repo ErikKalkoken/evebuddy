@@ -276,6 +276,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			)),
 		),
 		characterAssetsNav,
+		iwidget.NewNavPage(
+			"Contacts",
+			theme.NewThemedResource(icons.AccountSearchSvg),
+			newContentPage("Contacts", u.characterContacts),
+		),
 		characterCommunicationsNav,
 		characterMailNav,
 		characterSkillsNav,

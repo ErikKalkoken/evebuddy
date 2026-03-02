@@ -125,6 +125,7 @@ type baseUI struct {
 	characterAttributes     *characterAttributes
 	characterAugmentations  *characterAugmentations
 	characterBiography      *characterBiography
+	characterContacts       *characterContacts
 	characterCommunications *characterCommunications
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
@@ -437,6 +438,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
+	u.characterContacts = newCharacterContacts(u)
 	u.characterCommunications = newCharacterCommunications(u)
 	u.characterCorporation = newCorporationSheet(u, false)
 	u.characterJumpClones = newCharacterJumpClones(u)

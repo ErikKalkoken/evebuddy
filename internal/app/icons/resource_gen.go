@@ -50,6 +50,13 @@ var AccountOutlineSvg = &fyne.StaticResource{
 	StaticContent: AccountOutlineSvgData,
 }
 
+//go:embed account-search.svg
+var AccountSearchSvgData []byte
+var AccountSearchSvg = &fyne.StaticResource{
+	StaticName:    "account-search.svg",
+	StaticContent: AccountSearchSvgData,
+}
+
 //go:embed account.svg
 var AccountSvgData []byte
 var AccountSvg = &fyne.StaticResource{
@@ -97,6 +104,13 @@ var BugSvgData []byte
 var BugSvg = &fyne.StaticResource{
 	StaticName:    "bug.svg",
 	StaticContent: BugSvgData,
+}
+
+//go:embed cancel.svg
+var CancelSvgData []byte
+var CancelSvg = &fyne.StaticResource{
+	StaticName:    "cancel.svg",
+	StaticContent: CancelSvgData,
 }
 
 //go:embed cash.svg
@@ -232,6 +246,13 @@ var EarthSvg = &fyne.StaticResource{
 	StaticContent: EarthSvgData,
 }
 
+//go:embed equal-box.svg
+var EqualBoxSvgData []byte
+var EqualBoxSvg = &fyne.StaticResource{
+	StaticName:    "equal-box.svg",
+	StaticContent: EqualBoxSvgData,
+}
+
 //go:embed evelogo.png
 var EvelogoPngData []byte
 var EvelogoPng = &fyne.StaticResource{
@@ -251,6 +272,13 @@ var ExpandAllSvgData []byte
 var ExpandAllSvg = &fyne.StaticResource{
 	StaticName:    "expand-all.svg",
 	StaticContent: ExpandAllSvgData,
+}
+
+//go:embed eye.svg
+var EyeSvgData []byte
+var EyeSvg = &fyne.StaticResource{
+	StaticName:    "eye.svg",
+	StaticContent: EyeSvgData,
 }
 
 //go:embed faction_placeholder_64.png
@@ -456,6 +484,13 @@ var MessageSvg = &fyne.StaticResource{
 	StaticContent: MessageSvgData,
 }
 
+//go:embed minus-box.svg
+var MinusBoxSvgData []byte
+var MinusBoxSvg = &fyne.StaticResource{
+	StaticName:    "minus-box.svg",
+	StaticContent: MinusBoxSvgData,
+}
+
 //go:embed numeric-1-circle.svg
 var Numeric1CircleSvgData []byte
 var Numeric1CircleSvg = &fyne.StaticResource{
@@ -468,6 +503,13 @@ var OfficeBuildingSvgData []byte
 var OfficeBuildingSvg = &fyne.StaticResource{
 	StaticName:    "office-building.svg",
 	StaticContent: OfficeBuildingSvgData,
+}
+
+//go:embed plus-box.svg
+var PlusBoxSvgData []byte
+var PlusBoxSvg = &fyne.StaticResource{
+	StaticName:    "plus-box.svg",
+	StaticContent: PlusBoxSvgData,
 }
 
 //go:embed portrait.svg
