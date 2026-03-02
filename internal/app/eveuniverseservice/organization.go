@@ -140,7 +140,7 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		homeStationID := optional.FromPtr(r.HomeStationId)
 
 		ids := set.Of(corporationID)
-		for _, o := range []optional.Optional[int64]{ceoID, creatorID, factionID, homeStationID} {
+		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID, homeStationID} {
 			if v, ok := o.Value(); ok {
 				ids.Add(v)
 			}
