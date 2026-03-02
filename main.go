@@ -50,6 +50,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -386,7 +387,7 @@ func main() {
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
-	slog.Info("Janice API key", "value", obfuscate(key, 4, "X"))
+	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:              fyneApp,
 		CharacterService: cs,
@@ -423,15 +424,6 @@ func main() {
 		u := ui.NewMobileUI(bu)
 		u.ShowAndRun()
 	}
-}
-
-// obfuscate returns a new string of the same length as s with all characters replaced
-// with a placeholder, except for the last n characters.
-func obfuscate(s string, n int, placeholder string) string {
-	if n > len(s) || n < 0 {
-		return strings.Repeat(placeholder, len(s))
-	}
-	return strings.Repeat(placeholder, len(s)-n) + s[len(s)-n:]
 }
 
 // realtime represents the current time.

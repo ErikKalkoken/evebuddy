@@ -9,7 +9,7 @@ EVE Buddy.tar.xz
 evebuddy.exe
 *.AppImage
 fynemeta
-evebuddy
+/evebuddy
 profile*.gif
 __debug_*
 *.apk

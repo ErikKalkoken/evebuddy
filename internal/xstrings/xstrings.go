@@ -26,3 +26,12 @@ func JoinsOrEmpty(elems []string, sep, empty string) string {
 func Title(s string) string {
 	return cases.Title(language.English).String(s)
 }
+
+// Obfuscate returns a new string of the same length as s with all characters replaced
+// with a placeholder, except for the last n characters.
+func Obfuscate(s string, n int, placeholder string) string {
+	if n > len(s) || n < 0 {
+		return strings.Repeat(placeholder, len(s))
+	}
+	return strings.Repeat(placeholder, len(s)-n) + s[len(s)-n:]
+}

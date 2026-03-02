@@ -15,25 +15,25 @@ require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/anthonynsimon/bild v0.14.0
-	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
+	github.com/chasinglogic/appdirs v0.0.0-20260224113447-85de447711c9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/dweymouth/fyne-tooltip v0.4.0
-	github.com/fnt-eve/goesi-openapi v0.0.19
-	github.com/goccy/go-yaml v1.18.0
+	github.com/fnt-eve/goesi-openapi v0.0.22
+	github.com/goccy/go-yaml v1.19.2
 	github.com/gohugoio/httpcache v0.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.8.0
 	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/maniartech/signals v1.3.1
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/s-daehling/fyne-charts v0.1.0
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.16
-	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/text v0.34.0
 	golang.org/x/time v0.14.0
@@ -102,10 +102,10 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/image v0.36.0 // indirect
-	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/tools v0.41.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

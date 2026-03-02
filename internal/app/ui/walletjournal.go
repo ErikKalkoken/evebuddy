@@ -17,6 +17,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
+	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -527,7 +528,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 					contextItem.Text = "Related location"
 					go func() {
 						ctx := context.Background()
-						ts, err := u.cs.TokenSource(ctx, characterID, set.Of("esi-universe.read_structures.v1"))
+						ts, err := u.cs.TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
 						if err != nil {
 							reportError(o, err)
 							return
