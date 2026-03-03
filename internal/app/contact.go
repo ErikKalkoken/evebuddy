@@ -58,3 +58,9 @@ type CharacterContact struct {
 	Labels      set.Set[string]
 	Standing    float64
 }
+
+type CharacterContactLabel struct {
+	CharacterID int64
+	LabelID     int64
+	Name        string
+}

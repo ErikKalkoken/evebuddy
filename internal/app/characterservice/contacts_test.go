@@ -33,6 +33,9 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		contact := factory.CreateEveEntityCharacter()
+		label := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts", c.ID),
@@ -40,6 +43,7 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 				"contact_id":   contact.ID,
 				"contact_type": "character",
 				"standing":     -1.5,
+				"label_ids":    []int64{label.LabelID},
 			}}),
 		)
 
@@ -54,6 +58,7 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		o, err := st.GetCharacterContact(ctx, c.ID, contact.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, -1.5, o.Standing)
+		xassert.Equal(t, set.Of(label.Name), o.Labels)
 	})
 	t.Run("should update existing entries", func(t *testing.T) {
 		// given
@@ -127,5 +132,135 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		ids, err := st.ListCharacterContactIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(contact.ID), ids)
+	})
+}
+
+func TestUpdateCharacterContactLabelsESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(st)
+	ctx := context.Background()
+	t.Run("should create new entries from scratch", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts/labels", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"label_id":   42,
+				"label_name": "alpha",
+			}}),
+		)
+		// when
+		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContactLabels,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterContactLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "alpha", o.Name)
+	})
+	t.Run("should update existing entries", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			LabelID:     42,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts/labels", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"label_id":   42,
+				"label_name": "alpha",
+			}}),
+		)
+		// when
+		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContactLabels,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterContactLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "alpha", o.Name)
+	})
+	t.Run("should report when not changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			LabelID:     42,
+			Name:        "alpha",
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts/labels", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"label_id":   42,
+				"label_name": "alpha",
+			}}),
+		)
+		// when
+		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContactLabels,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should delete obsolete entries", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts/labels", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"label_id":   42,
+				"label_name": "alpha",
+			}}),
+		)
+		// when
+		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContactLabels,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](42), ids)
 	})
 }

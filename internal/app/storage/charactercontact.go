@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -35,14 +37,33 @@ func (st *Storage) DeleteCharacterContacts(ctx context.Context, characterID int6
 }
 
 func (st *Storage) GetCharacterContact(ctx context.Context, characterID int64, contactID int64) (*app.CharacterContact, error) {
-	r, err := st.qRO.GetCharacterContact(ctx, queries.GetCharacterContactParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterContact: %d %d: %w", characterID, contactID, err)
+	}
+	if characterID == 0 || contactID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	r, err := qtx.GetCharacterContact(ctx, queries.GetCharacterContactParams{
 		CharacterID: characterID,
 		ContactID:   contactID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("GetCharacterContact for character %d: %w", characterID, convertGetError(err))
+		return nil, wrapErr(convertGetError(err))
 	}
-	o := characterContactFromDBModel(r.CharacterContact, r.EveEntity)
+	labels, err := qtx.ListCharacterContactContactLabels(ctx, r.CharacterContact.ID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	o := characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels)
+	if err := tx.Commit(); err != nil {
+		return nil, wrapErr(err)
+	}
 	return o, err
 }
 
@@ -55,24 +76,45 @@ func (st *Storage) ListCharacterContactIDs(ctx context.Context, characterID int6
 }
 
 func (st *Storage) ListCharacterContacts(ctx context.Context, characterID int64) ([]*app.CharacterContact, error) {
-	rows, err := st.qRO.ListCharacterContacts(ctx, characterID)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterContacts: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := qtx.ListCharacterContacts(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterContact for character %d: %w", characterID, err)
 	}
 	var oo []*app.CharacterContact
 	for _, r := range rows {
-		oo = append(oo, characterContactFromDBModel(r.CharacterContact, r.EveEntity))
+		labels, err := qtx.ListCharacterContactContactLabels(ctx, r.CharacterContact.ID)
+		if err != nil {
+			return nil, wrapErr(err)
+		}
+		o := characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels)
+		oo = append(oo, o)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, wrapErr(err)
 	}
 	return oo, nil
 }
 
-func characterContactFromDBModel(r queries.CharacterContact, c queries.EveEntity) *app.CharacterContact {
+func characterContactFromDBModel(r queries.CharacterContact, c queries.EveEntity, labels []string) *app.CharacterContact {
 	o2 := &app.CharacterContact{
 		CharacterID: r.CharacterID,
 		Contact:     eveEntityFromDBModel(c),
 		IsBlocked:   optional.FromNullBool(r.IsBlocked),
 		IsWatched:   optional.FromNullBool(r.IsWatched),
 		Standing:    r.Standing,
+		Labels:      set.Collect(slices.Values(labels)),
 	}
 	return o2
 }
@@ -82,6 +124,7 @@ type UpdateOrCreateCharacterContactParams struct {
 	ContactID   int64
 	IsBlocked   optional.Optional[bool]
 	IsWatched   optional.Optional[bool]
+	LabelIDs    []int64
 	Standing    float64
 }
 
@@ -92,7 +135,13 @@ func (st *Storage) UpdateOrCreateCharacterContact(ctx context.Context, arg Updat
 	if arg.CharacterID == 0 || arg.ContactID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.UpdateOrCreateCharacterContact(ctx, queries.UpdateOrCreateCharacterContactParams{
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	contactID, err := qtx.UpdateOrCreateCharacterContact(ctx, queries.UpdateOrCreateCharacterContactParams{
 		CharacterID: arg.CharacterID,
 		ContactID:   arg.ContactID,
 		IsBlocked:   optional.ToNullBool(arg.IsBlocked),
@@ -102,64 +151,61 @@ func (st *Storage) UpdateOrCreateCharacterContact(ctx context.Context, arg Updat
 	if err != nil {
 		return wrapErr(err)
 	}
-	return nil
-}
 
-type CreateCharacterContactLabelParams struct {
-	CharacterID int64
-	LabelID     int64
-	Name        string
-}
-
-func (st *Storage) CreateCharacterContactLabel(ctx context.Context, arg CreateCharacterContactLabelParams) error {
-	err := st.qRW.CreateCharacterContactLabel(ctx, queries.CreateCharacterContactLabelParams{
+	x, err := qtx.ListCharacterContactContactLabelIds(ctx, queries.ListCharacterContactContactLabelIdsParams{
 		CharacterID: arg.CharacterID,
-		LabelID:     arg.LabelID,
-		Name:        arg.Name,
-	})
-	if err != nil {
-		return fmt.Errorf("CreateCharacterContactLabel: %v: %w", arg, err)
-	}
-	return nil
-}
-
-func (st *Storage) GetCharacterContactLabel(ctx context.Context, characterID, labelID int64) (string, error) {
-	r, err := st.qRO.GetCharacterContactLabel(ctx, queries.GetCharacterContactLabelParams{
-		CharacterID: characterID,
-		LabelID:     labelID,
-	})
-	if err != nil {
-		return "", fmt.Errorf("GetCharacterContactLabel: %d %d: %w", characterID, labelID, err)
-	}
-	return r.Name, nil
-}
-
-func (st *Storage) ListCharacterContactLabels(ctx context.Context, characterID int64) (set.Set[string], error) {
-	rows, err := st.qRO.ListCharacterContactLabels(ctx, characterID)
-	if err != nil {
-		return set.Set[string]{}, fmt.Errorf("ListCharacterContactLabels for character %d: %w", characterID, err)
-	}
-	x := set.Collect(slices.Values(rows))
-	return x, nil
-}
-
-func (st *Storage) DeleteCharacterContactLabels(ctx context.Context, characterID int64, names set.Set[string]) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterContactLabels for character %d and contact IDs: %v: %w", characterID, names, err)
-	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if names.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCharacterContactLabels(ctx, queries.DeleteCharacterContactLabelsParams{
-		CharacterID: characterID,
-		Names:       slices.Collect(names.All()),
+		ContactID:   arg.ContactID,
 	})
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Character labels deleted", "characterID", characterID, "labels", names)
+
+	current := set.Collect(slices.Values(x))
+	incoming := set.Collect(slices.Values(arg.LabelIDs))
+
+	toAdd := set.Difference(incoming, current)
+	if toAdd.Size() > 0 {
+		for labelID := range toAdd.All() {
+			label, err := qtx.GetCharacterContactLabel(ctx, queries.GetCharacterContactLabelParams{
+				CharacterID: arg.CharacterID,
+				LabelID:     labelID,
+			})
+			if errors.Is(err, sql.ErrNoRows) {
+				slog.Warn(
+					"Ignoring missing contact label",
+					slog.Int64("characterID", arg.CharacterID),
+					slog.Int64("contactID", arg.ContactID),
+					slog.Int64("labelID", labelID),
+				)
+				continue
+			}
+			if err != nil {
+				return wrapErr(convertGetError(err))
+			}
+			err = qtx.CreateCharacterContactContactLabel(ctx, queries.CreateCharacterContactContactLabelParams{
+				ContactID: contactID,
+				LabelID:   label.ID,
+			})
+			if err != nil {
+				return wrapErr(err)
+			}
+		}
+	}
+
+	toDelete := set.Difference(current, incoming)
+	if toDelete.Size() > 0 {
+		err := qtx.DeleteCharacterContactContactLabels(ctx, queries.DeleteCharacterContactContactLabelsParams{
+			CharacterID: arg.CharacterID,
+			ContactID:   arg.ContactID,
+			LabelIds:    slices.Collect(toDelete.All()),
+		})
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
 	return nil
 }

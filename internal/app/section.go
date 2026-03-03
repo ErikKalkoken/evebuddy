@@ -48,6 +48,7 @@ const (
 	SectionCharacterAssets             CharacterSection = "assets"
 	SectionCharacterAttributes         CharacterSection = "attributes"
 	SectionCharacterContacts           CharacterSection = "contacts"
+	SectionCharacterContactLabels      CharacterSection = "contact_labels"
 	SectionCharacterContracts          CharacterSection = "contracts"
 	SectionCharacterImplants           CharacterSection = "implants"
 	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"
@@ -74,6 +75,7 @@ var CharacterSections = []CharacterSection{
 	SectionCharacterAssets,
 	SectionCharacterAttributes,
 	SectionCharacterContacts,
+	SectionCharacterContactLabels,
 	SectionCharacterContracts,
 	SectionCharacterImplants,
 	SectionCharacterIndustryJobs,
@@ -105,6 +107,7 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 		SectionCharacterAssets:             {goesi.ScopeAssetsReadAssetsV1, goesi.ScopeUniverseReadStructuresV1},
 		SectionCharacterAttributes:         {goesi.ScopeSkillsReadSkillsV1},
 		SectionCharacterContacts:           {goesi.ScopeCharactersReadContactsV1},
+		SectionCharacterContactLabels:      {goesi.ScopeCharactersReadContactsV1},
 		SectionCharacterContracts:          {goesi.ScopeContractsReadCharacterContractsV1, goesi.ScopeUniverseReadStructuresV1},
 		SectionCharacterImplants:           {goesi.ScopeClonesReadImplantsV1},
 		SectionCharacterIndustryJobs:       {goesi.ScopeIndustryReadCharacterJobsV1, goesi.ScopeUniverseReadStructuresV1},
@@ -143,6 +146,7 @@ func (cs CharacterSection) Timeout() time.Duration {
 		SectionCharacterAssets:             3600 * time.Second,
 		SectionCharacterAttributes:         120 * time.Second,
 		SectionCharacterContacts:           300 * time.Second,
+		SectionCharacterContactLabels:      300 * time.Second,
 		SectionCharacterContracts:          300 * time.Second,
 		SectionCharacterImplants:           120 * time.Second,
 		SectionCharacterIndustryJobs:       300 * time.Second,

@@ -96,10 +96,12 @@ func TestEveUniverseService_EveGroup(t *testing.T) {
 	t.Run("can list skill groups", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill, IsPublished: true})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
-		factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: false})
-		factory.CreateEveGroup()
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID:     group.ID,
+			IsPublished: true,
+		})
 		// when
 		xx, err := st.ListEveSkillGroups(t.Context())
 		require.NoError(t, err)

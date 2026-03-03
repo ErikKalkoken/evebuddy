@@ -245,9 +245,9 @@ func (f Factory) CreateCharacterContact(args ...storage.UpdateOrCreateCharacterC
 	return o
 }
 
-func (f Factory) CreateCharacterContactLabel(args ...storage.CreateCharacterContactLabelParams) string {
+func (f Factory) CreateCharacterContactLabel(args ...storage.UpdateOrCreateCharacterContactLabelParams) *app.CharacterContactLabel {
 	ctx := context.Background()
-	var arg storage.CreateCharacterContactLabelParams
+	var arg storage.UpdateOrCreateCharacterContactLabelParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -266,7 +266,7 @@ func (f Factory) CreateCharacterContactLabel(args ...storage.CreateCharacterCont
 	if arg.Name == "" {
 		arg.Name = fake.Color()
 	}
-	err := f.st.CreateCharacterContactLabel(ctx, arg)
+	err := f.st.UpdateOrCreateCharacterContactLabel(ctx, arg)
 	if err != nil {
 		panic(fmt.Sprintf("%s|%+v", err, arg))
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"iter"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -12,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -24,20 +26,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-// TODO: Add contact labels
-
 type characterContactRow struct {
-	blocked          string
+	blockedSelect    string
 	category         string
 	contact          *app.EveEntity
 	isBlocked        optional.Optional[bool]
+	isNPC            optional.Optional[bool]
 	isWatched        optional.Optional[bool]
+	labels           set.Set[string]
+	labelsDisplay    string
+	npcSelect        string
 	searchTarget     string
 	standing         float64
 	standingCategory app.StandingCategory
-	watched          string
+	watchedSelect    string
 }
 
 type characterContacts struct {
@@ -52,6 +57,8 @@ type characterContacts struct {
 	searchBox      *widget.Entry
 	selectBlocked  *kxwidget.FilterChipSelect
 	selectCategory *kxwidget.FilterChipSelect
+	selectLabel    *kxwidget.FilterChipSelect
+	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
 	sortButton     *iwidget.SortButton
@@ -97,13 +104,19 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.selectCategory = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
+	a.selectBlocked = kxwidget.NewFilterChipSelect("Blocked", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectCategory = kxwidget.NewFilterChipSelect("Category", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectLabel = kxwidget.NewFilterChipSelectWithSearch("Label", []string{}, func(string) {
+		a.filterRowsAsync()
+	}, a.u.MainWindow())
+	a.selectNPC = kxwidget.NewFilterChipSelect("NPC", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
 	a.selectStanding = kxwidget.NewFilterChipSelect("Standing", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectBlocked = kxwidget.NewFilterChipSelect("Blocked", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
 	a.selectWatched = kxwidget.NewFilterChipSelect("Watched", []string{}, func(string) {
@@ -122,7 +135,8 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
-		if arg.section == app.SectionCharacterContacts {
+		switch arg.section {
+		case app.SectionCharacterContacts, app.SectionCharacterContactLabels:
 			a.update(ctx)
 		}
 	})
@@ -135,6 +149,8 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 		a.selectStanding,
 		a.selectBlocked,
 		a.selectWatched,
+		a.selectLabel,
+		a.selectNPC,
 		a.sortButton,
 	)
 	var topBox *fyne.Container
@@ -194,25 +210,60 @@ func (a *characterContacts) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	blocked := a.selectBlocked.Selected
 	category := a.selectCategory.Selected
+	label := a.selectLabel.Selected
+	npc := a.selectNPC.Selected
 	standing := a.selectStanding.Selected
 	watched := a.selectWatched.Selected
 	search := strings.ToLower(a.searchBox.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {
+		var hasNPC bool
+		for _, r := range rows {
+			if v, ok := r.isNPC.Value(); ok && v {
+				hasNPC = true
+				break
+			}
+		}
+		var hasBlocked bool
+		for _, r := range rows {
+			if v, ok := r.isBlocked.Value(); ok && v {
+				hasBlocked = true
+				break
+			}
+		}
+		var hasWatched bool
+		for _, r := range rows {
+			if v, ok := r.isWatched.Value(); ok && v {
+				hasWatched = true
+				break
+			}
+		}
+		var hasLabels bool
+		for _, r := range rows {
+			if r.labels.Size() > 0 {
+				hasLabels = true
+				break
+			}
+		}
+		if blocked != "" {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
+				return r.blockedSelect != blocked
+			})
+		}
 		if category != "" {
 			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.category != category
 			})
 		}
-		if blocked != "" {
+		if label != "" {
 			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.blocked != blocked
+				return !r.labels.Contains(label)
 			})
 		}
-		if watched != "" {
+		if npc != "" {
 			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.watched != watched
+				return r.npcSelect != npc
 			})
 		}
 		if standing != "" {
@@ -220,45 +271,72 @@ func (a *characterContacts) filterRowsAsync() {
 				return r.standingCategory.String() != standing
 			})
 		}
+		if watched != "" {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
+				return r.watchedSelect != watched
+			})
+		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		blockedOptions := set.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
-			return r.blocked
+		blockedOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
+			return r.blockedSelect
 		}))
-		categoryOptions := set.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
+		categoryOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.category
 		}))
-		standingOptions := set.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
+		labelOptions := slices.Collect(xiter.Chain(xslices.Map(rows, func(r characterContactRow) iter.Seq[string] {
+			return r.labels.All()
+		})...))
+		npcOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
+			return r.npcSelect
+		}))
+		standingOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.standingCategory.String()
 		}))
-		watchedOptions := set.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
-			return r.watched
+		watchedOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
+			return r.watchedSelect
 		}))
 
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
-		footer := fmt.Sprintf("Showing %s / %s members", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+		footer := fmt.Sprintf(
+			"Showing %s / %s contacts",
+			ihumanize.Comma(len(rows)),
+			ihumanize.Comma(totalRows),
+		)
 
 		fyne.Do(func() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			if blockedOptions.Equal(set.Of("no")) {
+			a.selectCategory.SetOptions(categoryOptions)
+			a.selectStanding.SetOptions(standingOptions)
+			if !hasLabels {
+				a.selectLabel.Disable()
+			} else {
+				a.selectLabel.Enable()
+				a.selectLabel.SetOptions(labelOptions)
+			}
+			if !hasBlocked {
 				a.selectBlocked.Disable()
 			} else {
 				a.selectBlocked.Enable()
-				a.selectBlocked.SetOptions(slices.Collect(blockedOptions.All()))
+				a.selectBlocked.SetOptions(blockedOptions)
 			}
-			a.selectCategory.SetOptions(slices.Collect(categoryOptions.All()))
-			a.selectStanding.SetOptions(slices.Collect(standingOptions.All()))
-			if watchedOptions.Equal(set.Of("no")) {
+			if !hasNPC {
+				a.selectNPC.Disable()
+			} else {
+				a.selectNPC.Enable()
+				a.selectNPC.SetOptions(npcOptions)
+			}
+			if !hasWatched {
 				a.selectWatched.Disable()
 			} else {
 				a.selectWatched.Enable()
-				a.selectWatched.SetOptions(slices.Collect(watchedOptions.All()))
+				a.selectWatched.SetOptions(watchedOptions)
 			}
 			a.rowsFiltered = rows
 			a.list.Refresh()
@@ -267,16 +345,34 @@ func (a *characterContacts) filterRowsAsync() {
 }
 
 func (a *characterContacts) update(ctx context.Context) {
+	clear := func() {
+		fyne.Do(func() {
+			a.rows = make([]characterContactRow, 0)
+			a.filterRowsAsync()
+		})
+	}
+	setFooter := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text = s
+			a.footer.Importance = i
+			a.footer.Refresh()
+		})
+	}
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
+		clear()
+		setFooter("No character", widget.LowImportance)
 		return
 	}
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterContacts)
-	if !hasData {
+	if !a.u.scs.HasCharacterSection(characterID, app.SectionCharacterContacts) {
+		clear()
+		setFooter("Loading data...", widget.WarningImportance)
 		return
 	}
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
+		clear()
+		setFooter("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {
@@ -292,26 +388,40 @@ func (a *characterContacts) fetchRows(ctx context.Context, characterID int64) ([
 	}
 	var rows []characterContactRow
 	for _, o := range oo {
+		isNPC := o.Contact.IsNPC()
+		labelsDisplay := strings.Join(slices.Sorted(o.Labels.All()), ", ")
+		blockedSelect := o.IsBlocked.StringFunc("no", func(v bool) string {
+			if v {
+				return "yes"
+			}
+			return "no"
+		})
+		npcSelect := isNPC.StringFunc("no", func(v bool) string {
+			if v {
+				return "yes"
+			}
+			return "no"
+		})
+		watchedSelect := o.IsWatched.StringFunc("no", func(v bool) string {
+			if v {
+				return "yes"
+			}
+			return "no"
+		})
 		rows = append(rows, characterContactRow{
 			category:         o.Contact.CategoryDisplay(),
 			contact:          o.Contact,
 			isBlocked:        o.IsBlocked,
 			isWatched:        o.IsWatched,
+			labels:           o.Labels,
+			isNPC:            isNPC,
+			labelsDisplay:    labelsDisplay,
 			searchTarget:     strings.ToLower(o.Contact.Name),
 			standing:         o.Standing,
 			standingCategory: app.NewStandingCategory(o.Standing),
-			blocked: o.IsBlocked.StringFunc("no", func(v bool) string {
-				if v {
-					return "yes"
-				}
-				return "no"
-			}),
-			watched: o.IsWatched.StringFunc("no", func(v bool) string {
-				if v {
-					return "yes"
-				}
-				return "no"
-			}),
+			blockedSelect:    blockedSelect,
+			npcSelect:        npcSelect,
+			watchedSelect:    watchedSelect,
 		})
 	}
 	return rows, nil
@@ -320,68 +430,73 @@ func (a *characterContacts) fetchRows(ctx context.Context, characterID int64) ([
 type characterContactItem struct {
 	widget.BaseWidget
 
-	eis     eveEntityEIS
-	icon    *canvas.Image
-	name    *widget.Label
-	symbol  *standingSymbol
-	watched *ttwidget.Icon
-	blocked *ttwidget.Icon
+	blocked  *ttwidget.Icon
+	eis      eveEntityEIS
+	icon     *canvas.Image
+	category *widget.Label
+	npc      *widget.Label
+	labels   *widget.Label
+	name     *widget.Label
+	symbol   *standingSymbol
+	watched  *ttwidget.Icon
 }
 
 func newCharacterContactItem(eis eveEntityEIS) *characterContactItem {
-	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-	name := widget.NewLabel("Template")
+	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
+	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
+	labels := widget.NewLabel("")
+	labels.Importance = widget.HighImportance
+	labels.SizeName = theme.SizeNameCaptionText
+	category := widget.NewLabel("")
+	category.SizeName = theme.SizeNameCaptionText
+	npc := widget.NewLabel("NPC")
+	npc.Importance = widget.WarningImportance
+	npc.SizeName = theme.SizeNameCaptionText
 	watched := ttwidget.NewIcon(theme.NewPrimaryThemedResource(icons.EyeSvg))
 	watched.SetToolTip("Watched")
 	blocked := ttwidget.NewIcon(theme.NewErrorThemedResource(icons.CancelSvg))
 	blocked.SetToolTip("Blocked")
 	w := &characterContactItem{
-		eis:     eis,
-		icon:    icon,
-		name:    name,
-		blocked: blocked,
-		watched: watched,
-		symbol:  newStandingSymbol(),
+		blocked:  blocked,
+		category: category,
+		eis:      eis,
+		icon:     icon,
+		labels:   labels,
+		name:     name,
+		npc:      npc,
+		symbol:   newStandingSymbol(),
+		watched:  watched,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *characterContactItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
 		nil,
-		container.NewCenter(w.icon),
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.New(layout.NewCustomPaddedLayout(p, p, p, -p), w.icon),
+			layout.NewSpacer(),
+		),
 		container.NewHBox(w.watched, w.symbol),
-		w.name,
+		container.New(layout.NewCustomPaddedVBoxLayout(-3*p),
+			layout.NewSpacer(),
+			w.name,
+			container.NewHBox(w.category, w.npc, w.labels),
+			layout.NewSpacer(),
+		),
 	)
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(container.NewPadded(c))
 }
 
 func (w *characterContactItem) set(r characterContactRow) {
 	w.name.SetText(r.contact.Name)
-	// var i widget.Importance
-	// switch r.contact.Category {
-	// case app.EveEntityAlliance:
-	// 	i = widget.WarningImportance
-	// case app.EveEntityCharacter:
-	// 	i = widget.MediumImportance
-	// case app.EveEntityCorporation:
-	// 	i = widget.HighImportance
-	// case app.EveEntityFaction:
-	// 	i = widget.SuccessImportance
-	// default:
-	// 	i = widget.LowImportance
-	// }
-	// w.category.Text, w.category.Importance = r.contact.CategoryDisplay(), i
-	// w.category.Refresh()
-
-	// if v, ok := r.contact.IsNPC().Value(); ok && v {
-	// 	w.npc.Show()
-	// } else {
-	// 	w.npc.Hide()
-	// }
+	w.labels.SetText(r.labelsDisplay)
+	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
 	loadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
@@ -397,18 +512,23 @@ func (w *characterContactItem) set(r characterContactRow) {
 	} else {
 		w.watched.Hide()
 	}
+	if v, ok := r.isNPC.Value(); ok && v {
+		w.npc.Show()
+	} else {
+		w.npc.Hide()
+	}
 }
 
 type standingSymbol struct {
 	ttwidget.ToolTipWidget
 
-	icon      *widget.Icon
-	bg        *canvas.Rectangle
-	terrible  fyne.Resource
 	bad       fyne.Resource
-	neutral   fyne.Resource
-	good      fyne.Resource
+	bg        *canvas.Rectangle
 	excellent fyne.Resource
+	good      fyne.Resource
+	icon      *widget.Icon
+	neutral   fyne.Resource
+	terrible  fyne.Resource
 }
 
 func newStandingSymbol() *standingSymbol {
@@ -417,13 +537,13 @@ func newStandingSymbol() *standingSymbol {
 	p := theme.Padding()
 	bg.SetMinSize(icon.MinSize().Subtract(fyne.NewPos(2*p, 2*p)))
 	w := &standingSymbol{
-		bg:        bg,
-		icon:      icon,
-		terrible:  theme.NewErrorThemedResource(icons.MinusBoxSvg),
 		bad:       theme.NewWarningThemedResource(icons.MinusBoxSvg),
+		bg:        bg,
+		excellent: theme.NewSuccessThemedResource(icons.PlusBoxSvg),
+		good:      theme.NewPrimaryThemedResource(icons.PlusBoxSvg),
+		icon:      icon,
 		neutral:   theme.NewDisabledResource(icons.EqualBoxSvg),
-		good:      theme.NewColoredResource(icons.PlusBoxSvg, colorNameInfo),
-		excellent: theme.NewPrimaryThemedResource(icons.PlusBoxSvg),
+		terrible:  theme.NewErrorThemedResource(icons.MinusBoxSvg),
 	}
 	w.ExtendBaseWidget(w)
 	return w

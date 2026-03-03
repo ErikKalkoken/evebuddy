@@ -153,7 +153,7 @@ func TestEveType(t *testing.T) {
 		o1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateEveType()
 		// when
-		oo, err := st.ListEveTypes(ctx)
+		oo, err := st.ListEveSkills(ctx)
 		// then
 		require.NoError(t, err)
 		want := set.Of(o1.ID)

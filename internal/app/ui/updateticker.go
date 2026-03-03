@@ -263,6 +263,11 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	})
 
 	updateGroup([]app.CharacterSection{
+		app.SectionCharacterContactLabels,
+		app.SectionCharacterContacts,
+	})
+
+	updateGroup([]app.CharacterSection{
 		app.SectionCharacterSkills,
 		app.SectionCharacterSkillqueue,
 	})

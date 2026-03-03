@@ -107,9 +107,8 @@ func TestCharacterLoyaltyPointEntry(t *testing.T) {
 	t.Run("can list all entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		o1 := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{})
-		o2 := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{})
-		factory.CreateCharacterLoyaltyPointEntry()
+		o1 := factory.CreateCharacterLoyaltyPointEntry()
+		o2 := factory.CreateCharacterLoyaltyPointEntry()
 		// when
 		s, err := st.ListAllCharacterLoyaltyPointEntries(ctx)
 		// then

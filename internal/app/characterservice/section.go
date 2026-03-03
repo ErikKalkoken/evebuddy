@@ -58,6 +58,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		f = s.updateAttributesESI
 	case app.SectionCharacterContacts:
 		f = s.updateContactsESI
+	case app.SectionCharacterContactLabels:
+		f = s.updateContactLabelsESI
 	case app.SectionCharacterContracts:
 		f = s.updateContractsESI
 	case app.SectionCharacterImplants:

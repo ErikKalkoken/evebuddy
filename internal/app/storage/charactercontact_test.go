@@ -2,7 +2,7 @@ package storage_test
 
 import (
 	"context"
-	"slices"
+	"maps"
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
@@ -45,12 +45,16 @@ func TestCharacterContact(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		contact := factory.CreateEveEntityCharacter()
+		label := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
 		arg := storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: c.ID,
 			ContactID:   contact.ID,
 			Standing:    -1.5,
 			IsBlocked:   optional.New(true),
 			IsWatched:   optional.New(false),
+			LabelIDs:    []int64{label.LabelID},
 		}
 		// when
 		err := st.UpdateOrCreateCharacterContact(ctx, arg)
@@ -63,17 +67,29 @@ func TestCharacterContact(t *testing.T) {
 		xassert.Equal(t, -1.5, o.Standing)
 		xassert.Equal(t, true, o.IsBlocked.MustValue())
 		xassert.Equal(t, false, o.IsWatched.MustValue())
+		xassert.Equal(t, set.Of(label.Name), o.Labels)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		o1 := factory.CreateCharacterContact()
+		c := factory.CreateCharacter()
+		label1 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		label2 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		o1 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{label1.LabelID},
+		})
 		arg := storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: o1.CharacterID,
 			ContactID:   o1.Contact.ID,
 			Standing:    -1.5,
 			IsBlocked:   optional.New(true),
 			IsWatched:   optional.New(false),
+			LabelIDs:    []int64{label2.LabelID},
 		}
 		// when
 		err := st.UpdateOrCreateCharacterContact(ctx, arg)
@@ -86,27 +102,58 @@ func TestCharacterContact(t *testing.T) {
 		xassert.Equal(t, -1.5, o2.Standing)
 		xassert.Equal(t, true, o2.IsBlocked.MustValue())
 		xassert.Equal(t, false, o2.IsWatched.MustValue())
+		xassert.Equal(t, set.Of(label2.Name), o2.Labels)
 	})
-	t.Run("can list entries for a character", func(t *testing.T) {
+	t.Run("should ignore missing label IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
-		o1 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+		contact := factory.CreateEveEntityCharacter()
+		arg := storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			ContactID:   contact.ID,
+			Standing:    -1.5,
+			LabelIDs:    []int64{1},
+		}
+		// when
+		err := st.UpdateOrCreateCharacterContact(ctx, arg)
+		// then
+		require.NoError(t, err)
+		o, err := st.GetCharacterContact(ctx, c.ID, contact.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, contact.ID, o.Contact.ID)
+		xassert.Equal(t, contact.Name, o.Contact.Name)
+		xassert.Equal(t, -1.5, o.Standing)
+		xassert.Equal(t, 0, o.Labels.Size())
+	})
+	t.Run("can list contacts for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		label1 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
 			CharacterID: c.ID,
 		})
-		o2 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+		contact1 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{label1.LabelID},
+		})
+		contact2 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: c.ID,
 		})
 		factory.CreateCharacterContact()
 		// when
-		s, err := st.ListCharacterContacts(ctx, c.ID)
+		oo, err := st.ListCharacterContacts(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		want := set.Of(o1.Contact.ID, o2.Contact.ID)
-		got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterContact) int64 {
-			return x.Contact.ID
+		want := set.Of(contact1.Contact.ID, contact2.Contact.ID)
+		oo2 := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterContact) (int64, *app.CharacterContact) {
+			return x.Contact.ID, x
 		}))
-		xassert.Equal(t, want, got)
+		xassert.Equal(t, want, set.Collect(maps.Keys(oo2)))
+		o := oo2[contact1.Contact.ID]
+		got2 := o.Labels
+		want2 := set.Of(label1.Name)
+		xassert.Equal(t, want2, got2)
 	})
 	t.Run("can list entry IDs for a character", func(t *testing.T) {
 		// given
@@ -144,53 +191,5 @@ func TestCharacterContact(t *testing.T) {
 		got, err := st.ListCharacterContactIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, want, got)
-	})
-}
-
-func TestCharacterContactLabel(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	ctx := context.Background()
-	t.Run("can create from scratch", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		// when
-		err := st.CreateCharacterContactLabel(ctx, storage.CreateCharacterContactLabelParams{
-			CharacterID: c.ID,
-			LabelID:     42,
-			Name:        "Alpha",
-		})
-		// then
-		require.NoError(t, err)
-		got, err := st.GetCharacterContactLabel(ctx, c.ID, 42)
-		require.NoError(t, err)
-		xassert.Equal(t, "Alpha", got)
-	})
-	t.Run("can list labels", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterContactLabel()
-		l2 := factory.CreateCharacterContactLabel()
-		// when
-		got, err := st.ListCharacterContactLabels(ctx, c.ID)
-		// then
-		require.NoError(t, err)
-		xassert.Equal(t, set.Of(l1, l2), got)
-	})
-	t.Run("can delete labels", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterContactLabel()
-		l2 := factory.CreateCharacterContactLabel()
-		// when
-		err := st.DeleteCharacterContactLabels(ctx, c.ID, set.Of(l1))
-		// then
-		require.NoError(t, err)
-		got, err := st.ListCharacterContactLabels(ctx, c.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, set.Of(l2), got)
 	})
 }
