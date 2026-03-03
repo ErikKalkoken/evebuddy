@@ -104,3 +104,62 @@ func (st *Storage) UpdateOrCreateCharacterContact(ctx context.Context, arg Updat
 	}
 	return nil
 }
+
+type CreateCharacterContactLabelParams struct {
+	CharacterID int64
+	LabelID     int64
+	Name        string
+}
+
+func (st *Storage) CreateCharacterContactLabel(ctx context.Context, arg CreateCharacterContactLabelParams) error {
+	err := st.qRW.CreateCharacterContactLabel(ctx, queries.CreateCharacterContactLabelParams{
+		CharacterID: arg.CharacterID,
+		LabelID:     arg.LabelID,
+		Name:        arg.Name,
+	})
+	if err != nil {
+		return fmt.Errorf("CreateCharacterContactLabel: %v: %w", arg, err)
+	}
+	return nil
+}
+
+func (st *Storage) GetCharacterContactLabel(ctx context.Context, characterID, labelID int64) (string, error) {
+	r, err := st.qRO.GetCharacterContactLabel(ctx, queries.GetCharacterContactLabelParams{
+		CharacterID: characterID,
+		LabelID:     labelID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("GetCharacterContactLabel: %d %d: %w", characterID, labelID, err)
+	}
+	return r.Name, nil
+}
+
+func (st *Storage) ListCharacterContactLabels(ctx context.Context, characterID int64) (set.Set[string], error) {
+	rows, err := st.qRO.ListCharacterContactLabels(ctx, characterID)
+	if err != nil {
+		return set.Set[string]{}, fmt.Errorf("ListCharacterContactLabels for character %d: %w", characterID, err)
+	}
+	x := set.Collect(slices.Values(rows))
+	return x, nil
+}
+
+func (st *Storage) DeleteCharacterContactLabels(ctx context.Context, characterID int64, names set.Set[string]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterContactLabels for character %d and contact IDs: %v: %w", characterID, names, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if names.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCharacterContactLabels(ctx, queries.DeleteCharacterContactLabelsParams{
+		CharacterID: characterID,
+		Names:       slices.Collect(names.All()),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Character labels deleted", "characterID", characterID, "labels", names)
+	return nil
+}

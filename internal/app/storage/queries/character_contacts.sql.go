@@ -11,6 +11,52 @@ import (
 	"strings"
 )
 
+const createCharacterContactLabel = `-- name: CreateCharacterContactLabel :exec
+INSERT INTO
+    character_contact_labels (character_id, label_id, name)
+VALUES
+    (?, ?, ?)
+`
+
+type CreateCharacterContactLabelParams struct {
+	CharacterID int64
+	LabelID     int64
+	Name        string
+}
+
+func (q *Queries) CreateCharacterContactLabel(ctx context.Context, arg CreateCharacterContactLabelParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacterContactLabel, arg.CharacterID, arg.LabelID, arg.Name)
+	return err
+}
+
+const deleteCharacterContactLabels = `-- name: DeleteCharacterContactLabels :exec
+DELETE FROM character_contact_labels
+WHERE
+    character_id = ?
+    AND name IN (/*SLICE:names*/?)
+`
+
+type DeleteCharacterContactLabelsParams struct {
+	CharacterID int64
+	Names       []string
+}
+
+func (q *Queries) DeleteCharacterContactLabels(ctx context.Context, arg DeleteCharacterContactLabelsParams) error {
+	query := deleteCharacterContactLabels
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Names) > 0 {
+		for _, v := range arg.Names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(arg.Names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const deleteCharacterContacts = `-- name: DeleteCharacterContacts :exec
 DELETE FROM character_contacts
 WHERE
@@ -78,6 +124,33 @@ func (q *Queries) GetCharacterContact(ctx context.Context, arg GetCharacterConta
 	return i, err
 }
 
+const getCharacterContactLabel = `-- name: GetCharacterContactLabel :one
+SELECT
+    id, character_id, label_id, name
+FROM
+    character_contact_labels
+WHERE
+    character_id = ?
+    AND label_id = ?
+`
+
+type GetCharacterContactLabelParams struct {
+	CharacterID int64
+	LabelID     int64
+}
+
+func (q *Queries) GetCharacterContactLabel(ctx context.Context, arg GetCharacterContactLabelParams) (CharacterContactLabel, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterContactLabel, arg.CharacterID, arg.LabelID)
+	var i CharacterContactLabel
+	err := row.Scan(
+		&i.ID,
+		&i.CharacterID,
+		&i.LabelID,
+		&i.Name,
+	)
+	return i, err
+}
+
 const listCharacterContactIDs = `-- name: ListCharacterContactIDs :many
 SELECT
     contact_id
@@ -100,6 +173,38 @@ func (q *Queries) ListCharacterContactIDs(ctx context.Context, characterID int64
 			return nil, err
 		}
 		items = append(items, contact_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterContactLabels = `-- name: ListCharacterContactLabels :many
+SELECT
+    name
+FROM
+    character_contact_labels
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterContactLabels(ctx context.Context, characterID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContactLabels, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -53,5 +55,6 @@ type CharacterContact struct {
 	Contact     *EveEntity
 	IsBlocked   optional.Optional[bool]
 	IsWatched   optional.Optional[bool]
+	Labels      set.Set[string]
 	Standing    float64
 }

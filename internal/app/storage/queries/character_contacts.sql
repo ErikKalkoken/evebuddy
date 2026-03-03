@@ -49,3 +49,32 @@ SET
     is_blocked = ?3,
     is_watched = ?4,
     standing = ?5;
+
+-- name: CreateCharacterContactLabel :exec
+INSERT INTO
+    character_contact_labels (character_id, label_id, name)
+VALUES
+    (?, ?, ?);
+
+-- name: DeleteCharacterContactLabels :exec
+DELETE FROM character_contact_labels
+WHERE
+    character_id = ?
+    AND name IN (sqlc.slice('names'));
+
+-- name: GetCharacterContactLabel :one
+SELECT
+    *
+FROM
+    character_contact_labels
+WHERE
+    character_id = ?
+    AND label_id = ?;
+
+-- name: ListCharacterContactLabels :many
+SELECT
+    name
+FROM
+    character_contact_labels
+WHERE
+    character_id = ?;

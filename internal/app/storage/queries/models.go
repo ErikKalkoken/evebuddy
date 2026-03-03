@@ -66,6 +66,19 @@ type CharacterContact struct {
 	Standing    float64
 }
 
+type CharacterContactLabel struct {
+	ID          int64
+	CharacterID int64
+	LabelID     int64
+	Name        string
+}
+
+type CharacterContactsLabel struct {
+	ID        int64
+	ContactID int64
+	LabelID   int64
+}
+
 type CharacterContract struct {
 	ID                  int64
 	AcceptorID          sql.NullInt64

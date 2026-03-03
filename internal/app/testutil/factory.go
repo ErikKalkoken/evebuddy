@@ -245,6 +245,38 @@ func (f Factory) CreateCharacterContact(args ...storage.UpdateOrCreateCharacterC
 	return o
 }
 
+func (f Factory) CreateCharacterContactLabel(args ...storage.CreateCharacterContactLabelParams) string {
+	ctx := context.Background()
+	var arg storage.CreateCharacterContactLabelParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.LabelID == 0 {
+		arg.LabelID = f.calcNewIDWithParam(
+			"character_contact_labels",
+			"label_id",
+			"character_id",
+			arg.CharacterID,
+		)
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Color()
+	}
+	err := f.st.CreateCharacterContactLabel(ctx, arg)
+	if err != nil {
+		panic(fmt.Sprintf("%s|%+v", err, arg))
+	}
+	v, err := f.st.GetCharacterContactLabel(ctx, arg.CharacterID, arg.LabelID)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
 	ctx := context.Background()
 	var arg storage.CreateCharacterContractParams

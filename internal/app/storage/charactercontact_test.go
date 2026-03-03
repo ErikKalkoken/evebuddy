@@ -146,3 +146,51 @@ func TestCharacterContact(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestCharacterContactLabel(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can create from scratch", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		err := st.CreateCharacterContactLabel(ctx, storage.CreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			LabelID:     42,
+			Name:        "Alpha",
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterContactLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "Alpha", got)
+	})
+	t.Run("can list labels", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateCharacterContactLabel()
+		l2 := factory.CreateCharacterContactLabel()
+		// when
+		got, err := st.ListCharacterContactLabels(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(l1, l2), got)
+	})
+	t.Run("can delete labels", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateCharacterContactLabel()
+		l2 := factory.CreateCharacterContactLabel()
+		// when
+		err := st.DeleteCharacterContactLabels(ctx, c.ID, set.Of(l1))
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterContactLabels(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(l2), got)
+	})
+}
