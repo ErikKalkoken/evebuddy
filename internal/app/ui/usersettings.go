@@ -96,7 +96,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
-	logLevel := NewSettingItemOptions(SettingItemOptions{
+	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
 		options:      a.u.settings.LogLevelNames(),
@@ -111,7 +111,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		window:   a.w,
 	})
 
-	developerMode := NewSettingItemSwitch(SettingItemSwitch{
+	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Developer Mode",
 		hint:      "App shows additional technical information like Character IDs",
 		getter:    a.u.settings.DeveloperMode,
@@ -124,7 +124,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		developerMode,
 	}
 
-	sysTray := NewSettingItemSwitch(SettingItemSwitch{
+	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.SysTrayEnabledDefault(),
 		label:        "Run in background",
 		hint:         "App will continue to run in background after window is closed (requires restart)",
@@ -135,13 +135,13 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		items = append(items, sysTray)
 	}
 
-	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
+	preferMarketTab := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Prefer market tab",
 		hint:      "Show market tab first for tradeable items",
 		getter:    a.u.settings.PreferMarketTab,
 		onChanged: a.u.settings.SetPreferMarketTab,
 	})
-	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitch{
+	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.HideLimitedCorporationsDefault(),
 		label:        "Hide limited corporations",
 		hint:         "Hide corporations with no privileged access, e.g. corporation wallet",
@@ -158,7 +158,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		hideLimitedCorporations,
 	})
 
-	colorTheme := NewSettingItemOptions(SettingItemOptions{
+	colorTheme := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
 		options:      []string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
@@ -195,7 +195,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		window:   a.w,
 	})
 
-	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitch{
+	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Disable DPI detection",
 		hint:      "Disables the automatic DPI detection. Requires restart.",
 		getter:    a.u.settings.DisableDPIDetection,
@@ -463,14 +463,14 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	typesEnabled := a.u.settings.NotificationTypesEnabled()
 
 	// add global items
-	notifyCommunications := NewSettingItemSwitch(SettingItemSwitch{
+	notifyCommunications := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyCommunicationsEnabledDefault(),
 		label:        "Notify communications",
 		hint:         "Whether to notify new communications",
 		getter:       a.u.settings.NotifyCommunicationsEnabled,
 		onChanged:    a.u.settings.SetNotifyCommunicationsEnabled,
 	})
-	notifyMails := NewSettingItemSwitch(SettingItemSwitch{
+	notifyMails := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyMailsEnabledDefault(),
 		label:        "Notify mails",
 		hint:         "Whether to notify new mails",
@@ -482,7 +482,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			}
 		},
 	})
-	notifyPI := NewSettingItemSwitch(SettingItemSwitch{
+	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyPIEnabled(),
 		label:        "Planetary Industry",
 		hint:         "Whether to notify about expired extractions",
@@ -495,7 +495,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	})
 
-	notifyTraining := NewSettingItemSwitch(SettingItemSwitch{
+	notifyTraining := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyTrainingEnabled(),
 		label:        "Notify Training",
 		hint:         "Whether to notify when skillqueue is empty for watched characters",
@@ -505,7 +505,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	})
 
-	notifyContracts := NewSettingItemSwitch(SettingItemSwitch{
+	notifyContracts := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyContractsEnabledDefault(),
 		label:        "Notify Contracts",
 		hint:         "Whether to notify when contract status changes",
@@ -561,7 +561,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
-				it := NewSettingItemSwitch(SettingItemSwitch{
+				it := NewSettingItemSwitch(SettingItemSwitchParams{
 					label: ntDisplay,
 					hint:  "",
 					getter: func() bool {
@@ -603,7 +603,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			}
 		}()
 
-		it := NewSettingItemCustom(SettingItemCustom{
+		it := NewSettingItemCustom(SettingItemCustomParams{
 			label: g.String(),
 			hint:  groupHint,
 			getter: func() any {
@@ -760,7 +760,7 @@ func NewSettingItemSeparator() SettingItem {
 	return SettingItem{variant: settingSeparator}
 }
 
-type SettingItemSwitch struct {
+type SettingItemSwitchParams struct {
 	defaultValue bool
 	getter       func() bool
 	hint         string
@@ -769,7 +769,7 @@ type SettingItemSwitch struct {
 }
 
 // NewSettingItemSwitch creates a switch setting in a setting list.
-func NewSettingItemSwitch(arg SettingItemSwitch) SettingItem {
+func NewSettingItemSwitch(arg SettingItemSwitchParams) SettingItem {
 	return SettingItem{
 		Default: arg.defaultValue,
 		Label:   arg.label,
@@ -788,7 +788,7 @@ func NewSettingItemSwitch(arg SettingItemSwitch) SettingItem {
 	}
 }
 
-type SettingItemCustom struct {
+type SettingItemCustomParams struct {
 	label      string
 	hint       string
 	getter     func() any
@@ -796,7 +796,7 @@ type SettingItemCustom struct {
 }
 
 // NewSettingItemCustom creates a custom setting in a setting list.
-func NewSettingItemCustom(arg SettingItemCustom) SettingItem {
+func NewSettingItemCustom(arg SettingItemCustomParams) SettingItem {
 	return SettingItem{
 		Label:      arg.label,
 		Hint:       arg.hint,
@@ -861,7 +861,7 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 	}
 }
 
-type SettingItemOptions struct {
+type SettingItemOptionsParams struct {
 	defaultValue string
 	getter       func() string
 	hint         string
@@ -872,7 +872,7 @@ type SettingItemOptions struct {
 	window       fyne.Window
 }
 
-func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
+func NewSettingItemOptions(arg SettingItemOptionsParams) SettingItem {
 	return SettingItem{
 		Default: arg.defaultValue,
 		Label:   arg.label,
@@ -953,87 +953,25 @@ func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 type SettingList struct {
 	widget.List
 
-	SelectDelay time.Duration
+	UnSelectDelay time.Duration
 }
 
 // NewSettingList returns a new SettingList widget.
 func NewSettingList(items []SettingItem) *SettingList {
-	w := &SettingList{SelectDelay: 200 * time.Millisecond}
+	w := &SettingList{UnSelectDelay: 200 * time.Millisecond}
 	w.Length = func() int {
 		return len(items)
 	}
 	w.CreateItem = func() fyne.CanvasObject {
-		// p := theme.Padding()
-		label := widget.NewLabel("Template")
-		label.Truncation = fyne.TextTruncateClip
-		hint := widget.NewLabel("")
-		hint.Truncation = fyne.TextTruncateClip
-		hint.SizeName = theme.SizeNameCaptionText
-		c := container.NewPadded(container.NewBorder(
-			nil,
-			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
-			nil,
-			container.NewVBox(layout.NewSpacer(), container.NewStack(kxwidget.NewSwitch(nil), widget.NewLabel("")), layout.NewSpacer()),
-			container.New(layout.NewCustomPaddedVBoxLayout(0), layout.NewSpacer(), label, hint, layout.NewSpacer()),
-		))
-		return c
+		return newSettingListItem()
 	}
 	w.UpdateItem = func(id widget.ListItemID, co fyne.CanvasObject) {
 		if id >= len(items) {
 			return
 		}
-		it := items[id]
-		border := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
-		right := border[2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-		sw := right[0].(*kxwidget.Switch)
-		value := right[1].(*widget.Label)
-		main := border[0].(*fyne.Container).Objects
-		hint := main[2].(*widget.Label)
-		if it.Hint != "" {
-			hint.SetText(it.Hint)
-			hint.Show()
-		} else {
-			hint.Hide()
-		}
-		label := main[1].(*widget.Label)
-		label.Text = it.Label
-		label.TextStyle.Bold = false
-		switch it.variant {
-		case settingHeading:
-			label.TextStyle.Bold = true
-			value.Hide()
-			sw.Hide()
-		case settingSwitch:
-			value.Hide()
-			sw.OnChanged = func(v bool) {
-				it.Setter(v)
-			}
-			sw.On = it.Getter().(bool)
-			sw.Show()
-			sw.Refresh()
-		case settingCustom:
-			formatter := it.Formatter
-			if formatter == nil {
-				formatter = func(v any) string {
-					return fmt.Sprint(v)
-				}
-			}
-			value.SetText(formatter(it.Getter()))
-			value.Show()
-			sw.Hide()
-		}
-		sep := border[1].(*fyne.Container)
-		if it.variant == settingSeparator {
-			sep.Show()
-			value.Hide()
-			sw.Hide()
-			label.Hide()
-		} else {
-			sep.Hide()
-			label.Show()
-			label.Refresh()
-		}
-		w.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+		li := co.(*settingListItem)
+		li.set(items[id])
+		w.SetItemHeight(id, li.MinSize().Height)
 	}
 	w.OnSelected = func(id widget.ListItemID) {
 		if id >= len(items) {
@@ -1049,7 +987,7 @@ func NewSettingList(items []SettingItem) *SettingList {
 			w.RefreshItem(id)
 		})
 		go func() {
-			time.Sleep(w.SelectDelay)
+			time.Sleep(w.UnSelectDelay)
 			fyne.Do(func() {
 				w.UnselectAll()
 			})
@@ -1058,4 +996,99 @@ func NewSettingList(items []SettingItem) *SettingList {
 	w.HideSeparators = true
 	w.ExtendBaseWidget(w)
 	return w
+}
+
+type settingListItem struct {
+	widget.BaseWidget
+
+	hint      *widget.Label
+	label     *widget.Label
+	separator *widget.Separator
+	switch_   *kxwidget.Switch
+	value     *widget.Label
+}
+
+func newSettingListItem() *settingListItem {
+	label := widget.NewLabel("Template")
+	label.Truncation = fyne.TextTruncateClip
+	hint := widget.NewLabel("")
+	hint.Truncation = fyne.TextTruncateClip
+	hint.SizeName = theme.SizeNameCaptionText
+	w := &settingListItem{
+		hint:      hint,
+		label:     label,
+		separator: widget.NewSeparator(),
+		switch_:   kxwidget.NewSwitch(nil),
+		value:     widget.NewLabel(""),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewPadded(container.NewBorder(
+		nil,
+		container.New(
+			layout.NewCustomPaddedLayout(0, 0, 0, 0),
+			w.separator,
+		),
+		nil,
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.NewStack(w.switch_, w.value),
+			layout.NewSpacer(),
+		),
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			layout.NewSpacer(),
+			w.label,
+			w.hint,
+			layout.NewSpacer(),
+		),
+	))
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *settingListItem) set(r SettingItem) {
+	if r.Hint != "" {
+		w.hint.SetText(r.Hint)
+		w.hint.Show()
+	} else {
+		w.hint.Hide()
+	}
+	w.label.Text = r.Label
+	w.label.TextStyle.Bold = false
+	switch r.variant {
+	case settingHeading:
+		w.label.TextStyle.Bold = true
+		w.value.Hide()
+		w.switch_.Hide()
+	case settingSwitch:
+		w.value.Hide()
+		w.switch_.OnChanged = func(v bool) {
+			r.Setter(v)
+		}
+		w.switch_.On = r.Getter().(bool)
+		w.switch_.Show()
+		w.switch_.Refresh()
+	case settingCustom:
+		formatter := r.Formatter
+		if formatter == nil {
+			formatter = func(v any) string {
+				return fmt.Sprint(v)
+			}
+		}
+		w.value.SetText(formatter(r.Getter()))
+		w.value.Show()
+		w.switch_.Hide()
+	}
+	if r.variant == settingSeparator {
+		w.separator.Show()
+		w.value.Hide()
+		w.switch_.Hide()
+		w.label.Hide()
+	} else {
+		w.separator.Hide()
+		w.label.Show()
+		w.label.Refresh()
+	}
 }
