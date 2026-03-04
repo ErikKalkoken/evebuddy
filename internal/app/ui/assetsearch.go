@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"log/slog"
 	"slices"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -614,9 +616,9 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
-		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
-			return r.tags
-		})...).All())
+		tagOptions := slices.Collect(xiter.Chain(xslices.Map(rows, func(r assetRow) iter.Seq[string] {
+			return r.tags.All()
+		})...))
 		categoryOptions := xslices.Map(rows, func(r assetRow) string {
 			return r.categoryName
 		})

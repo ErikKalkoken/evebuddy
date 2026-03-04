@@ -29,7 +29,7 @@ type Equaler[T any] interface {
 // and will also compare objects with their Equal() methods if available.
 func Equal[T any](t *testing.T, want, got T) bool {
 	t.Helper()
-	got2, ok := any(want).(Equaler[T])
+	got2, ok := any(got).(Equaler[T])
 	if ok {
 		return assert.Truef(t, got2.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
 	}

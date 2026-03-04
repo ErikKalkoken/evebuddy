@@ -220,6 +220,63 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 	return o
 }
 
+func (f Factory) CreateCharacterContact(args ...storage.UpdateOrCreateCharacterContactParams) *app.CharacterContact {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterContactParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.ContactID == 0 {
+		x1 := f.CreateEveEntityCharacter()
+		arg.ContactID = x1.ID
+	}
+	err := f.st.UpdateOrCreateCharacterContact(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContact(ctx, arg.CharacterID, arg.ContactID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCharacterContactLabel(args ...storage.UpdateOrCreateCharacterContactLabelParams) *app.CharacterContactLabel {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterContactLabelParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.LabelID == 0 {
+		arg.LabelID = f.calcNewIDWithParam(
+			"character_contact_labels",
+			"label_id",
+			"character_id",
+			arg.CharacterID,
+		)
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Color()
+	}
+	err := f.st.UpdateOrCreateCharacterContactLabel(ctx, arg)
+	if err != nil {
+		panic(fmt.Sprintf("%s|%+v", err, arg))
+	}
+	v, err := f.st.GetCharacterContactLabel(ctx, arg.CharacterID, arg.LabelID)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
 	ctx := context.Background()
 	var arg storage.CreateCharacterContractParams
@@ -2282,7 +2339,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 		panic(err)
 	}
 	o := &app.EveTypeDogmaAttribute{
-		Type:        et,
+		Type:           et,
 		DogmaAttribute: da,
 		Value:          v,
 	}

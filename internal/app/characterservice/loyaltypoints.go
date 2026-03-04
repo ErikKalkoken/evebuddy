@@ -103,7 +103,7 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 				return false, err
 			}
 			incomingIDs := set.Collect(maps.Keys(incoming))
-			obsoleteIDs := set.Difference(incomingIDs, currentIDs)
+			obsoleteIDs := set.Difference(currentIDs, incomingIDs)
 			if obsoleteIDs.Size() > 0 {
 				err := s.st.DeleteCharacterLoyaltyPointEntries(ctx, characterID, obsoleteIDs)
 				if err != nil {

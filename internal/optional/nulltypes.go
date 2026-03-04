@@ -7,6 +7,14 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// FromNullBool converts a sql.Null variable to it's Optional equivalent and returns it.
+func FromNullBool(v sql.NullBool) Optional[bool] {
+	if !v.Valid {
+		return Optional[bool]{}
+	}
+	return New(v.Bool)
+}
+
 // FromNullFloat64 converts a sql.Null variable to it's Optional equivalent and returns it.
 func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
 	if !v.Valid {
@@ -53,6 +61,14 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 		return Optional[time.Time]{}
 	}
 	return New(v.Time)
+}
+
+// ToNullBool converts an Optional variable to it's sql.Null equivalent and returns it.
+func ToNullBool(o Optional[bool]) sql.NullBool {
+	if !o.isPresent {
+		return sql.NullBool{}
+	}
+	return sql.NullBool{Bool: o.value, Valid: true}
 }
 
 // ToNullFloat64 converts an Optional variable to it's sql.Null equivalent and returns it.

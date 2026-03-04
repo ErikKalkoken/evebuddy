@@ -177,6 +177,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			},
 		),
 		navItemAssetBrowser,
+		iwidget.NewListItemWithIcon(
+			"Contacts",
+			theme.NewThemedResource(icons.AccountSearchSvg),
+			func() {
+				characterNav.Push(
+					newCharacterAppBar("Contacts", u.characterContacts))
+			},
+		),
 		navItemCommunications,
 		navItemMail,
 		navItemSkills,
