@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -97,41 +98,13 @@ func (a *corporationMember) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			portrait := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			name := widget.NewLabel("Template")
-			owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
-			owned.SetToolTip("You own this character")
-			ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
-			ceo.SetToolTip("CEO of this corporation")
-			return container.NewHBox(portrait, name, owned, ceo)
+			return newCorporationMemberItem(a.u.eis.CharacterPortraitAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
-			r := a.rowsFiltered[id]
-			box := co.(*fyne.Container).Objects
-			portrait := box[0].(*canvas.Image)
-			a.u.eis.CharacterPortraitAsync(r.id, app.IconPixelSize, func(r fyne.Resource) {
-				portrait.Resource = r
-				portrait.Refresh()
-			})
-			box[1].(*widget.Label).SetText(r.name)
-			owned := box[2]
-			if r.isOwned {
-				owned.Show()
-			} else {
-				owned.Hide()
-			}
-			ceo := box[3]
-			if r.isCEO {
-				ceo.Show()
-			} else {
-				ceo.Hide()
-			}
+			co.(*corporationMemberItem).set(a.rowsFiltered[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -231,4 +204,63 @@ func (a *corporationMember) fetchRows(ctx context.Context, corporationID, ceoID 
 		})
 	}
 	return rows, nil
+}
+
+type corporationMemberItem struct {
+	widget.BaseWidget
+
+	ceo            *ttwidget.Icon
+	name           *widget.Label
+	owned          *ttwidget.Icon
+	portrait       *canvas.Image
+	portraitLoader func(id int64, size int, setter func(r fyne.Resource))
+}
+
+func newCorporationMemberItem(portraitLoader func(id int64, size int, setter func(r fyne.Resource))) *corporationMemberItem {
+	ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
+	ceo.SetToolTip("CEO of this corporation")
+	owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
+	owned.SetToolTip("You own this character")
+	portrait := iwidget.NewImageFromResource(
+		icons.Characterplaceholder64Jpeg,
+		fyne.NewSquareSize(app.IconUnitSize),
+	)
+	w := &corporationMemberItem{
+		ceo:            ceo,
+		name:           widget.NewLabel(""),
+		owned:          owned,
+		portrait:       portrait,
+		portraitLoader: portraitLoader,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *corporationMemberItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.NewPadded(container.NewHBox(
+		container.New(layout.NewCustomPaddedLayout(p, p, p, 0), w.portrait),
+		w.name,
+		w.owned,
+		w.ceo,
+	))
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *corporationMemberItem) set(r corporationMemberRow) {
+	w.portraitLoader(r.id, app.IconPixelSize, func(r fyne.Resource) {
+		w.portrait.Resource = r
+		w.portrait.Refresh()
+	})
+	w.name.SetText(r.name)
+	if r.isOwned {
+		w.owned.Show()
+	} else {
+		w.owned.Hide()
+	}
+	if r.isCEO {
+		w.ceo.Show()
+	} else {
+		w.ceo.Hide()
+	}
 }
