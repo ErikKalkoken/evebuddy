@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -108,11 +109,11 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.structureName)
 		},
-	}, makeEveEntityColumn(makeEveEntityColumnParams[corporationStructureRow]{
-		columnID: structuresColType,
-		eis:      u.eis,
-		label:    "Type",
-		getEntity: func(r corporationStructureRow) *app.EveEntity {
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[corporationStructureRow]{
+		ColumnID: structuresColType,
+		EIS:      u.eis,
+		Label:    "Type",
+		GetEntity: func(r corporationStructureRow) *app.EveEntity {
 			return &app.EveEntity{
 				Category: app.EveEntityInventoryType,
 				ID:       r.typeID,

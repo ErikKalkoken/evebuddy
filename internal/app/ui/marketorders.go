@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -147,18 +148,18 @@ const (
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{
-		makeEveEntityColumn(makeEveEntityColumnParams[marketOrderRow]{
-			columnID: marketOrdersColType,
-			eis:      u.eis,
-			getEntity: func(r marketOrderRow) *app.EveEntity {
+		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
+			ColumnID: marketOrdersColType,
+			EIS:      u.eis,
+			GetEntity: func(r marketOrderRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.typeID,
 					Name:     r.typeName,
 					Category: app.EveEntityInventoryType,
 				}
 			},
-			isAvatar: false,
-			label:    "Type",
+			IsAvatar: false,
+			Label:    "Type",
 		}), {
 			ID:    marketOrdersColVolume,
 			Label: "Quantity",

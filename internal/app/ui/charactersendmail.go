@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -26,9 +27,9 @@ type characterSendMail struct {
 
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
-	from      *eveEntityEntry
+	from      *awidget.EveEntityEntry
 	subject   *widget.Entry
-	to        *eveEntityEntry
+	to        *awidget.EveEntityEntry
 	u         *baseUI
 	w         fyne.Window
 }
@@ -41,7 +42,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
+	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
 	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -51,7 +52,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, u.eis)
+	a.to = awidget.NewEveEntityEntry(toButton, labelWith, u.eis)
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -172,7 +173,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			loadEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
+			awidget.LoadEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
 				image.Resource = r
 				image.Refresh()
 			})

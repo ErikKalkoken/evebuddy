@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -485,7 +486,7 @@ func (w *searchResult) set(o *app.EveEntity) {
 					return w.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return entityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
+				return awidget.EntityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
 			}
 		},
 		func(r fyne.Resource) {

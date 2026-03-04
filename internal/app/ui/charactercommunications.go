@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -402,7 +403,7 @@ type communicationDetail struct {
 	subject *widget.Label
 }
 
-func newCommunicationDetail(eis eveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord

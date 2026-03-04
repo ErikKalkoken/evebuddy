@@ -122,85 +122,6 @@ func (a *FakeApp) SetSystemTrayWindow(fyne.Window) {
 var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
-type EveImageServiceFake struct {
-	Alliance    fyne.Resource
-	Character   fyne.Resource
-	Corporation fyne.Resource
-	Err         error
-	Faction     fyne.Resource
-	Type        fyne.Resource
-}
-
-func (s *EveImageServiceFake) AllianceLogo(id int64, size int) (fyne.Resource, error) {
-	return s.Alliance, s.Err
-}
-
-func (s *EveImageServiceFake) AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Alliance)
-}
-
-func (s *EveImageServiceFake) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
-	return s.Character, s.Err
-}
-
-func (s *EveImageServiceFake) CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Character)
-}
-
-func (s *EveImageServiceFake) CorporationLogo(id int64, size int) (fyne.Resource, error) {
-	return s.Corporation, s.Err
-}
-
-func (s *EveImageServiceFake) CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Corporation)
-}
-func (s *EveImageServiceFake) FactionLogo(id int64, size int) (fyne.Resource, error) {
-	return s.Faction, s.Err
-}
-
-func (s *EveImageServiceFake) FactionLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Faction)
-}
-
-func (s *EveImageServiceFake) InventoryTypeRender(id int64, size int) (fyne.Resource, error) {
-	return s.Type, s.Err
-}
-
-func (s *EveImageServiceFake) InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Type)
-}
-
-func (s *EveImageServiceFake) InventoryTypeIcon(id int64, size int) (fyne.Resource, error) {
-	return s.Type, s.Err
-}
-
-func (s *EveImageServiceFake) InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Type)
-}
-
-func (s *EveImageServiceFake) InventoryTypeBPO(id int64, size int) (fyne.Resource, error) {
-	return s.Type, s.Err
-}
-
-func (s *EveImageServiceFake) InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Type)
-}
-
-func (s *EveImageServiceFake) InventoryTypeBPC(id int64, size int) (fyne.Resource, error) {
-	return s.Type, s.Err
-}
-
-func (s *EveImageServiceFake) InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Type)
-}
-func (s *EveImageServiceFake) InventoryTypeSKIN(id int64, size int) (fyne.Resource, error) {
-	return s.Type, s.Err
-}
-
-func (s *EveImageServiceFake) InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource)) {
-	setter(s.Type)
-}
-
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
 	CorporationIDs set.Set[int64]
@@ -261,7 +182,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService: &EveImageServiceFake{
+		EveImageService: &testutil.EveImageServiceFake{
 			Character:   icons.Characterplaceholder64Jpeg,
 			Alliance:    icons.Corporationplaceholder64Png,
 			Corporation: icons.Corporationplaceholder64Png,

@@ -1,4 +1,4 @@
-package ui
+package widget
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -18,7 +19,7 @@ func TestEntityIcon(t *testing.T) {
 	faction := fyne.NewStaticResource("faction", []byte("faction"))
 	inventoryType := fyne.NewStaticResource("inventoryType", []byte("inventoryType"))
 	fallback := icons.BlankSvg
-	eis := &EveImageServiceFake{
+	eis := &testutil.EveImageServiceFake{
 		Alliance:    alliance,
 		Character:   character,
 		Corporation: corporation,
@@ -39,9 +40,9 @@ func TestEntityIcon(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.category.String(), func(t *testing.T) {
 			ee := &app.EveEntity{ID: 1, Category: tc.category, Name: "Dummy"}
-			got, err := entityIcon(eis, ee, 64, fallback)
+			got, err := EntityIcon(eis, ee, 64, fallback)
 			if assert.NoError(t, err) {
-			xassert.Equal(t, tc.want, got)
+				xassert.Equal(t, tc.want, got)
 			}
 		})
 	}

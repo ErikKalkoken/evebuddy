@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -462,7 +463,7 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      eveEntityEIS
+	eis      awidget.EveEntityEIS
 	icon     *canvas.Image
 	category *widget.Label
 	npc      *widget.Label
@@ -472,7 +473,7 @@ type characterContactItem struct {
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis eveEntityEIS) *characterContactItem {
+func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
 	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -529,7 +530,7 @@ func (w *characterContactItem) set(r characterContactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	loadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

@@ -8,9 +8,7 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -19,9 +17,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type corporationMemberRow struct {
@@ -209,50 +207,38 @@ func (a *corporationMember) fetchRows(ctx context.Context, corporationID, ceoID 
 type corporationMemberItem struct {
 	widget.BaseWidget
 
-	ceo            *ttwidget.Icon
-	name           *widget.Label
-	owned          *ttwidget.Icon
-	portrait       *canvas.Image
-	portraitLoader loadFuncAsync
+	ceo    *ttwidget.Icon
+	owned  *ttwidget.Icon
+	member *awidget.EntityListItem
 }
 
-func newCorporationMemberItem(portraitLoader loadFuncAsync) *corporationMemberItem {
+func newCorporationMemberItem(loadCharacterIcon loadFuncAsync) *corporationMemberItem {
 	ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
 	ceo.SetToolTip("CEO of this corporation")
 	owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
 	owned.SetToolTip("You own this character")
-	portrait := iwidget.NewImageFromResource(
-		icons.Characterplaceholder64Jpeg,
-		fyne.NewSquareSize(app.IconUnitSize),
-	)
 	w := &corporationMemberItem{
-		ceo:            ceo,
-		name:           widget.NewLabel(""),
-		owned:          owned,
-		portrait:       portrait,
-		portraitLoader: portraitLoader,
+		ceo:    ceo,
+		owned:  owned,
+		member: awidget.NewEntityListItem(false, loadCharacterIcon),
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *corporationMemberItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	c := container.NewPadded(container.NewHBox(
-		container.New(layout.NewCustomPaddedLayout(p, p, p, 0), w.portrait),
-		w.name,
-		w.owned,
-		w.ceo,
+	c := container.NewPadded(container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewHBox(w.owned, w.ceo),
+		w.member,
 	))
 	return widget.NewSimpleRenderer(c)
 }
 
 func (w *corporationMemberItem) set(r corporationMemberRow) {
-	w.portraitLoader(r.id, app.IconPixelSize, func(r fyne.Resource) {
-		w.portrait.Resource = r
-		w.portrait.Refresh()
-	})
-	w.name.SetText(r.name)
+	w.member.Set(r.id, r.name)
 	if r.isOwned {
 		w.owned.Show()
 	} else {

@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -126,18 +127,18 @@ func newClones(u *baseUI) *clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, makeEveEntityColumn(makeEveEntityColumnParams[cloneRow]{
-		columnID: clonesColCharacter,
-		eis:      u.eis,
-		getEntity: func(r cloneRow) *app.EveEntity {
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[cloneRow]{
+		ColumnID: clonesColCharacter,
+		EIS:      u.eis,
+		GetEntity: func(r cloneRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.jc.Character.ID,
 				Name:     r.jc.Character.Name,
 				Category: app.EveEntityCharacter,
 			}
 		},
-		isAvatar: true,
-		label:    "Character",
+		IsAvatar: true,
+		Label:    "Character",
 	}), {
 		ID:    clonesColJumps,
 		Label: "Jumps",
