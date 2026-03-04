@@ -21,6 +21,8 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type loadFuncAsync func(int64, int, func(fyne.Resource))
+
 func newLabelWithWrapping() *widget.Label {
 	l := widget.NewLabel("")
 	l.Wrapping = fyne.TextWrapWord

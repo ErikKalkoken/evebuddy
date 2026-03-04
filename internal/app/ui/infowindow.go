@@ -29,6 +29,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -206,7 +207,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}()
 }
 
-func (iw *infoWindow) showZoomWindow(title string, id int64, loaderAsync func(int64, int, func(fyne.Resource)), w fyne.Window) {
+func (iw *infoWindow) showZoomWindow(title string, id int64, load loadFuncAsync, w fyne.Window) {
 	w2, created := iw.u.getOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
@@ -214,7 +215,7 @@ func (iw *infoWindow) showZoomWindow(title string, id int64, loaderAsync func(in
 	}
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
 	image := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
-	loaderAsync(id, zoomImagePixelSize, func(r fyne.Resource) {
+	load(id, zoomImagePixelSize, func(r fyne.Resource) {
 		image.Resource = r
 		image.Refresh()
 	})
@@ -2057,7 +2058,7 @@ var attributeGroupsMap = map[attributeGroup][]int64{
 	},
 }
 
-type attributeRow struct {
+type typeAttributeRow struct {
 	icon    fyne.Resource
 	label   string
 	value   string
@@ -2065,14 +2066,14 @@ type attributeRow struct {
 	action  func(v string)
 }
 
-func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
+func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []typeAttributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
 	jumpDrive, ok := attributes[app.EveDogmaAttributeOnboardJumpDrive]
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
 
-	groupedRows := make(map[attributeGroup][]attributeRow)
+	groupedRows := make(map[attributeGroup][]typeAttributeRow)
 
 	for _, ag := range attributeGroups {
 		attributeSelection := make([]*app.EveTypeDogmaAttribute, 0)
@@ -2128,21 +2129,21 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 				iconID = o.DogmaAttribute.IconID.ValueOrZero()
 			}
 			r, _ := eveicon.FromID(iconID)
-			groupedRows[ag] = append(groupedRows[ag], attributeRow{
+			groupedRows[ag] = append(groupedRows[ag], typeAttributeRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName.ValueOrZero(),
 				value: v,
 			})
 		}
 	}
-	rows := make([]attributeRow, 0)
+	rows := make([]typeAttributeRow, 0)
 	if v, ok := et.Volume.Value(); ok {
 		value, _ := u.eus.FormatDogmaValue(ctx, v, app.EveUnitVolume)
 		if pv, ok := et.PackagedVolume.Value(); ok && !optional.Equal(et.Volume, et.PackagedVolume) {
 			s, _ := u.eus.FormatDogmaValue(ctx, pv, app.EveUnitVolume)
 			value += fmt.Sprintf(" (%s Packaged)", s)
 		}
-		r := attributeRow{
+		r := typeAttributeRow{
 			icon:  eveicon.FromName(eveicon.Structure),
 			label: "Volume",
 			value: value,
@@ -2153,7 +2154,7 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 		} else {
 			ag = attributeGroupMiscellaneous
 		}
-		groupedRows[ag] = append([]attributeRow{r}, groupedRows[ag]...)
+		groupedRows[ag] = append([]typeAttributeRow{r}, groupedRows[ag]...)
 	}
 	usedGroupsCount := 0
 	for _, ag := range attributeGroups {
@@ -2164,14 +2165,14 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 	for _, ag := range attributeGroups {
 		if len(groupedRows[ag]) > 0 {
 			if usedGroupsCount > 1 {
-				rows = append(rows, attributeRow{label: ag.DisplayName(), isTitle: true})
+				rows = append(rows, typeAttributeRow{label: ag.DisplayName(), isTitle: true})
 			}
 			rows = append(rows, groupedRows[ag]...)
 		}
 	}
 	if u.IsDeveloperMode() {
-		rows = append(rows, attributeRow{label: "Developer Mode", isTitle: true})
-		rows = append(rows, attributeRow{
+		rows = append(rows, typeAttributeRow{label: "Developer Mode", isTitle: true})
+		rows = append(rows, typeAttributeRow{
 			label: "EVE ID",
 			value: fmt.Sprint(et.ID),
 			action: func(v string) {
@@ -2206,8 +2207,8 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 	return container.NewTabItem("Fittings", list)
 }
 
-func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
-	data := make([]attributeRow, 0)
+func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []typeAttributeRow {
+	data := make([]typeAttributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := dogmaAttributes[da]
 		if !ok {
@@ -2215,7 +2216,7 @@ func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes m
 		}
 		r, _ := eveicon.FromID(o.DogmaAttribute.IconID.ValueOrZero())
 		v, _ := u.eus.FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
-		data = append(data, attributeRow{
+		data = append(data, typeAttributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName.ValueOrZero(),
 			value: v,
@@ -2237,7 +2238,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				newSkillLevel(),
+				awidget.NewSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -2246,7 +2247,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*skillLevel)
+			level := row[3].(*awidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {

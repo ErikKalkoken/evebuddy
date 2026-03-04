@@ -1,4 +1,4 @@
-package ui
+package widget
 
 import (
 	"fyne.io/fyne/v2"
@@ -10,10 +10,10 @@ import (
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// skillLevel shows the skill level status for a character.
+// SkillLevel shows the skill level status for a character.
 // Which level is currently active, which level is trained, but disabled.
 // It can also show which level is required.
-type skillLevel struct {
+type SkillLevel struct {
 	widget.BaseWidget
 
 	blocked  fyne.Resource
@@ -23,7 +23,7 @@ type skillLevel struct {
 	trained  fyne.Resource
 }
 
-func newSkillLevel() *skillLevel {
+func NewSkillLevel() *SkillLevel {
 	const s = 12
 	size := fyne.Size{Width: s, Height: s}
 	untrainedIcon := theme.NewDisabledResource(theme.MediaStopIcon())
@@ -32,7 +32,7 @@ func newSkillLevel() *skillLevel {
 		dot := iwidgets.NewImageFromResource(untrainedIcon, size)
 		dots[i] = dot
 	}
-	w := &skillLevel{
+	w := &SkillLevel{
 		blocked:  theme.NewWarningThemedResource(theme.MediaStopIcon()),
 		disabled: untrainedIcon,
 		dots:     dots,
@@ -45,7 +45,7 @@ func newSkillLevel() *skillLevel {
 
 // Set updates the widget to show a skill level.
 // queued is optional and will be ignored when zero.
-func (w *skillLevel) Set(active, trained, queued int64) {
+func (w *SkillLevel) Set(active, trained, queued int64) {
 	for i := range int64(5) {
 		y := w.dots[i]
 		if active > i {
@@ -61,7 +61,7 @@ func (w *skillLevel) Set(active, trained, queued int64) {
 	}
 }
 
-func (w *skillLevel) CreateRenderer() fyne.WidgetRenderer {
+func (w *SkillLevel) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHBox()
 	for i := range 5 {
 		c.Add(w.dots[i])

@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -147,19 +147,15 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			icon1 := iwidget.NewImageFromResource(icons.Corporationplaceholder64Png,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			icon2 := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			name := widget.NewLabel("Template")
-			name.Truncation = fyne.TextTruncateEllipsis
+			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			corporation := awidget.NewEntityListItem(false, a.u.eis.CorporationLogoAsync)
 			points := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
 				nil,
-				icon1,
-				container.NewHBox(points, icon2),
-				name,
+				nil,
+				container.NewHBox(points, icon),
+				corporation,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -168,14 +164,8 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			}
 			r := a.rowsFiltered[id]
 			box := co.(*fyne.Container).Objects
-			name := box[0].(*widget.Label)
-			icon1 := box[1].(*canvas.Image)
-			a.u.eis.CorporationLogoAsync(r.corporationID, app.IconPixelSize, func(r fyne.Resource) {
-				icon1.Resource = r
-				icon1.Refresh()
-			})
-			name.SetText(r.corporationName)
-			hbox := box[2].(*fyne.Container).Objects
+			box[0].(*awidget.EntityListItem).Set(r.corporationID, r.corporationName)
+			hbox := box[1].(*fyne.Container).Objects
 			points := hbox[0].(*widget.Label)
 			points.SetText(ihumanize.Comma(r.points))
 			icon2 := hbox[1].(*iwidget.TappableIcon)

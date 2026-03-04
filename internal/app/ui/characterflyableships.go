@@ -60,6 +60,7 @@ type characterFlyableShips struct {
 	sortButton    *iwidget.SortButton
 	top           *widget.Label
 	u             *baseUI
+	imageCache    xsync.Map[string, *image.RGBA]
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
@@ -164,14 +165,18 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newShipItem(a.u.eis)
+			return NewShipItem(
+				a.u.eis.InventoryTypeRender,
+				a.imageCache.Load,
+				a.imageCache.Store,
+			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
 			o := a.rowsFiltered[id]
-			item := co.(*shipItem)
+			item := co.(*ShipItem)
 			item.Set(o.typeID, o.typeName, o.canFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -330,23 +335,22 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 	})
 }
 
-// assetIconCache caches the images for asset icons.
-var shipImageCache xsync.Map[string, *image.RGBA]
-
-type shipItemEIS interface {
-	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
-}
-
-// The shipItem widget is used to render items on the type info window.
-type shipItem struct {
+// The ShipItem widget is used to render items on the type info window.
+type ShipItem struct {
 	widget.BaseWidget
 
-	eis   shipItemEIS
-	image *canvas.Image
-	label *widget.Label
+	image      *canvas.Image
+	label      *widget.Label
+	renderType func(int64, int) (fyne.Resource, error)
+	cacheLoad  func(string) (*image.RGBA, bool)
+	cacheStore func(string, *image.RGBA)
 }
 
-func newShipItem(eis shipItemEIS) *shipItem {
+func NewShipItem(
+	renderType func(int64, int) (fyne.Resource, error),
+	cacheLoad func(string) (*image.RGBA, bool),
+	cacheStore func(string, *image.RGBA),
+) *ShipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
@@ -354,16 +358,18 @@ func newShipItem(eis shipItemEIS) *shipItem {
 	image.ScaleMode = defaultImageScaleMode
 	image.CornerRadius = theme.InputRadiusSize()
 	image.SetMinSize(fyne.NewSquareSize(128))
-	w := &shipItem{
-		image: image,
-		label: widget.NewLabel("First line\nSecond Line\nThird Line"),
-		eis:   eis,
+	w := &ShipItem{
+		image:      image,
+		label:      widget.NewLabel("First line\nSecond Line\nThird Line"),
+		renderType: renderType,
+		cacheLoad:  cacheLoad,
+		cacheStore: cacheStore,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *shipItem) Set(typeID int64, label string, canFly bool) {
+func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 	w.label.Importance = widget.MediumImportance
 	w.label.Text = label
 	w.label.Wrapping = fyne.TextWrapWord
@@ -379,7 +385,7 @@ func (w *shipItem) Set(typeID int64, label string, canFly bool) {
 	// TODO: Move grayscale feature into general package
 
 	key := fmt.Sprintf("%d-%v", typeID, canFly)
-	img, ok := shipImageCache.Load(key)
+	img, ok := w.cacheLoad(key)
 	if ok {
 		w.image.Image = img
 		w.image.Refresh()
@@ -387,7 +393,7 @@ func (w *shipItem) Set(typeID int64, label string, canFly bool) {
 	}
 	go func() {
 		j, err := func() (image.Image, error) {
-			r, err := w.eis.InventoryTypeRender(typeID, 256)
+			r, err := w.renderType(typeID, 256)
 			if err != nil {
 				return nil, err
 			}
@@ -413,7 +419,7 @@ func (w *shipItem) Set(typeID int64, label string, canFly bool) {
 		if !canFly {
 			img = effect.Grayscale(img)
 		}
-		shipImageCache.Store(key, img)
+		w.cacheStore(key, img)
 
 		fyne.Do(func() {
 			w.image.Resource = nil
@@ -423,7 +429,7 @@ func (w *shipItem) Set(typeID int64, label string, canFly bool) {
 	}()
 }
 
-func (w *shipItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(container.NewPadded(w.image), w.label)
 	return widget.NewSimpleRenderer(c)
 }

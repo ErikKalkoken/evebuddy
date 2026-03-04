@@ -27,17 +27,18 @@ type hasCharacterSection interface {
 }
 
 type jumpCloneNode struct {
+	characterID            int64
 	implantCount           int
+	implantTypeDescription string
 	implantTypeID          int64
 	implantTypeName        string
-	implantTypeDescription string
 	isUnknown              bool
 	jumpCloneID            int64
 	jumpCloneName          string
 	locationID             int64
 	locationName           string
-	systemSecurityValue    float32
 	systemSecurityType     app.SolarSystemSecurityType
+	systemSecurityValue    float32
 }
 
 func (n jumpCloneNode) isTop() bool {
@@ -100,81 +101,15 @@ func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
-			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewLabel("Template")
-			main.Truncation = fyne.TextTruncateEllipsis
-			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			implants := widget.NewLabel("9")
-			spacer := newSpacer(fyne.NewSize(40, 10))
-			prefix := widget.NewLabel("-9.9")
-			prefix.Alignment = fyne.TextAlignTrailing
-			return container.NewBorder(
-				nil,
-				nil,
-				container.NewHBox(iconMain, container.NewStack(spacer, prefix)),
-				container.NewHBox(implants, iconInfo),
-				main,
+			return newCharacterJumpCloneItem(
+				a.u.isMobile,
+				a.u.eis.InventoryTypeIconAsync,
+				a.u.ShowTypeInfoWindowWithCharacter,
+				a.u.ShowLocationInfoWindow,
 			)
 		},
 		func(n *jumpCloneNode, _ bool, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			main := border[0].(*ttwidget.Label)
-			hbox1 := border[1].(*fyne.Container).Objects
-			iconMain := hbox1[0].(*canvas.Image)
-			spacer := hbox1[1].(*fyne.Container).Objects[0]
-			prefix := hbox1[1].(*fyne.Container).Objects[1].(*widget.Label)
-			hbox2 := border[2].(*fyne.Container).Objects
-			implants := hbox2[0].(*widget.Label)
-			iconInfo := hbox2[1].(*iwidget.TappableIcon)
-			if n.isTop() {
-				if a.u.isMobile {
-					iconMain.Hide()
-				} else {
-					iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
-					iconMain.Refresh()
-				}
-				if !n.isUnknown {
-					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
-					prefix.Importance = n.systemSecurityType.ToImportance()
-					iconInfo.OnTapped = func() {
-						a.u.ShowLocationInfoWindow(n.locationID)
-					}
-					iconInfo.SetToolTip("Show location")
-					iconInfo.Show()
-				} else {
-					prefix.Text = "?"
-					prefix.Importance = widget.LowImportance
-					iconInfo.Hide()
-				}
-				if n.implantCount > 0 {
-					implants.SetText(fmt.Sprint(n.implantCount))
-					implants.Show()
-				} else {
-					implants.Hide()
-				}
-				main.SetText(n.locationName)
-				main.SetToolTip("")
-				prefix.Show()
-				spacer.Show()
-			} else {
-				if a.u.isMobile {
-					iconMain.Show()
-				}
-				implants.Hide()
-				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
-					iconMain.Resource = r
-					iconMain.Refresh()
-				})
-				main.SetText(n.implantTypeName)
-				main.SetToolTip(n.implantTypeDescription)
-				prefix.Hide()
-				spacer.Hide()
-				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, characterIDOrZero(a.character.Load()))
-				}
-				iconInfo.SetToolTip("Show implant")
-				iconInfo.Show()
-			}
+			co.(*characterJumpCloneItem).set(n)
 		},
 	)
 	t.OnSelectedNode = func(n *jumpCloneNode) {
@@ -218,15 +153,13 @@ func (a *characterJumpClones) update(ctx context.Context) {
 
 func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (iwidget.TreeData[jumpCloneNode], error) {
 	var td iwidget.TreeData[jumpCloneNode]
-	if characterID == 0 {
-		return td, nil
-	}
 	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
 	if err != nil {
 		return td, err
 	}
 	for _, c := range clones {
 		clone := &jumpCloneNode{
+			characterID:   characterID,
 			implantCount:  len(c.Implants),
 			jumpCloneID:   c.CloneID,
 			jumpCloneName: c.Name.ValueOrZero(),
@@ -250,6 +183,7 @@ func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) 
 		}
 		for _, i := range c.Implants {
 			implant := &jumpCloneNode{
+				characterID:            characterID,
 				implantTypeDescription: i.EveType.DescriptionPlain(),
 				implantTypeID:          i.EveType.ID,
 				implantTypeName:        i.EveType.Name,
@@ -330,4 +264,107 @@ func (*characterJumpClones) makeTopText(cloneCount int, c *app.Character, s hasC
 		},
 	}
 	return segs
+}
+
+type characterJumpCloneItem struct {
+	widget.BaseWidget
+
+	iconInfo     *iwidget.TappableIcon
+	iconMain     *canvas.Image
+	implants     *widget.Label
+	isMobile     bool
+	main         *ttwidget.Label
+	prefix       *widget.Label
+	spacer       fyne.CanvasObject
+	loadTypeIcon loadFuncAsync
+	showType     func(int64, int64)
+	showLocation func(int64)
+}
+
+func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showType func(int64, int64), showLocation func(int64)) *characterJumpCloneItem {
+	iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	main := ttwidget.NewLabel("Template")
+	main.Truncation = fyne.TextTruncateEllipsis
+	iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	implants := widget.NewLabel("9")
+	spacer := newSpacer(fyne.NewSize(40, 10))
+	prefix := widget.NewLabel("-9.9")
+	prefix.Alignment = fyne.TextAlignTrailing
+	w := &characterJumpCloneItem{
+		iconInfo:     iconInfo,
+		iconMain:     iconMain,
+		implants:     implants,
+		isMobile:     isMobile,
+		main:         main,
+		prefix:       prefix,
+		spacer:       spacer,
+		loadTypeIcon: loadTypeIcon,
+		showType:     showType,
+		showLocation: showLocation,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *characterJumpCloneItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		nil,
+		nil,
+		container.NewHBox(w.iconMain, container.NewStack(w.spacer, w.prefix)),
+		container.NewHBox(w.implants, w.iconInfo),
+		w.main,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *characterJumpCloneItem) set(n *jumpCloneNode) {
+	if n.isTop() {
+		if w.isMobile {
+			w.iconMain.Hide()
+		} else {
+			w.iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
+			w.iconMain.Refresh()
+		}
+		if !n.isUnknown {
+			w.prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
+			w.prefix.Importance = n.systemSecurityType.ToImportance()
+			w.iconInfo.OnTapped = func() {
+				w.showLocation(n.locationID)
+			}
+			w.iconInfo.SetToolTip("Show location")
+			w.iconInfo.Show()
+		} else {
+			w.prefix.Text = "?"
+			w.prefix.Importance = widget.LowImportance
+			w.iconInfo.Hide()
+		}
+		if n.implantCount > 0 {
+			w.implants.SetText(fmt.Sprint(n.implantCount))
+			w.implants.Show()
+		} else {
+			w.implants.Hide()
+		}
+		w.main.SetText(n.locationName)
+		w.main.SetToolTip("")
+		w.prefix.Show()
+		w.spacer.Show()
+		return
+	}
+	if w.isMobile {
+		w.iconMain.Show()
+	}
+	w.implants.Hide()
+	w.loadTypeIcon(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+		w.iconMain.Resource = r
+		w.iconMain.Refresh()
+	})
+	w.main.SetText(n.implantTypeName)
+	w.main.SetToolTip(n.implantTypeDescription)
+	w.prefix.Hide()
+	w.spacer.Hide()
+	w.iconInfo.OnTapped = func() {
+		w.showType(n.implantTypeID, n.characterID)
+	}
+	w.iconInfo.SetToolTip("Show implant")
+	w.iconInfo.Show()
 }

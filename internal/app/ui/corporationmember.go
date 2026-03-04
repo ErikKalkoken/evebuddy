@@ -213,10 +213,10 @@ type corporationMemberItem struct {
 	name           *widget.Label
 	owned          *ttwidget.Icon
 	portrait       *canvas.Image
-	portraitLoader func(id int64, size int, setter func(r fyne.Resource))
+	portraitLoader loadFuncAsync
 }
 
-func newCorporationMemberItem(portraitLoader func(id int64, size int, setter func(r fyne.Resource))) *corporationMemberItem {
+func newCorporationMemberItem(portraitLoader loadFuncAsync) *corporationMemberItem {
 	ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
 	ceo.SetToolTip("CEO of this corporation")
 	owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))

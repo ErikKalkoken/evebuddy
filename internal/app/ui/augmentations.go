@@ -92,67 +92,35 @@ func newAugmentations(u *baseUI) *augmentations {
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
-	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.tree)
+	filter := container.NewHBox(
+		a.selectImplants,
+		a.selectTag,
+		a.collapseBranches,
+	)
+	c := container.NewBorder(
+		container.NewHScroll(filter),
+		a.footer,
+		nil,
+		nil,
+		a.tree,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
 	t := iwidget.NewTree(
-		func(branch bool) fyne.CanvasObject {
-			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewLabel("Template")
-			main.Truncation = fyne.TextTruncateEllipsis
-			implants := widget.NewLabel("9 implants")
-			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			return container.NewBorder(
-				nil,
-				nil,
-				iconMain,
-				container.NewHBox(implants, iconInfo),
-				main,
+		func(_ bool) fyne.CanvasObject {
+			return newAugmentationNodeItem(
+				a.u.eis.CharacterPortraitAsync,
+				a.u.eis.InventoryTypeIconAsync,
+				func(id int64) {
+					a.u.ShowInfoWindow(app.EveEntityCharacter, id)
+				},
+				a.u.ShowTypeInfoWindowWithCharacter,
 			)
 		},
-		func(n *characterAugmentationNode, b bool, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			main := border[0].(*ttwidget.Label)
-			iconMain := border[1].(*canvas.Image)
-			hbox := border[2].(*fyne.Container).Objects
-			implants := hbox[0].(*widget.Label)
-			iconInfo := hbox[1].(*iwidget.TappableIcon)
-			if n.IsTop() {
-				a.u.eis.CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
-					iconMain.Resource = r
-					iconMain.CornerRadius = app.IconUnitSize / 2
-					iconMain.Refresh()
-				})
-				if n.implantCount > 0 {
-					implants.SetText(fmt.Sprintf("%d implants", n.implantCount))
-					implants.Show()
-				} else {
-					implants.Hide()
-				}
-				main.SetText(n.characterName)
-				main.Refresh()
-				main.SetToolTip("")
-				iconInfo.SetToolTip("Show character")
-				iconInfo.OnTapped = func() {
-					a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
-				}
-			} else {
-				a.u.eis.InventoryTypeIconAsync(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
-					iconMain.Resource = r
-					iconMain.CornerRadius = 0
-					iconMain.Refresh()
-				})
-				main.SetText(n.implantTypeName)
-				main.SetToolTip(n.implantTypeDescription)
-				implants.Hide()
-				iconInfo.SetToolTip("Show implant")
-				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, n.characterID)
-				}
-			}
+		func(n *characterAugmentationNode, _ bool, co fyne.CanvasObject) {
+			co.(*augmentationNodeItem).set(n)
 		},
 	)
 	t.OnSelectedNode = func(n *characterAugmentationNode) {
@@ -296,4 +264,92 @@ func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[charact
 		}
 	}
 	return td, nil
+}
+
+type augmentationNodeItem struct {
+	widget.BaseWidget
+
+	iconInfo              *iwidget.TappableIcon
+	iconMain              *canvas.Image
+	implants              *widget.Label
+	loadCharacterPortrait loadFuncAsync
+	loadTypeIcon          loadFuncAsync
+	main                  *ttwidget.Label
+	showCharacter         func(int64)
+	showType              func(int64, int64)
+}
+
+func newAugmentationNodeItem(
+	loadCharacterPortrait, loadTypeIcon loadFuncAsync,
+	showCharacter func(int64),
+	showType func(int64, int64),
+) *augmentationNodeItem {
+	iconMain := iwidget.NewImageFromResource(
+		icons.BlankSvg,
+		fyne.NewSquareSize(app.IconUnitSize),
+	)
+	main := ttwidget.NewLabel("")
+	main.Truncation = fyne.TextTruncateEllipsis
+	implants := widget.NewLabel("")
+	iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	w := &augmentationNodeItem{
+		iconInfo:              iconInfo,
+		loadTypeIcon:          loadTypeIcon,
+		iconMain:              iconMain,
+		implants:              implants,
+		main:                  main,
+		loadCharacterPortrait: loadCharacterPortrait,
+		showCharacter:         showCharacter,
+		showType:              showType,
+	}
+	w.ExtendBaseWidget(w)
+
+	return w
+}
+
+func (w *augmentationNodeItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		nil,
+		nil,
+		w.iconMain,
+		container.NewHBox(w.implants, w.iconInfo),
+		w.main,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *augmentationNodeItem) set(n *characterAugmentationNode) {
+	if n.IsTop() {
+		w.loadCharacterPortrait(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
+			w.iconMain.Resource = r
+			w.iconMain.CornerRadius = app.IconUnitSize / 2
+			w.iconMain.Refresh()
+		})
+		if n.implantCount > 0 {
+			w.implants.SetText(fmt.Sprintf("%d implants", n.implantCount))
+			w.implants.Show()
+		} else {
+			w.implants.Hide()
+		}
+		w.main.SetText(n.characterName)
+		w.main.Refresh()
+		w.main.SetToolTip("")
+		w.iconInfo.SetToolTip("Show character")
+		w.iconInfo.OnTapped = func() {
+			w.showCharacter(n.characterID)
+		}
+	} else {
+		w.loadTypeIcon(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+			w.iconMain.Resource = r
+			w.iconMain.CornerRadius = 0
+			w.iconMain.Refresh()
+		})
+		w.main.SetText(n.implantTypeName)
+		w.main.SetToolTip(n.implantTypeDescription)
+		w.implants.Hide()
+		w.iconInfo.SetToolTip("Show implant")
+		w.iconInfo.OnTapped = func() {
+			w.showType(n.implantTypeID, n.characterID)
+		}
+	}
 }

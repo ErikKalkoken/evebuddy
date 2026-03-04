@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -26,7 +25,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -191,7 +190,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 					layout.NewSpacer(),
 					delete,
 				),
-				newAvatarListItem(a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 			)
 			return row
 		},
@@ -202,7 +201,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*avatarListItem).set(r.characterID, r.characterName)
+			border[0].(*awidget.EntityListItem).Set(r.characterID, r.characterName)
 
 			hbox := border[1].(*fyne.Container).Objects
 			issueBox := hbox[0].(*fyne.Container)
@@ -624,7 +623,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					nil,
 					check,
 					nil,
-					newAvatarListItem(a.mc.u.eis.CharacterPortraitAsync),
+					awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -633,7 +632,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				}
 				border := co.(*fyne.Container).Objects
 				r := others[id]
-				border[0].(*avatarListItem).set(r.ID, r.Name)
+				border[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
 
 				check := border[1].(*widget.Icon)
 				if selected[r.ID] {
@@ -780,7 +779,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				nil,
 				nil,
 				remove,
-				newAvatarListItem(a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -789,7 +788,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			}
 			r := a.characters[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*avatarListItem).set(r.ID, r.Name)
+			box[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
 
 			remove := box[1].(*ttwidget.Button)
 			remove.OnTapped = func() {
@@ -992,7 +991,7 @@ func (a *characterTraining) makeList() *widget.List {
 				nil,
 				nil,
 				kxwidget.NewSwitch(nil),
-				newAvatarListItem(a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -1002,7 +1001,7 @@ func (a *characterTraining) makeList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*avatarListItem).set(r.EveCharacter.ID, r.EveCharacter.Name)
+			border[0].(*awidget.EntityListItem).Set(r.EveCharacter.ID, r.EveCharacter.Name)
 
 			sw := border[1].(*kxwidget.Switch)
 			sw.On = r.IsTrainingWatched
@@ -1056,57 +1055,4 @@ func (a *characterTraining) update(ctx context.Context) {
 		a.characters = characters
 		a.list.Refresh()
 	})
-}
-
-type avatarListItem struct {
-	widget.BaseWidget
-
-	name           *widget.Label
-	portrait       *canvas.Image
-	portraitLoader func(id int64, size int, setter func(r fyne.Resource))
-}
-
-func newAvatarListItem(portraitLoader func(id int64, size int, setter func(r fyne.Resource))) *avatarListItem {
-	portrait := iwidget.NewImageFromResource(
-		icons.Characterplaceholder64Jpeg,
-		fyne.NewSquareSize(app.IconUnitSize),
-	)
-	portrait.CornerRadius = app.IconUnitSize / 2
-	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
-	w := &avatarListItem{
-		name:           name,
-		portrait:       portrait,
-		portraitLoader: portraitLoader,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *avatarListItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	c := container.NewBorder(
-		nil,
-		nil,
-		container.NewVBox(
-			layout.NewSpacer(),
-			container.New(layout.NewCustomPaddedLayout(p, p, 2*p, -p), w.portrait),
-			layout.NewSpacer(),
-		),
-		nil,
-		container.NewVBox(
-			layout.NewSpacer(),
-			w.name,
-			layout.NewSpacer(),
-		),
-	)
-	return widget.NewSimpleRenderer(c)
-}
-
-func (w *avatarListItem) set(characterID int64, characterName string) {
-	w.portraitLoader(characterID, app.IconPixelSize, func(r fyne.Resource) {
-		w.portrait.Resource = r
-		w.portrait.Refresh()
-	})
-	w.name.SetText(characterName)
 }
