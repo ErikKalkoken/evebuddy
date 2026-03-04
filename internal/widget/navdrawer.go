@@ -88,7 +88,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p),
 					widget.NewSeparator(),
 				),
-				newHooverThief(),
+				NewHooverThief(),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -356,33 +356,34 @@ func (ni *NavItem) Disable() {
 	ni.isDisabled = true
 }
 
-// hooverThief is an icon widget, which runs a function when tapped and supports tooltips.
-type hooverThief struct {
+// HooverThief is a widget that can disable hoovering of lower widgets.
+// For example when put on top a list item, the list item no longer hoovers.
+type HooverThief struct {
 	widget.BaseWidget
 
 	hovered bool
 }
 
-var _ desktop.Hoverable = (*hooverThief)(nil)
+var _ desktop.Hoverable = (*HooverThief)(nil)
 
-func newHooverThief() *hooverThief {
-	w := &hooverThief{}
+func NewHooverThief() *HooverThief {
+	w := &HooverThief{}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *hooverThief) CreateRenderer() fyne.WidgetRenderer {
+func (w *HooverThief) CreateRenderer() fyne.WidgetRenderer {
 	r := canvas.NewRectangle(color.Transparent)
 	return widget.NewSimpleRenderer(r)
 }
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
-func (w *hooverThief) MouseIn(e *desktop.MouseEvent) {
+func (w *HooverThief) MouseIn(e *desktop.MouseEvent) {
 	w.hovered = true
 }
 
-func (w *hooverThief) MouseMoved(e *desktop.MouseEvent) {}
+func (w *HooverThief) MouseMoved(e *desktop.MouseEvent) {}
 
-func (w *hooverThief) MouseOut() {
+func (w *HooverThief) MouseOut() {
 	w.hovered = false
 }

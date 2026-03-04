@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -545,7 +546,6 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		notifyContracts,
 		notifTimeout,
 	}
-	items = append(items, NewSettingItemSeparator())
 	items = append(items, NewSettingItemHeading("Communication Groups"))
 
 	// add communication groups
@@ -723,7 +723,6 @@ const (
 	settingUndefined settingVariant = iota
 	settingCustom
 	settingHeading
-	settingSeparator
 	settingSwitch
 )
 
@@ -753,11 +752,6 @@ func (si SettingItem) Reset() {
 // NewSettingItemHeading creates a heading in a setting list.
 func NewSettingItemHeading(label string) SettingItem {
 	return SettingItem{Label: label, variant: settingHeading}
-}
-
-// NewSettingItemSeparator creates a separator in a setting list.
-func NewSettingItemSeparator() SettingItem {
-	return SettingItem{variant: settingSeparator}
 }
 
 type SettingItemSwitchParams struct {
@@ -952,13 +946,12 @@ func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 // SettingList is a custom list widget for settings.
 type SettingList struct {
 	widget.List
-
-	UnSelectDelay time.Duration
 }
 
 // NewSettingList returns a new SettingList widget.
 func NewSettingList(items []SettingItem) *SettingList {
-	w := &SettingList{UnSelectDelay: 200 * time.Millisecond}
+	w := &SettingList{}
+	w.ExtendBaseWidget(w)
 	w.Length = func() int {
 		return len(items)
 	}
@@ -974,63 +967,65 @@ func NewSettingList(items []SettingItem) *SettingList {
 		w.SetItemHeight(id, li.MinSize().Height)
 	}
 	w.OnSelected = func(id widget.ListItemID) {
+		defer w.UnselectAll()
 		if id >= len(items) {
-			w.UnselectAll()
 			return
 		}
 		it := items[id]
 		if it.onSelected == nil {
-			w.UnselectAll()
 			return
 		}
 		it.onSelected(it, func() {
 			w.RefreshItem(id)
 		})
-		go func() {
-			time.Sleep(w.UnSelectDelay)
-			fyne.Do(func() {
-				w.UnselectAll()
-			})
-		}()
 	}
 	w.HideSeparators = true
-	w.ExtendBaseWidget(w)
 	return w
 }
 
 type settingListItem struct {
 	widget.BaseWidget
 
-	hint      *widget.Label
-	label     *widget.Label
-	separator *widget.Separator
-	switch_   *kxwidget.Switch
-	value     *widget.Label
+	background *canvas.Rectangle
+	hint       *widget.Label
+	label      *widget.Label
+	header     *widget.Label
+	switch_    *kxwidget.Switch
+	value      *widget.Label
+	thief      *iwidget.HooverThief
 }
 
 func newSettingListItem() *settingListItem {
 	label := widget.NewLabel("Template")
 	label.Truncation = fyne.TextTruncateClip
+	header := widget.NewLabel("Template")
+	header.Truncation = fyne.TextTruncateClip
+	header.TextStyle.Bold = true
 	hint := widget.NewLabel("")
 	hint.Truncation = fyne.TextTruncateClip
 	hint.SizeName = theme.SizeNameCaptionText
+	background := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
+	background.CornerRadius = 10
 	w := &settingListItem{
-		hint:      hint,
-		label:     label,
-		separator: widget.NewSeparator(),
-		switch_:   kxwidget.NewSwitch(nil),
-		value:     widget.NewLabel(""),
+		background: background,
+		header:     header,
+		hint:       hint,
+		label:      label,
+		switch_:    kxwidget.NewSwitch(nil),
+		thief:      iwidget.NewHooverThief(),
+		value:      widget.NewLabel(""),
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewPadded(container.NewBorder(
+	p := theme.Padding()
+	c := container.NewBorder(
 		nil,
-		container.New(
-			layout.NewCustomPaddedLayout(0, 0, 0, 0),
-			w.separator,
+		container.NewVBox(
+			newStandardSpacer(),
+			container.New(layout.NewCustomPaddedLayout(0, 0, 0, -2*p), w.header),
 		),
 		nil,
 		container.NewVBox(
@@ -1044,8 +1039,12 @@ func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
 			w.hint,
 			layout.NewSpacer(),
 		),
-	))
-	return widget.NewSimpleRenderer(c)
+	)
+	c2 := container.NewStack(
+		container.New(layout.NewCustomPaddedLayout(1, 1, p, p), container.NewStack(w.background, c)),
+		w.thief,
+	)
+	return widget.NewSimpleRenderer(c2)
 }
 
 func (w *settingListItem) set(r SettingItem) {
@@ -1055,14 +1054,19 @@ func (w *settingListItem) set(r SettingItem) {
 	} else {
 		w.hint.Hide()
 	}
-	w.label.Text = r.Label
-	w.label.TextStyle.Bold = false
 	switch r.variant {
 	case settingHeading:
-		w.label.TextStyle.Bold = true
+		w.header.SetText(r.Label)
+		w.header.Show()
+		w.label.Hide()
 		w.value.Hide()
 		w.switch_.Hide()
+		w.background.Hide()
+		w.thief.Show()
 	case settingSwitch:
+		w.label.SetText(r.Label)
+		w.header.Hide()
+		w.label.Show()
 		w.value.Hide()
 		w.switch_.OnChanged = func(v bool) {
 			r.Setter(v)
@@ -1070,7 +1074,12 @@ func (w *settingListItem) set(r SettingItem) {
 		w.switch_.On = r.Getter().(bool)
 		w.switch_.Show()
 		w.switch_.Refresh()
+		w.background.Show()
+		w.thief.Hide()
 	case settingCustom:
+		w.label.SetText(r.Label)
+		w.header.Hide()
+		w.label.Show()
 		formatter := r.Formatter
 		if formatter == nil {
 			formatter = func(v any) string {
@@ -1080,15 +1089,7 @@ func (w *settingListItem) set(r SettingItem) {
 		w.value.SetText(formatter(r.Getter()))
 		w.value.Show()
 		w.switch_.Hide()
-	}
-	if r.variant == settingSeparator {
-		w.separator.Show()
-		w.value.Hide()
-		w.switch_.Hide()
-		w.label.Hide()
-	} else {
-		w.separator.Hide()
-		w.label.Show()
-		w.label.Refresh()
+		w.background.Show()
+		w.thief.Hide()
 	}
 }
