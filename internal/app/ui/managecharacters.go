@@ -30,13 +30,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func showManageCharactersWindow(u *baseUI) {
+func ShowManageCharactersWindow(u *baseUI) {
 	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
 	if !created {
 		w.Show()
 		return
 	}
-	mc := u.manageCharacters
+	mc := newManageCharacters(u)
 	mc.setWindow(w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mc, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
@@ -51,6 +51,7 @@ func showManageCharactersWindow(u *baseUI) {
 		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	w.Show()
+	mc.update(context.Background())
 }
 
 type manageCharacters struct {

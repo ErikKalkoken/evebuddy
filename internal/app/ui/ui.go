@@ -151,7 +151,6 @@ type baseUI struct {
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
 	loyaltyPoints           *loyaltyPoints
-	manageCharacters        *manageCharacters
 	marketOrdersBuy         *marketOrders
 	marketOrdersSell        *marketOrders
 	slotsManufacturing      *industrySlots
@@ -466,7 +465,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobsForOverview(u)
 	u.loyaltyPoints = newLoyaltyPoints(u)
-	u.manageCharacters = newManageCharacters(u)
 	u.marketOrdersBuy = newMarketOrders(u, true)
 	u.marketOrdersSell = newMarketOrders(u, false)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
@@ -851,7 +849,6 @@ func (u *baseUI) initHome(ctx context.Context) {
 		"slotsResearch":      u.slotsResearch.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
-		"manageCharacters":   u.manageCharacters.update,
 	}
 	myLog := slog.With("title", "startup")
 	myLog.Debug("started")

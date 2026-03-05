@@ -71,7 +71,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			showManageCharactersWindow(u.baseUI)
+			ShowManageCharactersWindow(u.baseUI)
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")

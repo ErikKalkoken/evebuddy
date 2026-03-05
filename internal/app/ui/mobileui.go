@@ -413,7 +413,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			showManageCharactersWindow(u.baseUI)
+			ShowManageCharactersWindow(u.baseUI)
 		},
 	)
 

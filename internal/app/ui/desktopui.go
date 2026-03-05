@@ -74,7 +74,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.disableMenuShortcuts = u.disableShortcuts
 
 	u.showManageCharacters = func() {
-		showManageCharactersWindow(u.baseUI)
+		ShowManageCharactersWindow(u.baseUI)
 	}
 
 	u.defineShortcuts()
