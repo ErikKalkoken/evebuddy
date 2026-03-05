@@ -206,8 +206,6 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
-		rows:         make([]walletTransactionRow, 0),
-		rowsFiltered: make([]walletTransactionRow, 0),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -522,7 +520,7 @@ func (a *walletTransactions) fetchCharacterRows(ctx context.Context, characterID
 
 func (a *walletTransactions) updateCorporation(ctx context.Context) {
 	var err error
-	rows := make([]walletTransactionRow, 0)
+	var rows []walletTransactionRow
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
 	if hasData {

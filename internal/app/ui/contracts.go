@@ -170,7 +170,6 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	a := &contracts{
 		forCorporation: forCorporation,
 		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
-		rows:           make([]contractRow, 0),
 		footer:         newLabelWithTruncation(),
 		u:              u,
 	}

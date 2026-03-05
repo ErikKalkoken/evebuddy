@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -126,18 +127,18 @@ func newClones(u *baseUI) *clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, makeEveEntityColumn(makeEveEntityColumnParams[cloneRow]{
-		columnID: clonesColCharacter,
-		eis:      u.eis,
-		getEntity: func(r cloneRow) *app.EveEntity {
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[cloneRow]{
+		ColumnID: clonesColCharacter,
+		EIS:      u.eis,
+		GetEntity: func(r cloneRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.jc.Character.ID,
 				Name:     r.jc.Character.Name,
 				Category: app.EveEntityCharacter,
 			}
 		},
-		isAvatar: true,
-		label:    "Character",
+		IsAvatar: true,
+		Label:    "Character",
 	}), {
 		ID:    clonesColJumps,
 		Label: "Jumps",
@@ -154,8 +155,6 @@ func newClones(u *baseUI) *clones {
 	a := &clones{
 		columnSorter: iwidget.NewColumnSorter(columns, clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
-		rows:         make([]cloneRow, 0),
-		rowsFiltered: make([]cloneRow, 0),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
@@ -366,7 +365,7 @@ func (a *clones) update(ctx context.Context) {
 			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
-			a.rows = make([]cloneRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 		return
@@ -388,7 +387,7 @@ func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.Location.SolarSystemName(), b.Location.SolarSystemName())
 	})
-	rows := make([]cloneRow, 0)
+	var rows []cloneRow
 	for _, o := range oo {
 		r := cloneRow{jc: o}
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.Character.ID)
@@ -409,7 +408,7 @@ func (a *clones) updateRoutesAsync() {
 		a.rows[i].route = nil
 	}
 	a.body.Refresh()
-	headers := make([]app.EveRouteHeader, 0)
+	var headers []app.EveRouteHeader
 	for _, r := range a.rows {
 		destination, ok := r.jc.Location.SolarSystem.Value()
 		if !ok {
@@ -457,7 +456,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 		a.u.showErrorDialog("Something went wrong", err, w)
 	}
 	var d dialog.Dialog
-	results := make([]*app.EveEntity, 0)
+	var results []*app.EveEntity
 	routePref := widget.NewSelect(
 		xslices.Map(app.EveRoutePreferences(), func(a app.EveRoutePreference) string {
 			return a.String()

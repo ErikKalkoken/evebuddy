@@ -17,6 +17,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -95,8 +96,6 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
-		rows:           make([]skillRow, 0),
-		rowsFiltered:   make([]skillRow, 0),
 		search:         widget.NewEntry(),
 		top:            newLabelWithWrapping(),
 		u:              u,
@@ -186,7 +185,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				newSkillLevel(),
+				awidget.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -219,7 +218,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		)
 		label.SetToolTip(tt)
 
-		level := row[1].(*skillLevel)
+		level := row[1].(*awidget.SkillLevel)
 		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
@@ -303,8 +302,8 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 
 	clear := func() {
 		fyne.Do(func() {
-			clear(a.rows)
-			clear(a.rowsFiltered)
+			a.rows = xslices.Reset(a.rows)
+			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
 		})
 	}
 

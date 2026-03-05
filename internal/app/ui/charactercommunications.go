@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -52,8 +53,6 @@ type characterCommunications struct {
 
 func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a := &characterCommunications{
-		folders:          make([]notificationFolder, 0),
-		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
 		u:                u,
@@ -103,7 +102,7 @@ func (a *characterCommunications) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
-	items2 := make([]*fyne.MenuItem, 0)
+	var items2 []*fyne.MenuItem
 	for _, f := range a.folders {
 		s := f.Name
 		if f.Unread.ValueOrZero() > 0 {
@@ -402,7 +401,7 @@ type communicationDetail struct {
 	subject *widget.Label
 }
 
-func newCommunicationDetail(eis eveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord

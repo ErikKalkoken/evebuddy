@@ -21,7 +21,7 @@ type SyncQueue[T any] struct {
 
 // New returns a new [SyncQueue].
 func New[T any]() *SyncQueue[T] {
-	q := &SyncQueue[T]{s: make([]T, 0)}
+	q := new(SyncQueue[T])
 	q.cond = sync.NewCond(&q.cmu)
 	return q
 }

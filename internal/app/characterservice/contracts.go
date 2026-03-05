@@ -383,7 +383,7 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 	if err != nil {
 		return err
 	}
-	newBids := make([]esi.CharactersCharacterIdContractsContractIdBidsGetInner, 0)
+	var newBids []esi.CharactersCharacterIdContractsContractIdBidsGetInner
 	for _, b := range bids {
 		if !existingBidIDs.Contains(b.BidId) {
 			newBids = append(newBids, b)

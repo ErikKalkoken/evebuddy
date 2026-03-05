@@ -80,11 +80,7 @@ func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int64]
 	return s.st.ListCharacterIDs(ctx)
 }
 
-// ListCharactersShort returns all characters in short form and ordered by name.
-func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort, error) {
-	return s.st.ListCharactersShort(ctx)
-}
-
+// CharacterNames returns an ID to name map for all existing characters.
 func (s *CharacterService) CharacterNames(ctx context.Context) (map[int64]string, error) {
 	oo, err := s.st.ListCharactersShort(ctx)
 	if err != nil {

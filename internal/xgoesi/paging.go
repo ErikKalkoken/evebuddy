@@ -82,7 +82,7 @@ func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int32) 
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	combined := make([]T, 0)
+	var combined []T
 	for _, result := range results {
 		combined = slices.Concat(combined, result)
 	}

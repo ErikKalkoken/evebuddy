@@ -117,7 +117,7 @@ func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name stri
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.EveEntity, 0)
+	var oo []*app.EveEntity
 	for _, r := range rows {
 		oo = append(oo, eveEntityFromDBModel(r))
 	}
@@ -164,7 +164,7 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 	if len(ids) == 0 {
 		return []*app.EveEntity{}, nil
 	}
-	rows := make([]queries.EveEntity, 0)
+	var rows []queries.EveEntity
 	for idsChunk := range slices.Chunk(ids, st.MaxListEveEntitiesForIDs) {
 		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
 		if err != nil {
@@ -176,7 +176,7 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 	for _, r := range rows {
 		m[int64(r.ID)] = eveEntityFromDBModel(r)
 	}
-	oo := make([]*app.EveEntity, 0)
+	var oo []*app.EveEntity
 	for _, id := range ids {
 		o, found := m[id]
 		if !found {

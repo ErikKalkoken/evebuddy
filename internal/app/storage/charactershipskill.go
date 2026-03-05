@@ -16,15 +16,15 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterShipsAbilities(ctx,characterID)
+	rows, err := st.qRO.ListCharacterShipsAbilities(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterShipAbility, 0)
+	var oo []*app.CharacterShipAbility
 	for _, row := range rows {
 		oo = append(oo, &app.CharacterShipAbility{
-			Group:  app.EntityShort{ID:row.GroupID, Name: row.GroupName},
-			Type:   app.EntityShort{ID:row.TypeID, Name: row.TypeName},
+			Group:  app.EntityShort{ID: row.GroupID, Name: row.GroupName},
+			Type:   app.EntityShort{ID: row.TypeID, Name: row.TypeName},
 			CanFly: row.CanFly,
 		})
 	}
@@ -36,13 +36,13 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 		return fmt.Errorf("ListCharacterShipSkills: %d %d: %w", characterID, shipTypeID, err)
 	}
 	rows, err := st.qRO.ListCharacterShipSkills(ctx, queries.ListCharacterShipSkillsParams{
-		CharacterID:characterID,
-		ShipTypeID: shipTypeID,
+		CharacterID: characterID,
+		ShipTypeID:  shipTypeID,
 	})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterShipSkill, 0)
+	var oo []*app.CharacterShipSkill
 	for _, r := range rows {
 		oo = append(oo, characterShiSkillFromDBModel(r))
 	}
@@ -52,8 +52,8 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *app.CharacterShipSkill {
 	css := &app.CharacterShipSkill{
 		Rank:        uint(r.Rank),
-		ShipTypeID: r.ShipTypeID,
-		SkillTypeID:r.SkillTypeID,
+		ShipTypeID:  r.ShipTypeID,
+		SkillTypeID: r.SkillTypeID,
 		SkillName:   r.SkillName,
 		SkillLevel:  uint(r.SkillLevel),
 	}

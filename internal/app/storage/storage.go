@@ -84,7 +84,7 @@ func (st *Storage) DumpData(tables ...string) string {
 		if err != nil {
 			panic(err)
 		}
-		data := make([]any, 0)
+		var data []any
 		for rows.Next() {
 			items := make([]any, len(cols))
 			for i := range items {

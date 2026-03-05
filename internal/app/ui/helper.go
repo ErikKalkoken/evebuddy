@@ -15,11 +15,12 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
+
+type loadFuncAsync func(int64, int, func(fyne.Resource))
 
 func newLabelWithWrapping() *widget.Label {
 	l := widget.NewLabel("")

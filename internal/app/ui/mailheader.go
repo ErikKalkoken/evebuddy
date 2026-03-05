@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -21,14 +22,14 @@ type mailHeaderItem struct {
 
 	FallbackIcon fyne.Resource
 
-	eis       eveEntityEIS
+	eis       awidget.EveEntityEIS
 	from      *widget.Label
 	icon      *canvas.Image
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func newMailHeaderItem(eis eveEntityEIS) *mailHeaderItem {
+func newMailHeaderItem(eis awidget.EveEntityEIS) *mailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
@@ -54,7 +55,7 @@ func (w *mailHeaderItem) Set(characterID int64, from *app.EveEntity, subject str
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	loadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	awidget.LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
@@ -83,7 +84,7 @@ func (w *mailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 type mailHeader struct {
 	widget.BaseWidget
 
-	eis        eveEntityEIS
+	eis        awidget.EveEntityEIS
 	from       *kxwidget.TappableLabel
 	icon       *iwidget.TappableImage
 	recipients *fyne.Container
@@ -92,7 +93,7 @@ type mailHeader struct {
 	timestamp  *widget.Label
 }
 
-func newMailHeader(eis eveEntityEIS, show func(*app.EveEntity)) *mailHeader {
+func newMailHeader(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *mailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
@@ -130,7 +131,7 @@ func (w *mailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.
 		w.showInfo(from)
 	}
 	w.to.Show()
-	loadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	awidget.LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()

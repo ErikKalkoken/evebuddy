@@ -369,7 +369,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 			return items, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			items := make([]storage.SkillqueueItemParams, 0)
+			var items []storage.SkillqueueItemParams
 			for _, o := range data.([]esi.CharactersSkillqueueSkill) {
 				if o.SkillId == 0 || o.FinishedLevel == 0 {
 					continue

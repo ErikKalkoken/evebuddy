@@ -156,8 +156,6 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
 		loadInfo:     info,
-		rows:         make([]characterOverviewRow, 0),
-		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
 		u:            u,
 	}
@@ -271,7 +269,13 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterCard(a.u.eis, false, a.u.ShowInfoWindow)
+			return newCharacterCard(
+				a.u.eis.CharacterPortraitAsync,
+				a.u.eis.CorporationLogoAsync,
+				a.u.eis.AllianceLogoAsync,
+				false,
+				a.u.ShowInfoWindow,
+			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -311,7 +315,13 @@ func (a *characterOverview) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterCard(a.u.eis, true, a.u.ShowInfoWindow)
+			return newCharacterCard(
+				a.u.eis.CharacterPortraitAsync,
+				a.u.eis.CorporationLogoAsync,
+				a.u.eis.AllianceLogoAsync,
+				true,
+				a.u.ShowInfoWindow,
+			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -427,7 +437,7 @@ func (a *characterOverview) filterRowsAsync(sortCol int) {
 func (a *characterOverview) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]characterOverviewRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -486,7 +496,7 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]characterOverviewRow, 0)
+	var rows []characterOverviewRow
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrInvalid) {
@@ -546,12 +556,6 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 	return r, nil
 }
 
-type characterCardEIS interface {
-	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
-}
-
 // characterCard is a widget that shows a card for a character.
 // It has a large version designed for desktop and a small version designed for mobile.
 type characterCard struct {
@@ -562,7 +566,6 @@ type characterCard struct {
 	border                   *canvas.Rectangle
 	characterName            *widget.Label
 	corporationLogo          *iwidget.TappableImage
-	eis                      characterCardEIS
 	isSmall                  bool
 	mails                    *widget.Label
 	portrait                 *canvas.Image
@@ -576,9 +579,12 @@ type characterCard struct {
 	solarSystem              *iwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
+	loadCharacter            loadFuncAsync
+	loadCorporation          loadFuncAsync
+	loadAlliance             loadFuncAsync
 }
 
-func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int64)) *characterCard {
+func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int64)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -606,8 +612,10 @@ func newCharacterCard(eis characterCardEIS, isSmall bool, showInfoWindow func(c 
 		border:                   canvas.NewRectangle(color.Transparent),
 		characterName:            widget.NewLabel("Veronica Blomquist"),
 		corporationLogo:          iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
-		eis:                      eis,
 		isSmall:                  isSmall,
+		loadAlliance:             loadAlliance,
+		loadCharacter:            loadCharacter,
+		loadCorporation:          loadCorporation,
 		mails:                    makeLabel(numberTemplate),
 		portrait:                 portrait,
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
@@ -800,7 +808,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 		logoSize = 64
 	}
 
-	w.eis.CharacterPortraitAsync(c.characterID, portraitSize, func(r fyne.Resource) {
+	w.loadCharacter(c.characterID, portraitSize, func(r fyne.Resource) {
 		w.portrait.Resource = r
 		w.portrait.Refresh()
 	})
@@ -812,7 +820,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 		w.corporationLogo.SetToolTip(c.corporationName())
 	}
 
-	w.eis.CorporationLogoAsync(c.corporation.ID, logoSize, func(r fyne.Resource) {
+	w.loadCorporation(c.corporation.ID, logoSize, func(r fyne.Resource) {
 		w.corporationLogo.SetResource(r)
 	})
 
@@ -824,7 +832,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}
 		w.allianceLogo.Show()
-		w.eis.AllianceLogoAsync(alliance.ID, logoSize, func(r fyne.Resource) {
+		w.loadAlliance(alliance.ID, logoSize, func(r fyne.Resource) {
 			w.allianceLogo.SetResource(r)
 		})
 	} else {

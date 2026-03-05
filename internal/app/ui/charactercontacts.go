@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -51,7 +52,7 @@ type characterContacts struct {
 	character      atomic.Pointer[app.Character]
 	columnSorter   *iwidget.ColumnSorter[characterContactRow]
 	footer         *widget.Label
-	list           *iwidget.StripedList
+	list           fyne.CanvasObject
 	rows           []characterContactRow
 	rowsFiltered   []characterContactRow
 	searchBox      *widget.Entry
@@ -84,7 +85,6 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 	)
 	a := &characterContacts{
 		columnSorter: columnSorter,
-		rows:         make([]characterContactRow, 0),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
@@ -102,7 +102,12 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 			return
 		}
 		a.filterRowsAsync()
-		a.list.ScrollToTop()
+		switch x := a.list.(type) {
+		case *widget.List:
+			x.ScrollToTop()
+		case *iwidget.StripedList:
+			x.ScrollToTop()
+		}
 	}
 	a.selectBlocked = kxwidget.NewFilterChipSelect("Blocked", []string{}, func(string) {
 		a.filterRowsAsync()
@@ -178,8 +183,34 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterContacts) makeList() *iwidget.StripedList {
-	l := iwidget.NewStripedList(
+func (a *characterContacts) makeList() fyne.CanvasObject {
+	if a.u.isMobile {
+		l := iwidget.NewStripedList(
+			func() int {
+				return len(a.rowsFiltered)
+			},
+			func() fyne.CanvasObject {
+				return newCharacterContactItem(a.u.eis)
+			},
+			func(id widget.ListItemID, co fyne.CanvasObject) {
+				if id >= len(a.rowsFiltered) {
+					return
+				}
+				co.(*characterContactItem).set(a.rowsFiltered[id])
+
+			},
+		)
+		l.OnSelected = func(id widget.ListItemID) {
+			defer l.UnselectAll()
+			if id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			a.u.ShowEveEntityInfoWindow(r.contact)
+		}
+		return l
+	}
+	l := widget.NewList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -347,7 +378,7 @@ func (a *characterContacts) filterRowsAsync() {
 func (a *characterContacts) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]characterContactRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
 		})
 	}
@@ -431,7 +462,7 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      eveEntityEIS
+	eis      awidget.EveEntityEIS
 	icon     *canvas.Image
 	category *widget.Label
 	npc      *widget.Label
@@ -441,7 +472,7 @@ type characterContactItem struct {
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis eveEntityEIS) *characterContactItem {
+func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
 	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -490,7 +521,7 @@ func (w *characterContactItem) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewSpacer(),
 		),
 	)
-	return widget.NewSimpleRenderer(container.NewPadded(c))
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
 func (w *characterContactItem) set(r characterContactRow) {
@@ -498,7 +529,7 @@ func (w *characterContactItem) set(r characterContactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	loadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

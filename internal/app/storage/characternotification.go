@@ -329,12 +329,12 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 	}
 	err = st.qRW.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
 		Body:           optional.ToNullString(arg.Body),
-		CharacterID:   arg.CharacterID,
+		CharacterID:    arg.CharacterID,
 		IsRead:         arg.IsRead.ValueOrZero(),
 		IsProcessed:    arg.IsProcessed,
 		NotificationID: arg.NotificationID,
 		RecipientID:    optional.ToNullInt64(arg.RecipientID),
-		SenderID:      arg.SenderID,
+		SenderID:       arg.SenderID,
 		Text:           arg.Text.ValueOrZero(),
 		Timestamp:      arg.Timestamp,
 		Title:          optional.ToNullString(arg.Title),
@@ -409,7 +409,7 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 }
 
 func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, characterID int64, types set.Set[app.EveNotificationType]) ([]*app.CharacterNotification, error) {
-	names := make([]string, 0)
+	var names []string
 	for t := range types.All() {
 		s, ok := st.EveNotificationTypeToESIString(t)
 		if !ok {
@@ -542,7 +542,7 @@ func characterNotificationFromDBModel(arg characterNotificationFromDBModelParams
 	o2 := &app.CharacterNotification{
 		ID:             arg.cn.ID,
 		Body:           optional.FromNullString(arg.cn.Body),
-		CharacterID:   arg.cn.CharacterID,
+		CharacterID:    arg.cn.CharacterID,
 		IsProcessed:    arg.cn.IsProcessed,
 		IsRead:         optional.FromZeroValue(arg.cn.IsRead),
 		NotificationID: arg.cn.NotificationID,

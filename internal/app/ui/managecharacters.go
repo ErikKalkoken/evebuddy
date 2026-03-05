@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -26,7 +25,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -136,8 +135,7 @@ type characterAdmin struct {
 
 func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
 	a := &characterAdmin{
-		characters: make([]characterAdminRow, 0),
-		mc:         mc,
+		mc: mc,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
@@ -170,48 +168,46 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			portrait.CornerRadius = app.IconUnitSize / 2
-			name := widget.NewLabel("Template")
 			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 			delete.Importance = widget.DangerImportance
 			delete.SetToolTip("Delete character")
 			issueLabel := ttwidget.NewLabel("Missing scopes")
 			issueLabel.Importance = widget.WarningImportance
 			issueIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
-			issueBox := container.New(
+			issue := container.New(
 				layout.NewCustomPaddedHBoxLayout(-p),
 				issueIcon,
 				issueLabel,
 			)
-			issueBox.Hide()
-			row := container.NewHBox(portrait, name, issueBox, layout.NewSpacer(), delete)
+			issue.Hide()
+			row := container.NewBorder(
+				nil,
+				nil,
+				nil,
+				container.NewHBox(
+					issue,
+					layout.NewSpacer(),
+					delete,
+				),
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
+			)
 			return row
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.characters) {
 				return
 			}
-			c := a.characters[id]
-			row := co.(*fyne.Container).Objects
+			r := a.characters[id]
+			border := co.(*fyne.Container).Objects
 
-			portrait := row[0].(*canvas.Image)
-			a.mc.u.eis.CharacterPortraitAsync(c.characterID, app.IconPixelSize, func(r fyne.Resource) {
-				portrait.Resource = r
-				portrait.Refresh()
-			})
+			border[0].(*awidget.EntityListItem).Set(r.characterID, r.characterName)
 
-			name := row[1].(*widget.Label)
-			name.SetText(c.characterName)
-
-			issueBox := row[2].(*fyne.Container)
+			hbox := border[1].(*fyne.Container).Objects
+			issueBox := hbox[0].(*fyne.Container)
 			issueIcon := issueBox.Objects[0].(*ttwidget.Icon)
 			issueLabel := issueBox.Objects[1].(*ttwidget.Label)
-			if c.missingScopes.Size() != 0 {
-				x := slices.Sorted(c.missingScopes.All())
+			if r.missingScopes.Size() != 0 {
+				x := slices.Sorted(r.missingScopes.All())
 				s := "Please re-add to approve missing scopes: " + strings.Join(x, ", ")
 				issueIcon.SetToolTip(s)
 				issueLabel.SetToolTip(s)
@@ -220,9 +216,9 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 				issueBox.Hide()
 			}
 
-			delete := row[4].(*ttwidget.Button)
+			delete := hbox[2].(*ttwidget.Button)
 			delete.OnTapped = func() {
-				a.showDeleteDialog(c)
+				a.showDeleteDialog(r)
 			}
 		})
 
@@ -415,9 +411,7 @@ type characterTags struct {
 
 func newCharacterTags(mc *manageCharacters) *characterTags {
 	a := &characterTags{
-		characters: make([]*app.EntityShort, 0),
-		mc:         mc,
-		tags:       make([]*app.CharacterTag, 0),
+		mc: mc,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -608,7 +602,6 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		_, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters", err)
-			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		if len(others) == 0 {
@@ -621,36 +614,24 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 			},
 			func() fyne.CanvasObject {
 				check := widget.NewIcon(theme.CheckButtonIcon())
-				portrait := iwidget.NewImageFromResource(
-					icons.Characterplaceholder64Jpeg,
-					fyne.NewSquareSize(app.IconUnitSize),
-				)
-				portrait.CornerRadius = app.IconUnitSize / 2
 				return container.NewBorder(
 					nil,
 					nil,
-					container.NewHBox(check, portrait),
+					check,
 					nil,
-					widget.NewLabel("Template"),
+					awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(others) {
 					return
 				}
-				box := co.(*fyne.Container).Objects
-				character := others[id]
-				box[0].(*widget.Label).SetText(character.Name)
-				icons := box[1].(*fyne.Container).Objects
+				border := co.(*fyne.Container).Objects
+				r := others[id]
+				border[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
 
-				portrait := icons[1].(*canvas.Image)
-				a.mc.u.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
-					portrait.Resource = r
-					portrait.Refresh()
-				})
-
-				check := icons[0].(*widget.Icon)
-				if selected[character.ID] {
+				check := border[1].(*widget.Icon)
+				if selected[r.ID] {
 					check.SetResource(theme.CheckButtonCheckedIcon())
 				} else {
 					check.SetResource(theme.CheckButtonIcon())
@@ -759,7 +740,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						}
 						a.tagList.UnselectAll()
 						a.selectedTag = nil
-						a.characters = make([]*app.EntityShort, 0)
+						a.characters = xslices.Reset(a.characters)
 						a.addCharactersButton.Disable()
 						a.characterList.Refresh()
 						a.addCharactersButton.Disable()
@@ -789,42 +770,30 @@ func (a *characterTags) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			remove := ttwidget.NewButtonWithIcon("", theme.CancelIcon(), nil)
 			remove.SetToolTip("Remove character from tag")
-			portrait := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			portrait.CornerRadius = app.IconUnitSize / 2
-			name := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
 				nil,
-				portrait,
+				nil,
 				remove,
-				name,
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.characters) {
 				return
 			}
-			character := a.characters[id]
+			r := a.characters[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*widget.Label).SetText(character.Name)
+			box[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
 
-			portrait := box[1].(*canvas.Image)
-			a.mc.u.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
-				portrait.Resource = r
-				portrait.Refresh()
-			})
-
-			remove := box[2].(*ttwidget.Button)
+			remove := box[1].(*ttwidget.Button)
 			remove.OnTapped = func() {
 				if a.selectedTag == nil {
 					return
 				}
 				err := a.mc.u.cs.RemoveTagFromCharacter(
 					context.Background(),
-					character.ID,
+					r.ID,
 					a.selectedTag.ID,
 				)
 				if err != nil {
@@ -846,7 +815,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		a.characters = make([]*app.EntityShort, 0)
+		a.characters = xslices.Reset(a.characters)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -857,7 +826,6 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 		tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters for "+tag.Name, err)
-			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		fyne.Do(func() {
@@ -928,7 +896,7 @@ func (a *characterTags) update(ctx context.Context) {
 	tags, err := a.mc.u.cs.ListTagsByName(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to list tags", err)
-		a.tags = make([]*app.CharacterTag, 0)
+		a.tags = xslices.Reset(a.tags)
 		return
 	}
 	fyne.Do(func() {
@@ -1013,39 +981,25 @@ func (a *characterTraining) makeList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			portrait.CornerRadius = app.IconUnitSize / 2
-			character := widget.NewLabel("Character")
-			character.Truncation = fyne.TextTruncateEllipsis
 			return container.NewBorder(
 				nil,
 				nil,
-				portrait,
+				nil,
 				kxwidget.NewSwitch(nil),
-				character,
+				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.characters) {
 				return
 			}
-			c := a.characters[id]
-			row := co.(*fyne.Container).Objects
+			r := a.characters[id]
+			border := co.(*fyne.Container).Objects
 
-			character := row[0].(*widget.Label)
-			character.SetText(c.EveCharacter.Name)
+			border[0].(*awidget.EntityListItem).Set(r.EveCharacter.ID, r.EveCharacter.Name)
 
-			portrait := row[1].(*canvas.Image)
-			a.mc.u.eis.CharacterPortraitAsync(c.ID, app.IconPixelSize, func(r fyne.Resource) {
-				portrait.Resource = r
-				portrait.Refresh()
-			})
-
-			sw := row[2].(*kxwidget.Switch)
-			sw.On = c.IsTrainingWatched
+			sw := border[1].(*kxwidget.Switch)
+			sw.On = r.IsTrainingWatched
 			sw.Refresh()
 			sw.OnChanged = func(on bool) {
 				a.updateCharacterWatched(context.Background(), id, on)

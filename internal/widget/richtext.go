@@ -21,7 +21,7 @@ func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.
 // so they are all rendered in the same line.
 // Non-alignable segments are skipped.
 func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
-	segs2 := make([]widget.RichTextSegment, 0)
+	var segs2 []widget.RichTextSegment
 	segs := slices.Concat(segments...)
 	for _, s := range segs[:len(segs)-1] {
 		if s.Inline() {
@@ -43,7 +43,7 @@ func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichT
 // AlignRichTextSegments returns a copy where all segments are aligned as given.
 // Non-alignable segments are skipped.
 func AlignRichTextSegments(align fyne.TextAlign, segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
-	segs2 := make([]widget.RichTextSegment, 0)
+	var segs2 []widget.RichTextSegment
 	segs := slices.Concat(segments...)
 	for _, x := range segs {
 		t, ok := x.(*widget.TextSegment)
@@ -57,7 +57,7 @@ func AlignRichTextSegments(align fyne.TextAlign, segments ...[]widget.RichTextSe
 }
 
 func ModifyRichTextStyle(segments []widget.RichTextSegment, modify func(x *widget.RichTextStyle)) []widget.RichTextSegment {
-	segs2 := make([]widget.RichTextSegment, 0)
+	var segs2 []widget.RichTextSegment
 	for _, x := range segments {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {

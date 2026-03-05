@@ -358,7 +358,6 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         newLabelWithTruncation(),
-		rowsFiltered:   make([]assetRow, 0),
 		search:         widget.NewEntry(),
 		top:            newLabelWithWrapping(),
 		u:              u,
@@ -671,7 +670,7 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 func (a *assetSearch) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]assetRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -721,24 +720,20 @@ func (a *assetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 }
 
 func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
-	cc, err := a.u.cs.ListCharactersShort(ctx)
+	characters, err := a.u.cs.CharacterNames(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(cc) == 0 {
+	if len(characters) == 0 {
 		return nil, nil
 	}
-	characterNames := make(map[int64]string)
-	for _, o := range cc {
-		characterNames[o.ID] = o.Name
-	}
 	tagsPerCharacter := make(map[int64]set.Set[string])
-	for _, c := range cc {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	for id := range characters {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, id)
 		if err != nil {
 			return nil, nil
 		}
-		tagsPerCharacter[c.ID] = tags
+		tagsPerCharacter[id] = tags
 	}
 	assets, err := a.u.cs.ListAllAssets(ctx)
 	if err != nil {
@@ -752,7 +747,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	var rows []assetRow
 	for _, ca := range assets {
 		r := newCharacterAssetRow(ca, ac, func(id int64) string {
-			return characterNames[id]
+			return characters[id]
 		})
 		r.searchTarget = strings.ToLower(r.name)
 		r.tags = tagsPerCharacter[ca.CharacterID]

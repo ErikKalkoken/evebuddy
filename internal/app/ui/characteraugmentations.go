@@ -31,9 +31,8 @@ type characterAugmentations struct {
 
 func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	a := &characterAugmentations{
-		implants: make([]*app.CharacterImplant, 0),
-		top:      newLabelWithWrapping(),
-		u:        u,
+		top: newLabelWithWrapping(),
+		u:   u,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
@@ -58,52 +57,21 @@ func (a *characterAugmentations) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterAugmentations) makeImplantList() *widget.List {
-	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize*1.2))
-			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			iconInfo.SetToolTip("Show information")
-			name := ttwidget.NewLabel("placeholder")
-			name.Truncation = fyne.TextTruncateEllipsis
-			slot := widget.NewLabel("placeholder")
-			slot.Truncation = fyne.TextTruncateEllipsis
-			return container.NewBorder(
-				nil,
-				nil,
-				iconMain,
-				iconInfo,
-				container.New(
-					layout.NewCustomPaddedVBoxLayout(0),
-					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), name),
-					container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), slot),
-				),
+			return newCharacterAugmentationItem(
+				a.u.eis.InventoryTypeIconAsync,
+				a.u.ShowTypeInfoWindowWithCharacter,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.implants) {
 				return
 			}
-			o := a.implants[id]
-			border := co.(*fyne.Container).Objects
-			vbox := border[0].(*fyne.Container).Objects
-			name := vbox[0].(*fyne.Container).Objects[0].(*ttwidget.Label)
-			name.SetText(o.EveType.Name)
-			name.SetToolTip(o.EveType.Description)
-			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
-			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
-			iconMain := border[1].(*canvas.Image)
-			a.u.eis.InventoryTypeIconAsync(o.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
-				iconMain.Resource = r
-				iconMain.Refresh()
-			})
-			info := border[2].(*iwidget.TappableIcon)
-			info.OnTapped = func() {
-				a.u.ShowTypeInfoWindowWithCharacter(a.implants[id].EveType.ID, characterIDOrZero(a.character.Load()))
-			}
+			co.(*characterAugmentationItem).set(a.implants[id])
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
@@ -115,7 +83,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 
 func (a *characterAugmentations) update(ctx context.Context) {
 	var err error
-	implants := make([]*app.CharacterImplant, 0)
+	var implants []*app.CharacterImplant
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterImplants)
 	if hasData {
@@ -139,4 +107,75 @@ func (a *characterAugmentations) update(ctx context.Context) {
 		a.implants = implants
 		a.list.Refresh()
 	})
+}
+
+type characterAugmentationItem struct {
+	widget.BaseWidget
+
+	iconInfo     *iwidget.TappableIcon
+	iconMain     *canvas.Image
+	loadTypeIcon loadFuncAsync
+	name         *ttwidget.Label
+	showType     func(int64, int64)
+	slot         *widget.Label
+}
+
+func newCharacterAugmentationItem(
+	loadTypeIcon loadFuncAsync,
+	showType func(int64, int64),
+) *characterAugmentationItem {
+	iconMain := iwidget.NewImageFromResource(
+		icons.BlankSvg,
+		fyne.NewSquareSize(app.IconUnitSize*1.2),
+	)
+	iconInfo := iwidget.NewTappableIcon(
+		theme.NewThemedResource(icons.InformationSlabCircleSvg),
+		nil,
+	)
+	iconInfo.SetToolTip("Show information")
+	name := ttwidget.NewLabel("placeholder")
+	name.Truncation = fyne.TextTruncateEllipsis
+	slot := widget.NewLabel("placeholder")
+	slot.Truncation = fyne.TextTruncateEllipsis
+	w := &characterAugmentationItem{
+		iconInfo:     iconInfo,
+		iconMain:     iconMain,
+		loadTypeIcon: loadTypeIcon,
+		name:         name,
+		showType:     showType,
+		slot:         slot,
+	}
+	w.ExtendBaseWidget(w)
+
+	return w
+}
+
+func (w *characterAugmentationItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.NewBorder(
+		nil,
+		nil,
+		w.iconMain,
+		w.iconInfo,
+		container.New(
+			layout.NewCustomPaddedVBoxLayout(0),
+			container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), w.name),
+			container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), w.slot),
+		),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *characterAugmentationItem) set(o *app.CharacterImplant) {
+	w.name.SetText(o.EveType.Name)
+	w.name.SetToolTip(o.EveType.Description)
+	w.slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
+	w.loadTypeIcon(o.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
+		w.iconMain.Resource = r
+		w.iconMain.Refresh()
+	})
+	w.iconInfo.OnTapped = func() {
+		w.showType(o.EveType.ID, o.CharacterID)
+	}
+
 }

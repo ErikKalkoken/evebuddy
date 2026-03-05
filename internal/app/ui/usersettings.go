@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -96,7 +97,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
-	logLevel := NewSettingItemOptions(SettingItemOptions{
+	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
 		options:      a.u.settings.LogLevelNames(),
@@ -111,7 +112,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		window:   a.w,
 	})
 
-	developerMode := NewSettingItemSwitch(SettingItemSwitch{
+	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Developer Mode",
 		hint:      "App shows additional technical information like Character IDs",
 		getter:    a.u.settings.DeveloperMode,
@@ -124,7 +125,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		developerMode,
 	}
 
-	sysTray := NewSettingItemSwitch(SettingItemSwitch{
+	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.SysTrayEnabledDefault(),
 		label:        "Run in background",
 		hint:         "App will continue to run in background after window is closed (requires restart)",
@@ -135,13 +136,13 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		items = append(items, sysTray)
 	}
 
-	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
+	preferMarketTab := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Prefer market tab",
 		hint:      "Show market tab first for tradeable items",
 		getter:    a.u.settings.PreferMarketTab,
 		onChanged: a.u.settings.SetPreferMarketTab,
 	})
-	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitch{
+	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.HideLimitedCorporationsDefault(),
 		label:        "Hide limited corporations",
 		hint:         "Hide corporations with no privileged access, e.g. corporation wallet",
@@ -158,7 +159,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		hideLimitedCorporations,
 	})
 
-	colorTheme := NewSettingItemOptions(SettingItemOptions{
+	colorTheme := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
 		options:      []string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
@@ -195,7 +196,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		window:   a.w,
 	})
 
-	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitch{
+	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Disable DPI detection",
 		hint:      "Disables the automatic DPI detection. Requires restart.",
 		getter:    a.u.settings.DisableDPIDetection,
@@ -452,7 +453,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		g := n.Group()
 		groupsAndTypes[g] = append(groupsAndTypes[g], n)
 	}
-	groups := make([]app.EveNotificationGroup, 0)
+	var groups []app.EveNotificationGroup
 	for c := range groupsAndTypes {
 		groups = append(groups, c)
 	}
@@ -463,14 +464,14 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	typesEnabled := a.u.settings.NotificationTypesEnabled()
 
 	// add global items
-	notifyCommunications := NewSettingItemSwitch(SettingItemSwitch{
+	notifyCommunications := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyCommunicationsEnabledDefault(),
 		label:        "Notify communications",
 		hint:         "Whether to notify new communications",
 		getter:       a.u.settings.NotifyCommunicationsEnabled,
 		onChanged:    a.u.settings.SetNotifyCommunicationsEnabled,
 	})
-	notifyMails := NewSettingItemSwitch(SettingItemSwitch{
+	notifyMails := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyMailsEnabledDefault(),
 		label:        "Notify mails",
 		hint:         "Whether to notify new mails",
@@ -482,7 +483,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			}
 		},
 	})
-	notifyPI := NewSettingItemSwitch(SettingItemSwitch{
+	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyPIEnabled(),
 		label:        "Planetary Industry",
 		hint:         "Whether to notify about expired extractions",
@@ -495,7 +496,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	})
 
-	notifyTraining := NewSettingItemSwitch(SettingItemSwitch{
+	notifyTraining := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyTrainingEnabled(),
 		label:        "Notify Training",
 		hint:         "Whether to notify when skillqueue is empty for watched characters",
@@ -505,7 +506,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	})
 
-	notifyContracts := NewSettingItemSwitch(SettingItemSwitch{
+	notifyContracts := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.settings.NotifyContractsEnabledDefault(),
 		label:        "Notify Contracts",
 		hint:         "Whether to notify when contract status changes",
@@ -545,7 +546,6 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		notifyContracts,
 		notifTimeout,
 	}
-	items = append(items, NewSettingItemSeparator())
 	items = append(items, NewSettingItemHeading("Communication Groups"))
 
 	// add communication groups
@@ -557,11 +557,11 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	groupPages := make(map[app.EveNotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
-			items2 := make([]SettingItem, 0)
+			var items2 []SettingItem
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
-				it := NewSettingItemSwitch(SettingItemSwitch{
+				it := NewSettingItemSwitch(SettingItemSwitchParams{
 					label: ntDisplay,
 					hint:  "",
 					getter: func() bool {
@@ -603,7 +603,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			}
 		}()
 
-		it := NewSettingItemCustom(SettingItemCustom{
+		it := NewSettingItemCustom(SettingItemCustomParams{
 			label: g.String(),
 			hint:  groupHint,
 			getter: func() any {
@@ -701,7 +701,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 // }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
-	items := make([]*fyne.MenuItem, 0)
+	var items []*fyne.MenuItem
 	for _, a := range actions {
 		items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 	}
@@ -723,7 +723,6 @@ const (
 	settingUndefined settingVariant = iota
 	settingCustom
 	settingHeading
-	settingSeparator
 	settingSwitch
 )
 
@@ -755,12 +754,7 @@ func NewSettingItemHeading(label string) SettingItem {
 	return SettingItem{Label: label, variant: settingHeading}
 }
 
-// NewSettingItemSeparator creates a separator in a setting list.
-func NewSettingItemSeparator() SettingItem {
-	return SettingItem{variant: settingSeparator}
-}
-
-type SettingItemSwitch struct {
+type SettingItemSwitchParams struct {
 	defaultValue bool
 	getter       func() bool
 	hint         string
@@ -769,7 +763,7 @@ type SettingItemSwitch struct {
 }
 
 // NewSettingItemSwitch creates a switch setting in a setting list.
-func NewSettingItemSwitch(arg SettingItemSwitch) SettingItem {
+func NewSettingItemSwitch(arg SettingItemSwitchParams) SettingItem {
 	return SettingItem{
 		Default: arg.defaultValue,
 		Label:   arg.label,
@@ -788,7 +782,7 @@ func NewSettingItemSwitch(arg SettingItemSwitch) SettingItem {
 	}
 }
 
-type SettingItemCustom struct {
+type SettingItemCustomParams struct {
 	label      string
 	hint       string
 	getter     func() any
@@ -796,7 +790,7 @@ type SettingItemCustom struct {
 }
 
 // NewSettingItemCustom creates a custom setting in a setting list.
-func NewSettingItemCustom(arg SettingItemCustom) SettingItem {
+func NewSettingItemCustom(arg SettingItemCustomParams) SettingItem {
 	return SettingItem{
 		Label:      arg.label,
 		Hint:       arg.hint,
@@ -861,7 +855,7 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 	}
 }
 
-type SettingItemOptions struct {
+type SettingItemOptionsParams struct {
 	defaultValue string
 	getter       func() string
 	hint         string
@@ -872,7 +866,7 @@ type SettingItemOptions struct {
 	window       fyne.Window
 }
 
-func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
+func NewSettingItemOptions(arg SettingItemOptionsParams) SettingItem {
 	return SettingItem{
 		Default: arg.defaultValue,
 		Label:   arg.label,
@@ -952,110 +946,150 @@ func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 // SettingList is a custom list widget for settings.
 type SettingList struct {
 	widget.List
-
-	SelectDelay time.Duration
 }
 
 // NewSettingList returns a new SettingList widget.
 func NewSettingList(items []SettingItem) *SettingList {
-	w := &SettingList{SelectDelay: 200 * time.Millisecond}
+	w := &SettingList{}
+	w.ExtendBaseWidget(w)
 	w.Length = func() int {
 		return len(items)
 	}
 	w.CreateItem = func() fyne.CanvasObject {
-		// p := theme.Padding()
-		label := widget.NewLabel("Template")
-		label.Truncation = fyne.TextTruncateClip
-		hint := widget.NewLabel("")
-		hint.Truncation = fyne.TextTruncateClip
-		hint.SizeName = theme.SizeNameCaptionText
-		c := container.NewPadded(container.NewBorder(
-			nil,
-			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
-			nil,
-			container.NewVBox(layout.NewSpacer(), container.NewStack(kxwidget.NewSwitch(nil), widget.NewLabel("")), layout.NewSpacer()),
-			container.New(layout.NewCustomPaddedVBoxLayout(0), layout.NewSpacer(), label, hint, layout.NewSpacer()),
-		))
-		return c
+		return newSettingListItem()
 	}
 	w.UpdateItem = func(id widget.ListItemID, co fyne.CanvasObject) {
 		if id >= len(items) {
 			return
 		}
-		it := items[id]
-		border := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
-		right := border[2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-		sw := right[0].(*kxwidget.Switch)
-		value := right[1].(*widget.Label)
-		main := border[0].(*fyne.Container).Objects
-		hint := main[2].(*widget.Label)
-		if it.Hint != "" {
-			hint.SetText(it.Hint)
-			hint.Show()
-		} else {
-			hint.Hide()
-		}
-		label := main[1].(*widget.Label)
-		label.Text = it.Label
-		label.TextStyle.Bold = false
-		switch it.variant {
-		case settingHeading:
-			label.TextStyle.Bold = true
-			value.Hide()
-			sw.Hide()
-		case settingSwitch:
-			value.Hide()
-			sw.OnChanged = func(v bool) {
-				it.Setter(v)
-			}
-			sw.On = it.Getter().(bool)
-			sw.Show()
-			sw.Refresh()
-		case settingCustom:
-			formatter := it.Formatter
-			if formatter == nil {
-				formatter = func(v any) string {
-					return fmt.Sprint(v)
-				}
-			}
-			value.SetText(formatter(it.Getter()))
-			value.Show()
-			sw.Hide()
-		}
-		sep := border[1].(*fyne.Container)
-		if it.variant == settingSeparator {
-			sep.Show()
-			value.Hide()
-			sw.Hide()
-			label.Hide()
-		} else {
-			sep.Hide()
-			label.Show()
-			label.Refresh()
-		}
-		w.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+		li := co.(*settingListItem)
+		li.set(items[id])
+		w.SetItemHeight(id, li.MinSize().Height)
 	}
 	w.OnSelected = func(id widget.ListItemID) {
+		defer w.UnselectAll()
 		if id >= len(items) {
-			w.UnselectAll()
 			return
 		}
 		it := items[id]
 		if it.onSelected == nil {
-			w.UnselectAll()
 			return
 		}
 		it.onSelected(it, func() {
 			w.RefreshItem(id)
 		})
-		go func() {
-			time.Sleep(w.SelectDelay)
-			fyne.Do(func() {
-				w.UnselectAll()
-			})
-		}()
 	}
 	w.HideSeparators = true
+	return w
+}
+
+type settingListItem struct {
+	widget.BaseWidget
+
+	background *canvas.Rectangle
+	hint       *widget.Label
+	label      *widget.Label
+	header     *widget.Label
+	switch_    *kxwidget.Switch
+	value      *widget.Label
+	thief      *iwidget.HooverThief
+}
+
+func newSettingListItem() *settingListItem {
+	label := widget.NewLabel("Template")
+	label.Truncation = fyne.TextTruncateClip
+	header := widget.NewLabel("Template")
+	header.Truncation = fyne.TextTruncateClip
+	header.TextStyle.Bold = true
+	hint := widget.NewLabel("")
+	hint.Truncation = fyne.TextTruncateClip
+	hint.SizeName = theme.SizeNameCaptionText
+	background := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
+	background.CornerRadius = 10
+	w := &settingListItem{
+		background: background,
+		header:     header,
+		hint:       hint,
+		label:      label,
+		switch_:    kxwidget.NewSwitch(nil),
+		thief:      iwidget.NewHooverThief(),
+		value:      widget.NewLabel(""),
+	}
 	w.ExtendBaseWidget(w)
 	return w
+}
+
+func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.NewBorder(
+		nil,
+		container.NewVBox(
+			newStandardSpacer(),
+			container.New(layout.NewCustomPaddedLayout(0, 0, 0, -2*p), w.header),
+		),
+		nil,
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.NewStack(w.switch_, w.value),
+			layout.NewSpacer(),
+		),
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			layout.NewSpacer(),
+			w.label,
+			w.hint,
+			layout.NewSpacer(),
+		),
+	)
+	c2 := container.NewStack(
+		container.New(layout.NewCustomPaddedLayout(1, 1, p, p), container.NewStack(w.background, c)),
+		w.thief,
+	)
+	return widget.NewSimpleRenderer(c2)
+}
+
+func (w *settingListItem) set(r SettingItem) {
+	if r.Hint != "" {
+		w.hint.SetText(r.Hint)
+		w.hint.Show()
+	} else {
+		w.hint.Hide()
+	}
+	switch r.variant {
+	case settingHeading:
+		w.header.SetText(r.Label)
+		w.header.Show()
+		w.label.Hide()
+		w.value.Hide()
+		w.switch_.Hide()
+		w.background.Hide()
+		w.thief.Show()
+	case settingSwitch:
+		w.label.SetText(r.Label)
+		w.header.Hide()
+		w.label.Show()
+		w.value.Hide()
+		w.switch_.OnChanged = func(v bool) {
+			r.Setter(v)
+		}
+		w.switch_.On = r.Getter().(bool)
+		w.switch_.Show()
+		w.switch_.Refresh()
+		w.background.Show()
+		w.thief.Hide()
+	case settingCustom:
+		w.label.SetText(r.Label)
+		w.header.Hide()
+		w.label.Show()
+		formatter := r.Formatter
+		if formatter == nil {
+			formatter = func(v any) string {
+				return fmt.Sprint(v)
+			}
+		}
+		w.value.SetText(formatter(r.Getter()))
+		w.value.Show()
+		w.switch_.Hide()
+		w.background.Show()
+		w.thief.Hide()
+	}
 }

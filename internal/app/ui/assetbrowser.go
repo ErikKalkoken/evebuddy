@@ -26,6 +26,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type assetFilter uint
@@ -223,7 +224,6 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
 		ab:            ab,
 		filteredTrees: make(map[assetFilter]filteredTree),
-		filters:       make([]assetFilter, 0),
 		search:        widget.NewEntry(),
 		footer:        newLabelWithWrapping(),
 	}
@@ -578,11 +578,9 @@ type assetBrowserContainer struct {
 
 func newAssetBrowserContainer(ab *assetBrowser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
-		ab:            ab,
-		footer:        newLabelWithTruncation(),
-		items:         make([]containerItem, 0),
-		itemsFiltered: make([]containerItem, 0),
-		search:        widget.NewEntry(),
+		ab:     ab,
+		footer: newLabelWithTruncation(),
+		search: widget.NewEntry(),
 	}
 	a.ExtendBaseWidget(a)
 	a.grid = a.makeAssetGrid()
@@ -666,7 +664,7 @@ func (a *assetBrowserContainer) set(cn *assetContainerNode) {
 		nodes = cn.node.Children()
 	}
 	go func() {
-		items := make([]containerItem, 0)
+		var items []containerItem
 		for _, n := range nodes {
 			var s string
 			if an, ok := n.Asset(); ok {
@@ -694,8 +692,8 @@ func (a *assetBrowserContainer) clear() {
 	a.location.clear()
 	a.search.Hide()
 	a.footer.SetText("")
-	a.items = make([]containerItem, 0)
-	a.itemsFiltered = make([]containerItem, 0)
+	a.items = xslices.Reset(a.items)
+	a.itemsFiltered = xslices.Reset(a.itemsFiltered)
 	a.grid.Refresh()
 }
 

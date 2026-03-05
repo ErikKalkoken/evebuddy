@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -108,11 +109,11 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
 			co.(*iwidget.RichText).SetWithText(r.structureName)
 		},
-	}, makeEveEntityColumn(makeEveEntityColumnParams[corporationStructureRow]{
-		columnID: structuresColType,
-		eis:      u.eis,
-		label:    "Type",
-		getEntity: func(r corporationStructureRow) *app.EveEntity {
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[corporationStructureRow]{
+		ColumnID: structuresColType,
+		EIS:      u.eis,
+		Label:    "Type",
+		GetEntity: func(r corporationStructureRow) *app.EveEntity {
 			return &app.EveEntity{
 				Category: app.EveEntityInventoryType,
 				ID:       r.typeID,
@@ -148,8 +149,6 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	}})
 	a := &corporationStructures{
 		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
-		rows:         make([]corporationStructureRow, 0),
-		rowsFiltered: make([]corporationStructureRow, 0),
 		footer:       newLabelWithWrapping(),
 		u:            u,
 	}
@@ -337,7 +336,7 @@ func (a *corporationStructures) filterRowsAsync(sortCol int) {
 func (a *corporationStructures) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]corporationStructureRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -380,7 +379,7 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]corporationStructureRow, 0)
+	var rows []corporationStructureRow
 	for _, s := range structures {
 		stateText := s.State.DisplayShort()
 		if v, ok := s.StateTimerEnd.Value(); ok {

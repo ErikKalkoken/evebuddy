@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type folderNodeCategory int
@@ -113,7 +114,6 @@ func newCharacterMails(u *baseUI) *characterMails {
 		folderDownloaded: ttwidget.NewLabel(""),
 		folderStatus:     widget.NewLabel(""),
 		folderTotal:      widget.NewLabel("?"),
-		headers:          make([]*app.CharacterMailHeader, 0),
 		headerStatus:     widget.NewLabel(""),
 		headerTop:        widget.NewLabel(""),
 		u:                u,
@@ -240,7 +240,7 @@ func (a *characterMails) update(ctx context.Context) {
 		fyne.Do(func() {
 			a.folders.Clear()
 			a.currentFolder.Store(nil)
-			a.headers = make([]*app.CharacterMailHeader, 0)
+			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
 			a.headerTop.SetText("")
 			a.clearMail()
@@ -526,7 +526,7 @@ func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int
 
 func (a *characterMails) makeFolderMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
-	items1 := make([]*fyne.MenuItem, 0)
+	var items1 []*fyne.MenuItem
 	a.folders.Data().Walk(nil, func(f *mailFolderNode) bool {
 		s := f.Name
 		if f.UnreadCount > 0 {
@@ -596,7 +596,7 @@ func (a *characterMails) setCurrentFolder(ctx context.Context, folder *mailFolde
 func (a *characterMails) headerUpdate(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.headers = make([]*app.CharacterMailHeader, 0)
+			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
 			a.headerTop.SetText("")
 			a.clearMail()

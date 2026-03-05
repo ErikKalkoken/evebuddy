@@ -5,7 +5,7 @@ package xslices
 // The order of the elements is not changed, but the new slice can be shorter.
 func Deduplicate[S ~[]E, E comparable](s S) []E {
 	seen := make(map[E]bool)
-	s2 := make([]E, 0)
+	var s2 []E
 	for _, v := range s {
 		if seen[v] {
 			continue
@@ -18,7 +18,7 @@ func Deduplicate[S ~[]E, E comparable](s S) []E {
 
 // Filter returns a new slice containing the elements where applied function f returned true.
 func Filter[S ~[]E, E any](s S, f func(E) bool) []E {
-	s2 := make([]E, 0)
+	var s2 []E
 	for _, v := range s {
 		if f(v) {
 			s2 = append(s2, v)
@@ -61,4 +61,12 @@ func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
 		x = f(x, v)
 	}
 	return x
+}
+
+// Reset returns a slice that have been reset to length 0
+// and has all it's elements cleared.
+func Reset[S ~[]E, E any](s S) []E {
+	clear(s)
+	s = s[:0]
+	return s
 }

@@ -251,7 +251,6 @@ func (a *loyaltyPoints) filterTreeAsync() {
 			}
 
 			c.totalPoints = 0
-			data2[c] = make([]*loyaltyPointsNode, 0)
 			for _, character := range characters {
 				data2[c] = append(data2[c], character)
 				c.totalPoints += character.points
@@ -352,7 +351,6 @@ func (a *loyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][
 	for _, o := range entries {
 		k := o.Corporation.ID
 		if corporationEntries[k] == nil {
-			corporationEntries[k] = make([]*app.CharacterLoyaltyPointEntry, 0)
 			c := &loyaltyPointsNode{
 				corporationID:   o.Corporation.ID,
 				corporationName: o.Corporation.Name,
@@ -368,7 +366,6 @@ func (a *loyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][
 	}
 
 	for _, c := range corporations {
-		data[c] = make([]*loyaltyPointsNode, 0)
 		for _, o := range corporationEntries[c.corporationID] {
 			character := &loyaltyPointsNode{
 				characterID:   o.CharacterID,

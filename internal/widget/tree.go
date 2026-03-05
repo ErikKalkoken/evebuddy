@@ -231,7 +231,7 @@ func (td TreeData[T]) Children(parent *T) []*T {
 	if !ok {
 		return nil
 	}
-	nodes := make([]*T, 0)
+	var nodes []*T
 	for _, id := range td.children[uid] {
 		nodes = append(nodes, td.nodes[id])
 	}
@@ -397,8 +397,7 @@ func (td TreeData[T]) Path(parent, n *T) []*T {
 	if !ok {
 		return nil
 	}
-	path := make([]*T, 0)
-	path = append(path, n)
+	path := []*T{n}
 	for {
 		aUID = td.parents[aUID]
 		if aUID != treeRootID {
@@ -418,10 +417,10 @@ func (td TreeData[T]) Path(parent, n *T) []*T {
 //
 // Will return all paths from root when parent is nil.
 func (td TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string {
-	all := make([][]string, 0)
+	var all [][]string
 	td.Walk(parent, func(n *T) bool {
 		if td.ChildrenCount(n) == 0 {
-			p := make([]string, 0)
+			var p []string
 			for _, x := range td.Path(parent, n) {
 				p = append(p, stringify(x))
 			}

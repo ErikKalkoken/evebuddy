@@ -260,8 +260,6 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		footer:         newLabelWithWrapping(),
 		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
-		rows:           make([]industryJobRow, 0),
-		rowsFiltered:   make([]industryJobRow, 0),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -666,22 +664,20 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 	if err != nil {
 		return nil, err
 	}
-	cc, err := a.u.cs.ListCharactersShort(ctx)
+	myCharacters, err := a.u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
 	tagsPerCharacter := make(map[int64]set.Set[string])
-	for _, c := range cc {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	for id := range myCharacters.All() {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		tagsPerCharacter[c.ID] = tags
+		tagsPerCharacter[id] = tags
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
-		return c.ID
-	})...)
-	characterJobs := make([]industryJobRow, 0)
+
+	var characterJobs []industryJobRow
 	for _, j := range cj {
 		characterJobs = append(characterJobs, industryJobRow{
 			activity:           j.Activity,
@@ -711,7 +707,7 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 		})
 	}
 
-	corporationJobs := make([]industryJobRow, 0)
+	var corporationJobs []industryJobRow
 	for _, j := range rj {
 		if !myCharacters.Contains(j.Installer.ID) {
 			continue
@@ -727,7 +723,7 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			duration:           j.Duration,
 			endDate:            j.EndDate,
 			installer:          j.Installer,
-			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
+			isInstallerMe:      true,
 			isOwnerMe:          false,
 			jobID:              j.JobID,
 			licensedRuns:       j.LicensedRuns,
@@ -768,14 +764,11 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 	if err != nil {
 		return nil, err
 	}
-	cc, err := a.u.cs.ListCharactersShort(ctx)
+	myCharacters, err := a.u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
-		return c.ID
-	})...)
-	jobs := make([]industryJobRow, 0)
+	var jobs []industryJobRow
 	for _, j := range rj {
 		jobs = append(jobs, industryJobRow{
 			activity:           j.Activity,

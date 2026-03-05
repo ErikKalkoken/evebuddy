@@ -420,8 +420,8 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 			if err != nil {
 				return false, err
 			}
-			newMail := make([]storage.CreateCharacterMailParams, 0)
-			existingMail := make([]storage.CreateCharacterMailParams, 0)
+			var newMail []storage.CreateCharacterMailParams
+			var existingMail []storage.CreateCharacterMailParams
 			for _, m := range mail {
 				if existingIDs.Contains(m.MailID) {
 					existingMail = append(existingMail, m)
@@ -455,7 +455,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 // It will at most return (maxMail + page size) headers.
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int64, maxMails int) ([]storage.CreateCharacterMailParams, error) {
 	const maxMailHeadersPerPage = 50 // maximum header objects returned per page
-	headers := make([]esi.CharactersCharacterIdMailGetInner, 0)
+	var headers []esi.CharactersCharacterIdMailGetInner
 	var lastMailID int64
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMail")
 	for {
@@ -481,7 +481,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 			return *x.MailId
 		}))
 	}
-	mail := make([]storage.CreateCharacterMailParams, 0)
+	var mail []storage.CreateCharacterMailParams
 	for _, h := range headers {
 		if h.MailId == nil || h.From == nil || h.Timestamp == nil {
 			continue // ignore mails which are missing important fields

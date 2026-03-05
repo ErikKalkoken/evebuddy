@@ -2745,7 +2745,7 @@ func (f *Factory) calcNewIDWithParam(table, idField, whereField string, whereVal
 
 func (f *Factory) calcNewIDWithParams(table, idField string, clauses map[string]any) int64 {
 	var max sql.NullInt64
-	parts := make([]string, 0)
+	var parts []string
 	for f, v := range clauses {
 		parts = append(parts, fmt.Sprintf("%s = %v", f, v))
 	}
