@@ -64,21 +64,21 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 
 	// Signals
 	if a.showCurrentCharacter {
-		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		}, a.signalKey)
 	}
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		switch arg.section {
+		switch arg.Section {
 		case app.SectionCharacterSkillqueue:
 			a.update(ctx)
 		}
 	}, a.signalKey)
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
+	a.u.signals.CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		if characterIDOrZero(a.character.Load()) != characterID {
 			return
 		}
@@ -90,7 +90,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 		a.character.Store(c)
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})
@@ -161,10 +161,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 // stop frees resources and removes event listeners.
 func (a *characterSkillQueue) stop() {
 	if a.showCurrentCharacter {
-		a.u.currentCharacterExchanged.RemoveListener(a.signalKey)
+		a.u.signals.CurrentCharacterExchanged.RemoveListener(a.signalKey)
 	}
-	a.u.characterSectionChanged.RemoveListener(a.signalKey)
-	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
+	a.u.signals.CharacterSectionChanged.RemoveListener(a.signalKey)
+	a.u.signals.RefreshTickerExpired.RemoveListener(a.signalKey)
 }
 
 func (a *characterSkillQueue) update(ctx context.Context) {

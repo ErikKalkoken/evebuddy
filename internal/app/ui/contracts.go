@@ -228,32 +228,32 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 
 	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
-			if arg.section != app.SectionCorporationContracts {
+			if arg.Section != app.SectionCorporationContracts {
 				return
 			}
 			a.update(ctx)
 		})
 	} else {
-		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-			if arg.section == app.SectionCharacterContracts {
+		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if arg.Section == app.SectionCharacterContracts {
 				a.update(ctx)
 			}
 		})
-		a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
 	}

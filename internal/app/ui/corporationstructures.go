@@ -219,20 +219,20 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		a.filterRowsAsync(-1)
 	})
 
-	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
-		if arg.section != app.SectionCorporationStructures {
+		if arg.Section != app.SectionCorporationStructures {
 			return
 		}
 		a.update(ctx)
 	})
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})

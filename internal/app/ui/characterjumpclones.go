@@ -72,19 +72,19 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	a.tree = a.makeTree()
 
 	// Signals
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		if arg.section == app.SectionCharacterJumpClones {
+		if arg.Section == app.SectionCharacterJumpClones {
 			a.update(ctx)
 		}
 	})
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			n := a.tree.Data().ChildrenCount(nil)
 			a.refreshTop(n)

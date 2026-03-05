@@ -146,15 +146,15 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		switch arg.section {
+		switch arg.Section {
 		case
 			app.SectionCharacterMailLabels,
 			app.SectionCharacterMailLists,
@@ -162,7 +162,7 @@ func newCharacterMails(u *baseUI) *characterMails {
 			a.update(ctx)
 		}
 	})
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		a.updateDownloaded(ctx)
 	})
 	return a

@@ -413,7 +413,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			ShowManageCharactersWindow(u.baseUI)
+			ShowManageCharactersWindow(ManageCharactersParams{
+				CharacterService:   u.cs,
+				CorporationService: u.rs,
+				EveImageService:    u.eis,
+				IsMobile:           u.isMobile,
+				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
+				Signals:            u.signals,
+				UIService:          u.baseUI,
+			})
 		},
 	)
 
@@ -429,7 +437,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				settingswindow.Show(u.baseUI, u.settings, u.isMobile)
+				settingswindow.Show(u.baseUI, u.settings, u.isMobile, u.signals)
 			},
 		),
 		navItemManageCharacters,
@@ -506,7 +514,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	navBar.Select(4)
 
 	togglePermittedSections := func() {
-		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
+		sections, err := u.rs.PermittedSections(context.Background(), u.CurrentCorporationID())
 		if err != nil {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()
@@ -567,7 +575,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.makeFolderMenu()
 			mailMenu.Refresh()
@@ -684,21 +692,21 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.onAppFirstStarted = func() {
 		// signals
-		u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+		u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+		u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+		u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, _ app.GeneralSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
 

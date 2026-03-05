@@ -46,15 +46,15 @@ func newCharacterAttributes(u *baseUI) *characterAttributes {
 	}
 	a.list = a.makeAttributeList()
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		if arg.section == app.SectionCharacterAttributes {
+		if arg.Section == app.SectionCharacterAttributes {
 			a.update(ctx)
 		}
 	})

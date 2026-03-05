@@ -425,42 +425,42 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 
 	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
-			if arg.section != app.SectionCorporationAssets {
+			if arg.Section != app.SectionCorporationAssets {
 				return
 			}
 			a.update(ctx)
 		})
 	} else {
-		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-			if arg.section == app.SectionCharacterAssets {
+		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if arg.Section == app.SectionCharacterAssets {
 				a.update(ctx)
 			}
 		})
-		a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if arg.section == app.SectionCorporationAssets {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if arg.Section == app.SectionCorporationAssets {
 				a.update(ctx)
 			}
 		})
 	}
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
-		if arg.section == app.SectionEveMarketPrices {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}
 	})

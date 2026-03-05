@@ -71,7 +71,14 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			ShowManageCharactersWindow(u.baseUI)
+			ShowManageCharactersWindow(ManageCharactersParams{
+				CharacterService:   u.cs,
+				CorporationService: u.rs,
+				EveImageService:    u.eis,
+				IsMobile:           u.isMobile,
+				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
+				UIService:          u.baseUI,
+			})
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
@@ -128,21 +135,21 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *statusBar) start() {
 	// signals
-	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+	a.u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+	a.u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, _ app.GeneralSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
 
@@ -158,7 +165,7 @@ func (a *statusBar) start() {
 		}
 		a.updateStatus.Refresh()
 	}
-	a.u.updateStarted.AddListener(func(_ context.Context, id string) {
+	a.u.signals.UpdateStarted.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Add(id)
@@ -168,7 +175,7 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	a.u.updateStopped.AddListener(func(_ context.Context, id string) {
+	a.u.signals.UpdateStopped.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Delete(id)
@@ -200,7 +207,7 @@ func (a *statusBar) start() {
 		return
 	}
 
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
 		a.updateEveStatus(ctx)
 	})
 

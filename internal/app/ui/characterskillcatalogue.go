@@ -131,24 +131,24 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	}, a.u.window)
 
 	// signals
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		if arg.section == app.SectionCharacterSkills {
+		if arg.Section == app.SectionCharacterSkills {
 			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
 		}
-		if arg.section == app.SectionEveTypes {
+		if arg.Section == app.SectionEveTypes {
 			a.update(ctx)
 		}
 	})

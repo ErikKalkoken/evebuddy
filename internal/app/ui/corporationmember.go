@@ -62,15 +62,15 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
-		if arg.section != app.SectionCorporationMembers {
+		if arg.Section != app.SectionCorporationMembers {
 			return
 		}
 		a.update(ctx)

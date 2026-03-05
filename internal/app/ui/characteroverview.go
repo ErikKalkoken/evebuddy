@@ -195,44 +195,44 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}, a.u.window)
 
 	// Signals
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
-		switch arg.section {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+		switch arg.Section {
 		case app.SectionEveCharacters:
 			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int64 {
 				return r.characterID
 			}))
-			for characterID := range set.Intersection(characters, arg.changed).All() {
+			for characterID := range set.Intersection(characters, arg.Changed).All() {
 				a.updateItem(ctx, characterID)
 			}
 		}
 	})
-	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		switch arg.section {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		switch arg.Section {
 		case
 			app.SectionCharacterLocation,
 			app.SectionCharacterMailHeaders,
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
-			a.updateItem(ctx, arg.characterID)
+			a.updateItem(ctx, arg.CharacterID)
 		}
 	})
-	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		switch arg.section {
+	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		switch arg.Section {
 		case
 			app.SectionCharacterSkillqueue:
-			a.updateItem(ctx, arg.characterID)
+			a.updateItem(ctx, arg.CharacterID)
 		}
 	})
-	a.u.characterChanged.AddListener(func(ctx context.Context, characterID int64) {
+	a.u.signals.CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
 	return a
@@ -294,11 +294,11 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 		if a.u.onShowCharacter != nil {
 			a.u.onShowCharacter()
 		}
-		if a.u.currentCharacterID() == r.characterID {
+		if a.u.CurrentCharacterID() == r.characterID {
 			return
 		}
 		go func() {
-			err := a.u.loadCharacter(r.characterID)
+			err := a.u.LoadCharacter(r.characterID)
 			if err != nil {
 				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
 				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.HumanizeError(err)))
@@ -341,11 +341,11 @@ func (a *characterOverview) makeList() *widget.List {
 		if a.u.onShowCharacter != nil {
 			a.u.onShowCharacter()
 		}
-		if a.u.currentCharacterID() == r.characterID {
+		if a.u.CurrentCharacterID() == r.characterID {
 			return
 		}
 		go func() {
-			err := a.u.loadCharacter(r.characterID)
+			err := a.u.LoadCharacter(r.characterID)
 			if err != nil {
 				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
 				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.HumanizeError(err)))

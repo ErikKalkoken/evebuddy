@@ -72,30 +72,30 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	a.ExtendBaseWidget(a)
 
 	if isCorpMode {
-		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+		a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
 			}
-			if arg.section == app.SectionEveCorporations && arg.changed.Contains(corporationID) {
+			if arg.Section == app.SectionEveCorporations && arg.Changed.Contains(corporationID) {
 				a.update(ctx)
 			}
 		})
 	} else {
-		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+		a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
 				return
 			}
-			if arg.section == app.SectionEveCorporations && arg.changed.Contains(c.EveCharacter.Corporation.ID) {
+			if arg.Section == app.SectionEveCorporations && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update(ctx)
 			}
 		})

@@ -44,7 +44,7 @@ func TestCorporationMember_CanRenderWithData(t *testing.T) {
 		CorporationID: c.ID,
 		Section:       app.SectionCorporationMembers,
 	})
-	ui.setCorporation(c)
+	ui.SetCorporation(c)
 	err := ui.scs.InitCache(ctx)
 	if err != nil {
 		t.Fatal(err)

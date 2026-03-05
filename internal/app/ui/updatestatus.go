@@ -137,30 +137,30 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	}
 
 	// Signals
-	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
+	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.corporationSectionUpdated.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
+	a.u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.generalSectionUpdated.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+	a.u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a
 }
 
 func (a *updateStatus) stop() {
-	a.u.characterAdded.RemoveListener(a.signalKey)
-	a.u.characterRemoved.RemoveListener(a.signalKey)
-	a.u.characterSectionUpdated.RemoveListener(a.signalKey)
-	a.u.corporationSectionUpdated.RemoveListener(a.signalKey)
-	a.u.generalSectionUpdated.RemoveListener(a.signalKey)
+	a.u.signals.CharacterAdded.RemoveListener(a.signalKey)
+	a.u.signals.CharacterRemoved.RemoveListener(a.signalKey)
+	a.u.signals.CharacterSectionUpdated.RemoveListener(a.signalKey)
+	a.u.signals.CorporationSectionUpdated.RemoveListener(a.signalKey)
+	a.u.signals.GeneralSectionUpdated.RemoveListener(a.signalKey)
 }
 
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
@@ -305,9 +305,9 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 		case sectionGeneral:
 			go a.u.updateGeneralSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
-			go a.u.updateCharacterAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
-			go a.u.updateCorporationAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}

@@ -132,15 +132,15 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 	}, a.u.window)
 
 	// signals
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		switch arg.section {
+		switch arg.Section {
 		case app.SectionCharacterContacts, app.SectionCharacterContactLabels:
 			a.update(ctx)
 		}

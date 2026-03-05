@@ -74,7 +74,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.disableMenuShortcuts = u.disableShortcuts
 
 	u.showManageCharacters = func() {
-		ShowManageCharactersWindow(u.baseUI)
+		ShowManageCharactersWindow(ManageCharactersParams{
+			CharacterService:   u.cs,
+			CorporationService: u.rs,
+			EveImageService:    u.eis,
+			IsMobile:           u.isMobile,
+			Signals:            u.signals,
+			UIService:          u.baseUI,
+		})
 	}
 
 	u.defineShortcuts()
@@ -515,7 +522,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	togglePermittedSections := func() {
-		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
+		sections, err := u.rs.PermittedSections(context.Background(), u.CurrentCorporationID())
 		if err != nil {
 			slog.Error("Failed to identify permitted sections", "error", err)
 			sections.Clear()
@@ -582,7 +589,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go togglePermittedSections()
 	}
 
-	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
 				tabs.DisableItem(characterTab)
@@ -704,7 +711,7 @@ func (u *DesktopUI) showAdvancedSearch(s string) {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	c := u.currentCharacter()
+	c := u.CurrentCharacter()
 	var n string
 	if c != nil {
 		n = c.EveCharacter.Name
@@ -747,7 +754,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				characterID := u.currentCharacterID()
+				characterID := u.CurrentCharacterID()
 				if characterID == 0 {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -760,7 +767,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.currentCharacter()
+				c := u.CurrentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -778,7 +785,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.currentCharacter()
+				c := u.CurrentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -804,7 +811,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				settingswindow.Show(u.baseUI, u.settings, u.isMobile)
+				settingswindow.Show(u.baseUI, u.settings, u.isMobile, u.signals)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{

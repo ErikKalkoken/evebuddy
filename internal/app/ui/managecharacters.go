@@ -25,26 +25,67 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func ShowManageCharactersWindow(u *baseUI) {
-	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+type UIService interface {
+	CurrentCharacterID() int64
+	CurrentCorporationID() int64
+	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	HasCharacter() bool
+	HasCorporation() bool
+	HumanizeError(err error) string
+	IsOffline() bool
+	LoadCharacter(id int64) error
+	LoadCorporation(id int64) error
+	ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window)
+	SetAnyCharacter() error
+	SetAnyCorporation() error
+	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
+	ShowErrorDialog(message string, err error, parent fyne.Window)
+	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
+	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
+}
+
+type EIS interface {
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+}
+
+type ManageCharactersParams struct {
+	CharacterService   *characterservice.CharacterService
+	CorporationService *corporationservice.CorporationService
+	EveImageService    EIS
+	IsMobile           bool
+	IsUpdateDisabled   bool
+	Signals            *app.Signals
+	UIService          UIService
+}
+
+func ShowManageCharactersWindow(arg ManageCharactersParams) {
+	if arg.CharacterService == nil ||
+		arg.CorporationService == nil ||
+		arg.EveImageService == nil ||
+		arg.Signals == nil ||
+		arg.UIService == nil {
+		panic(app.ErrInvalid)
+	}
+	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
 	if !created {
 		w.Show()
 		return
 	}
-	mc := newManageCharacters(u)
-	mc.setWindow(w)
+	mc := newManageCharacters(arg, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mc, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
-		mc.unsetWindow()
+		mc.stop()
 	})
 	w.SetCloseIntercept(func() {
 		w.Close()
@@ -60,21 +101,34 @@ type manageCharacters struct {
 	characterAdmin    *characterAdmin
 	characterTags     *characterTags
 	characterTraining *characterTraining
+	cs                *characterservice.CharacterService
+	eis               EIS
+	isMobile          bool
+	isUpdateDisabled  bool
+	rs                *corporationservice.CorporationService
 	sb                *iwidget.Snackbar
-	u                 *baseUI
+	signals           *app.Signals
+	u                 UIService
 	w                 fyne.Window
 }
 
-func newManageCharacters(u *baseUI) *manageCharacters {
+func newManageCharacters(arg ManageCharactersParams, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
-		sb: u.snackbar,
-		u:  u,
-		w:  u.MainWindow(),
+		cs:               arg.CharacterService,
+		eis:              arg.EveImageService,
+		isMobile:         arg.IsMobile,
+		rs:               arg.CorporationService,
+		sb:               iwidget.NewSnackbar(w),
+		u:                arg.UIService,
+		w:                w,
+		isUpdateDisabled: arg.IsUpdateDisabled,
+		signals:          arg.Signals,
 	}
 	a.ExtendBaseWidget(a)
 	a.characterAdmin = newCharacterAdmin(a)
 	a.characterTags = newCharacterTags(a)
 	a.characterTraining = newCharacterTraining(a)
+	a.sb.Start()
 	return a
 }
 
@@ -88,13 +142,7 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *manageCharacters) setWindow(w fyne.Window) {
-	a.w = w
-	a.sb = iwidget.NewSnackbar(w)
-	a.sb.Start()
-}
-
-func (a *manageCharacters) unsetWindow() {
+func (a *manageCharacters) stop() {
 	a.sb.Stop()
 }
 
@@ -154,7 +202,7 @@ func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
 		nil,
 		a.list,
 	))
-	a.ab.HideBackground = !a.mc.u.isMobile
+	a.ab.HideBackground = !a.mc.isMobile
 	return a
 }
 
@@ -190,7 +238,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 					layout.NewSpacer(),
 					delete,
 				),
-				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
 			)
 			return row
 		},
@@ -244,12 +292,12 @@ func (a *characterAdmin) update(ctx context.Context) {
 
 func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, error) {
 	var rows []characterAdminRow
-	cc, err := a.mc.u.cs.ListCharacters(ctx)
+	cc, err := a.mc.cs.ListCharacters(ctx)
 	if err != nil {
 		return rows, err
 	}
 	for _, c := range cc {
-		missing, err := a.mc.u.cs.MissingScopes(ctx, c.ID, app.Scopes())
+		missing, err := a.mc.cs.MissingScopes(ctx, c.ID, app.Scopes())
 		if err != nil {
 			return rows, err
 		}
@@ -294,7 +342,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 	d1.Show()
 	go func() {
 		err := func() error {
-			character, err := a.mc.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+			character, err := a.mc.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)
 					closeButton.Hide()
@@ -309,18 +357,19 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			fyne.Do(func() {
 				infoText.SetText("Adding new character...")
 			})
-			a.update(context.Background())
-			if !a.mc.u.hasCharacter() {
-				a.mc.u.loadCharacter(character.ID)
+			ctx := context.Background()
+			a.update(ctx)
+			if !a.mc.u.HasCharacter() {
+				a.mc.u.LoadCharacter(character.ID)
 			}
-			if !a.mc.u.hasCorporation() {
+			if !a.mc.u.HasCorporation() {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					a.mc.u.loadCorporation(c.ID)
+					a.mc.u.LoadCorporation(c.ID)
 				}
 			}
-			go a.mc.u.characterAdded.Emit(context.Background(), character)
-			if !a.mc.u.isUpdateDisabled.Load() {
-				go a.mc.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
+			go a.mc.signals.CharacterAdded.Emit(ctx, character)
+			if !a.mc.isUpdateDisabled {
+				go a.mc.u.UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
 			}
 			return nil
 		}()
@@ -353,29 +402,42 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 				fmt.Sprintf("Deleting %s...", r.characterName),
 				func() error {
 					ctx := context.Background()
-					corpDeleted, err := a.mc.u.cs.DeleteCharacter(ctx, r.characterID)
+					wasCorpDeleted, err := a.mc.cs.DeleteCharacter(ctx, r.characterID)
 					if err != nil {
 						return err
 					}
 					a.update(ctx)
-					if a.mc.u.currentCharacterID() == r.characterID {
-						a.mc.u.setAnyCharacter()
+					if a.mc.u.CurrentCharacterID() == r.characterID {
+						err := a.mc.u.SetAnyCharacter()
+						if err != nil {
+							slog.Error("delete character", "error", err)
+							a.mc.sb.Show("Error: " + a.mc.u.HumanizeError(err))
+						}
 					}
-					if corpDeleted {
-						a.mc.u.setAnyCorporation()
+					if wasCorpDeleted {
+						err := a.mc.u.SetAnyCorporation()
+						if err != nil {
+							slog.Error("delete corporation", "error", err)
+							a.mc.sb.Show("Error: " + a.mc.u.HumanizeError(err))
+						}
+
 					} else {
-						ok, err := a.mc.u.rs.HasCorporation(ctx, r.corporationID)
+						ok, err := a.mc.rs.HasCorporation(ctx, r.corporationID)
 						if err != nil {
 							slog.Error("Failed to determine if corp exists", "err", err)
 						}
 						if ok {
-							if err := a.mc.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
-								slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+							err := a.mc.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+							if err != nil {
+								slog.Error(
+									"Failed to remove corp data after character was deleted",
+									slog.Int64("characterID", r.characterID),
+									slog.Any("error", err))
 							}
-							go a.mc.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							go a.mc.u.UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 					}
-					go a.mc.u.characterRemoved.Emit(context.Background(), &app.EntityShort{
+					go a.mc.signals.CharacterRemoved.Emit(ctx, &app.EntityShort{
 						ID:   r.characterID,
 						Name: r.characterName,
 					})
@@ -430,9 +492,9 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+	a.mc.signals.CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
 		a.update(ctx)
-		a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+		a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
 }
@@ -441,7 +503,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
 		a.modifyTag("Create Character Tag", "Create", func(name string) error {
-			_, err := a.mc.u.cs.CreateTag(context.Background(), name)
+			_, err := a.mc.cs.CreateTag(context.Background(), name)
 			return err
 		})
 	})
@@ -459,7 +521,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := iwidget.NewAppBar("Tags", main, actions)
-	ab.HideBackground = !a.mc.u.isMobile
+	ab.HideBackground = !a.mc.isMobile
 	c := container.NewVSplit(
 		container.NewStack(ab, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -481,12 +543,12 @@ func (a *characterTags) deleteTags() {
 				"Deleting...",
 				func() error {
 					ctx := context.Background()
-					err := a.mc.u.cs.DeleteAllTags(ctx)
+					err := a.mc.cs.DeleteAllTags(ctx)
 					if err != nil {
 						return err
 					}
 					a.update(ctx)
-					go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+					go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
 					return nil
 				},
 				a.mc.w,
@@ -515,7 +577,7 @@ func (a *characterTags) exportTags() {
 				if err != nil {
 					return err
 				}
-				err := a.mc.u.cs.WriteTags(context.Background(), writer, a.mc.u.app.Metadata().Version)
+				err := a.mc.cs.WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
@@ -553,12 +615,12 @@ func (a *characterTags) importTags() {
 					return err
 				}
 				ctx := context.Background()
-				err = a.mc.u.cs.ReadAndReplaceTags(ctx, reader, a.mc.u.app.Metadata().Version)
+				err = a.mc.cs.ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
 				a.update(ctx)
-				go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+				go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
 				slog.Info("Tags imported from file", "uri", reader.URI())
 				return nil
 			},
@@ -590,7 +652,7 @@ func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
 			a.characterList,
 		),
 	)
-	ab.HideBackground = !a.mc.u.isMobile
+	ab.HideBackground = !a.mc.isMobile
 	ab.Hide()
 	return ab
 }
@@ -600,7 +662,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		if a.selectedTag == nil {
 			return
 		}
-		_, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
+		_, others, err := a.mc.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters", err)
 			return
@@ -620,7 +682,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					nil,
 					check,
 					nil,
-					awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
+					awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -662,7 +724,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					if !v {
 						return
 					}
-					err := a.mc.u.cs.AddTagToCharacter(
+					err := a.mc.cs.AddTagToCharacter(
 						context.Background(),
 						characterID,
 						a.selectedTag.ID,
@@ -673,7 +735,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					}
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
+				go a.mc.signals.TagsChanged.Emit(context.Background(), struct{}{})
 			},
 			a.mc.w,
 		)
@@ -717,7 +779,7 @@ func (a *characterTags) makeTagList() *widget.List {
 			icons := box[1].(*fyne.Container).Objects
 			icons[0].(*ttwidget.Button).OnTapped = func() {
 				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(name string) error {
-					return a.mc.u.cs.RenameTag(context.Background(), tag.ID, name)
+					return a.mc.cs.RenameTag(context.Background(), tag.ID, name)
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
@@ -728,13 +790,13 @@ func (a *characterTags) makeTagList() *widget.List {
 							return
 						}
 						ctx := context.Background()
-						err := a.mc.u.cs.DeleteTag(ctx, tag.ID)
+						err := a.mc.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
 							a.mc.u.ShowErrorDialog("Failed to delete tag", err, a.mc.w)
 							return
 						}
 						a.update(ctx)
-						go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+						go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
 							return
@@ -776,7 +838,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				nil,
 				nil,
 				remove,
-				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -792,7 +854,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				if a.selectedTag == nil {
 					return
 				}
-				err := a.mc.u.cs.RemoveTagFromCharacter(
+				err := a.mc.cs.RemoveTagFromCharacter(
 					context.Background(),
 					r.ID,
 					a.selectedTag.ID,
@@ -802,7 +864,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					return
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.mc.u.tagsChanged.Emit(context.Background(), struct{}{})
+				go a.mc.signals.TagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
 	)
@@ -824,7 +886,7 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.manageCharacters.SetTitle("Tag: " + tag.Name)
 	a.manageCharacters.Show()
 	go func() {
-		tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
+		tagged, others, err := a.mc.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters for "+tag.Name, err)
 			return
@@ -874,7 +936,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 			}
 			ctx := context.Background()
 			a.update(ctx)
-			go a.mc.u.tagsChanged.Emit(ctx, struct{}{})
+			go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
 		}, a.mc.w,
 	)
 	a.mc.u.ModifyShortcutsForDialog(d, a.mc.w)
@@ -894,7 +956,7 @@ func (a *characterTags) selectTagByName(name string) {
 }
 
 func (a *characterTags) update(ctx context.Context) {
-	tags, err := a.mc.u.cs.ListTagsByName(ctx)
+	tags, err := a.mc.cs.ListTagsByName(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to list tags", err)
 		a.tags = xslices.Reset(a.tags)
@@ -932,10 +994,10 @@ func newCharacterTraining(mc *manageCharacters) *characterTraining {
 	a.list = a.makeList()
 
 	// Signals
-	a.mc.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.mc.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.mc.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.mc.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
 	return a
@@ -947,7 +1009,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 			go func() {
 				ctx := context.Background()
 				for id, c := range a.characters {
-					d, err := a.mc.u.cs.TotalTrainingTime(ctx, c.ID)
+					d, err := a.mc.cs.TotalTrainingTime(ctx, c.ID)
 					if err != nil {
 						slog.Error("Failed to set watcher for trained characters", "error", err)
 						continue
@@ -972,7 +1034,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 		}),
 	))
 	ab := iwidget.NewAppBar("Watched Training", a.list, actions)
-	ab.HideBackground = !a.mc.u.isMobile
+	ab.HideBackground = !a.mc.isMobile
 	return widget.NewSimpleRenderer(ab)
 }
 
@@ -987,7 +1049,7 @@ func (a *characterTraining) makeList() *widget.List {
 				nil,
 				nil,
 				kxwidget.NewSwitch(nil),
-				awidget.NewEntityListItem(true, a.mc.u.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -1025,21 +1087,21 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 	}
 	c := a.characters[id]
 	go func() {
-		err := a.mc.u.cs.UpdateIsTrainingWatched(ctx, c.ID, on)
+		err := a.mc.cs.UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
-			a.mc.u.ShowSnackbar("Failed to update training watcher: " + a.mc.u.HumanizeError(err))
+			a.mc.sb.Show("Failed to update training watcher: " + a.mc.u.HumanizeError(err))
 		}
 		fyne.Do(func() {
 			a.characters[id].IsTrainingWatched = on
 			a.list.RefreshItem(id)
 		})
-		a.mc.u.characterChanged.Emit(ctx, c.ID)
+		a.mc.signals.CharacterChanged.Emit(ctx, c.ID)
 	}()
 }
 
 func (a *characterTraining) update(ctx context.Context) {
-	characters, err := a.mc.u.cs.ListCharacters(ctx)
+	characters, err := a.mc.cs.ListCharacters(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to update training", err)
 		return

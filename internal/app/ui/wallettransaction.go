@@ -82,15 +82,15 @@ type walletTransactions struct {
 
 func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		if arg.section == app.SectionCharacterWalletTransactions {
+		if arg.Section == app.SectionCharacterWalletTransactions {
 			a.update(ctx)
 		}
 	})
@@ -99,15 +99,15 @@ func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 
 func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransactions {
 	a := newWalletTransaction(u, d)
-	a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
-		if arg.section == app.CorporationSectionWalletTransactions(d) {
+		if arg.Section == app.CorporationSectionWalletTransactions(d) {
 			a.update(ctx)
 		}
 	})

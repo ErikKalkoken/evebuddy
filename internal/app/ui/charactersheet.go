@@ -77,15 +77,15 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	a.ExtendBaseWidget(a)
 
 	// Signals
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.characterID {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
-		switch arg.section {
+		switch arg.Section {
 		case
 			app.SectionCharacterAssets,
 			app.SectionCharacterRoles,
@@ -95,19 +95,19 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 		c := a.character.Load()
 		if c == nil {
 			return
 		}
 		characterID := characterIDOrZero(c)
-		switch arg.section {
+		switch arg.Section {
 		case app.SectionEveCharacters:
-			if arg.changed.Contains(characterID) {
+			if arg.Changed.Contains(characterID) {
 				a.update(ctx)
 			}
 		case app.SectionEveCorporations:
-			if arg.changed.Contains(c.EveCharacter.Corporation.ID) {
+			if arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update(ctx)
 			}
 		case app.SectionEveMarketPrices:

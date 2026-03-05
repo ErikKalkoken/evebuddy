@@ -29,16 +29,16 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
 		}
-		if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+		if arg.Section == app.SectionEveCharacters && arg.Changed.Contains(characterID) {
 			a.update(ctx)
 		}
 	})

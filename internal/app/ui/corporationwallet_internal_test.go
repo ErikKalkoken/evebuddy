@@ -53,7 +53,7 @@ func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 		CorporationID: c.ID,
 		Section:       app.SectionCorporationWalletBalances,
 	})
-	ui.setCorporation(c)
+	ui.SetCorporation(c)
 	err := ui.scs.InitCache(ctx)
 	if err != nil {
 		t.Fatal(err)

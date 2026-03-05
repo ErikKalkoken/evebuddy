@@ -334,41 +334,41 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}, a.u.window, 6, 7)
 
 	if forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
-			if arg.section == app.SectionCorporationIndustryJobs {
+			if arg.Section == app.SectionCorporationIndustryJobs {
 				a.update(ctx)
 			}
 		})
 	} else {
 		a.selectInstaller.Selected = industryInstallerMe
-		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-			if arg.section == app.SectionCharacterIndustryJobs {
+		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if arg.Section == app.SectionCharacterIndustryJobs {
 				a.update(ctx)
 			}
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if arg.section == app.SectionCorporationIndustryJobs {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if arg.Section == app.SectionCorporationIndustryJobs {
 				a.update(ctx)
 			}
 		})
-		a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
 	}
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 		})
@@ -883,7 +883,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			status.Set(r.statusDisplay())
 		})
@@ -892,7 +892,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		if onClosed != nil {
 			onClosed()
 		}
-		a.u.refreshTickerExpired.RemoveListener(key)
+		a.u.signals.RefreshTickerExpired.RemoveListener(key)
 	})
 	setDetailWindow(detailWindowParams{
 		content: f,

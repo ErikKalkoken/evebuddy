@@ -33,7 +33,6 @@ import (
 type UIService interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
-	EmitCorporationChanged(ctx context.Context)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HumanizeError(err error) string
 	IsDeveloperMode() bool
@@ -57,17 +56,18 @@ type userSettings struct {
 	isMobile bool
 	sb       *iwidget.Snackbar
 	settings *settings.Settings
+	signals  *app.Signals
 	u        UIService
 	w        fyne.Window
 }
 
-func Show(u UIService, s *settings.Settings, isMobile bool) {
+func Show(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals) {
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("user-settings", "Settings")
 	if !ok {
 		w.Show()
 		return
 	}
-	a := newUserSettings(u, s, isMobile, w)
+	a := newUserSettings(u, s, isMobile, signals, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -83,13 +83,14 @@ func Show(u UIService, s *settings.Settings, isMobile bool) {
 	w.Show()
 }
 
-func newUserSettings(u UIService, s *settings.Settings, isMobile bool, w fyne.Window) *userSettings {
+func newUserSettings(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals, w fyne.Window) *userSettings {
 	a := &userSettings{
 		isMobile: isMobile,
 		sb:       iwidget.NewSnackbar(w),
 		settings: s,
 		u:        u,
 		w:        w,
+		signals:  signals,
 	}
 	a.ExtendBaseWidget(a)
 	a.sb.Start()
@@ -173,7 +174,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.settings.HideLimitedCorporations,
 		onChanged: func(enabled bool) {
 			a.settings.SetHideLimitedCorporations(enabled)
-			go a.u.EmitCorporationChanged(context.Background())
+			go a.signals.CorporationsChanged.Emit(context.Background(), struct{}{})
 		},
 	})
 

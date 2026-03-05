@@ -76,14 +76,14 @@ func newWealth(u *baseUI) *wealth {
 	a.totalSplit.SetTitleStyle(ts)
 	a.characterSplit.SetTitleStyle(ts)
 
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		switch arg.section {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		switch arg.Section {
 		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
 			a.update(ctx)
 		}
 	})
-	a.u.generalSectionChanged.AddListener(func(ctx context.Context, arg generalSectionUpdated) {
-		if arg.section == app.SectionEveMarketPrices {
+	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}
 	})

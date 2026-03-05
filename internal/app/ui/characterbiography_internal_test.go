@@ -23,7 +23,7 @@ func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-	ui.setCharacter(character)
+	ui.SetCharacter(character)
 	w := test.NewWindow(ui.characterBiography)
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))

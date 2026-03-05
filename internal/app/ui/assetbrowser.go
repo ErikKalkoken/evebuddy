@@ -76,28 +76,28 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 
 	// Signals
 	if a.forCorporation {
-		a.u.currentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.corporationSectionChanged.AddListener(func(ctx context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
+		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
-			if arg.section == app.SectionCorporationAssets {
+			if arg.Section == app.SectionCorporationAssets {
 				a.update(ctx)
 			}
 		})
 	} else {
-		a.u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-			if characterIDOrZero(a.character.Load()) != arg.characterID {
+		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 				return
 			}
-			if arg.section == app.SectionCharacterAssets {
+			if arg.Section == app.SectionCharacterAssets {
 				a.update(ctx)
 			}
 		})

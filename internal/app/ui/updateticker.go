@@ -41,8 +41,8 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	}
 
 	id := "general-" + uniqueID()
-	u.updateStarted.Emit(ctx, id)
-	defer u.updateStopped.Emit(ctx, id)
+	u.signals.UpdateStarted.Emit(ctx, id)
+	defer u.signals.UpdateStopped.Emit(ctx, id)
 
 	sections := set.Of(app.GeneralSections...)
 	var wg sync.WaitGroup
@@ -70,20 +70,20 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 
 	needsRefresh := changedIDs.Size() > 0 || forceUpdate
-	arg := generalSectionUpdated{
-		section:      section,
-		changed:      changedIDs,
-		needsRefresh: needsRefresh,
+	arg := app.GeneralSectionUpdated{
+		Section:      section,
+		Changed:      changedIDs,
+		NeedsRefresh: needsRefresh,
 	}
 
 	var wg sync.WaitGroup
 	if needsRefresh {
 		wg.Go(func() {
-			u.generalSectionChanged.Emit(ctx, arg)
+			u.signals.GeneralSectionChanged.Emit(ctx, arg)
 		})
 	}
 	wg.Go(func() {
-		u.generalSectionUpdated.Emit(ctx, arg)
+		u.signals.GeneralSectionUpdated.Emit(ctx, arg)
 	})
 	wg.Wait()
 }
@@ -122,7 +122,7 @@ func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool)
 	var wg sync.WaitGroup
 	for c := range characters.All() {
 		wg.Go(func() {
-			u.updateCharacterAndRefreshIfNeeded(ctx, c, forceUpdate)
+			u.UpdateCharacterAndRefreshIfNeeded(ctx, c, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating characters", "characters", characters, "forceUpdate", forceUpdate)
@@ -179,9 +179,9 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int64)
 	}
 }
 
-// updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
+// UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool) {
+func (u *baseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool) {
 	if u.isOffline {
 		return
 	}
@@ -214,20 +214,20 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	}
 
 	id := "characters-" + uniqueID()
-	u.updateStarted.Emit(ctx, id)
-	defer u.updateStopped.Emit(ctx, id)
+	u.signals.UpdateStarted.Emit(ctx, id)
+	defer u.signals.UpdateStopped.Emit(ctx, id)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
-	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
+	u.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 		if c != nil && c.ID == characterID {
 			cancel() // abort updates when the character is removed
 		}
 	}, key)
 	defer func() {
-		u.characterRemoved.RemoveListener(key)
+		u.signals.CharacterRemoved.RemoveListener(key)
 	}()
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	// _, err := u.cs.TokenSource(ctx, characterID)
@@ -322,13 +322,13 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
-			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
+			u.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 				if c != nil && c.ID == characterID {
 					cancel() // abort updates when the character is removed
 				}
 			}, key)
 			defer func() {
-				u.characterRemoved.RemoveListener(key)
+				u.signals.CharacterRemoved.RemoveListener(key)
 			}()
 			_, err := u.cs.DownloadMissingMailBodies(ctx, characterID)
 			if err != nil {
@@ -362,19 +362,19 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 
 	needsRefresh := hasChanged || forceUpdate
-	arg := characterSectionUpdated{
-		characterID:  characterID,
-		section:      section,
-		needsRefresh: needsRefresh,
+	arg := app.CharacterSectionUpdated{
+		CharacterID:  characterID,
+		Section:      section,
+		NeedsRefresh: needsRefresh,
 	}
 	var wg sync.WaitGroup
 	if needsRefresh {
 		wg.Go(func() {
-			u.characterSectionChanged.Emit(ctx, arg)
+			u.signals.CharacterSectionChanged.Emit(ctx, arg)
 		})
 	}
 	wg.Go(func() {
-		u.characterSectionUpdated.Emit(ctx, arg)
+		u.signals.CharacterSectionUpdated.Emit(ctx, arg)
 	})
 	wg.Wait()
 }
@@ -401,15 +401,15 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 	}
 
 	id := "corporations-" + uniqueID()
-	u.updateStarted.Emit(ctx, id)
-	defer u.updateStopped.Emit(ctx, id)
+	u.signals.UpdateStarted.Emit(ctx, id)
+	defer u.signals.UpdateStopped.Emit(ctx, id)
 
 	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
 	}
 	if changed {
-		u.corporationsChanged.Emit(ctx, struct{}{})
+		u.signals.CorporationsChanged.Emit(ctx, struct{}{})
 	}
 	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
@@ -418,7 +418,7 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 	var wg sync.WaitGroup
 	for id := range corporations.All() {
 		wg.Go(func() {
-			u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+			u.UpdateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
@@ -427,9 +427,9 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 	return nil
 }
 
-// updateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
+// UpdateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
 // and refreshes the UI accordingly.
-func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
+func (u *baseUI) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
 	if u.isOffline {
 		return
 	}
@@ -468,19 +468,19 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		return
 	}
 	needsRefresh := hasChanged || forceUpdate
-	arg := corporationSectionUpdated{
-		corporationID: corporationID,
-		section:       section,
-		needsRefresh:  needsRefresh,
+	arg := app.CorporationSectionUpdated{
+		CorporationID: corporationID,
+		Section:       section,
+		NeedsRefresh:  needsRefresh,
 	}
 	var wg sync.WaitGroup
 	if needsRefresh {
 		wg.Go(func() {
-			u.corporationSectionChanged.Emit(ctx, arg)
+			u.signals.CorporationSectionChanged.Emit(ctx, arg)
 		})
 	}
 	wg.Go(func() {
-		u.corporationSectionUpdated.Emit(ctx, arg)
+		u.signals.CorporationSectionUpdated.Emit(ctx, arg)
 	})
 	wg.Wait()
 }

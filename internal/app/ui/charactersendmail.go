@@ -135,9 +135,9 @@ func (a *characterSendMail) SendAction() bool {
 		showErrorDialog(err.Error())
 		return false
 	}
-	go a.u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
-		characterID: c.ID,
-		section:     app.SectionCharacterMailHeaders,
+	go a.u.signals.CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
+		CharacterID: c.ID,
+		Section:     app.SectionCharacterMailHeaders,
 	})
 	a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
 	return true

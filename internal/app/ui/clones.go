@@ -245,18 +245,18 @@ func newClones(u *baseUI) *clones {
 	}, a.u.window)
 
 	// signals
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if arg.section == app.SectionCharacterJumpClones {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if arg.Section == app.SectionCharacterJumpClones {
 			a.update(ctx)
 		}
 	})
-	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 	return a

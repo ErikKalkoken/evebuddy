@@ -126,7 +126,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 		defer w.Close()
 		w.Resize(fyne.NewSize(1700, 300))
 
-		ui.setCorporation(corporation)
+		ui.SetCorporation(corporation)
 		x.update(t.Context())
 
 		// fmt.Println(testutil.DumpTables(db))

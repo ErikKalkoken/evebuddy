@@ -60,7 +60,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-	ui.setCharacter(character)
+	ui.SetCharacter(character)
 	w := test.NewWindow(ui.assetSearchAll)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1400, 300))

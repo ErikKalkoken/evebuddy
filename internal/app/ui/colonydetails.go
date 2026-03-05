@@ -203,14 +203,14 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 	a.search.PlaceHolder = "Search"
 
 	// signals
-	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.signals.RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.filterRowsAsync()
 			a.refreshStatus()
 		})
 	}, a.signalKey)
-	a.u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
-		if arg.characterID == a.characterID.Load() && arg.section == app.SectionCharacterPlanets {
+	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		if arg.CharacterID == a.characterID.Load() && arg.Section == app.SectionCharacterPlanets {
 			err := a.update(ctx)
 			if err != nil {
 				slog.Error("failed to update colony installations", "error", err)
@@ -220,7 +220,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 			}
 		}
 	}, a.signalKey)
-	a.u.characterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
+	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.setIssue("Character has been removed")
@@ -271,9 +271,9 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *colonyDetails) stop() {
-	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
-	a.u.characterSectionChanged.RemoveListener(a.signalKey)
-	a.u.characterRemoved.RemoveListener(a.signalKey)
+	a.u.signals.RefreshTickerExpired.RemoveListener(a.signalKey)
+	a.u.signals.CharacterSectionChanged.RemoveListener(a.signalKey)
+	a.u.signals.CharacterRemoved.RemoveListener(a.signalKey)
 }
 
 func (a *colonyDetails) setIssue(s string) {
