@@ -143,7 +143,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
@@ -307,7 +307,7 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		})
 	}
 
-	if !a.u.scs.HasGeneralSection(app.SectionEveTypes) {
+	if !a.u.scs.HasEveUniverseSection(app.SectionEveTypes) {
 		clear()
 		setTop("No data yet", widget.WarningImportance)
 		return

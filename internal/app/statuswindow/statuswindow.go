@@ -45,12 +45,12 @@ type EIS interface {
 type SCS interface {
 	CharacterSectionSummary(characterID int64) app.StatusSummary
 	CorporationSectionSummary(corporationID int64) app.StatusSummary
-	GeneralSectionSummary() app.StatusSummary
+	EveUniverseSectionSummary() app.StatusSummary
 	ListCharacters() []*app.EntityShort
 	ListCharacterSections(characterID int64) []app.CacheSectionStatus
 	ListCorporations() []*app.EntityShort
 	ListCorporationSections(corporationID int64) []app.CacheSectionStatus
-	ListGeneralSections() []app.CacheSectionStatus
+	ListEveUniverseSections() []app.CacheSectionStatus
 }
 
 type sectionCategory uint
@@ -217,7 +217,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 	a.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a
@@ -229,7 +229,7 @@ func (a *statusWindow) stop() {
 	a.signals.CharacterRemoved.RemoveListener(a.signalKey)
 	a.signals.CharacterSectionUpdated.RemoveListener(a.signalKey)
 	a.signals.CorporationSectionUpdated.RemoveListener(a.signalKey)
-	a.signals.GeneralSectionUpdated.RemoveListener(a.signalKey)
+	a.signals.EveUniverseSectionUpdated.RemoveListener(a.signalKey)
 }
 
 func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
@@ -442,11 +442,11 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 		}
 	}
 	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
-	ss := a.scs.GeneralSectionSummary()
+	ss := a.scs.EveUniverseSectionSummary()
 	o := sectionEntity{
 		category: sectionGeneral,
-		id:       app.GeneralSectionEntityID,
-		name:     app.GeneralSectionEntityName,
+		id:       app.EveUniverseSectionEntityID,
+		name:     app.EveUniverseSectionEntityName,
 		ss:       ss,
 	}
 	entities = append(entities, o)
@@ -519,7 +519,7 @@ func (a *statusWindow) refreshSections() {
 	case sectionCorporation:
 		a.sections = a.scs.ListCorporationSections(se.id)
 	case sectionGeneral:
-		a.sections = a.scs.ListGeneralSections()
+		a.sections = a.scs.ListEveUniverseSections()
 	}
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
@@ -554,7 +554,7 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 		switch c.category {
 		case sectionGeneral:
 			go a.eus.UpdateSectionAndRefreshIfNeeded(
-				ctx, app.GeneralSection(sectionID), true,
+				ctx, app.EveUniverseSection(sectionID), true,
 			)
 		case sectionCharacter:
 			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(

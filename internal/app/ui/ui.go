@@ -272,13 +272,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	// Signal logging and base listeners
 	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		slog.Debug("Signal: characterExchanged", "characterID", characterIDOrZero(c))
+		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", characterIDOrZero(c))
 		updateStatus(ctx)
 	})
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		slog.Debug("Signal: characterSectionChanged", "arg", arg)
+		slog.Debug("Signal: CharacterSectionChanged", "arg", arg)
 		logErr := func(err error) {
-			slog.Error("Failed to process characterSectionChanged", "arg", arg, "error", err)
+			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
 		isShown := arg.CharacterID == u.CurrentCharacterID()
 		switch arg.Section {
@@ -334,12 +334,12 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		updateStatus(ctx)
 	})
 	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
-		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
+		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", corporationIDOrZero(c))
 		updateStatus(ctx)
 		u.updateCorporationWalletTotal(ctx)
 	})
 	u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		slog.Debug("Signal: corporationSectionChanged", "arg", arg)
+		slog.Debug("Signal: CorporationSectionChanged", "arg", arg)
 		if u.CurrentCorporationID() != arg.CorporationID {
 			return
 		}
@@ -348,8 +348,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
-		slog.Debug("Signal: generalSectionChanged", "arg", arg)
+	u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			if arg.Changed.Contains(u.CurrentCharacterID()) {

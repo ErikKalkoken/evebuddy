@@ -2030,14 +2030,14 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 }
 
 type GeneralSectionStatusParams struct {
-	Section      app.GeneralSection
+	Section      app.EveUniverseSection
 	ErrorMessage string
 	CompletedAt  time.Time
 	StartedAt    time.Time
 	Data         any
 }
 
-func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.GeneralSectionStatus {
+func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.EveUniverseSectionStatus {
 	ctx := context.Background()
 	var arg GeneralSectionStatusParams
 	if len(args) > 0 {

@@ -13,14 +13,14 @@ import (
 )
 
 const (
-	generalSectionsUpdateTicker = 300 * time.Second
+	sectionsUpdateTicker = 300 * time.Second
 )
 
 func (s *EveUniverseService) StartUpdateTicker() {
 	go func() {
 		for {
 			go s.UpdateSectionsIfNeeded(context.Background(), false)
-			<-time.Tick(generalSectionsUpdateTicker)
+			<-time.Tick(sectionsUpdateTicker)
 		}
 	}()
 }
@@ -35,7 +35,7 @@ func (s *EveUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	s.signals.UpdateStarted.Emit(ctx, id)
 	defer s.signals.UpdateStopped.Emit(ctx, id)
 
-	sections := set.Of(app.GeneralSections...)
+	sections := set.Of(app.EveUniverseSections...)
 	var wg sync.WaitGroup
 	for section := range sections.All() {
 		wg.Go(func() {
@@ -47,11 +47,11 @@ func (s *EveUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
-	changedIDs, err := s.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
+	changedIDs, err := s.UpdateSectionIfNeeded(ctx, app.EveUniverseSectionUpdateParams{
 		Section:     section,
 		ForceUpdate: forceUpdate,
 	})
@@ -61,7 +61,7 @@ func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 	}
 
 	needsRefresh := changedIDs.Size() > 0 || forceUpdate
-	arg := app.GeneralSectionUpdated{
+	arg := app.EveUniverseSectionUpdated{
 		Section:      section,
 		Changed:      changedIDs,
 		NeedsRefresh: needsRefresh,
@@ -70,11 +70,11 @@ func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 	var wg sync.WaitGroup
 	if needsRefresh {
 		wg.Go(func() {
-			s.signals.GeneralSectionChanged.Emit(ctx, arg)
+			s.signals.EveUniverseSectionChanged.Emit(ctx, arg)
 		})
 	}
 	wg.Go(func() {
-		s.signals.GeneralSectionUpdated.Emit(ctx, arg)
+		s.signals.EveUniverseSectionUpdated.Emit(ctx, arg)
 	})
 	wg.Wait()
 }

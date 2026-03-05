@@ -29,7 +29,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 		oo, err := st.ListGeneralSectionStatus(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.GeneralSectionStatus{s1, s2}, oo)
+			assert.ElementsMatch(t, []*app.EveUniverseSectionStatus{s1, s2}, oo)
 		}
 	})
 	t.Run("can set from scratch", func(t *testing.T) {

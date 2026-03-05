@@ -95,7 +95,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		c := a.character.Load()
 		if c == nil {
 			return

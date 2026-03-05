@@ -76,7 +76,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+		a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
@@ -90,7 +90,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+		a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
 				return

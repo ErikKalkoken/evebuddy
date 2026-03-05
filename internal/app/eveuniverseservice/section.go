@@ -16,7 +16,7 @@ import (
 )
 
 // HasSection reports whether a section exists at all.
-func (s *EveUniverseService) HasSection(ctx context.Context, section app.GeneralSection) (bool, error) {
+func (s *EveUniverseService) HasSection(ctx context.Context, section app.EveUniverseSection) (bool, error) {
 	x, err := s.st.GetGeneralSectionStatus(ctx, section)
 	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
@@ -28,7 +28,7 @@ func (s *EveUniverseService) HasSection(ctx context.Context, section app.General
 }
 
 // UpdateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
-func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.GeneralSectionUpdateParams) (set.Set[int64], error) {
+func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.EveUniverseSectionUpdateParams) (set.Set[int64], error) {
 	var zero set.Set[int64]
 	if !arg.ForceUpdate {
 		status, err := s.st.GetGeneralSectionStatus(ctx, arg.Section)
@@ -70,7 +70,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		if err != nil {
 			return set.Set[int64]{}, err
 		}
-		s.scs.SetGeneralSection(o)
+		s.scs.SetEveUniverseSection(o)
 		changed, err := f(ctx)
 		slog.Debug("Finished updating general section", "section", arg.Section)
 		return changed, err
@@ -87,7 +87,7 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		if err != nil {
 			return zero, err
 		}
-		s.scs.SetGeneralSection(o)
+		s.scs.SetEveUniverseSection(o)
 		return zero, err
 	}
 	completedAt := storage.NewNullTimeFromTime(time.Now())
@@ -102,6 +102,6 @@ func (s *EveUniverseService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	if err != nil {
 		return zero, err
 	}
-	s.scs.SetGeneralSection(o)
+	s.scs.SetEveUniverseSection(o)
 	return changed, nil
 }

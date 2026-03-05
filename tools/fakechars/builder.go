@@ -176,7 +176,7 @@ func (b *CharacterBuilder) loadTypes(ctx context.Context) error {
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	if _, err := b.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
+	if _, err := b.eus.UpdateSectionIfNeeded(ctx, app.EveUniverseSectionUpdateParams{
 		ForceUpdate: true,
 		Section:     app.SectionEveMarketPrices,
 	}); err != nil {
@@ -534,7 +534,7 @@ func (b *CharacterBuilder) setCharacterSections() {
 }
 
 func (b *CharacterBuilder) setGeneralSections() {
-	for _, s := range app.GeneralSections {
+	for _, s := range app.EveUniverseSections {
 		b.f.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: s,
 		})

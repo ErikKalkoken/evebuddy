@@ -158,7 +158,7 @@ func (a *statusBar) start() {
 	a.u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, _ app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
 

@@ -14,7 +14,7 @@ import (
 const (
 	characterSectionDefaultTimeout   = 3600 * time.Second
 	corporationSectionDefaultTimeout = 3600 * time.Second
-	generalSectionDefaultTimeout     = 24 * time.Hour
+	eveUniverseSectionDefaultTimeout = 24 * time.Hour
 	sectionErrorTimeout              = 120 * time.Second
 )
 
@@ -390,20 +390,20 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 	return set.Of(scopes...)
 }
 
-// GeneralSection represents a general topic that can be updated, e.g. market prices
-type GeneralSection string
+// EveUniverseSection represents a topic from EveUniverse that can be updated, e.g. market prices
+type EveUniverseSection string
 
-var _ section = (*GeneralSection)(nil)
+var _ section = (*EveUniverseSection)(nil)
 
 const (
-	SectionEveCharacters   GeneralSection = "characters"    // character
-	SectionEveCorporations GeneralSection = "corporations"  // corporation
-	SectionEveEntities     GeneralSection = "entities"      // static-data
-	SectionEveMarketPrices GeneralSection = "market_prices" // market
-	SectionEveTypes        GeneralSection = "types"         // static-data
+	SectionEveCharacters   EveUniverseSection = "characters"    // character
+	SectionEveCorporations EveUniverseSection = "corporations"  // corporation
+	SectionEveEntities     EveUniverseSection = "entities"      // static-data
+	SectionEveMarketPrices EveUniverseSection = "market_prices" // market
+	SectionEveTypes        EveUniverseSection = "types"         // static-data
 )
 
-var GeneralSections = []GeneralSection{
+var EveUniverseSections = []EveUniverseSection{
 	SectionEveCharacters,
 	SectionEveCorporations,
 	SectionEveEntities,
@@ -411,7 +411,7 @@ var GeneralSections = []GeneralSection{
 	SectionEveTypes,
 }
 
-var generalSectionTimeouts = map[GeneralSection]time.Duration{
+var eveUniverseSectionTimeouts = map[EveUniverseSection]time.Duration{
 	SectionEveCharacters:   1 * time.Hour,
 	SectionEveCorporations: 1 * time.Hour,
 	SectionEveEntities:     6 * time.Hour,
@@ -419,23 +419,23 @@ var generalSectionTimeouts = map[GeneralSection]time.Duration{
 	SectionEveTypes:        24 * time.Hour,
 }
 
-func (gs GeneralSection) DisplayName() string {
+func (gs EveUniverseSection) DisplayName() string {
 	return makeSectionDisplayName(gs)
 }
 
-func (gs GeneralSection) Scopes() set.Set[string] {
+func (gs EveUniverseSection) Scopes() set.Set[string] {
 	return set.Set[string]{}
 }
 
-func (gs GeneralSection) String() string {
+func (gs EveUniverseSection) String() string {
 	return string(gs)
 }
 
-func (gs GeneralSection) Timeout() time.Duration {
-	duration, ok := generalSectionTimeouts[gs]
+func (gs EveUniverseSection) Timeout() time.Duration {
+	duration, ok := eveUniverseSectionTimeouts[gs]
 	if !ok {
 		slog.Warn("Requested duration for unknown section. Using default.", "section", gs)
-		return generalSectionDefaultTimeout
+		return eveUniverseSectionDefaultTimeout
 	}
 	return duration
 }
@@ -456,9 +456,9 @@ func Scopes() set.Set[string] {
 	return scopes
 }
 
-type GeneralSectionUpdateParams struct {
+type EveUniverseSectionUpdateParams struct {
 	ForceUpdate bool
-	Section     GeneralSection
+	Section     EveUniverseSection
 }
 
 type CharacterSectionUpdateParams struct {

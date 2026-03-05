@@ -109,7 +109,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 		return err
 	}
 	for _, o := range oo {
-		sc.SetGeneralSection(o)
+		sc.SetEveUniverseSection(o)
 	}
 	return nil
 }
@@ -126,8 +126,8 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 	for _, r := range rr {
 		ss.add(sc.calcCorporationSectionSummary(r.ID))
 	}
-	ss.add(sc.calcGeneralSectionSummary())
-	total := len(app.CharacterSections)*len(cc) + len(app.CorporationSections)*len(rr) + len(app.GeneralSections)
+	ss.add(sc.calcEveUniverseSectionSummary())
+	total := len(app.CharacterSections)*len(cc) + len(app.CorporationSections)*len(rr) + len(app.EveUniverseSections)
 	s := app.StatusSummary{
 		Current:   ss.current,
 		Errors:    ss.errors,
@@ -420,23 +420,23 @@ func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.En
 
 // general sections
 
-func (sc *StatusCacheService) HasGeneralSection(section app.GeneralSection) bool {
-	x, ok := sc.GeneralSection(section)
+func (sc *StatusCacheService) HasEveUniverseSection(section app.EveUniverseSection) bool {
+	x, ok := sc.EveUniverseSection(section)
 	if !ok {
 		return false
 	}
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.CacheSectionStatus, bool) {
+func (sc *StatusCacheService) EveUniverseSection(section app.EveUniverseSection) (app.CacheSectionStatus, bool) {
 	o := app.CacheSectionStatus{
-		EntityID:    app.GeneralSectionEntityID,
-		EntityName:  app.GeneralSectionEntityName,
+		EntityID:    app.EveUniverseSectionEntityID,
+		EntityName:  app.EveUniverseSectionEntityName,
 		SectionID:   section.String(),
 		SectionName: section.DisplayName(),
 		Timeout:     section.Timeout(),
 	}
-	k := cacheKey{id: app.GeneralSectionEntityID, section: section.String()}
+	k := cacheKey{id: app.EveUniverseSectionEntityID, section: section.String()}
 	x, ok := sc.cache.Get(k.String())
 	if ok {
 		v := x.(cacheValue)
@@ -447,14 +447,14 @@ func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.Ca
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListGeneralSections() []app.CacheSectionStatus {
+func (sc *StatusCacheService) ListEveUniverseSections() []app.CacheSectionStatus {
 	var list []app.CacheSectionStatus
-	for _, section := range app.GeneralSections {
-		v, ok := sc.GeneralSection(section)
+	for _, section := range app.EveUniverseSections {
+		v, ok := sc.EveUniverseSection(section)
 		if !ok {
 			v = app.CacheSectionStatus{
-				EntityID:    app.GeneralSectionEntityID,
-				EntityName:  app.GeneralSectionEntityName,
+				EntityID:    app.EveUniverseSectionEntityID,
+				EntityName:  app.EveUniverseSectionEntityName,
 				SectionID:   section.String(),
 				SectionName: section.DisplayName(),
 				Timeout:     section.Timeout(),
@@ -465,12 +465,12 @@ func (sc *StatusCacheService) ListGeneralSections() []app.CacheSectionStatus {
 	return list
 }
 
-func (sc *StatusCacheService) SetGeneralSection(o *app.GeneralSectionStatus) {
+func (sc *StatusCacheService) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {
 	if o == nil {
 		return
 	}
 	k := cacheKey{
-		id:      app.GeneralSectionEntityID,
+		id:      app.EveUniverseSectionEntityID,
 		section: o.Section.String(),
 	}
 	v := cacheValue{
@@ -481,20 +481,20 @@ func (sc *StatusCacheService) SetGeneralSection(o *app.GeneralSectionStatus) {
 	sc.cache.Set(k.String(), v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
-	ss := sc.calcGeneralSectionSummary()
+func (sc *StatusCacheService) EveUniverseSectionSummary() app.StatusSummary {
+	ss := sc.calcEveUniverseSectionSummary()
 	s := app.StatusSummary{
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
-		Total:     len(app.GeneralSections),
+		Total:     len(app.EveUniverseSections),
 	}
 	return s
 }
 
-func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
+func (sc *StatusCacheService) calcEveUniverseSectionSummary() statusSummary {
 	var ss statusSummary
-	gsl := sc.ListGeneralSections()
+	gsl := sc.ListEveUniverseSections()
 	for _, o := range gsl {
 		if o.HasError() {
 			ss.errors++

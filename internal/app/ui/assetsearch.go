@@ -459,7 +459,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			}
 		})
 	}
-	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}

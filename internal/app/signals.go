@@ -23,9 +23,9 @@ type CorporationSectionUpdated struct {
 	NeedsRefresh  bool
 }
 
-type GeneralSectionUpdated struct {
+type EveUniverseSectionUpdated struct {
 	Changed      set.Set[int64]
-	Section      GeneralSection
+	Section      EveUniverseSection
 	NeedsRefresh bool
 }
 
@@ -59,11 +59,11 @@ type Signals struct {
 	// A corporation section has been updated from ESI.
 	CorporationSectionUpdated signals.Signal[CorporationSectionUpdated]
 
-	// A general section has changed after an update from ESI.
-	GeneralSectionChanged signals.Signal[GeneralSectionUpdated]
+	// An EveUniverse section has changed after an update from ESI.
+	EveUniverseSectionChanged signals.Signal[EveUniverseSectionUpdated]
 
-	// A general section has been updated after an update from ESI.
-	GeneralSectionUpdated signals.Signal[GeneralSectionUpdated]
+	// An EveUniverse section has been updated after an update from ESI.
+	EveUniverseSectionUpdated signals.Signal[EveUniverseSectionUpdated]
 
 	// Ticker for dynamic UI refresh has expired.
 	RefreshTickerExpired signals.Signal[struct{}]
@@ -95,8 +95,8 @@ func NewSignals() *Signals {
 		CorporationSectionUpdated:   signals.New[CorporationSectionUpdated](),
 		CurrentCharacterExchanged:   signals.New[*Character](),
 		CurrentCorporationExchanged: signals.New[*Corporation](),
-		GeneralSectionChanged:       signals.New[GeneralSectionUpdated](),
-		GeneralSectionUpdated:       signals.New[GeneralSectionUpdated](),
+		EveUniverseSectionChanged:   signals.New[EveUniverseSectionUpdated](),
+		EveUniverseSectionUpdated:   signals.New[EveUniverseSectionUpdated](),
 		RefreshTickerExpired:        signals.New[struct{}](),
 		TagsChanged:                 signals.New[struct{}](),
 		UpdateStarted:               signals.New[string](),

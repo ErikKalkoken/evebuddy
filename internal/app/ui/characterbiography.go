@@ -33,7 +33,7 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return

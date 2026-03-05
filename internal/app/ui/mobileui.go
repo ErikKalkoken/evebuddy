@@ -715,7 +715,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, _ app.GeneralSectionUpdated) {
+		u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
 

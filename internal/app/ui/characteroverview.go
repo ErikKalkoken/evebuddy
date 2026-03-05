@@ -195,7 +195,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	}, a.u.window)
 
 	// Signals
-	a.u.signals.GeneralSectionChanged.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int64 {
