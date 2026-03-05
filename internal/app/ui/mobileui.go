@@ -19,6 +19,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -413,7 +414,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			ShowManageCharactersWindow(ManageCharactersParams{
+			characterwindow.Show(characterwindow.Params{
 				CharacterService:   u.cs,
 				CorporationService: u.rs,
 				EveImageService:    u.eis,

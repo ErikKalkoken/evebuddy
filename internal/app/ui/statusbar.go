@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -71,7 +72,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			ShowManageCharactersWindow(ManageCharactersParams{
+			characterwindow.Show(characterwindow.Params{
 				CharacterService:   u.cs,
 				CorporationService: u.rs,
 				EveImageService:    u.eis,

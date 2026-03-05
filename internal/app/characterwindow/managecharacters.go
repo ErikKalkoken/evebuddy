@@ -1,0 +1,166 @@
+// Package characterwindow provides a window for managing Characters.
+package characterwindow
+
+import (
+	"context"
+
+	"fmt"
+	"image/color"
+	"log/slog"
+
+	"sync"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+)
+
+type UIService interface {
+	CurrentCharacterID() int64
+	CurrentCorporationID() int64
+	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	HasCharacter() bool
+	HasCorporation() bool
+	HumanizeError(err error) string
+	IsOffline() bool
+	LoadCharacter(id int64) error
+	LoadCorporation(id int64) error
+	ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window)
+	SetAnyCharacter() error
+	SetAnyCorporation() error
+	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
+	ShowErrorDialog(message string, err error, parent fyne.Window)
+	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
+	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
+}
+
+type EIS interface {
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+}
+
+type Params struct {
+	CharacterService   *characterservice.CharacterService
+	CorporationService *corporationservice.CorporationService
+	EveImageService    EIS
+	IsMobile           bool
+	IsUpdateDisabled   bool
+	Signals            *app.Signals
+	UIService          UIService
+}
+
+func Show(arg Params) {
+	if arg.CharacterService == nil ||
+		arg.CorporationService == nil ||
+		arg.EveImageService == nil ||
+		arg.Signals == nil ||
+		arg.UIService == nil {
+		panic(app.ErrInvalid)
+	}
+	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+	if !created {
+		w.Show()
+		return
+	}
+	mc := newManageCharacters(arg, w)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(mc, w.Canvas()))
+	w.Resize(fyne.Size{Width: 700, Height: 500})
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		mc.stop()
+	})
+	w.SetCloseIntercept(func() {
+		w.Close()
+		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+	})
+	w.Show()
+	mc.update(context.Background())
+}
+
+type manageCharacters struct {
+	widget.BaseWidget
+
+	characterAdmin    *characterAdmin
+	characterTags     *characterTags
+	characterTraining *characterTraining
+	cs                *characterservice.CharacterService
+	eis               EIS
+	isMobile          bool
+	isUpdateDisabled  bool
+	rs                *corporationservice.CorporationService
+	sb                *iwidget.Snackbar
+	signals           *app.Signals
+	u                 UIService
+	w                 fyne.Window
+}
+
+func newManageCharacters(arg Params, w fyne.Window) *manageCharacters {
+	a := &manageCharacters{
+		cs:               arg.CharacterService,
+		eis:              arg.EveImageService,
+		isMobile:         arg.IsMobile,
+		rs:               arg.CorporationService,
+		sb:               iwidget.NewSnackbar(w),
+		u:                arg.UIService,
+		w:                w,
+		isUpdateDisabled: arg.IsUpdateDisabled,
+		signals:          arg.Signals,
+	}
+	a.ExtendBaseWidget(a)
+	a.characterAdmin = newCharacterAdmin(a)
+	a.characterTags = newCharacterTags(a)
+	a.characterTraining = newCharacterTraining(a)
+	a.sb.Start()
+	return a
+}
+
+func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewAppTabs(
+		container.NewTabItem("Characters", a.characterAdmin),
+		container.NewTabItem("Tags", a.characterTags),
+		container.NewTabItem("Training", a.characterTraining),
+	)
+	c.SetTabLocation(container.TabLocationLeading)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *manageCharacters) stop() {
+	a.sb.Stop()
+}
+
+func (a *manageCharacters) update(ctx context.Context) {
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		a.characterAdmin.update(ctx)
+	})
+	wg.Go(func() {
+		a.characterTags.update(ctx)
+	})
+	wg.Go(func() {
+		a.characterTraining.update(ctx)
+	})
+	wg.Wait()
+}
+
+func (a *manageCharacters) reportError(text string, err error) {
+	slog.Error(text, "error", err)
+	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+}
+func newStandardSpacer() fyne.CanvasObject {
+	r := canvas.NewRectangle(color.Transparent)
+	r.SetMinSize(fyne.NewSquareSize(theme.Padding()))
+	return r
+}
