@@ -342,7 +342,7 @@ func (a *assetBrowserNavigation) clear() {
 	a.footer.SetText("")
 }
 
-func (a *assetBrowserNavigation) update(ctx context.Context, trees []*asset.Node) {
+func (a *assetBrowserNavigation) update(_ context.Context, trees []*asset.Node) {
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.ab.forCorporation)

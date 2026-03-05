@@ -1,4 +1,5 @@
-package ui
+// Package infowindow provides a window for displaying information about Eve objects.
+package infowindow
 
 import (
 	"context"
@@ -109,7 +110,8 @@ type Settings interface {
 	PreferMarketTab() bool
 }
 
-// InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
+// InfoWindow represents a dedicated window for showing information about Eve objects
+// similar to the in-game info window.
 type InfoWindow struct {
 	cs            CS
 	eis           EIS
@@ -125,42 +127,52 @@ type InfoWindow struct {
 	w             fyne.Window
 }
 
-type InfoWindowParams struct {
-	cs       CS
-	eis      EIS
-	eus      EUS
-	isMobile bool
-	js       *janiceservice.JaniceService
-	scs      SCS
-	settings Settings
-	u        UIService
-	w        fyne.Window
+type Params struct {
+	CharacterService   CS
+	EveImageService    EIS
+	EveUniverseService EUS
+	IsMobile           bool
+	JaniceService      *janiceservice.JaniceService
+	StatusCacheService SCS
+	Settings           Settings
+	UIService          UIService
+	Window             fyne.Window
 }
 
-// NewInfoWindow returns a configured InfoWindow.
-func NewInfoWindow(arg InfoWindowParams) *InfoWindow {
+// New returns a configured InfoWindow.
+func New(arg Params) *InfoWindow {
 	iw := &InfoWindow{
-		cs:       arg.cs,
-		eis:      arg.eis,
-		eus:      arg.eus,
-		isMobile: arg.isMobile,
-		js:       arg.js,
-		scs:      arg.scs,
-		settings: arg.settings,
-		u:        arg.u,
-		w:        arg.w,
+		cs:       arg.CharacterService,
+		eis:      arg.EveImageService,
+		eus:      arg.EveUniverseService,
+		isMobile: arg.IsMobile,
+		js:       arg.JaniceService,
+		scs:      arg.StatusCacheService,
+		settings: arg.Settings,
+		u:        arg.UIService,
+		w:        arg.Window,
+	}
+	if iw.cs == nil ||
+		iw.eis == nil ||
+		iw.eus == nil ||
+		iw.js == nil ||
+		iw.scs == nil ||
+		iw.settings == nil ||
+		iw.u == nil ||
+		iw.w == nil {
+		panic(app.ErrInvalid)
 	}
 	return iw
 }
 
 // ShowEveEntity shows a new info window for an EveEntity.
 func (iw *InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	iw.show(eveEntity2InfoVariant(ee), int64(ee.ID))
+	iw.show(eveEntity2InfoVariant(ee), ee.ID)
 }
 
 // Show shows a new info window for an EveEntity.
 func (iw *InfoWindow) Show(c app.EveEntityCategory, id int64) {
-	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), int64(id))
+	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), id)
 }
 
 func (iw *InfoWindow) ShowLocation(id int64) {
@@ -168,7 +180,11 @@ func (iw *InfoWindow) ShowLocation(id int64) {
 }
 
 func (iw *InfoWindow) ShowRace(id int64) {
-	iw.show(infoRace, int64(id))
+	iw.show(infoRace, id)
+}
+
+func (iw *InfoWindow) ShowTypeWithCharacter(typeID, characterID int64) {
+	iw.showWithCharacterID(infoInventoryType, typeID, characterID)
 }
 
 // infoWidget defines common functionality for all info widgets.
@@ -219,30 +235,30 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	switch v {
 	case infoAlliance:
 		title = "Alliance"
-		page = newAllianceInfo(iw, int64(entityID))
+		page = newAllianceInfo(iw, entityID)
 	case infoCharacter:
 		title = "Character"
-		page = newCharacterInfo(iw, int64(entityID))
+		page = newCharacterInfo(iw, entityID)
 	case infoConstellation:
 		title = "Constellation"
-		page = newConstellationInfo(iw, int64(entityID))
+		page = newConstellationInfo(iw, entityID)
 	case infoCorporation:
 		title = "Corporation"
-		page = newCorporationInfo(iw, int64(entityID))
+		page = newCorporationInfo(iw, entityID)
 	case infoInventoryType:
-		x := newInventoryTypeInfo(iw, int64(entityID), characterID)
+		x := newInventoryTypeInfo(iw, entityID, characterID)
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
 	case infoRace:
 		title = "Race"
-		page = newRaceInfo(iw, int64(entityID))
+		page = newRaceInfo(iw, entityID)
 	case infoRegion:
 		title = "Region"
-		page = newRegionInfo(iw, int64(entityID))
+		page = newRegionInfo(iw, entityID)
 	case infoSolarSystem:
 		title = "Solar System"
-		page = newSolarSystemInfo(iw, int64(entityID))
+		page = newSolarSystemInfo(iw, entityID)
 	case infoLocation:
 		title = "Location"
 		page = newLocationInfo(iw, entityID)
@@ -295,7 +311,7 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}()
 }
 
-func (iw *InfoWindow) showZoomWindow(title string, id int64, load loadFuncAsync, w fyne.Window) {
+func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
 	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
@@ -458,7 +474,7 @@ func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
 
 }
 
-func infoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
+func InfoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
 
 }
@@ -1290,7 +1306,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
 		}
-		ss, err := a.iw.eus.GetStationServicesESI(ctx, int64(a.id))
+		ss, err := a.iw.eus.GetStationServicesESI(ctx, a.id)
 		if err != nil {
 			return err
 		}
@@ -2284,7 +2300,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
 		r := requiredSkills[id]
-		a.iw.show(infoInventoryType, int64(r.typeID))
+		a.iw.show(infoInventoryType, r.typeID)
 	}
 	return container.NewTabItem("Requirements", list)
 }
@@ -2453,7 +2469,7 @@ func (w *attributeList) set(items []attributeItem) {
 }
 
 func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
-	supportedCategories := infoWindowSupportedEveEntities()
+	supportedCategories := InfoWindowSupportedEveEntities()
 	l := widget.NewList(
 		func() int {
 			return len(w.items)
@@ -2609,7 +2625,7 @@ func newEntityItem(id int64, category, text string, v infoVariant) entityItem {
 
 func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 	return entityItem{
-		id:          int64(o.ID),
+		id:          o.ID,
 		category:    "Planet",
 		text:        o.Name,
 		infoVariant: infoNotSupported,
@@ -2619,7 +2635,7 @@ func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	ee := o.EveEntity()
 	return entityItem{
-		id:           int64(ee.ID),
+		id:           ee.ID,
 		category:     ee.CategoryDisplay(),
 		textSegments: o.DisplayRichText(),
 		infoVariant:  eveEntity2InfoVariant(ee),
@@ -2627,14 +2643,14 @@ func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 }
 
 func newEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
-	return newEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
+	return newEntityItem(ee.ID, ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
 }
 
 func newEntityItemFromEveEntityWithText(ee *app.EveEntity, text string) entityItem {
 	if text == "" {
 		text = ee.Name
 	}
-	return newEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
+	return newEntityItem(ee.ID, ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
 }
 
 // entityList is a list widget for showing entities.

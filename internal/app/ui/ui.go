@@ -32,6 +32,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -991,7 +992,7 @@ func (u *baseUI) ShowTypeInfoWindow(id int64) {
 }
 
 func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int64) {
-	u.newInfoWindow().showWithCharacterID(infoInventoryType, int64(typeID), characterID)
+	u.newInfoWindow().ShowTypeWithCharacter(typeID, characterID)
 }
 
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
@@ -1002,17 +1003,17 @@ func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int64) {
 	u.newInfoWindow().Show(c, id)
 }
 
-func (u *baseUI) newInfoWindow() *InfoWindow {
-	iw := NewInfoWindow(InfoWindowParams{
-		cs:       u.cs,
-		eis:      u.eis,
-		eus:      u.eus,
-		isMobile: u.isMobile,
-		js:       u.js,
-		settings: u.settings,
-		scs:      u.scs,
-		u:        u,
-		w:        u.MainWindow(),
+func (u *baseUI) newInfoWindow() *infowindow.InfoWindow {
+	iw := infowindow.New(infowindow.Params{
+		CharacterService:   u.cs,
+		EveImageService:    u.eis,
+		EveUniverseService: u.eus,
+		IsMobile:           u.isMobile,
+		JaniceService:      u.js,
+		Settings:           u.settings,
+		StatusCacheService: u.scs,
+		UIService:          u,
+		Window:             u.MainWindow(),
 	})
 	return iw
 }

@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -54,7 +55,7 @@ func newGameSearch(u *baseUI) *gameSearch {
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
-		supportedCategories: infoWindowSupportedEveEntities(),
+		supportedCategories: infowindow.InfoWindowSupportedEveEntities(),
 		u:                   u,
 		w:                   u.MainWindow(),
 	}
@@ -265,7 +266,7 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.u.eis, a.u.eus, infoWindowSupportedEveEntities())
+			return newSearchResult(a.u.eis, a.u.eus, infowindow.InfoWindowSupportedEveEntities())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {
