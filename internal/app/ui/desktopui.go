@@ -23,6 +23,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -803,7 +804,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				ShowSettingsWindow(u.baseUI, u.settings, u.isMobile)
+				settingswindow.Show(u.baseUI, u.settings, u.isMobile)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{

@@ -1,9 +1,11 @@
-package ui
+// Package settingswindow provides a window to view and configure user settings.
+package settingswindow
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -59,7 +61,7 @@ type userSettings struct {
 	w        fyne.Window
 }
 
-func ShowSettingsWindow(u UIService, s *settings.Settings, isMobile bool) {
+func Show(u UIService, s *settings.Settings, isMobile bool) {
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("user-settings", "Settings")
 	if !ok {
 		w.Show()
@@ -1043,10 +1045,12 @@ func newSettingListItem() *settingListItem {
 
 func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSquareSize(theme.Padding()))
 	c := container.NewBorder(
 		nil,
 		container.NewVBox(
-			newStandardSpacer(),
+			spacer,
 			container.New(layout.NewCustomPaddedLayout(0, 0, 0, -2*p), w.header),
 		),
 		nil,

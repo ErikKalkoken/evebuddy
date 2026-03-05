@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -428,7 +429,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				ShowSettingsWindow(u.baseUI, u.settings, u.isMobile)
+				settingswindow.Show(u.baseUI, u.settings, u.isMobile)
 			},
 		),
 		navItemManageCharacters,
