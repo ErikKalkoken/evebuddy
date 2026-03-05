@@ -41,12 +41,12 @@ type EveEntityEntry struct {
 
 	eis         EveEntityEIS
 	field       *canvas.Rectangle
+	items       []*app.EveEntity
 	label       fyne.CanvasObject
 	labelWidth  float32
 	main        *fyne.Container
 	mu          sync.Mutex
 	placeholder *iwidget.RichText
-	s           []*app.EveEntity
 }
 
 func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis EveEntityEIS) *EveEntityEntry {
@@ -54,16 +54,16 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis EveEntit
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	placeholder := iwidget.NewRichText(&widget.TextSegment{
+		Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
+	})
 	w := &EveEntityEntry{
-		field:      bg,
-		eis:        eis,
-		label:      label,
-		labelWidth: labelWidth,
-		main:       container.New(layout.NewCustomPaddedVBoxLayout(0)),
-		placeholder: iwidget.NewRichText(&widget.TextSegment{
-			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
-		}),
-		s: make([]*app.EveEntity, 0),
+		eis:         eis,
+		field:       bg,
+		label:       label,
+		labelWidth:  labelWidth,
+		main:        container.New(layout.NewCustomPaddedVBoxLayout(0)),
+		placeholder: placeholder,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -73,13 +73,13 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis EveEntit
 func (w *EveEntityEntry) Items() []*app.EveEntity {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return w.s
+	return w.items
 }
 
 // Set replaces the list of items.
 func (w *EveEntityEntry) Set(s []*app.EveEntity) {
 	w.mu.Lock()
-	w.s = s
+	w.items = s
 	w.mu.Unlock()
 	w.Refresh()
 }
@@ -88,12 +88,12 @@ func (w *EveEntityEntry) Add(ee *app.EveEntity) {
 	added := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
-		for _, o := range w.s {
+		for _, o := range w.items {
 			if o.ID == ee.ID {
 				return false
 			}
 		}
-		w.s = append(w.s, ee)
+		w.items = append(w.items, ee)
 		return true
 	}()
 	if added {
@@ -105,9 +105,9 @@ func (w *EveEntityEntry) Remove(id int64) {
 	removed := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
-		for i, o := range w.s {
+		for i, o := range w.items {
 			if o.ID == id {
-				w.s = slices.Delete(w.s, i, i+1)
+				w.items = slices.Delete(w.items, i, i+1)
 				return true
 			}
 		}
@@ -120,8 +120,8 @@ func (w *EveEntityEntry) Remove(id int64) {
 
 // String returns a list of all entities as string.
 func (w *EveEntityEntry) String() string {
-	s := make([]string, len(w.s))
-	for i, ee := range w.s {
+	s := make([]string, len(w.items))
+	for i, ee := range w.items {
 		s[i] = ee.Name
 	}
 	return strings.Join(s, ", ")
@@ -130,7 +130,7 @@ func (w *EveEntityEntry) String() string {
 func (w *EveEntityEntry) IsEmpty() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return len(w.s) == 0
+	return len(w.items) == 0
 }
 
 func (w *EveEntityEntry) update() {
@@ -138,13 +138,13 @@ func (w *EveEntityEntry) update() {
 	defer w.mu.Unlock()
 	w.main.RemoveAll()
 	columns := kxlayout.NewColumns(w.labelWidth)
-	if len(w.s) == 0 {
+	if len(w.items) == 0 {
 		w.placeholder.SetWithText(w.Placeholder)
 		w.main.Add(container.New(columns, w.label, w.placeholder))
 	} else {
 		firstRow := true
 		isDisabled := w.Disabled()
-		for _, ee := range w.s {
+		for _, ee := range w.items {
 			var label fyne.CanvasObject
 			if firstRow {
 				label = w.label

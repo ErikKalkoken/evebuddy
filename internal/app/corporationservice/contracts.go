@@ -325,7 +325,7 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 	if err != nil {
 		return err
 	}
-	newBids := make([]esi.CharactersCharacterIdContractsContractIdBidsGetInner, 0)
+	var newBids []esi.CharactersCharacterIdContractsContractIdBidsGetInner
 	for _, b := range bids {
 		if !existingBidIDs.Contains(b.BidId) {
 			newBids = append(newBids, b)

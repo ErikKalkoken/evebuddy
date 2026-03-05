@@ -290,8 +290,7 @@ func (n *Node) Path() []*Node {
 	if n == nil {
 		return nil
 	}
-	nodes := make([]*Node, 0)
-	nodes = append(nodes, n)
+	nodes := []*Node{n}
 	current := n
 	for current.parent != nil {
 		nodes = append(nodes, current.parent)
@@ -308,7 +307,7 @@ func (n *Node) AllPaths() [][]string {
 	if n == nil {
 		return nil
 	}
-	all := make([][]string, 0)
+	var all [][]string
 	for n := range n.All() {
 		if c := n.ChildrenCount(); c == 0 {
 			p := xslices.Map(n.Path(), func(x *Node) string {

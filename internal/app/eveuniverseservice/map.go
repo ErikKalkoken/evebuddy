@@ -178,13 +178,12 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 	if err != nil {
 		return z, nil, nil, nil, nil, err
 	}
-	stations = make([]*app.EveEntity, len(system.Stations))
-	for i, id := range system.Stations {
+	for _, id := range system.Stations {
 		st, err := s.getValidEntity(ctx, id)
 		if err != nil {
 			return z, nil, nil, nil, nil, err
 		}
-		stations[i] = st
+		stations = append(stations, st)
 	}
 	slices.SortFunc(stations, func(a, b *app.EveEntity) int {
 		return a.Compare(b)

@@ -35,7 +35,7 @@ func (st *Storage) ListEveMarketPrices(ctx context.Context) ([]*app.EveMarketPri
 	if err != nil {
 		return nil, fmt.Errorf("ListEveMarketPrices: %w", err)
 	}
-	oo := make([]*app.EveMarketPrice, 0)
+	var oo []*app.EveMarketPrice
 	for _, r := range rows {
 		oo = append(oo, eveMarketPriceFromDBModel(r))
 	}

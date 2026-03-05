@@ -139,7 +139,7 @@ func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) 
 	if err != nil {
 		return nil, fmt.Errorf("ListAllCharacterIndustryJobActiveCounts: %w", err)
 	}
-	result := make([]app.IndustryJobActivityCount, 0)
+	var result []app.IndustryJobActivityCount
 	for _, r := range rows {
 		result = append(result, app.IndustryJobActivityCount{
 			Activity:    app.IndustryActivity(r.ActivityID),

@@ -65,7 +65,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	if err != nil {
 		return wrapErr(err)
 	}
-	ss := make([]queries.Scope, 0)
+	var ss []queries.Scope
 	for name := range arg.Scopes.All() {
 		s, err := st.getOrCreateScope(ctx, name)
 		if err != nil {
@@ -144,7 +144,7 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	tokens := make([]*app.CharacterToken, 0)
+	var tokens []*app.CharacterToken
 	for _, r := range rows {
 		ss, err := st.qRO.ListCharacterTokenScopes(ctx, r.CharacterID)
 		if err != nil {

@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	notifications := make([]notification, 0)
+	var notifications []notification
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		log.Fatal(err)
 	}

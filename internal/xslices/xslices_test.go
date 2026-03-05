@@ -44,7 +44,7 @@ func TestDeduplicate(t *testing.T) {
 		s := []string{}
 		got := xslices.Deduplicate(s)
 		want := []string{}
-		assert.Equal(t, want, got)
+		assert.ElementsMatch(t, want, got)
 	})
 }
 

@@ -27,7 +27,7 @@ type Tree struct {
 }
 
 func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Tree {
-	items := make([]Item, 0)
+	var items []Item
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
@@ -35,7 +35,7 @@ func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLo
 }
 
 func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Tree {
-	items := make([]Item, 0)
+	var items []Item
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
@@ -381,7 +381,7 @@ func (ac Tree) Node(itemID int64) (*Node, bool) {
 // Locations returns a new slice with all location nodes.
 // Locations without any further nodes are excluded.
 func (ac Tree) Locations() []*Node {
-	locations := make([]*Node, 0)
+	var locations []*Node
 	for _, loc := range ac.locations {
 		if loc.ChildrenCount() > 0 {
 			locations = append(locations, loc)

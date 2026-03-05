@@ -106,7 +106,7 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterSkillqueueItem, 0)
+	var oo []*app.CharacterSkillqueueItem
 	for _, r := range rows {
 		oo = append(oo, skillqueueItemFromDBModel(skillqueueItemFromDBModelParams{
 			description: r.SkillDescription,

@@ -107,9 +107,6 @@ type ErrGroupDebug struct {
 }
 
 func (g *ErrGroupDebug) Go(f func() error) {
-	if g.ff == nil {
-		g.ff = make([]func() error, 0)
-	}
 	g.ff = append(g.ff, f)
 }
 

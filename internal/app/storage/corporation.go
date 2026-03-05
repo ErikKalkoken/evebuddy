@@ -31,7 +31,7 @@ type CreateCorporationParams struct {
 }
 
 func (st *Storage) CreateCorporation(ctx context.Context, corporationID int64) error {
-	if err := st.qRW.CreateCorporation(ctx,corporationID); err != nil {
+	if err := st.qRW.CreateCorporation(ctx, corporationID); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintPrimaryKey {
 				err = app.ErrAlreadyExists
@@ -43,7 +43,7 @@ func (st *Storage) CreateCorporation(ctx context.Context, corporationID int64) e
 }
 
 func (st *Storage) DeleteCorporation(ctx context.Context, corporationID int64) error {
-	err := st.qRW.DeleteCorporation(ctx,corporationID)
+	err := st.qRW.DeleteCorporation(ctx, corporationID)
 	if err != nil {
 		return fmt.Errorf("delete corporation %d: %w", corporationID, err)
 	}
@@ -51,7 +51,7 @@ func (st *Storage) DeleteCorporation(ctx context.Context, corporationID int64) e
 }
 
 func (st *Storage) GetCorporation(ctx context.Context, corporationID int64) (*app.Corporation, error) {
-	r, err := st.qRO.GetCorporation(ctx,corporationID)
+	r, err := st.qRO.GetCorporation(ctx, corporationID)
 	if err != nil {
 		return nil, fmt.Errorf("get corporation %d: %w", corporationID, convertGetError(err))
 	}
@@ -112,7 +112,7 @@ func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
 		},
 	})
 	o := &app.Corporation{
-		ID:            r.EveCorporation.ID,
+		ID:             r.EveCorporation.ID,
 		EveCorporation: ec,
 	}
 	return o
@@ -127,16 +127,16 @@ func (st *Storage) GetOrCreateCorporation(ctx context.Context, corporationID int
 		}
 		defer tx.Rollback()
 		qtx := st.qRW.WithTx(tx)
-		r, err = qtx.GetCorporation(ctx,corporationID)
+		r, err = qtx.GetCorporation(ctx, corporationID)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				return nil, err
 			}
-			err = qtx.CreateCorporation(ctx,corporationID)
+			err = qtx.CreateCorporation(ctx, corporationID)
 			if err != nil {
 				return nil, err
 			}
-			r, err = qtx.GetCorporation(ctx,corporationID)
+			r, err = qtx.GetCorporation(ctx, corporationID)
 			if err != nil {
 				return nil, err
 			}
@@ -179,9 +179,9 @@ func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShor
 		return nil, fmt.Errorf("list corporations short: %w", err)
 
 	}
-	cc := make([]*app.EntityShort, 0)
+	var cc []*app.EntityShort
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort{ID:r.ID, Name: r.Name})
+		cc = append(cc, &app.EntityShort{ID: r.ID, Name: r.Name})
 	}
 	return cc, nil
 }
@@ -194,9 +194,9 @@ func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, required
 		return nil, fmt.Errorf("ListPrivilegedCorporationsShort: %w", err)
 
 	}
-	cc := make([]*app.EntityShort, 0)
+	var cc []*app.EntityShort
 	for _, r := range rows {
-		cc = append(cc, &app.EntityShort{ID:r.ID, Name: r.Name})
+		cc = append(cc, &app.EntityShort{ID: r.ID, Name: r.Name})
 	}
 	return cc, nil
 }

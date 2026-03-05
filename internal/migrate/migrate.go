@@ -97,7 +97,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	if err != nil {
 		return err
 	}
-	unapplied := make([]migration, 0)
+	var unapplied []migration
 	for _, entry := range c {
 		fn := entry.Name()
 		ext := filepath.Ext(fn)

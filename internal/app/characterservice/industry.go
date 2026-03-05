@@ -77,7 +77,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
 				return j.JobID, j.Status
 			}))
-			changedJobs := make([]esi.CharactersCharacterIdIndustryJobsGetInner, 0)
+			var changedJobs []esi.CharactersCharacterIdIndustryJobsGetInner
 			for _, j := range jobs {
 				status, found := currentJobs[j.JobId]
 				if !found {

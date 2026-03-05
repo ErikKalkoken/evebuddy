@@ -55,7 +55,7 @@ func (st *Storage) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, err
 		return nil, fmt.Errorf("list tags: %w", err)
 
 	}
-	tags := make([]*app.CharacterTag, 0)
+	var tags []*app.CharacterTag
 	for _, r := range rows {
 		tags = append(tags, tagFromDBModel(r))
 	}
@@ -141,7 +141,7 @@ func (st *Storage) createCharactersCharacterTag(ctx context.Context, q *queries.
 		return wrapErr(app.ErrInvalid)
 	}
 	err := q.CreateCharactersCharacterTag(ctx, queries.CreateCharactersCharacterTagParams{
-		CharacterID:arg.CharacterID,
+		CharacterID: arg.CharacterID,
 		TagID:       arg.TagID,
 	})
 	if err != nil {
@@ -155,7 +155,7 @@ func (st *Storage) DeleteCharactersCharacterTag(ctx context.Context, arg CreateC
 		return fmt.Errorf("DeleteCharactersCharacterTag: %+v: %w", arg, app.ErrInvalid)
 	}
 	return st.qRW.DeleteCharactersCharacterTag(ctx, queries.DeleteCharactersCharacterTagParams{
-		CharacterID:arg.CharacterID,
+		CharacterID: arg.CharacterID,
 		TagID:       arg.TagID,
 	})
 }
@@ -172,10 +172,10 @@ func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int6
 		return nil, wrapErr(err)
 
 	}
-	cc := make([]*app.EntityShort, 0)
+	var cc []*app.EntityShort
 	for _, r := range rows {
 		cc = append(cc, &app.EntityShort{
-			ID:  r.ID,
+			ID:   r.ID,
 			Name: r.Name,
 		})
 	}
@@ -189,12 +189,12 @@ func (st *Storage) ListCharacterTagsForCharacter(ctx context.Context, characterI
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterTagsForCharacter(ctx,characterID)
+	rows, err := st.qRO.ListCharacterTagsForCharacter(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 
 	}
-	tags := make([]*app.CharacterTag, 0)
+	var tags []*app.CharacterTag
 	for _, r := range rows {
 		tags = append(tags, tagFromDBModel(r))
 	}

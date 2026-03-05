@@ -81,7 +81,7 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.PlanetPin, 0)
+	var oo []*app.PlanetPin
 	for _, r := range rows {
 		o, err := st.planetPinFromDBModel(ctx, queries.GetPlanetPinRow(r))
 		if err != nil {

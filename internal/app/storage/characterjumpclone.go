@@ -59,7 +59,7 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	if err != nil {
 		return nil, fmt.Errorf("get character jump clone implants for clone ID %d: %w", cloneID, err)
 	}
-	oo := make([]*app.CharacterJumpCloneImplant, 0)
+	var oo []*app.CharacterJumpCloneImplant
 	for _, r := range rows {
 		oo = append(oo, characterJumpCloneImplantFromDBModel(characterJumpCloneImplantFromDBModelParams{
 			jci:  r.CharacterJumpCloneImplant,
@@ -101,7 +101,7 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 	if err != nil {
 		return nil, fmt.Errorf("list all character jump clones: %w", err)
 	}
-	oo := make([]*app.CharacterJumpClone2, 0)
+	var oo []*app.CharacterJumpClone2
 	for _, r := range rows {
 		el, err := st.eveLocationFromDBModel(ctx, queries.EveLocation{
 			ID:               r.LocationID,
@@ -116,8 +116,8 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 		oo = append(oo, &app.CharacterJumpClone2{
 			ID:            r.ID,
 			ImplantsCount: int(r.ImplantsCount),
-			CloneID:      r.JumpCloneID,
-			Character:     &app.EntityShort{ID:r.CharacterID, Name: r.CharacterName},
+			CloneID:       r.JumpCloneID,
+			Character:     &app.EntityShort{ID: r.CharacterID, Name: r.CharacterName},
 			Location:      el,
 		})
 	}
@@ -135,7 +135,7 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int6
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CharacterJumpClone, 0)
+	var oo []*app.CharacterJumpClone
 	for _, r := range rows {
 		o := characterJumpCloneFromDBModel(characterJumpCloneFromDBModelParams{
 			jc:               r.CharacterJumpClone,
@@ -223,9 +223,9 @@ func characterJumpCloneFromDBModel(arg characterJumpCloneFromDBModelParams) *app
 		panic("invalid IDs")
 	}
 	o2 := &app.CharacterJumpClone{
-		CharacterID:arg.jc.CharacterID,
+		CharacterID: arg.jc.CharacterID,
 		ID:          arg.jc.ID,
-		CloneID:    arg.jc.JumpCloneID,
+		CloneID:     arg.jc.JumpCloneID,
 		Location: &app.EveLocationShort{
 			ID:             arg.jc.LocationID,
 			Name:           optional.New(arg.locationName),

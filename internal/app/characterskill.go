@@ -71,7 +71,7 @@ type CharacterSkillqueue struct {
 
 // NewCharacterSkillqueue returns a new skill queue for a character.
 func NewCharacterSkillqueue() *CharacterSkillqueue {
-	sq := &CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
+	sq := &CharacterSkillqueue{}
 	return sq
 }
 
@@ -205,8 +205,7 @@ func (sq *CharacterSkillqueue) Update(ctx context.Context, cs CharacterServiceSk
 
 func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServiceSkillqueue, characterID int64) ([]*CharacterSkillqueueItem, error) {
 	if characterID == 0 {
-		items := make([]*CharacterSkillqueueItem, 0)
-		return items, nil
+		return nil, nil
 	}
 	items, err := cs.ListSkillqueueItems(ctx, characterID)
 	if err != nil {

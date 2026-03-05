@@ -22,7 +22,7 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int64) ([]
 	rolesSorted := slices.SortedFunc(app.RolesAll(), func(a, b app.Role) int {
 		return strings.Compare(a.String(), b.String())
 	})
-	roles := make([]app.CharacterRole, 0)
+	var roles []app.CharacterRole
 	if granted.Contains(app.RoleDirector) {
 		roles = append(roles, app.CharacterRole{
 			CharacterID: characterID,

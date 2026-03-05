@@ -92,7 +92,7 @@ func (ec EveCharacter) Hash() string {
 		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
 		ec.Title,
 	}
-	s := make([]string, 0)
+	var s []string
 	for _, x := range xx {
 		s = append(s, fmt.Sprint(x))
 	}
@@ -172,7 +172,7 @@ func (ec EveCorporation) Hash() string {
 		ec.URL,
 		ec.WarEligible,
 	}
-	s := make([]string, 0)
+	var s []string
 	for _, x := range xx {
 		s = append(s, fmt.Sprint(x))
 	}

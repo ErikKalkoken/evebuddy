@@ -16,13 +16,11 @@ type Stack[T any] struct {
 }
 
 func (s *Stack[T]) Clear() {
+	clear(s.s)
 	s.s = s.s[0:0]
 }
 
 func (s *Stack[T]) Push(v T) {
-	if s.s == nil {
-		s.s = make([]T, 0)
-	}
 	s.s = append(s.s, v)
 }
 

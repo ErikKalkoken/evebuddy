@@ -103,7 +103,7 @@ func (s Settings) LogLevelNames() []string {
 		name  string
 		level slog.Level
 	}
-	levels := make([]t, 0)
+	var levels []t
 	for name, level := range logLevelName2Level {
 		levels = append(levels, t{name, level})
 	}

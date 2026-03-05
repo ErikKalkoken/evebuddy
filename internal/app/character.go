@@ -271,7 +271,7 @@ func (cp CharacterPlanet) ExtractionsEarliestExpiry() optional.Optional[time.Tim
 // ExtractionsExpiryTimes returns the expiry times for all extractions.
 // When no expiry data is found it will return empty.
 func (cp CharacterPlanet) ExtractionsExpiryTimes() []time.Time {
-	s := make([]time.Time, 0)
+	var s []time.Time
 	for pp := range cp.ActiveExtractors() {
 		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
 			s = append(s, v)

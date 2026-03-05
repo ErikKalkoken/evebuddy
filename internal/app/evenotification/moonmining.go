@@ -52,7 +52,7 @@ func makeOreText(ctx context.Context, ores map[int64]float64, eus EveUniverseSer
 	if err != nil {
 		return "", err
 	}
-	items := make([]oreItem, 0)
+	var items []oreItem
 	for id, v := range ores {
 		i := oreItem{
 			id:     id,

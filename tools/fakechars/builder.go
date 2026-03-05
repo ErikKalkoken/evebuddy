@@ -64,7 +64,6 @@ type CharacterBuilder struct {
 
 func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EveUniverseService, corporationID int64) *CharacterBuilder {
 	b := &CharacterBuilder{
-		characterIDs:  make([]int64, 0),
 		corporationID: corporationID,
 		eus:           eus,
 		f:             f,
@@ -72,7 +71,6 @@ func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveunive
 		locations:     make(map[int64]*app.EveLocation),
 		st:            st,
 		types:         make(map[int64]*app.EveType),
-		corporations:  make([]*app.EveEntity, 0),
 	}
 	return b
 }
@@ -138,7 +136,7 @@ func (b *CharacterBuilder) loadCharacterIDs(ctx context.Context) error {
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
-	ids := make([]int64, 0)
+	var ids []int64
 	for _, c := range v.Characters {
 		ids = append(ids, c.CharacterID)
 	}
@@ -364,7 +362,7 @@ func (b *CharacterBuilder) createImplants() {
 
 func (b *CharacterBuilder) createJumpClones() {
 	// jump clones
-	ii := make([]int64, 0)
+	var ii []int64
 	for range implants * b.Factor {
 		i := b.f.CreateEveType()
 		ii = append(ii, i.ID)
@@ -459,7 +457,7 @@ func (b *CharacterBuilder) createNotifications() {
 }
 
 func (b *CharacterBuilder) createSkills() {
-	groupIDs := make([]int64, 0)
+	var groupIDs []int64
 	for range skillGroups * b.Factor {
 		eg := b.f.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID:  app.EveCategorySkill,
@@ -477,7 +475,7 @@ func (b *CharacterBuilder) createSkills() {
 		})
 		b.f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: b.character.ID,
-			TypeID:   et.ID,
+			TypeID:      et.ID,
 		})
 		printProgress("skills", skills*b.Factor, i)
 	}

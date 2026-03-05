@@ -324,7 +324,7 @@ func (n structureItemsDelivered) render(ctx context.Context, text string, timest
 		location,
 		makeSolarSystemLink(solarSystem),
 	)
-	p := make([]string, 0)
+	var p []string
 	for _, r := range data.ListOfTypesAndQty {
 		p = append(p, fmt.Sprintf("%dx %s", r[0], entities[r[1]].Name))
 	}
@@ -496,7 +496,7 @@ func (n structuresReinforcementChanged) render(ctx context.Context, text string,
 	if err != nil {
 		return title, body, err
 	}
-	structures := make([]structureReinforcementInfo, 0)
+	var structures []structureReinforcementInfo
 	for _, r := range data.AllStructureInfo {
 		typeID := int64(r[2].(uint64))
 		s := structureReinforcementInfo{
@@ -513,7 +513,7 @@ func (n structuresReinforcementChanged) render(ctx context.Context, text string,
 	if err != nil {
 		return title, body, err
 	}
-	lines := make([]string, 0)
+	var lines []string
 	for _, o := range structures {
 		lines = append(lines, fmt.Sprintf("- %s (%s)", o.name, entities[o.typeID].Name))
 	}
@@ -559,7 +559,7 @@ func (n structureServicesOffline) render(ctx context.Context, text string, times
 	if err != nil {
 		return title, body, err
 	}
-	lines := make([]string, 0)
+	var lines []string
 	for e := range maps.Values(entities) {
 		lines = append(lines, fmt.Sprintf("- %s", e.Name))
 	}

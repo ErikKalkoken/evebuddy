@@ -173,7 +173,7 @@ func (sc *StatusCacheService) CharacterSection(characterID int64, section app.Ch
 }
 
 func (sc *StatusCacheService) ListCharacterSections(characterID int64) []app.CacheSectionStatus {
-	list := make([]app.CacheSectionStatus, 0)
+	var list []app.CacheSectionStatus
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSection(characterID, section)
 		if !ok {
@@ -313,7 +313,7 @@ func (sc *StatusCacheService) CorporationSection(corporationID int64, section ap
 }
 
 func (sc *StatusCacheService) ListCorporationSections(corporationID int64) []app.CacheSectionStatus {
-	list := make([]app.CacheSectionStatus, 0)
+	var list []app.CacheSectionStatus
 	for _, section := range app.CorporationSections {
 		v, ok := sc.CorporationSection(corporationID, section)
 		if !ok {
@@ -448,7 +448,7 @@ func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.Ca
 }
 
 func (sc *StatusCacheService) ListGeneralSections() []app.CacheSectionStatus {
-	list := make([]app.CacheSectionStatus, 0)
+	var list []app.CacheSectionStatus
 	for _, section := range app.GeneralSections {
 		v, ok := sc.GeneralSection(section)
 		if !ok {
