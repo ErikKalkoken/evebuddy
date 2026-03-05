@@ -62,8 +62,26 @@ type Params struct {
 // New creates a new character service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CharacterService {
+	if arg.AuthClient == nil {
+		panic("AuthClient")
+	}
+	if arg.Cache == nil {
+		panic("Cache")
+	}
 	if arg.ESIClient == nil {
-		panic("missing esi client")
+		panic("ESIClient")
+	}
+	if arg.EveNotificationService == nil {
+		panic("EveNotificationService")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService")
+	}
+	if arg.Storage == nil {
+		panic("Storage")
 	}
 	s := &CharacterService{
 		authClient:       arg.AuthClient,

@@ -10,8 +10,11 @@ import (
 
 	"github.com/fnt-eve/goesi-openapi"
 
+	"github.com/ErikKalkoken/eveauth"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -70,12 +73,21 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	ac, err := eveauth.NewClient(eveauth.Config{
+		ClientID: "DUMMY",
+		Port:     8000,
+	})
+	if err != nil {
+		panic(err)
+	}
 	cs := characterservice.New(characterservice.Params{
-		Cache:              testutil.NewCacheFake2(),
-		ESIClient:          esiClient,
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
+		AuthClient:             ac,
+		Cache:                  testutil.NewCacheFake2(),
+		ESIClient:              esiClient,
+		EveNotificationService: evenotification.New(eus),
+		EveUniverseService:     eus,
+		StatusCacheService:     scs,
+		Storage:                st,
 	})
 	app := test.NewTempApp(t)
 	makeInfoWindow := func() *InfoWindow {

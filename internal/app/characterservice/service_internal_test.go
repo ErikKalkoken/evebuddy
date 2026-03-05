@@ -28,13 +28,23 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	ac, err := eveauth.NewClient(eveauth.Config{
+		ClientID: "DUMMY",
+		Port:     8000,
+	})
+	if err != nil {
+		panic(err)
+	}
 	arg := Params{
+		AuthClient:             ac,
 		Cache:                  testutil.NewCacheFake2(),
 		ESIClient:              client,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		StatusCacheService:     scs,
 		Storage:                st,
+		ConcurrencyLimit:       0,
+		HTTPClient:             &http.Client{},
 	}
 	if len(args) > 0 {
 		a := args[0]

@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -163,12 +165,21 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	ac, err := eveauth.NewClient(eveauth.Config{
+		ClientID: "DUMMY",
+		Port:     8000,
+	})
+	if err != nil {
+		panic(err)
+	}
 	cs := characterservice.New(characterservice.Params{
-		Cache:              testutil.NewCacheFake2(),
-		ESIClient:          esiClient,
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
+		AuthClient:             ac,
+		Cache:                  testutil.NewCacheFake2(),
+		ESIClient:              esiClient,
+		EveNotificationService: evenotification.New(eus),
+		EveUniverseService:     eus,
+		StatusCacheService:     scs,
+		Storage:                st,
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		Cache: testutil.NewCacheFake2(),
