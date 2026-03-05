@@ -410,6 +410,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		func() {
 			statuswindow.Show(statuswindow.Params{
 				EveImageService:    u.eis,
+				EveUniverseService: u.eus,
 				IsMobile:           u.isMobile,
 				Signals:            u.signals,
 				StatusCacheService: u.scs,

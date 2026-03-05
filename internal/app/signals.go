@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"sync/atomic"
+	"time"
 
 	"github.com/maniartech/signals"
 
@@ -106,4 +108,10 @@ func NewSignals() *Signals {
 // UniqueKey returns a unique key for registering listeners.
 func (s *Signals) UniqueKey() string {
 	return fmt.Sprintf("key-%d", s.keyID.Add(1))
+}
+
+func (s *Signals) PseudoUniqueID() string {
+	currentTime := time.Now().UnixNano()
+	randomNumber := rand.Uint64()
+	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
 }

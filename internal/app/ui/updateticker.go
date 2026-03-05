@@ -17,77 +17,9 @@ import (
 // ticker
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
-	generalSectionsUpdateTicker   = 300 * time.Second
 )
 
 // update general sections
-
-func (u *baseUI) startUpdateTickerGeneralSections() {
-	go func() {
-		for {
-			go u.UpdateGeneralSectionsIfNeeded(context.Background(), false)
-			<-time.Tick(generalSectionsUpdateTicker)
-		}
-	}()
-}
-
-func (u *baseUI) UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
-	if !forceUpdate && u.ess.IsDailyDowntime() {
-		slog.Info("Skipping regular update of general sections during daily downtime")
-		return
-	}
-	if !forceUpdate && u.isMobile && !u.isForeground.Load() {
-		slog.Debug("Skipping general sections update while in background")
-		return
-	}
-
-	id := "general-" + uniqueID()
-	u.signals.UpdateStarted.Emit(ctx, id)
-	defer u.signals.UpdateStopped.Emit(ctx, id)
-
-	sections := set.Of(app.GeneralSections...)
-	var wg sync.WaitGroup
-	for s := range sections.All() {
-		wg.Go(func() {
-			u.UpdateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
-		})
-	}
-	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
-	wg.Wait()
-	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
-}
-
-func (u *baseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	logErr := func(err error) {
-		slog.Error("Failed to update general section", "section", section, "err", err)
-	}
-	changedIDs, err := u.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
-		Section:     section,
-		ForceUpdate: forceUpdate,
-	})
-	if err != nil {
-		logErr(err)
-		return
-	}
-
-	needsRefresh := changedIDs.Size() > 0 || forceUpdate
-	arg := app.GeneralSectionUpdated{
-		Section:      section,
-		Changed:      changedIDs,
-		NeedsRefresh: needsRefresh,
-	}
-
-	var wg sync.WaitGroup
-	if needsRefresh {
-		wg.Go(func() {
-			u.signals.GeneralSectionChanged.Emit(ctx, arg)
-		})
-	}
-	wg.Go(func() {
-		u.signals.GeneralSectionUpdated.Emit(ctx, arg)
-	})
-	wg.Wait()
-}
 
 // update character sections
 

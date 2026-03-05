@@ -453,7 +453,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					go u.UpdateCharactersIfNeeded(context.Background(), false)
 					go u.UpdateCorporationsIfNeeded(context.Background(), false)
-					go u.UpdateGeneralSectionsIfNeeded(context.Background(), false)
+					go u.eus.UpdateSectionsIfNeeded(context.Background(), false)
 				}()
 			}
 		}
@@ -536,7 +536,7 @@ func (u *baseUI) Start() bool {
 		if !u.isOffline && !u.isUpdateDisabled.Load() {
 			time.Sleep(3 * time.Second) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
-			u.startUpdateTickerGeneralSections()
+			u.eus.StartUpdateTicker()
 			u.startUpdateTickerCharacters()
 			u.startUpdateTickerCorporations()
 		} else {

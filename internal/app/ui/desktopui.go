@@ -831,6 +831,7 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				statuswindow.Show(statuswindow.Params{
 					EveImageService:    u.eis,
+					EveUniverseService: u.eus,
 					IsMobile:           u.isMobile,
 					Signals:            u.signals,
 					StatusCacheService: u.scs,

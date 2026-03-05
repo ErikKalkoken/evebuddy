@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -33,8 +34,6 @@ type UIService interface {
 	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
 	UpdateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool)
 	UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error
-	UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool)
-	UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool)
 	HumanizeError(err error) string
 }
 
@@ -99,10 +98,12 @@ type statusWindow struct {
 	u                 UIService
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
+	eus               *eveuniverseservice.EveUniverseService
 }
 
 type Params struct {
 	EveImageService    EIS
+	EveUniverseService *eveuniverseservice.EveUniverseService
 	IsMobile           bool
 	Signals            *app.Signals
 	StatusCacheService SCS
@@ -110,11 +111,20 @@ type Params struct {
 }
 
 func Show(arg Params) {
-	if arg.EveImageService == nil ||
-		arg.Signals == nil ||
-		arg.StatusCacheService == nil ||
-		arg.UIService == nil {
-		panic(app.ErrInvalid)
+	if arg.EveImageService == nil {
+		panic("EveImageService")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService")
+	}
+	if arg.Signals == nil {
+		panic("Signals")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService")
+	}
+	if arg.UIService == nil {
+		panic("UIService")
 	}
 	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
 	if !ok {
@@ -143,6 +153,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 		details:           newUpdateStatusDetail(),
 		detailsTop:        newLabelWithWrapping(),
 		eis:               arg.EveImageService,
+		eus:               arg.EveUniverseService,
 		isMobile:          arg.IsMobile,
 		sb:                iwidget.NewSnackbar(w),
 		scs:               arg.StatusCacheService,
@@ -243,7 +254,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 
 		}),
 		fyne.NewMenuItem("Update all general topics", func() {
-			go a.u.UpdateGeneralSectionsIfNeeded(context.Background(), true)
+			go a.eus.UpdateSectionsIfNeeded(context.Background(), true)
 		}),
 	)
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
@@ -374,7 +385,7 @@ func (a *statusWindow) makeUpdateAllAction() func() {
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.UpdateGeneralSectionsIfNeeded(ctx, true)
+			go a.eus.UpdateSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
 			go a.u.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
@@ -542,7 +553,7 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.UpdateGeneralSectionAndRefreshIfNeeded(
+			go a.eus.UpdateSectionAndRefreshIfNeeded(
 				ctx, app.GeneralSection(sectionID), true,
 			)
 		case sectionCharacter:
