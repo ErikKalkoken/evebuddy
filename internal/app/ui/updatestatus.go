@@ -91,8 +91,6 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
 		detailsTop:        newLabelWithWrapping(),
-		sectionEntities:   make([]sectionEntity, 0),
-		sections:          make([]app.CacheSectionStatus, 0),
 		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,

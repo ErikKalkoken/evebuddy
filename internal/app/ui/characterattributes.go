@@ -41,7 +41,6 @@ type characterAttributes struct {
 
 func newCharacterAttributes(u *baseUI) *characterAttributes {
 	a := &characterAttributes{
-		rows:   make([]characterAttributeRow, 0),
 		footer: newLabelWithTruncation(),
 		u:      u,
 	}

@@ -114,7 +114,6 @@ func newCharacterMails(u *baseUI) *characterMails {
 		folderDownloaded: ttwidget.NewLabel(""),
 		folderStatus:     widget.NewLabel(""),
 		folderTotal:      widget.NewLabel("?"),
-		headers:          make([]*app.CharacterMailHeader, 0),
 		headerStatus:     widget.NewLabel(""),
 		headerTop:        widget.NewLabel(""),
 		u:                u,
@@ -597,7 +596,7 @@ func (a *characterMails) setCurrentFolder(ctx context.Context, folder *mailFolde
 func (a *characterMails) headerUpdate(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.headers = make([]*app.CharacterMailHeader, 0)
+			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
 			a.headerTop.SetText("")
 			a.clearMail()

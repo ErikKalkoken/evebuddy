@@ -83,8 +83,6 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a := &characterFlyableShips{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
-		rows:         make([]flyableShipRow, 0),
-		rowsFiltered: make([]flyableShipRow, 0),
 		top:          newLabelWithWrapping(),
 		u:            u,
 	}

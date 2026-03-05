@@ -260,8 +260,6 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		footer:         newLabelWithWrapping(),
 		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
 		forCorporation: forCorporation,
-		rows:           make([]industryJobRow, 0),
-		rowsFiltered:   make([]industryJobRow, 0),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

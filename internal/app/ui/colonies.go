@@ -210,8 +210,6 @@ func newColonies(u *baseUI) *colonies {
 	a := &colonies{
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, coloniesColEndDate, iwidget.SortAsc),
-		rows:         make([]colonyRow, 0),
-		rowsFiltered: make([]colonyRow, 0),
 		search:       widget.NewEntry(),
 		u:            u,
 	}

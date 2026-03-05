@@ -206,8 +206,6 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
-		rows:         make([]walletTransactionRow, 0),
-		rowsFiltered: make([]walletTransactionRow, 0),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

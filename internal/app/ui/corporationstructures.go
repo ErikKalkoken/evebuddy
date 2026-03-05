@@ -149,8 +149,6 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	}})
 	a := &corporationStructures{
 		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
-		rows:         make([]corporationStructureRow, 0),
-		rowsFiltered: make([]corporationStructureRow, 0),
 		footer:       newLabelWithWrapping(),
 		u:            u,
 	}

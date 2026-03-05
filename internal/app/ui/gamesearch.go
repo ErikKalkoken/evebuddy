@@ -53,7 +53,6 @@ func newGameSearch(u *baseUI) *gameSearch {
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
-		recentItems:         make([]*app.EveEntity, 0),
 		resultCount:         widget.NewLabel(""),
 		supportedCategories: infoWindowSupportedEveEntities(),
 		u:                   u,

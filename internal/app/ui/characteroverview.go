@@ -156,8 +156,6 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		footer:       newLabelWithTruncation(),
 		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
 		loadInfo:     info,
-		rows:         make([]characterOverviewRow, 0),
-		rowsFiltered: make([]characterOverviewRow, 0),
 		search:       widget.NewEntry(),
 		u:            u,
 	}

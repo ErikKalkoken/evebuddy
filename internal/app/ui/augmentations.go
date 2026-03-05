@@ -209,24 +209,12 @@ func (a *augmentations) update(ctx context.Context) {
 
 func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[characterAugmentationNode], error) {
 	var td iwidget.TreeData[characterAugmentationNode]
-	characters, err := a.u.cs.ListCharactersShort(ctx)
-	if err != nil {
-		return td, err
-	}
 	characterImplants := make(map[int64][]*app.CharacterImplant)
-	for _, c := range characters {
-		characterImplants[c.ID] = make([]*app.CharacterImplant, 0)
-	}
 	implants, err := a.u.cs.ListAllImplants(ctx)
 	if err != nil {
 		return td, err
 	}
 	for _, im := range implants {
-		_, ok := characterImplants[im.CharacterID]
-		if !ok {
-			slog.Warn("Unknown character for implant", "characterID", im.CharacterID)
-			continue
-		}
 		characterImplants[im.CharacterID] = append(characterImplants[im.CharacterID], im)
 	}
 	for k := range characterImplants {
@@ -234,15 +222,20 @@ func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[charact
 			return cmp.Compare(a.SlotNum, b.SlotNum)
 		})
 	}
-	for _, c := range characters {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+
+	characters, err := a.u.cs.CharacterNames(ctx)
+	if err != nil {
+		return td, err
+	}
+	for characterID, implants := range characterImplants {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, characterID)
 		if err != nil {
 			return td, err
 		}
-		implantCount := len(characterImplants[c.ID])
+		implantCount := len(implants)
 		clone := &characterAugmentationNode{
-			characterID:   c.ID,
-			characterName: c.Name,
+			characterID:   characterID,
+			characterName: characters[characterID],
 			implantCount:  implantCount,
 			tags:          tags,
 		}
@@ -250,12 +243,12 @@ func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[charact
 		if err != nil {
 			return td, err
 		}
-		for _, o := range characterImplants[c.ID] {
+		for _, o := range implants {
 			implant := &characterAugmentationNode{
+				characterID:            characterID,
 				implantTypeDescription: o.EveType.DescriptionPlain(),
 				implantTypeID:          o.EveType.ID,
 				implantTypeName:        o.EveType.Name,
-				characterID:            c.ID,
 			}
 			err := td.Add(clone, implant, false)
 			if err != nil {

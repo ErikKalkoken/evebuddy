@@ -255,8 +255,6 @@ func newTraining(u *baseUI) *training {
 	a := &training{
 		columnSorter: iwidget.NewColumnSorter(columns, trainingColCharacter, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
-		rows:         make([]trainingRow, 0),
-		rowsFiltered: make([]trainingRow, 0),
 		search:       widget.NewEntry(),
 		u:            u,
 	}

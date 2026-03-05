@@ -44,7 +44,6 @@ type corporationMember struct {
 
 func newCorporationMember(u *baseUI) *corporationMember {
 	a := &corporationMember{
-		rows:   make([]corporationMemberRow, 0),
 		footer: newLabelWithTruncation(),
 		u:      u,
 	}

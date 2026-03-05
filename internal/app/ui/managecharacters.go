@@ -135,8 +135,7 @@ type characterAdmin struct {
 
 func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
 	a := &characterAdmin{
-		characters: make([]characterAdminRow, 0),
-		mc:         mc,
+		mc: mc,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
@@ -412,9 +411,7 @@ type characterTags struct {
 
 func newCharacterTags(mc *manageCharacters) *characterTags {
 	a := &characterTags{
-		characters: make([]*app.EntityShort, 0),
-		mc:         mc,
-		tags:       make([]*app.CharacterTag, 0),
+		mc: mc,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -605,7 +602,6 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		_, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters", err)
-			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		if len(others) == 0 {
@@ -744,7 +740,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						}
 						a.tagList.UnselectAll()
 						a.selectedTag = nil
-						a.characters = make([]*app.EntityShort, 0)
+						a.characters = xslices.Reset(a.characters)
 						a.addCharactersButton.Disable()
 						a.characterList.Refresh()
 						a.addCharactersButton.Disable()
@@ -819,7 +815,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		a.characters = make([]*app.EntityShort, 0)
+		a.characters = xslices.Reset(a.characters)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -830,7 +826,6 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 		tagged, others, err := a.mc.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
 			a.mc.reportError("Failed to list characters for "+tag.Name, err)
-			a.characters = make([]*app.EntityShort, 0)
 			return
 		}
 		fyne.Do(func() {
@@ -901,7 +896,7 @@ func (a *characterTags) update(ctx context.Context) {
 	tags, err := a.mc.u.cs.ListTagsByName(ctx)
 	if err != nil {
 		a.mc.reportError("Failed to list tags", err)
-		a.tags = make([]*app.CharacterTag, 0)
+		a.tags = xslices.Reset(a.tags)
 		return
 	}
 	fyne.Do(func() {

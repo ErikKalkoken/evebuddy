@@ -155,8 +155,6 @@ func newClones(u *baseUI) *clones {
 	a := &clones{
 		columnSorter: iwidget.NewColumnSorter(columns, clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
-		rows:         make([]cloneRow, 0),
-		rowsFiltered: make([]cloneRow, 0),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}

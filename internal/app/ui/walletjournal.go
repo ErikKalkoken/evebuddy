@@ -169,7 +169,6 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		columnSorter: iwidget.NewColumnSorter(columns, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		footer:       newLabelWithTruncation(),
-		rows:         make([]walletJournalRow, 0),
 		top:          newLabelWithTruncation(),
 		u:            u,
 	}

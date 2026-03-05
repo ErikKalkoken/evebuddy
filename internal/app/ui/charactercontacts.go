@@ -85,7 +85,6 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 	)
 	a := &characterContacts{
 		columnSorter: columnSorter,
-		rows:         make([]characterContactRow, 0),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}

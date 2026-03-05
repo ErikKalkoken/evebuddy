@@ -96,8 +96,6 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
-		rows:           make([]skillRow, 0),
-		rowsFiltered:   make([]skillRow, 0),
 		search:         widget.NewEntry(),
 		top:            newLabelWithWrapping(),
 		u:              u,

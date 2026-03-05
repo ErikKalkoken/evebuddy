@@ -53,8 +53,6 @@ type characterCommunications struct {
 
 func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a := &characterCommunications{
-		folders:          make([]notificationFolder, 0),
-		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
 		u:                u,

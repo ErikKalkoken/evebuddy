@@ -71,7 +71,6 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 	)
 	a := &characterLoyaltyPoints{
 		columnSorter: columnSorter,
-		rows:         make([]characterLoyaltyPointsRow, 0),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
