@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -36,7 +35,6 @@ type gameSearch struct {
 	defaultCategories   []string
 	entry               *widget.Entry
 	indicator           *widget.ProgressBarInfinite
-	mu                  sync.RWMutex
 	recent              *widget.List
 	recentItems         []*app.EveEntity
 	recentPage          *fyne.Container
@@ -116,7 +114,8 @@ func newGameSearch(u *baseUI) *gameSearch {
 	)
 	clearRecent := widget.NewHyperlink("Clear", nil)
 	clearRecent.OnTapped = func() {
-		a.setRecentItems(make([]*app.EveEntity, 0))
+		a.recentItems = xslices.Reset(a.recentItems)
+		a.recent.Refresh()
 		a.storeRecentItems()
 	}
 	a.recentPage = container.NewBorder(
@@ -136,9 +135,9 @@ func (a *gameSearch) init(ctx context.Context) {
 	}
 	ee, err := a.u.eus.ListEntitiesForIDs(ctx, ids)
 	if errors.Is(err, app.ErrNotFound) {
-		ee = make([]*app.EveEntity, 0)
 		fyne.Do(func() {
-			a.setRecentItems(ee)
+			a.recentItems = xslices.Reset(a.recentItems)
+			a.recent.Refresh()
 		})
 		return
 	}
@@ -147,7 +146,8 @@ func (a *gameSearch) init(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
-		a.setRecentItems(ee)
+		a.recentItems = ee
+		a.recent.Refresh()
 		a.showRecent()
 	})
 }
@@ -183,13 +183,6 @@ func (a *gameSearch) toogleOptions(enabled bool) {
 		a.searchOptions.Close(0)
 	}
 	a.searchOptions.Refresh()
-}
-
-func (a *gameSearch) setRecentItems(ee []*app.EveEntity) {
-	a.mu.Lock()
-	a.recentItems = ee
-	a.mu.Unlock()
-	a.recent.Refresh()
 }
 
 func (a *gameSearch) storeRecentItems() {
@@ -250,13 +243,11 @@ func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
 			return
 		}
 		a.showSupportedResult(n.ee)
-		a.mu.Lock()
 		a.recentItems = slices.DeleteFunc(a.recentItems, func(a *app.EveEntity) bool {
 			return a.ID == n.ee.ID
 		})
 		a.recentItems = slices.Insert(a.recentItems, 0, n.ee)
 		a.storeRecentItems()
-		a.mu.Unlock()
 		a.recent.Refresh()
 	}
 	return t
@@ -272,16 +263,12 @@ func (a *gameSearch) showSupportedResult(o *app.EveEntity) {
 func (a *gameSearch) makeRecentSelected() *widget.List {
 	l := widget.NewList(
 		func() int {
-			a.mu.RLock()
-			defer a.mu.RUnlock()
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
 			return newSearchResult(a.u.eis, a.u.eus, infoWindowSupportedEveEntities())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			a.mu.RLock()
-			defer a.mu.RUnlock()
 			if id >= len(a.recentItems) {
 				return
 			}
@@ -290,14 +277,10 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		a.mu.RLock()
-		defer l.UnselectAll()
 		if id >= len(a.recentItems) {
-			a.mu.RUnlock()
 			return
 		}
 		it := a.recentItems[id]
-		a.mu.RUnlock()
 		a.showSupportedResult(it)
 	}
 	return l
@@ -437,18 +420,24 @@ type searchResult struct {
 }
 
 func newSearchResult(eis searchResultEIS, eus searchResultEUS, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
+	image := iwidget.NewImageFromResource(
+		icons.BlankSvg,
+		fyne.NewSquareSize(app.IconUnitSize),
+	)
 	w := &searchResult{
-		supportedCategories: supportedCategories,
+		eis:                 eis,
+		eus:                 eus,
+		image:               image,
 		name:                widget.NewLabel(""),
-		image: iwidget.NewImageFromResource(
-			icons.BlankSvg,
-			fyne.NewSquareSize(app.IconUnitSize),
-		),
-		eis: eis,
-		eus: eus,
+		supportedCategories: supportedCategories,
 	}
 	w.ExtendBaseWidget(w)
 	return w
+}
+
+func (w *searchResult) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, container.NewPadded(w.image), nil, w.name)
+	return widget.NewSimpleRenderer(c)
 }
 
 func (w *searchResult) set(o *app.EveEntity) {
@@ -493,11 +482,6 @@ func (w *searchResult) set(o *app.EveEntity) {
 			searchResultResourceCache.Store(o.ID, r)
 		},
 	)
-}
-
-func (w *searchResult) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(nil, nil, container.NewPadded(w.image), nil, w.name)
-	return widget.NewSimpleRenderer(c)
 }
 
 var searchCategory2optionMap = map[app.SearchCategory]string{
