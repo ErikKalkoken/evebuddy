@@ -462,7 +462,7 @@ func (a *allianceInfo) update(ctx context.Context) error {
 			return err
 		}
 		// Attributes
-		attributes := make([]attributeItem, 0)
+		var attributes []attributeItem
 		if v, ok := o.ExecutorCorporation.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Executor", v))
 		}
@@ -1102,7 +1102,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 }
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
-	attributes := make([]attributeItem, 0)
+	var attributes []attributeItem
 	if v, ok := o.Ceo.Value(); ok {
 		attributes = append(attributes, newAttributeItem("CEO", v))
 	}
@@ -2076,7 +2076,7 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 	groupedRows := make(map[attributeGroup][]typeAttributeRow)
 
 	for _, ag := range attributeGroups {
-		attributeSelection := make([]*app.EveTypeDogmaAttribute, 0)
+		var attributeSelection []*app.EveTypeDogmaAttribute
 		for _, da := range attributeGroupsMap[ag] {
 			o, ok := attributes[da]
 			if !ok {
@@ -2136,7 +2136,7 @@ func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveTyp
 			})
 		}
 	}
-	rows := make([]typeAttributeRow, 0)
+	var rows []typeAttributeRow
 	if v, ok := et.Volume.Value(); ok {
 		value, _ := u.eus.FormatDogmaValue(ctx, v, app.EveUnitVolume)
 		if pv, ok := et.PackagedVolume.Value(); ok && !optional.Equal(et.Volume, et.PackagedVolume) {
@@ -2208,7 +2208,7 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 }
 
 func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) []typeAttributeRow {
-	data := make([]typeAttributeRow, 0)
+	var data []typeAttributeRow
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := dogmaAttributes[da]
 		if !ok {
@@ -2355,7 +2355,7 @@ type requiredSkill struct {
 }
 
 func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int64, attributes map[int64]*app.EveTypeDogmaAttribute, u *baseUI) ([]requiredSkill, error) {
-	skills := make([]requiredSkill, 0)
+	var skills []requiredSkill
 	skillAttributes := []struct {
 		id    int64
 		level int64
@@ -2643,7 +2643,7 @@ func entityItemsFromEveEntities(ee []*app.EveEntity) []entityItem {
 }
 
 func newEntityList(show func(infoVariant, int64)) *entityList {
-	items := make([]entityItem, 0)
+	var items []entityItem
 	return newEntityListFromItems(show, items...)
 }
 

@@ -480,7 +480,7 @@ func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]marketOrderRow, 0)
+	var rows []marketOrderRow
 	for _, o := range orders {
 		r := marketOrderRow{
 			characterID:   o.CharacterID,

@@ -379,7 +379,7 @@ func (a *characterContacts) filterRowsAsync() {
 func (a *characterContacts) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]characterContactRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
 		})
 	}

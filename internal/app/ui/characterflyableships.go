@@ -248,7 +248,7 @@ func (a *characterFlyableShips) filterRowsAsync() {
 func (a *characterFlyableShips) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]flyableShipRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.search.Disable()
 			a.search.SetText("")
 			a.selectGroup.SetOptions([]string{})
@@ -305,7 +305,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 		reportError(err)
 		return
 	}
-	rows := make([]flyableShipRow, 0)
+	var rows []flyableShipRow
 	for _, o := range oo {
 		rows = append(rows, flyableShipRow{
 			canFly:      o.CanFly,

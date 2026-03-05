@@ -219,7 +219,7 @@ func (a *characterLoyaltyPoints) filterRowsAsync() {
 func (a *characterLoyaltyPoints) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]characterLoyaltyPointsRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
 		})
 	}

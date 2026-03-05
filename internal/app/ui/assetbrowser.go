@@ -26,6 +26,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type assetFilter uint
@@ -666,7 +667,7 @@ func (a *assetBrowserContainer) set(cn *assetContainerNode) {
 		nodes = cn.node.Children()
 	}
 	go func() {
-		items := make([]containerItem, 0)
+		var items []containerItem
 		for _, n := range nodes {
 			var s string
 			if an, ok := n.Asset(); ok {
@@ -694,8 +695,8 @@ func (a *assetBrowserContainer) clear() {
 	a.location.clear()
 	a.search.Hide()
 	a.footer.SetText("")
-	a.items = make([]containerItem, 0)
-	a.itemsFiltered = make([]containerItem, 0)
+	a.items = xslices.Reset(a.items)
+	a.itemsFiltered = xslices.Reset(a.itemsFiltered)
 	a.grid.Refresh()
 }
 

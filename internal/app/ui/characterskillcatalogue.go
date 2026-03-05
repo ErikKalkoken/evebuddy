@@ -304,8 +304,8 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 
 	clear := func() {
 		fyne.Do(func() {
-			clear(a.rows)
-			clear(a.rowsFiltered)
+			a.rows = xslices.Reset(a.rows)
+			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
 		})
 	}
 

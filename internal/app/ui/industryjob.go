@@ -681,7 +681,7 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
 		return c.ID
 	})...)
-	characterJobs := make([]industryJobRow, 0)
+	var characterJobs []industryJobRow
 	for _, j := range cj {
 		characterJobs = append(characterJobs, industryJobRow{
 			activity:           j.Activity,
@@ -711,7 +711,7 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 		})
 	}
 
-	corporationJobs := make([]industryJobRow, 0)
+	var corporationJobs []industryJobRow
 	for _, j := range rj {
 		if !myCharacters.Contains(j.Installer.ID) {
 			continue
@@ -775,7 +775,7 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort) int64 {
 		return c.ID
 	})...)
-	jobs := make([]industryJobRow, 0)
+	var jobs []industryJobRow
 	for _, j := range rj {
 		jobs = append(jobs, industryJobRow{
 			activity:           j.Activity,

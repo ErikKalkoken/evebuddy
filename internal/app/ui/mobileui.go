@@ -38,7 +38,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var navBar *iwidget.NavBar
 
 	makeAppBarIcons := func(items ...*kxwidget.IconButton) []fyne.CanvasObject {
-		x := make([]fyne.CanvasObject, 0)
+		var x []fyne.CanvasObject
 		for _, ib := range items {
 			x = append(x, ib)
 		}
@@ -192,7 +192,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	u.characterMails.onUpdate = func(unread, missing int) {
-		s := make([]string, 0)
+		var s []string
 		if unread > 0 {
 			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
 		}
@@ -259,7 +259,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpWalletItems := make([]*iwidget.NavListItem, 0)
+	var corpWalletItems []*iwidget.NavListItem
 	corporationWalletNavs := make(map[app.Division]*iwidget.NavListItem)
 	for _, d := range app.Divisions {
 		corporationWalletNavs[d] = iwidget.NewNavListItemWithIcon(

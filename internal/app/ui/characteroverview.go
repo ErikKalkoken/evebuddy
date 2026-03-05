@@ -439,7 +439,7 @@ func (a *characterOverview) filterRowsAsync(sortCol int) {
 func (a *characterOverview) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]characterOverviewRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -498,7 +498,7 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]characterOverviewRow, 0)
+	var rows []characterOverviewRow
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrInvalid) {

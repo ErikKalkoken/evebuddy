@@ -1084,7 +1084,7 @@ func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Res
 
 func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	cc := u.scs.ListCharacters()
-	items := make([]*fyne.MenuItem, 0)
+	var items []*fyne.MenuItem
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No characters", nil)
 		it.Disabled = true
@@ -1132,7 +1132,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 }
 
 func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
-	items := make([]*fyne.MenuItem, 0)
+	var items []*fyne.MenuItem
 	cc, err := u.ListCorporationsForSelection()
 	if err != nil {
 		slog.Error("Failed to fetch corporations", "error", err)

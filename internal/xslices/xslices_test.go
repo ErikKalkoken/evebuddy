@@ -4,9 +4,28 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
+
+func TestClear(t *testing.T) {
+	t.Run("normal slice", func(t *testing.T) {
+		s := []int{1, 2}
+		s = xslices.Reset(s)
+		assert.Len(t, s, 0)
+	})
+	t.Run("empty slice", func(t *testing.T) {
+		s := []int{}
+		s = xslices.Reset(s)
+		assert.Len(t, s, 0)
+	})
+	t.Run("nil slice", func(t *testing.T) {
+		var s []int
+		s = xslices.Reset(s)
+		assert.Len(t, s, 0)
+	})
+}
 
 func TestDeduplicate(t *testing.T) {
 	t.Run("can remove duplicate elements", func(t *testing.T) {

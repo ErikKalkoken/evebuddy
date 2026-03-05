@@ -92,7 +92,7 @@ func (a *characterAttributes) makeAttributeList() *widget.List {
 func (a *characterAttributes) update(ctx context.Context) {
 	var err error
 	var total int64
-	attributes := make([]characterAttributeRow, 0)
+	var attributes []characterAttributeRow
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {

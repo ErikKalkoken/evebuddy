@@ -338,7 +338,7 @@ func (a *corporationStructures) filterRowsAsync(sortCol int) {
 func (a *corporationStructures) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
-			a.rows = make([]corporationStructureRow, 0)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -381,7 +381,7 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]corporationStructureRow, 0)
+	var rows []corporationStructureRow
 	for _, s := range structures {
 		stateText := s.State.DisplayShort()
 		if v, ok := s.StateTimerEnd.Value(); ok {

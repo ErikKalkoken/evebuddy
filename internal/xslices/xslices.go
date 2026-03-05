@@ -62,3 +62,11 @@ func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
 	}
 	return x
 }
+
+// Reset returns a slice that have been reset to length 0
+// and has all it's elements cleared.
+func Reset[S ~[]E, E any](s S) []E {
+	clear(s)
+	s = s[:0]
+	return s
+}

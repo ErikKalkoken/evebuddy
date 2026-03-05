@@ -145,7 +145,7 @@ func (a *characterSendMail) SendAction() bool {
 
 func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
-	results := make([]*app.EveEntity, 0)
+	var results []*app.EveEntity
 	list := widget.NewList(
 		func() int {
 			return len(results)

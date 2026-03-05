@@ -453,7 +453,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		g := n.Group()
 		groupsAndTypes[g] = append(groupsAndTypes[g], n)
 	}
-	groups := make([]app.EveNotificationGroup, 0)
+	var groups []app.EveNotificationGroup
 	for c := range groupsAndTypes {
 		groups = append(groups, c)
 	}
@@ -557,7 +557,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	groupPages := make(map[app.EveNotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
-			items2 := make([]SettingItem, 0)
+			var items2 []SettingItem
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
@@ -701,7 +701,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 // }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
-	items := make([]*fyne.MenuItem, 0)
+	var items []*fyne.MenuItem
 	for _, a := range actions {
 		items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 	}
