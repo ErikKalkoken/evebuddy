@@ -538,7 +538,7 @@ func (u *baseUI) Start() bool {
 			slog.Info("Starting update ticker")
 			u.eus.StartUpdateTicker()
 			u.startUpdateTickerCharacters()
-			u.startUpdateTickerCorporations()
+			u.StartUpdateTickerCorporations()
 		} else {
 			slog.Info("Update ticker disabled")
 		}

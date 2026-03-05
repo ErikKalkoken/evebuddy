@@ -314,7 +314,7 @@ func (u *baseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 // update corporation sections
 
-func (u *baseUI) startUpdateTickerCorporations() {
+func (u *baseUI) StartUpdateTickerCorporations() {
 	go func() {
 		for {
 			go func() {

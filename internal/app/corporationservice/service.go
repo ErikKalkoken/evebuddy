@@ -36,6 +36,7 @@ type CorporationService struct {
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
 	sfg              singleflight.Group
+	signals          *app.Signals
 	st               *storage.Storage
 }
 
@@ -45,6 +46,7 @@ type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
 	EveUniverseService *eveuniverseservice.EveUniverseService
+	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 	// optional
@@ -54,8 +56,26 @@ type Params struct {
 // New creates a new corporation service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CorporationService {
+	if arg.Cache == nil {
+		panic("Cache")
+	}
+	if arg.CharacterService == nil {
+		panic("CharacterService")
+	}
 	if arg.ESIClient == nil {
-		panic("must provide esi client")
+		panic("ESIClient")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService")
+	}
+	if arg.Signals == nil {
+		panic("Signals")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService")
+	}
+	if arg.Storage == nil {
+		panic("Storage")
 	}
 	s := &CorporationService{
 		cache:            arg.Cache,
@@ -64,6 +84,7 @@ func New(arg Params) *CorporationService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		signals:          arg.Signals,
 		st:               arg.Storage,
 	}
 	if arg.HTTPClient == nil {

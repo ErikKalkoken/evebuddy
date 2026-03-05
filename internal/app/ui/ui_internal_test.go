@@ -188,6 +188,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		}},
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})

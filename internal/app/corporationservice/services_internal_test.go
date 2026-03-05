@@ -64,11 +64,15 @@ func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 		Cache:              testutil.NewCacheFake2(),
 		ESIClient:          client,
 		EveUniverseService: eus,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	}
 	if len(args) > 0 {
 		arg.CharacterService = args[0].CharacterService
+	}
+	if arg.CharacterService == nil {
+		arg.CharacterService = new(CharacterServiceFake)
 	}
 	s := New(arg)
 	return s
