@@ -2,25 +2,40 @@ package evenotification
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
+	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
+
+func NewEUS(st *storage.Storage) *eveuniverseservice.EveUniverseService {
+	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+	})
+	s := eveuniverseservice.New(eveuniverseservice.Params{
+		ESIClient:          client,
+		Signals:            app.NewSignals(),
+		StatusCacheService: statuscacheservice.New(st),
+		Storage:            st,
+	})
+	return s
+}
 
 func TestMakeStructureBaseText(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
-	})
+	eus := NewEUS(st)
 	ctx := context.Background()
 	t.Run("can create base text from complete input data", func(t *testing.T) {
 		// given

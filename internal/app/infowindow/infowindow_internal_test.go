@@ -10,6 +10,7 @@ import (
 
 	"github.com/fnt-eve/goesi-openapi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -62,8 +63,10 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 	if err := scs.InitCache(t.Context()); err != nil {
 		panic(err)
 	}
+	signals := app.NewSignals()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})

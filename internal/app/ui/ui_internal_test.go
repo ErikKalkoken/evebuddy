@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
 const (
@@ -155,8 +156,10 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	if err := scs.InitCache(context.Background()); err != nil {
 		panic(err)
 	}
+	signals := app.NewSignals()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
@@ -177,23 +180,26 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	eisFake := &testutil.EveImageServiceFake{
+		Character:   icons.Characterplaceholder64Jpeg,
+		Alliance:    icons.Corporationplaceholder64Png,
+		Corporation: icons.Corporationplaceholder64Png,
+		Err:         nil,
+		Faction:     icons.Factionplaceholder64Png,
+		Type:        icons.Typeplaceholder64Png,
+	}
 	bu := NewBaseUI(BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService: &testutil.EveImageServiceFake{
-			Character:   icons.Characterplaceholder64Jpeg,
-			Alliance:    icons.Corporationplaceholder64Png,
-			Corporation: icons.Corporationplaceholder64Png,
-			Err:         nil,
-			Faction:     icons.Factionplaceholder64Png,
-			Type:        icons.Typeplaceholder64Png,
-		},
+		EveImageService:    eisFake,
 		EveUniverseService: eus,
-		StatusCacheService: scs,
-		IsOffline:          true,
 		IsMobile:           !isDesktop,
+		IsOffline:          true,
+		JaniceService:      janiceservice.New(http.DefaultClient, ""),
+		Signals:            signals,
+		StatusCacheService: scs,
 	})
 	return bu
 }

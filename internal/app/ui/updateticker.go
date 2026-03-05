@@ -57,13 +57,6 @@ func (u *baseUI) UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-// uniqueID returns a pseudo unique ID.
-func uniqueID() string {
-	currentTime := time.Now().UnixNano()
-	randomNumber := rand.Uint64()
-	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
-}
-
 func (u *baseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
@@ -491,4 +484,11 @@ func (u *baseUI) UpdateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		u.signals.CorporationSectionUpdated.Emit(ctx, arg)
 	})
 	wg.Wait()
+}
+
+// uniqueID returns a pseudo unique ID.
+func uniqueID() string {
+	currentTime := time.Now().UnixNano()
+	randomNumber := rand.Uint64()
+	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
 }

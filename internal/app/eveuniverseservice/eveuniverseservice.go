@@ -28,29 +28,39 @@ type EveUniverseService struct {
 	esiClient        *esi.APIClient
 	scs              *statuscacheservice.StatusCacheService
 	sfg              singleflight.Group
+	signals          *app.Signals
 	st               *storage.Storage
 }
 
 type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
+	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 }
 
 // New returns a new instance of an Eve universe service.
 func New(arg Params) *EveUniverseService {
+	if arg.ESIClient == nil {
+		panic("ESIClient")
+	}
+	if arg.Signals == nil {
+		panic("Signals")
+	}
+	if arg.Storage == nil {
+		panic("Storage")
+	}
 	if arg.StatusCacheService == nil {
-		arg.StatusCacheService = statuscacheservice.New(arg.Storage)
+		panic("StatusCacheService")
 	}
 	s := &EveUniverseService{
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
+		Now:              func() time.Time { return time.Now().UTC() },
 		scs:              arg.StatusCacheService,
+		signals:          arg.Signals,
 		st:               arg.Storage,
-		Now: func() time.Time {
-			return time.Now().UTC()
-		},
 	}
 	if arg.ConcurrencyLimit > 0 {
 		s.concurrencyLimit = arg.ConcurrencyLimit

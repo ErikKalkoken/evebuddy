@@ -21,8 +21,10 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})
+	signals := app.NewSignals()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          client,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})

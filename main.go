@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
+	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/chasinglogic/appdirs"
@@ -34,6 +34,7 @@ import (
 	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
@@ -122,7 +123,7 @@ func main() {
 	runtime.GOMAXPROCS(cpuLimit)
 
 	// start fyne app
-	fyneApp := app.NewWithID(appID)
+	fyneApp := fyneapp.NewWithID(appID)
 	if *versionFlag {
 		fmt.Println(fyneApp.Metadata().Version)
 		return
@@ -307,6 +308,9 @@ func main() {
 	rhc2.Logger = slog.Default()
 	rhc2.ResponseLogHook = logResponse
 
+	// Signals
+	signals := app.NewSignals()
+
 	// Init StatusCache service
 	scs := statuscacheservice.New(st)
 	if err := scs.InitCache(context.Background()); err != nil {
@@ -317,6 +321,7 @@ func main() {
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ConcurrencyLimit:   concurrentLimit,
 		ESIClient:          esiClient,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
@@ -341,13 +346,13 @@ func main() {
 		log.Fatal(err)
 	}
 	cs := characterservice.New(characterservice.Params{
+		AuthClient:             authClient,
 		Cache:                  newServiceCacheAdapter(pc, "characterservice-"),
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		HTTPClient:             rhc1.StandardClient(),
-		AuthClient:             authClient,
 		StatusCacheService:     scs,
 		Storage:                st,
 	})
@@ -389,23 +394,21 @@ func main() {
 	}
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
-		App:              fyneApp,
-		CharacterService: cs,
-		ClearCacheFunc: func() {
-			pc.Clear()
-
-		},
+		App:                fyneApp,
+		CharacterService:   cs,
+		ClearCacheFunc:     func() { pc.Clear() },
 		ConcurrencyLimit:   concurrentLimit,
 		CorporationService: rs,
 		DataPaths:          dataPaths,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
-		IsMobile:           *mobileFlag || fyne.CurrentDevice().IsMobile(),
 		IsFakeMobile:       *mobileFlag,
+		IsMobile:           *mobileFlag || fyne.CurrentDevice().IsMobile(),
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
 		JaniceService:      janiceservice.New(rhc1.StandardClient(), key),
+		Signals:            signals,
 		StatusCacheService: scs,
 	})
 	if isDesktop {

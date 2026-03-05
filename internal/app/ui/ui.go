@@ -181,6 +181,7 @@ type BaseUIParams struct {
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	StatusCacheService *statuscacheservice.StatusCacheService
+	Signals            *app.Signals
 	// optional
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
@@ -195,6 +196,30 @@ type BaseUIParams struct {
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(arg BaseUIParams) *baseUI {
+	if arg.CharacterService == nil {
+		panic("CharacterService")
+	}
+	if arg.CorporationService == nil {
+		panic("CorporationService")
+	}
+	if arg.ESIStatusService == nil {
+		panic("ESIStatusService")
+	}
+	if arg.EveImageService == nil {
+		panic("EveImageService")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService")
+	}
+	if arg.JaniceService == nil {
+		panic("JaniceService")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService")
+	}
+	if arg.Signals == nil {
+		panic("Signals")
+	}
 	u := &baseUI{
 		app:                arg.App,
 		concurrencyLimit:   -1, // Default is no limit
@@ -211,7 +236,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		scs:                arg.StatusCacheService,
 		settings:           settings.New(arg.App.Preferences()),
 		sig:                singleinstance.NewGroup(),
-		signals:            app.NewSignals(),
+		signals:            arg.Signals,
 		statusText:         NewStatusText(),
 		windows:            make(map[string]fyne.Window),
 	}
