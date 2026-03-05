@@ -461,7 +461,7 @@ func (a *marketOrders) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -519,7 +519,7 @@ func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 // showMarketOrderWindow shows the location of a character in a new window.
 func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),
 		title,
 		r.characterName,

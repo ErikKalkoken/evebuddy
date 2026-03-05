@@ -198,7 +198,7 @@ func (a *characterSkillQueue) update(ctx context.Context) {
 	err := a.skillqueue.Update(ctx, a.u.cs, c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.HumanizeError(err), widget.DangerImportance)
 		clear()
 		return
 	}
@@ -257,7 +257,7 @@ func (a *characterSkillQueue) update(ctx context.Context) {
 
 func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 	characterName := u.scs.CharacterName(r.CharacterID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),
 		"Skill: Information",
 		characterName,

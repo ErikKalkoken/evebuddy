@@ -350,7 +350,7 @@ func (a *corporationStructures) update(ctx context.Context) {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		clear()
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -427,7 +427,7 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 }
 
 func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corporationID int64, structureID int64, title string) {
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,
 	)

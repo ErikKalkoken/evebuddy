@@ -455,7 +455,7 @@ func (a *walletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 // showCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
 		title,
 		u.scs.CharacterName(characterID),
@@ -484,7 +484,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 			contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
 			reportError := func(o *app.CharacterWalletJournalEntry, err error) {
 				slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-				contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
+				contextDefaultWidget.SetText("Failed to load related item: " + u.HumanizeError(err))
 			}
 			// TODO: Add support for industry jobs
 			if v, ok := o.ContextIDType.Value(); ok {
@@ -603,7 +603,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 // showCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
 func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),
 		title,
 		u.scs.CorporationName(corporationID),
@@ -633,7 +633,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			// ctx := context.Background()
 			// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
 			// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-			// 	contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
+			// 	contextDefaultWidget.SetText("Failed to load related item: " + u.HumanizeError(err))
 			// }
 			// TODO: Add support for industry jobs
 			// switch o.ContextIDType {

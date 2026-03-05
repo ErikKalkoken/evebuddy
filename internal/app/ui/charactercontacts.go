@@ -403,7 +403,7 @@ func (a *characterContacts) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
 		clear()
-		setFooter("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		setFooter("ERROR: "+a.u.HumanizeError(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {

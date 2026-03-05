@@ -66,7 +66,7 @@ type updateStatus struct {
 }
 
 func showUpdateStatusWindow(u *baseUI) {
-	w, ok, onClosed := u.getOrCreateWindowWithOnClosed("update-status", "Update Status")
+	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
 	if !ok {
 		w.Show()
 		return

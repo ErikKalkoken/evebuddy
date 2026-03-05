@@ -659,7 +659,7 @@ func (u *DesktopUI) saveAppState() {
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.App().NewWindow(u.makeWindowTitle(title))
+	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
@@ -710,7 +710,7 @@ func (u *DesktopUI) showSearchWindow() {
 	} else {
 		n = "No Character"
 	}
-	w, created := u.getOrCreateWindow(fmt.Sprintf("search-%s", n), fmt.Sprintf("Search New Eden [%s]", n))
+	w, created := u.GetOrCreateWindow(fmt.Sprintf("search-%s", n), fmt.Sprintf("Search New Eden [%s]", n))
 	if !created {
 		w.Show()
 		return

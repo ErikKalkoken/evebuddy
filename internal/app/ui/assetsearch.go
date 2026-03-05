@@ -697,7 +697,7 @@ func (a *assetSearch) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
 		clear()
-		setTop("ERROR: "+a.u.humanizeError(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.HumanizeError(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {
@@ -860,7 +860,7 @@ func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, vari
 
 // showAssetDetailWindow shows the details for an assets in a new window.
 func showAssetDetailWindow(u *baseUI, r assetRow) {
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",
 		r.owner.Name,

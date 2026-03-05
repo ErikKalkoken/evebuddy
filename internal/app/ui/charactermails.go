@@ -272,7 +272,7 @@ func (a *characterMails) update(ctx context.Context) {
 	td, folderAll, err := a.fetchFolders(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
-		setStatus("Error: "+a.u.humanizeError(err), widget.DangerImportance)
+		setStatus("Error: "+a.u.HumanizeError(err), widget.DangerImportance)
 		return
 	}
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
@@ -625,7 +625,7 @@ func (a *characterMails) headerUpdate(ctx context.Context) {
 	headers, err := a.fetchHeaders(ctx, folder)
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
-		setStatus("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
+		setStatus("Failed to load: "+a.u.HumanizeError(err), widget.DangerImportance)
 		clear()
 		return
 	}
@@ -697,7 +697,7 @@ func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.humanizeError(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.HumanizeError(err)))
 				}
 				m.Start()
 			}, a.u.MainWindow(),
@@ -751,7 +751,7 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		fyne.Do(func() {
-			a.Detail.SetBody("ERROR: Failed to load: " + a.u.humanizeError(err))
+			a.Detail.SetBody("ERROR: Failed to load: " + a.u.HumanizeError(err))
 		})
 		return
 	}
@@ -776,7 +776,7 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
-						a.Detail.SetBody("ERROR: Failed to load: " + a.u.humanizeError(err))
+						a.Detail.SetBody("ERROR: Failed to load: " + a.u.HumanizeError(err))
 					})
 					return nil, nil
 				}

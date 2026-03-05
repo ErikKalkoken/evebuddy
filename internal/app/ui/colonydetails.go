@@ -73,7 +73,7 @@ type colonyDetails struct {
 func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
-	w, ok, onClosed := u.getOrCreateWindowWithOnClosed(key, title, r.ownerName)
+	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.ownerName)
 	if !ok {
 		w.Show()
 		return
@@ -215,7 +215,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 			if err != nil {
 				slog.Error("failed to update colony installations", "error", err)
 				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.humanizeError(err))
+					a.setIssue("ERROR: " + a.u.HumanizeError(err))
 				})
 			}
 		}

@@ -494,7 +494,7 @@ func (a *training) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -616,7 +616,7 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 }
 
 func (a *training) showTrainingQueueWindow(r trainingRow) {
-	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(fmt.Sprintf("skillqueue-%d", r.characterID), "Skill Queue", r.characterName)
+	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(fmt.Sprintf("skillqueue-%d", r.characterID), "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()
 		return

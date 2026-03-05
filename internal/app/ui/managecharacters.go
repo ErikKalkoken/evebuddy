@@ -31,7 +31,7 @@ import (
 )
 
 func showManageCharactersWindow(u *baseUI) {
-	w, created, onClosed := u.getOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
 	if !created {
 		w.Show()
 		return
@@ -1027,7 +1027,7 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 		err := a.mc.u.cs.UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
-			a.mc.u.ShowSnackbar("Failed to update training watcher: " + a.mc.u.humanizeError(err))
+			a.mc.u.ShowSnackbar("Failed to update training watcher: " + a.mc.u.HumanizeError(err))
 		}
 		fyne.Do(func() {
 			a.characters[id].IsTrainingWatched = on

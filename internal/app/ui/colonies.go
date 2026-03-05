@@ -553,7 +553,7 @@ func (a *colonies) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh colony UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})

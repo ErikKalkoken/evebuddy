@@ -263,7 +263,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 	}
 	reportError := func(err error) {
 		slog.Error("Failed to update data for flyable ships UI", "error", err)
-		setTop(a.u.humanizeError(err), widget.DangerImportance)
+		setTop(a.u.HumanizeError(err), widget.DangerImportance)
 	}
 
 	ok1, err := a.u.eus.HasSection(ctx, app.SectionEveTypes)

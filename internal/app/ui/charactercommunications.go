@@ -201,7 +201,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
 		fyne.Do(func() {
-			a.Detail.setError(a.u.humanizeError(err))
+			a.Detail.setError(a.u.HumanizeError(err))
 		})
 		return
 	}

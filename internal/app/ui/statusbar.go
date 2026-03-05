@@ -243,7 +243,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	x, err := a.u.ess.Fetch(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
-		set(eveStatusError, "ERROR", a.u.humanizeError(err))
+		set(eveStatusError, "ERROR", a.u.HumanizeError(err))
 		return
 	}
 	if !x.IsOK() {

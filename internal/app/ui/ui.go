@@ -625,8 +625,8 @@ func (u *baseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()
 }
 
-// humanizeError returns user friendly representation of an error for display in the UI.
-func (u *baseUI) humanizeError(err error) string {
+// HumanizeError returns user friendly representation of an error for display in the UI.
+func (u *baseUI) HumanizeError(err error) string {
 	if err == nil {
 		return "No error"
 	}
@@ -950,7 +950,7 @@ func (u *baseUI) ShowConfirmDialog(title, message, confirm string, callback func
 
 func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
 	title := widget.NewLabel(message)
-	error := widget.NewLabel(u.humanizeError(err))
+	error := widget.NewLabel(u.HumanizeError(err))
 	error.TextStyle.Monospace = true
 	error.Wrapping = fyne.TextWrapBreak
 	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))
@@ -979,33 +979,42 @@ func (u *baseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {
-	iw := newInfoWindow(u)
-	iw.showLocation(id)
+	u.newInfoWindow().ShowLocation(id)
 }
 
 func (u *baseUI) ShowRaceInfoWindow(id int64) {
-	iw := newInfoWindow(u)
-	iw.showRace(id)
+	u.newInfoWindow().ShowRace(id)
 }
 
 func (u *baseUI) ShowTypeInfoWindow(id int64) {
-	iw := newInfoWindow(u)
-	iw.Show(app.EveEntityInventoryType, id)
+	u.ShowInfoWindow(app.EveEntityInventoryType, id)
 }
 
 func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int64) {
-	iw := newInfoWindow(u)
-	iw.showWithCharacterID(infoInventoryType, int64(typeID), characterID)
+	u.newInfoWindow().showWithCharacterID(infoInventoryType, int64(typeID), characterID)
 }
 
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	iw := newInfoWindow(u)
-	iw.showEveEntity(o)
+	u.newInfoWindow().ShowEveEntity(o)
 }
 
 func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int64) {
-	iw := newInfoWindow(u)
-	iw.Show(c, id)
+	u.newInfoWindow().Show(c, id)
+}
+
+func (u *baseUI) newInfoWindow() *InfoWindow {
+	iw := NewInfoWindow(InfoWindowParams{
+		cs:       u.cs,
+		eis:      u.eis,
+		eus:      u.eus,
+		isMobile: u.isMobile,
+		js:       u.js,
+		settings: u.settings,
+		scs:      u.scs,
+		u:        u,
+		w:        u.MainWindow(),
+	})
+	return iw
 }
 
 func (u *baseUI) ShowSnackbar(text string) {
@@ -1191,25 +1200,25 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 
 // Windows
 
-// getOrCreateWindow returns a unique window as defined by the given id string
+// GetOrCreateWindow returns a unique window as defined by the given id string
 // and reports whether a new window was created or the window already exists.
-func (u *baseUI) getOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
-	w, ok, f := u.getOrCreateWindowWithOnClosed(id, titles...)
+func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
+	w, ok, f := u.GetOrCreateWindowWithOnClosed(id, titles...)
 	if f != nil {
 		w.SetOnClosed(f)
 	}
 	return w, ok
 }
 
-// getOrCreateWindowWithOnClosed is like getOrCreateWindow,
+// GetOrCreateWindowWithOnClosed is like GetOrCreateWindow,
 // but returns an additional onClosed function which must be called when the window is closed.
 // This allows constructing a custom onClosed callback for the window.
-func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
+func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
 	w, ok := u.windows[id]
 	if ok {
 		return w, false, nil
 	}
-	w = u.App().NewWindow(u.makeWindowTitle(titles...))
+	w = u.App().NewWindow(u.MakeWindowTitle(titles...))
 	u.windows[id] = w
 	if fyne.CurrentDevice().IsMobile() {
 		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
@@ -1225,7 +1234,7 @@ func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	return w, true, f
 }
 
-func (u *baseUI) makeWindowTitle(parts ...string) string {
+func (u *baseUI) MakeWindowTitle(parts ...string) string {
 	if len(parts) == 0 {
 		parts = append(parts, "PLACEHOLDER")
 	}
@@ -1245,7 +1254,7 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 // makeTopText makes the content for the top label of a gui element.
 func (u *baseUI) makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
-		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
+		return "ERROR: " + u.HumanizeError(err), widget.DangerImportance
 	}
 	if characterID == 0 {
 		return "No entity", widget.LowImportance

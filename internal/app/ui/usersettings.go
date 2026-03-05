@@ -40,7 +40,7 @@ type userSettings struct {
 }
 
 func showSettingsWindow(u *baseUI) {
-	w, ok, onClosed := u.getOrCreateWindowWithOnClosed("user-settings", "Settings")
+	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("user-settings", "Settings")
 	if !ok {
 		w.Show()
 		return
@@ -301,7 +301,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 					}
 					m.OnError = func(err error) {
 						slog.Error("Failed to clear cache", "error", err)
-						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.humanizeError(err)))
+						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.HumanizeError(err)))
 					}
 					m.Start()
 				}, w,

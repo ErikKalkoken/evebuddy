@@ -362,7 +362,7 @@ func (a *clones) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.humanizeError(err)
+			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 			a.rows = xslices.Reset(a.rows)
@@ -425,7 +425,7 @@ func (a *clones) updateRoutesAsync() {
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
-				s := "Failed to fetch routes: " + a.u.humanizeError(err)
+				s := "Failed to fetch routes: " + a.u.HumanizeError(err)
 				a.originLabel.Set(iwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
 					ColorName: theme.ColorNameError,
 				}))
@@ -566,7 +566,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 		return
 	}
 	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("route-%s", r.id()), title, r.jc.Character.Name)
+	w, ok := a.u.GetOrCreateWindow(fmt.Sprintf("route-%s", r.id()), title, r.jc.Character.Name)
 	if !ok {
 		w.Show()
 		return
@@ -662,7 +662,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		return
 	}
 	title := fmt.Sprintf("Clone #%d", jc.CloneID)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("clone-%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
+	w, ok := a.u.GetOrCreateWindow(fmt.Sprintf("clone-%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
 	if !ok {
 		w.Show()
 		return

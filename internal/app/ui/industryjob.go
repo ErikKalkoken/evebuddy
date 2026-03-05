@@ -624,7 +624,7 @@ func (a *industryJobs) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.HumanizeError(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -803,7 +803,7 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
 	key := fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID)
-	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(key, title, r.owner.Name)
+	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(key, title, r.owner.Name)
 	if !ok {
 		w.Show()
 		return

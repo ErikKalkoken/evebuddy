@@ -434,7 +434,7 @@ func (a *contracts) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.HumanizeError(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -570,7 +570,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
 	characterName := u.scs.CharacterName(characterID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("character-contract-%d-%d", characterID, contractID),
 		title,
 		characterName,
@@ -751,7 +751,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
 	corporationName := u.scs.CorporationName(corporationID)
-	w, created := u.getOrCreateWindow(
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporation-contract-%d-%d", corporationID, contractID),
 		title,
 		corporationName,
