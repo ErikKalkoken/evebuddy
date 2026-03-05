@@ -45,29 +45,13 @@ type UIService interface {
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 }
 
-type settingAction struct {
-	Label  string
-	Action func()
-}
-
-type userSettings struct {
-	widget.BaseWidget
-
-	isMobile bool
-	sb       *iwidget.Snackbar
-	settings *settings.Settings
-	signals  *app.Signals
-	u        UIService
-	w        fyne.Window
-}
-
 func Show(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals) {
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("user-settings", "Settings")
 	if !ok {
 		w.Show()
 		return
 	}
-	a := newUserSettings(u, s, isMobile, signals, w)
+	a := newSettingsWindow(u, s, isMobile, signals, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -83,8 +67,24 @@ func Show(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals
 	w.Show()
 }
 
-func newUserSettings(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals, w fyne.Window) *userSettings {
-	a := &userSettings{
+type settingAction struct {
+	Label  string
+	Action func()
+}
+
+type settingsWindow struct {
+	widget.BaseWidget
+
+	isMobile bool
+	sb       *iwidget.Snackbar
+	settings *settings.Settings
+	signals  *app.Signals
+	u        UIService
+	w        fyne.Window
+}
+
+func newSettingsWindow(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals, w fyne.Window) *settingsWindow {
+	a := &settingsWindow{
 		isMobile: isMobile,
 		sb:       iwidget.NewSnackbar(w),
 		settings: s,
@@ -97,7 +97,7 @@ func newUserSettings(u UIService, s *settings.Settings, isMobile bool, signals *
 	return a
 }
 
-func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
+func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		ab := iwidget.NewAppBar(title, content, actions)
 		ab.HideBackground = !a.isMobile
@@ -121,7 +121,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
@@ -406,7 +406,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 	return list, makeIconButtonFromActions(actions)
 }
 
-func (a *userSettings) showDeleteFileDialog(name, path string) {
+func (a *settingsWindow) showDeleteFileDialog(name, path string) {
 	a.u.ShowConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
@@ -436,7 +436,7 @@ func (a *userSettings) showDeleteFileDialog(name, path string) {
 		}, a.w)
 }
 
-func (a *userSettings) showExportFileDialog(path string) {
+func (a *settingsWindow) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -472,7 +472,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	groupsAndTypes := make(map[app.EveNotificationGroup][]app.EveNotificationType)
 	for n := range app.NotificationTypesSupported().All() {
 		g := n.Group()

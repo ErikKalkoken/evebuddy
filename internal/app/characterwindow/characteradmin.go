@@ -38,12 +38,12 @@ type characterAdmin struct {
 	ab         *iwidget.AppBar
 	characters []characterAdminRow
 	list       *widget.List
-	mc         *manageCharacters
+	cw         *characterWindow
 }
 
-func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
+func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 	a := &characterAdmin{
-		mc: mc,
+		cw: cw,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
@@ -51,7 +51,7 @@ func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
 		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if a.mc.u.IsOffline() {
+	if a.cw.u.IsOffline() {
 		add.Disable()
 	}
 	a.ab = iwidget.NewAppBar("Characters", container.NewBorder(
@@ -61,7 +61,7 @@ func newCharacterAdmin(mc *manageCharacters) *characterAdmin {
 		nil,
 		a.list,
 	))
-	a.ab.HideBackground = !a.mc.isMobile
+	a.ab.HideBackground = !a.cw.isMobile
 	return a
 }
 
@@ -97,7 +97,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 					layout.NewSpacer(),
 					delete,
 				),
-				awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.cw.eis.CharacterPortraitAsync),
 			)
 			return row
 		},
@@ -139,7 +139,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 func (a *characterAdmin) update(ctx context.Context) {
 	characters, err := a.fetchRows(ctx)
 	if err != nil {
-		a.mc.reportError("Failed to update characters", err)
+		a.cw.reportError("Failed to update characters", err)
 		return
 	}
 	fyne.Do(func() {
@@ -151,12 +151,12 @@ func (a *characterAdmin) update(ctx context.Context) {
 
 func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, error) {
 	var rows []characterAdminRow
-	cc, err := a.mc.cs.ListCharacters(ctx)
+	cc, err := a.cw.cs.ListCharacters(ctx)
 	if err != nil {
 		return rows, err
 	}
 	for _, c := range cc {
-		missing, err := a.mc.cs.MissingScopes(ctx, c.ID, app.Scopes())
+		missing, err := a.cw.cs.MissingScopes(ctx, c.ID, app.Scopes())
 		if err != nil {
 			return rows, err
 		}
@@ -190,9 +190,9 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			nil,
 			infoText,
 		),
-		a.mc.w,
+		a.cw.w,
 	)
-	a.mc.u.ModifyShortcutsForDialog(d1, a.mc.w)
+	a.cw.u.ModifyShortcutsForDialog(d1, a.cw.w)
 	done := make(chan struct{})
 	d1.SetOnClosed(func() {
 		cancel()
@@ -201,7 +201,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 	d1.Show()
 	go func() {
 		err := func() error {
-			character, err := a.mc.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+			character, err := a.cw.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)
 					closeButton.Hide()
@@ -218,24 +218,24 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			})
 			ctx := context.Background()
 			a.update(ctx)
-			if !a.mc.u.HasCharacter() {
-				a.mc.u.LoadCharacter(character.ID)
+			if !a.cw.u.HasCharacter() {
+				a.cw.u.LoadCharacter(character.ID)
 			}
-			if !a.mc.u.HasCorporation() {
+			if !a.cw.u.HasCorporation() {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					a.mc.u.LoadCorporation(c.ID)
+					a.cw.u.LoadCorporation(c.ID)
 				}
 			}
-			go a.mc.signals.CharacterAdded.Emit(ctx, character)
-			if !a.mc.isUpdateDisabled {
-				go a.mc.u.UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
+			go a.cw.signals.CharacterAdded.Emit(ctx, character)
+			if !a.cw.isUpdateDisabled {
+				go a.cw.u.UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
 			}
 			return nil
 		}()
 		if err != nil {
 			fyne.Do(func() {
 				d1.Hide()
-				a.mc.u.ShowErrorDialog("Failed to add a new character", err, a.mc.w)
+				a.cw.u.ShowErrorDialog("Failed to add a new character", err, a.cw.w)
 			})
 		} else {
 			fyne.Do(func() {
@@ -248,7 +248,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 }
 
 func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
-	a.mc.u.ShowConfirmDialog(
+	a.cw.u.ShowConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
 		"Delete",
@@ -261,57 +261,57 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 				fmt.Sprintf("Deleting %s...", r.characterName),
 				func() error {
 					ctx := context.Background()
-					wasCorpDeleted, err := a.mc.cs.DeleteCharacter(ctx, r.characterID)
+					wasCorpDeleted, err := a.cw.cs.DeleteCharacter(ctx, r.characterID)
 					if err != nil {
 						return err
 					}
 					a.update(ctx)
-					if a.mc.u.CurrentCharacterID() == r.characterID {
-						err := a.mc.u.SetAnyCharacter()
+					if a.cw.u.CurrentCharacterID() == r.characterID {
+						err := a.cw.u.SetAnyCharacter()
 						if err != nil {
 							slog.Error("delete character", "error", err)
-							a.mc.sb.Show("Error: " + a.mc.u.HumanizeError(err))
+							a.cw.sb.Show("Error: " + a.cw.u.HumanizeError(err))
 						}
 					}
 					if wasCorpDeleted {
-						err := a.mc.u.SetAnyCorporation()
+						err := a.cw.u.SetAnyCorporation()
 						if err != nil {
 							slog.Error("delete corporation", "error", err)
-							a.mc.sb.Show("Error: " + a.mc.u.HumanizeError(err))
+							a.cw.sb.Show("Error: " + a.cw.u.HumanizeError(err))
 						}
 
 					} else {
-						ok, err := a.mc.rs.HasCorporation(ctx, r.corporationID)
+						ok, err := a.cw.rs.HasCorporation(ctx, r.corporationID)
 						if err != nil {
 							slog.Error("Failed to determine if corp exists", "err", err)
 						}
 						if ok {
-							err := a.mc.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+							err := a.cw.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
 							if err != nil {
 								slog.Error(
 									"Failed to remove corp data after character was deleted",
 									slog.Int64("characterID", r.characterID),
 									slog.Any("error", err))
 							}
-							go a.mc.u.UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							go a.cw.u.UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 					}
-					go a.mc.signals.CharacterRemoved.Emit(ctx, &app.EntityShort{
+					go a.cw.signals.CharacterRemoved.Emit(ctx, &app.EntityShort{
 						ID:   r.characterID,
 						Name: r.characterName,
 					})
 					return nil
 				},
-				a.mc.w,
+				a.cw.w,
 			)
 			m.OnSuccess = func() {
-				a.mc.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
+				a.cw.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
 			}
 			m.OnError = func(err error) {
-				a.mc.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
+				a.cw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
 			}
 			m.Start()
 		},
-		a.mc.w,
+		a.cw.w,
 	)
 }

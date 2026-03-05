@@ -73,24 +73,24 @@ func Show(arg Params) {
 		w.Show()
 		return
 	}
-	mc := newManageCharacters(arg, w)
-	w.SetContent(fynetooltip.AddWindowToolTipLayer(mc, w.Canvas()))
+	cw := newCharacterWindow(arg, w)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(cw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
-		mc.stop()
+		cw.stop()
 	})
 	w.SetCloseIntercept(func() {
 		w.Close()
 		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	w.Show()
-	mc.update(context.Background())
+	cw.update(context.Background())
 }
 
-type manageCharacters struct {
+type characterWindow struct {
 	widget.BaseWidget
 
 	characterAdmin    *characterAdmin
@@ -107,8 +107,8 @@ type manageCharacters struct {
 	w                 fyne.Window
 }
 
-func newManageCharacters(arg Params, w fyne.Window) *manageCharacters {
-	a := &manageCharacters{
+func newCharacterWindow(arg Params, w fyne.Window) *characterWindow {
+	a := &characterWindow{
 		cs:               arg.CharacterService,
 		eis:              arg.EveImageService,
 		isMobile:         arg.IsMobile,
@@ -127,7 +127,7 @@ func newManageCharacters(arg Params, w fyne.Window) *manageCharacters {
 	return a
 }
 
-func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterWindow) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewAppTabs(
 		container.NewTabItem("Characters", a.characterAdmin),
 		container.NewTabItem("Tags", a.characterTags),
@@ -137,11 +137,11 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *manageCharacters) stop() {
+func (a *characterWindow) stop() {
 	a.sb.Stop()
 }
 
-func (a *manageCharacters) update(ctx context.Context) {
+func (a *characterWindow) update(ctx context.Context) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		a.characterAdmin.update(ctx)
@@ -155,7 +155,7 @@ func (a *manageCharacters) update(ctx context.Context) {
 	wg.Wait()
 }
 
-func (a *manageCharacters) reportError(text string, err error) {
+func (a *characterWindow) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
 }

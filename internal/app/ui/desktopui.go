@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -828,7 +829,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				ShowUpdateStatusWindow(Params{
+				statuswindow.Show(statuswindow.Params{
 					EveImageService:    u.eis,
 					IsMobile:           u.isMobile,
 					Signals:            u.signals,

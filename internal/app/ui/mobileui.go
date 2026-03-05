@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -407,7 +408,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			ShowUpdateStatusWindow(Params{
+			statuswindow.Show(statuswindow.Params{
 				EveImageService:    u.eis,
 				IsMobile:           u.isMobile,
 				Signals:            u.signals,

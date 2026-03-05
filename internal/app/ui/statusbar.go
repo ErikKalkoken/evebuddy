@@ -26,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -98,7 +99,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		container.NewStack(spacer, a.updatingIndicator),
 		"?",
 		func() {
-			ShowUpdateStatusWindow(Params{
+			statuswindow.Show(statuswindow.Params{
 				EveImageService:    u.eis,
 				IsMobile:           u.isMobile,
 				Signals:            u.signals,

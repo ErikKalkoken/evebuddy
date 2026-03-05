@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"slices"
 	"sync"
 	"time"
@@ -54,6 +55,13 @@ func (u *baseUI) UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 	wg.Wait()
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
+}
+
+// uniqueID returns a pseudo unique ID.
+func uniqueID() string {
+	currentTime := time.Now().UnixNano()
+	randomNumber := rand.Uint64()
+	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
 }
 
 func (u *baseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {

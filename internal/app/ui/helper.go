@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"math/rand/v2"
 	"slices"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -214,11 +212,4 @@ func corporationNameOrZero(c *app.Corporation) string {
 		return ""
 	}
 	return c.EveCorporation.Name
-}
-
-// uniqueID returns a pseudo unique ID.
-func uniqueID() string {
-	currentTime := time.Now().UnixNano()
-	randomNumber := rand.Uint64()
-	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
 }

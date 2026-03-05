@@ -1,4 +1,5 @@
-package ui
+// Package statuswindow provides a window that shows the current update status.
+package statuswindow
 
 import (
 	"context"
@@ -70,7 +71,7 @@ type sectionEntity struct {
 	ss       app.StatusSummary
 }
 
-type updateStatus struct {
+type statusWindow struct {
 	widget.BaseWidget
 
 	charactersTop     *widget.Label
@@ -108,7 +109,7 @@ type Params struct {
 	UIService          UIService
 }
 
-func ShowUpdateStatusWindow(arg Params) {
+func Show(arg Params) {
 	if arg.EveImageService == nil ||
 		arg.Signals == nil ||
 		arg.StatusCacheService == nil ||
@@ -120,7 +121,7 @@ func ShowUpdateStatusWindow(arg Params) {
 		w.Show()
 		return
 	}
-	a := newUpdateStatus(arg, w)
+	a := newStatusWindow(arg, w)
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.SetOnClosed(func() {
@@ -131,19 +132,25 @@ func ShowUpdateStatusWindow(arg Params) {
 	go a.update(context.Background())
 }
 
-func newUpdateStatus(arg Params, w fyne.Window) *updateStatus {
-	a := &updateStatus{
+func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
+	newLabelWithWrapping := func() *widget.Label {
+		l := widget.NewLabel("")
+		l.Wrapping = fyne.TextWrapWord
+		return l
+	}
+	a := &statusWindow{
 		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
 		detailsTop:        newLabelWithWrapping(),
 		eis:               arg.EveImageService,
+		isMobile:          arg.IsMobile,
+		sb:                iwidget.NewSnackbar(w),
 		scs:               arg.StatusCacheService,
 		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
-		signalKey:         "updateStatus-" + uniqueID(),
+		signalKey:         arg.Signals.UniqueKey(),
 		signals:           arg.Signals,
-		sb:                iwidget.NewSnackbar(w),
 		u:                 arg.UIService,
 	}
 	a.ExtendBaseWidget(a)
@@ -205,7 +212,7 @@ func newUpdateStatus(arg Params, w fyne.Window) *updateStatus {
 	return a
 }
 
-func (a *updateStatus) stop() {
+func (a *statusWindow) stop() {
 	a.sb.Stop()
 	a.signals.CharacterAdded.RemoveListener(a.signalKey)
 	a.signals.CharacterRemoved.RemoveListener(a.signalKey)
@@ -214,7 +221,7 @@ func (a *updateStatus) stop() {
 	a.signals.GeneralSectionUpdated.RemoveListener(a.signalKey)
 }
 
-func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
+func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
 			go func() {
@@ -260,7 +267,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *updateStatus) makeEntityList() *widget.List {
+func (a *statusWindow) makeEntityList() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(a.sectionEntities)
@@ -361,7 +368,7 @@ func (a *updateStatus) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *updateStatus) makeUpdateAllAction() func() {
+func (a *statusWindow) makeUpdateAllAction() func() {
 	return func() {
 		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]
@@ -373,12 +380,12 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 		case sectionCorporation:
 			go a.u.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
-			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
+			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
 	}
 }
 
-func (a *updateStatus) update(ctx context.Context) {
+func (a *statusWindow) update(ctx context.Context) {
 	entities, count := a.updateEntityList(ctx)
 
 	fyne.Do(func() {
@@ -390,7 +397,7 @@ func (a *updateStatus) update(ctx context.Context) {
 	})
 }
 
-func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int) {
+func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int) {
 	var count int
 	var entities []sectionEntity
 	cc := a.scs.ListCharacters()
@@ -436,7 +443,7 @@ func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int
 	return entities, count
 }
 
-func (a *updateStatus) makeSectionList() *widget.List {
+func (a *statusWindow) makeSectionList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.sections)
@@ -490,7 +497,7 @@ func (a *updateStatus) makeSectionList() *widget.List {
 	return l
 }
 
-func (a *updateStatus) refreshSections() {
+func (a *statusWindow) refreshSections() {
 	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 		return
 	}
@@ -507,7 +514,7 @@ func (a *updateStatus) refreshSections() {
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
 }
 
-func (a *updateStatus) refreshDetails() {
+func (a *statusWindow) refreshDetails() {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
 		a.details.Hide()
@@ -529,7 +536,7 @@ func (a *updateStatus) refreshDetails() {
 	a.details.Show()
 }
 
-func (a *updateStatus) makeUpdateSectionAction(entityID int64, sectionID string) func() {
+func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string) func() {
 	return func() {
 		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]

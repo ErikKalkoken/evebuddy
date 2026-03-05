@@ -153,7 +153,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 		region:       widget.NewLabel(""),
 		search:       widget.NewEntry(),
 		security:     iwidget.NewRichText(),
-		signalKey:    fmt.Sprintf("colony-detail-%d-%d-%s", characterID, planetID, uniqueID()),
+		signalKey:    u.signals.UniqueKey(),
 		status:       iwidget.NewRichText(),
 		u:            u,
 	}

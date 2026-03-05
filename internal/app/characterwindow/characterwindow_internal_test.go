@@ -2,7 +2,7 @@ package characterwindow
 
 // func TestCharacterAdmin_CanRenderWithData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip("UI test are flaky")
 // 	}
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()
@@ -19,8 +19,16 @@ package characterwindow
 // 			Scopes:      app.Scopes(),
 // 		})
 // 		test.ApplyTheme(t, test.Theme())
-// 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 		ui.SetCharacter(character)
+
+// 		cw := newCharacterWindow(Params{
+// 			CharacterService:   &characterservice.CharacterService{},
+// 			CorporationService: &corporationservice.CorporationService{},
+// 			EveImageService:    nil,
+// 			IsMobile:           false,
+// 			IsUpdateDisabled:   false,
+// 			Signals:            &app.Signals{},
+// 			UIService:          ui,
+// 		})
 // 		a := newCharacterAdmin(&manageCharacters{
 // 			u: ui,
 // 		})

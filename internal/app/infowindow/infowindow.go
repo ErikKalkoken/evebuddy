@@ -33,15 +33,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-const (
-	infoWindowHeight    = 600
-	infoWindowWidth     = 600
-	logoUnitSize        = 64
-	renderIconPixelSize = 256
-	renderIconUnitSize  = 128
-	zoomImagePixelSize  = 512
-)
-
 type UIService interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	HumanizeError(err error) string
@@ -132,6 +123,15 @@ type Params struct {
 	UIService          UIService
 	Window             fyne.Window
 }
+
+const (
+	infoWindowHeight    = 600
+	infoWindowWidth     = 600
+	logoUnitSize        = 64
+	renderIconPixelSize = 256
+	renderIconUnitSize  = 128
+	zoomImagePixelSize  = 512
+)
 
 // New returns a configured InfoWindow.
 func New(arg Params) *InfoWindow {

@@ -32,15 +32,15 @@ type characterTags struct {
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *iwidget.AppBar
-	mc                  *manageCharacters
+	cw                  *characterWindow
 	selectedTag         *app.CharacterTag
 	tagList             *widget.List
 	tags                []*app.CharacterTag
 }
 
-func newCharacterTags(mc *manageCharacters) *characterTags {
+func newCharacterTags(cw *characterWindow) *characterTags {
 	a := &characterTags{
-		mc: mc,
+		cw: cw,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -58,9 +58,9 @@ func newCharacterTags(mc *manageCharacters) *characterTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.mc.signals.CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+	a.cw.signals.CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
 		a.update(ctx)
-		a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
+		a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
 }
@@ -69,7 +69,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
 		a.modifyTag("Create Character Tag", "Create", func(name string) error {
-			_, err := a.mc.cs.CreateTag(context.Background(), name)
+			_, err := a.cw.cs.CreateTag(context.Background(), name)
 			return err
 		})
 	})
@@ -87,7 +87,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := iwidget.NewAppBar("Tags", main, actions)
-	ab.HideBackground = !a.mc.isMobile
+	ab.HideBackground = !a.cw.isMobile
 	c := container.NewVSplit(
 		container.NewStack(ab, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -96,7 +96,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterTags) deleteTags() {
-	a.mc.u.ShowConfirmDialog(
+	a.cw.u.ShowConfirmDialog(
 		"Delete All Tags",
 		"Are you sure you want to delete all tags?",
 		"Delete",
@@ -109,24 +109,24 @@ func (a *characterTags) deleteTags() {
 				"Deleting...",
 				func() error {
 					ctx := context.Background()
-					err := a.mc.cs.DeleteAllTags(ctx)
+					err := a.cw.cs.DeleteAllTags(ctx)
 					if err != nil {
 						return err
 					}
 					a.update(ctx)
-					go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
+					go a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
 					return nil
 				},
-				a.mc.w,
+				a.cw.w,
 			)
 			m.OnError = func(err error) {
 				fyne.Do(func() {
-					a.mc.reportError("Failed to delete tags", err)
+					a.cw.reportError("Failed to delete tags", err)
 				})
 			}
 			m.Start()
 		},
-		a.mc.w,
+		a.cw.w,
 	)
 }
 
@@ -143,26 +143,26 @@ func (a *characterTags) exportTags() {
 				if err != nil {
 					return err
 				}
-				err := a.mc.cs.WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
+				err := a.cw.cs.WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
 				slog.Info("Tags exported to file", "uri", writer.URI())
-				a.mc.sb.Show("Tags exported")
+				a.cw.sb.Show("Tags exported")
 				return nil
 			},
-			a.mc.w,
+			a.cw.w,
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.mc.u.ShowErrorDialog("Failed to export tags", err, a.mc.w)
+				a.cw.u.ShowErrorDialog("Failed to export tags", err, a.cw.w)
 			})
 		}
 		m.Start()
 	},
-		a.mc.w,
+		a.cw.w,
 	)
-	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	kxdialog.AddDialogKeyHandler(d, a.cw.w)
 	d.SetTitleText("Save tags to file")
 	d.Show()
 }
@@ -181,27 +181,27 @@ func (a *characterTags) importTags() {
 					return err
 				}
 				ctx := context.Background()
-				err = a.mc.cs.ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
+				err = a.cw.cs.ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
 				a.update(ctx)
-				go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
+				go a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
 				slog.Info("Tags imported from file", "uri", reader.URI())
 				return nil
 			},
-			a.mc.w,
+			a.cw.w,
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.mc.u.ShowErrorDialog("Failed to import tags", err, a.mc.w)
+				a.cw.u.ShowErrorDialog("Failed to import tags", err, a.cw.w)
 			})
 		}
 		m.Start()
 	},
-		a.mc.w,
+		a.cw.w,
 	)
-	kxdialog.AddDialogKeyHandler(d, a.mc.w)
+	kxdialog.AddDialogKeyHandler(d, a.cw.w)
 	d.SetTitleText("Replace tags from file")
 	d.SetConfirmText("Replace")
 	d.Show()
@@ -218,7 +218,7 @@ func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
 			a.characterList,
 		),
 	)
-	ab.HideBackground = !a.mc.isMobile
+	ab.HideBackground = !a.cw.isMobile
 	ab.Hide()
 	return ab
 }
@@ -228,9 +228,9 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		if a.selectedTag == nil {
 			return
 		}
-		_, others, err := a.mc.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
+		_, others, err := a.cw.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
-			a.mc.reportError("Failed to list characters", err)
+			a.cw.reportError("Failed to list characters", err)
 			return
 		}
 		if len(others) == 0 {
@@ -248,7 +248,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					nil,
 					check,
 					nil,
-					awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
+					awidget.NewEntityListItem(true, a.cw.eis.CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -290,24 +290,24 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					if !v {
 						return
 					}
-					err := a.mc.cs.AddTagToCharacter(
+					err := a.cw.cs.AddTagToCharacter(
 						context.Background(),
 						characterID,
 						a.selectedTag.ID,
 					)
 					if err != nil {
-						a.mc.reportError("Failed to add tag to character", err)
+						a.cw.reportError("Failed to add tag to character", err)
 						return
 					}
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.mc.signals.TagsChanged.Emit(context.Background(), struct{}{})
+				go a.cw.signals.TagsChanged.Emit(context.Background(), struct{}{})
 			},
-			a.mc.w,
+			a.cw.w,
 		)
-		a.mc.u.ModifyShortcutsForDialog(d, a.mc.w)
+		a.cw.u.ModifyShortcutsForDialog(d, a.cw.w)
 		d.Show()
-		_, s := a.mc.w.Canvas().InteractiveArea()
+		_, s := a.cw.w.Canvas().InteractiveArea()
 		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
 	})
 	w.Importance = widget.HighImportance
@@ -345,24 +345,24 @@ func (a *characterTags) makeTagList() *widget.List {
 			icons := box[1].(*fyne.Container).Objects
 			icons[0].(*ttwidget.Button).OnTapped = func() {
 				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(name string) error {
-					return a.mc.cs.RenameTag(context.Background(), tag.ID, name)
+					return a.cw.cs.RenameTag(context.Background(), tag.ID, name)
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
 				s := "Are you sure you want to delete tag " + tag.Name + "?"
-				a.mc.u.ShowConfirmDialog(
+				a.cw.u.ShowConfirmDialog(
 					"Delete Tag", s, "Delete", func(confirmed bool) {
 						if !confirmed {
 							return
 						}
 						ctx := context.Background()
-						err := a.mc.cs.DeleteTag(ctx, tag.ID)
+						err := a.cw.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
-							a.mc.u.ShowErrorDialog("Failed to delete tag", err, a.mc.w)
+							a.cw.u.ShowErrorDialog("Failed to delete tag", err, a.cw.w)
 							return
 						}
 						a.update(ctx)
-						go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
+						go a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
 							return
@@ -374,7 +374,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						a.characterList.Refresh()
 						a.addCharactersButton.Disable()
 						a.manageCharacters.Hide()
-					}, a.mc.w,
+					}, a.cw.w,
 				)
 			}
 		},
@@ -404,7 +404,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				nil,
 				nil,
 				remove,
-				awidget.NewEntityListItem(true, a.mc.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.cw.eis.CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -420,17 +420,17 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				if a.selectedTag == nil {
 					return
 				}
-				err := a.mc.cs.RemoveTagFromCharacter(
+				err := a.cw.cs.RemoveTagFromCharacter(
 					context.Background(),
 					r.ID,
 					a.selectedTag.ID,
 				)
 				if err != nil {
-					a.mc.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
+					a.cw.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
 					return
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.mc.signals.TagsChanged.Emit(context.Background(), struct{}{})
+				go a.cw.signals.TagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
 	)
@@ -452,9 +452,9 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.manageCharacters.SetTitle("Tag: " + tag.Name)
 	a.manageCharacters.Show()
 	go func() {
-		tagged, others, err := a.mc.cs.ListCharactersForTag(context.Background(), tag.ID)
+		tagged, others, err := a.cw.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
-			a.mc.reportError("Failed to list characters for "+tag.Name, err)
+			a.cw.reportError("Failed to list characters for "+tag.Name, err)
 			return
 		}
 		fyne.Do(func() {
@@ -497,18 +497,18 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				a.mc.u.ShowErrorDialog("Failed to modify tag", err, a.mc.w)
+				a.cw.u.ShowErrorDialog("Failed to modify tag", err, a.cw.w)
 				return
 			}
 			ctx := context.Background()
 			a.update(ctx)
-			go a.mc.signals.TagsChanged.Emit(ctx, struct{}{})
-		}, a.mc.w,
+			go a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
+		}, a.cw.w,
 	)
-	a.mc.u.ModifyShortcutsForDialog(d, a.mc.w)
+	a.cw.u.ModifyShortcutsForDialog(d, a.cw.w)
 	d.Show()
 	d.Resize(fyne.NewSize(300, 200))
-	a.mc.w.Canvas().Focus(name)
+	a.cw.w.Canvas().Focus(name)
 }
 
 func (a *characterTags) selectTagByName(name string) {
@@ -522,9 +522,9 @@ func (a *characterTags) selectTagByName(name string) {
 }
 
 func (a *characterTags) update(ctx context.Context) {
-	tags, err := a.mc.cs.ListTagsByName(ctx)
+	tags, err := a.cw.cs.ListTagsByName(ctx)
 	if err != nil {
-		a.mc.reportError("Failed to list tags", err)
+		a.cw.reportError("Failed to list tags", err)
 		a.tags = xslices.Reset(a.tags)
 		return
 	}
