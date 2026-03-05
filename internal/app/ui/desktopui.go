@@ -828,7 +828,13 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				showUpdateStatusWindow(u.baseUI)
+				ShowUpdateStatusWindow(Params{
+					EveImageService:    u.eis,
+					IsMobile:           u.isMobile,
+					Signals:            u.signals,
+					StatusCacheService: u.scs,
+					UIService:          u.baseUI,
+				})
 			}},
 		"quit": {
 			&desktop.CustomShortcut{

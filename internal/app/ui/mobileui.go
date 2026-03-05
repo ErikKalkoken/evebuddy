@@ -407,7 +407,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			showUpdateStatusWindow(u.baseUI)
+			ShowUpdateStatusWindow(Params{
+				EveImageService:    u.eis,
+				IsMobile:           u.isMobile,
+				Signals:            u.signals,
+				StatusCacheService: u.scs,
+				UIService:          u.baseUI,
+			})
 		},
 	)
 	navItemManageCharacters := iwidget.NewNavListItemWithIcon(

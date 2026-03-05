@@ -23,6 +23,36 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type UIService interface {
+	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsOffline() bool
+	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
+	UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool)
+	UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error
+	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
+	UpdateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool)
+	UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error
+	UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool)
+	UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool)
+	HumanizeError(err error) string
+}
+
+type EIS interface {
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
+}
+
+type SCS interface {
+	CharacterSectionSummary(characterID int64) app.StatusSummary
+	CorporationSectionSummary(corporationID int64) app.StatusSummary
+	GeneralSectionSummary() app.StatusSummary
+	ListCharacters() []*app.EntityShort
+	ListCharacterSections(characterID int64) []app.CacheSectionStatus
+	ListCorporations() []*app.EntityShort
+	ListCorporationSections(corporationID int64) []app.CacheSectionStatus
+	ListGeneralSections() []app.CacheSectionStatus
+}
+
 type sectionCategory uint
 
 const (
@@ -46,11 +76,15 @@ type updateStatus struct {
 	charactersTop     *widget.Label
 	details           *updateStatusDetail
 	detailsTop        *widget.Label
+	eis               EIS
 	entities          fyne.CanvasObject
 	entityList        *widget.List
+	isMobile          bool
 	nav               *iwidget.Navigator
 	onEntitySelected  func(int)
 	onSectionSelected func(int)
+	sb                *iwidget.Snackbar
+	scs               SCS
 	sectionEntities   []sectionEntity
 	sectionList       *widget.List
 	sections          []app.CacheSectionStatus
@@ -58,44 +92,59 @@ type updateStatus struct {
 	selectedEntityID  int
 	selectedSectionID int
 	signalKey         string
+	signals           *app.Signals
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
-	u                 *baseUI
+	u                 UIService
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
 }
 
-func showUpdateStatusWindow(u *baseUI) {
-	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
+type Params struct {
+	EveImageService    EIS
+	IsMobile           bool
+	Signals            *app.Signals
+	StatusCacheService SCS
+	UIService          UIService
+}
+
+func ShowUpdateStatusWindow(arg Params) {
+	if arg.EveImageService == nil ||
+		arg.Signals == nil ||
+		arg.StatusCacheService == nil ||
+		arg.UIService == nil {
+		panic(app.ErrInvalid)
+	}
+	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
 	if !ok {
 		w.Show()
 		return
 	}
-	a := newUpdateStatus(u)
-	go func() {
-		a.update(context.Background())
-		fyne.Do(func() {
-			w.SetContent(a)
-			w.Resize(fyne.Size{Width: 1100, Height: 500})
-			w.SetOnClosed(func() {
-				a.stop()
-				onClosed()
-			})
-			w.Show()
-		})
-	}()
+	a := newUpdateStatus(arg, w)
+	w.SetContent(a)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	w.SetOnClosed(func() {
+		a.stop()
+		onClosed()
+	})
+	w.Show()
+	go a.update(context.Background())
 }
 
-func newUpdateStatus(u *baseUI) *updateStatus {
+func newUpdateStatus(arg Params, w fyne.Window) *updateStatus {
 	a := &updateStatus{
 		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
 		detailsTop:        newLabelWithWrapping(),
+		eis:               arg.EveImageService,
+		scs:               arg.StatusCacheService,
 		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		signalKey:         "updateStatus-" + uniqueID(),
-		u:                 u,
+		signals:           arg.Signals,
+		sb:                iwidget.NewSnackbar(w),
+		u:                 arg.UIService,
 	}
 	a.ExtendBaseWidget(a)
 	a.entityList = a.makeEntityList()
@@ -115,7 +164,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
-	if u.isMobile {
+	if arg.IsMobile {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := kxwidget.NewIconButtonWithMenu(
@@ -137,47 +186,62 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	}
 
 	// Signals
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.sb.Start()
+	a.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
+	a.signals.GeneralSectionUpdated.AddListener(func(ctx context.Context, arg app.GeneralSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a
 }
 
 func (a *updateStatus) stop() {
-	a.u.signals.CharacterAdded.RemoveListener(a.signalKey)
-	a.u.signals.CharacterRemoved.RemoveListener(a.signalKey)
-	a.u.signals.CharacterSectionUpdated.RemoveListener(a.signalKey)
-	a.u.signals.CorporationSectionUpdated.RemoveListener(a.signalKey)
-	a.u.signals.GeneralSectionUpdated.RemoveListener(a.signalKey)
+	a.sb.Stop()
+	a.signals.CharacterAdded.RemoveListener(a.signalKey)
+	a.signals.CharacterRemoved.RemoveListener(a.signalKey)
+	a.signals.CharacterSectionUpdated.RemoveListener(a.signalKey)
+	a.signals.CorporationSectionUpdated.RemoveListener(a.signalKey)
+	a.signals.GeneralSectionUpdated.RemoveListener(a.signalKey)
 }
 
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
-			go a.u.updateCharactersIfNeeded(context.Background(), true)
+			go func() {
+				err := a.u.UpdateCharactersIfNeeded(context.Background(), true)
+				if err != nil {
+					slog.Error("update status", "error", err)
+					a.sb.Show("Error: " + a.u.HumanizeError(err))
+				}
+			}()
 		}),
 		fyne.NewMenuItem("Update all corporations", func() {
-			go a.u.updateCorporationsIfNeeded(context.Background(), true)
+			go func() {
+				err := a.u.UpdateCorporationsIfNeeded(context.Background(), true)
+				if err != nil {
+					slog.Error("update status", "error", err)
+					a.sb.Show("Error: " + a.u.HumanizeError(err))
+				}
+			}()
+
 		}),
 		fyne.NewMenuItem("Update all general topics", func() {
-			go a.u.updateGeneralSectionsIfNeeded(context.Background(), true)
+			go a.u.UpdateGeneralSectionsIfNeeded(context.Background(), true)
 		}),
 	)
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
-	if a.u.isMobile {
+	if a.isMobile {
 		ab := iwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,
@@ -233,12 +297,12 @@ func (a *updateStatus) makeEntityList() *widget.List {
 				name.Refresh()
 				switch c.category {
 				case sectionCharacter:
-					a.u.eis.CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+					a.eis.CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
 						icon.Resource = r
 						icon.Refresh()
 					})
 				case sectionCorporation:
-					a.u.eis.CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+					a.eis.CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
 						icon.Resource = r
 						icon.Refresh()
 					})
@@ -303,7 +367,7 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.updateGeneralSectionsIfNeeded(ctx, true)
+			go a.u.UpdateGeneralSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
 			go a.u.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
@@ -329,12 +393,12 @@ func (a *updateStatus) update(ctx context.Context) {
 func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int) {
 	var count int
 	var entities []sectionEntity
-	cc := a.u.scs.ListCharacters()
+	cc := a.scs.ListCharacters()
 	if len(cc) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
 		count += len(cc)
 		for _, c := range cc {
-			ss := a.u.scs.CharacterSectionSummary(c.ID)
+			ss := a.scs.CharacterSectionSummary(c.ID)
 			o := sectionEntity{
 				category: sectionCharacter,
 				id:       c.ID,
@@ -344,12 +408,12 @@ func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int
 			entities = append(entities, o)
 		}
 	}
-	rr := a.u.scs.ListCorporations()
+	rr := a.scs.ListCorporations()
 	if len(rr) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
 		count += len(rr)
 		for _, r := range rr {
-			ss := a.u.scs.CorporationSectionSummary(r.ID)
+			ss := a.scs.CorporationSectionSummary(r.ID)
 			o := sectionEntity{
 				category: sectionCorporation,
 				id:       r.ID,
@@ -360,7 +424,7 @@ func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int
 		}
 	}
 	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
-	ss := a.u.scs.GeneralSectionSummary()
+	ss := a.scs.GeneralSectionSummary()
 	o := sectionEntity{
 		category: sectionGeneral,
 		id:       app.GeneralSectionEntityID,
@@ -433,11 +497,11 @@ func (a *updateStatus) refreshSections() {
 	se := a.sectionEntities[a.selectedEntityID]
 	switch se.category {
 	case sectionCharacter:
-		a.sections = a.u.scs.ListCharacterSections(se.id)
+		a.sections = a.scs.ListCharacterSections(se.id)
 	case sectionCorporation:
-		a.sections = a.u.scs.ListCorporationSections(se.id)
+		a.sections = a.scs.ListCorporationSections(se.id)
 	case sectionGeneral:
-		a.sections = a.u.scs.ListGeneralSections()
+		a.sections = a.scs.ListGeneralSections()
 	}
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
@@ -471,15 +535,15 @@ func (a *updateStatus) makeUpdateSectionAction(entityID int64, sectionID string)
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.updateGeneralSectionAndRefreshIfNeeded(
+			go a.u.UpdateGeneralSectionAndRefreshIfNeeded(
 				ctx, app.GeneralSection(sectionID), true,
 			)
 		case sectionCharacter:
-			go a.u.updateCharacterSectionAndRefreshIfNeeded(
+			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CharacterSection(sectionID), true,
 			)
 		case sectionCorporation:
-			go a.u.updateCorporationSectionAndRefreshIfNeeded(
+			go a.u.UpdateCorporationSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CorporationSection(sectionID), true,
 			)
 		default:

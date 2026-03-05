@@ -24,13 +24,13 @@ const (
 func (u *baseUI) startUpdateTickerGeneralSections() {
 	go func() {
 		for {
-			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			go u.UpdateGeneralSectionsIfNeeded(context.Background(), false)
 			<-time.Tick(generalSectionsUpdateTicker)
 		}
 	}()
 }
 
-func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
+func (u *baseUI) UpdateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && u.ess.IsDailyDowntime() {
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
@@ -48,7 +48,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	var wg sync.WaitGroup
 	for s := range sections.All() {
 		wg.Go(func() {
-			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
+			u.UpdateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
@@ -56,7 +56,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+func (u *baseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
@@ -101,7 +101,7 @@ func (u *baseUI) startUpdateTickerCharacters() {
 			}()
 
 			go func() {
-				if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
+				if err := u.UpdateCharactersIfNeeded(ctx, false); err != nil {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			}()
@@ -110,7 +110,7 @@ func (u *baseUI) startUpdateTickerCharacters() {
 	}()
 }
 
-func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
+func (u *baseUI) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && u.ess.IsDailyDowntime() {
 		slog.Info("Skipping regular update of characters during daily downtime")
 		return nil
@@ -245,7 +245,7 @@ func (u *baseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 					if !mySections.Contains(s) {
 						continue
 					}
-					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+					u.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 				}
 			})
 		}
@@ -281,7 +281,7 @@ func (u *baseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	// Other sections
 	for s := range sections.All() {
 		wg.Go(func() {
-			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+			u.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
@@ -289,12 +289,12 @@ func (u *baseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	slog.Debug("Finished updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
-// updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
+// UpdateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
 // and refreshes the UI accordingly.
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
+func (u *baseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to process update for character section",
 			"characterID", characterID,
@@ -385,7 +385,7 @@ func (u *baseUI) startUpdateTickerCorporations() {
 	go func() {
 		for {
 			go func() {
-				if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
+				if err := u.UpdateCorporationsIfNeeded(context.Background(), false); err != nil {
 					slog.Error("Failed to update corporations", "error", err)
 				}
 			}()
@@ -394,7 +394,7 @@ func (u *baseUI) startUpdateTickerCorporations() {
 	}()
 }
 
-func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+func (u *baseUI) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && u.ess.IsDailyDowntime() {
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
@@ -441,7 +441,7 @@ func (u *baseUI) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	var wg sync.WaitGroup
 	for _, s := range sections {
 		wg.Go(func() {
-			u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+			u.UpdateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
@@ -449,12 +449,12 @@ func (u *baseUI) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	slog.Debug("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
-// updateCorporationSectionAndRefreshIfNeeded runs update for a corporation section if needed
+// UpdateCorporationSectionAndRefreshIfNeeded runs update for a corporation section if needed
 // and refreshes the UI accordingly.
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
+func (u *baseUI) UpdateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
 		ctx, app.CorporationSectionUpdateParams{
 			CorporationID:         corporationID,

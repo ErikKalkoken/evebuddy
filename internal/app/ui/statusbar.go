@@ -98,7 +98,13 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		container.NewStack(spacer, a.updatingIndicator),
 		"?",
 		func() {
-			showUpdateStatusWindow(u.baseUI)
+			ShowUpdateStatusWindow(Params{
+				EveImageService:    u.eis,
+				IsMobile:           u.isMobile,
+				Signals:            u.signals,
+				StatusCacheService: u.scs,
+				UIService:          u.baseUI,
+			})
 		},
 	)
 	a.updateStatus.SetToolTip("Current update status - click for details")
