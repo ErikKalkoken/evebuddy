@@ -439,7 +439,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 	go func() {
 		structure, err := u.rs.GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			u.showErrorDialog("Failed to fetch structure", err, u.MainWindow())
+			u.ShowErrorDialog("Failed to fetch structure", err, u.MainWindow())
 			return
 		}
 		corporationName := u.scs.CorporationName(corporationID)

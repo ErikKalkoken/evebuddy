@@ -191,7 +191,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		u.showErrorDialog("Something went wrong", err, w)
+		u.ShowErrorDialog("Something went wrong", err, w)
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."

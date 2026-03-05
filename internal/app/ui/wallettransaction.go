@@ -610,7 +610,7 @@ func showCharacterWalletTransactionWindowAsync(u *baseUI, characterID int64, tra
 	go func() {
 		o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
-			u.showErrorDialog("Failed to show market transaction", err, u.window)
+			u.ShowErrorDialog("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {
@@ -686,7 +686,7 @@ func showCorporationWalletTransactionWindowAsync(u *baseUI, corporationID int64,
 	go func() {
 		o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
-			u.showErrorDialog("Failed to show market transaction", err, u.window)
+			u.ShowErrorDialog("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {

@@ -428,7 +428,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				showSettingsWindow(u.baseUI)
+				ShowSettingsWindow(u.baseUI, u.settings, u.isMobile)
 			},
 		),
 		navItemManageCharacters,

@@ -453,7 +453,7 @@ func (a *clones) updateRoutesAsync() {
 func (a *clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		a.u.showErrorDialog("Something went wrong", err, w)
+		a.u.ShowErrorDialog("Something went wrong", err, w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity
@@ -670,7 +670,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
-		a.u.showErrorDialog("failed to load clone", err, a.u.MainWindow())
+		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())
 		return
 	}
 	list := widget.NewList(

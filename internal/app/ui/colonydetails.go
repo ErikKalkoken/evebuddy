@@ -88,7 +88,7 @@ func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 			slog.Any("planetID", r.planetID),
 			slog.Any("error", err),
 		)
-		u.showErrorDialog("Failed to show colony details", err, u.MainWindow())
+		u.ShowErrorDialog("Failed to show colony details", err, u.MainWindow())
 		return
 	}
 

@@ -326,7 +326,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 		if err != nil {
 			fyne.Do(func() {
 				d1.Hide()
-				a.mc.u.showErrorDialog("Failed to add a new character", err, a.mc.w)
+				a.mc.u.ShowErrorDialog("Failed to add a new character", err, a.mc.w)
 			})
 		} else {
 			fyne.Do(func() {
@@ -526,7 +526,7 @@ func (a *characterTags) exportTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.mc.u.showErrorDialog("Failed to export tags", err, a.mc.w)
+				a.mc.u.ShowErrorDialog("Failed to export tags", err, a.mc.w)
 			})
 		}
 		m.Start()
@@ -565,7 +565,7 @@ func (a *characterTags) importTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.mc.u.showErrorDialog("Failed to import tags", err, a.mc.w)
+				a.mc.u.ShowErrorDialog("Failed to import tags", err, a.mc.w)
 			})
 		}
 		m.Start()
@@ -729,7 +729,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						ctx := context.Background()
 						err := a.mc.u.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
-							a.mc.u.showErrorDialog("Failed to delete tag", err, a.mc.w)
+							a.mc.u.ShowErrorDialog("Failed to delete tag", err, a.mc.w)
 							return
 						}
 						a.update(ctx)
@@ -868,7 +868,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				a.mc.u.showErrorDialog("Failed to modify tag", err, a.mc.w)
+				a.mc.u.ShowErrorDialog("Failed to modify tag", err, a.mc.w)
 				return
 			}
 			ctx := context.Background()

@@ -623,7 +623,7 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 	}
 	c, err := a.u.cs.GetCharacter(context.Background(), r.characterID)
 	if err != nil {
-		a.u.showErrorDialog("Failed to fetch character", err, a.u.MainWindow())
+		a.u.ShowErrorDialog("Failed to fetch character", err, a.u.MainWindow())
 		return
 	}
 	sq := newCharacterSkillQueueWithCharacter(a.u, c)

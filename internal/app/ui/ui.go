@@ -524,7 +524,7 @@ func (u *baseUI) Start() bool {
 	}
 	// First app start
 	u.defaultTheme = theme.Current()
-	u.setColorTheme(u.settings.ColorTheme())
+	u.SetColorTheme(u.settings.ColorTheme())
 	if u.isOffline {
 		slog.Info("App started in offline mode")
 	} else {
@@ -638,6 +638,14 @@ func (u *baseUI) HumanizeError(err error) string {
 	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
 }
 
+func (u *baseUI) DataPaths() xmaps.OrderedMap[string, string] {
+	return u.dataPaths
+}
+
+func (u *baseUI) EmitCorporationChanged(ctx context.Context) {
+	u.corporationsChanged.Emit(ctx, struct{}{})
+}
+
 //////////////////
 // Current character
 
@@ -661,7 +669,7 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 		}
 	}
 	if c == nil {
-		u.resetCharacter()
+		u.ResetCharacter()
 		return
 	}
 	u.setCharacter(c)
@@ -706,7 +714,7 @@ func (u *baseUI) reloadCurrentCharacter() {
 	u.character.Store(c)
 }
 
-func (u *baseUI) resetCharacter() {
+func (u *baseUI) ResetCharacter() {
 	u.character.Store(nil)
 	u.currentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
@@ -727,7 +735,7 @@ func (u *baseUI) setCharacter(c *app.Character) {
 func (u *baseUI) setAnyCharacter() error {
 	c, err := u.cs.GetAnyCharacter(context.Background())
 	if errors.Is(err, app.ErrNotFound) {
-		u.resetCharacter()
+		u.ResetCharacter()
 		return nil
 	} else if err != nil {
 		return err
@@ -759,7 +767,7 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 		}
 	}
 	if c == nil {
-		u.resetCorporation()
+		u.ResetCorporation()
 		return
 	}
 	u.setCorporation(c)
@@ -791,7 +799,7 @@ func (u *baseUI) loadCorporation(id int64) error {
 	return nil
 }
 
-func (u *baseUI) resetCorporation() {
+func (u *baseUI) ResetCorporation() {
 	u.corporation.Store(nil)
 	u.currentCorporationExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCorporationID()
@@ -812,7 +820,7 @@ func (u *baseUI) setCorporation(c *app.Corporation) {
 func (u *baseUI) setAnyCorporation() error {
 	c, err := u.rs.GetAnyCorporation(context.Background())
 	if errors.Is(err, app.ErrNotFound) {
-		u.resetCorporation()
+		u.ResetCorporation()
 		return nil
 	}
 	if err != nil {
@@ -860,7 +868,7 @@ func (u *baseUI) initHome(ctx context.Context) {
 	g.Wait()
 }
 
-func (u *baseUI) setColorTheme(s settings.ColorTheme) {
+func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
 }
 
@@ -961,8 +969,8 @@ func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	return d
 }
 
-// showErrorDialog shows an error dialog and logs the error.
-func (u *baseUI) showErrorDialog(message string, err error, parent fyne.Window) {
+// ShowErrorDialog shows an error dialog and logs the error.
+func (u *baseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
 	slog.Error(message, "error", err)
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()

@@ -468,7 +468,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 	go func() {
 		o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+			u.ShowErrorDialog("Failed to show wallet transaction", err, u.window)
 			return
 		}
 
@@ -616,7 +616,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 	go func() {
 		o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+			u.ShowErrorDialog("Failed to show wallet transaction", err, u.window)
 			return
 		}
 
