@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/mobile"
 
 	"fyne.io/fyne/v2/theme"
@@ -37,7 +36,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
-	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -886,40 +884,6 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 		return github.VersionInfo{}, err
 	}
 	return v, nil
-}
-
-func (u *baseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
-	d := dialog.NewInformation(title, message, parent)
-	xdesktop.DisableShortcutsForDialog(d, parent)
-	d.Show()
-}
-
-func (u *baseUI) ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) {
-	d := dialog.NewConfirm(title, message, callback, parent)
-	d.SetConfirmImportance(widget.DangerImportance)
-	d.SetConfirmText(confirm)
-	d.SetDismissText("Cancel")
-	xdesktop.DisableShortcutsForDialog(d, parent)
-	d.Show()
-}
-
-func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
-	title := widget.NewLabel(message)
-	error := widget.NewLabel(u.HumanizeError(err))
-	error.TextStyle.Monospace = true
-	error.Wrapping = fyne.TextWrapBreak
-	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))
-	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
-	d := dialog.NewCustom("Error", "OK", c, parent)
-	xdesktop.DisableShortcutsForDialog(d, parent)
-	return d
-}
-
-// ShowErrorDialog shows an error dialog and logs the error.
-func (u *baseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
-	slog.Error(message, "error", err)
-	d := u.NewErrorDialog(message, err, parent)
-	d.Show()
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {

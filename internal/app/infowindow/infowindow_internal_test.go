@@ -51,8 +51,6 @@ func (u *UIServiceFake) MakeWindowTitle(parts ...string) string {
 	return strings.Join(parts, " - ")
 }
 
-func (u *UIServiceFake) ShowInformationDialog(title, message string, parent fyne.Window) {}
-
 type SettingsFake struct{}
 
 func (s *SettingsFake) PreferMarketTab() bool {

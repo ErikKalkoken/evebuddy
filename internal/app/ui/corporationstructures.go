@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -439,7 +440,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 	go func() {
 		structure, err := u.rs.GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			u.ShowErrorDialog("Failed to fetch structure", err, u.MainWindow())
+			xdialog.ShowError("Failed to fetch structure", err, u.MainWindow())
 			return
 		}
 		corporationName := u.scs.CorporationName(corporationID)

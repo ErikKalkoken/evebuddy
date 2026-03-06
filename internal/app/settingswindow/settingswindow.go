@@ -25,6 +25,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -41,8 +42,6 @@ type UIService interface {
 	ResetCharacter()
 	ResetCorporation()
 	SetColorTheme(s settings.ColorTheme)
-	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
-	ShowErrorDialog(message string, err error, parent fyne.Window)
 }
 
 type Params struct {
@@ -322,7 +321,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		Label: "Clear cache",
 		Action: func() {
 			w := a.w
-			a.u.ShowConfirmDialog(
+			xdialog.ShowConfirm(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
 				"Clear",
@@ -426,7 +425,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 }
 
 func (a *settingsWindow) showDeleteFileDialog(name, path string) {
-	a.u.ShowConfirmDialog(
+	xdialog.ShowConfirm(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
 		"Delete",
@@ -462,7 +461,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 		a.sb.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		a.u.ShowErrorDialog("Failed to open "+filename, err, a.w)
+		xdialog.ShowError("Failed to open "+filename, err, a.w)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -482,7 +481,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				a.u.ShowErrorDialog("Failed to export "+filename, err, a.w)
+				xdialog.ShowError("Failed to export "+filename, err, a.w)
 			}
 		}, a.w,
 	)

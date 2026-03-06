@@ -20,6 +20,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -468,7 +469,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 	go func() {
 		o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			u.ShowErrorDialog("Failed to show wallet transaction", err, u.window)
+			xdialog.ShowError("Failed to show wallet transaction", err, u.window)
 			return
 		}
 
@@ -616,7 +617,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 	go func() {
 		o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			u.ShowErrorDialog("Failed to show wallet transaction", err, u.window)
+			xdialog.ShowError("Failed to show wallet transaction", err, u.window)
 			return
 		}
 

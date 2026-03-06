@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -217,7 +218,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				return
 			}
 			processErr := func(err error) {
-				a.u.ShowErrorDialog(
+				xdialog.ShowError(
 					"Failed to generated notification for clipboard",
 					err,
 					a.u.MainWindow(),

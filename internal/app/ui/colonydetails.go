@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -88,7 +89,7 @@ func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 			slog.Any("planetID", r.planetID),
 			slog.Any("error", err),
 		)
-		u.ShowErrorDialog("Failed to show colony details", err, u.MainWindow())
+		xdialog.ShowError("Failed to show colony details", err, u.MainWindow())
 		return
 	}
 

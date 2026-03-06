@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -236,7 +237,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 		if err != nil {
 			fyne.Do(func() {
 				d1.Hide()
-				a.cw.u.ShowErrorDialog("Failed to add a new character", err, a.cw.w)
+				xdialog.ShowError("Failed to add a new character", err, a.cw.w)
 			})
 		} else {
 			fyne.Do(func() {
@@ -249,7 +250,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 }
 
 func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
-	a.cw.u.ShowConfirmDialog(
+	xdialog.ShowConfirm(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
 		"Delete",

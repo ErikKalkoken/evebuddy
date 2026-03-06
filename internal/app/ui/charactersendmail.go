@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -108,7 +109,7 @@ func (a *characterSendMail) SetWindow(w fyne.Window) {
 // sendAction tries to send the current mail and reports whether it was successful
 func (a *characterSendMail) SendAction() bool {
 	showErrorDialog := func(message string) {
-		a.u.ShowInformationDialog("Failed to send mail", message, a.u.MainWindow())
+		xdialog.ShowInformation("Failed to send mail", message, a.u.MainWindow())
 	}
 	if a.to.IsEmpty() {
 		showErrorDialog("A mail needs to have at least one recipient.")
@@ -191,7 +192,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		u.ShowErrorDialog("Something went wrong", err, w)
+		xdialog.ShowError("Something went wrong", err, w)
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."

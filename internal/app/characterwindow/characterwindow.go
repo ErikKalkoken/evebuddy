@@ -42,8 +42,6 @@ type UIService interface {
 	LoadCorporation(id int64) error
 	SetAnyCharacter() error
 	SetAnyCorporation() error
-	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
-	ShowErrorDialog(message string, err error, parent fyne.Window)
 }
 
 type Params struct {

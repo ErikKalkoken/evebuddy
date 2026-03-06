@@ -20,6 +20,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -610,7 +611,7 @@ func showCharacterWalletTransactionWindowAsync(u *baseUI, characterID int64, tra
 	go func() {
 		o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
-			u.ShowErrorDialog("Failed to show market transaction", err, u.window)
+			xdialog.ShowError("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {
@@ -686,7 +687,7 @@ func showCorporationWalletTransactionWindowAsync(u *baseUI, corporationID int64,
 	go func() {
 		o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
-			u.ShowErrorDialog("Failed to show market transaction", err, u.window)
+			xdialog.ShowError("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {

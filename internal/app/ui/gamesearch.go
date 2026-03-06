@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -306,7 +307,7 @@ func (a *gameSearch) setEntry(s string) {
 func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
-			a.u.ShowInformationDialog(
+			xdialog.ShowInformation(
 				"Offline",
 				"Can't search when offline",
 				a.w,
@@ -341,7 +342,7 @@ func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	)
 	if err != nil {
 		fyne.Do(func() {
-			a.u.ShowErrorDialog("Search failed", err, a.u.MainWindow())
+			xdialog.ShowError("Search failed", err, a.u.MainWindow())
 		})
 		return
 	}

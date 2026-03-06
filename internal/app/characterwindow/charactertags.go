@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -97,7 +98,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterTags) deleteTags() {
-	a.cw.u.ShowConfirmDialog(
+	xdialog.ShowConfirm(
 		"Delete All Tags",
 		"Are you sure you want to delete all tags?",
 		"Delete",
@@ -156,7 +157,7 @@ func (a *characterTags) exportTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.cw.u.ShowErrorDialog("Failed to export tags", err, a.cw.w)
+				xdialog.ShowError("Failed to export tags", err, a.cw.w)
 			})
 		}
 		m.Start()
@@ -195,7 +196,7 @@ func (a *characterTags) importTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				a.cw.u.ShowErrorDialog("Failed to import tags", err, a.cw.w)
+				xdialog.ShowError("Failed to import tags", err, a.cw.w)
 			})
 		}
 		m.Start()
@@ -351,7 +352,7 @@ func (a *characterTags) makeTagList() *widget.List {
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
 				s := "Are you sure you want to delete tag " + tag.Name + "?"
-				a.cw.u.ShowConfirmDialog(
+				xdialog.ShowConfirm(
 					"Delete Tag", s, "Delete", func(confirmed bool) {
 						if !confirmed {
 							return
@@ -359,7 +360,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						ctx := context.Background()
 						err := a.cw.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
-							a.cw.u.ShowErrorDialog("Failed to delete tag", err, a.cw.w)
+							xdialog.ShowError("Failed to delete tag", err, a.cw.w)
 							return
 						}
 						a.update(ctx)
@@ -498,7 +499,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				a.cw.u.ShowErrorDialog("Failed to modify tag", err, a.cw.w)
+				xdialog.ShowError("Failed to modify tag", err, a.cw.w)
 				return
 			}
 			ctx := context.Background()

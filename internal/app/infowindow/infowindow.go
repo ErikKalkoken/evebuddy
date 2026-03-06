@@ -26,6 +26,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -40,7 +41,6 @@ type UIService interface {
 	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
-	ShowInformationDialog(title, message string, parent fyne.Window)
 }
 
 type CS interface {
@@ -238,7 +238,7 @@ type infoWidget interface {
 
 func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
 	if iw.u.IsOffline() {
-		iw.u.ShowInformationDialog(
+		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",
 			iw.w,
@@ -258,7 +258,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		case app.EveLocationSolarSystem:
 			v = infoSolarSystem
 		case app.EveLocationUnknown:
-			iw.u.ShowInformationDialog(
+			xdialog.ShowInformation(
 				"Unknown location",
 				"Can't show info window for an unknown location",
 				iw.w,
@@ -301,7 +301,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		title = "Location"
 		page = newLocationInfo(iw, entityID)
 	default:
-		iw.u.ShowInformationDialog(
+		xdialog.ShowInformation(
 			"Warning",
 			"Can't show info window for unknown category",
 			iw.w,
