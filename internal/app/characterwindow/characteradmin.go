@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
 
 type characterAdminRow struct {
@@ -192,7 +193,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 		),
 		a.cw.w,
 	)
-	a.cw.u.ModifyShortcutsForDialog(d1, a.cw.w)
+	xdesktop.DisableShortcutsForDialog(d1, a.cw.w)
 	done := make(chan struct{})
 	d1.SetOnClosed(func() {
 		cancel()

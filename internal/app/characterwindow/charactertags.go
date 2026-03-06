@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -305,7 +306,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 			},
 			a.cw.w,
 		)
-		a.cw.u.ModifyShortcutsForDialog(d, a.cw.w)
+		xdesktop.DisableShortcutsForDialog(d, a.cw.w)
 		d.Show()
 		_, s := a.cw.w.Canvas().InteractiveArea()
 		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
@@ -505,7 +506,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 			go a.cw.signals.TagsChanged.Emit(ctx, struct{}{})
 		}, a.cw.w,
 	)
-	a.cw.u.ModifyShortcutsForDialog(d, a.cw.w)
+	xdesktop.DisableShortcutsForDialog(d, a.cw.w)
 	d.Show()
 	d.Resize(fyne.NewSize(300, 200))
 	a.cw.w.Canvas().Focus(name)

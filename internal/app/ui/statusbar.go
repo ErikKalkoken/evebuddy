@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
 
 const (
@@ -297,7 +298,8 @@ func (a *statusBar) showClockDialog() {
 	clock := widget.NewLabel("")
 	clock.SizeName = theme.SizeNameHeadingText
 	d := dialog.NewCustom("EVE Clock", "Close", clock, a.u.MainWindow())
-	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
+
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -333,7 +335,7 @@ func (a *statusBar) showEveStatusDialog() {
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
 	d := dialog.NewCustom("ESI status", "OK", lb, a.u.MainWindow())
-	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -506,7 +508,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 			}
 		}, w.u.MainWindow(),
 		)
-		w.u.ModifyShortcutsForDialog(d, w.u.MainWindow())
+		xdesktop.DisableShortcutsForDialog(d, w.u.MainWindow())
 		d.Show()
 	})
 	c := container.NewHBox(l, widget.NewSeparator())

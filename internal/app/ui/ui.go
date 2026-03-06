@@ -20,7 +20,6 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"golang.org/x/sync/errgroup"
@@ -39,6 +38,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -84,8 +84,6 @@ type eveImageService interface {
 type baseUI struct {
 	// Callbacks
 	clearCache                      func() // clear all caches
-	disableMenuShortcuts            func()
-	enableMenuShortcuts             func()
 	hideMailIndicator               func()
 	onAppFirstStarted               func()
 	onAppStopped                    func()
@@ -892,7 +890,7 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 
 func (u *baseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
 	d := dialog.NewInformation(title, message, parent)
-	u.ModifyShortcutsForDialog(d, parent)
+	xdesktop.DisableShortcutsForDialog(d, parent)
 	d.Show()
 }
 
@@ -901,7 +899,7 @@ func (u *baseUI) ShowConfirmDialog(title, message, confirm string, callback func
 	d.SetConfirmImportance(widget.DangerImportance)
 	d.SetConfirmText(confirm)
 	d.SetDismissText("Cancel")
-	u.ModifyShortcutsForDialog(d, parent)
+	xdesktop.DisableShortcutsForDialog(d, parent)
 	d.Show()
 }
 
@@ -913,7 +911,7 @@ func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))
 	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", c, parent)
-	u.ModifyShortcutsForDialog(d, parent)
+	xdesktop.DisableShortcutsForDialog(d, parent)
 	return d
 }
 
@@ -922,17 +920,6 @@ func (u *baseUI) ShowErrorDialog(message string, err error, parent fyne.Window) 
 	slog.Error(message, "error", err)
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()
-}
-
-// ModifyShortcutsForDialog modifies the shortcuts for a dialog.
-func (u *baseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
-	kxdialog.AddDialogKeyHandler(d, w)
-	if u.disableMenuShortcuts != nil && u.enableMenuShortcuts != nil {
-		u.disableMenuShortcuts()
-		d.SetOnClosed(func() {
-			u.enableMenuShortcuts()
-		})
-	}
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {

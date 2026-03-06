@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -41,7 +40,6 @@ type UIService interface {
 	IsOffline() bool
 	LoadCharacter(id int64) error
 	LoadCorporation(id int64) error
-	ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window)
 	SetAnyCharacter() error
 	SetAnyCorporation() error
 	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)

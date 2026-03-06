@@ -26,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
@@ -37,7 +38,6 @@ type UIService interface {
 	HumanizeError(err error) string
 	IsDeveloperMode() bool
 	MainWindow() fyne.Window
-	ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window)
 	ResetCharacter()
 	ResetCorporation()
 	SetColorTheme(s settings.ColorTheme)
@@ -487,7 +487,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 		}, a.w,
 	)
 	d.SetFileName(filename)
-	a.u.ModifyShortcutsForDialog(d, a.w)
+	xdesktop.DisableShortcutsForDialog(d, a.w)
 	d.Show()
 }
 
@@ -682,7 +682,7 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 				c := container.NewBorder(nil, container.NewVBox(hint, buttons), nil, nil, p.content)
 				w := a.w
 				d = dialog.NewCustomWithoutButtons(title, c, w)
-				a.u.ModifyShortcutsForDialog(d, w)
+				xdesktop.DisableShortcutsForDialog(d, w)
 				d.Show()
 				_, s := w.Canvas().InteractiveArea()
 				d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))

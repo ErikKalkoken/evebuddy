@@ -29,6 +29,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
 
 const (
@@ -52,8 +53,7 @@ type shortcutDef struct {
 type DesktopUI struct {
 	*baseUI
 
-	shortcuts map[string]shortcutDef
-	sfg       singleflight.Group
+	sfg singleflight.Group
 }
 
 // NewDesktopUI build the UI and returns it.
@@ -72,8 +72,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.hideMailIndicator = func() {
 		deskApp.SetSystemTrayIcon(icons.IconPng)
 	}
-	u.enableMenuShortcuts = u.enableShortcuts
-	u.disableMenuShortcuts = u.disableShortcuts
 
 	u.showManageCharacters = func() {
 		characterwindow.Show(characterwindow.Params{
@@ -612,7 +610,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		u.MainWindow().Resize(u.settings.WindowSize())
 	}
 	u.onAppFirstStarted = func() {
-		u.enableShortcuts()
+		xdesktop.EnableShortcuts(u.MainWindow())
 		go u.updateMailIndicator(context.Background())
 		go statusBar.start()
 	}
@@ -733,7 +731,7 @@ func (u *DesktopUI) showSearchWindow() {
 }
 
 func (u *DesktopUI) defineShortcuts() {
-	u.shortcuts = map[string]shortcutDef{
+	m := map[string]shortcutDef{
 		"snackbar": {
 			&desktop.CustomShortcut{
 				KeyName:  fyne.KeyS,
@@ -854,25 +852,17 @@ func (u *DesktopUI) defineShortcuts() {
 				u.App().Quit()
 			}},
 	}
-}
-
-// enableShortcuts enables all registered menu shortcuts.
-func (u *DesktopUI) enableShortcuts() {
-	for _, sc := range u.shortcuts {
-		u.MainWindow().Canvas().AddShortcut(sc.shortcut, sc.handler)
-	}
-}
-
-// disableShortcuts disabled all registered menu shortcuts.
-func (u *DesktopUI) disableShortcuts() {
-	for _, sc := range u.shortcuts {
-		u.MainWindow().Canvas().RemoveShortcut(sc.shortcut)
+	for name, def := range m {
+		xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
+			Shortcut: def.shortcut,
+			Handler:  def.handler,
+		}, u.MainWindow())
 	}
 }
 
 func (u *DesktopUI) showAboutDialog() {
 	d := dialog.NewCustom("About", "Close", makeAboutPage(u.baseUI), u.MainWindow())
-	u.ModifyShortcutsForDialog(d, u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 
@@ -890,7 +880,7 @@ func (u *DesktopUI) showUserDataDialog() {
 		f.Append(name, c)
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
-	u.ModifyShortcutsForDialog(d, u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 
