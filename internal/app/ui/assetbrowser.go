@@ -125,7 +125,7 @@ func (a *assetBrowser) update(ctx context.Context) {
 	}
 	reportError := func(err error) {
 		slog.Error("Failed to update asset browser", "error", err)
-		setFooter(a.u.HumanizeError(err), widget.DangerImportance)
+		setFooter(app.ErrorDisplay(err), widget.DangerImportance)
 	}
 	el, err := a.u.eus.ListLocations(ctx)
 	if err != nil {

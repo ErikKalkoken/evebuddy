@@ -141,7 +141,7 @@ func (a *wealth) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.HumanizeError(err))
+			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", app.ErrorDisplay(err))
 			a.top.Importance = widget.DangerImportance
 			a.top.Refresh()
 			a.top.Show()

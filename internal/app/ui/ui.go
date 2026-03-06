@@ -579,18 +579,6 @@ func (u *baseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()
 }
 
-// HumanizeError returns user friendly representation of an error for display in the UI.
-func (u *baseUI) HumanizeError(err error) string {
-	if err == nil {
-		return "No error"
-	}
-	if u.settings.DeveloperMode() {
-		return err.Error()
-	}
-	return err.Error()
-	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
-}
-
 func (u *baseUI) DataPaths() xmaps.OrderedMap[string, string] {
 	return u.dataPaths
 }
@@ -1157,7 +1145,7 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 // makeTopText makes the content for the top label of a gui element.
 func (u *baseUI) makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
-		return "ERROR: " + u.HumanizeError(err), widget.DangerImportance
+		return "ERROR: " + app.ErrorDisplay(err), widget.DangerImportance
 	}
 	if characterID == 0 {
 		return "No entity", widget.LowImportance

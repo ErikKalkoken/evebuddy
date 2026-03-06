@@ -351,7 +351,7 @@ func (a *corporationStructures) update(ctx context.Context) {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		clear()
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
+			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})

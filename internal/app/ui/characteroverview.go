@@ -301,7 +301,7 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 			err := a.u.LoadCharacter(r.characterID)
 			if err != nil {
 				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
-				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.HumanizeError(err)))
+				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", app.ErrorDisplay(err)))
 				return
 			}
 		}()
@@ -348,7 +348,7 @@ func (a *characterOverview) makeList() *widget.List {
 			err := a.u.LoadCharacter(r.characterID)
 			if err != nil {
 				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
-				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.HumanizeError(err)))
+				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", app.ErrorDisplay(err)))
 				return
 			}
 		}()
@@ -451,7 +451,7 @@ func (a *characterOverview) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		clear()
-		setFooter("ERROR: "+a.u.HumanizeError(err), widget.DangerImportance)
+		setFooter("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
 		return
 	}

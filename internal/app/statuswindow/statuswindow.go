@@ -46,7 +46,6 @@ type SCS interface {
 type UIService interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsOffline() bool
-	HumanizeError(err error) string
 }
 
 type Params struct {
@@ -253,7 +252,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 				err := a.cs.UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + a.u.HumanizeError(err))
+					a.sb.Show("Error: " + app.ErrorDisplay(err))
 				}
 			}()
 		}),
@@ -262,7 +261,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 				err := a.rs.UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + a.u.HumanizeError(err))
+					a.sb.Show("Error: " + app.ErrorDisplay(err))
 				}
 			}()
 

@@ -133,7 +133,7 @@ func (a *corporationWallet) updateBalance(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to update corp wallet ballance UI", "corporationID", corporationID, "err", err)
 		clear()
-		setBalance("Error: "+a.u.HumanizeError(err), widget.DangerImportance)
+		setBalance("Error: "+app.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))

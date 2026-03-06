@@ -671,7 +671,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			p, err := a.iw.eus.MarketPrice(ctx, et.ID)
 			if err != nil {
 				slog.Error("average price", "typeID", et.ID, "error", err)
-				averagePrice = "ERROR: " + a.iw.u.HumanizeError(err)
+				averagePrice = "ERROR: " + app.ErrorDisplay(err)
 			} else {
 				averagePrice = p.StringFunc("?", func(v float64) string {
 					return humanize.FormatFloat(priceFormat, v) + currencySuffix
@@ -682,7 +682,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			j, err := a.iw.js.FetchPrices(ctx, a.typeID)
 			if err != nil {
 				slog.Error("janice pricer", "typeID", et.ID, "error", err)
-				s := "ERROR: " + a.iw.u.HumanizeError(err)
+				s := "ERROR: " + app.ErrorDisplay(err)
 				items = append(items, newAttributeItem("Janice prices", s))
 			} else {
 				items2 := []attributeItem{

@@ -624,7 +624,7 @@ func (a *industryJobs) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.HumanizeError(err))
+			a.footer.Text = fmt.Sprintf("ERROR: %s", app.ErrorDisplay(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})

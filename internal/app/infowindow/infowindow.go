@@ -36,7 +36,6 @@ import (
 
 type UIService interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
-	HumanizeError(err error) string
 	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
@@ -342,7 +341,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		if err != nil {
 			slog.Error("info widget load", "variant", v, "id", entityID, "error", err)
 			fyne.Do(func() {
-				page.setError("ERROR: " + iw.u.HumanizeError(err))
+				page.setError("ERROR: " + app.ErrorDisplay(err))
 			})
 		}
 	}()
@@ -700,7 +699,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 		if ok && x != nil {
 			err := w.openURL(x)
 			if err != nil {
-				w.iw.sb.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", w.iw.u.HumanizeError(err)))
+				w.iw.sb.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
 			}
 			return
 		}

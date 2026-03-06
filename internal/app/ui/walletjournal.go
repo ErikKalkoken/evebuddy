@@ -485,7 +485,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 			contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
 			reportError := func(o *app.CharacterWalletJournalEntry, err error) {
 				slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-				contextDefaultWidget.SetText("Failed to load related item: " + u.HumanizeError(err))
+				contextDefaultWidget.SetText("Failed to load related item: " + app.ErrorDisplay(err))
 			}
 			// TODO: Add support for industry jobs
 			if v, ok := o.ContextIDType.Value(); ok {
@@ -634,7 +634,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			// ctx := context.Background()
 			// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
 			// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-			// 	contextDefaultWidget.SetText("Failed to load related item: " + u.HumanizeError(err))
+			// 	contextDefaultWidget.SetText("Failed to load related item: " + app.ErrorDisplay(err))
 			// }
 			// TODO: Add support for industry jobs
 			// switch o.ContextIDType {

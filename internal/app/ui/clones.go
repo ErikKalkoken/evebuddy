@@ -364,7 +364,7 @@ func (a *clones) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.HumanizeError(err)
+			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 			a.rows = xslices.Reset(a.rows)
@@ -427,7 +427,7 @@ func (a *clones) updateRoutesAsync() {
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
-				s := "Failed to fetch routes: " + a.u.HumanizeError(err)
+				s := "Failed to fetch routes: " + app.ErrorDisplay(err)
 				a.originLabel.Set(xwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
 					ColorName: theme.ColorNameError,
 				}))

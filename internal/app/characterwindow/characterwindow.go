@@ -36,7 +36,6 @@ type UIService interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HasCharacter() bool
 	HasCorporation() bool
-	HumanizeError(err error) string
 	IsOffline() bool
 	LoadCharacter(id int64) error
 	LoadCorporation(id int64) error

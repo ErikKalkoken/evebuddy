@@ -216,7 +216,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 			if err != nil {
 				slog.Error("failed to update colony installations", "error", err)
 				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.HumanizeError(err))
+					a.setIssue("ERROR: " + app.ErrorDisplay(err))
 				})
 			}
 		}

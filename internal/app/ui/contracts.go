@@ -435,7 +435,7 @@ func (a *contracts) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.HumanizeError(err))
+			a.footer.Text = fmt.Sprintf("ERROR: %s", app.ErrorDisplay(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})

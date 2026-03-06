@@ -36,7 +36,6 @@ type UIService interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	HumanizeError(err error) string
 	MainWindow() fyne.Window
 	ResetCharacter()
 	ResetCorporation()
@@ -346,7 +345,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 					}
 					m.OnError = func(err error) {
 						slog.Error("Failed to clear cache", "error", err)
-						a.sb.Show(fmt.Sprintf("Failed to clear cache: %s", a.u.HumanizeError(err)))
+						a.sb.Show(fmt.Sprintf("Failed to clear cache: %s", app.ErrorDisplay(err)))
 					}
 					m.Start()
 				}, w,

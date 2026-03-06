@@ -134,7 +134,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 		go func() {
 			ec, err := a.iw.eus.GetCharacterESI(context.Background(), a.id)
 			if err != nil {
-				a.iw.sb.Show("Failed to get character for forum: " + a.iw.u.HumanizeError(err))
+				a.iw.sb.Show("Failed to get character for forum: " + app.ErrorDisplay(err))
 				return
 			}
 			name := strings.ReplaceAll(ec.Name, " ", "_")

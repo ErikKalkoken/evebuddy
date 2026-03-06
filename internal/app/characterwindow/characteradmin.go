@@ -272,14 +272,14 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 						err := a.cw.u.SetAnyCharacter()
 						if err != nil {
 							slog.Error("delete character", "error", err)
-							a.cw.sb.Show("Error: " + a.cw.u.HumanizeError(err))
+							a.cw.sb.Show("Error: " + app.ErrorDisplay(err))
 						}
 					}
 					if wasCorpDeleted {
 						err := a.cw.u.SetAnyCorporation()
 						if err != nil {
 							slog.Error("delete corporation", "error", err)
-							a.cw.sb.Show("Error: " + a.cw.u.HumanizeError(err))
+							a.cw.sb.Show("Error: " + app.ErrorDisplay(err))
 						}
 
 					} else {

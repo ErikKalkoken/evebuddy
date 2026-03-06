@@ -246,7 +246,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, character.ID)
 	if err != nil {
 		clear()
-		setFooter("ERROR: "+a.u.HumanizeError(err), widget.DangerImportance)
+		setFooter("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {
