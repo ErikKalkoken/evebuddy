@@ -456,19 +456,8 @@ func Scopes() set.Set[string] {
 	return scopes
 }
 
-type EveUniverseSectionUpdateParams struct {
-	ForceUpdate bool
-	Section     EveUniverseSection
-}
-
 type CharacterSectionUpdateParams struct {
 	CharacterID int64
 	ForceUpdate bool
 	Section     CharacterSection
-}
-
-type CorporationSectionUpdateParams struct {
-	CorporationID int64
-	ForceUpdate   bool
-	Section       CorporationSection
 }

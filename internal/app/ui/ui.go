@@ -540,8 +540,8 @@ func (u *baseUI) Start() bool {
 		if !u.isOffline && !u.isUpdateDisabled.Load() {
 			time.Sleep(3 * time.Second) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
-			u.eus.StartUpdateTicker()
-			u.startUpdateTickerCharacters()
+			u.eus.StartUpdateTicker(300 * time.Second)
+			u.StartUpdateTickerCharacters(60 * time.Second)
 			u.rs.StartUpdateTickerCorporations(60 * time.Second)
 		} else {
 			slog.Info("Update ticker disabled")

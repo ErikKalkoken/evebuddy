@@ -14,16 +14,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-// ticker
-const (
-	characterSectionsUpdateTicker = 60 * time.Second
-)
-
-// update general sections
-
 // update character sections
 
-func (u *baseUI) startUpdateTickerCharacters() {
+func (u *baseUI) StartUpdateTickerCharacters(d time.Duration) {
 	go func() {
 		for {
 			ctx := context.Background()
@@ -38,7 +31,7 @@ func (u *baseUI) startUpdateTickerCharacters() {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			}()
-			<-time.Tick(characterSectionsUpdateTicker)
+			<-time.Tick(d)
 		}
 	}()
 }

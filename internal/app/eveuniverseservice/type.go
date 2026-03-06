@@ -447,9 +447,9 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int64) (opt
 
 // TODO: Change to bulk create
 
-// updateMarketPricesESI updates all market prices from ESI and reports which have changed.
+// UpdateMarketPricesESI updates all market prices from ESI and reports which have changed.
 // Will only reports changes on prices for known types.
-func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
+func (s *EveUniverseService) UpdateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
 	v, err, _ := xsingleflight.Do(&s.sfg, "updateMarketPricesESI", func() (set.Set[int64], error) {
 		prices, _, err := s.esiClient.MarketAPI.GetMarketsPrices(ctx).Execute()
 		if err != nil {

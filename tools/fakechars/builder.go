@@ -173,13 +173,11 @@ func (b *CharacterBuilder) loadTypes(ctx context.Context) error {
 	g.Go(func() error {
 		return b.eus.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
-	if err := g.Wait(); err != nil {
+	g.Go(func() error {
+		_, err := b.eus.UpdateMarketPricesESI(ctx)
 		return err
-	}
-	if _, err := b.eus.UpdateSectionIfNeeded(ctx, app.EveUniverseSectionUpdateParams{
-		ForceUpdate: true,
-		Section:     app.SectionEveMarketPrices,
-	}); err != nil {
+	})
+	if err := g.Wait(); err != nil {
 		return err
 	}
 	types, err := b.st.ListEveTypes(ctx)
