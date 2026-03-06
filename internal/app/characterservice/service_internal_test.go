@@ -16,6 +16,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
+type SettingsFake struct {
+	MaxWalletTransactionsDefault    int
+	MaxMailsDefault                 int
+	MarketOrderRetentionDaysDefault int
+}
+
+func (s *SettingsFake) MaxMails() int {
+	return s.MaxMailsDefault
+}
+
+func (s *SettingsFake) MaxWalletTransactions() int {
+	return s.MaxWalletTransactionsDefault
+}
+
+func (s *SettingsFake) MarketOrderRetentionDays() int {
+	return s.MarketOrderRetentionDaysDefault
+}
+
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(st)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
@@ -28,29 +46,35 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	ac, err := eveauth.NewClient(eveauth.Config{
-		ClientID: "DUMMY",
-		Port:     8000,
-	})
-	if err != nil {
-		panic(err)
-	}
 	arg := Params{
-		AuthClient:             ac,
 		Cache:                  testutil.NewCacheFake2(),
 		ESIClient:              client,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		StatusCacheService:     scs,
 		Storage:                st,
-		ConcurrencyLimit:       0,
-		HTTPClient:             &http.Client{},
 	}
 	if len(args) > 0 {
 		a := args[0]
 		if a.AuthClient != nil {
 			arg.AuthClient = a.AuthClient
 		}
+		if a.Settings != nil {
+			arg.Settings = a.Settings
+		}
+	}
+	if arg.AuthClient == nil {
+		ac, err := eveauth.NewClient(eveauth.Config{
+			ClientID: "DUMMY",
+			Port:     8000,
+		})
+		if err != nil {
+			panic(err)
+		}
+		arg.AuthClient = ac
+	}
+	if arg.Settings == nil {
+		arg.Settings = new(SettingsFake)
 	}
 	s := New(arg)
 	return s

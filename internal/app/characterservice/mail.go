@@ -407,7 +407,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.Cha
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
-			mail, err := s.fetchMailHeadersESI(ctx, characterID, arg.MaxMails)
+			mail, err := s.fetchMailHeadersESI(ctx, characterID, s.settings.MaxMails())
 			if err != nil {
 				return false, err
 			}

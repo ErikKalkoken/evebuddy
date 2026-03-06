@@ -17,6 +17,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
+type Settings interface {
+	MarketOrderRetentionDays() int
+	MaxMails() int
+	MaxWalletTransactions() int
+}
+
 type AuthClient interface {
 	Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error)
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
@@ -40,6 +46,7 @@ type CharacterService struct {
 	esiClient        *esi.APIClient
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
+	settings         Settings
 	scs              *statuscacheservice.StatusCacheService
 	sfg              singleflight.Group
 	sig              *singleinstance.Group
@@ -53,6 +60,7 @@ type Params struct {
 	ESIClient              *esi.APIClient
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
+	Settings               Settings
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
@@ -77,6 +85,9 @@ func New(arg Params) *CharacterService {
 	if arg.EveUniverseService == nil {
 		panic("EveUniverseService")
 	}
+	if arg.Settings == nil {
+		panic("Settings")
+	}
 	if arg.StatusCacheService == nil {
 		panic("StatusCacheService")
 	}
@@ -91,6 +102,7 @@ func New(arg Params) *CharacterService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		settings:         arg.Settings,
 		sig:              singleinstance.NewGroup(),
 		st:               arg.Storage,
 	}

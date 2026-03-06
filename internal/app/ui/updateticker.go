@@ -237,12 +237,9 @@ func (u *baseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		)
 	}
 	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
-		CharacterID:           characterID,
-		ForceUpdate:           forceUpdate,
-		MarketOrderRetention:  time.Duration(u.settings.MarketOrderRetentionDays()) * time.Hour * 24,
-		MaxMails:              u.settings.MaxMails(),
-		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-		Section:               section,
+		CharacterID: characterID,
+		ForceUpdate: forceUpdate,
+		Section:     section,
 	})
 	if err != nil {
 		logErr(err)

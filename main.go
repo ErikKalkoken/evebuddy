@@ -354,6 +354,7 @@ func main() {
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		HTTPClient:             rhc1.StandardClient(),
+		Settings:               settings,
 		StatusCacheService:     scs,
 		Storage:                st,
 	})

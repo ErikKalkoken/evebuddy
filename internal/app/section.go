@@ -462,12 +462,9 @@ type EveUniverseSectionUpdateParams struct {
 }
 
 type CharacterSectionUpdateParams struct {
-	CharacterID           int64
-	ForceUpdate           bool
-	MarketOrderRetention  time.Duration
-	MaxMails              int
-	MaxWalletTransactions int
-	Section               CharacterSection
+	CharacterID int64
+	ForceUpdate bool
+	Section     CharacterSection
 }
 
 type CorporationSectionUpdateParams struct {

@@ -143,7 +143,8 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.ForceUpdate
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions, lastID, checkLastID)
+			maxTransactions := s.settings.MaxWalletTransactions()
+			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, maxTransactions, lastID, checkLastID)
 			if err != nil {
 				return false, err
 			}

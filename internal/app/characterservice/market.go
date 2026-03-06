@@ -175,7 +175,8 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			}
 
 			// Delete stale orders
-			if arg.MarketOrderRetention == 0 {
+			retention := time.Duration(s.settings.MarketOrderRetentionDays()) * time.Hour * 24
+			if retention == 0 {
 				return true, nil
 			}
 
@@ -184,7 +185,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				return false, err
 			}
 			stale := set.Collect(xiter.Map(xiter.FilterSlice(current2, func(x *app.CharacterMarketOrder) bool {
-				return x.State != app.OrderOpen && time.Since(x.Issued) > arg.MarketOrderRetention
+				return x.State != app.OrderOpen && time.Since(x.Issued) > retention
 			}), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))

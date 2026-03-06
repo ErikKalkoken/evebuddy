@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -80,16 +81,17 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	app := test.NewTempApp(t)
 	cs := characterservice.New(characterservice.Params{
 		AuthClient:             ac,
 		Cache:                  testutil.NewCacheFake2(),
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
+		Settings:               settings.New(app.Preferences()),
 		StatusCacheService:     scs,
 		Storage:                st,
 	})
-	app := test.NewTempApp(t)
 	makeInfoWindow := func() *InfoWindow {
 		return New(Params{
 			CharacterService: cs,
