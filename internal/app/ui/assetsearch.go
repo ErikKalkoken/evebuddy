@@ -364,7 +364,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	}
 	a.ExtendBaseWidget(a)
 
-	if a.u.isMobile {
+	if app.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
 		a.body = xwidget.MakeDataTable(
@@ -481,7 +481,7 @@ func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 		filters.Add(a.selectOwner)
 	}
 	topBox := container.NewVBox(a.top)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filters.Add(a.sortButton)
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(filters))

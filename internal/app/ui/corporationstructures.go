@@ -154,7 +154,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	if !a.u.isMobile {
+	if !app.IsMobile() {
 		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -243,7 +243,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 
 func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)

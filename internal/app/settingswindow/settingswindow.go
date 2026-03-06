@@ -43,7 +43,6 @@ type UIService interface {
 }
 
 type Params struct {
-	IsMobile  bool
 	Settings  *settings.Settings
 	Signals   *app.Signals
 	UIService UIService
@@ -91,7 +90,6 @@ type settingAction struct {
 type settingsWindow struct {
 	widget.BaseWidget
 
-	isMobile bool
 	sb       *xwidget.Snackbar
 	settings *settings.Settings
 	signals  *app.Signals
@@ -101,7 +99,6 @@ type settingsWindow struct {
 
 func newSettingsWindow(arg Params, w fyne.Window) *settingsWindow {
 	a := &settingsWindow{
-		isMobile: arg.IsMobile,
 		sb:       xwidget.NewSnackbar(w),
 		settings: arg.Settings,
 		signals:  arg.Signals,
@@ -116,7 +113,7 @@ func newSettingsWindow(arg Params, w fyne.Window) *settingsWindow {
 func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		ab := xwidget.NewAppBar(title, content, actions)
-		ab.HideBackground = !a.isMobile
+		ab.HideBackground = !app.IsMobile()
 		return ab
 	}
 	generalContent, generalActions := a.makeGeneralPage()
@@ -149,7 +146,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -176,7 +173,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		getter:       a.settings.SysTrayEnabled,
 		onChanged:    a.settings.SetSysTrayEnabled,
 	})
-	if !a.isMobile {
+	if !app.IsMobile() {
 		items = append(items, sysTray)
 	}
 
@@ -216,7 +213,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 			s.SetColorTheme(settings.ColorTheme(v))
 			a.u.SetColorTheme(settings.ColorTheme(v))
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -236,7 +233,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		formatter: func(v any) string {
 			return fmt.Sprintf("%v %%", v)
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -247,7 +244,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		onChanged: a.settings.SetDisableDPIDetection,
 	})
 
-	if !a.isMobile {
+	if !app.IsMobile() {
 		items = slices.Concat(items, []SettingItem{
 			colorTheme,
 			fyneScale,
@@ -269,7 +266,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		setter: func(v float64) {
 			a.settings.SetMaxMails(int(v))
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -287,7 +284,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		setter: func(v float64) {
 			a.settings.SetMaxWalletTransactions(int(v))
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -305,7 +302,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		setter: func(v float64) {
 			a.settings.SetMarketOrdersRetentionDay(int(v))
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 
@@ -393,7 +390,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		},
 	}
 	actions := []settingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
-	if !a.isMobile {
+	if !app.IsMobile() {
 		actions = append(actions, settingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
@@ -577,7 +574,7 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 		setter: func(v float64) {
 			a.settings.SetNotifyTimeoutHours(int(v))
 		},
-		isMobile: a.isMobile,
+		isMobile: app.IsMobile(),
 		window:   a.w,
 	})
 

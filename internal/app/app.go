@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"github.com/fnt-eve/goesi-openapi/esi"
 	"github.com/mattn/go-sqlite3"
 )
@@ -45,7 +46,10 @@ var (
 	ErrNotFound      = errors.New("object not found")
 )
 
-var isDeveloperMode bool
+var (
+	isDeveloperMode bool
+	isMobile        bool
+)
 
 func SetDeveloperMode(b bool) {
 	isDeveloperMode = b
@@ -53,6 +57,14 @@ func SetDeveloperMode(b bool) {
 
 func IsDeveloperMode() bool {
 	return isDeveloperMode
+}
+
+func SetIsMobile(b bool) {
+	isMobile = b
+}
+
+func IsMobile() bool {
+	return isMobile
 }
 
 // VariableDateFormat returns a variable format for [time.Time] values.
@@ -115,4 +127,14 @@ func ErrorDisplay(err error) string {
 		return "network error"
 	}
 	return "general error"
+}
+
+// Name returns the name for this app.
+func Name() string {
+	info := fyne.CurrentApp().Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
 }

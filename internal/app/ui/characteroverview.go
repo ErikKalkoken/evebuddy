@@ -169,7 +169,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters and systems"
-	if !a.u.isMobile {
+	if !app.IsMobile() {
 		a.main = a.makeGrid()
 	} else {
 		a.main = a.makeList()
@@ -248,7 +248,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 		a.sortButton,
 	)
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(a.search, container.NewHScroll(filters))
 	} else {
 		topBox = container.NewBorder(nil, nil, filters, nil, a.search)

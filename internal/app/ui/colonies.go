@@ -215,7 +215,7 @@ func newColonies(u *baseUI) *colonies {
 	}
 	a.ExtendBaseWidget(a)
 
-	if a.u.isMobile {
+	if app.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
 		a.body = xwidget.MakeDataTable(
@@ -307,11 +307,11 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.selectOwner,
 		a.selectTag,
 	)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	var top *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		top = container.NewVBox(
 			a.search,
 			container.NewHScroll(filter),

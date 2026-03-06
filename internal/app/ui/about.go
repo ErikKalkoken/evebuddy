@@ -21,7 +21,7 @@ const (
 )
 
 func makeAboutPage(u *baseUI) fyne.CanvasObject {
-	title := widget.NewLabel(u.appName())
+	title := widget.NewLabel(app.Name())
 	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
 

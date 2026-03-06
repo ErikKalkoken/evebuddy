@@ -182,7 +182,6 @@ type BaseUIParams struct {
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
 	DataPaths        map[string]string
-	IsMobile         bool
 	IsFakeMobile     bool
 	IsOffline        bool
 	IsUpdateDisabled bool
@@ -228,7 +227,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                arg.ESIStatusService,
 		eus:                arg.EveUniverseService,
 		isFakeMobile:       arg.IsFakeMobile,
-		isMobile:           arg.IsMobile,
 		isOffline:          arg.IsOffline,
 		js:                 arg.JaniceService,
 		rs:                 arg.CorporationService,
@@ -239,7 +237,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		statusText:         NewStatusText(),
 		windows:            make(map[string]fyne.Window),
 	}
-	u.window = u.app.NewWindow(u.appName())
+	u.window = u.app.NewWindow(app.Name())
 	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
 
 	if arg.ClearCacheFunc != nil {
@@ -256,7 +254,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		u.dataPaths = make(xmaps.OrderedMap[string, string])
 	}
 
-	if !u.isMobile {
+	if !app.IsMobile() {
 		xwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
@@ -442,7 +440,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		if u.isMobile {
+		if app.IsMobile() {
 			// When the app is restarted on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
@@ -895,7 +893,6 @@ func (u *baseUI) infoWindowParams() infowindow.Params {
 		CharacterService:   u.cs,
 		EveImageService:    u.eis,
 		EveUniverseService: u.eus,
-		IsMobile:           u.isMobile,
 		JaniceService:      u.js,
 		Settings:           u.settings,
 		StatusCacheService: u.scs,
@@ -918,15 +915,6 @@ func (u *baseUI) websiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
-}
-
-func (u *baseUI) appName() string {
-	info := u.app.Metadata()
-	name := info.Name
-	if name == "" {
-		return "EVE Buddy"
-	}
-	return name
 }
 
 // Avatars & switch menus
@@ -1124,10 +1112,10 @@ func (u *baseUI) MakeWindowTitle(parts ...string) string {
 	if len(parts) == 0 {
 		parts = append(parts, "PLACEHOLDER")
 	}
-	if u.isMobile {
+	if app.IsMobile() {
 		return parts[0]
 	}
-	parts = append(parts, u.appName())
+	parts = append(parts, app.Name())
 	return strings.Join(parts, " - ")
 }
 

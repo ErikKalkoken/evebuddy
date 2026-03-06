@@ -89,7 +89,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := xwidget.NewAppBar("Tags", main, actions)
-	ab.HideBackground = !a.cw.isMobile
+	ab.HideBackground = !app.IsMobile()
 	c := container.NewVSplit(
 		container.NewStack(ab, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -220,7 +220,7 @@ func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
 			a.characterList,
 		),
 	)
-	ab.HideBackground = !a.cw.isMobile
+	ab.HideBackground = !app.IsMobile()
 	ab.Hide()
 	return ab
 }

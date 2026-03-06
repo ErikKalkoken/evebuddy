@@ -212,7 +212,6 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eisFake,
 		EveUniverseService: eus,
-		IsMobile:           !isDesktop,
 		IsOffline:          true,
 		JaniceService:      janiceservice.New(http.DefaultClient, ""),
 		Settings:           settings,

@@ -47,7 +47,6 @@ type Params struct {
 	CharacterService   *characterservice.CharacterService
 	CorporationService *corporationservice.CorporationService
 	EveImageService    EIS
-	IsMobile           bool
 	IsUpdateDisabled   bool
 	Signals            *app.Signals
 	UIService          UIService
@@ -104,7 +103,6 @@ type characterWindow struct {
 	characterTraining *characterTraining
 	cs                *characterservice.CharacterService
 	eis               EIS
-	isMobile          bool
 	isUpdateDisabled  bool
 	rs                *corporationservice.CorporationService
 	sb                *xwidget.Snackbar
@@ -117,7 +115,6 @@ func newCharacterWindow(arg Params, w fyne.Window) *characterWindow {
 	a := &characterWindow{
 		cs:               arg.CharacterService,
 		eis:              arg.EveImageService,
-		isMobile:         arg.IsMobile,
 		rs:               arg.CorporationService,
 		sb:               xwidget.NewSnackbar(w),
 		u:                arg.UIService,

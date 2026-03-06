@@ -268,7 +268,7 @@ func newTraining(u *baseUI) *training {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
-	if a.u.isMobile {
+	if app.IsMobile() {
 		a.main = a.makeDataList()
 	} else {
 		a.main = xwidget.MakeDataTable(
@@ -331,11 +331,11 @@ func newTraining(u *baseUI) *training {
 
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(
 			a.search,
 			container.NewHScroll(filter),
@@ -375,7 +375,7 @@ func (a *training) makeDataList() *xwidget.StripedList {
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
 				tags,
-				newSkillQueueItem(a.u.isMobile),
+				newSkillQueueItem(app.IsMobile()),
 				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
 				spacer,

@@ -100,7 +100,6 @@ type infoWindow struct {
 	cs            CS
 	eis           EIS
 	eus           EUS
-	isMobile      bool
 	js            *janiceservice.JaniceService
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
@@ -115,7 +114,6 @@ type Params struct {
 	CharacterService   CS
 	EveImageService    EIS
 	EveUniverseService EUS
-	IsMobile           bool
 	StatusCacheService SCS
 	Settings           Settings
 	UIService          UIService
@@ -205,7 +203,6 @@ func newInfoWindow(arg Params) (*infoWindow, bool) {
 		cs:       arg.CharacterService,
 		eis:      arg.EveImageService,
 		eus:      arg.EveUniverseService,
-		isMobile: arg.IsMobile,
 		js:       arg.JaniceService,
 		scs:      arg.StatusCacheService,
 		settings: arg.Settings,
@@ -242,7 +239,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}
 
 	makeAppBarTitle := func(s string) string {
-		if iw.isMobile {
+		if app.IsMobile() {
 			return s
 		}
 		return s + ": Information"
@@ -304,7 +301,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		return
 	}
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
-	ab.HideBackground = !iw.isMobile
+	ab.HideBackground = !app.IsMobile()
 	if iw.nav == nil {
 		w := fyne.CurrentApp().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
@@ -445,7 +442,7 @@ func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableI
 
 func (iw *infoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if iw.isMobile {
+	if app.IsMobile() {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize

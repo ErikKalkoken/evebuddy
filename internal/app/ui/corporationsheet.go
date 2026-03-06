@@ -127,7 +127,7 @@ func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
 		portraitDesktop,
 		main,
 	)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		portraitDesktop.Hide()
 	}
 	return widget.NewSimpleRenderer(c)

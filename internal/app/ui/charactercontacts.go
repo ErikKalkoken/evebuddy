@@ -159,7 +159,7 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 		a.sortButton,
 	)
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(
 			container.NewHScroll(filter),
 			a.searchBox,
@@ -184,7 +184,7 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterContacts) makeList() fyne.CanvasObject {
-	if a.u.isMobile {
+	if app.IsMobile() {
 		l := xwidget.NewStripedList(
 			func() int {
 				return len(a.rowsFiltered)

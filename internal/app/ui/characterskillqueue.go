@@ -116,10 +116,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			level := awidget.NewSkillLevel()
-			if a.u.isMobile {
+			if app.IsMobile() {
 				level.Hide()
 			}
-			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(a.u.isMobile))
+			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(app.IsMobile()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			qi := a.skillqueue.Item(id)

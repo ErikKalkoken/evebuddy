@@ -78,7 +78,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			CharacterService:   u.cs,
 			CorporationService: u.rs,
 			EveImageService:    u.eis,
-			IsMobile:           u.isMobile,
 			Signals:            u.signals,
 			UIService:          u,
 		})
@@ -482,7 +481,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
-		name := u.appName()
+		name := app.Name()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
 		m := fyne.NewMenu(
@@ -812,7 +811,6 @@ func (u *DesktopUI) defineShortcuts() {
 			},
 			func(fyne.Shortcut) {
 				settingswindow.Show(settingswindow.Params{
-					IsMobile:  u.isMobile,
 					Settings:  u.settings,
 					Signals:   u.signals,
 					UIService: u,
@@ -837,7 +835,6 @@ func (u *DesktopUI) defineShortcuts() {
 					CorporationService: u.rs,
 					EveImageService:    u.eis,
 					EveUniverseService: u.eus,
-					IsMobile:           u.isMobile,
 					Signals:            u.signals,
 					StatusCacheService: u.scs,
 					UIService:          u.baseUI,

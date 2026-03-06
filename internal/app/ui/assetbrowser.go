@@ -257,7 +257,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
-		if ab.u.isMobile {
+		if app.IsMobile() {
 			a.locations.UnselectAll()
 		}
 	}
@@ -550,7 +550,7 @@ func (a *assetBrowserNavigation) setFooter(s string, i widget.Importance) {
 
 func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
 	a.locations.UnselectAll()
-	if !a.ab.u.isMobile {
+	if !app.IsMobile() {
 		a.locations.SelectNode(cn)
 	}
 	for _, cn2 := range a.locations.Data().Path(nil, cn) {

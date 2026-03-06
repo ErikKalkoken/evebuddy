@@ -53,7 +53,6 @@ type Params struct {
 	CorporationService *corporationservice.CorporationService // TODO: Reduce to interface
 	EveImageService    EIS
 	EveUniverseService *eveuniverseservice.EveUniverseService // TODO: Reduce to interface
-	IsMobile           bool
 	Signals            *app.Signals
 	StatusCacheService SCS
 	UIService          UIService
@@ -129,7 +128,6 @@ type statusWindow struct {
 	detailsTop        *widget.Label
 	entities          fyne.CanvasObject
 	entityList        *widget.List
-	isMobile          bool
 	nav               *xwidget.Navigator
 	onEntitySelected  func(int)
 	onSectionSelected func(int)
@@ -167,7 +165,6 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 		detailsTop:        newLabelWithWrapping(),
 		eis:               arg.EveImageService,
 		eus:               arg.EveUniverseService,
-		isMobile:          arg.IsMobile,
 		sb:                xwidget.NewSnackbar(w),
 		scs:               arg.StatusCacheService,
 		sectionsTop:       newLabelWithWrapping(),
@@ -195,7 +192,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
-	if arg.IsMobile {
+	if app.IsMobile() {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := kxwidget.NewIconButtonWithMenu(
@@ -272,7 +269,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	)
 	updateEntities := xwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
-	if a.isMobile {
+	if app.IsMobile() {
 		ab := xwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,

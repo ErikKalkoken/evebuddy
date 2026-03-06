@@ -175,7 +175,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	}
 	a.ExtendBaseWidget(a)
 
-	if a.u.isMobile {
+	if app.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
 		a.body = xwidget.MakeDataTable(
@@ -208,7 +208,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 
 func (a *walletJournal) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

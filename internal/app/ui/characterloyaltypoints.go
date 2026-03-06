@@ -116,7 +116,7 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 
 func (a *characterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(
 			container.NewHBox(a.selectFaction, a.sortButton),
 			a.searchBox,

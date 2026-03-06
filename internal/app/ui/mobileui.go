@@ -413,7 +413,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				CorporationService: u.rs,
 				EveImageService:    u.eis,
 				EveUniverseService: u.eus,
-				IsMobile:           u.isMobile,
 				Signals:            u.signals,
 				StatusCacheService: u.scs,
 				UIService:          u,
@@ -428,7 +427,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				CharacterService:   u.cs,
 				CorporationService: u.rs,
 				EveImageService:    u.eis,
-				IsMobile:           u.isMobile,
 				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
 				Signals:            u.signals,
 				UIService:          u.baseUI,
@@ -449,7 +447,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
 				settingswindow.Show(settingswindow.Params{
-					IsMobile:  u.isMobile,
 					Settings:  u.settings,
 					Signals:   u.signals,
 					UIService: u,

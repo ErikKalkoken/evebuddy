@@ -146,7 +146,7 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 		portrait,
 		container.NewVScroll(main),
 	)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		portrait.Hide()
 	}
 	return widget.NewSimpleRenderer(c)

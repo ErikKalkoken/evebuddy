@@ -158,7 +158,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
 	topBox := container.NewVBox(a.top)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
@@ -231,7 +231,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			a.u.ShowTypeInfoWindowWithCharacter(r.typeID, characterIDOrZero(a.character.Load()))
 		}
 	}
-	return makeGridOrList(a.u.isMobile, length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(app.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *characterSkillCatalogue) filterRowsAsync() {

@@ -141,7 +141,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)
 	topBox := container.NewVBox(a.top)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(buttons))
 	} else {

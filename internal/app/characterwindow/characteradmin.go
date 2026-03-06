@@ -63,7 +63,7 @@ func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 		nil,
 		a.list,
 	))
-	a.ab.HideBackground = !a.cw.isMobile
+	a.ab.HideBackground = !app.IsMobile()
 	return a
 }
 

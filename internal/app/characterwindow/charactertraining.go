@@ -74,7 +74,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 		}),
 	))
 	ab := xwidget.NewAppBar("Watched Training", a.list, actions)
-	ab.HideBackground = !a.cw.isMobile
+	ab.HideBackground = !app.IsMobile()
 	return widget.NewSimpleRenderer(ab)
 }
 

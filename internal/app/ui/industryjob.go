@@ -264,7 +264,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	}
 	a.ExtendBaseWidget(a)
 
-	if a.u.isMobile {
+	if app.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
 		a.body = xwidget.MakeDataTable(
@@ -383,11 +383,11 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
 	}
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(
 			a.search,
 			container.NewHScroll(filter),

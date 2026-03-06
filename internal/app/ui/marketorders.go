@@ -235,7 +235,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	}
 	a.ExtendBaseWidget(a)
 
-	if !a.u.isMobile {
+	if !app.IsMobile() {
 		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -302,7 +302,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 
 func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	p := theme.Padding()

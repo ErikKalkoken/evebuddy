@@ -165,7 +165,7 @@ func newClones(u *baseUI) *clones {
 	a.changeOrigin = widget.NewButton("Origin", func() {
 		a.setOrigin(a.u.MainWindow())
 	})
-	if !a.u.isMobile {
+	if !app.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -278,11 +278,11 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 		a.selectOwner,
 		a.selectTag,
 	)
-	if a.u.isMobile {
+	if app.IsMobile() {
 		filters.Add(a.sortButton)
 	}
 	var topBox *fyne.Container
-	if a.u.isMobile {
+	if app.IsMobile() {
 		topBox = container.NewVBox(origin, container.NewHScroll(filters))
 	} else {
 		topBox = container.New(xlayout.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
@@ -554,7 +554,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	)
 	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
 	_, s := w.Canvas().InteractiveArea()
-	if a.u.isMobile {
+	if app.IsMobile() {
 		d.Resize(fyne.NewSize(s.Width, s.Height))
 	} else {
 		d.Resize(fyne.NewSize(600, max(400, s.Height*0.8)))
