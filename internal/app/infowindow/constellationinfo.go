@@ -27,7 +27,7 @@ type constellationInfo struct {
 	tabs    *container.AppTabs
 }
 
-func newConstellationInfo(iw *InfoWindow, id int64) *constellationInfo {
+func newConstellationInfo(iw *infoWindow, id int64) *constellationInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{

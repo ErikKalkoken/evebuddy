@@ -936,11 +936,11 @@ func (u *baseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {
-	u.newInfoWindow().ShowLocation(id)
+	infowindow.ShowLocation(id, u.infoWindowParams())
 }
 
 func (u *baseUI) ShowRaceInfoWindow(id int64) {
-	u.newInfoWindow().ShowRace(id)
+	infowindow.ShowRace(id, u.infoWindowParams())
 }
 
 func (u *baseUI) ShowTypeInfoWindow(id int64) {
@@ -948,19 +948,19 @@ func (u *baseUI) ShowTypeInfoWindow(id int64) {
 }
 
 func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int64) {
-	u.newInfoWindow().ShowTypeWithCharacter(typeID, characterID)
+	infowindow.ShowTypeWithCharacter(typeID, characterID, u.infoWindowParams())
 }
 
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.newInfoWindow().ShowEveEntity(o)
+	infowindow.ShowEveEntity(o, u.infoWindowParams())
 }
 
 func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int64) {
-	u.newInfoWindow().Show(c, id)
+	infowindow.Show(c, id, u.infoWindowParams())
 }
 
-func (u *baseUI) newInfoWindow() *infowindow.InfoWindow {
-	iw := infowindow.New(infowindow.Params{
+func (u *baseUI) infoWindowParams() infowindow.Params {
+	return infowindow.Params{
 		CharacterService:   u.cs,
 		EveImageService:    u.eis,
 		EveUniverseService: u.eus,
@@ -969,9 +969,7 @@ func (u *baseUI) newInfoWindow() *infowindow.InfoWindow {
 		Settings:           u.settings,
 		StatusCacheService: u.scs,
 		UIService:          u,
-		Window:             u.MainWindow(),
-	})
-	return iw
+	}
 }
 
 func (u *baseUI) ShowSnackbar(text string) {

@@ -38,6 +38,7 @@ type UIService interface {
 	HumanizeError(err error) string
 	IsDeveloperMode() bool
 	IsOffline() bool
+	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
 	ShowInformationDialog(title, message string, parent fyne.Window)
 }
@@ -95,9 +96,9 @@ type Settings interface {
 	PreferMarketTab() bool
 }
 
-// InfoWindow represents a dedicated window for showing information about Eve objects
+// infoWindow represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
-type InfoWindow struct {
+type infoWindow struct {
 	cs            CS
 	eis           EIS
 	eus           EUS
@@ -121,7 +122,6 @@ type Params struct {
 	StatusCacheService SCS
 	Settings           Settings
 	UIService          UIService
-	Window             fyne.Window
 }
 
 const (
@@ -133,9 +133,80 @@ const (
 	zoomImagePixelSize  = 512
 )
 
-// New returns a configured InfoWindow.
-func New(arg Params) *InfoWindow {
-	iw := &InfoWindow{
+// Show shows a new info window for an EveEntity.
+func Show(c app.EveEntityCategory, id int64, arg Params) {
+	iw, ok := newInfoWindow(arg)
+	if !ok {
+		return
+	}
+	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), id)
+}
+
+// ShowEveEntity shows a new info window for an EveEntity.
+func ShowEveEntity(ee *app.EveEntity, arg Params) {
+	iw, ok := newInfoWindow(arg)
+	if !ok {
+		return
+	}
+	iw.show(eveEntity2InfoVariant(ee), ee.ID)
+}
+
+func ShowLocation(id int64, arg Params) {
+	iw, ok := newInfoWindow(arg)
+	if !ok {
+		return
+	}
+	iw.show(infoLocation, id)
+}
+
+func ShowRace(id int64, arg Params) {
+	iw, ok := newInfoWindow(arg)
+	if !ok {
+		return
+	}
+	iw.show(infoRace, id)
+}
+
+func ShowTypeWithCharacter(typeID, characterID int64, arg Params) {
+	iw, ok := newInfoWindow(arg)
+	if !ok {
+		return
+	}
+	iw.showWithCharacterID(infoInventoryType, typeID, characterID)
+}
+
+// newInfoWindow returns a configured InfoWindow.
+func newInfoWindow(arg Params) (*infoWindow, bool) {
+	if arg.CharacterService == nil {
+		slog.Error("characterWindow: CharacterService missing")
+		return nil, false
+	}
+	if arg.EveImageService == nil {
+		slog.Error("characterWindow: EveImageService missing")
+		return nil, false
+	}
+	if arg.EveUniverseService == nil {
+		slog.Error("characterWindow: EveUniverseService missing")
+		return nil, false
+	}
+	if arg.JaniceService == nil {
+		slog.Error("characterWindow: JaniceService missing")
+		return nil, false
+	}
+	if arg.StatusCacheService == nil {
+		slog.Error("characterWindow: StatusCacheService missing")
+		return nil, false
+	}
+	if arg.Settings == nil {
+		slog.Error("characterWindow: Settings missing")
+		return nil, false
+	}
+	if arg.UIService == nil {
+		slog.Error("characterWindow: UIService missing")
+		return nil, false
+	}
+
+	iw := &infoWindow{
 		cs:       arg.CharacterService,
 		eis:      arg.EveImageService,
 		eus:      arg.EveUniverseService,
@@ -144,41 +215,18 @@ func New(arg Params) *InfoWindow {
 		scs:      arg.StatusCacheService,
 		settings: arg.Settings,
 		u:        arg.UIService,
-		w:        arg.Window,
+		w:        arg.UIService.MainWindow(),
 	}
-	if iw.cs == nil ||
-		iw.eis == nil ||
-		iw.eus == nil ||
-		iw.js == nil ||
-		iw.scs == nil ||
-		iw.settings == nil ||
-		iw.u == nil ||
-		iw.w == nil {
-		panic(app.ErrInvalid)
-	}
-	return iw
+	return iw, true
 }
 
-// ShowEveEntity shows a new info window for an EveEntity.
-func (iw *InfoWindow) ShowEveEntity(ee *app.EveEntity) {
+// showEveEntity shows a new info window for an EveEntity.
+func (iw *infoWindow) showEveEntity(ee *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(ee), ee.ID)
 }
 
-// Show shows a new info window for an EveEntity.
-func (iw *InfoWindow) Show(c app.EveEntityCategory, id int64) {
-	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), id)
-}
-
-func (iw *InfoWindow) ShowLocation(id int64) {
-	iw.show(infoLocation, id)
-}
-
-func (iw *InfoWindow) ShowRace(id int64) {
-	iw.show(infoRace, id)
-}
-
-func (iw *InfoWindow) ShowTypeWithCharacter(typeID, characterID int64) {
-	iw.showWithCharacterID(infoInventoryType, typeID, characterID)
+func (iw *infoWindow) show(v infoVariant, id int64) {
+	iw.showWithCharacterID(v, id, 0)
 }
 
 // infoWidget defines common functionality for all info widgets.
@@ -188,11 +236,7 @@ type infoWidget interface {
 	setError(string)
 }
 
-func (iw *InfoWindow) show(v infoVariant, id int64) {
-	iw.showWithCharacterID(v, id, 0)
-}
-
-func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
+func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -305,7 +349,7 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	}()
 }
 
-func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
+func (iw *infoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
 	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
@@ -322,7 +366,7 @@ func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, in
 	w2.Show()
 }
 
-func (iw *InfoWindow) openURL(s string) {
+func (iw *infoWindow) openURL(s string) {
 	x, err := url.ParseRequestURI(s)
 	if err != nil {
 		slog.Error("Constructing URL", "url", s, "error", err)
@@ -335,7 +379,7 @@ func (iw *InfoWindow) openURL(s string) {
 	}
 }
 
-func (iw *InfoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -359,7 +403,7 @@ func (iw *InfoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.Tappa
 	return icon
 }
 
-func (iw *InfoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corp",
@@ -382,7 +426,7 @@ func (iw *InfoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corporation",
@@ -404,7 +448,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) renderIconSize() fyne.Size {
+func (iw *infoWindow) renderIconSize() fyne.Size {
 	var s float32
 	if iw.isMobile {
 		s = logoUnitSize
@@ -468,7 +512,8 @@ func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
 
 }
 
-func InfoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
+// SupportedCategories returns which EveEntity categories are supported.
+func SupportedCategories() set.Set[app.EveEntityCategory] {
 	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
 
 }
@@ -476,10 +521,10 @@ func InfoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 // baseInfo represents shared functionality between all info widgets.
 type baseInfo struct {
 	name *widget.Label
-	iw   *InfoWindow
+	iw   *infoWindow
 }
 
-func (b *baseInfo) initBase(iw *InfoWindow) {
+func (b *baseInfo) initBase(iw *infoWindow) {
 	b.iw = iw
 	b.name = newLabelWithWrapAndSelectable("Loading...")
 }
@@ -510,11 +555,11 @@ type attributeList struct {
 	widget.BaseWidget
 
 	items   []attributeItem
-	iw      *InfoWindow
+	iw      *infoWindow
 	openURL func(*url.URL) error
 }
 
-func newAttributeList(iw *InfoWindow, items ...attributeItem) *attributeList {
+func newAttributeList(iw *infoWindow, items ...attributeItem) *attributeList {
 	w := &attributeList{
 		items:   items,
 		iw:      iw,
@@ -530,7 +575,7 @@ func (w *attributeList) set(items []attributeItem) {
 }
 
 func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
-	supportedCategories := InfoWindowSupportedEveEntities()
+	supportedCategories := SupportedCategories()
 	l := widget.NewList(
 		func() int {
 			return len(w.items)
@@ -620,19 +665,19 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			case *app.EveEntity:
 				if x != nil && supportedCategories.Contains(x.Category) {
 					f = func() {
-						w.iw.ShowEveEntity(x)
+						w.iw.showEveEntity(x)
 					}
 				}
 			case *app.EveLocation:
 				if x != nil {
 					f = func() {
-						w.iw.ShowLocation(x.ID)
+						w.iw.show(infoLocation, x.ID)
 					}
 				}
 			case *app.EveRace:
 				if x != nil {
 					f = func() {
-						w.iw.ShowRace(x.ID)
+						w.iw.show(infoRace, x.ID)
 					}
 				}
 			}

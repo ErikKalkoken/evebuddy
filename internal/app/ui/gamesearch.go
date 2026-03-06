@@ -55,7 +55,7 @@ func newGameSearch(u *baseUI) *gameSearch {
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
-		supportedCategories: infowindow.InfoWindowSupportedEveEntities(),
+		supportedCategories: infowindow.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
 	}
@@ -266,7 +266,7 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.u.eis, a.u.eus, infowindow.InfoWindowSupportedEveEntities())
+			return newSearchResult(a.u.eis, a.u.eus, infowindow.SupportedCategories())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {

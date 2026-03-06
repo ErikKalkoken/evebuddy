@@ -36,7 +36,7 @@ type corporationInfo struct {
 	tabs            *container.AppTabs
 }
 
-func newCorporationInfo(iw *InfoWindow, id int64) *corporationInfo {
+func newCorporationInfo(iw *infoWindow, id int64) *corporationInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := widget.NewHyperlink("", nil)

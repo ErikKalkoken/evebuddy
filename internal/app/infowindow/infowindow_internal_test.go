@@ -43,6 +43,10 @@ func (u *UIServiceFake) IsOffline() bool {
 	return false
 }
 
+func (u *UIServiceFake) MainWindow() fyne.Window {
+	return u.app.NewWindow("Dummy")
+}
+
 func (u *UIServiceFake) MakeWindowTitle(parts ...string) string {
 	return strings.Join(parts, " - ")
 }
@@ -93,8 +97,8 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 		StatusCacheService:     scs,
 		Storage:                st,
 	})
-	makeInfoWindow := func() *InfoWindow {
-		return New(Params{
+	makeInfoWindow := func() *infoWindow {
+		iw, ok := newInfoWindow(Params{
 			CharacterService: cs,
 			EveImageService: &testutil.EveImageServiceFake{
 				Character:   icons.Characterplaceholder64Jpeg,
@@ -109,9 +113,12 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 			JaniceService:      new(janiceservice.JaniceService),
 			StatusCacheService: scs,
 			Settings:           new(SettingsFake),
-			UIService:          new(UIServiceFake),
-			Window:             app.NewWindow("Dummy"),
+			UIService:          &UIServiceFake{app: test.NewTempApp(t)},
 		})
+		if !ok {
+			panic("infoWindow params missing")
+		}
+		return iw
 	}
 	t.Run("can render full location", func(t *testing.T) {
 		l := factory.CreateEveLocationStation()

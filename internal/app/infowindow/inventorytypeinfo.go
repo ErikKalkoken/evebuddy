@@ -46,7 +46,7 @@ type inventoryTypeInfo struct {
 	typeID           int64
 }
 
-func newInventoryTypeInfo(iw *InfoWindow, typeID, characterID int64) *inventoryTypeInfo {
+func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int64) *inventoryTypeInfo {
 	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
