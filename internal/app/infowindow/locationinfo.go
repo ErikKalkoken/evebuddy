@@ -102,7 +102,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.ShowEveEntity(et.EveEntity())
+				a.iw.showEveEntity(et.EveEntity())
 			}
 			a.typeImage.OnTapped = func() {
 				a.iw.showZoomWindow(o.Name, et.ID, a.iw.eis.InventoryTypeRenderAsync, a.iw.w)
@@ -122,7 +122,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.owner.SetText(v.Name)
 			a.owner.OnTapped = func() {
-				a.iw.ShowEveEntity(v)
+				a.iw.showEveEntity(v)
 			}
 		})
 	}

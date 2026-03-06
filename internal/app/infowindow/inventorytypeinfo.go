@@ -167,7 +167,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 			})
 			a.characterIcon.Show()
 			a.characterName.OnTapped = func() {
-				a.iw.ShowEveEntity(character)
+				a.iw.showEveEntity(character)
 			}
 			a.characterName.SetText(character.Name)
 			a.characterName.Show()
