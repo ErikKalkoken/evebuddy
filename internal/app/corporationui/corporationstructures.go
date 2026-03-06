@@ -100,8 +100,8 @@ const (
 	structuresColServices
 )
 
-func NewCorporationStructures(arg Params) *CorporationStructures {
-	s, err := arg.Services()
+func NewCorporationStructures(arg Services) *CorporationStructures {
+	s, err := arg.services()
 	if err != nil {
 		panic(fmt.Errorf("corporation member: %w", err))
 	}

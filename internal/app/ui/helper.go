@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
@@ -88,15 +86,6 @@ func makeCharacterActionLabel(id int64, name string, action func(o *app.EveEntit
 	return makeEveEntityActionLabel(o, action)
 }
 
-func makeCorporationActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
-	o := &app.EveEntity{
-		ID:       id,
-		Name:     name,
-		Category: app.EveEntityCorporation,
-	}
-	return makeEveEntityActionLabel(o, action)
-}
-
 // makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
 func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
 	if o == nil {
@@ -153,28 +142,6 @@ func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(in
 	}
 	x := makeLinkLabelWithWrap(el.DisplayName(), func() {
 		show(el.ID)
-	})
-	x.Wrapping = fyne.TextWrapWord
-	return x
-}
-
-func makeSolarSystemLabel(o *app.EveSolarSystem, show func(o *app.EveEntity)) fyne.CanvasObject {
-	if o == nil {
-		return widget.NewLabel("?")
-	}
-	segs := slices.Concat(
-		o.SecurityStatusRichText(),
-		xwidget.RichTextSegmentsFromText(" ", widget.RichTextStyleInline),
-		xwidget.RichTextSegmentsFromText(o.Name, widget.RichTextStyle{
-			ColorName: theme.ColorNamePrimary,
-		}))
-	x := xwidget.NewTappableRichText(segs, func() {
-		o := &app.EveEntity{
-			ID:       o.ID,
-			Name:     o.Name,
-			Category: app.EveEntitySolarSystem,
-		}
-		show(o)
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x

@@ -43,8 +43,8 @@ type CorporationMember struct {
 	s            services
 }
 
-func NewCorporationMember(arg Params) *CorporationMember {
-	s, err := arg.Services()
+func NewCorporationMember(arg Services) *CorporationMember {
+	s, err := arg.services()
 	if err != nil {
 		panic(fmt.Errorf("corporation member: %w", err))
 	}

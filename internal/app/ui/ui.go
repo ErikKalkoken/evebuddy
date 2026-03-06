@@ -107,7 +107,7 @@ type baseUI struct {
 	characterBiography      *characterBiography
 	characterContacts       *characterContacts
 	characterCommunications *characterCommunications
-	characterCorporation    *corporationSheet
+	characterCorporation    *corporationui.CorporationSheet
 	characterJumpClones     *characterJumpClones
 	characterMails          *characterMails
 	characterOverview       *characterOverview
@@ -124,7 +124,7 @@ type baseUI struct {
 	corporationContracts    *contracts
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationui.CorporationMember
-	corporationSheet        *corporationSheet
+	corporationSheet        *corporationui.CorporationSheet
 	corporationStructures   *corporationui.CorporationStructures
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
@@ -358,16 +358,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				updateStatus(ctx)
 			}
 		case app.SectionEveCorporations:
-			if arg.Changed.Contains(u.CurrentCorporationID()) {
-				u.corporationSheet.update(ctx)
-			}
-			c := u.CurrentCharacter()
-			if c == nil {
-				break
-			}
-			if arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
-				u.characterCorporation.update(ctx)
-			}
 			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
 			if err != nil {
 				slog.Error("Failed to update status", "arg", arg, "err", err)
@@ -388,6 +378,15 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
+	services := corporationui.Services{
+		CharacterService:   u.cs,
+		EveImageService:    u.eis,
+		EveUniverseService: u.eus,
+		CorporationService: u.rs,
+		Signals:            u.signals,
+		UI:                 u,
+	}
+
 	u.assetSearchAll = newCombinedAssetSearch(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
@@ -396,7 +395,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterBiography = newCharacterBiography(u)
 	u.characterContacts = newCharacterContacts(u)
 	u.characterCommunications = newCharacterCommunications(u)
-	u.characterCorporation = newCorporationSheet(u, false)
+	u.characterCorporation = corporationui.NewCorporationSheet(services, false)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMails = newCharacterMails(u)
 	u.characterOverview = newCharacterOverview(u)
@@ -413,17 +412,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
 
-	corpParams := corporationui.Params{
-		CharacterService:   u.cs,
-		EveImageService:    u.eis,
-		CorporationService: u.rs,
-		Signals:            u.signals,
-		UI:                 u,
-	}
-	u.corporationMember = corporationui.NewCorporationMember(corpParams)
-	u.corporationStructures = corporationui.NewCorporationStructures(corpParams)
-
-	u.corporationSheet = newCorporationSheet(u, true)
+	u.corporationMember = corporationui.NewCorporationMember(services)
+	u.corporationStructures = corporationui.NewCorporationStructures(services)
+	u.corporationSheet = corporationui.NewCorporationSheet(services, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}

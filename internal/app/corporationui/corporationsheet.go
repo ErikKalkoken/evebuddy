@@ -1,4 +1,4 @@
-package ui
+package corporationui
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type corporationSheet struct {
+type CorporationSheet struct {
 	widget.BaseWidget
 
 	alliance    *widget.Hyperlink
@@ -37,10 +37,14 @@ type corporationSheet struct {
 	roles       *widget.Label
 	taxRate     *widget.Label
 	ticker      *widget.Label
-	u           *baseUI
+	s           services
 }
 
-func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
+func NewCorporationSheet(arg Services, isCorpMode bool) *CorporationSheet {
+	s, err := arg.services()
+	if err != nil {
+		panic(fmt.Errorf("corporation sheet: %w", err))
+	}
 	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
@@ -55,7 +59,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x
 	}
-	a := &corporationSheet{
+	a := &CorporationSheet{
 		alliance:   makeHyperLink(),
 		ceo:        makeHyperLink(),
 		faction:    makeHyperLink(),
@@ -67,16 +71,17 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		roles:      makeLabel(),
 		taxRate:    makeLabel(),
 		ticker:     makeLabel(),
-		u:          u,
+		s:          s,
 	}
 	a.ExtendBaseWidget(a)
 
+	// signals
 	if isCorpMode {
-		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.s.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		a.s.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
@@ -86,11 +91,11 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 			}
 		})
 	} else {
-		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.s.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		a.s.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
 				return
@@ -103,7 +108,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	return a
 }
 
-func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
+func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	items := []*widget.FormItem{
 		widget.NewFormItem("Name", a.name),
 		widget.NewFormItem("Ticker", a.ticker),
@@ -133,7 +138,7 @@ func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationSheet) update(ctx context.Context) {
+func (a *CorporationSheet) update(ctx context.Context) {
 	var corporation *app.EveCorporation
 	if a.isCorpMode {
 		if c := a.corporation.Load(); c != nil {
@@ -143,7 +148,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 		character := a.character.Load()
 		if character != nil && character.EveCharacter != nil {
 			var roles string
-			oo, err := a.u.cs.ListRoles(ctx, character.ID)
+			oo, err := a.s.cs.ListRoles(ctx, character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
 				roles = "ERROR: " + app.ErrorDisplay(err)
@@ -163,7 +168,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 				a.roles.SetText(roles)
 			})
 			corporationID := character.EveCharacter.Corporation.ID
-			c, err := a.u.eus.GetCorporation(ctx, corporationID)
+			c, err := a.s.eus.GetCorporation(ctx, corporationID)
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore
 			} else if err != nil {
@@ -192,13 +197,13 @@ func (a *corporationSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(corporation.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityCorporation, corporation.ID)
+			a.s.u.InfoWindow().Show(app.EveEntityCorporation, corporation.ID)
 		}
 		a.logo.OnTapped = a.name.OnTapped
 		a.members.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRate.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
 		a.ticker.SetText(corporation.Ticker)
-		a.u.eis.CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
+		a.s.eis.CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
 			a.logo.SetResource(r)
 		})
 	})
@@ -206,7 +211,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 		if alliance, ok := corporation.Alliance.Value(); ok {
 			a.alliance.SetText(alliance.Name)
 			a.alliance.OnTapped = func() {
-				a.u.InfoWindow().ShowEntity(alliance)
+				a.s.u.InfoWindow().ShowEntity(alliance)
 			}
 		} else {
 			a.alliance.SetText("-")
@@ -217,7 +222,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 		if faction, ok := corporation.Faction.Value(); ok {
 			a.faction.SetText(faction.Name)
 			a.faction.OnTapped = func() {
-				a.u.InfoWindow().ShowEntity(faction)
+				a.s.u.InfoWindow().ShowEntity(faction)
 			}
 		} else {
 			a.faction.SetText("-")
@@ -228,7 +233,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 		if ceo, ok := corporation.Ceo.Value(); ok {
 			a.ceo.SetText(ceo.Name)
 			a.ceo.OnTapped = func() {
-				a.u.InfoWindow().ShowEntity(ceo)
+				a.s.u.InfoWindow().ShowEntity(ceo)
 			}
 		} else {
 			a.ceo.SetText("-")
@@ -239,7 +244,7 @@ func (a *corporationSheet) update(ctx context.Context) {
 		if home, ok := corporation.HomeStation.Value(); ok {
 			a.home.SetText(home.Name)
 			a.home.OnTapped = func() {
-				a.u.InfoWindow().ShowEntity(home)
+				a.s.u.InfoWindow().ShowEntity(home)
 			}
 		} else {
 			a.home.SetText("-")
