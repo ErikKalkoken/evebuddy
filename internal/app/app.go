@@ -5,6 +5,7 @@ package app
 
 import (
 	"errors"
+	"log/slog"
 	"net"
 	"net/url"
 	"syscall"
@@ -24,6 +25,7 @@ const (
 	FloatFormat               = "#,###.##"
 	IconPixelSize             = 64
 	IconUnitSize              = 28
+	fallbackWebsiteURL        = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 // EntityShort is a short representation of an entity.
@@ -137,4 +139,17 @@ func Name() string {
 		return "EVE Buddy"
 	}
 	return name
+}
+
+func WebsiteRootURL() *url.URL {
+	s := fyne.CurrentApp().Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
 }

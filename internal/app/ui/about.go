@@ -31,7 +31,8 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		v = "?"
 	}
 	currentVersion := widget.NewLabel(v)
-	releaseNotes := widget.NewHyperlink("What's new", u.websiteRootURL().JoinPath("releases", "v"+v))
+	rootURL := app.WebsiteRootURL()
+	releaseNotes := widget.NewHyperlink("What's new", rootURL.JoinPath("releases", "v"+v))
 
 	_, size := u.MainWindow().Canvas().InteractiveArea()
 	x := fmt.Sprintf("%d x %d", int(size.Width), int(size.Height))
@@ -45,7 +46,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
 	support.Wrapping = fyne.TextWrapWord
 
-	updateAvailableLink := widget.NewHyperlink("Download", u.websiteRootURL().JoinPath("releases"))
+	updateAvailableLink := widget.NewHyperlink("Download", rootURL.JoinPath("releases"))
 	updateAvailableRow := container.NewHBox(
 		widget.NewLabelWithStyle("Update available", fyne.TextAlignLeading, fyne.TextStyle{
 			Bold: true,
@@ -63,7 +64,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 			return
 		}
 		fyne.Do(func() {
-			updateAvailableLink.URL = u.websiteRootURL().JoinPath("releases", "tag", "v"+v.Latest)
+			updateAvailableLink.URL = rootURL.JoinPath("releases", "tag", "v"+v.Latest)
 			updateAvailableRow.Show()
 		})
 	}()
@@ -75,8 +76,8 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		techInfos,
 		support,
 		container.NewHBox(
-			widget.NewHyperlink("Website", u.websiteRootURL()),
-			widget.NewHyperlink("Downloads", u.websiteRootURL().JoinPath("releases")),
+			widget.NewHyperlink("Website", rootURL),
+			widget.NewHyperlink("Downloads", rootURL.JoinPath("releases")),
 			widget.NewHyperlink("Discord", discordURL),
 		),
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -43,14 +42,17 @@ import (
 
 // update info
 const (
-	githubOwner        = "ErikKalkoken"
-	githubRepo         = "evebuddy"
-	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+	githubOwner = "ErikKalkoken"
+	githubRepo  = "evebuddy"
 )
 
 // ticker
 const (
-	refreshUITicker = 30 * time.Second
+	refreshUITick           = 30 * time.Second
+	characterUpdateTick     = 60 * time.Second
+	corporationUpdateTick   = 60 * time.Second
+	eveUniverseUpdateTick   = 300 * time.Second
+	delayBeforeUpdateStatus = 3 * time.Second
 )
 
 // Default ScaleMode for images
@@ -524,7 +526,7 @@ func (u *baseUI) Start() bool {
 
 		u.isStartupCompleted.Store(true)
 		go func() {
-			for range time.Tick(refreshUITicker) {
+			for range time.Tick(refreshUITick) {
 				u.signals.RefreshTickerExpired.Emit(context.Background(), struct{}{})
 			}
 		}()
@@ -532,11 +534,11 @@ func (u *baseUI) Start() bool {
 			u.onAppFirstStarted()
 		}
 		if !u.isOffline && !u.isUpdateDisabled.Load() {
-			time.Sleep(3 * time.Second) // allow app to fully load before updating
+			time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
-			u.eus.StartUpdateTicker(300 * time.Second)
-			u.cs.StartUpdateTickerCharacters(60 * time.Second)
-			u.rs.StartUpdateTickerCorporations(60 * time.Second)
+			u.eus.StartUpdateTicker(eveUniverseUpdateTick)
+			u.cs.StartUpdateTickerCharacters(characterUpdateTick)
+			u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
 		} else {
 			slog.Info("Update ticker disabled")
 		}
@@ -902,19 +904,6 @@ func (u *baseUI) infoWindowParams() infowindow.Params {
 
 func (u *baseUI) ShowSnackbar(text string) {
 	u.snackbar.Show(text)
-}
-
-func (u *baseUI) websiteRootURL() *url.URL {
-	s := u.app.Metadata().Custom["Website"]
-	if s == "" {
-		s = fallbackWebsiteURL
-	}
-	uri, err := url.Parse(s)
-	if err != nil {
-		slog.Error("parse main website URL")
-		uri, _ = url.Parse(fallbackWebsiteURL)
-	}
-	return uri
 }
 
 // Avatars & switch menus
