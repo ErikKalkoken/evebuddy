@@ -175,6 +175,18 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 	return nil
 }
 
+// HasSection reports whether a section exists at all.
+func (s *CorporationService) HasSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
+	x, err := s.st.GetCorporationSectionStatus(ctx, corporationID, section)
+	if errors.Is(err, app.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !x.IsMissing(), nil
+}
+
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
 func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {

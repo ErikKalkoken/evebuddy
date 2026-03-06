@@ -23,12 +23,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -57,26 +59,26 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
-type eveImageService interface {
-	AllianceLogo(id int64, size int) (fyne.Resource, error)
-	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	CharacterPortrait(id int64, size int) (fyne.Resource, error)
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-	CorporationLogo(id int64, size int) (fyne.Resource, error)
-	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	FactionLogo(id int64, size int) (fyne.Resource, error)
-	FactionLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
-	InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
-	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
-	InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
-	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
-	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
-}
+// type EveImageService interface {
+// 	AllianceLogo(id int64, size int) (fyne.Resource, error)
+// 	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
+// 	CharacterPortrait(id int64, size int) (fyne.Resource, error)
+// 	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+// 	CorporationLogo(id int64, size int) (fyne.Resource, error)
+// 	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
+// 	FactionLogo(id int64, size int) (fyne.Resource, error)
+// 	FactionLogoAsync(id int64, size int, setter func(r fyne.Resource))
+// 	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
+// 	InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource))
+// 	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
+// 	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
+// 	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
+// 	InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource))
+// 	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
+// 	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
+// 	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
+// 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
+// }
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
@@ -121,7 +123,7 @@ type baseUI struct {
 	corporationAssetSearch  *assetSearch
 	corporationContracts    *contracts
 	corporationIndyJobs     *industryJobs
-	corporationMember       *corporationMember
+	corporationMember       *corporationui.CorporationMember
 	corporationSheet        *corporationSheet
 	corporationStructures   *corporationStructures
 	corporationWallets      map[app.Division]*corporationWallet
@@ -141,7 +143,7 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      eveImageService
+	eis      *eveimageservice.EveImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EveUniverseService
 	js       *janiceservice.JaniceService
@@ -173,7 +175,7 @@ type BaseUIParams struct {
 	CharacterService   *characterservice.CharacterService
 	CorporationService *corporationservice.CorporationService
 	ESIStatusService   *esistatusservice.ESIStatusService
-	EveImageService    eveImageService
+	EveImageService    *eveimageservice.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	StatusCacheService *statuscacheservice.StatusCacheService
@@ -410,7 +412,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.corporationAssetSearch = newAssetSearchForCorporation(u)
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
-	u.corporationMember = newCorporationMember(u)
+	u.corporationMember = corporationui.NewCorporationMember(corporationui.Params{
+		CharacterService:   u.cs,
+		EveImageService:    u.eis,
+		CorporationService: u.rs,
+		Signals:            u.signals,
+		UI:                 u,
+	})
 	u.corporationStructures = newCorporationStructures(u)
 	u.corporationSheet = newCorporationSheet(u, true)
 	for _, d := range app.Divisions {
