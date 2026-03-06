@@ -122,48 +122,48 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 	return missing.Size() > 0 || obsolete.Size() > 0, nil
 }
 
-func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCorporationDivisions {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCorporationDivisions {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdDivisions")
-			divisions, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID).Execute()
+			divisions, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdDivisions(ctx, arg.corporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return divisions, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			divisions := data.(*esi.CorporationsCorporationIdDivisionsGet)
 			for _, w := range divisions.Hangar {
 				if w.Division == nil || w.Name == nil {
 					continue
 				}
 				if err := s.st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
-					CorporationID: arg.CorporationID,
+					CorporationID: arg.corporationID,
 					DivisionID:    *w.Division,
 					Name:          *w.Name,
 				}); err != nil {
 					return false, err
 				}
 			}
-			slog.Info("Updated corporation hangar names", "corporationID", arg.CorporationID)
+			slog.Info("Updated corporation hangar names", "corporationID", arg.corporationID)
 			for _, w := range divisions.Wallet {
 				if w.Division == nil || w.Name == nil {
 					continue
 				}
 				if err := s.st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
-					CorporationID: arg.CorporationID,
+					CorporationID: arg.corporationID,
 					DivisionID:    *w.Division,
 					Name:          *w.Name,
 				}); err != nil {
 					return false, err
 				}
 			}
-			slog.Info("Updated corporation wallet names", "corporationID", arg.CorporationID)
+			slog.Info("Updated corporation wallet names", "corporationID", arg.corporationID)
 			return true, nil
 		})
 }

@@ -121,9 +121,9 @@ func TestUpdateDivisionsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateDivisionsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationDivisions,
+		changed, err := s.updateDivisionsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationDivisions,
 		})
 		// then
 		require.NoError(t, err)
@@ -190,9 +190,9 @@ func TestUpdateDivisionsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationWalletBalances,
+		changed, err := s.updateWalletBalancesESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationWalletBalances,
 		})
 		// then
 		require.NoError(t, err)

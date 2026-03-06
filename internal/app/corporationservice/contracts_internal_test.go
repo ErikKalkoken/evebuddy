@@ -79,9 +79,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -172,9 +172,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -241,9 +241,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -295,9 +295,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -347,9 +347,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -419,9 +419,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
