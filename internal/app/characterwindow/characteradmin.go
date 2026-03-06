@@ -228,7 +228,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			}
 			go a.cw.signals.CharacterAdded.Emit(ctx, character)
 			if !a.cw.isUpdateDisabled {
-				go a.cw.u.UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
+				go a.cw.cs.UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
 			}
 			return nil
 		}()

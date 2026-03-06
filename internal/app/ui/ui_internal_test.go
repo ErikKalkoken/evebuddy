@@ -181,6 +181,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		Settings:               settings,
+		Signals:                signals,
 		StatusCacheService:     scs,
 		Storage:                st,
 	})

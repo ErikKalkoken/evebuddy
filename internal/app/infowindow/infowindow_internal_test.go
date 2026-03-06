@@ -89,6 +89,7 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		Settings:               settings.New(app.Preferences()),
+		Signals:                signals,
 		StatusCacheService:     scs,
 		Storage:                st,
 	})

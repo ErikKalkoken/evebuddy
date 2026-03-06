@@ -63,28 +63,28 @@ type Params struct {
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CorporationService {
 	if arg.Cache == nil {
-		panic("Cache")
+		panic("Cache missing")
 	}
 	if arg.CharacterService == nil {
-		panic("CharacterService")
+		panic("CharacterService missing")
 	}
 	if arg.ESIClient == nil {
-		panic("ESIClient")
+		panic("ESIClient missing")
 	}
 	if arg.EveUniverseService == nil {
-		panic("EveUniverseService")
+		panic("EveUniverseService missing")
 	}
 	if arg.Settings == nil {
-		panic("Settings")
+		panic("Settings missing")
 	}
 	if arg.Signals == nil {
-		panic("Signals")
+		panic("Signals missing")
 	}
 	if arg.StatusCacheService == nil {
-		panic("StatusCacheService")
+		panic("StatusCacheService missing")
 	}
 	if arg.Storage == nil {
-		panic("Storage")
+		panic("Storage missing")
 	}
 	s := &CorporationService{
 		cache:            arg.Cache,

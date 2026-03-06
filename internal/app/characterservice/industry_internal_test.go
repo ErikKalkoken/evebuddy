@@ -58,9 +58,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -126,9 +126,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -180,9 +180,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -230,9 +230,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -282,9 +282,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -347,9 +347,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, objs))
 
 		// when
-		_, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		_, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -411,9 +411,9 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterIndustryJobs,
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {

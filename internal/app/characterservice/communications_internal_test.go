@@ -47,9 +47,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 		}}),
 	// 	)
 	// 	// when
-	// 	changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
+	// 	changed, err := s.updateNotificationsESI(ctx, CharacterSectionUpdateParams{
 	// 		CharacterID: c.ID,
 	// 		Section:     app.SectionCharacterNotifications,
 	// 	})
@@ -138,9 +138,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 				"type":            "InsurancePayoutMsg",
 			}}))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
@@ -183,9 +183,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
@@ -225,9 +225,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
@@ -272,9 +272,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		assert.Error(t, err)
@@ -314,9 +314,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterNotifications,
+		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)

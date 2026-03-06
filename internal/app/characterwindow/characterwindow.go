@@ -27,6 +27,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type EIS interface {
+	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
+}
+
 type UIService interface {
 	CurrentCharacterID() int64
 	CurrentCorporationID() int64
@@ -42,11 +46,6 @@ type UIService interface {
 	SetAnyCorporation() error
 	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
 	ShowErrorDialog(message string, err error, parent fyne.Window)
-	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
-}
-
-type EIS interface {
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
 type Params struct {
@@ -60,12 +59,20 @@ type Params struct {
 }
 
 func Show(arg Params) {
-	if arg.CharacterService == nil ||
-		arg.CorporationService == nil ||
-		arg.EveImageService == nil ||
-		arg.Signals == nil ||
-		arg.UIService == nil {
-		panic(app.ErrInvalid)
+	if arg.CharacterService == nil {
+		panic("CharacterService missing")
+	}
+	if arg.CorporationService == nil {
+		panic("CorporationService missing")
+	}
+	if arg.EveImageService == nil {
+		panic("EveImageService missing")
+	}
+	if arg.Signals == nil {
+		panic("Signals missing")
+	}
+	if arg.UIService == nil {
+		panic("UIService missing")
 	}
 	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
 	if !created {
@@ -86,7 +93,7 @@ func Show(arg Params) {
 		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	w.Show()
-	cw.update(context.Background())
+	go cw.update(context.Background())
 }
 
 type characterWindow struct {

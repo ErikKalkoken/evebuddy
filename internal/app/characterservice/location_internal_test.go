@@ -40,9 +40,9 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateLocationESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLocation,
+		changed, err := s.updateLocationESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLocation,
 		})
 		// then
 		require.NoError(t, err)
@@ -68,9 +68,9 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateLocationESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLocation,
+		changed, err := s.updateLocationESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLocation,
 		})
 		// then
 		require.NoError(t, err)
@@ -104,9 +104,9 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateLocationESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLocation,
+		changed, err := s.updateLocationESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLocation,
 		})
 		// then
 		require.NoError(t, err)

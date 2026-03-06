@@ -48,9 +48,9 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateContactsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContacts,
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
 		})
 		// then
 		require.NoError(t, err)
@@ -86,9 +86,9 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateContactsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContacts,
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
 		})
 		// then
 		require.NoError(t, err)
@@ -122,9 +122,9 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateContactsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContacts,
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
 		})
 		// then
 		require.NoError(t, err)
@@ -159,9 +159,9 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContactLabels,
+		changed, err := s.updateContactLabelsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContactLabels,
 		})
 		// then
 		require.NoError(t, err)
@@ -191,9 +191,9 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContactLabels,
+		changed, err := s.updateContactLabelsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContactLabels,
 		})
 		// then
 		require.NoError(t, err)
@@ -224,9 +224,9 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContactLabels,
+		changed, err := s.updateContactLabelsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContactLabels,
 		})
 		// then
 		require.NoError(t, err)
@@ -252,9 +252,9 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContactLabelsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContactLabels,
+		changed, err := s.updateContactLabelsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContactLabels,
 		})
 		// then
 		require.NoError(t, err)

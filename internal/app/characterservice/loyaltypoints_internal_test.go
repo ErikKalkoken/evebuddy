@@ -41,9 +41,9 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateLoyaltyPointEntriesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLoyaltyPoints,
+		changed, err := s.updateLoyaltyPointEntriesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLoyaltyPoints,
 		})
 		// then
 		require.NoError(t, err)
@@ -73,9 +73,9 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateLoyaltyPointEntriesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLoyaltyPoints,
+		changed, err := s.updateLoyaltyPointEntriesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLoyaltyPoints,
 		})
 		// then
 		require.NoError(t, err)
@@ -104,9 +104,9 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateLoyaltyPointEntriesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterLoyaltyPoints,
+		changed, err := s.updateLoyaltyPointEntriesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterLoyaltyPoints,
 		})
 		// then
 		require.NoError(t, err)

@@ -49,9 +49,9 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		changed, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -102,9 +102,9 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		changed, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -150,9 +150,9 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		changed, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -180,9 +180,9 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		changed, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -235,9 +235,9 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		changed, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -302,16 +302,16 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 				"second_party_id": 1000132,
 			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
-		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		_, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		require.NoError(t, err) // when
 		httpmock.ZeroCallCounters()
 		// when
-		_, err = s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		_, err = s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		require.NoError(t, err)
@@ -359,17 +359,17 @@ func TestCharacterService_UpdateWalletJournalEntryESI(t *testing.T) {
 				"second_party_id": 1000132,
 			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
-		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
+		_, err := s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
 		})
 		require.NoError(t, err) // when
 		httpmock.ZeroCallCounters()
 		// when
-		_, err = s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletJournal,
-			ForceUpdate: true,
+		_, err = s.updateWalletJournalEntryESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletJournal,
+			forceUpdate: true,
 		})
 		// then
 		require.NoError(t, err)
@@ -430,9 +430,9 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		changed, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -483,9 +483,9 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		changed, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -536,9 +536,9 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		_, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -559,9 +559,9 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
-		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		changed, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -617,9 +617,9 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		_, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -674,16 +674,16 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 				"unit_price":     9.23,
 			}}),
 		)
-		_, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		_, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		require.NoError(t, err)
 		httpmock.ZeroCallCounters()
 		// when
-		_, err = s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		_, err = s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		require.NoError(t, err)
@@ -735,17 +735,17 @@ func TestCharacterService_UpdateWalletTransactionESI(t *testing.T) {
 				"unit_price":     9.23,
 			}}),
 		)
-		_, err := s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
+		_, err := s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
 		})
 		require.NoError(t, err)
 		httpmock.ZeroCallCounters()
 		// when
-		_, err = s.updateWalletTransactionESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletTransactions,
-			ForceUpdate: true,
+		_, err = s.updateWalletTransactionESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletTransactions,
+			forceUpdate: true,
 		})
 		// then
 		require.NoError(t, err)
@@ -793,9 +793,9 @@ func TestCharacterService_UpdateWalletBalanceESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, balance),
 		)
 		// when
-		changed, err := s.updateWalletBalanceESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletBalance,
+		changed, err := s.updateWalletBalanceESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterWalletBalance,
 		})
 		// then
 		require.NoError(t, err)

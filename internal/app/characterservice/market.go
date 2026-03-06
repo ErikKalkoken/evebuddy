@@ -22,9 +22,9 @@ func (s *CharacterService) ListAllMarketOrder(ctx context.Context, isBuyOrders b
 	return s.st.ListAllCharacterMarketOrders(ctx, isBuyOrders)
 }
 
-func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMarketOrders {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterMarketOrders {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	const openState = "open"
 	return s.updateSectionIfChanged(

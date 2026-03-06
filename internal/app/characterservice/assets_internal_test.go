@@ -78,9 +78,9 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterAssets,
 		})
 		// then
 		require.NoError(t, err)
@@ -152,9 +152,9 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterAssets,
 		})
 		// then
 		require.NoError(t, err)
@@ -226,9 +226,9 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterAssets,
+		changed, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterAssets,
 		})
 		// then
 		require.NoError(t, err)

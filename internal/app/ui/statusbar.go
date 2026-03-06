@@ -79,6 +79,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 				EveImageService:    u.eis,
 				IsMobile:           u.isMobile,
 				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
+				Signals:            u.signals,
 				UIService:          u.baseUI,
 			})
 		},
@@ -100,6 +101,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		"?",
 		func() {
 			statuswindow.Show(statuswindow.Params{
+				CharacterService:   u.cs,
 				CorporationService: u.rs,
 				EveImageService:    u.eis,
 				EveUniverseService: u.eus,

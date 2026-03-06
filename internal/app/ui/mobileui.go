@@ -409,6 +409,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
 			statuswindow.Show(statuswindow.Params{
+				CharacterService:   u.cs,
 				CorporationService: u.rs,
 				EveImageService:    u.eis,
 				EveUniverseService: u.eus,

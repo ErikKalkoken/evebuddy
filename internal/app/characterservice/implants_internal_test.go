@@ -38,9 +38,9 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{et1.ID, et2.ID}))
 
 		// when
-		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterImplants,
+		changed, err := s.updateImplantsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterImplants,
 		})
 		// then
 		require.NoError(t, err)
@@ -65,9 +65,9 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{et.ID, ci.EveType.ID}))
 
 		// when
-		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterImplants,
+		changed, err := s.updateImplantsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterImplants,
 		})
 		// then
 		require.NoError(t, err)
@@ -91,9 +91,9 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{ci.EveType.ID}))
 
 		// when
-		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterImplants,
+		changed, err := s.updateImplantsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterImplants,
 		})
 		// then
 		require.NoError(t, err)

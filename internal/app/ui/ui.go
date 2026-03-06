@@ -198,31 +198,31 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(arg BaseUIParams) *baseUI {
 	if arg.CharacterService == nil {
-		panic("CharacterService")
+		panic("CharacterService missing")
 	}
 	if arg.CorporationService == nil {
-		panic("CorporationService")
+		panic("CorporationService missing")
 	}
 	if arg.ESIStatusService == nil {
-		panic("ESIStatusService")
+		panic("ESIStatusService missing")
 	}
 	if arg.EveImageService == nil {
-		panic("EveImageService")
+		panic("EveImageService missing")
 	}
 	if arg.EveUniverseService == nil {
-		panic("EveUniverseService")
+		panic("EveUniverseService missing")
 	}
 	if arg.JaniceService == nil {
-		panic("JaniceService")
+		panic("JaniceService missing")
 	}
 	if arg.Settings == nil {
-		panic("Settings")
+		panic("Settings missing")
 	}
 	if arg.StatusCacheService == nil {
-		panic("StatusCacheService")
+		panic("StatusCacheService missing")
 	}
 	if arg.Signals == nil {
-		panic("Signals")
+		panic("Signals missing")
 	}
 	u := &baseUI{
 		app:                arg.App,
@@ -455,7 +455,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			if !u.isOffline && !u.isUpdateDisabled.Load() {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
-					go u.UpdateCharactersIfNeeded(context.Background(), false)
+					go u.cs.UpdateCharactersIfNeeded(context.Background(), false)
 					go u.rs.UpdateCorporationsIfNeeded(context.Background(), false)
 					go u.eus.UpdateSectionsIfNeeded(context.Background(), false)
 				}()
@@ -541,7 +541,7 @@ func (u *baseUI) Start() bool {
 			time.Sleep(3 * time.Second) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
 			u.eus.StartUpdateTicker(300 * time.Second)
-			u.StartUpdateTickerCharacters(60 * time.Second)
+			u.cs.StartUpdateTickerCharacters(60 * time.Second)
 			u.rs.StartUpdateTickerCorporations(60 * time.Second)
 		} else {
 			slog.Info("Update ticker disabled")
@@ -853,13 +853,6 @@ func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {
 		return u.rs.ListPrivilegedCorporations(context.Background())
 	}
 	return u.cs.ListCharacterCorporations(context.Background())
-}
-
-func (u *baseUI) sendDesktopNotification(title, content string) {
-	fyne.Do(func() {
-		u.app.SendNotification(fyne.NewNotification(title, content))
-	})
-	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
 func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {

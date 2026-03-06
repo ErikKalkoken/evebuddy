@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/ErikKalkoken/eveauth"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -34,6 +36,17 @@ func (s *SettingsFake) MarketOrderRetentionDays() int {
 	return s.MarketOrderRetentionDaysDefault
 }
 
+func (s *SettingsFake) NotificationTypesEnabled() set.Set[string] { return set.Set[string]{} }
+func (s *SettingsFake) NotifyCommunicationsEarliest() time.Time   { return time.Now() }
+func (s *SettingsFake) NotifyCommunicationsEnabled() bool         { return true }
+func (s *SettingsFake) NotifyContractsEarliest() time.Time        { return time.Now() }
+func (s *SettingsFake) NotifyContractsEnabled() bool              { return true }
+func (s *SettingsFake) NotifyMailsEarliest() time.Time            { return time.Now() }
+func (s *SettingsFake) NotifyMailsEnabled() bool                  { return true }
+func (s *SettingsFake) NotifyPIEnabled() bool                     { return true }
+func (s *SettingsFake) NotifyTrainingEnabled() bool               { return true }
+func (s *SettingsFake) NotifyPIEarliest() time.Time               { return time.Now() }
+
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(st)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
@@ -51,6 +64,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		ESIClient:              client,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
+		Signals:                signals,
 		StatusCacheService:     scs,
 		Storage:                st,
 	}

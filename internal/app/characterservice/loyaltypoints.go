@@ -22,9 +22,9 @@ func (s *CharacterService) ListLoyaltyPointEntries(ctx context.Context, characte
 	return s.st.ListCharacterLoyaltyPointEntries(ctx, characterID)
 }
 
-func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterLoyaltyPoints {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterLoyaltyPoints {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, true,

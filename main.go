@@ -357,6 +357,11 @@ func main() {
 		Settings:               settings,
 		StatusCacheService:     scs,
 		Storage:                st,
+		Signals:                signals,
+		SendDesktopNotification: func(title, content string) {
+			fyneApp.SendNotification(fyne.NewNotification(title, content))
+			slog.Info("desktop notification sent", "title", title, "content", content)
+		},
 	})
 
 	// Init Corporation service

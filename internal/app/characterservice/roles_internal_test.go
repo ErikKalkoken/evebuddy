@@ -41,9 +41,9 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateRolesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterRoles,
+		changed, err := s.updateRolesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterRoles,
 		})
 		// then
 		require.NoError(t, err)
@@ -71,9 +71,9 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateRolesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterRoles,
+		changed, err := s.updateRolesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterRoles,
 		})
 		// then
 		require.NoError(t, err)
@@ -101,9 +101,9 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateRolesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterRoles,
+		changed, err := s.updateRolesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterRoles,
 		})
 		// then
 		require.NoError(t, err)

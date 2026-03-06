@@ -76,9 +76,9 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 
 // TODO: Improve update logic to only update changes to pins
 
-func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterPlanets {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterPlanets {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,

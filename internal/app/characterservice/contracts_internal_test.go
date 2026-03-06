@@ -72,9 +72,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -148,9 +148,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -237,9 +237,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -304,9 +304,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -356,9 +356,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -414,9 +414,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		_, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -482,9 +482,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		_, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)

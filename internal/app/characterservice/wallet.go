@@ -30,9 +30,9 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 }
 
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterWalletJournal {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterWalletJournal {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
@@ -40,7 +40,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
 			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
 			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.ForceUpdate
+			checkLastID := found && !arg.forceUpdate
 			entries, err := xgoesi.FetchPagesWithStop(
 				func(page int32) ([]esi.CharactersCharacterIdWalletJournalGetInner, *http.Response, error) {
 					return s.esiClient.WalletAPI.GetCharactersCharacterIdWalletJournal(ctx, characterID).Page(page).Execute()
@@ -133,16 +133,16 @@ func (s *CharacterService) ListWalletTransactions(ctx context.Context, character
 }
 
 // updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterWalletTransactions {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterWalletTransactions {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
 			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.ForceUpdate
+			checkLastID := found && !arg.forceUpdate
 			maxTransactions := s.settings.MaxWalletTransactions()
 			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, maxTransactions, lastID, checkLastID)
 			if err != nil {
@@ -253,9 +253,9 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 	return transactions, nil
 }
 
-func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterWalletBalance {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterWalletBalance {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,

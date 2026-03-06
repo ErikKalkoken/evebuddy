@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -45,13 +46,11 @@ type SCS interface {
 type UIService interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsOffline() bool
-	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
-	UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool)
-	UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error
 	HumanizeError(err error) string
 }
 
 type Params struct {
+	CharacterService   *characterservice.CharacterService     // TODO: Reduce to interface
 	CorporationService *corporationservice.CorporationService // TODO: Reduce to interface
 	EveImageService    EIS
 	EveUniverseService *eveuniverseservice.EveUniverseService // TODO: Reduce to interface
@@ -62,23 +61,26 @@ type Params struct {
 }
 
 func Show(arg Params) {
+	if arg.CharacterService == nil {
+		panic("CharacterService missing")
+	}
 	if arg.CorporationService == nil {
-		panic("CorporationService")
+		panic("CorporationService missing")
 	}
 	if arg.EveImageService == nil {
-		panic("EveImageService")
+		panic("EveImageService missing")
 	}
 	if arg.EveUniverseService == nil {
-		panic("EveUniverseService")
+		panic("EveUniverseService missing")
 	}
 	if arg.Signals == nil {
-		panic("Signals")
+		panic("Signals missing")
 	}
 	if arg.StatusCacheService == nil {
-		panic("StatusCacheService")
+		panic("StatusCacheService missing")
 	}
 	if arg.UIService == nil {
-		panic("UIService")
+		panic("UIService missing")
 	}
 	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
 	if !ok {
@@ -119,7 +121,6 @@ type statusWindow struct {
 	charactersTop     *widget.Label
 	details           *updateStatusDetail
 	detailsTop        *widget.Label
-	eis               EIS
 	entities          fyne.CanvasObject
 	entityList        *widget.List
 	isMobile          bool
@@ -127,7 +128,6 @@ type statusWindow struct {
 	onEntitySelected  func(int)
 	onSectionSelected func(int)
 	sb                *iwidget.Snackbar
-	scs               SCS
 	sectionEntities   []sectionEntity
 	sectionList       *widget.List
 	sections          []app.CacheSectionStatus
@@ -138,11 +138,15 @@ type statusWindow struct {
 	signals           *app.Signals
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
-	u                 UIService
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
-	eus               *eveuniverseservice.EveUniverseService
-	rs                *corporationservice.CorporationService
+
+	cs  *characterservice.CharacterService
+	eis EIS
+	eus *eveuniverseservice.EveUniverseService
+	rs  *corporationservice.CorporationService
+	scs SCS
+	u   UIService
 }
 
 func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
@@ -239,7 +243,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
 			go func() {
-				err := a.u.UpdateCharactersIfNeeded(context.Background(), true)
+				err := a.cs.UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + a.u.HumanizeError(err))
@@ -390,7 +394,7 @@ func (a *statusWindow) makeUpdateAllAction() func() {
 		case sectionGeneral:
 			go a.eus.UpdateSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
-			go a.u.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
+			go a.cs.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
 			go a.rs.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
@@ -560,7 +564,7 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 				ctx, app.EveUniverseSection(sectionID), true,
 			)
 		case sectionCharacter:
-			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(
+			go a.cs.UpdateCharacterSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CharacterSection(sectionID), true,
 			)
 		case sectionCorporation:

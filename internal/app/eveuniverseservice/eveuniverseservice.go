@@ -43,16 +43,16 @@ type Params struct {
 // New returns a new instance of an Eve universe service.
 func New(arg Params) *EveUniverseService {
 	if arg.ESIClient == nil {
-		panic("ESIClient")
+		panic("ESIClient missing")
 	}
 	if arg.Signals == nil {
-		panic("Signals")
+		panic("Signals missing")
 	}
 	if arg.Storage == nil {
-		panic("Storage")
+		panic("Storage missing")
 	}
 	if arg.StatusCacheService == nil {
-		panic("StatusCacheService")
+		panic("StatusCacheService missing")
 	}
 	s := &EveUniverseService{
 		concurrencyLimit: -1, // Default is no limit
