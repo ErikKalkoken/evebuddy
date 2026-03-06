@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type mailHeaderItem struct {
@@ -42,7 +42,7 @@ func newMailHeaderItem(eis awidget.EveEntityEIS) *mailHeaderItem {
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}
-	w.icon = iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
+	w.icon = xwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
 	w.icon.CornerRadius = app.IconUnitSize / 2
 	w.ExtendBaseWidget(w)
 	return w
@@ -86,7 +86,7 @@ type mailHeader struct {
 
 	eis        awidget.EveEntityEIS
 	from       *kxwidget.TappableLabel
-	icon       *iwidget.TappableImage
+	icon       *xwidget.TappableImage
 	recipients *fyne.Container
 	to         *widget.Label
 	showInfo   func(*app.EveEntity)
@@ -106,7 +106,7 @@ func newMailHeader(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *mailHea
 		to:         widget.NewLabel("to"),
 	}
 	w.ExtendBaseWidget(w)
-	w.icon = iwidget.NewTappableImage(icons.BlankSvg, nil)
+	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	w.icon.SetCornerRadius(app.IconUnitSize / 2)

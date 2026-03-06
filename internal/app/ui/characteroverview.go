@@ -23,10 +23,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterOverviewRow struct {
@@ -71,7 +71,7 @@ type characterOverview struct {
 	widget.BaseWidget
 
 	footer            *widget.Label
-	columnSorter      *iwidget.ColumnSorter[characterOverviewRow]
+	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
 	loadInfo          *widget.Label
 	main              fyne.CanvasObject
 	onUpdate          func(characters int)
@@ -83,7 +83,7 @@ type characterOverview struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *iwidget.SortButton
+	sortButton        *xwidget.SortButton
 	u                 *baseUI
 }
 
@@ -99,7 +99,7 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[characterOverviewRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",
 		Sort: func(a, b characterOverviewRow) int {
@@ -154,7 +154,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 
 	a := &characterOverview{
 		footer:       newLabelWithTruncation(),
-		columnSorter: iwidget.NewColumnSorter(columns, overviewColCharacter, iwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		loadInfo:     info,
 		search:       widget.NewEntry(),
 		u:            u,
@@ -561,11 +561,11 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 type characterCard struct {
 	widget.BaseWidget
 
-	allianceLogo             *iwidget.TappableImage
+	allianceLogo             *xwidget.TappableImage
 	background               *canvas.Rectangle
 	border                   *canvas.Rectangle
 	characterName            *widget.Label
-	corporationLogo          *iwidget.TappableImage
+	corporationLogo          *xwidget.TappableImage
 	isSmall                  bool
 	mails                    *widget.Label
 	portrait                 *canvas.Image
@@ -576,7 +576,7 @@ type characterCard struct {
 	ship                     *widget.Label
 	showInfoWindow           func(c app.EveEntityCategory, id int64)
 	skillpoints              *widget.Label
-	solarSystem              *iwidget.RichText
+	solarSystem              *xwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
 	loadCharacter            loadFuncAsync
@@ -594,12 +594,12 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	}
 	var portrait *canvas.Image
 	if isSmall {
-		portrait = iwidget.NewImageFromResource(
+		portrait = xwidget.NewImageFromResource(
 			icons.Characterplaceholder256Jpeg,
 			fyne.NewSquareSize(88),
 		)
 	} else {
-		portrait = iwidget.NewImageFromResource(
+		portrait = xwidget.NewImageFromResource(
 			icons.Characterplaceholder512Jpeg,
 			fyne.NewSquareSize(200),
 		)
@@ -607,11 +607,11 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	resTraining := theme.MediaRecordIcon()
 	trainingUnknown := theme.NewDisabledResource(icons.QuestionmarksmallSvg)
 	w := &characterCard{
-		allianceLogo:             iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		allianceLogo:             xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		background:               canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
 		border:                   canvas.NewRectangle(color.Transparent),
 		characterName:            widget.NewLabel("Veronica Blomquist"),
-		corporationLogo:          iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		corporationLogo:          xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		isSmall:                  isSmall,
 		loadAlliance:             loadAlliance,
 		loadCharacter:            loadCharacter,
@@ -625,7 +625,7 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 		ship:                     makeLabel("Merlin"),
 		showInfoWindow:           showInfoWindow,
 		skillpoints:              makeLabel(numberTemplate),
-		solarSystem:              iwidget.NewRichText(),
+		solarSystem:              xwidget.NewRichText(),
 		trainingStatus:           ttwidget.NewIcon(trainingUnknown),
 		wallet:                   makeLabel(numberTemplate + " ISK"),
 	}
@@ -876,12 +876,12 @@ func (w *characterCard) set(c characterOverviewRow) {
 
 	w.ship.SetText(c.shipName())
 
-	rt := iwidget.RichTextSegmentsFromText("?")
+	rt := xwidget.RichTextSegmentsFromText("?")
 	if el, ok := c.location.Value(); ok {
 		if es, ok := el.SolarSystem.Value(); ok {
 			rt = es.DisplayRichText()
 		}
 	}
-	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
+	rt = xwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)
 }

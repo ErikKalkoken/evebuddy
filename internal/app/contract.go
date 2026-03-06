@@ -9,8 +9,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type ContractAvailability uint
@@ -131,7 +131,7 @@ func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 	default:
 		color = theme.ColorNameForeground
 	}
-	return iwidget.RichTextSegmentsFromText(cs.Display(), widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(cs.Display(), widget.RichTextStyle{
 		ColorName: color,
 	})
 }

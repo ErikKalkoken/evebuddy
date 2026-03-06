@@ -20,9 +20,9 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -50,21 +50,21 @@ type characterFlyableShips struct {
 
 	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
-	columnSorter  *iwidget.ColumnSorter[flyableShipRow]
+	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
 	grid          *widget.GridWrap
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
 	search        *widget.Entry
 	selectFlyable *kxwidget.FilterChipSelect
 	selectGroup   *kxwidget.FilterChipSelect
-	sortButton    *iwidget.SortButton
+	sortButton    *xwidget.SortButton
 	top           *widget.Label
 	u             *baseUI
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
 func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[flyableShipRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
 		Sort: func(a, b flyableShipRow) int {
@@ -78,7 +78,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		},
 	}}),
 		flyableColType,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
 	a := &characterFlyableShips{
 		columnSorter: columnSorter,

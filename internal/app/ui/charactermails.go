@@ -20,8 +20,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type folderNodeCategory int
@@ -89,7 +89,7 @@ type characterMails struct {
 	currentFolder    atomic.Pointer[mailFolderNode]
 	folderDefault    *mailFolderNode
 	folderDownloaded *ttwidget.Label
-	folders          *iwidget.Tree[mailFolderNode]
+	folders          *xwidget.Tree[mailFolderNode]
 	folderStatus     *widget.Label
 	folderTotal      *widget.Label
 	headerList       *widget.List
@@ -195,8 +195,8 @@ func (a *characterMails) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
-	t := iwidget.NewTree(
+func (a *characterMails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
+	t := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icons.BlankSvg),
@@ -340,8 +340,8 @@ func (a *characterMails) updateDownloaded(ctx context.Context) {
 	})
 }
 
-func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (iwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
-	var td iwidget.TreeData[mailFolderNode]
+func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
+	var td xwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return td, nil, nil
 	}
@@ -471,7 +471,7 @@ func (a *characterMails) updateUnreadCounts(ctx context.Context) {
 	})
 }
 
-func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int64, td iwidget.TreeData[mailFolderNode]) (int, error) {
+func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int64, td xwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}

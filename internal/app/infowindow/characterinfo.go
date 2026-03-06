@@ -17,8 +17,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // characterInfo shows public information about a character.
@@ -37,7 +37,7 @@ type characterInfo struct {
 	isOwned         bool
 	membership      *widget.Label
 	ownedIcon       *ttwidget.Icon
-	portrait        *iwidget.TappableImage
+	portrait        *xwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
 	title           *widget.Label
@@ -48,7 +48,7 @@ func newCharacterInfo(iw *infoWindow, id int64) *characterInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
-	portrait := iwidget.NewTappableImage(icons.BlankSvg, nil)
+	portrait := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(iw.renderIconSize())
 	title := widget.NewLabel("")
@@ -61,7 +61,7 @@ func newCharacterInfo(iw *infoWindow, id int64) *characterInfo {
 		alliance:        alliance,
 		bio:             bio,
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		description:     newLabelWithWrapAndSelectable(""),
 		id:              id,
 		isOwned:         iw.scs.ListCharacterIDs().Contains(id),
@@ -130,7 +130,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
+	forums := xwidget.NewTappableIcon(icons.EvelogoPng, func() {
 		go func() {
 			ec, err := a.iw.eus.GetCharacterESI(context.Background(), a.id)
 			if err != nil {

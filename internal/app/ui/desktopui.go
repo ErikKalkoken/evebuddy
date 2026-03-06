@@ -28,8 +28,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -98,27 +98,27 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	// Home
 
-	var homeNav *iwidget.NavDrawer
-	overview := iwidget.NewNavPage(
+	var homeNav *xwidget.NavDrawer
+	overview := xwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
 		newContentPage("Character Overview", u.characterOverview),
 	)
 
-	wealth := iwidget.NewNavPage(
+	wealth := xwidget.NewNavPage(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		newContentPage("Wealth", u.wealth),
 	)
 
 	const assetsTitle = "Assets"
-	allAssets := iwidget.NewNavPage(
+	allAssets := xwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage(assetsTitle, u.assetSearchAll),
 	)
 
-	contracts := iwidget.NewNavPage(
+	contracts := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		newContentPage("Contracts", u.contracts),
@@ -131,7 +131,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		homeNav.SetItemBadge(contracts, s)
 	}
 
-	overviewColonies := iwidget.NewNavPage(
+	overviewColonies := xwidget.NewNavPage(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		newContentPage("Colonies", u.colonies),
@@ -144,7 +144,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		homeNav.SetItemBadge(overviewColonies, s)
 	}
 
-	industry := iwidget.NewNavPage(
+	industry := xwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		newContentPage("Industry", container.NewAppTabs(
@@ -164,7 +164,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		homeNav.SetItemBadge(industry, badge)
 	}
 
-	marketOrders := iwidget.NewNavPage(
+	marketOrders := xwidget.NewNavPage(
 		"Market Orders",
 		theme.NewThemedResource(icons.ChartAreasplineSvg),
 		newContentPage("Market Orders", container.NewAppTabs(
@@ -173,7 +173,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 
-	training := iwidget.NewNavPage(
+	training := xwidget.NewNavPage(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
 		newContentPage("Training", u.training),
@@ -186,10 +186,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		homeNav.SetItemBadge(training, badge)
 	}
 
-	homeNav = iwidget.NewNavDrawer(
+	homeNav = xwidget.NewNavDrawer(
 		overview,
 		allAssets,
-		iwidget.NewNavPage(
+		xwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			newContentPage("Clones", container.NewAppTabs(
@@ -200,7 +200,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		contracts,
 		overviewColonies,
 		industry,
-		iwidget.NewNavPage(
+		xwidget.NewNavPage(
 			"Loyalty Points",
 			theme.NewThemedResource(icons.HandHeartSvg),
 			newContentPage("Loyalty Points", u.loyaltyPoints),
@@ -209,7 +209,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		training,
 		wealth,
 	)
-	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
+	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
 		if it == allAssets {
 			u.assetSearchAll.focus()
 		}
@@ -217,9 +217,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	homeNav.MinWidth = navDrawerMinWidth
 
 	// current character
-	var characterNav *iwidget.NavDrawer
+	var characterNav *xwidget.NavDrawer
 
-	characterMailNav := iwidget.NewNavPage(
+	characterMailNav := xwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
 		newContentPage("Mail", u.characterMails),
@@ -229,7 +229,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.characterMails.onSendMessage = u.showSendMailWindow
 
-	characterCommunicationsNav := iwidget.NewNavPage(
+	characterCommunicationsNav := xwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		newContentPage("Communications", u.characterCommunications),
@@ -244,7 +244,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterNav.SetItemBadge(characterCommunicationsNav, s)
 	}
 
-	characterSkillsNav := iwidget.NewNavPage(
+	characterSkillsNav := xwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		newContentPage(
@@ -261,17 +261,17 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterNav.SetItemBadge(characterSkillsNav, status)
 	}
 
-	characterWalletNav := iwidget.NewNavPage("Wallet",
+	characterWalletNav := xwidget.NewNavPage("Wallet",
 		theme.NewThemedResource(icons.CashSvg),
 		newContentPage("Wallet", u.characterWallet),
 	)
-	characterAssetsNav := iwidget.NewNavPage(
+	characterAssetsNav := xwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage("Assets", u.characterAssetBrowser),
 	)
-	characterNav = iwidget.NewNavDrawer(
-		iwidget.NewNavPage(
+	characterNav = xwidget.NewNavDrawer(
+		xwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
 			newContentPage("Character Sheet", container.NewAppTabs(
@@ -284,7 +284,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			)),
 		),
 		characterAssetsNav,
-		iwidget.NewNavPage(
+		xwidget.NewNavPage(
 			"Contacts",
 			theme.NewThemedResource(icons.AccountSearchSvg),
 			newContentPage("Contacts", u.characterContacts),
@@ -303,7 +303,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	// Corporation
-	corpAssetsItem := iwidget.NewNavPage(
+	corpAssetsItem := xwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage("Assets", container.NewAppTabs(
@@ -312,15 +312,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 
-	var corporationNav *iwidget.NavDrawer
-	walletsNav := iwidget.NewNavSectionLabel("Wallets")
-	corpWalletItems := []*iwidget.NavItem{walletsNav}
-	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
+	var corporationNav *xwidget.NavDrawer
+	walletsNav := xwidget.NewNavSectionLabel("Wallets")
+	corpWalletItems := []*xwidget.NavItem{walletsNav}
+	corporationWalletNavs := make(map[app.Division]*xwidget.NavItem)
 	corporationWalletPages := make(map[app.Division]*contentPage)
 	for _, d := range app.Divisions {
 		name := d.DefaultWalletName()
 		corporationWalletPages[d] = newContentPage(name, u.corporationWallets[d])
-		corporationWalletNavs[d] = iwidget.NewNavPage(
+		corporationWalletNavs[d] = xwidget.NewNavPage(
 			name,
 			theme.NewThemedResource(icons.CashSvg),
 			corporationWalletPages[d],
@@ -328,7 +328,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
 
-	corpContractsItem := iwidget.NewNavPage(
+	corpContractsItem := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		newContentPage("Contracts", u.corporationContracts),
@@ -341,7 +341,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corporationNav.SetItemBadge(corpContractsItem, badge)
 	}
 
-	corpIndustryItem := iwidget.NewNavPage(
+	corpIndustryItem := xwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		newContentPage("Industry", u.corporationIndyJobs),
@@ -354,7 +354,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corporationNav.SetItemBadge(corpIndustryItem, badge)
 	}
 
-	corpStructuresItem := iwidget.NewNavPage(
+	corpStructuresItem := xwidget.NewNavPage(
 		"Structures",
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
 		newContentPage("Structures", u.corporationStructures),
@@ -367,7 +367,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corporationNav.SetItemBadge(corpStructuresItem, badge)
 	}
 
-	corpSheetItem := iwidget.NewNavPage(
+	corpSheetItem := xwidget.NewNavPage(
 		"Corporation Sheet",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		newContentPage("Corporation Sheet", container.NewAppTabs(
@@ -376,8 +376,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 
-	corporationNav = iwidget.NewNavDrawer(slices.Concat(
-		[]*iwidget.NavItem{
+	corporationNav = xwidget.NewNavDrawer(slices.Concat(
+		[]*xwidget.NavItem{
 			corpSheetItem,
 			corpAssetsItem,
 			corpContractsItem,
@@ -922,11 +922,11 @@ func (w *contentPage) SetTitle(s string) {
 type PageHeader struct {
 	widget.BaseWidget
 
-	button        *iwidget.ContextMenuButton
+	button        *xwidget.ContextMenuButton
 	buttonIcon    fyne.Resource
 	buttonTooltip string
 	icon          *canvas.Image
-	title         *iwidget.TappableLabel
+	title         *xwidget.TappableLabel
 	titleTooltip  string
 }
 
@@ -939,7 +939,7 @@ type NewPageHeaderParams struct {
 }
 
 func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
-	title2 := iwidget.NewTappableLabel(arg.Title, nil)
+	title2 := xwidget.NewTappableLabel(arg.Title, nil)
 	title2.SizeName = theme.SizeNameSubHeadingText
 	var fb fyne.Resource
 	if arg.IconFallback != nil {
@@ -947,8 +947,8 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 	} else {
 		fb = icons.BlankSvg
 	}
-	icon := iwidget.NewImageFromResource(fb, fyne.NewSquareSize(app.IconUnitSize))
-	button := iwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
+	icon := xwidget.NewImageFromResource(fb, fyne.NewSquareSize(app.IconUnitSize))
+	button := xwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
 	w := &PageHeader{
 		title:         title2,
 		button:        button,

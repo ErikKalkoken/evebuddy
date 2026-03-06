@@ -19,9 +19,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterTags struct {
@@ -32,7 +32,7 @@ type characterTags struct {
 	characters          []*app.EntityShort
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
-	manageCharacters    *iwidget.AppBar
+	manageCharacters    *xwidget.AppBar
 	cw                  *characterWindow
 	selectedTag         *app.CharacterTag
 	tagList             *widget.List
@@ -87,7 +87,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		fyne.NewMenuItem("Replace tags from file", a.importTags),
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
-	ab := iwidget.NewAppBar("Tags", main, actions)
+	ab := xwidget.NewAppBar("Tags", main, actions)
 	ab.HideBackground = !a.cw.isMobile
 	c := container.NewVSplit(
 		container.NewStack(ab, a.emptyTagsHint),
@@ -208,8 +208,8 @@ func (a *characterTags) importTags() {
 	d.Show()
 }
 
-func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
-	ab := iwidget.NewAppBar(
+func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
+	ab := xwidget.NewAppBar(
 		"",
 		container.NewBorder(
 			nil,

@@ -22,9 +22,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type walletJournalRow struct {
@@ -58,14 +58,14 @@ type walletJournal struct {
 
 	body         fyne.CanvasObject
 	character    atomic.Pointer[app.Character]
-	columnSorter *iwidget.ColumnSorter[walletJournalRow]
+	columnSorter *xwidget.ColumnSorter[walletJournalRow]
 	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
 	footer       *widget.Label
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *iwidget.SortButton
+	sortButton   *xwidget.SortButton
 	top          *widget.Label
 	u            *baseUI
 }
@@ -115,7 +115,7 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[walletJournalRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
@@ -123,7 +123,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 			return a.date.Compare(b.date)
 		},
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.dateFormatted)
+			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
 		ID:    walletJournalColType,
@@ -133,7 +133,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 			return strings.Compare(a.refType, b.refType)
 		},
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.refTypeDisplay)
+			co.(*xwidget.RichText).SetWithText(r.refTypeDisplay)
 		},
 	}, {
 		ID:    walletJournalColAmount,
@@ -143,14 +143,14 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 			return optional.Compare(a.amount, b.amount)
 		},
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.amountDisplay)
+			co.(*xwidget.RichText).Set(r.amountDisplay)
 		},
 	}, {
 		ID:    walletJournalColBalance,
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
+			co.(*xwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
 				return humanize.FormatFloat(app.FloatFormat, v)
 			}), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
@@ -162,11 +162,11 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		Label: "Description",
 		Width: 450,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.descriptionWithReason())
+			co.(*xwidget.RichText).SetWithText(r.descriptionWithReason())
 		},
 	}})
 	a := &walletJournal{
-		columnSorter: iwidget.NewColumnSorter(columns, walletJournalColDate, iwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, walletJournalColDate, xwidget.SortDesc),
 		division:     division,
 		footer:       newLabelWithTruncation(),
 		top:          newLabelWithTruncation(),
@@ -177,11 +177,11 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -223,9 +223,9 @@ func (a *walletJournal) isCorporation() bool {
 	return a.division != app.DivisionZero
 }
 
-func (a *walletJournal) makeDataList() *iwidget.StripedList {
+func (a *walletJournal) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStripedList(
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -401,7 +401,7 @@ func (a *walletJournal) fetchCharacterRows(ctx context.Context, characterID int6
 			refType:        o.RefType,
 			refTypeDisplay: o.RefTypeDisplay(),
 		}
-		r.amountDisplay = iwidget.RichTextSegmentsFromText(
+		r.amountDisplay = xwidget.RichTextSegmentsFromText(
 			r.amountFormatted,
 			widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
@@ -440,7 +440,7 @@ func (a *walletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 			refTypeDisplay: o.RefTypeDisplay(),
 		}
 
-		r.amountDisplay = iwidget.RichTextSegmentsFromText(
+		r.amountDisplay = xwidget.RichTextSegmentsFromText(
 			r.amountFormatted,
 			widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,

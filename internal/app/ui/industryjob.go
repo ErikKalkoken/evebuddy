@@ -24,9 +24,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Options for industry job select widgets
@@ -92,11 +92,11 @@ func (r industryJobRow) statusCalculated() app.IndustryJobStatus {
 func (r industryJobRow) statusDisplay() []widget.RichTextSegment {
 	status := r.statusCalculated()
 	if status == app.JobActive {
-		return iwidget.RichTextSegmentsFromText(ihumanize.Duration(r.remaining()), widget.RichTextStyle{
+		return xwidget.RichTextSegmentsFromText(ihumanize.Duration(r.remaining()), widget.RichTextStyle{
 			ColorName: theme.ColorNameForeground,
 		})
 	}
-	return iwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
 		ColorName: status.Color(),
 	})
 }
@@ -108,7 +108,7 @@ type industryJobs struct {
 
 	body            fyne.CanvasObject
 	footer          *widget.Label
-	columnSorter    *iwidget.ColumnSorter[industryJobRow]
+	columnSorter    *xwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
@@ -119,7 +119,7 @@ type industryJobs struct {
 	selectOwner     *kxwidget.FilterChipSelect
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
-	sortButton      *iwidget.SortButton
+	sortButton      *xwidget.SortButton
 	u               *baseUI
 }
 
@@ -144,7 +144,7 @@ func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
 
 func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[industryJobRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
@@ -152,7 +152,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return strings.Compare(a.blueprintType.Name, b.blueprintType.Name)
 		},
 		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
@@ -177,7 +177,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return cmp.Compare(a.remaining(), b.remaining())
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.statusDisplay())
+			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
 		ID:    industryJobsColRuns,
@@ -187,7 +187,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return cmp.Compare(a.runs, b.runs)
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(
+			co.(*xwidget.RichText).SetWithText(
 				ihumanize.Comma(r.runs),
 				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
 			)
@@ -200,7 +200,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return strings.Compare(a.activity.String(), b.activity.String())
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.activity.Display())
+			co.(*xwidget.RichText).SetWithText(r.activity.Display())
 		},
 	}, {
 		ID:    industryJobsColEndDate,
@@ -210,7 +210,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return a.endDate.Compare(b.endDate)
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
+			co.(*xwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
 		},
 	}, {
 		ID:    industryJobsColLocation,
@@ -220,7 +220,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return optional.Compare(a.location.Name, b.location.Name)
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
+			co.(*xwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
 		},
 	}, {
 		ID:    industryJobsColOwner,
@@ -253,12 +253,12 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			return strings.Compare(a.installer.Name, b.installer.Name)
 		},
 		Update: func(r industryJobRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.installer.Name)
+			co.(*xwidget.RichText).SetWithText(r.installer.Name)
 		},
 	}})
 	a := &industryJobs{
 		footer:         newLabelWithWrapping(),
-		columnSorter:   iwidget.NewColumnSorter(columns, industryJobsColEndDate, iwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, industryJobsColEndDate, xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,
 	}
@@ -267,11 +267,11 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -411,7 +411,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industryJobs) makeDataList() *iwidget.StripedList {
+func (a *industryJobs) makeDataList() *xwidget.StripedList {
 	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
@@ -426,8 +426,8 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
 		app.Reactions2:                 theme.NewThemedResource(icons.IndyreactionsSvg),
 	}
-	var l *iwidget.StripedList
-	l = iwidget.NewStripedList(
+	var l *xwidget.StripedList
+	l = xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -435,7 +435,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 			title := widget.NewLabel("Template")
 			title.TextStyle.Bold = true
 			title.Wrapping = fyne.TextWrapWord
-			status := iwidget.NewRichText()
+			status := xwidget.NewRichText()
 			location := widget.NewLabel("Template")
 			location.Wrapping = fyne.TextWrapWord
 			completed := widget.NewLabel("Template")
@@ -475,7 +475,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 			statusStack := c1[2].(*fyne.Container).Objects
 			status := j.statusCalculated()
 			if status == app.JobActive {
-				statusStack[0].(*iwidget.RichText).Set(j.statusDisplay())
+				statusStack[0].(*xwidget.RichText).Set(j.statusDisplay())
 				statusStack[0].Show()
 				statusStack[1].Hide()
 			} else {
@@ -828,7 +828,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 			}),
 		))
 	}
-	status := iwidget.NewRichText(r.statusDisplay()...)
+	status := xwidget.NewRichText(r.statusDisplay()...)
 	items = slices.Concat(items, []*widget.FormItem{
 		widget.NewFormItem("Status", status),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),

@@ -22,9 +22,9 @@ import (
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -121,7 +121,7 @@ func (r marketOrderRow) volumeDisplay() string {
 type marketOrders struct {
 	widget.BaseWidget
 
-	columnSorter *iwidget.ColumnSorter[marketOrderRow]
+	columnSorter *xwidget.ColumnSorter[marketOrderRow]
 	footer       *widget.Label
 	isBuyOrders  bool
 	main         fyne.CanvasObject
@@ -132,7 +132,7 @@ type marketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *iwidget.SortButton
+	sortButton   *xwidget.SortButton
 	u            *baseUI
 }
 
@@ -147,7 +147,7 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[marketOrderRow]{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
 			EIS:      u.eis,
@@ -168,7 +168,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return cmp.Compare(a.volumeRemain, b.volumeRemain)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.volumeDisplay(), widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.volumeDisplay(), widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 			},
@@ -180,7 +180,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return cmp.Compare(a.price, b.price)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 			},
@@ -192,7 +192,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return a.expires.Compare(b.expires)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.stateDisplay(), widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.stateDisplay(), widget.RichTextStyle{
 					ColorName: r.stateColor(),
 				})
 			},
@@ -204,7 +204,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return strings.Compare(a.locationName, b.locationName)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.locationName)
+				co.(*xwidget.RichText).SetWithText(r.locationName)
 			},
 		}, {
 			ID:    marketOrdersColRegion,
@@ -214,7 +214,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return strings.Compare(a.regionName, b.regionName)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.regionName)
+				co.(*xwidget.RichText).SetWithText(r.regionName)
 			},
 		}, {
 			ID:    marketOrdersColOwner,
@@ -224,11 +224,11 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.ownerName)
+				co.(*xwidget.RichText).SetWithText(r.ownerName)
 			},
 		}})
 	a := &marketOrders{
-		columnSorter: iwidget.NewColumnSorter(columns, marketOrdersColType, iwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
 		footer:       newLabelWithTruncation(),
 		isBuyOrders:  isBuyOrders,
 		u:            u,
@@ -236,11 +236,11 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.ExtendBaseWidget(a)
 
 	if !a.u.isMobile {
-		a.main = iwidget.MakeDataTable(
+		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -316,9 +316,9 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *marketOrders) makeDataList() *iwidget.StripedList {
+func (a *marketOrders) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStripedList(
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -332,7 +332,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 			price.Truncation = fyne.TextTruncateClip
 			volume := widget.NewLabel("Template")
 			volume.Alignment = fyne.TextAlignTrailing
-			location := iwidget.NewRichText()
+			location := xwidget.NewRichText()
 			location.Truncation = fyne.TextTruncateClip
 			owner := widget.NewLabel("Template")
 			owner.Truncation = fyne.TextTruncateClip
@@ -361,7 +361,7 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 			b1[0].(*widget.Label).SetText(ihumanize.NumberF(r.price, 2) + " ISK")
 			b1[1].(*widget.Label).SetText(r.volumeDisplay())
 
-			c[2].(*iwidget.RichText).Set(r.location.DisplayRichText())
+			c[2].(*xwidget.RichText).Set(r.location.DisplayRichText())
 			c[3].(*widget.Label).SetText(r.ownerName)
 		},
 	)

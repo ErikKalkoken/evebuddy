@@ -20,9 +20,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -40,7 +40,7 @@ type gameSearch struct {
 	recentItems         []*app.EveEntity
 	recentPage          *fyne.Container
 	resultCount         *widget.Label
-	results             *iwidget.Tree[resultNode]
+	results             *xwidget.Tree[resultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
@@ -220,8 +220,8 @@ func (a *gameSearch) setWindow(w fyne.Window) {
 	a.w = w
 }
 
-func (a *gameSearch) makeResults() *iwidget.Tree[resultNode] {
-	t := iwidget.NewTree(
+func (a *gameSearch) makeResults() *xwidget.Tree[resultNode] {
+	t := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
 				return widget.NewLabel("Template")
@@ -365,7 +365,7 @@ func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	if total == 0 {
 		return
 	}
-	var td iwidget.TreeData[resultNode]
+	var td xwidget.TreeData[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
 		items, ok := results[c]
@@ -420,7 +420,7 @@ type searchResult struct {
 }
 
 func newSearchResult(eis searchResultEIS, eus searchResultEUS, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
-	image := iwidget.NewImageFromResource(
+	image := xwidget.NewImageFromResource(
 		icons.BlankSvg,
 		fyne.NewSquareSize(app.IconUnitSize),
 	)
@@ -449,7 +449,7 @@ func (w *searchResult) set(o *app.EveEntity) {
 	w.name.Text = o.Name
 	w.name.Refresh()
 
-	iwidget.LoadResourceAsyncWithCache(
+	xwidget.LoadResourceAsyncWithCache(
 		icons.BlankSvg,
 		func() (fyne.Resource, bool) {
 			return searchResultResourceCache.Load(o.ID)

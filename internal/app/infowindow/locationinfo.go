@@ -15,9 +15,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // locationInfo shows public information about a character.
@@ -32,7 +32,7 @@ type locationInfo struct {
 	ownerLogo   *canvas.Image
 	services    *entityList
 	tabs        *container.AppTabs
-	typeImage   *iwidget.TappableImage
+	typeImage   *xwidget.TappableImage
 	typeInfo    *widget.Hyperlink
 }
 
@@ -41,14 +41,14 @@ func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := widget.NewHyperlink("", nil)
 	owner.Wrapping = fyne.TextWrapWord
-	typeImage := iwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeImage := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
 		owner:       owner,
-		ownerLogo:   iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		ownerLogo:   xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		typeImage:   typeImage,
 		typeInfo:    typeInfo,
 	}

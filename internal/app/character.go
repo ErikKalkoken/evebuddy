@@ -10,9 +10,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Character is an Eve Online character owned by the user.
@@ -234,7 +234,7 @@ type CharacterPlanet struct {
 func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 	return slices.Concat(
 		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
+		xwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
 	)
 }
 

@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type EIS interface {
@@ -110,7 +110,7 @@ type characterWindow struct {
 	isMobile          bool
 	isUpdateDisabled  bool
 	rs                *corporationservice.CorporationService
-	sb                *iwidget.Snackbar
+	sb                *xwidget.Snackbar
 	signals           *app.Signals
 	u                 UIService
 	w                 fyne.Window
@@ -122,7 +122,7 @@ func newCharacterWindow(arg Params, w fyne.Window) *characterWindow {
 		eis:              arg.EveImageService,
 		isMobile:         arg.IsMobile,
 		rs:               arg.CorporationService,
-		sb:               iwidget.NewSnackbar(w),
+		sb:               xwidget.NewSnackbar(w),
 		u:                arg.UIService,
 		w:                w,
 		isUpdateDisabled: arg.IsUpdateDisabled,

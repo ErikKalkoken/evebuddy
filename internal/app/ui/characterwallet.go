@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterWallet struct {
@@ -35,7 +35,7 @@ type characterWallet struct {
 
 func newCharacterWallet(u *baseUI) *characterWallet {
 	a := &characterWallet{
-		balance:       iwidget.NewLabelWithSelection(""),
+		balance:       xwidget.NewLabelWithSelection(""),
 		journal:       newCharacterWalletJournal(u),
 		transactions:  newCharacterWalletTransaction(u),
 		loyaltyPoints: newCharacterLoyaltyPoints(u),

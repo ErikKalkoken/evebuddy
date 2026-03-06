@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type hasCharacterSection interface {
@@ -56,13 +56,13 @@ type characterJumpClones struct {
 	widget.BaseWidget
 
 	character atomic.Pointer[app.Character]
-	top       *iwidget.RichText
-	tree      *iwidget.Tree[jumpCloneNode]
+	top       *xwidget.RichText
+	tree      *xwidget.Tree[jumpCloneNode]
 	u         *baseUI
 }
 
 func newCharacterJumpClones(u *baseUI) *characterJumpClones {
-	top := iwidget.NewRichText()
+	top := xwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
 	a := &characterJumpClones{
 		top: top,
@@ -98,8 +98,8 @@ func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
-	t := iwidget.NewTree(
+func (a *characterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
+	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newCharacterJumpCloneItem(
 				a.u.isMobile,
@@ -137,7 +137,7 @@ func (a *characterJumpClones) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
-			a.top.Set(iwidget.RichTextSegmentsFromText("ERROR: "+a.u.HumanizeError(err), widget.RichTextStyle{
+			a.top.Set(xwidget.RichTextSegmentsFromText("ERROR: "+a.u.HumanizeError(err), widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
 			}))
 		})
@@ -151,8 +151,8 @@ func (a *characterJumpClones) update(ctx context.Context) {
 	})
 }
 
-func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (iwidget.TreeData[jumpCloneNode], error) {
-	var td iwidget.TreeData[jumpCloneNode]
+func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[jumpCloneNode], error) {
+	var td xwidget.TreeData[jumpCloneNode]
 	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
 	if err != nil {
 		return td, err
@@ -269,7 +269,7 @@ func (*characterJumpClones) makeTopText(cloneCount int, c *app.Character, s hasC
 type characterJumpCloneItem struct {
 	widget.BaseWidget
 
-	iconInfo     *iwidget.TappableIcon
+	iconInfo     *xwidget.TappableIcon
 	iconMain     *canvas.Image
 	implants     *widget.Label
 	isMobile     bool
@@ -282,10 +282,10 @@ type characterJumpCloneItem struct {
 }
 
 func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showType func(int64, int64), showLocation func(int64)) *characterJumpCloneItem {
-	iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	iconMain := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	main := ttwidget.NewLabel("Template")
 	main.Truncation = fyne.TextTruncateEllipsis
-	iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	implants := widget.NewLabel("9")
 	spacer := newSpacer(fyne.NewSize(40, 10))
 	prefix := widget.NewLabel("-9.9")

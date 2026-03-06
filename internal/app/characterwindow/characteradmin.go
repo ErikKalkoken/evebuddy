@@ -21,8 +21,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterAdminRow struct {
@@ -36,7 +36,7 @@ type characterAdminRow struct {
 type characterAdmin struct {
 	widget.BaseWidget
 
-	ab         *iwidget.AppBar
+	ab         *xwidget.AppBar
 	characters []characterAdminRow
 	list       *widget.List
 	cw         *characterWindow
@@ -55,7 +55,7 @@ func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 	if a.cw.u.IsOffline() {
 		add.Disable()
 	}
-	a.ab = iwidget.NewAppBar("Characters", container.NewBorder(
+	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
 		container.NewVBox(add, newStandardSpacer()),
 		nil,

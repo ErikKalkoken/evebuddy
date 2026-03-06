@@ -10,7 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // EntityListItem is a list item for an entity. It has an icon and a name.
@@ -23,7 +23,7 @@ type EntityListItem struct {
 }
 
 func NewEntityListItem(isAvatar bool, loadIconAsync func(id int64, size int, setter func(r fyne.Resource))) *EntityListItem {
-	portrait := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	portrait := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	if isAvatar {
 		portrait.CornerRadius = app.IconUnitSize / 2
 	}

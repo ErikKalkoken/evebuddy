@@ -21,9 +21,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Options for industry job select widgets
@@ -65,7 +65,7 @@ type walletTransactions struct {
 	body           fyne.CanvasObject
 	footer         *widget.Label
 	character      atomic.Pointer[app.Character]
-	columnSorter   *iwidget.ColumnSorter[walletTransactionRow]
+	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
 	division       app.Division
 	rows           []walletTransactionRow
@@ -76,7 +76,7 @@ type walletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *iwidget.SortButton
+	sortButton     *xwidget.SortButton
 	u              *baseUI
 }
 
@@ -125,7 +125,7 @@ const (
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[walletTransactionRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
 		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: columnWidthDateTime,
@@ -133,7 +133,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return a.date.Compare(b.date)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.dateFormatted)
+			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
 		ID:    walletTransactionColQuantity,
@@ -143,7 +143,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return cmp.Compare(a.quantity, b.quantity)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
@@ -155,7 +155,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return strings.Compare(a.typeName, b.typeName)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.typeName)
+			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
 		ID:    walletTransactionColPrice,
@@ -165,7 +165,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return cmp.Compare(a.unitPrice, b.unitPrice)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.unitPriceDisplay, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.unitPriceDisplay, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
@@ -177,7 +177,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return cmp.Compare(a.total, b.total)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.totalFormatted, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.totalFormatted, widget.RichTextStyle{
 				ColorName: r.totalColor,
 			})
 		},
@@ -189,7 +189,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return xstrings.CompareIgnoreCase(a.clientName, b.clientName)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.clientName)
+			co.(*xwidget.RichText).SetWithText(r.clientName)
 		},
 	}, {
 		ID:    walletTransactionColLocation,
@@ -199,23 +199,23 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			return strings.Compare(a.locationName, b.locationName)
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.locationDisplay)
+			co.(*xwidget.RichText).Set(r.locationDisplay)
 		},
 	}})
 	a := &walletTransactions{
 		footer:       newLabelWithTruncation(),
-		columnSorter: iwidget.NewColumnSorter(columns, walletTransactionColDate, iwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, walletTransactionColDate, xwidget.SortDesc),
 		division:     d,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
 	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -296,9 +296,9 @@ func (a *walletTransactions) isCorporation() bool {
 	return a.division != app.DivisionZero
 }
 
-func (a *walletTransactions) makeDataList() *iwidget.StripedList {
+func (a *walletTransactions) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStripedList(
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterSheet struct {
@@ -32,7 +32,7 @@ type characterSheet struct {
 	lastLoginAt *widget.Label
 	location    *widget.Hyperlink
 	name        *widget.Hyperlink
-	portrait    *iwidget.TappableImage
+	portrait    *xwidget.TappableImage
 	race        *widget.Hyperlink
 	security    *widget.Label
 	ship        *widget.Hyperlink
@@ -54,7 +54,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x
 	}
-	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
+	portrait := xwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	portrait.SetToolTip("Show details")

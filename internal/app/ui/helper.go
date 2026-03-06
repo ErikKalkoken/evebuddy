@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
@@ -164,11 +164,11 @@ func makeSolarSystemLabel(o *app.EveSolarSystem, show func(o *app.EveEntity)) fy
 	}
 	segs := slices.Concat(
 		o.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText(" ", widget.RichTextStyleInline),
-		iwidget.RichTextSegmentsFromText(o.Name, widget.RichTextStyle{
+		xwidget.RichTextSegmentsFromText(" ", widget.RichTextStyleInline),
+		xwidget.RichTextSegmentsFromText(o.Name, widget.RichTextStyle{
 			ColorName: theme.ColorNamePrimary,
 		}))
-	x := iwidget.NewTappableRichText(segs, func() {
+	x := xwidget.NewTappableRichText(segs, func() {
 		o := &app.EveEntity{
 			ID:       o.ID,
 			Name:     o.Name,

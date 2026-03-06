@@ -25,11 +25,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -130,12 +130,12 @@ func (r *assetRow) setLocationFlag(ac asset.Tree, itemID int64) {
 func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 	ln, ok := ac.LocationForItem(itemID)
 	if !ok {
-		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
+		r.locationDisplay = xwidget.RichTextSegmentsFromText("?")
 		return
 	}
 	el, ok := ln.Location()
 	if !ok {
-		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
+		r.locationDisplay = xwidget.RichTextSegmentsFromText("?")
 		return
 	}
 	r.location = el.ToShort()
@@ -202,7 +202,7 @@ type assetSearch struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
-	columnSorter   *iwidget.ColumnSorter[assetRow]
+	columnSorter   *xwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
@@ -217,7 +217,7 @@ type assetSearch struct {
 	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
-	sortButton     *iwidget.SortButton
+	sortButton     *xwidget.SortButton
 	top            *widget.Label
 	u              *baseUI
 }
@@ -243,7 +243,7 @@ func newAssetSearchForCorporation(u *baseUI) *assetSearch {
 
 func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
-	cols := []iwidget.DataColumn[assetRow]{{
+	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
 		Label: "Item",
 		Width: 300,
@@ -251,7 +251,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return strings.Compare(a.name, b.name)
 		},
 		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
@@ -273,7 +273,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return strings.Compare(a.groupName, b.groupName)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.groupName)
+			co.(*xwidget.RichText).SetWithText(r.groupName)
 		},
 	}, {
 		ID:    assetsColLocation,
@@ -283,7 +283,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return strings.Compare(a.locationName, b.locationName)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.locationDisplay)
+			co.(*xwidget.RichText).Set(r.locationDisplay)
 		},
 	}, {
 		ID:    assetsColState,
@@ -293,7 +293,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return strings.Compare(a.locationName, b.locationName)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.state)
+			co.(*xwidget.RichText).SetWithText(r.state)
 		},
 	}, {
 		ID:    assetsColQuantity,
@@ -303,7 +303,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return cmp.Compare(a.quantity, b.quantity)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.quantityDisplay, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
@@ -315,13 +315,13 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			return optional.Compare(a.total, b.total)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
 	}}
 	if !forCorporation {
-		cols = slices.Concat(cols, []iwidget.DataColumn[assetRow]{{
+		cols = slices.Concat(cols, []xwidget.DataColumn[assetRow]{{
 			ID:    assetsColOwner,
 			Label: "Owner",
 			Width: 250,
@@ -349,13 +349,13 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			Label: "Tags",
 			Width: columnWidthEntity,
 			Update: func(r assetRow, co fyne.CanvasObject) {
-				co.(*iwidget.RichText).SetWithText(r.tagsDisplay)
+				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
 			},
 		}})
 	}
-	columns := iwidget.NewDataColumns(cols)
+	columns := xwidget.NewDataColumns(cols)
 	a := &assetSearch{
-		columnSorter:   iwidget.NewColumnSorter(columns, assetsColItem, iwidget.SortAsc),
+		columnSorter:   xwidget.NewColumnSorter(columns, assetsColItem, xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         newLabelWithTruncation(),
 		search:         widget.NewEntry(),
@@ -367,11 +367,11 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -492,9 +492,9 @@ func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetSearch) makeDataList() *iwidget.StripedList {
+func (a *assetSearch) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStripedList(
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -504,7 +504,7 @@ func (a *assetSearch) makeDataList() *iwidget.StripedList {
 			if a.forCorporation {
 				owner.Hide()
 			}
-			location := iwidget.NewRichTextWithText("Template")
+			location := xwidget.NewRichTextWithText("Template")
 			price := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
@@ -526,7 +526,7 @@ func (a *assetSearch) makeDataList() *iwidget.StripedList {
 				title = fmt.Sprintf("%s x%s", r.name, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
-			box[1].(*iwidget.RichText).Set(r.locationDisplay)
+			box[1].(*xwidget.RichText).Set(r.locationDisplay)
 			box[2].(*widget.Label).SetText(r.owner.Name)
 			box[3].(*widget.Label).SetText(r.totalDisplay)
 		},
@@ -831,7 +831,7 @@ var assetIconCache xsync.Map[string, fyne.Resource]
 
 func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, variant app.InventoryTypeVariant) {
 	key := fmt.Sprintf("%d-%d", typeID, variant)
-	iwidget.LoadResourceAsyncWithCache(
+	xwidget.LoadResourceAsyncWithCache(
 		icons.BlankSvg,
 		func() (fyne.Resource, bool) {
 			return assetIconCache.Load(key)

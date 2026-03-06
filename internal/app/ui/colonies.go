@@ -23,10 +23,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -74,7 +74,7 @@ func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 
 func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment {
 	if len(extractorExpiries) == 0 {
-		return iwidget.RichTextSegmentsFromText("-")
+		return xwidget.RichTextSegmentsFromText("-")
 	}
 	var expired int
 	for _, v := range extractorExpiries {
@@ -83,19 +83,19 @@ func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment
 		}
 	}
 	if expired == len(extractorExpiries) {
-		return iwidget.RichTextSegmentsFromText(colonyStatusAllIdle, widget.RichTextStyle{
+		return xwidget.RichTextSegmentsFromText(colonyStatusAllIdle, widget.RichTextStyle{
 			ColorName: theme.ColorNameError,
 		})
 	}
 	if expired > 0 {
-		return iwidget.RichTextSegmentsFromText(colonyStatusSomeIdle, widget.RichTextStyle{
+		return xwidget.RichTextSegmentsFromText(colonyStatusSomeIdle, widget.RichTextStyle{
 			ColorName: theme.ColorNameWarning,
 		})
 	}
 	earliest := slices.MinFunc(extractorExpiries, func(a, b time.Time) int {
 		return a.Compare(b)
 	})
-	return iwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(earliest)), widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(earliest)), widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	})
 }
@@ -104,7 +104,7 @@ type colonies struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
-	columnSorter      *iwidget.ColumnSorter[colonyRow]
+	columnSorter      *xwidget.ColumnSorter[colonyRow]
 	footer            *widget.Label
 	onUpdate          func(total, expired int)
 	rows              []colonyRow
@@ -118,7 +118,7 @@ type colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *iwidget.SortButton
+	sortButton        *xwidget.SortButton
 	u                 *baseUI
 }
 
@@ -133,7 +133,7 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[colonyRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 200,
@@ -141,17 +141,17 @@ func newColonies(u *baseUI) *colonies {
 			return strings.Compare(a.name, b.name)
 		},
 		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
-			name := iwidget.NewRichText()
+			name := xwidget.NewRichText()
 			name.Truncation = fyne.TextTruncateClip
 			return container.NewBorder(nil, nil, icon, nil, name)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			border[0].(*iwidget.RichText).Set(r.nameDisplay)
+			border[0].(*xwidget.RichText).Set(r.nameDisplay)
 			x := border[1].(*canvas.Image)
 			u.eis.InventoryTypeIconAsync(r.planetTypeID, app.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
@@ -166,14 +166,14 @@ func newColonies(u *baseUI) *colonies {
 			return cmp.Compare(a.remaining(), b.remaining())
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.statusDisplay())
+			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
 		ID:    coloniesColExtracting,
 		Label: "Extracting",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.extractingText)
+			co.(*xwidget.RichText).SetWithText(r.extractingText)
 		},
 	}, {
 		ID:    coloniesColEndDate,
@@ -185,7 +185,7 @@ func newColonies(u *baseUI) *colonies {
 			})
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
+			co.(*xwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
 				return v.Format(app.DateTimeFormat)
 			}))
 		},
@@ -194,7 +194,7 @@ func newColonies(u *baseUI) *colonies {
 		Label: "Producing",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.producingText)
+			co.(*xwidget.RichText).SetWithText(r.producingText)
 		},
 	}, {
 		ID:    coloniesColCharacter,
@@ -204,12 +204,12 @@ func newColonies(u *baseUI) *colonies {
 			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.ownerName)
+			co.(*xwidget.RichText).SetWithText(r.ownerName)
 		},
 	}})
 	a := &colonies{
 		footer:       newLabelWithTruncation(),
-		columnSorter: iwidget.NewColumnSorter(columns, coloniesColEndDate, iwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
 		search:       widget.NewEntry(),
 		u:            u,
 	}
@@ -218,11 +218,11 @@ func newColonies(u *baseUI) *colonies {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -329,8 +329,8 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *colonies) makeDataList() *iwidget.StripedList {
-	l := iwidget.NewStripedList(
+func (a *colonies) makeDataList() *xwidget.StripedList {
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -360,8 +360,8 @@ type colonyListItem struct {
 	character  *widget.Label
 	extracting *widget.Label
 	producing  *widget.Label
-	status     *iwidget.RichText
-	title      *iwidget.RichText
+	status     *xwidget.RichText
+	title      *xwidget.RichText
 }
 
 func newColonyListItem() *colonyListItem {
@@ -371,13 +371,13 @@ func newColonyListItem() *colonyListItem {
 	extracting.Truncation = fyne.TextTruncateClip
 	producing := widget.NewLabel("Template")
 	producing.Truncation = fyne.TextTruncateClip
-	status := iwidget.NewRichText()
+	status := xwidget.NewRichText()
 	w := &colonyListItem{
 		character:  character,
 		extracting: extracting,
 		producing:  producing,
 		status:     status,
-		title:      iwidget.NewRichText(),
+		title:      xwidget.NewRichText(),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -591,7 +591,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		producing := set.Collect(xiter.MapSlice(p.ProducedSchematics(), func(x *app.EveSchematic) string {
 			return x.Name
 		}))
-		titleDisplay := iwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
+		titleDisplay := xwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
 			x.SizeName = theme.SizeNameSubHeadingText
 		})
 		name := p.EvePlanet.Name

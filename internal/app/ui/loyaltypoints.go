@@ -21,7 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type loyaltyPointsNode struct {
@@ -46,15 +46,15 @@ type loyaltyPoints struct {
 
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
-	columnSorter     *iwidget.ColumnSorter[*loyaltyPointsNode]
+	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
 	data             map[*loyaltyPointsNode][]*loyaltyPointsNode
 	searchBox        *widget.Entry
 	selectCharacter  *kxwidget.FilterChipSelect
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	sortButton       *iwidget.SortButton
+	sortButton       *xwidget.SortButton
 	top              *widget.Label
-	tree             *iwidget.Tree[loyaltyPointsNode]
+	tree             *xwidget.Tree[loyaltyPointsNode]
 	u                *baseUI
 }
 
@@ -66,7 +66,7 @@ const (
 func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[*loyaltyPointsNode]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{
 		ID:    loyaltyPointsColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b *loyaltyPointsNode) int {
@@ -80,7 +80,7 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 		},
 	}}),
 		characterLoyaltyPointsColCorporation,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
 	a := &loyaltyPoints{
 		columnSorter: columnSorter,
@@ -153,11 +153,11 @@ func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *loyaltyPoints) makeTree() *iwidget.Tree[loyaltyPointsNode] {
-	t := iwidget.NewTree(
+func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
+	t := xwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
-			icon1 := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			icon2 := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon1 := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+			icon2 := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			name := widget.NewLabel("Template")
 			points := widget.NewLabel("99.999.999")
 			return container.NewBorder(
@@ -175,7 +175,7 @@ func (a *loyaltyPoints) makeTree() *iwidget.Tree[loyaltyPointsNode] {
 			icon1 := border[1].(*canvas.Image)
 			hbox := border[2].(*fyne.Container).Objects
 			points := hbox[0].(*widget.Label)
-			icon2 := hbox[1].(*iwidget.TappableIcon)
+			icon2 := hbox[1].(*xwidget.TappableIcon)
 			if n.IsTop() {
 				a.u.eis.CorporationLogoAsync(n.corporationID, app.IconPixelSize, func(r fyne.Resource) {
 					icon1.Resource = r
@@ -262,7 +262,7 @@ func (a *loyaltyPoints) filterTreeAsync() {
 		a.columnSorter.SortRows(corporations, sortCol, dir, doSort)
 
 		// build tree
-		var td iwidget.TreeData[loyaltyPointsNode]
+		var td xwidget.TreeData[loyaltyPointsNode]
 		var factionOptions, characterOptions []string
 		var tags set.Set[string]
 		for _, c := range corporations {

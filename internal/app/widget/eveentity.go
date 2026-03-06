@@ -19,9 +19,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type EveEntityEIS interface {
@@ -46,7 +46,7 @@ type EveEntityEntry struct {
 	labelWidth  float32
 	main        *fyne.Container
 	mu          sync.Mutex
-	placeholder *iwidget.RichText
+	placeholder *xwidget.RichText
 }
 
 func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis EveEntityEIS) *EveEntityEntry {
@@ -54,7 +54,7 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis EveEntit
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	placeholder := iwidget.NewRichText(&widget.TextSegment{
+	placeholder := xwidget.NewRichText(&widget.TextSegment{
 		Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 	})
 	w := &EveEntityEntry{
@@ -242,7 +242,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 	if w.Disabled() {
 		name.Importance = widget.LowImportance
 	}
-	icon := iwidget.NewImageFromResource(
+	icon := xwidget.NewImageFromResource(
 		w.fallbackIcon,
 		fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon)),
 	)
@@ -319,7 +319,7 @@ func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, setter func(r f
 		setter(theme.MailComposeIcon())
 		return
 	}
-	iwidget.LoadResourceAsyncWithCache(
+	xwidget.LoadResourceAsyncWithCache(
 		icons.BlankSvg,
 		func() (fyne.Resource, bool) {
 			return eveEntityResourceCache.Load(ee.ID)
@@ -375,7 +375,7 @@ type MakeEveEntityColumnParams[T any] struct {
 }
 
 // MakeEveEntityColumn returns a new data column for showing an entity.
-func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) iwidget.DataColumn[T] {
+func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataColumn[T] {
 	// set defaults
 	if arg.Width == 0 {
 		arg.Width = 220
@@ -386,12 +386,12 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) iwidget.DataCo
 	if arg.EIS == nil {
 		panic("must define eis")
 	}
-	c := iwidget.DataColumn[T]{
+	c := xwidget.DataColumn[T]{
 		ID:    arg.ColumnID,
 		Label: arg.Label,
 		Width: float32(arg.Width),
 		Create: func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			icon := xwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)

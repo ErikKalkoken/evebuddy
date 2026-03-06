@@ -21,9 +21,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -63,7 +63,7 @@ type contracts struct {
 
 	body           fyne.CanvasObject
 	footer         *widget.Label
-	columnSorter   *iwidget.ColumnSorter[contractRow]
+	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
@@ -73,7 +73,7 @@ type contracts struct {
 	selectStatus   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *iwidget.SortButton
+	sortButton     *xwidget.SortButton
 	u              *baseUI
 }
 
@@ -96,7 +96,7 @@ func newContractsForCharacters(u *baseUI) *contracts {
 }
 
 func newContracts(u *baseUI, forCorporation bool) *contracts {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[contractRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
 		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
@@ -104,7 +104,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return strings.Compare(a.name, b.name)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.name)
+			co.(*xwidget.RichText).SetWithText(r.name)
 		},
 	}, {
 		ID:    contractsColType,
@@ -114,7 +114,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return strings.Compare(a.typeName, b.typeName)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.typeName)
+			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
 		ID:    contractsColIssuer,
@@ -124,7 +124,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.issuerName)
+			co.(*xwidget.RichText).SetWithText(r.issuerName)
 		},
 	}, {
 		ID:    contractsColAssignee,
@@ -134,7 +134,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.assigneeName)
+			co.(*xwidget.RichText).SetWithText(r.assigneeName)
 		},
 	}, {
 		ID:    contractsColStatus,
@@ -144,7 +144,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return strings.Compare(a.statusText, b.statusText)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.status.DisplayRichText())
+			co.(*xwidget.RichText).Set(r.status.DisplayRichText())
 		},
 	}, {
 		ID:    contractsColIssuedAt,
@@ -154,7 +154,7 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return a.dateIssued.Compare(b.dateIssued)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
+			co.(*xwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
 		},
 	}, {
 		ID:    contractsColExpiresAt,
@@ -164,12 +164,12 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			return a.dateExpired.Compare(b.dateExpired)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.dateExpiredDisplay)
+			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
 		},
 	}})
 	a := &contracts{
 		forCorporation: forCorporation,
-		columnSorter:   iwidget.NewColumnSorter(columns, contractsColIssuedAt, iwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
 		footer:         newLabelWithTruncation(),
 		u:              u,
 	}
@@ -178,11 +178,11 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	if a.u.isMobile {
 		a.body = a.makeDataList()
 	} else {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -283,19 +283,19 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *contracts) makeDataList() *iwidget.StripedList {
+func (a *contracts) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStripedList(
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			type_ := widget.NewLabel("Template")
-			status := iwidget.NewRichTextWithText("Template")
+			status := xwidget.NewRichTextWithText("Template")
 			issuer := widget.NewLabel("Template")
 			assignee := widget.NewLabel("Template")
-			dateExpired := iwidget.NewRichTextWithText("Template")
+			dateExpired := xwidget.NewRichTextWithText("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
 				container.NewHBox(type_, layout.NewSpacer(), status),
@@ -313,7 +313,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 			main[0].(*widget.Label).SetText(r.name)
 			box := main[1].(*fyne.Container).Objects
 			box[0].(*widget.Label).SetText(r.typeName)
-			box[2].(*iwidget.RichText).Set(r.status.DisplayRichText())
+			box[2].(*xwidget.RichText).Set(r.status.DisplayRichText())
 
 			main[2].(*widget.Label).SetText("From " + r.issuerName)
 			assignee := "To "
@@ -324,8 +324,8 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 			}
 			main[3].(*widget.Label).SetText(assignee)
 
-			main[4].(*iwidget.RichText).Set(iwidget.InlineRichTextSegments(
-				iwidget.RichTextSegmentsFromText("Expires "),
+			main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
+				xwidget.RichTextSegmentsFromText("Expires "),
 				r.dateExpiredDisplay,
 			))
 		},
@@ -488,7 +488,7 @@ func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 			text = ihumanize.RelTime(r.dateExpired)
 			color = theme.ColorNameForeground
 		}
-		r.dateExpiredDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 			ColorName: color,
 		})
 		rows = append(rows, r)
@@ -542,7 +542,7 @@ func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 			text = ihumanize.RelTime(r.dateExpired)
 			color = theme.ColorNameForeground
 		}
-		r.dateExpiredDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 			ColorName: color,
 		})
 		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.CharacterID)
@@ -610,7 +610,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	if o.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.ShowEveEntityInfoWindow)))
 	}
-	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.ShowLocationInfoWindow)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
@@ -791,7 +791,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 	if o.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.ShowEveEntityInfoWindow)))
 	}
-	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.ShowLocationInfoWindow)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {

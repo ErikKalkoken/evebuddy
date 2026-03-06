@@ -18,8 +18,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterAugmentationNode struct {
@@ -48,8 +48,8 @@ type augmentations struct {
 	collapseBranches *ttwidget.Button
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	tree             *iwidget.Tree[characterAugmentationNode]
-	treeData         iwidget.TreeData[characterAugmentationNode]
+	tree             *xwidget.Tree[characterAugmentationNode]
+	treeData         xwidget.TreeData[characterAugmentationNode]
 	u                *baseUI
 }
 
@@ -107,8 +107,8 @@ func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *augmentations) makeTree() *iwidget.Tree[characterAugmentationNode] {
-	t := iwidget.NewTree(
+func (a *augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
+	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newAugmentationNodeItem(
 				a.u.eis.CharacterPortraitAsync,
@@ -207,8 +207,8 @@ func (a *augmentations) update(ctx context.Context) {
 	})
 }
 
-func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[characterAugmentationNode], error) {
-	var td iwidget.TreeData[characterAugmentationNode]
+func (a *augmentations) fetchData(ctx context.Context) (xwidget.TreeData[characterAugmentationNode], error) {
+	var td xwidget.TreeData[characterAugmentationNode]
 	characterImplants := make(map[int64][]*app.CharacterImplant)
 	implants, err := a.u.cs.ListAllImplants(ctx)
 	if err != nil {
@@ -262,7 +262,7 @@ func (a *augmentations) fetchData(ctx context.Context) (iwidget.TreeData[charact
 type augmentationNodeItem struct {
 	widget.BaseWidget
 
-	iconInfo              *iwidget.TappableIcon
+	iconInfo              *xwidget.TappableIcon
 	iconMain              *canvas.Image
 	implants              *widget.Label
 	loadCharacterPortrait loadFuncAsync
@@ -277,14 +277,14 @@ func newAugmentationNodeItem(
 	showCharacter func(int64),
 	showType func(int64, int64),
 ) *augmentationNodeItem {
-	iconMain := iwidget.NewImageFromResource(
+	iconMain := xwidget.NewImageFromResource(
 		icons.BlankSvg,
 		fyne.NewSquareSize(app.IconUnitSize),
 	)
 	main := ttwidget.NewLabel("")
 	main.Truncation = fyne.TextTruncateEllipsis
 	implants := widget.NewLabel("")
-	iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	w := &augmentationNodeItem{
 		iconInfo:              iconInfo,
 		loadTypeIcon:          loadTypeIcon,

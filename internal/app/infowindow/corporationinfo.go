@@ -15,8 +15,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // corporationInfo shows public information about a character.
@@ -43,7 +43,7 @@ func newCorporationInfo(iw *infoWindow, id int64) *corporationInfo {
 	hq.Wrapping = fyne.TextWrapWord
 	a := &corporationInfo{
 		alliance:     alliance,
-		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		allianceLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		description:  newLabelWithWrapAndSelectable(""),
 		hq:           hq,
 		id:           id,

@@ -16,7 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterAugmentations struct {
@@ -112,7 +112,7 @@ func (a *characterAugmentations) update(ctx context.Context) {
 type characterAugmentationItem struct {
 	widget.BaseWidget
 
-	iconInfo     *iwidget.TappableIcon
+	iconInfo     *xwidget.TappableIcon
 	iconMain     *canvas.Image
 	loadTypeIcon loadFuncAsync
 	name         *ttwidget.Label
@@ -124,11 +124,11 @@ func newCharacterAugmentationItem(
 	loadTypeIcon loadFuncAsync,
 	showType func(int64, int64),
 ) *characterAugmentationItem {
-	iconMain := iwidget.NewImageFromResource(
+	iconMain := xwidget.NewImageFromResource(
 		icons.BlankSvg,
 		fyne.NewSquareSize(app.IconUnitSize*1.2),
 	)
-	iconInfo := iwidget.NewTappableIcon(
+	iconInfo := xwidget.NewTappableIcon(
 		theme.NewThemedResource(icons.InformationSlabCircleSvg),
 		nil,
 	)

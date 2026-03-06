@@ -21,8 +21,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type cloneRow struct {
@@ -72,9 +72,9 @@ type clones struct {
 	body              fyne.CanvasObject
 	footer            *widget.Label
 	changeOrigin      *widget.Button
-	columnSorter      *iwidget.ColumnSorter[cloneRow]
+	columnSorter      *xwidget.ColumnSorter[cloneRow]
 	origin            *app.EveSolarSystem
-	originLabel       *iwidget.RichText
+	originLabel       *xwidget.RichText
 	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
@@ -82,7 +82,7 @@ type clones struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *iwidget.SortButton
+	sortButton        *xwidget.SortButton
 	u                 *baseUI
 }
 
@@ -95,7 +95,7 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[cloneRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",
 		Width: columnWidthLocation,
@@ -103,7 +103,7 @@ func newClones(u *baseUI) *clones {
 			return cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.jc.Location.DisplayRichText())
+			co.(*xwidget.RichText).Set(r.jc.Location.DisplayRichText())
 		},
 	}, {
 		ID:    clonesColRegion,
@@ -113,7 +113,7 @@ func newClones(u *baseUI) *clones {
 			return cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.jc.Location.RegionName())
+			co.(*xwidget.RichText).SetWithText(r.jc.Location.RegionName())
 		},
 	}, {
 		ID:    clonesColImplants,
@@ -123,7 +123,7 @@ func newClones(u *baseUI) *clones {
 			return cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount), widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
@@ -147,14 +147,14 @@ func newClones(u *baseUI) *clones {
 			return a.compare(b)
 		},
 		Update: func(r cloneRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.jumps(), widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.jumps(), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
 	}})
 	a := &clones{
-		columnSorter: iwidget.NewColumnSorter(columns, clonesColLocation, iwidget.SortAsc),
-		originLabel:  iwidget.NewRichTextWithText("(not set)"),
+		columnSorter: xwidget.NewColumnSorter(columns, clonesColLocation, xwidget.SortAsc),
+		originLabel:  xwidget.NewRichTextWithText("(not set)"),
 		footer:       newLabelWithTruncation(),
 		u:            u,
 	}
@@ -164,11 +164,11 @@ func newClones(u *baseUI) *clones {
 		a.setOrigin(a.u.MainWindow())
 	})
 	if !a.u.isMobile {
-		a.body = iwidget.MakeDataTable(
+		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -198,7 +198,7 @@ func newClones(u *baseUI) *clones {
 			},
 		)
 	} else {
-		a.body = iwidget.MakeDataList(
+		a.body = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
 			func(col int, r cloneRow) []widget.RichTextSegment {
@@ -207,13 +207,13 @@ func newClones(u *baseUI) *clones {
 				case clonesColLocation:
 					s = r.jc.Location.DisplayRichText()
 				case clonesColRegion:
-					s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
+					s = xwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
 				case clonesColImplants:
-					s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
+					s = xwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
 				case clonesColCharacter:
-					s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
+					s = xwidget.RichTextSegmentsFromText(r.jc.Character.Name)
 				case clonesColJumps:
-					s = iwidget.RichTextSegmentsFromText(r.jumps())
+					s = xwidget.RichTextSegmentsFromText(r.jumps())
 				}
 				return s
 			},
@@ -283,7 +283,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		topBox = container.NewVBox(origin, container.NewHScroll(filters))
 	} else {
-		topBox = container.New(iwidget.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
+		topBox = container.New(xwidget.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -426,7 +426,7 @@ func (a *clones) updateRoutesAsync() {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
 				s := "Failed to fetch routes: " + a.u.HumanizeError(err)
-				a.originLabel.Set(iwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
+				a.originLabel.Set(xwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
 					ColorName: theme.ColorNameError,
 				}))
 			})
@@ -444,7 +444,7 @@ func (a *clones) updateRoutesAsync() {
 				}
 				a.rows[i].route = m[solarSystem.ID]
 			}
-			a.columnSorter.Set(clonesColJumps, iwidget.SortAsc)
+			a.columnSorter.Set(clonesColJumps, xwidget.SortAsc)
 			a.filterRowsAsync(-1)
 		})
 	}()
@@ -490,9 +490,9 @@ func (a *clones) setOrigin(w fyne.Window) {
 		}
 		a.origin = s
 		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-		a.originLabel.Set(iwidget.InlineRichTextSegments(
+		a.originLabel.Set(xwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
-			iwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
+			xwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
 		))
 		a.updateRoutesAsync()
 		d.Hide()
@@ -577,7 +577,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 			return len(r.route)
 		},
 		func() fyne.CanvasObject {
-			return container.New(col, widget.NewLabel(""), iwidget.NewRichText())
+			return container.New(col, widget.NewLabel(""), xwidget.NewRichText())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(r.route) {
@@ -587,7 +587,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 			border := co.(*fyne.Container).Objects
 			num := border[0].(*widget.Label)
 			num.SetText(fmt.Sprint(id))
-			border[1].(*iwidget.RichText).Set(s.DisplayRichTextWithRegion())
+			border[1].(*xwidget.RichText).Set(s.DisplayRichTextWithRegion())
 		},
 	)
 	list.HideSeparators = true
@@ -605,7 +605,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	if a.origin != nil {
 		fromText = a.origin.DisplayRichTextWithRegion()
 	}
-	from := iwidget.NewTappableRichText(fromText, func() {
+	from := xwidget.NewTappableRichText(fromText, func() {
 		if a.origin != nil {
 			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
 		}
@@ -616,7 +616,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	if v, ok := r.jc.Location.SolarSystem.Value(); ok {
 		toText = v.DisplayRichTextWithRegion()
 	}
-	to := iwidget.NewTappableRichText(toText, func() {
+	to := xwidget.NewTappableRichText(toText, func() {
 		if v, ok := r.jc.Location.SolarSystem.Value(); ok {
 			a.u.ShowInfoWindow(app.EveEntitySolarSystem, v.ID)
 		}
@@ -678,7 +678,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 			return len(clone.Implants)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			icon := xwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)

@@ -25,9 +25,9 @@ import (
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterContactRow struct {
@@ -50,7 +50,7 @@ type characterContacts struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
-	columnSorter   *iwidget.ColumnSorter[characterContactRow]
+	columnSorter   *xwidget.ColumnSorter[characterContactRow]
 	footer         *widget.Label
 	list           fyne.CanvasObject
 	rows           []characterContactRow
@@ -62,12 +62,12 @@ type characterContacts struct {
 	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
-	sortButton     *iwidget.SortButton
+	sortButton     *xwidget.SortButton
 	u              *baseUI
 }
 
 func newCharacterContacts(u *baseUI) *characterContacts {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[characterContactRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterContactRow]{{
 		ID:    1,
 		Label: "Name",
 		Sort: func(a, b characterContactRow) int {
@@ -81,7 +81,7 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 		},
 	}}),
 		1,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
 	a := &characterContacts{
 		columnSorter: columnSorter,
@@ -105,7 +105,7 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 		switch x := a.list.(type) {
 		case *widget.List:
 			x.ScrollToTop()
-		case *iwidget.StripedList:
+		case *xwidget.StripedList:
 			x.ScrollToTop()
 		}
 	}
@@ -185,7 +185,7 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterContacts) makeList() fyne.CanvasObject {
 	if a.u.isMobile {
-		l := iwidget.NewStripedList(
+		l := xwidget.NewStripedList(
 			func() int {
 				return len(a.rowsFiltered)
 			},
@@ -473,7 +473,7 @@ type characterContactItem struct {
 }
 
 func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
-	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
 	labels := widget.NewLabel("")

@@ -9,7 +9,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type detailWindowParams struct {
@@ -38,7 +38,7 @@ func setDetailWindow(arg detailWindowParams) {
 
 	var image2 fyne.CanvasObject
 	if arg.imageLoader != nil {
-		image := iwidget.NewTappableImage(icons.BlankSvg, arg.imageAction)
+		image := xwidget.NewTappableImage(icons.BlankSvg, arg.imageAction)
 		image.SetFillMode(canvas.ImageFillContain)
 		image.SetMinSize(fyne.NewSquareSize(arg.imageSize))
 		arg.imageLoader(func(r fyne.Resource) {

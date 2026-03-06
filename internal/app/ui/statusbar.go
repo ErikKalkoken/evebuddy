@@ -28,8 +28,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -56,11 +56,11 @@ type statusBar struct {
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *statusBarItem
-	updatingIndicator *iwidget.Activity
+	updatingIndicator *xwidget.Activity
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
-	ac := iwidget.NewActivity()
+	ac := xwidget.NewActivity()
 	ac.SetToolTip("Synchronizing with game server...")
 	a := &statusBar{
 		updatingIndicator: ac,
@@ -492,7 +492,7 @@ func (w *updateHint) set(v github.VersionInfo) {
 }
 
 func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
-	l := iwidget.NewCustomHyperlink("Update available", func() {
+	l := xwidget.NewCustomHyperlink("Update available", func() {
 		c := container.NewVBox(
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),

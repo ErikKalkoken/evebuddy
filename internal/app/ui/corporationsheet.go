@@ -17,8 +17,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type corporationSheet struct {
@@ -31,7 +31,7 @@ type corporationSheet struct {
 	faction     *widget.Hyperlink
 	home        *widget.Hyperlink
 	isCorpMode  bool
-	logo        *iwidget.TappableImage
+	logo        *xwidget.TappableImage
 	members     *widget.Label
 	name        *widget.Hyperlink
 	roles       *widget.Label
@@ -41,7 +41,7 @@ type corporationSheet struct {
 }
 
 func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
-	logo := iwidget.NewTappableImage(icons.BlankSvg, nil)
+	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
 	makeHyperLink := func() *widget.Hyperlink {
@@ -50,7 +50,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		return x
 	}
 	makeLabel := func() *widget.Label {
-		x := iwidget.NewLabelWithSelection("?")
+		x := xwidget.NewLabelWithSelection("?")
 		x.Selectable = true
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x

@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const labelWith = 45
@@ -155,7 +155,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 			name.Truncation = fyne.TextTruncateClip
 			category := widget.NewLabel("Template")
 			category.SizeName = theme.SizeNameCaptionText
-			icon := iwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
+			icon := xwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
 			icon.CornerRadius = app.IconUnitSize / 2
 			return container.NewBorder(
 				nil,

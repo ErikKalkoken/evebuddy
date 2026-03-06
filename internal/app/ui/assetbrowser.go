@@ -25,8 +25,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type assetFilter uint
@@ -201,7 +201,7 @@ func (n assetContainerNode) String() string {
 }
 
 type filteredTree struct {
-	td         iwidget.TreeData[assetContainerNode]
+	td         xwidget.TreeData[assetContainerNode]
 	nodeLookup map[*asset.Node]*assetContainerNode
 }
 
@@ -214,7 +214,7 @@ type assetBrowserNavigation struct {
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
-	locations      *iwidget.Tree[assetContainerNode]
+	locations      *xwidget.Tree[assetContainerNode]
 	search         *widget.Entry
 	selectCategory *kxwidget.FilterChipSelect
 	footer         *widget.Label
@@ -229,7 +229,7 @@ func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.locations = iwidget.NewTree(
+	a.locations = xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			count := widget.NewLabel("99.999.999")
 			name := widget.NewLabel("Template")
@@ -362,15 +362,15 @@ func (a *assetBrowserNavigation) update(_ context.Context, trees []*asset.Node) 
 	})
 }
 
-func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) iwidget.TreeData[assetContainerNode] {
-	var td iwidget.TreeData[assetContainerNode]
+func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) xwidget.TreeData[assetContainerNode] {
+	var td xwidget.TreeData[assetContainerNode]
 
 	addNodes(&td, nil, trees, filter, isCorporation)
 	updateItemCounts(td)
 	return td
 }
 
-func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
+func addNodes(td *xwidget.TreeData[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
 	slices.SortFunc(nodes, func(a, b *asset.Node) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -458,7 +458,7 @@ func addNodes(td *iwidget.TreeData[assetContainerNode], parent *assetContainerNo
 	}
 }
 
-func updateItemCounts(td iwidget.TreeData[assetContainerNode]) {
+func updateItemCounts(td xwidget.TreeData[assetContainerNode]) {
 	td.Walk(nil, func(n *assetContainerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
 			n.itemCount.Set(k)
@@ -510,7 +510,7 @@ func (a *assetBrowserNavigation) filterLocationsAsync() {
 	search := strings.ToLower(a.search.Text)
 
 	go func() {
-		var td iwidget.TreeData[assetContainerNode]
+		var td xwidget.TreeData[assetContainerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *assetContainerNode) bool {
@@ -774,14 +774,14 @@ type assetBrowserLocation struct {
 	widget.BaseWidget
 
 	breadcrumbs *fyne.Container
-	info        *iwidget.TappableIcon
+	info        *xwidget.TappableIcon
 	selected    *assetBrowserContainer
 }
 
 func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocation {
 	a := &assetBrowserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
-		info:        iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
+		info:        xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
 	}
 	a.ExtendBaseWidget(a)
@@ -869,7 +869,7 @@ type assetItem struct {
 }
 
 func newAssetIcon(eis assetIconEIS) *assetItem {
-	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
 	w := &assetItem{
 		icon:  icon,
 		label: newAssetLabel(),

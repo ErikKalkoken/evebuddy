@@ -25,10 +25,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type UIService interface {
@@ -95,7 +95,7 @@ type settingsWindow struct {
 	widget.BaseWidget
 
 	isMobile bool
-	sb       *iwidget.Snackbar
+	sb       *xwidget.Snackbar
 	settings *settings.Settings
 	signals  *app.Signals
 	u        UIService
@@ -105,7 +105,7 @@ type settingsWindow struct {
 func newSettingsWindow(arg Params, w fyne.Window) *settingsWindow {
 	a := &settingsWindow{
 		isMobile: arg.IsMobile,
-		sb:       iwidget.NewSnackbar(w),
+		sb:       xwidget.NewSnackbar(w),
 		settings: arg.Settings,
 		signals:  arg.Signals,
 		u:        arg.UIService,
@@ -118,7 +118,7 @@ func newSettingsWindow(arg Params, w fyne.Window) *settingsWindow {
 
 func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
-		ab := iwidget.NewAppBar(title, content, actions)
+		ab := xwidget.NewAppBar(title, content, actions)
 		ab.HideBackground = !a.isMobile
 		return ab
 	}
@@ -1036,7 +1036,7 @@ type settingListItem struct {
 	header     *widget.Label
 	switch_    *kxwidget.Switch
 	value      *widget.Label
-	thief      *iwidget.HooverThief
+	thief      *xwidget.HooverThief
 }
 
 func newSettingListItem() *settingListItem {
@@ -1056,7 +1056,7 @@ func newSettingListItem() *settingListItem {
 		hint:       hint,
 		label:      label,
 		switch_:    kxwidget.NewSwitch(nil),
-		thief:      iwidget.NewHooverThief(),
+		thief:      xwidget.NewHooverThief(),
 		value:      widget.NewLabel(""),
 	}
 	w.ExtendBaseWidget(w)

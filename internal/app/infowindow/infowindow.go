@@ -29,8 +29,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type UIService interface {
@@ -104,9 +104,9 @@ type infoWindow struct {
 	eus           EUS
 	isMobile      bool
 	js            *janiceservice.JaniceService
-	nav           *iwidget.Navigator
+	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
-	sb            *iwidget.Snackbar
+	sb            *xwidget.Snackbar
 	scs           SCS
 	settings      Settings
 	u             UIService
@@ -269,7 +269,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 
 	var title string
 	var page infoWidget
-	var ab *iwidget.AppBar
+	var ab *xwidget.AppBar
 	switch v {
 	case infoAlliance:
 		title = "Alliance"
@@ -308,14 +308,14 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		)
 		return
 	}
-	ab = iwidget.NewAppBar(makeAppBarTitle(title), page)
+	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !iw.isMobile
 	if iw.nav == nil {
 		w := fyne.CurrentApp().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
-		iw.sb = iwidget.NewSnackbar(w)
+		iw.sb = xwidget.NewSnackbar(w)
 		iw.sb.Start()
-		iw.nav = iwidget.NewNavigator(ab)
+		iw.nav = xwidget.NewNavigator(ab)
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
 		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
 		w.SetCloseIntercept(func() {
@@ -356,7 +356,7 @@ func (iw *infoWindow) showZoomWindow(title string, id int64, load func(int64, in
 		return
 	}
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
-	image := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
+	image := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	load(id, zoomImagePixelSize, func(r fyne.Resource) {
 		image.Resource = r
 		image.Refresh()
@@ -379,7 +379,7 @@ func (iw *infoWindow) openURL(s string) {
 	}
 }
 
-func (iw *infoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeZKillboardIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -396,14 +396,14 @@ func (iw *infoWindow) makeZKillboardIcon(id int64, v infoVariant) *iwidget.Tappa
 		}
 		title = fmt.Sprintf("Show %s on zKillboard.com", v)
 	}
-	icon := iwidget.NewTappableIcon(icons.ZkillboardPng, f)
+	icon := xwidget.NewTappableIcon(icons.ZkillboardPng, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
 	return icon
 }
 
-func (iw *infoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corp",
@@ -419,14 +419,14 @@ func (iw *infoWindow) makeDotlanIcon(id int64, v infoVariant) *iwidget.TappableI
 		}
 		title = fmt.Sprintf("Show %s on evemaps.dotlan.net", v)
 	}
-	icon := iwidget.NewTappableIcon(icons.DotlanAvatarPng, f)
+	icon := xwidget.NewTappableIcon(icons.DotlanAvatarPng, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
 	return icon
 }
 
-func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corporation",
@@ -441,7 +441,7 @@ func (iw *infoWindow) makeEveWhoIcon(id int64, v infoVariant) *iwidget.TappableI
 		}
 		title = fmt.Sprintf("Show %s on evewho.com", v)
 	}
-	icon := iwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, f)
+	icon := xwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
@@ -585,7 +585,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			value.Truncation = fyne.TextTruncateEllipsis
 			value.Alignment = fyne.TextAlignTrailing
 			label := widget.NewLabel("Label")
-			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			return container.NewBorder(
 				nil,
 				nil,
@@ -683,7 +683,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			}
 			iconBox := border[2].(*fyne.Container)
 			if f != nil {
-				iconBox.Objects[1].(*iwidget.TappableIcon).OnTapped = f
+				iconBox.Objects[1].(*xwidget.TappableIcon).OnTapped = f
 				iconBox.Show()
 			} else {
 				iconBox.Hide()
@@ -801,9 +801,9 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 		func() fyne.CanvasObject {
 			category := widget.NewLabel("Category")
 			category.SizeName = theme.SizeNameCaptionText
-			text := iwidget.NewRichText()
+			text := xwidget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
-			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			p := theme.Padding()
 			return container.NewBorder(
 				nil,
@@ -823,7 +823,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
-			icon := border1[1].(*fyne.Container).Objects[1].(*iwidget.TappableIcon)
+			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.TappableIcon)
 			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == infoNotSupported {
@@ -835,7 +835,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 				}
 				icon.Show()
 			}
-			text := border2[1].(*fyne.Container).Objects[0].(*iwidget.RichText)
+			text := border2[1].(*fyne.Container).Objects[0].(*xwidget.RichText)
 			if len(it.textSegments) != 0 {
 				text.Set(it.textSegments)
 			} else {
@@ -873,7 +873,7 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 }
 
 func makeInfoLogo() *canvas.Image {
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
+	logo := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
 	return logo
 }
 

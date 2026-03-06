@@ -18,8 +18,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type characterLoyaltyPointsRow struct {
@@ -37,13 +37,13 @@ type characterLoyaltyPoints struct {
 
 	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
-	columnSorter  *iwidget.ColumnSorter[characterLoyaltyPointsRow]
+	columnSorter  *xwidget.ColumnSorter[characterLoyaltyPointsRow]
 	list          *widget.List
 	rows          []characterLoyaltyPointsRow
 	rowsFiltered  []characterLoyaltyPointsRow
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
-	sortButton    *iwidget.SortButton
+	sortButton    *xwidget.SortButton
 	u             *baseUI
 }
 
@@ -53,7 +53,7 @@ const (
 )
 
 func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[characterLoyaltyPointsRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
 		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b characterLoyaltyPointsRow) int {
@@ -67,7 +67,7 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 		},
 	}}),
 		characterLoyaltyPointsColCorporation,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
 	a := &characterLoyaltyPoints{
 		columnSorter: columnSorter,
@@ -146,7 +146,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			corporation := awidget.NewEntityListItem(false, a.u.eis.CorporationLogoAsync)
 			points := widget.NewLabel("Template")
 			return container.NewBorder(
@@ -167,7 +167,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			hbox := box[1].(*fyne.Container).Objects
 			points := hbox[0].(*widget.Label)
 			points.SetText(ihumanize.Comma(r.points))
-			icon2 := hbox[1].(*iwidget.TappableIcon)
+			icon2 := hbox[1].(*xwidget.TappableIcon)
 			icon2.OnTapped = func() {
 				a.u.ShowInfoWindow(app.EveEntityCorporation, r.corporationID)
 			}

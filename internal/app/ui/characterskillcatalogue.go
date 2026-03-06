@@ -20,8 +20,8 @@ import (
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -63,12 +63,12 @@ type characterSkillCatalogue struct {
 	skills         fyne.CanvasObject
 	top            *widget.Label
 	u              *baseUI
-	sortButton     *iwidget.SortButton
-	columnSorter   *iwidget.ColumnSorter[skillRow]
+	sortButton     *xwidget.SortButton
+	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
 func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[skillRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",
 		Sort: func(a, b skillRow) int {
@@ -88,7 +88,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		},
 	}}),
 		1,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
 	a := &characterSkillCatalogue{
 		columnSorter:   columnSorter,

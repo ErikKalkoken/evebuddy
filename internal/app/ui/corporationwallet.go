@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type corporationWallet struct {
@@ -37,7 +37,7 @@ type corporationWallet struct {
 
 func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	a := &corporationWallet{
-		balance:      iwidget.NewLabelWithSelection(""),
+		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,
 		journal:      newCorporationWalletJournal(u, division),
 		name:         widget.NewLabel(""),

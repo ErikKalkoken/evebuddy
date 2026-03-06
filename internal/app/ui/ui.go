@@ -37,11 +37,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // update info
@@ -135,7 +135,7 @@ type baseUI struct {
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
-	snackbar                *iwidget.Snackbar
+	snackbar                *xwidget.Snackbar
 	statusText              *statusText
 	training                *training
 	wealth                  *wealth
@@ -260,7 +260,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 
 	if !u.isMobile {
-		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
+		xwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
@@ -430,7 +430,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
-	u.snackbar = iwidget.NewSnackbar(u.window)
+	u.snackbar = xwidget.NewSnackbar(u.window)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
@@ -994,7 +994,7 @@ var (
 )
 
 func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resource)) {
-	iwidget.LoadResourceAsyncWithCache(
+	xwidget.LoadResourceAsyncWithCache(
 		characterAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
 			return avatarCache.Load(characterID)
@@ -1014,7 +1014,7 @@ func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resourc
 }
 
 func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Resource)) {
-	iwidget.LoadResourceAsyncWithCache(
+	xwidget.LoadResourceAsyncWithCache(
 		corporationAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
 			return avatarCache.Load(corporationID)

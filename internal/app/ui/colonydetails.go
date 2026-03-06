@@ -24,9 +24,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type colonyDetailsRow struct {
@@ -48,24 +48,24 @@ type colonyDetails struct {
 	widget.BaseWidget
 
 	characterID   atomic.Int64
-	columnSorter  *iwidget.ColumnSorter[colonyDetailsRow]
+	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
 	expiryTimes   []time.Time
 	footer        *widget.Label
 	icon          *canvas.Image
 	installations *widget.List
 	owner         *widget.Hyperlink
-	planet        *iwidget.TappableRichText
+	planet        *xwidget.TappableRichText
 	planetID      atomic.Int64
 	planetType    *widget.Hyperlink
 	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
 	search        *widget.Entry
-	security      *iwidget.RichText
+	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
-	sortButton    *iwidget.SortButton
-	status        *iwidget.RichText
+	sortButton    *xwidget.SortButton
+	status        *xwidget.RichText
 	u             *baseUI
 }
 
@@ -117,7 +117,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
-	columnSorter := iwidget.NewColumnSorter(iwidget.NewDataColumns([]iwidget.DataColumn[colonyDetailsRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[colonyDetailsRow]{{
 		ID:    1,
 		Label: "Group",
 		Sort: func(a, b colonyDetailsRow) int {
@@ -139,22 +139,22 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 		},
 	}}),
 		1,
-		iwidget.SortAsc,
+		xwidget.SortAsc,
 	)
-	planet := iwidget.NewTappableRichText(nil, nil)
+	planet := xwidget.NewTappableRichText(nil, nil)
 	planet.Wrapping = fyne.TextWrapWord
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
-		icon:         iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
 		region:       widget.NewLabel(""),
 		search:       widget.NewEntry(),
-		security:     iwidget.NewRichText(),
+		security:     xwidget.NewRichText(),
 		signalKey:    u.signals.UniqueKey(),
-		status:       iwidget.NewRichText(),
+		status:       xwidget.NewRichText(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -477,7 +477,7 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 				}
 			}
 		}
-		status := iwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
+		status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
 			ColorName: statusTextColor,
 		})
 
@@ -505,12 +505,12 @@ type colonyPinItem struct {
 	info   *widget.Label
 	name   *widget.Label
 	output *widget.Label
-	status *iwidget.RichText
+	status *xwidget.RichText
 	symbol *planetPinSymbol
 }
 
 func newColonyPinItem() *colonyPinItem {
-	status := iwidget.NewRichText()
+	status := xwidget.NewRichText()
 	name := widget.NewLabel("")
 	name.TextStyle.Bold = true
 	name.Truncation = fyne.TextTruncateClip

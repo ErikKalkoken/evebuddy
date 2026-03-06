@@ -24,8 +24,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // inventoryTypeInfo displays information about Eve Online inventory types.
@@ -42,16 +42,16 @@ type inventoryTypeInfo struct {
 	janice           *fyne.Container
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
-	typeIcon         *iwidget.TappableImage
+	typeIcon         *xwidget.TappableImage
 	typeID           int64
 }
 
 func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int64) *inventoryTypeInfo {
-	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeIcon := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
 	a := &inventoryTypeInfo{
-		characterIcon: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		characterIcon: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		characterID:   characterID,
 		checkIcon:     widget.NewIcon(icons.BlankSvg),
 		description:   newLabelWithWrapAndSelectable(""),
@@ -67,14 +67,14 @@ func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int64) *inventoryT
 	a.characterName.Wrapping = fyne.TextWrapWord
 	a.characterName.Hide()
 
-	emb := iwidget.NewTappableIcon(icons.EvemarketbrowserJpg, func() {
+	emb := xwidget.NewTappableIcon(icons.EvemarketbrowserJpg, func() {
 		a.iw.openURL(fmt.Sprintf("https://evemarketbrowser.com/region/0/type/%d", a.typeID))
 	})
 	emb.SetToolTip("Show on evemarketbrowser.com")
 	a.eveMarketBrowser = container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
 	a.eveMarketBrowser.Hide()
 
-	janice := iwidget.NewTappableIcon(icons.JanicePng, func() {
+	janice := xwidget.NewTappableIcon(icons.JanicePng, func() {
 		a.iw.openURL(fmt.Sprintf("https://janice.e-351.com/i/%d", a.typeID))
 	})
 	janice.SetToolTip("Show on janice.e-351.com")

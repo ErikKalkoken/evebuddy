@@ -20,10 +20,10 @@ import (
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -64,7 +64,7 @@ func (r corporationStructureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 		color = theme.ColorNameWarning
 		text = "Low Power"
 	}
-	return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: color,
 	})
 }
@@ -75,7 +75,7 @@ type corporationStructures struct {
 	OnUpdate func(count int)
 
 	footer            *widget.Label
-	columnSorter      *iwidget.ColumnSorter[corporationStructureRow]
+	columnSorter      *xwidget.ColumnSorter[corporationStructureRow]
 	corporation       atomic.Pointer[app.Corporation]
 	main              fyne.CanvasObject
 	rows              []corporationStructureRow
@@ -86,7 +86,7 @@ type corporationStructures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
-	sortButton        *iwidget.SortButton
+	sortButton        *xwidget.SortButton
 	u                 *baseUI
 }
 
@@ -99,7 +99,7 @@ const (
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[corporationStructureRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[corporationStructureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
@@ -107,7 +107,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			return xstrings.CompareIgnoreCase(a.structureName, b.structureName)
 		},
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.structureName)
+			co.(*xwidget.RichText).SetWithText(r.structureName)
 		},
 	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[corporationStructureRow]{
 		ColumnID: structuresColType,
@@ -128,14 +128,14 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			return a.fuelSort.Compare(b.fuelSort)
 		},
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).Set(r.fuelExpiresDisplay())
+			co.(*xwidget.RichText).Set(r.fuelExpiresDisplay())
 		},
 	}, {
 		ID:    structuresColState,
 		Label: "State",
 		Width: 150,
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.stateText, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.stateText, widget.RichTextStyle{
 				ColorName: r.stateColor,
 			})
 		},
@@ -144,21 +144,21 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Label: "Services",
 		Width: 200,
 		Update: func(r corporationStructureRow, co fyne.CanvasObject) {
-			co.(*iwidget.RichText).SetWithText(r.servicesText)
+			co.(*xwidget.RichText).SetWithText(r.servicesText)
 		},
 	}})
 	a := &corporationStructures{
-		columnSorter: iwidget.NewColumnSorter(columns, structuresColName, iwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
 		footer:       newLabelWithWrapping(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	if !a.u.isMobile {
-		a.main = iwidget.MakeDataTable(
+		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
-				x := iwidget.NewRichText()
+				x := xwidget.NewRichText()
 				x.Truncation = fyne.TextTruncateClip
 				return x
 			},
@@ -168,25 +168,25 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			},
 		)
 	} else {
-		a.main = iwidget.MakeDataList(
+		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
 			func(col int, r corporationStructureRow) []widget.RichTextSegment {
 				switch col {
 				case structuresColType:
-					return iwidget.RichTextSegmentsFromText(r.typeName)
+					return xwidget.RichTextSegmentsFromText(r.typeName)
 				case structuresColName:
-					return iwidget.RichTextSegmentsFromText(r.structureName)
+					return xwidget.RichTextSegmentsFromText(r.structureName)
 				case structuresColFuelExpires:
 					return r.fuelExpiresDisplay()
 				case structuresColState:
-					return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
+					return xwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 						ColorName: r.stateColor,
 					})
 				case structuresColServices:
-					return iwidget.RichTextSegmentsFromText(r.servicesText)
+					return xwidget.RichTextSegmentsFromText(r.servicesText)
 				}
-				return iwidget.RichTextSegmentsFromText("?")
+				return xwidget.RichTextSegmentsFromText("?")
 			},
 			func(r corporationStructureRow) {
 				go showCorporationStructureWindowAsync(context.Background(), a.u, r.corporationID, r.structureID, r.solarSystemName)
@@ -446,7 +446,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 		fyne.Do(func() {
 			var services []widget.RichTextSegment
 			if len(structure.Services) == 0 {
-				services = iwidget.RichTextSegmentsFromText("-")
+				services = xwidget.RichTextSegmentsFromText("-")
 			} else {
 				slices.SortFunc(structure.Services, func(a, b *app.StructureService) int {
 					return strings.Compare(a.Name, b.Name)
@@ -460,7 +460,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 						color = theme.ColorNameDisabled
 						name += " [offline]"
 					}
-					services = slices.Concat(services, iwidget.RichTextSegmentsFromText(name, widget.RichTextStyle{
+					services = slices.Concat(services, xwidget.RichTextSegmentsFromText(name, widget.RichTextStyle{
 						ColorName: color,
 					}))
 				}
@@ -493,13 +493,13 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 					u.ShowInfoWindow(app.EveEntityRegion, structure.System.Constellation.Region.ID)
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
-				widget.NewFormItem("Fuel Expires", widget.NewRichText(iwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
+				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
 					ColorName: powerColor,
 				})...)),
-				widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(structure.State.Display(), widget.RichTextStyle{
+				widget.NewFormItem("State", widget.NewRichText(xwidget.RichTextSegmentsFromText(structure.State.Display(), widget.RichTextStyle{
 					ColorName: structure.State.Color(),
 				})...)),
-				widget.NewFormItem("Power Mode", widget.NewRichText(iwidget.RichTextSegmentsFromText(powerText, widget.RichTextStyle{
+				widget.NewFormItem("Power Mode", widget.NewRichText(xwidget.RichTextSegmentsFromText(powerText, widget.RichTextStyle{
 					ColorName: powerColor,
 				})...)),
 				widget.NewFormItem("Timer Start", widget.NewLabel(structure.StateTimerStart.StringFunc("-", func(v time.Time) string {

@@ -8,9 +8,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestSplitLines(t *testing.T) {

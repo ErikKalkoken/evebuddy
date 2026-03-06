@@ -14,7 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // characterTraining is a UI component that allows to configure training watchers for characters.
@@ -73,7 +73,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 			}
 		}),
 	))
-	ab := iwidget.NewAppBar("Watched Training", a.list, actions)
+	ab := xwidget.NewAppBar("Watched Training", a.list, actions)
 	ab.HideBackground = !a.cw.isMobile
 	return widget.NewSimpleRenderer(ab)
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type EIS interface {
@@ -131,10 +131,10 @@ type statusWindow struct {
 	entities          fyne.CanvasObject
 	entityList        *widget.List
 	isMobile          bool
-	nav               *iwidget.Navigator
+	nav               *xwidget.Navigator
 	onEntitySelected  func(int)
 	onSectionSelected func(int)
-	sb                *iwidget.Snackbar
+	sb                *xwidget.Snackbar
 	sectionEntities   []sectionEntity
 	sectionList       *widget.List
 	sections          []app.CacheSectionStatus
@@ -169,7 +169,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 		eis:               arg.EveImageService,
 		eus:               arg.EveUniverseService,
 		isMobile:          arg.IsMobile,
-		sb:                iwidget.NewSnackbar(w),
+		sb:                xwidget.NewSnackbar(w),
 		scs:               arg.StatusCacheService,
 		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
@@ -204,7 +204,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
-			a.nav.Push(iwidget.NewAppBar("Sections", sections, menu))
+			a.nav.Push(xwidget.NewAppBar("Sections", sections, menu))
 		}
 		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
@@ -213,7 +213,7 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 				fyne.NewMenu(
 					"", fyne.NewMenuItem(a.updateSection.Text, a.makeUpdateSectionAction(s.EntityID, s.SectionID))),
 			)
-			a.nav.Push(iwidget.NewAppBar("Section Detail", details, menu))
+			a.nav.Push(xwidget.NewAppBar("Section Detail", details, menu))
 		}
 	}
 
@@ -271,14 +271,14 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 			go a.eus.UpdateSectionsIfNeeded(context.Background(), true)
 		}),
 	)
-	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
+	updateEntities := xwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
 	if a.isMobile {
-		ab := iwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
+		ab := xwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,
 		))
-		a.nav = iwidget.NewNavigator(ab)
+		a.nav = xwidget.NewNavigator(ab)
 		c = a.nav
 	} else {
 		sections := container.NewBorder(a.top2, a.updateAllSections, nil, nil, a.sectionList)
@@ -298,7 +298,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+			icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			spinner := widget.NewActivity()
