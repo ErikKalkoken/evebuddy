@@ -666,7 +666,7 @@ func (u *DesktopUI) saveAppState() {
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.app.NewWindow(u.MakeWindowTitle(title))
+	w := u.app.NewWindow(app.MakeWindowTitle(title))
 	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button

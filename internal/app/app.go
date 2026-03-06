@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"strings"
 	"syscall"
 	"time"
 
@@ -151,6 +152,7 @@ func Name() string {
 	return name
 }
 
+// WebsiteRootURL returns the URL of the app's website.
 func WebsiteRootURL() *url.URL {
 	s := fyne.CurrentApp().Metadata().Custom["Website"]
 	if s == "" {
@@ -162,4 +164,16 @@ func WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
+}
+
+// MakeWindowTitle creates a standardized title for a window.
+func MakeWindowTitle(parts ...string) string {
+	if len(parts) == 0 {
+		parts = append(parts, "PLACEHOLDER")
+	}
+	if IsMobile() {
+		return parts[0]
+	}
+	parts = append(parts, Name())
+	return strings.Join(parts, " - ")
 }

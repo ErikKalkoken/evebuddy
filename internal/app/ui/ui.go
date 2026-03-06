@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -1074,7 +1073,7 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	if ok {
 		return w, false, nil
 	}
-	w = u.app.NewWindow(u.MakeWindowTitle(titles...))
+	w = u.app.NewWindow(app.MakeWindowTitle(titles...))
 	u.windows[id] = w
 	if fyne.CurrentDevice().IsMobile() {
 		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
@@ -1088,17 +1087,6 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 		delete(u.windows, id)
 	}
 	return w, true, f
-}
-
-func (u *baseUI) MakeWindowTitle(parts ...string) string {
-	if len(parts) == 0 {
-		parts = append(parts, "PLACEHOLDER")
-	}
-	if app.IsMobile() {
-		return parts[0]
-	}
-	parts = append(parts, app.Name())
-	return strings.Join(parts, " - ")
 }
 
 // statusText is a widget that can show/hide multiple status texts with a spinner.

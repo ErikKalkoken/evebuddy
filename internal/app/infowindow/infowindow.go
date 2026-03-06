@@ -37,7 +37,6 @@ import (
 type UIService interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	MainWindow() fyne.Window
-	MakeWindowTitle(parts ...string) string
 }
 
 type CS interface {
@@ -302,7 +301,7 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !app.IsMobile()
 	if iw.nav == nil {
-		w := fyne.CurrentApp().NewWindow(iw.u.MakeWindowTitle("Information"))
+		w := fyne.CurrentApp().NewWindow(app.MakeWindowTitle("Information"))
 		iw.w = w
 		iw.sb = xwidget.NewSnackbar(w)
 		iw.sb.Start()
