@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
 
@@ -33,7 +34,7 @@ func ShowConfirm(title, message, confirm string, callback func(bool), parent fyn
 func ShowError(message string, err error, parent fyne.Window) {
 	slog.Error(message, "error", err)
 	title := widget.NewLabel(message)
-	error := widget.NewLabel(err.Error()) // TODO: Add humanizing
+	error := widget.NewLabel(app.ErrorDisplay(err))
 	error.TextStyle.Monospace = true
 	error.Wrapping = fyne.TextWrapBreak
 	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))

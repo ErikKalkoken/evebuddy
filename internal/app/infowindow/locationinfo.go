@@ -135,7 +135,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			)
 		})
 	}
-	if a.iw.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
@@ -228,7 +228,7 @@ func (a *raceInfo) update(ctx context.Context) error {
 	}
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		if a.iw.u.IsDeveloperMode() {
+		if app.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))

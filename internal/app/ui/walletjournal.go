@@ -584,7 +584,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 			if !o.ContextIDType.IsEmpty() {
 				items = append(items, contextItem)
 			}
-			if u.IsDeveloperMode() {
+			if app.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 			}
 
@@ -718,7 +718,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 				)
 			}
 			items = append(items, contextItem)
-			if u.IsDeveloperMode() {
+			if app.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 			}
 

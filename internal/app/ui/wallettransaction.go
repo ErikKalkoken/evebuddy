@@ -647,7 +647,7 @@ func showCharacterWalletTransactionWindowAsync(u *baseUI, characterID int64, tra
 				// )),
 			}
 
-			if u.IsDeveloperMode() {
+			if app.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem(
 					"Transaction ID",
 					u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),
@@ -714,7 +714,7 @@ func showCorporationWalletTransactionWindowAsync(u *baseUI, corporationID int64,
 				)),
 			}
 
-			if u.IsDeveloperMode() {
+			if app.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem(
 					"Transaction ID",
 					u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),

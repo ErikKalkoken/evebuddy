@@ -286,7 +286,7 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter)
 			attributes = append(attributes, newAttributeItem("Last Login", v))
 		}
 	}
-	if a.iw.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))

@@ -540,7 +540,7 @@ func (a *inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveT
 			rows = append(rows, groupedRows[ag]...)
 		}
 	}
-	if a.iw.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		rows = append(rows, typeAttributeRow{label: "Developer Mode", isTitle: true})
 		rows = append(rows, typeAttributeRow{
 			label: "EVE ID",

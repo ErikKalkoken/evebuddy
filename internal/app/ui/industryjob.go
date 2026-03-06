@@ -878,7 +878,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 			a.u.ShowEveEntityInfoWindow(v)
 		})))
 	}
-	if a.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.jobID))))
 	}
 	f := widget.NewForm(items...)

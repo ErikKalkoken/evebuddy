@@ -45,6 +45,16 @@ var (
 	ErrNotFound      = errors.New("object not found")
 )
 
+var isDeveloperMode bool
+
+func SetDeveloperMode(b bool) {
+	isDeveloperMode = b
+}
+
+func IsDeveloperMode() bool {
+	return isDeveloperMode
+}
+
 // VariableDateFormat returns a variable format for [time.Time] values.
 func VariableDateFormat(t time.Time) string {
 	var dateFormat string
@@ -64,7 +74,11 @@ func isToday(t time.Time) bool {
 }
 
 // ErrorDisplay returns a user friendly error message for an error.
+// Or returns the full error when in developer mode.
 func ErrorDisplay(err error) string {
+	if IsDeveloperMode() {
+		return err.Error()
+	}
 	if err == nil {
 		return "No error"
 	}

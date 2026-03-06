@@ -303,7 +303,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(r.TrainingStartSP.ValueOrZero()-r.LevelStartSP.ValueOrZero()))),
 		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(r.LevelEndSP.ValueOrZero()-r.LevelStartSP.ValueOrZero()))),
 	}
-	if u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem(
 			"Queue Position",
 			widget.NewLabel(fmt.Sprint(r.QueuePosition)),

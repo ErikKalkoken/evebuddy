@@ -37,7 +37,6 @@ import (
 type UIService interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	HumanizeError(err error) string
-	IsDeveloperMode() bool
 	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string

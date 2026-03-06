@@ -247,7 +247,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			a.u.App().Clipboard().SetContent(s)
 		}),
 	)
-	if a.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		toolbar.Append(widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
 			if a.current == nil {
 				return

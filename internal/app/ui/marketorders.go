@@ -588,7 +588,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		u.ShowEveEntityInfoWindow,
 	)))
 
-	if u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Order ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.orderID))))
 	}
 	f := widget.NewForm(items...)

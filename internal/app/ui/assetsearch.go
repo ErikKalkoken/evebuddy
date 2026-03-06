@@ -922,7 +922,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 			})),
 		),
 	}
-	if u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		items = slices.Concat(items, []*widget.FormItem{
 			widget.NewFormItem("Location Flag", widget.NewLabel(r.locationFlag.String())),
 			widget.NewFormItem("Item ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.itemID))),

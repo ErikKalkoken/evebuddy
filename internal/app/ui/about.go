@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
 
@@ -37,7 +38,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	techInfos := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
 	)
-	if !u.IsDeveloperMode() {
+	if !app.IsDeveloperMode() {
 		techInfos.Hide()
 	}
 	discordURL, _ := url.Parse(discordServerURL)

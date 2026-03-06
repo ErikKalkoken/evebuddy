@@ -479,6 +479,7 @@ func (u *baseUI) Start() bool {
 		return false
 	}
 	// First app start
+	app.SetDeveloperMode(u.settings.DeveloperMode())
 	u.defaultTheme = theme.Current()
 	u.SetColorTheme(u.settings.ColorTheme())
 	if u.isOffline {
@@ -568,10 +569,6 @@ func (u *baseUI) ClearAllCaches() {
 
 func (u *baseUI) MainWindow() fyne.Window {
 	return u.window
-}
-
-func (u *baseUI) IsDeveloperMode() bool {
-	return u.settings.DeveloperMode()
 }
 
 func (u *baseUI) IsOffline() bool {

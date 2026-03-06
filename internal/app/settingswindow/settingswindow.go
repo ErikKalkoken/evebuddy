@@ -37,7 +37,6 @@ type UIService interface {
 	DataPaths() xmaps.OrderedMap[string, string]
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HumanizeError(err error) string
-	IsDeveloperMode() bool
 	MainWindow() fyne.Window
 	ResetCharacter()
 	ResetCorporation()
@@ -156,10 +155,13 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	})
 
 	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
-		label:     "Developer Mode",
-		hint:      "App shows additional technical information like Character IDs",
-		getter:    a.settings.DeveloperMode,
-		onChanged: a.settings.SetDeveloperMode,
+		label:  "Developer Mode",
+		hint:   "App shows additional technical information like Character IDs",
+		getter: a.settings.DeveloperMode,
+		onChanged: func(b bool) {
+			a.settings.SetDeveloperMode(b)
+			app.SetDeveloperMode(b)
+		},
 	})
 
 	items := []SettingItem{
@@ -401,7 +403,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 			},
 		})
 	}
-	if a.u.IsDeveloperMode() {
+	if app.IsDeveloperMode() {
 		actions = append(actions, settingAction{
 			Label: "Show snackbar (debug)",
 			Action: func() {
