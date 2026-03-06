@@ -1,4 +1,3 @@
-// Package corporationui provides UI elements related to corporations.
 package corporationui
 
 import (
@@ -17,8 +16,9 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/services"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -40,12 +40,11 @@ type CorporationMember struct {
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
 	searchBox    *widget.Entry
-	s            services
+	s            services.Services
 }
 
-func NewCorporationMember(arg Services) *CorporationMember {
-	s, err := arg.services()
-	if err != nil {
+func NewCorporationMember(s services.Services) *CorporationMember {
+	if err := s.Check(); err != nil {
 		panic(fmt.Errorf("corporation member: %w", err))
 	}
 	a := &CorporationMember{
@@ -67,11 +66,11 @@ func NewCorporationMember(arg Services) *CorporationMember {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.s.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.s.Signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.s.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.Signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -100,7 +99,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(a.s.eis.CharacterPortraitAsync)
+			return newCorporationMemberItem(a.s.EVEImage.CharacterPortraitAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -115,7 +114,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.s.u.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.s.UI.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }
@@ -157,7 +156,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 	}
 	var rows []corporationMemberRow
 	var err error
-	hasData, err := a.s.rs.HasSection(ctx, corporationID, app.SectionCorporationMembers)
+	hasData, err := a.s.Corporation.HasSection(ctx, corporationID, app.SectionCorporationMembers)
 	if hasData {
 		rows2, err2 := a.fetchRows(ctx, corporationID, ceoID)
 		if err2 != nil {
@@ -181,7 +180,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 }
 
 func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]corporationMemberRow, error) {
-	cc, err := a.s.cs.ListCharacters(ctx)
+	cc, err := a.s.Character.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +190,7 @@ func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID 
 			owned.Add(c.ID)
 		}
 	}
-	oo, err := a.s.rs.ListMembers(ctx, corporationID)
+	oo, err := a.s.Corporation.ListMembers(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}

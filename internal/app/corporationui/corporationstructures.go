@@ -17,7 +17,8 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/services"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -89,7 +90,7 @@ type CorporationStructures struct {
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	s                 services
+	s                 services.Services
 }
 
 const (
@@ -100,9 +101,8 @@ const (
 	structuresColServices
 )
 
-func NewCorporationStructures(arg Services) *CorporationStructures {
-	s, err := arg.services()
-	if err != nil {
+func NewCorporationStructures(s services.Services) *CorporationStructures {
+	if err := s.Check(); err != nil {
 		panic(fmt.Errorf("corporation member: %w", err))
 	}
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[corporationStructureRow]{{
@@ -117,7 +117,7 @@ func NewCorporationStructures(arg Services) *CorporationStructures {
 		},
 	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[corporationStructureRow]{
 		ColumnID: structuresColType,
-		EIS:      s.eis,
+		EIS:      s.EVEImage,
 		Label:    "Type",
 		GetEntity: func(r corporationStructureRow) *app.EveEntity {
 			return &app.EveEntity{
@@ -218,7 +218,7 @@ func NewCorporationStructures(arg Services) *CorporationStructures {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.s.u.MainWindow())
+	}, a.s.UI.MainWindow())
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
@@ -227,11 +227,11 @@ func NewCorporationStructures(arg Services) *CorporationStructures {
 	})
 
 	// Signals
-	a.s.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.s.Signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.s.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.Signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -240,7 +240,7 @@ func NewCorporationStructures(arg Services) *CorporationStructures {
 		}
 		a.update(ctx)
 	})
-	a.s.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.s.Signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})
@@ -383,11 +383,11 @@ func (a *CorporationStructures) fetchData(ctx context.Context, corporationID int
 	if corporationID == 0 {
 		return []corporationStructureRow{}, nil
 	}
-	structures, err := a.s.rs.ListStructures(ctx, corporationID)
+	structures, err := a.s.Corporation.ListStructures(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
-	corporationNames, err := a.s.rs.CorporationNames(ctx)
+	corporationNames, err := a.s.Corporation.CorporationNames(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -438,8 +438,8 @@ func (a *CorporationStructures) fetchData(ctx context.Context, corporationID int
 	return rows, nil
 }
 
-func showCorporationStructureWindowAsync(ctx context.Context, s services, corporationID int64, structureID int64, title string) {
-	w, created := s.u.GetOrCreateWindow(
+func showCorporationStructureWindowAsync(ctx context.Context, s services.Services, corporationID int64, structureID int64, title string) {
+	w, created := s.UI.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,
 	)
@@ -449,14 +449,14 @@ func showCorporationStructureWindowAsync(ctx context.Context, s services, corpor
 	}
 
 	go func() {
-		structure, err := s.rs.GetStructure(ctx, corporationID, structureID)
+		structure, err := s.Corporation.GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, s.u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show structure", err, s.UI.MainWindow())
 			return
 		}
-		corporationNames, err := s.rs.CorporationNames(ctx)
+		corporationNames, err := s.Corporation.CorporationNames(ctx)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, s.u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show structure", err, s.UI.MainWindow())
 			return
 		}
 		corporationName := corporationNames[corporationID]
@@ -499,15 +499,15 @@ func showCorporationStructureWindowAsync(ctx context.Context, s services, corpor
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					s.u.InfoWindow().ShowEntity,
+					s.UI.InfoWindow().ShowEntity,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
-					s.u.InfoWindow().ShowType(structure.Type.ID)
+					s.UI.InfoWindow().ShowType(structure.Type.ID)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, s.u.InfoWindow().ShowEntity)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, s.UI.InfoWindow().ShowEntity)),
 				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					s.u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
+					s.UI.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
@@ -544,10 +544,10 @@ func showCorporationStructureWindowAsync(ctx context.Context, s services, corpor
 			xwindow.Set(xwindow.Params{
 				Content: f,
 				ImageAction: func() {
-					s.u.InfoWindow().ShowType(structure.Type.ID)
+					s.UI.InfoWindow().ShowType(structure.Type.ID)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
-					s.eis.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
+					s.EVEImage.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
 				},
 				Title:  structure.DisplayName(),
 				Window: w,

@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/services"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -378,13 +379,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	services := corporationui.Services{
-		CharacterService:   u.cs,
-		EveImageService:    u.eis,
-		EveUniverseService: u.eus,
-		CorporationService: u.rs,
-		Signals:            u.signals,
-		UI:                 u,
+	services := services.Services{
+		Character:   u.cs,
+		EVEImage:    u.eis,
+		EVEUniverse: u.eus,
+		Corporation: u.rs,
+		Signals:     u.signals,
+		UI:          u,
 	}
 
 	u.assetSearchAll = newCombinedAssetSearch(u)
