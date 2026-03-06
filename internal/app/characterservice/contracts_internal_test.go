@@ -272,11 +272,10 @@ func TestUpdateContractESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		o1 := factory.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
 			Availability: app.ContractAvailabilityPublic,
 			Status:       app.ContractStatusOutstanding,
-			Type:         app.ContractTypeCourier,
 		})
 		acceptor := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(

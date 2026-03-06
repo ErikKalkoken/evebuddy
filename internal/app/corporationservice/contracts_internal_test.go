@@ -209,11 +209,10 @@ func TestUpdateContractESI(t *testing.T) {
 		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
-		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+		o1 := factory.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Availability:  app.ContractAvailabilityPublic,
 			Status:        app.ContractStatusOutstanding,
-			Type:          app.ContractTypeCourier,
 		})
 		acceptor := factory.CreateEveEntityCorporation()
 		httpmock.RegisterResponder(

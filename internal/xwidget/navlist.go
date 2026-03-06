@@ -59,19 +59,8 @@ type NavListItem struct {
 	isAnimating     bool
 }
 
-func NewNavListItemWithIcon(headline string, leading fyne.Resource, action func()) *NavListItem {
+func NewNavListItem(headline string, leading fyne.Resource, action func()) *NavListItem {
 	return newNavListItem(leading, nil, headline, "", action)
-}
-
-func NewNavListItem(headline string, action func()) *NavListItem {
-	return newNavListItem(nil, nil, headline, "", action)
-}
-
-func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) *NavListItem {
-	w := NewNavListItem(ab.Title(), func() {
-		nav.Push(ab)
-	})
-	return w
 }
 
 const (

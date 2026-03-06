@@ -58,7 +58,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var characterNav *xwidget.Navigator
 
 	const assetsTitle = "Asset Browser"
-	navItemAssetBrowser := xwidget.NewNavListItemWithIcon(
+	navItemAssetBrowser := xwidget.NewNavListItem(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -70,7 +70,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	communicationsMenu := fyne.NewMenu("")
-	navItemCommunications := xwidget.NewNavListItemWithIcon(
+	navItemCommunications := xwidget.NewNavListItem(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		func() {
@@ -107,7 +107,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			),
 		)
 	}
-	navItemMail := xwidget.NewNavListItemWithIcon(
+	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
@@ -135,7 +135,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	navItemSkills := xwidget.NewNavListItemWithIcon(
+	navItemSkills := xwidget.NewNavListItem(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
@@ -151,7 +151,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	navItemWallet := xwidget.NewNavListItemWithIcon(
+	navItemWallet := xwidget.NewNavListItem(
 		"Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg),
 		func() {
@@ -161,7 +161,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	characterList := xwidget.NewNavList(
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
@@ -180,7 +180,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			},
 		),
 		navItemAssetBrowser,
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Contacts",
 			theme.NewThemedResource(icons.AccountSearchSvg),
 			func() {
@@ -241,7 +241,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var corpNav *xwidget.Navigator
 
 	const corpAssetBrowserTitle = "Asset Browser"
-	corpAssetBrowserNav := xwidget.NewNavListItemWithIcon(
+	corpAssetBrowserNav := xwidget.NewNavListItem(
 		corpAssetBrowserTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -253,7 +253,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	const corpAssetSearchTitle = "Asset Search"
-	corpAssetSearchNav := xwidget.NewNavListItemWithIcon(
+	corpAssetSearchNav := xwidget.NewNavListItem(
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -265,7 +265,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var corpWalletItems []*xwidget.NavListItem
 	corporationWalletNavs := make(map[app.Division]*xwidget.NavListItem)
 	for _, d := range app.Divisions {
-		corporationWalletNavs[d] = xwidget.NewNavListItemWithIcon(
+		corporationWalletNavs[d] = xwidget.NewNavListItem(
 			d.DefaultWalletName(),
 			theme.NewThemedResource(icons.CashSvg),
 			func() {
@@ -279,7 +279,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
 	corpWalletList := xwidget.NewNavList(corpWalletItems...)
-	corpWalletNav := xwidget.NewNavListItemWithIcon(
+	corpWalletNav := xwidget.NewNavListItem(
 		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
@@ -305,7 +305,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
-	corpContractsNav := xwidget.NewNavListItemWithIcon(
+	corpContractsNav := xwidget.NewNavListItem(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
@@ -313,7 +313,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpIndustryNav := xwidget.NewNavListItemWithIcon(
+	corpIndustryNav := xwidget.NewNavListItem(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
@@ -321,7 +321,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpStructuresNav := xwidget.NewNavListItemWithIcon(
+	corpStructuresNav := xwidget.NewNavListItem(
 		"Structures",
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
 		func() {
@@ -329,7 +329,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpSheetNav := xwidget.NewNavListItemWithIcon(
+	corpSheetNav := xwidget.NewNavListItem(
 		"Corporation Sheet",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
@@ -404,7 +404,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	// more destination
 	var moreNav *xwidget.Navigator
-	navItemUpdateStatus := xwidget.NewNavListItemWithIcon(
+	navItemUpdateStatus := xwidget.NewNavListItem(
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
@@ -419,7 +419,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			})
 		},
 	)
-	navItemManageCharacters := xwidget.NewNavListItemWithIcon(
+	navItemManageCharacters := xwidget.NewNavListItem(
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
@@ -434,7 +434,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	navItemAbout := xwidget.NewNavListItemWithIcon(
+	navItemAbout := xwidget.NewNavListItem(
 		"About",
 		theme.InfoIcon(),
 		func() {
@@ -442,7 +442,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	moreList := xwidget.NewNavList(
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
@@ -790,7 +790,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 	var homeNav *xwidget.Navigator
 	var homeList *xwidget.NavList
 
-	navItemColonies2 := xwidget.NewNavListItemWithIcon(
+	navItemColonies2 := xwidget.NewNavListItem(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
@@ -802,7 +802,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemColonies2.Refresh()
 	}
 
-	navItemIndustry := xwidget.NewNavListItemWithIcon(
+	navItemIndustry := xwidget.NewNavListItem(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
@@ -827,7 +827,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemIndustry.Refresh()
 	}
 
-	navItemContracts := xwidget.NewNavListItemWithIcon(
+	navItemContracts := xwidget.NewNavListItem(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
@@ -843,7 +843,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemContracts.Refresh()
 	}
 
-	navItemWealth := xwidget.NewNavListItemWithIcon(
+	navItemWealth := xwidget.NewNavListItem(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
@@ -858,7 +858,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemWealth.Refresh()
 	}
 
-	navItemAssets := xwidget.NewNavListItemWithIcon(
+	navItemAssets := xwidget.NewNavListItem(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -867,7 +867,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		},
 	)
 
-	navItemCharacters := xwidget.NewNavListItemWithIcon(
+	navItemCharacters := xwidget.NewNavListItem(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
@@ -879,7 +879,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemCharacters.Refresh()
 	}
 
-	navItemTraining := xwidget.NewNavListItemWithIcon(
+	navItemTraining := xwidget.NewNavListItem(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
@@ -894,7 +894,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 	homeList = xwidget.NewNavList(
 		navItemCharacters,
 		navItemAssets,
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
@@ -907,14 +907,14 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Loyalty Points",
 			theme.NewThemedResource(icons.HandHeartSvg),
 			func() {
 				homeNav.Push(xwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
 			},
 		),
-		xwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Market Orders",
 			theme.NewThemedResource(icons.ChartAreasplineSvg),
 			func() {
