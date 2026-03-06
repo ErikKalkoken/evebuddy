@@ -79,10 +79,14 @@ func (s *CharacterService) TokenSourceForCorporation(ctx context.Context, corpor
 func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, scopes set.Set[string]) (oauth2.TokenSource, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create token source: %w", err)
 	}
 	if !token.HasScopes(scopes) {
 		return nil, app.ErrNotFound
+	}
+	_, err = s.ensureValidToken(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("create token source: %w", err)
 	}
 	ts := newTokenSource(token, s.ensureValidToken)
 	return ts, nil
