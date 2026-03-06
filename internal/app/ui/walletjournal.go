@@ -335,7 +335,7 @@ func (a *walletJournal) updateCharacter(ctx context.Context) {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
@@ -363,7 +363,7 @@ func (a *walletJournal) updateCorporation(ctx context.Context) {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
+	t, i := makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
 		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {

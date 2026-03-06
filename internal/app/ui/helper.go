@@ -213,3 +213,22 @@ func corporationNameOrZero(c *app.Corporation) string {
 	}
 	return c.EveCorporation.Name
 }
+
+// TODO: Remove this helper
+
+// makeTopText makes the content for the top label of a gui element.
+func makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+	if err != nil {
+		return "ERROR: " + app.ErrorDisplay(err), widget.DangerImportance
+	}
+	if characterID == 0 {
+		return "No entity", widget.LowImportance
+	}
+	if !hasData {
+		return "No data", widget.WarningImportance
+	}
+	if make == nil {
+		return "", widget.MediumImportance
+	}
+	return make()
+}
