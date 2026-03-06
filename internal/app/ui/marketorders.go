@@ -529,10 +529,10 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		return
 	}
 	item := makeLinkLabelWithWrap(r.typeName, func() {
-		u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
+		u.InfoWindow().ShowTypeWithCharacter(r.typeID, r.characterID)
 	})
 	region := makeLinkLabel(r.regionName, func() {
-		u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
+		u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
 	})
 	var buySell string
 	if r.IsBuyOrder.ValueOrZero() {
@@ -553,7 +553,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeEveEntityActionLabel(
 			r.owner,
-			u.ShowEveEntityInfoWindow,
+			u.InfoWindow().ShowEntity,
 		)),
 		widget.NewFormItem("Type", item),
 		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
@@ -563,7 +563,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
 		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
 		widget.NewFormItem("Expires", widget.NewLabel(expires)),
-		widget.NewFormItem("Location", makeLocationLabel(r.location, u.ShowLocationInfoWindow)),
+		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
 		widget.NewFormItem("Region", region),
 	}
 	if r.IsBuyOrder.ValueOrZero() {
@@ -585,7 +585,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
 		r.characterID,
 		r.characterName,
-		u.ShowEveEntityInfoWindow,
+		u.InfoWindow().ShowEntity,
 	)))
 
 	if app.IsDeveloperMode() {
@@ -596,7 +596,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {
-			u.ShowTypeInfoWindow(r.typeID)
+			u.InfoWindow().ShowType(r.typeID)
 		},
 		imageLoader: func(setter func(r fyne.Resource)) {
 			u.eis.InventoryTypeIconAsync(r.typeID, 256, setter)

@@ -36,7 +36,7 @@ type locationInfo struct {
 	typeInfo    *widget.Hyperlink
 }
 
-func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
+func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	typeInfo := widget.NewHyperlink("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := widget.NewHyperlink("", nil)
@@ -102,7 +102,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.showEveEntity(et.EveEntity())
+				a.iw.ShowEntity(et.EveEntity())
 			}
 			a.typeImage.OnTapped = func() {
 				a.iw.showZoomWindow(o.Name, et.ID, a.iw.eis.InventoryTypeRenderAsync, a.iw.w)
@@ -122,7 +122,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.owner.SetText(v.Name)
 			a.owner.OnTapped = func() {
-				a.iw.showEveEntity(v)
+				a.iw.ShowEntity(v)
 			}
 		})
 	}
@@ -185,7 +185,7 @@ type raceInfo struct {
 	description *widget.Label
 }
 
-func newRaceInfo(iw *infoWindow, id int64) *raceInfo {
+func newRaceInfo(iw *InfoWindow, id int64) *raceInfo {
 	a := &raceInfo{
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,

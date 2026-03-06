@@ -186,7 +186,7 @@ func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 				points.Text = ihumanize.Comma(n.totalPoints)
 				points.TextStyle = fyne.TextStyle{Bold: true}
 				icon2.OnTapped = func() {
-					a.u.ShowInfoWindow(app.EveEntityCorporation, n.corporationID)
+					a.u.InfoWindow().Show(app.EveEntityCorporation, n.corporationID)
 				}
 			} else {
 				a.u.eis.CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
@@ -198,7 +198,7 @@ func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 				points.Text = ihumanize.Comma(n.points)
 				points.TextStyle = fyne.TextStyle{}
 				icon2.OnTapped = func() {
-					a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
+					a.u.InfoWindow().Show(app.EveEntityCharacter, n.characterID)
 				}
 			}
 			points.Refresh()

@@ -62,7 +62,7 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(a.u.eis, a.u.ShowEveEntityInfoWindow)
+	a.Detail = newCommunicationDetail(a.u.eis, u.InfoWindow().ShowEntity)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {

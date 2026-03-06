@@ -258,7 +258,7 @@ func (a *gameSearch) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
-	a.u.ShowEveEntityInfoWindow(o)
+	a.u.InfoWindow().ShowEntity(o)
 }
 
 func (a *gameSearch) makeRecentSelected() *widget.List {

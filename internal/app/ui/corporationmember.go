@@ -110,7 +110,7 @@ func (a *corporationMember) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.u.ShowEveEntityInfoWindow(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.u.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }

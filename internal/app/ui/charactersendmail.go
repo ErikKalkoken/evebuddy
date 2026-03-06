@@ -44,7 +44,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 	a.ExtendBaseWidget(a)
 
 	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
-	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
+	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
 
@@ -54,7 +54,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 		}, a.w)
 	})
 	a.to = awidget.NewEveEntityEntry(toButton, labelWith, u.eis)
-	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
+	a.to.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
 	a.subject = widget.NewEntry()

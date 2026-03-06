@@ -43,7 +43,7 @@ type characterInfo struct {
 	title           *widget.Label
 }
 
-func newCharacterInfo(iw *infoWindow, id int64) *characterInfo {
+func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
@@ -190,7 +190,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		})))
 		a.corporation.SetText(o.Corporation.Name)
 		a.corporation.OnTapped = func() {
-			a.iw.showEveEntity(o.Corporation)
+			a.iw.ShowEntity(o.Corporation)
 		}
 		a.portrait.OnTapped = func() {
 			a.iw.showZoomWindow(o.Name, a.id, a.iw.eis.CharacterPortraitAsync, a.iw.w)
@@ -209,7 +209,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(v)
+			a.iw.ShowEntity(v)
 		}
 	})
 	fyne.Do(func() {

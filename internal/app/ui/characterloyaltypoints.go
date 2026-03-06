@@ -169,7 +169,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 			points.SetText(ihumanize.Comma(r.points))
 			icon2 := hbox[1].(*xwidget.TappableIcon)
 			icon2.OnTapped = func() {
-				a.u.ShowInfoWindow(app.EveEntityCorporation, r.corporationID)
+				a.u.InfoWindow().Show(app.EveEntityCorporation, r.corporationID)
 			}
 		},
 	)

@@ -137,6 +137,7 @@ type baseUI struct {
 	statusText              *statusText
 	training                *training
 	wealth                  *wealth
+	iw                      *infowindow.InfoWindow
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -427,6 +428,20 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
+	x, ok := infowindow.New(infowindow.Params{
+		CharacterService:   u.cs,
+		EveImageService:    u.eis,
+		EveUniverseService: u.eus,
+		JaniceService:      u.js,
+		Settings:           u.settings,
+		StatusCacheService: u.scs,
+		UIService:          u,
+	})
+	if !ok {
+		panic("Failed to init info window")
+	}
+	u.iw = x
+
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -560,6 +575,11 @@ func (u *baseUI) ClearAllCaches() {
 
 func (u *baseUI) MainWindow() fyne.Window {
 	return u.window
+}
+
+// InfoWindow returns the info window.
+func (u *baseUI) InfoWindow() *infowindow.InfoWindow {
+	return u.iw
 }
 
 func (u *baseUI) IsStartupCompleted() bool {
@@ -856,42 +876,6 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 		return github.VersionInfo{}, err
 	}
 	return v, nil
-}
-
-func (u *baseUI) ShowLocationInfoWindow(id int64) {
-	infowindow.ShowLocation(id, u.infoWindowParams())
-}
-
-func (u *baseUI) ShowRaceInfoWindow(id int64) {
-	infowindow.ShowRace(id, u.infoWindowParams())
-}
-
-func (u *baseUI) ShowTypeInfoWindow(id int64) {
-	u.ShowInfoWindow(app.EveEntityInventoryType, id)
-}
-
-func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int64) {
-	infowindow.ShowTypeWithCharacter(typeID, characterID, u.infoWindowParams())
-}
-
-func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	infowindow.ShowEveEntity(o, u.infoWindowParams())
-}
-
-func (u *baseUI) ShowInfoWindow(c app.EveEntityCategory, id int64) {
-	infowindow.Show(c, id, u.infoWindowParams())
-}
-
-func (u *baseUI) infoWindowParams() infowindow.Params {
-	return infowindow.Params{
-		CharacterService:   u.cs,
-		EveImageService:    u.eis,
-		EveUniverseService: u.eus,
-		JaniceService:      u.js,
-		Settings:           u.settings,
-		StatusCacheService: u.scs,
-		UIService:          u,
-	}
 }
 
 func (u *baseUI) ShowSnackbar(text string) {

@@ -183,7 +183,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.rowsFiltered[id]
-		a.u.ShowTypeInfoWindowWithCharacter(o.typeID, characterIDOrZero(a.character.Load()))
+		a.u.InfoWindow().ShowTypeWithCharacter(o.typeID, characterIDOrZero(a.character.Load()))
 	}
 	return g
 }

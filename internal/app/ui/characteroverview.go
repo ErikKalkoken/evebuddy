@@ -274,7 +274,7 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 				a.u.eis.CorporationLogoAsync,
 				a.u.eis.AllianceLogoAsync,
 				false,
-				a.u.ShowInfoWindow,
+				a.u.InfoWindow().Show,
 			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
@@ -320,7 +320,7 @@ func (a *characterOverview) makeList() *widget.List {
 				a.u.eis.CorporationLogoAsync,
 				a.u.eis.AllianceLogoAsync,
 				true,
-				a.u.ShowInfoWindow,
+				a.u.InfoWindow().Show,
 			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {

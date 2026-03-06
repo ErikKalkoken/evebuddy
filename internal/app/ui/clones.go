@@ -179,10 +179,10 @@ func newClones(u *baseUI) *clones {
 			func(c int, r cloneRow) {
 				switch c {
 				case 0:
-					a.u.ShowLocationInfoWindow(r.jc.Location.ID)
+					a.u.InfoWindow().ShowLocation(r.jc.Location.ID)
 				case 1:
 					if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-						a.u.ShowInfoWindow(app.EveEntityRegion, v.Constellation.Region.ID)
+						a.u.InfoWindow().Show(app.EveEntityRegion, v.Constellation.Region.ID)
 					}
 				case 2:
 					if r.jc == nil || r.jc.ImplantsCount == 0 {
@@ -190,7 +190,7 @@ func newClones(u *baseUI) *clones {
 					}
 					a.showCloneWindow(r.jc)
 				case 3:
-					a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
+					a.u.InfoWindow().Show(app.EveEntityCharacter, r.jc.Character.ID)
 				case 4:
 					if len(r.route) == 0 {
 						return
@@ -599,7 +599,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 			return
 		}
 		s := r.route[id]
-		a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
+		a.u.InfoWindow().Show(app.EveEntitySolarSystem, s.ID)
 
 	}
 
@@ -609,7 +609,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	}
 	from := xwidget.NewTappableRichText(fromText, func() {
 		if a.origin != nil {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+			a.u.InfoWindow().Show(app.EveEntitySolarSystem, a.origin.ID)
 		}
 	})
 	from.Wrapping = fyne.TextWrapWord
@@ -620,7 +620,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	}
 	to := xwidget.NewTappableRichText(toText, func() {
 		if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, v.ID)
+			a.u.InfoWindow().Show(app.EveEntitySolarSystem, v.ID)
 		}
 	})
 	to.Wrapping = fyne.TextWrapWord
@@ -716,13 +716,13 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 			return
 		}
 		im := clone.Implants[id]
-		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
+		a.u.InfoWindow().Show(app.EveEntityInventoryType, im.EveType.ID)
 
 	}
 
-	location := makeLocationLabel(jc.Location.ToShort(), a.u.ShowLocationInfoWindow)
+	location := makeLocationLabel(jc.Location.ToShort(), a.u.InfoWindow().ShowLocation)
 	character := makeLinkLabelWithWrap(jc.Character.Name, func() {
-		a.u.ShowInfoWindow(app.EveEntityCharacter, jc.Character.ID)
+		a.u.InfoWindow().Show(app.EveEntityCharacter, jc.Character.ID)
 	})
 	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
 	col := kxlayout.NewColumns(80)

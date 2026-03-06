@@ -33,7 +33,7 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw *infoWindow, id int64) *solarSystemInfo {
+func newSolarSystemInfo(iw *InfoWindow, id int64) *solarSystemInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := widget.NewHyperlink("", nil)
@@ -129,11 +129,11 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 			a.name.SetText(o.Name)
 			a.region.SetText(o.Constellation.Region.Name)
 			a.region.OnTapped = func() {
-				a.iw.showEveEntity(o.Constellation.Region.EveEntity())
+				a.iw.ShowEntity(o.Constellation.Region.EveEntity())
 			}
 			a.constellation.SetText(o.Constellation.Name)
 			a.constellation.OnTapped = func() {
-				a.iw.showEveEntity(o.Constellation.EveEntity())
+				a.iw.ShowEntity(o.Constellation.EveEntity())
 			}
 			a.security.Text = o.SecurityStatusDisplay()
 			a.security.Importance = o.SecurityType().ToImportance()

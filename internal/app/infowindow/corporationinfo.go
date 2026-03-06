@@ -36,7 +36,7 @@ type corporationInfo struct {
 	tabs            *container.AppTabs
 }
 
-func newCorporationInfo(iw *infoWindow, id int64) *corporationInfo {
+func newCorporationInfo(iw *InfoWindow, id int64) *corporationInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := widget.NewHyperlink("", nil)
@@ -130,7 +130,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		}
 		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(v)
+			a.iw.ShowEntity(v)
 		}
 		a.iw.eis.AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
@@ -145,7 +145,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		}
 		a.hq.SetText("Headquarters: " + v.Name)
 		a.hq.OnTapped = func() {
-			a.iw.showEveEntity(v)
+			a.iw.ShowEntity(v)
 		}
 	})
 	g := new(errgroup.Group)

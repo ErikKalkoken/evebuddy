@@ -64,7 +64,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 		func() fyne.CanvasObject {
 			return newCharacterAugmentationItem(
 				a.u.eis.InventoryTypeIconAsync,
-				a.u.ShowTypeInfoWindowWithCharacter,
+				a.u.InfoWindow().ShowTypeWithCharacter,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

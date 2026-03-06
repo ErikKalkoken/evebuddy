@@ -94,8 +94,8 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 		StatusCacheService:     scs,
 		Storage:                st,
 	})
-	makeInfoWindow := func() *infoWindow {
-		iw, ok := newInfoWindow(Params{
+	makeInfoWindow := func() *InfoWindow {
+		iw, ok := New(Params{
 			CharacterService: cs,
 			EveImageService: &testutil.EveImageServiceFake{
 				Character:   icons.Characterplaceholder64Jpeg,

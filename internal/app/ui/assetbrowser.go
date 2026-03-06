@@ -838,7 +838,7 @@ func (a *assetBrowserLocation) set(cn *assetContainerNode) {
 			return
 		}
 		a.info.OnTapped = func() {
-			a.selected.ab.u.ShowLocationInfoWindow(el.ID)
+			a.selected.ab.u.InfoWindow().ShowLocation(el.ID)
 		}
 		a.info.Show()
 	case asset.NodeAsset:

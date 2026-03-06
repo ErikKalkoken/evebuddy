@@ -28,7 +28,7 @@ type regionInfo struct {
 	tabs           *container.AppTabs
 }
 
-func newRegionInfo(iw *infoWindow, id int64) *regionInfo {
+func newRegionInfo(iw *InfoWindow, id int64) *regionInfo {
 	a := &regionInfo{
 		id:          id,
 		description: newLabelWithWrapAndSelectable(""),

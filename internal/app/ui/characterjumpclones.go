@@ -104,8 +104,8 @@ func (a *characterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
 			return newCharacterJumpCloneItem(
 				app.IsMobile(),
 				a.u.eis.InventoryTypeIconAsync,
-				a.u.ShowTypeInfoWindowWithCharacter,
-				a.u.ShowLocationInfoWindow,
+				a.u.InfoWindow().ShowTypeWithCharacter,
+				a.u.InfoWindow().ShowLocation,
 			)
 		},
 		func(n *jumpCloneNode, _ bool, co fyne.CanvasObject) {

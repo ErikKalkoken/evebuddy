@@ -813,10 +813,10 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			a.u.ShowEveEntityInfoWindow,
+			a.u.InfoWindow().ShowEntity,
 		)),
 		widget.NewFormItem("Blueprint", makeLinkLabelWithWrap(r.blueprintType.Name, func() {
-			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.blueprintType.ID)
+			a.u.InfoWindow().Show(app.EveEntityInventoryType, r.blueprintType.ID)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 	}
@@ -824,7 +824,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		items = append(items, widget.NewFormItem(
 			"Product Type",
 			makeLinkLabelWithWrap(v.Name, func() {
-				a.u.ShowInfoWindow(app.EveEntityInventoryType, v.ID)
+				a.u.InfoWindow().Show(app.EveEntityInventoryType, v.ID)
 			}),
 		))
 	}
@@ -867,15 +867,15 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		)
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Location", makeLocationLabel(r.location, a.u.ShowLocationInfoWindow)),
+		widget.NewFormItem("Location", makeLocationLabel(r.location, a.u.InfoWindow().ShowLocation)),
 		widget.NewFormItem("Installer", makeLinkLabelWithWrap(r.installer.Name, func() {
-			a.u.ShowEveEntityInfoWindow(r.installer)
+			a.u.InfoWindow().ShowEntity(r.installer)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if v, ok := r.completedCharacter.Value(); ok {
 		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(v.Name, func() {
-			a.u.ShowEveEntityInfoWindow(v)
+			a.u.InfoWindow().ShowEntity(v)
 		})))
 	}
 	if app.IsDeveloperMode() {
@@ -897,7 +897,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {
-			a.u.ShowTypeInfoWindow(r.blueprintType.ID)
+			a.u.InfoWindow().ShowType(r.blueprintType.ID)
 		},
 		imageLoader: func(setter func(r fyne.Resource)) {
 			a.u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)

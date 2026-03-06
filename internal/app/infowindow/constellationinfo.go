@@ -28,7 +28,7 @@ type constellationInfo struct {
 	tabs    *container.AppTabs
 }
 
-func newConstellationInfo(iw *infoWindow, id int64) *constellationInfo {
+func newConstellationInfo(iw *InfoWindow, id int64) *constellationInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{
@@ -73,7 +73,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Region.Name)
 		a.region.OnTapped = func() {
-			a.iw.showEveEntity(o.Region.EveEntity())
+			a.iw.ShowEntity(o.Region.EveEntity())
 		}
 
 		if app.IsDeveloperMode() {

@@ -228,7 +228,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			r := a.rowsFiltered[id]
-			a.u.ShowTypeInfoWindowWithCharacter(r.typeID, characterIDOrZero(a.character.Load()))
+			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, characterIDOrZero(a.character.Load()))
 		}
 	}
 	return makeGridOrList(app.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
