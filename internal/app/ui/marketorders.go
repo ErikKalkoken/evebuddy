@@ -589,7 +589,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	)))
 
 	if app.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Order ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.orderID))))
+		items = append(items, widget.NewFormItem("Order ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(r.orderID))))
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive

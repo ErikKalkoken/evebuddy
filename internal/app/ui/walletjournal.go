@@ -585,7 +585,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 				items = append(items, contextItem)
 			}
 			if app.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
+				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
 			}
 
 			for _, it := range items {
@@ -719,7 +719,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			}
 			items = append(items, contextItem)
 			if app.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
+				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
 			}
 
 			for _, it := range items {

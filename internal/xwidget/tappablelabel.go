@@ -22,6 +22,15 @@ type TappableLabel struct {
 var _ fyne.Tappable = (*TappableLabel)(nil)
 var _ desktop.Hoverable = (*TappableLabel)(nil)
 
+// NewTappableLabelWithClipboardCopy returns a tappable label which copies text to clipboard.
+func NewTappableLabelWithClipboardCopy(text string) *TappableLabel {
+	x := NewTappableLabel(text, func() {
+		fyne.CurrentApp().Clipboard().SetContent(text)
+	})
+	x.SetToolTip("Click to copy to clipboard")
+	return x
+}
+
 // NewTappableLabel returns a new TappableLabel instance.
 func NewTappableLabel(text string, tapped func()) *TappableLabel {
 	w := &TappableLabel{OnTapped: tapped}

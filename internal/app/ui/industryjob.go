@@ -879,7 +879,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		})))
 	}
 	if app.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.jobID))))
+		items = append(items, widget.NewFormItem("Job ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(r.jobID))))
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive

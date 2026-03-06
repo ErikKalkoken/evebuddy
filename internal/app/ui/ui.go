@@ -19,7 +19,6 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"golang.org/x/sync/errgroup"
 
@@ -1130,12 +1129,6 @@ func (u *baseUI) MakeWindowTitle(parts ...string) string {
 	}
 	parts = append(parts, u.appName())
 	return strings.Join(parts, " - ")
-}
-
-func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
-	return kxwidget.NewTappableLabel(text, func() {
-		fyne.CurrentApp().Clipboard().SetContent(text)
-	})
 }
 
 // makeTopText makes the content for the top label of a gui element.

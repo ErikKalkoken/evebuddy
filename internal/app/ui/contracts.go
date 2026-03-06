@@ -606,7 +606,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 		widget.NewFormItem("Availability", availability),
 	}
 	if app.IsDeveloperMode() {
-		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
+		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.ShowEveEntityInfoWindow)))
@@ -787,7 +787,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 		widget.NewFormItem("Availability", availability),
 	}
 	if app.IsDeveloperMode() {
-		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
+		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.ShowEveEntityInfoWindow)))
