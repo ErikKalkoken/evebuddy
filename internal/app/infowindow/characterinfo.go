@@ -34,7 +34,6 @@ type characterInfo struct {
 	description     *widget.Label
 	employeeHistory *entityList
 	id              int64
-	isOwned         bool
 	membership      *widget.Label
 	ownedIcon       *ttwidget.Icon
 	portrait        *xwidget.TappableImage
@@ -57,6 +56,7 @@ func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
 	bio.Wrapping = fyne.TextWrapWord
 	ownedIcon := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
 	ownedIcon.SetToolTip("You own this character")
+	ownedIcon.Hide()
 	a := &characterInfo{
 		alliance:        alliance,
 		bio:             bio,
@@ -64,7 +64,6 @@ func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
 		corporationLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		description:     newLabelWithWrapAndSelectable(""),
 		id:              id,
-		isOwned:         iw.scs.ListCharacterIDs().Contains(id),
 		membership:      widget.NewLabel(""),
 		ownedIcon:       ownedIcon,
 		portrait:        portrait,
@@ -86,9 +85,6 @@ func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
 		a.tabs.Append(container.NewTabItem("Employment History", a.employeeHistory))
 	}
 	a.tabs.Select(attributes)
-	if !a.isOwned {
-		a.ownedIcon.Hide()
-	}
 	return a
 }
 
@@ -220,7 +216,17 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 		a.title.SetText("Title: " + v)
 	})
-	attributes, err := a.makeAttributes(ctx, o)
+
+	characterIDs, err := a.iw.cs.ListCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	isOwned := characterIDs.Contains(a.id)
+	if isOwned {
+		a.ownedIcon.Show()
+	}
+
+	attributes, err := a.makeAttributes(ctx, o, isOwned)
 	if err != nil {
 		return err
 	}
@@ -249,7 +255,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 	return nil
 }
 
-func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter) ([]attributeItem, error) {
+func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter, isOwned bool) ([]attributeItem, error) {
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
@@ -271,7 +277,7 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter)
 		u = "?"
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
-	if a.isOwned {
+	if isOwned {
 		c, err := a.iw.cs.GetCharacter(ctx, a.id)
 		if err != nil {
 			return nil, err

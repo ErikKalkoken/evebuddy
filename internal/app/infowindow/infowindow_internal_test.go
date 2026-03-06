@@ -106,7 +106,6 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 				Type:        icons.Typeplaceholder64Png,
 			},
 			EveUniverseService: eus,
-			StatusCacheService: scs,
 			Settings:           new(SettingsFake),
 			UIService:          &UIServiceFake{app: test.NewTempApp(t)},
 		})

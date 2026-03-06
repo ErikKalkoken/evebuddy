@@ -442,7 +442,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		EveUniverseService: u.eus,
 		JaniceService:      u.js,
 		Settings:           u.settings,
-		StatusCacheService: u.scs,
 		UIService:          u,
 	})
 	if !ok {

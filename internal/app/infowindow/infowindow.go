@@ -42,10 +42,7 @@ type UIService interface {
 type CS interface {
 	GetCharacter(ctx context.Context, id int64) (*app.Character, error)
 	GetSkill(ctx context.Context, characterID int64, typeID int64) (*app.CharacterSkill, error)
-}
-
-type SCS interface {
-	ListCharacterIDs() set.Set[int64]
+	ListCharacterIDs(ctx context.Context) (set.Set[int64], error)
 }
 
 type EUS interface {
@@ -92,6 +89,16 @@ type Settings interface {
 	PreferMarketTab() bool
 }
 
+type Params struct {
+	CharacterService   CS
+	EveImageService    EIS
+	EveUniverseService EUS
+	Settings           Settings
+	UIService          UIService
+	// optional
+	JaniceService *janiceservice.JaniceService
+}
+
 // InfoWindow represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
 type InfoWindow struct {
@@ -102,21 +109,10 @@ type InfoWindow struct {
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
 	sb            *xwidget.Snackbar
-	scs           SCS
 	settings      Settings
 	u             UIService
 	w             fyne.Window
-}
-
-type Params struct {
-	CharacterService   CS
-	EveImageService    EIS
-	EveUniverseService EUS
-	StatusCacheService SCS
-	Settings           Settings
-	UIService          UIService
-	// optional
-	JaniceService *janiceservice.JaniceService
+	current       *showParams // parameters for currently shown info window (if any)
 }
 
 const (
@@ -142,10 +138,6 @@ func New(arg Params) (*InfoWindow, bool) {
 		slog.Error("characterWindow: EveUniverseService missing")
 		return nil, false
 	}
-	if arg.StatusCacheService == nil {
-		slog.Error("characterWindow: StatusCacheService missing")
-		return nil, false
-	}
 	if arg.Settings == nil {
 		slog.Error("characterWindow: Settings missing")
 		return nil, false
@@ -160,7 +152,6 @@ func New(arg Params) (*InfoWindow, bool) {
 		eis:      arg.EveImageService,
 		eus:      arg.EveUniverseService,
 		js:       arg.JaniceService,
-		scs:      arg.StatusCacheService,
 		settings: arg.Settings,
 		u:        arg.UIService,
 		w:        arg.UIService.MainWindow(),
@@ -186,15 +177,27 @@ func (iw *InfoWindow) ShowRace(id int64) {
 }
 
 func (iw *InfoWindow) ShowType(typeID int64) {
-	iw.showWithCharacterID(infoInventoryType, typeID, 0)
+	iw.showWithCharacterID(showParams{
+		variant:     infoInventoryType,
+		entityID:    typeID,
+		characterID: 0,
+	})
 }
 
 func (iw *InfoWindow) ShowTypeWithCharacter(typeID, characterID int64) {
-	iw.showWithCharacterID(infoInventoryType, typeID, characterID)
+	iw.showWithCharacterID(showParams{
+		variant:     infoInventoryType,
+		entityID:    typeID,
+		characterID: characterID,
+	})
 }
 
 func (iw *InfoWindow) show(v infoVariant, id int64) {
-	iw.showWithCharacterID(v, id, 0)
+	iw.showWithCharacterID(showParams{
+		variant:     v,
+		entityID:    id,
+		characterID: id,
+	})
 }
 
 // infoWidget defines common functionality for all info widgets.
@@ -204,7 +207,13 @@ type infoWidget interface {
 	setError(string)
 }
 
-func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
+type showParams struct {
+	variant     infoVariant
+	entityID    int64
+	characterID int64
+}
+
+func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 	if app.IsOfflineMode() {
 		xdialog.ShowInformation(
 			"Offline",
@@ -214,6 +223,16 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		return
 	}
 
+	// don't spawn another window if it is already shown.
+	if iw.current != nil && iw.w != nil {
+		if *iw.current == arg {
+			iw.w.Show()
+			iw.w.RequestFocus()
+			return
+		}
+	}
+	iw.current = &arg
+
 	makeAppBarTitle := func(s string) string {
 		if app.IsMobile() {
 			return s
@@ -221,10 +240,10 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 		return s + ": Information"
 	}
 
-	if v == infoLocation {
-		switch app.LocationVariantFromID(entityID) {
+	if arg.variant == infoLocation {
+		switch app.LocationVariantFromID(arg.entityID) {
 		case app.EveLocationSolarSystem:
-			v = infoSolarSystem
+			arg.variant = infoSolarSystem
 		case app.EveLocationUnknown:
 			xdialog.ShowInformation(
 				"Unknown location",
@@ -238,36 +257,36 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	var title string
 	var page infoWidget
 	var ab *xwidget.AppBar
-	switch v {
+	switch arg.variant {
 	case infoAlliance:
 		title = "Alliance"
-		page = newAllianceInfo(iw, entityID)
+		page = newAllianceInfo(iw, arg.entityID)
 	case infoCharacter:
 		title = "Character"
-		page = newCharacterInfo(iw, entityID)
+		page = newCharacterInfo(iw, arg.entityID)
 	case infoConstellation:
 		title = "Constellation"
-		page = newConstellationInfo(iw, entityID)
+		page = newConstellationInfo(iw, arg.entityID)
 	case infoCorporation:
 		title = "Corporation"
-		page = newCorporationInfo(iw, entityID)
+		page = newCorporationInfo(iw, arg.entityID)
 	case infoInventoryType:
-		x := newInventoryTypeInfo(iw, entityID, characterID)
+		x := newInventoryTypeInfo(iw, arg.entityID, arg.characterID)
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
 	case infoRace:
 		title = "Race"
-		page = newRaceInfo(iw, entityID)
+		page = newRaceInfo(iw, arg.entityID)
 	case infoRegion:
 		title = "Region"
-		page = newRegionInfo(iw, entityID)
+		page = newRegionInfo(iw, arg.entityID)
 	case infoSolarSystem:
 		title = "Solar System"
-		page = newSolarSystemInfo(iw, entityID)
+		page = newSolarSystemInfo(iw, arg.entityID)
 	case infoLocation:
 		title = "Location"
-		page = newLocationInfo(iw, entityID)
+		page = newLocationInfo(iw, arg.entityID)
 	default:
 		xdialog.ShowInformation(
 			"Warning",
@@ -313,7 +332,7 @@ func (iw *InfoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 	go func() {
 		err := page.update(context.Background())
 		if err != nil {
-			slog.Error("info widget load", "variant", v, "id", entityID, "error", err)
+			slog.Error("info widget load", "params", arg, "error", err)
 			fyne.Do(func() {
 				page.setError("ERROR: " + app.ErrorDisplay(err))
 			})
