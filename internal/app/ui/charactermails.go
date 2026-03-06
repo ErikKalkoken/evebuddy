@@ -730,7 +730,7 @@ func (a *characterMails) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarAction(a.MakeReplyAllAction()),
 		widget.NewToolbarAction(a.MakeForwardAction()),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			a.u.App().Clipboard().SetContent(a.mail.String())
+			fyne.CurrentApp().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(a.MakeDeleteAction(nil)),

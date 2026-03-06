@@ -559,10 +559,6 @@ func (u *baseUI) ShowAndRun() {
 	}
 }
 
-func (u *baseUI) App() fyne.App {
-	return u.app
-}
-
 func (u *baseUI) ClearAllCaches() {
 	u.clearCache()
 }
@@ -1109,7 +1105,7 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	if ok {
 		return w, false, nil
 	}
-	w = u.App().NewWindow(u.MakeWindowTitle(titles...))
+	w = u.app.NewWindow(u.MakeWindowTitle(titles...))
 	u.windows[id] = w
 	if fyne.CurrentDevice().IsMobile() {
 		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
@@ -1138,7 +1134,7 @@ func (u *baseUI) MakeWindowTitle(parts ...string) string {
 
 func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 	return kxwidget.NewTappableLabel(text, func() {
-		u.App().Clipboard().SetContent(text)
+		fyne.CurrentApp().Clipboard().SetContent(text)
 	})
 }
 

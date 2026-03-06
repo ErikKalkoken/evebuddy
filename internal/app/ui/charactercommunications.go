@@ -244,7 +244,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			} else {
 				s += "(no body)"
 			}
-			a.u.App().Clipboard().SetContent(s)
+			fyne.CurrentApp().Clipboard().SetContent(s)
 		}),
 	)
 	if app.IsDeveloperMode() {

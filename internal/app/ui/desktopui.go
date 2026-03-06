@@ -61,7 +61,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u := &DesktopUI{
 		baseUI: bu,
 	}
-	deskApp, ok := u.App().(desktop.App)
+	deskApp, ok := u.app.(desktop.App)
 	if !ok {
 		panic("Could not start in desktop mode")
 	}
@@ -658,7 +658,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 }
 
 func (u *DesktopUI) saveAppState() {
-	if u.MainWindow() == nil || u.App() == nil {
+	if u.MainWindow() == nil || u.app == nil {
 		slog.Warn("Failed to save app state")
 	}
 	u.settings.SetWindowSize(u.MainWindow().Canvas().Size())
@@ -667,7 +667,7 @@ func (u *DesktopUI) saveAppState() {
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.App().NewWindow(u.MakeWindowTitle(title))
+	w := u.app.NewWindow(u.MakeWindowTitle(title))
 	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
@@ -849,7 +849,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.App().Quit()
+				u.app.Quit()
 			}},
 	}
 	for name, def := range m {
@@ -874,7 +874,7 @@ func (u *DesktopUI) showUserDataDialog() {
 			widget.NewLabel(p),
 			layout.NewSpacer(),
 			widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-				u.App().Clipboard().SetContent(p)
+				u.app.Clipboard().SetContent(p)
 			}),
 		)
 		f.Append(name, c)
