@@ -116,10 +116,11 @@ type Params struct {
 	EveImageService    EIS
 	EveUniverseService EUS
 	IsMobile           bool
-	JaniceService      *janiceservice.JaniceService
 	StatusCacheService SCS
 	Settings           Settings
 	UIService          UIService
+	// optional
+	JaniceService *janiceservice.JaniceService
 }
 
 const (
@@ -185,10 +186,6 @@ func newInfoWindow(arg Params) (*infoWindow, bool) {
 	}
 	if arg.EveUniverseService == nil {
 		slog.Error("characterWindow: EveUniverseService missing")
-		return nil, false
-	}
-	if arg.JaniceService == nil {
-		slog.Error("characterWindow: JaniceService missing")
 		return nil, false
 	}
 	if arg.StatusCacheService == nil {

@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
 type UIServiceFake struct {
@@ -108,7 +107,6 @@ func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {
 			},
 			EveUniverseService: eus,
 			IsMobile:           false,
-			JaniceService:      new(janiceservice.JaniceService),
 			StatusCacheService: scs,
 			Settings:           new(SettingsFake),
 			UIService:          &UIServiceFake{app: test.NewTempApp(t)},

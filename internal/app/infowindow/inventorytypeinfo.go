@@ -649,6 +649,11 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 	return container.NewTabItem("Requirements", list)
 }
 
+const (
+	priceFormat    = "#,###.##"
+	currencySuffix = " ISK"
+)
+
 func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) *container.TabItem {
 	if !et.IsTradeable() {
 		return nil
@@ -657,10 +662,6 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 	a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
 	marketTab := container.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
 	go func() {
-		const (
-			priceFormat    = "#,###.##"
-			currencySuffix = " ISK"
-		)
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
 	L:
@@ -678,27 +679,16 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 				})
 			}
 			items = append(items, newAttributeItem("Average price", averagePrice))
-
-			j, err := a.iw.js.FetchPrices(ctx, a.typeID)
+			it, err := a.addJanicePriceItems(ctx, et.ID)
 			if err != nil {
 				slog.Error("janice pricer", "typeID", et.ID, "error", err)
 				s := "ERROR: " + app.ErrorDisplay(err)
 				items = append(items, newAttributeItem("Janice prices", s))
 			} else {
-				items2 := []attributeItem{
-					newAttributeItem("Jita sell price", humanize.FormatFloat(
-						priceFormat,
-						j.ImmediatePrices.SellPrice)+currencySuffix,
-					),
-					newAttributeItem("Jita buy price", humanize.FormatFloat(
-						priceFormat,
-						j.ImmediatePrices.BuyPrice)+currencySuffix,
-					),
-					newAttributeItem("Jita sell volume", ihumanize.Comma(j.SellVolume)),
-					newAttributeItem("Jita buy volume", ihumanize.Comma(j.BuyVolume)),
-				}
-				items = slices.Concat(items, items2)
+				items = slices.Concat(items, it)
 			}
+			items = slices.Concat(items)
+
 			c := newAttributeList(a.iw, items...)
 			fyne.Do(func() {
 				marketTab.Content = c
@@ -713,6 +703,30 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 		slog.Debug("market update type for canceled", "name", et.Name)
 	}()
 	return marketTab
+}
+
+func (a *inventoryTypeInfo) addJanicePriceItems(ctx context.Context, typeID int64) ([]attributeItem, error) {
+	if a.iw.js == nil {
+		return nil, fmt.Errorf("janice prices not configured")
+	}
+	j, err := a.iw.js.FetchPrices(ctx, typeID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch prices from janice: %w", err)
+	}
+
+	items := []attributeItem{
+		newAttributeItem("Jita sell price", humanize.FormatFloat(
+			priceFormat,
+			j.ImmediatePrices.SellPrice)+currencySuffix,
+		),
+		newAttributeItem("Jita buy price", humanize.FormatFloat(
+			priceFormat,
+			j.ImmediatePrices.BuyPrice)+currencySuffix,
+		),
+		newAttributeItem("Jita sell volume", ihumanize.Comma(j.SellVolume)),
+		newAttributeItem("Jita buy volume", ihumanize.Comma(j.BuyVolume)),
+	}
+	return items, nil
 }
 
 type requiredSkill struct {
