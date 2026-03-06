@@ -1,4 +1,5 @@
-package xwidget
+// Package xlayout extends Fyne's layout package.
+package xlayout
 
 import (
 	"fyne.io/fyne/v2"

@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -283,7 +284,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.isMobile {
 		topBox = container.NewVBox(origin, container.NewHScroll(filters))
 	} else {
-		topBox = container.New(xwidget.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
+		topBox = container.New(xlayout.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
 	}
 	c := container.NewBorder(
 		topBox,
