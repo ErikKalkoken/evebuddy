@@ -45,13 +45,32 @@ type UIService interface {
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 }
 
-func Show(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals) {
-	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed("user-settings", "Settings")
+type Params struct {
+	IsMobile  bool
+	Settings  *settings.Settings
+	Signals   *app.Signals
+	UIService UIService
+}
+
+func Show(arg Params) {
+	if arg.Settings == nil {
+		slog.Error("settingsWindow: Settings missing")
+		return
+	}
+	if arg.Signals == nil {
+		slog.Error("settingsWindow: Signals missing")
+		return
+	}
+	if arg.UIService == nil {
+		slog.Error("settingsWindow: UIService missing")
+		return
+	}
+	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("settingsWindow", "Settings")
 	if !ok {
 		w.Show()
 		return
 	}
-	a := newSettingsWindow(u, s, isMobile, signals, w)
+	a := newSettingsWindow(arg, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -83,14 +102,14 @@ type settingsWindow struct {
 	w        fyne.Window
 }
 
-func newSettingsWindow(u UIService, s *settings.Settings, isMobile bool, signals *app.Signals, w fyne.Window) *settingsWindow {
+func newSettingsWindow(arg Params, w fyne.Window) *settingsWindow {
 	a := &settingsWindow{
-		isMobile: isMobile,
+		isMobile: arg.IsMobile,
 		sb:       iwidget.NewSnackbar(w),
-		settings: s,
-		u:        u,
+		settings: arg.Settings,
+		signals:  arg.Signals,
+		u:        arg.UIService,
 		w:        w,
-		signals:  signals,
 	}
 	a.ExtendBaseWidget(a)
 	a.sb.Start()

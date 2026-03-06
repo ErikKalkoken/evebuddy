@@ -62,27 +62,34 @@ type Params struct {
 
 func Show(arg Params) {
 	if arg.CharacterService == nil {
-		panic("CharacterService missing")
+		slog.Error("statusWindow: CharacterService missing")
+		return
 	}
 	if arg.CorporationService == nil {
-		panic("CorporationService missing")
+		slog.Error("statusWindow: CorporationService missing")
+		return
 	}
 	if arg.EveImageService == nil {
-		panic("EveImageService missing")
+		slog.Error("statusWindow: EveImageService missing")
+		return
 	}
 	if arg.EveUniverseService == nil {
-		panic("EveUniverseService missing")
+		slog.Error("statusWindow: EveUniverseService missing")
+		return
 	}
 	if arg.Signals == nil {
-		panic("Signals missing")
+		slog.Error("statusWindow: Signals missing")
+		return
 	}
 	if arg.StatusCacheService == nil {
-		panic("StatusCacheService missing")
+		slog.Error("statusWindow: StatusCacheService missing")
+		return
 	}
 	if arg.UIService == nil {
-		panic("UIService missing")
+		slog.Error("statusWindow: UIService missing")
+		return
 	}
-	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
+	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
 		w.Show()
 		return

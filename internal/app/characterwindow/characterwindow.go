@@ -60,21 +60,26 @@ type Params struct {
 
 func Show(arg Params) {
 	if arg.CharacterService == nil {
-		panic("CharacterService missing")
+		slog.Error("characterWindow: CharacterService missing")
+		return
 	}
 	if arg.CorporationService == nil {
-		panic("CorporationService missing")
+		slog.Error("characterWindow: CorporationService missing")
+		return
 	}
 	if arg.EveImageService == nil {
-		panic("EveImageService missing")
+		slog.Error("characterWindow: EveImageService missing")
+		return
 	}
 	if arg.Signals == nil {
-		panic("Signals missing")
+		slog.Error("characterWindow: Signals missing")
+		return
 	}
 	if arg.UIService == nil {
-		panic("UIService missing")
+		slog.Error("characterWindow: UIService missing")
+		return
 	}
-	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
 	if !created {
 		w.Show()
 		return

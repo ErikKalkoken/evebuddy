@@ -813,7 +813,12 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				settingswindow.Show(u.baseUI, u.settings, u.isMobile, u.signals)
+				settingswindow.Show(settingswindow.Params{
+					IsMobile:  u.isMobile,
+					Settings:  u.settings,
+					Signals:   u.signals,
+					UIService: u,
+				})
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{
