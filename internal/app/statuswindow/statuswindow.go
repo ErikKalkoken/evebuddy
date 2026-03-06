@@ -45,7 +45,6 @@ type SCS interface {
 
 type UIService interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	IsOffline() bool
 }
 
 type Params struct {
@@ -347,7 +346,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				return
 			}
 
-			if c.ss.IsRunning && !a.u.IsOffline() {
+			if c.ss.IsRunning && !app.IsOfflineMode() {
 				spinner.Start()
 				spinner.Show()
 			} else {
@@ -375,7 +374,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
 
-		if !a.u.IsOffline() {
+		if !app.IsOfflineMode() {
 			a.updateAllSections.OnTapped = a.makeUpdateAllAction()
 			a.updateAllSections.Enable()
 		}
@@ -494,7 +493,7 @@ func (a *statusWindow) makeSectionList() *widget.List {
 			status.Refresh()
 
 			spinner := hbox[1].(*widget.Activity)
-			if cs.IsRunning() && !a.u.IsOffline() {
+			if cs.IsRunning() && !app.IsOfflineMode() {
 				spinner.Start()
 				spinner.Show()
 			} else {
@@ -549,7 +548,7 @@ func (a *statusWindow) refreshDetails() {
 	} else {
 		a.detailsTop.SetText("")
 	}
-	if !a.u.IsOffline() {
+	if !app.IsOfflineMode() {
 		a.updateSection.OnTapped = a.makeUpdateSectionAction(ss.EntityID, ss.SectionID)
 		a.updateSection.Enable()
 	}

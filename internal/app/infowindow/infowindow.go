@@ -36,7 +36,6 @@ import (
 
 type UIService interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
-	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
 }
@@ -229,7 +228,7 @@ type infoWidget interface {
 }
 
 func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int64) {
-	if iw.u.IsOffline() {
+	if app.IsOfflineMode() {
 		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",

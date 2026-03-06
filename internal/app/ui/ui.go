@@ -159,7 +159,6 @@ type baseUI struct {
 	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
-	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled   atomic.Bool // Whether to disable update tickers (useful for debugging)
 	sig                *singleinstance.Group
@@ -185,7 +184,6 @@ type BaseUIParams struct {
 	ConcurrencyLimit int
 	DataPaths        map[string]string
 	IsFakeMobile     bool
-	IsOffline        bool
 	IsUpdateDisabled bool
 }
 
@@ -229,7 +227,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                arg.ESIStatusService,
 		eus:                arg.EveUniverseService,
 		isFakeMobile:       arg.IsFakeMobile,
-		isOffline:          arg.IsOffline,
 		js:                 arg.JaniceService,
 		rs:                 arg.CorporationService,
 		scs:                arg.StatusCacheService,
@@ -447,7 +444,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
 			go u.signals.RefreshTickerExpired.Emit(context.Background(), struct{}{})
-			if !u.isOffline && !u.isUpdateDisabled.Load() {
+			if !app.IsOfflineMode() && !u.isUpdateDisabled.Load() {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					go u.cs.UpdateCharactersIfNeeded(context.Background(), false)
@@ -481,7 +478,7 @@ func (u *baseUI) Start() bool {
 	app.SetDeveloperMode(u.settings.DeveloperMode())
 	u.defaultTheme = theme.Current()
 	u.SetColorTheme(u.settings.ColorTheme())
-	if u.isOffline {
+	if app.IsOfflineMode() {
 		slog.Info("App started in offline mode")
 	} else {
 		slog.Info("App started")
@@ -533,7 +530,7 @@ func (u *baseUI) Start() bool {
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
-		if !u.isOffline && !u.isUpdateDisabled.Load() {
+		if !app.IsOfflineMode() && !u.isUpdateDisabled.Load() {
 			time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
 			u.eus.StartUpdateTicker(eveUniverseUpdateTick)
@@ -564,10 +561,6 @@ func (u *baseUI) ClearAllCaches() {
 
 func (u *baseUI) MainWindow() fyne.Window {
 	return u.window
-}
-
-func (u *baseUI) IsOffline() bool {
-	return u.isOffline
 }
 
 func (u *baseUI) IsStartupCompleted() bool {

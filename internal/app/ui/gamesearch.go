@@ -305,7 +305,7 @@ func (a *gameSearch) setEntry(s string) {
 }
 
 func (a *gameSearch) doSearch(ctx context.Context, search string) {
-	if a.u.IsOffline() {
+	if app.IsOfflineMode() {
 		fyne.Do(func() {
 			xdialog.ShowInformation(
 				"Offline",

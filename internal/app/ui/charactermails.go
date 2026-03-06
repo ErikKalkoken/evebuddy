@@ -762,7 +762,7 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 		a.toolbar.Show()
 	})
 
-	if a.u.IsOffline() || a.u.isUpdateDisabled.Load() {
+	if app.IsOfflineMode() || a.u.isUpdateDisabled.Load() {
 		return
 	}
 

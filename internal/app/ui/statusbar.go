@@ -212,7 +212,7 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOffline() {
+	if app.IsOfflineMode() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})

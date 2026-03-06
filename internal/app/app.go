@@ -48,9 +48,11 @@ var (
 	ErrNotFound      = errors.New("object not found")
 )
 
+// global state
 var (
 	isDeveloperMode bool
 	isMobile        bool
+	isOfflineMode   bool
 )
 
 func SetDeveloperMode(b bool) {
@@ -67,6 +69,14 @@ func SetIsMobile(b bool) {
 
 func IsMobile() bool {
 	return isMobile
+}
+
+func SetIsOfflineMode(b bool) {
+	isOfflineMode = b
+}
+
+func IsOfflineMode() bool {
+	return isOfflineMode
 }
 
 // VariableDateFormat returns a variable format for [time.Time] values.
