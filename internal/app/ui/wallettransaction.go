@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -611,7 +612,7 @@ func showCharacterWalletTransactionWindowAsync(u *baseUI, characterID int64, tra
 	go func() {
 		o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
-			xdialog.ShowError("Failed to show market transaction", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {
@@ -655,16 +656,16 @@ func showCharacterWalletTransactionWindowAsync(u *baseUI, characterID int64, tra
 			}
 			f := widget.NewForm(items...)
 			f.Orientation = widget.Adaptive
-			setDetailWindow(detailWindowParams{
-				content: f,
-				imageAction: func() {
+			xwindow.Set(xwindow.Params{
+				Content: f,
+				ImageAction: func() {
 					u.InfoWindow().ShowType(o.Type.ID)
 				},
-				imageLoader: func(setter func(r fyne.Resource)) {
+				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.eis.InventoryTypeIconAsync(o.Type.ID, 256, setter)
 				},
-				title:  title,
-				window: w,
+				Title:  title,
+				Window: w,
 			})
 			w.Show()
 		})
@@ -687,7 +688,7 @@ func showCorporationWalletTransactionWindowAsync(u *baseUI, corporationID int64,
 	go func() {
 		o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
-			xdialog.ShowError("Failed to show market transaction", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.window)
 			return
 		}
 		fyne.Do(func() {
@@ -722,16 +723,16 @@ func showCorporationWalletTransactionWindowAsync(u *baseUI, corporationID int64,
 			}
 			f := widget.NewForm(items...)
 			f.Orientation = widget.Adaptive
-			setDetailWindow(detailWindowParams{
-				content: f,
-				imageAction: func() {
+			xwindow.Set(xwindow.Params{
+				Content: f,
+				ImageAction: func() {
 					u.InfoWindow().ShowType(o.Type.ID)
 				},
-				imageLoader: func(setter func(r fyne.Resource)) {
+				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.eis.InventoryTypeIconAsync(o.Type.ID, 256, setter)
 				},
-				title:  title,
-				window: w,
+				Title:  title,
+				Window: w,
 			})
 			w.Show()
 		})

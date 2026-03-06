@@ -342,7 +342,7 @@ func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	)
 	if err != nil {
 		fyne.Do(func() {
-			xdialog.ShowError("Search failed", err, a.u.MainWindow())
+			xdialog.ShowErrorAndLog("Search failed", err, a.u.MainWindow())
 		})
 		return
 	}

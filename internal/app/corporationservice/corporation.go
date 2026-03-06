@@ -65,6 +65,18 @@ func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.
 	return s.st.ListCorporationsShort(ctx)
 }
 
+func (s *CorporationService) CorporationNames(ctx context.Context) (map[int64]string, error) {
+	oo, err := s.st.ListCorporationsShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int64]string)
+	for _, o := range oo {
+		m[o.ID] = o.Name
+	}
+	return m, nil
+}
+
 // ListPrivilegedCorporations returns all corporations with privileged access.
 func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	var roles set.Set[app.Role]

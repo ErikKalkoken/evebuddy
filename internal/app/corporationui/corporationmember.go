@@ -17,27 +17,11 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-type UI interface {
-	InfoWindow() *infowindow.InfoWindow
-}
-
-type Params struct {
-	CharacterService   *characterservice.CharacterService
-	CorporationService *corporationservice.CorporationService
-	EveImageService    *eveimageservice.EveImageService
-	Signals            *app.Signals
-	UI                 UI
-}
 
 type corporationMemberRow struct {
 	id           int64
@@ -51,26 +35,22 @@ type CorporationMember struct {
 	widget.BaseWidget
 
 	corporation  atomic.Pointer[app.Corporation]
-	cs           *characterservice.CharacterService
-	eis          *eveimageservice.EveImageService
 	footer       *widget.Label
 	list         *widget.List
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
-	rs           *corporationservice.CorporationService
 	searchBox    *widget.Entry
-	signals      *app.Signals
-	u            UI
+	s            services
 }
 
 func NewCorporationMember(arg Params) *CorporationMember {
+	s, err := arg.Services()
+	if err != nil {
+		panic(fmt.Errorf("corporation member: %w", err))
+	}
 	a := &CorporationMember{
-		cs:      arg.CharacterService,
-		eis:     arg.EveImageService,
-		footer:  newLabelWithTruncation(),
-		rs:      arg.CorporationService,
-		signals: arg.Signals,
-		u:       arg.UI,
+		footer: newLabelWithTruncation(),
+		s:      s,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
@@ -87,11 +67,11 @@ func NewCorporationMember(arg Params) *CorporationMember {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.s.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -120,7 +100,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(a.eis.CharacterPortraitAsync)
+			return newCorporationMemberItem(a.s.eis.CharacterPortraitAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -135,7 +115,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.u.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.s.u.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }
@@ -177,7 +157,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 	}
 	var rows []corporationMemberRow
 	var err error
-	hasData, err := a.rs.HasSection(ctx, corporationID, app.SectionCorporationMembers)
+	hasData, err := a.s.rs.HasSection(ctx, corporationID, app.SectionCorporationMembers)
 	if hasData {
 		rows2, err2 := a.fetchRows(ctx, corporationID, ceoID)
 		if err2 != nil {
@@ -201,7 +181,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 }
 
 func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]corporationMemberRow, error) {
-	cc, err := a.cs.ListCharacters(ctx)
+	cc, err := a.s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +191,7 @@ func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID 
 			owned.Add(c.ID)
 		}
 	}
-	oo, err := a.rs.ListMembers(ctx, corporationID)
+	oo, err := a.s.rs.ListMembers(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}

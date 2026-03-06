@@ -459,7 +459,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 		a.sb.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		xdialog.ShowError("Failed to open "+filename, err, a.w)
+		xdialog.ShowErrorAndLog("Failed to open "+filename, err, a.w)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -479,7 +479,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				xdialog.ShowError("Failed to export "+filename, err, a.w)
+				xdialog.ShowErrorAndLog("Failed to export "+filename, err, a.w)
 			}
 		}, a.w,
 	)

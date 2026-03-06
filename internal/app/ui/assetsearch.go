@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -931,12 +932,12 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(detailWindowParams{
-		content: f,
-		imageAction: func() {
+	xwindow.Set(xwindow.Params{
+		Content: f,
+		ImageAction: func() {
 			u.InfoWindow().ShowType(r.typeID)
 		},
-		imageLoader: func(setter func(r fyne.Resource)) {
+		ImageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {
 			case app.VariantSKIN:
 				u.eis.InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
@@ -948,9 +949,9 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 				u.eis.InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
 			}
 		},
-		minSize: fyne.NewSize(500, 450),
-		title:   r.name,
-		window:  w,
+		MinSize: fyne.NewSize(500, 450),
+		Title:   r.name,
+		Window:  w,
 	})
 	w.Show()
 }

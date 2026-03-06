@@ -237,7 +237,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 		if err != nil {
 			fyne.Do(func() {
 				d1.Hide()
-				xdialog.ShowError("Failed to add a new character", err, a.cw.w)
+				xdialog.ShowErrorAndLog("Failed to add a new character", err, a.cw.w)
 			})
 		} else {
 			fyne.Do(func() {

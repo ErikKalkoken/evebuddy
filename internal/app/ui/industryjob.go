@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -894,16 +895,16 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		}
 		a.u.signals.RefreshTickerExpired.RemoveListener(key)
 	})
-	setDetailWindow(detailWindowParams{
-		content: f,
-		imageAction: func() {
+	xwindow.Set(xwindow.Params{
+		Content: f,
+		ImageAction: func() {
 			a.u.InfoWindow().ShowType(r.blueprintType.ID)
 		},
-		imageLoader: func(setter func(r fyne.Resource)) {
+		ImageLoader: func(setter func(r fyne.Resource)) {
 			a.u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)
 		},
-		title:  title,
-		window: w,
+		Title:  title,
+		Window: w,
 	})
 	w.Show()
 }

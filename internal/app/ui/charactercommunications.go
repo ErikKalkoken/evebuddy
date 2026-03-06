@@ -218,7 +218,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				return
 			}
 			processErr := func(err error) {
-				xdialog.ShowError(
+				xdialog.ShowErrorAndLog(
 					"Failed to generated notification for clipboard",
 					err,
 					a.u.MainWindow(),

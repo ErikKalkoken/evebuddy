@@ -503,7 +503,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 				return
 			}
 			if err := fyne.CurrentApp().OpenURL(u); err != nil {
-				xdialog.ShowError("Failed to open download page", err, w.u.MainWindow())
+				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.MainWindow())
 			}
 		}, w.u.MainWindow(),
 		)

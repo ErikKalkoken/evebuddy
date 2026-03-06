@@ -1,4 +1,4 @@
-package ui
+package corporationui
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -70,7 +71,7 @@ func (r corporationStructureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 	})
 }
 
-type corporationStructures struct {
+type CorporationStructures struct {
 	widget.BaseWidget
 
 	OnUpdate func(count int)
@@ -88,7 +89,7 @@ type corporationStructures struct {
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 *baseUI
+	s                 services
 }
 
 const (
@@ -99,7 +100,11 @@ const (
 	structuresColServices
 )
 
-func newCorporationStructures(u *baseUI) *corporationStructures {
+func NewCorporationStructures(arg Params) *CorporationStructures {
+	s, err := arg.Services()
+	if err != nil {
+		panic(fmt.Errorf("corporation member: %w", err))
+	}
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[corporationStructureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
@@ -112,7 +117,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		},
 	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[corporationStructureRow]{
 		ColumnID: structuresColType,
-		EIS:      u.eis,
+		EIS:      s.eis,
 		Label:    "Type",
 		GetEntity: func(r corporationStructureRow) *app.EveEntity {
 			return &app.EveEntity{
@@ -148,10 +153,10 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			co.(*xwidget.RichText).SetWithText(r.servicesText)
 		},
 	}})
-	a := &corporationStructures{
+	a := &CorporationStructures{
 		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
 		footer:       newLabelWithWrapping(),
-		u:            u,
+		s:            s,
 	}
 	a.ExtendBaseWidget(a)
 	if !app.IsMobile() {
@@ -165,7 +170,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r corporationStructureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), a.u, r.corporationID, r.structureID, r.solarSystemName)
+				go showCorporationStructureWindowAsync(context.Background(), s, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	} else {
@@ -190,11 +195,12 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 				return xwidget.RichTextSegmentsFromText("?")
 			},
 			func(r corporationStructureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), a.u, r.corporationID, r.structureID, r.solarSystemName)
+				go showCorporationStructureWindowAsync(context.Background(), s, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	}
 
+	// filter
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -212,7 +218,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.s.u.MainWindow())
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
@@ -220,11 +226,12 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		a.filterRowsAsync(-1)
 	})
 
-	a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	// Signals
+	a.s.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -233,7 +240,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		}
 		a.update(ctx)
 	})
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.s.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})
@@ -241,7 +248,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	return a
 }
 
-func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
+func (a *CorporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
 	if app.IsMobile() {
 		filter.Add(a.sortButton)
@@ -250,7 +257,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationStructures) filterRowsAsync(sortCol int) {
+func (a *CorporationStructures) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -334,7 +341,7 @@ func (a *corporationStructures) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *corporationStructures) update(ctx context.Context) {
+func (a *CorporationStructures) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
@@ -372,11 +379,15 @@ func (a *corporationStructures) update(ctx context.Context) {
 	})
 }
 
-func (a *corporationStructures) fetchData(ctx context.Context, corporationID int64) ([]corporationStructureRow, error) {
+func (a *CorporationStructures) fetchData(ctx context.Context, corporationID int64) ([]corporationStructureRow, error) {
 	if corporationID == 0 {
 		return []corporationStructureRow{}, nil
 	}
-	structures, err := a.u.rs.ListStructures(ctx, corporationID)
+	structures, err := a.s.rs.ListStructures(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	corporationNames, err := a.s.rs.CorporationNames(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +414,7 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 
 		rows = append(rows, corporationStructureRow{
 			corporationID:      corporationID,
-			corporationName:    a.u.scs.CorporationName(corporationID),
+			corporationName:    corporationNames[corporationID],
 			fuelExpires:        s.FuelExpires,
 			fuelSort:           s.FuelExpires.ValueOrZero(),
 			isFullPower:        !s.FuelExpires.IsEmpty(),
@@ -427,8 +438,8 @@ func (a *corporationStructures) fetchData(ctx context.Context, corporationID int
 	return rows, nil
 }
 
-func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corporationID int64, structureID int64, title string) {
-	w, created := u.GetOrCreateWindow(
+func showCorporationStructureWindowAsync(ctx context.Context, s services, corporationID int64, structureID int64, title string) {
+	w, created := s.u.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,
 	)
@@ -438,12 +449,17 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 	}
 
 	go func() {
-		structure, err := u.rs.GetStructure(ctx, corporationID, structureID)
+		structure, err := s.rs.GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			xdialog.ShowError("Failed to fetch structure", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show structure", err, s.u.MainWindow())
 			return
 		}
-		corporationName := u.scs.CorporationName(corporationID)
+		corporationNames, err := s.rs.CorporationNames(ctx)
+		if err != nil {
+			xdialog.ShowErrorAndLog("Failed to show structure", err, s.u.MainWindow())
+			return
+		}
+		corporationName := corporationNames[corporationID]
 		fyne.Do(func() {
 			var services []widget.RichTextSegment
 			if len(structure.Services) == 0 {
@@ -483,15 +499,15 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					u.InfoWindow().ShowEntity,
+					s.u.InfoWindow().ShowEntity,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
-					u.InfoWindow().ShowType(structure.Type.ID)
+					s.u.InfoWindow().ShowType(structure.Type.ID)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().ShowEntity)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, s.u.InfoWindow().ShowEntity)),
 				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
+					s.u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
@@ -525,16 +541,16 @@ func showCorporationStructureWindowAsync(ctx context.Context, u *baseUI, corpora
 
 			f := widget.NewForm(fi...)
 			f.Orientation = widget.Adaptive
-			setDetailWindow(detailWindowParams{
-				content: f,
-				imageAction: func() {
-					u.InfoWindow().ShowType(structure.Type.ID)
+			xwindow.Set(xwindow.Params{
+				Content: f,
+				ImageAction: func() {
+					s.u.InfoWindow().ShowType(structure.Type.ID)
 				},
-				imageLoader: func(setter func(r fyne.Resource)) {
-					u.eis.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
+				ImageLoader: func(setter func(r fyne.Resource)) {
+					s.eis.InventoryTypeIconAsync(structure.Type.ID, 512, setter)
 				},
-				title:  structure.DisplayName(),
-				window: w,
+				Title:  structure.DisplayName(),
+				Window: w,
 			})
 			w.Show()
 		})

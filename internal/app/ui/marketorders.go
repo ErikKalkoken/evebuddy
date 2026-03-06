@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -593,16 +594,16 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(detailWindowParams{
-		content: f,
-		imageAction: func() {
+	xwindow.Set(xwindow.Params{
+		Content: f,
+		ImageAction: func() {
 			u.InfoWindow().ShowType(r.typeID)
 		},
-		imageLoader: func(setter func(r fyne.Resource)) {
+		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.eis.InventoryTypeIconAsync(r.typeID, 256, setter)
 		},
-		title:  title,
-		window: w,
+		Title:  title,
+		Window: w,
 	})
 	w.Show()
 }

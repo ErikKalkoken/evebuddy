@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -566,7 +567,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	ctx := context.Background()
 	o, err := u.cs.GetContract(ctx, characterID, contractID)
 	if err != nil {
-		xdialog.ShowError("Failed to show contract", err, u.window)
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.window)
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -651,7 +652,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 	case app.ContractTypeAuction:
 		total, err := u.cs.CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowError("Failed to show contract bids", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.window)
 			return
 		}
 		var currentBid string
@@ -660,7 +661,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 		} else {
 			top, err := u.cs.GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowError("Failed to show contract top bid", err, u.window)
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.window)
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -727,15 +728,15 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowError("Failed to show contract items", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.window)
 			return
 		}
 		main.Add(x)
 	}
-	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		content: main,
-		window:  w,
+	xwindow.Set(xwindow.Params{
+		Title:   subTitle,
+		Content: main,
+		Window:  w,
 	})
 	w.Show()
 }
@@ -747,7 +748,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 	ctx := context.Background()
 	o, err := u.rs.GetContract(ctx, corporationID, contractID)
 	if err != nil {
-		xdialog.ShowError("Failed to show contract", err, u.window)
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.window)
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -832,7 +833,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 	case app.ContractTypeAuction:
 		total, err := u.cs.CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowError("Failed to show contract bids", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.window)
 			return
 		}
 		var currentBid string
@@ -841,7 +842,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 		} else {
 			top, err := u.cs.GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowError("Failed to show contract top bid", err, u.window)
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.window)
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -908,15 +909,15 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowError("Failed to show contract items", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.window)
 			return
 		}
 		main.Add(x)
 	}
-	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		content: main,
-		window:  w,
+	xwindow.Set(xwindow.Params{
+		Title:   subTitle,
+		Content: main,
+		Window:  w,
 	})
 	w.Show()
 }

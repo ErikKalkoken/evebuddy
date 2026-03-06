@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -624,7 +625,7 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 	}
 	c, err := a.u.cs.GetCharacter(context.Background(), r.characterID)
 	if err != nil {
-		xdialog.ShowError("Failed to fetch character", err, a.u.MainWindow())
+		xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.MainWindow())
 		return
 	}
 	sq := newCharacterSkillQueueWithCharacter(a.u, c)
@@ -636,12 +637,12 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 	})
 	go sq.update(context.Background())
 	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
-	setDetailWindow(detailWindowParams{
-		content:        sq,
-		enableTooltips: true,
-		minSize:        fyne.NewSize(800, 450),
-		title:          subTitle,
-		window:         w,
+	xwindow.Set(xwindow.Params{
+		Content:        sq,
+		EnableTooltips: true,
+		MinSize:        fyne.NewSize(800, 450),
+		Title:          subTitle,
+		Window:         w,
 	})
 	w.Show()
 }

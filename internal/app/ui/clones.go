@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -455,7 +456,7 @@ func (a *clones) updateRoutesAsync() {
 func (a *clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		xdialog.ShowError("Something went wrong", err, w)
+		xdialog.ShowErrorAndLog("Something went wrong", err, w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity
@@ -651,10 +652,10 @@ func (a *clones) showRouteWindow(r cloneRow) {
 		nil,
 		list,
 	)
-	setDetailWindow(detailWindowParams{
-		title:   title,
-		content: c,
-		window:  w,
+	xwindow.Set(xwindow.Params{
+		Title:   title,
+		Content: c,
+		Window:  w,
 	})
 	w.Show()
 }
@@ -672,7 +673,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
-		xdialog.ShowError("failed to load clone", err, a.u.MainWindow())
+		xdialog.ShowErrorAndLog("failed to load clone", err, a.u.MainWindow())
 		return
 	}
 	list := widget.NewList(
@@ -751,10 +752,10 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		nil,
 		list,
 	)
-	setDetailWindow(detailWindowParams{
-		title:   title,
-		content: c,
-		window:  w,
+	xwindow.Set(xwindow.Params{
+		Title:   title,
+		Content: c,
+		Window:  w,
 	})
 	w.Show()
 }

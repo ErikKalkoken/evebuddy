@@ -30,8 +30,8 @@ func ShowConfirm(title, message, confirm string, callback func(bool), parent fyn
 	d.Show()
 }
 
-// ShowError shows a error dialog and logs the error.
-func ShowError(message string, err error, parent fyne.Window) {
+// ShowErrorAndLog shows a error dialog and logs the error.
+func ShowErrorAndLog(message string, err error, parent fyne.Window) {
 	slog.Error(message, "error", err)
 	title := widget.NewLabel(message)
 	error := widget.NewLabel(app.ErrorDisplay(err))

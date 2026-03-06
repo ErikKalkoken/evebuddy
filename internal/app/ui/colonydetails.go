@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -89,7 +90,7 @@ func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 			slog.Any("planetID", r.planetID),
 			slog.Any("error", err),
 		)
-		xdialog.ShowError("Failed to show colony details", err, u.MainWindow())
+		xdialog.ShowErrorAndLog("Failed to show colony details", err, u.MainWindow())
 		return
 	}
 
@@ -100,11 +101,11 @@ func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 		b.stop()
 	})
 
-	setDetailWindow(detailWindowParams{
-		content: b,
-		title:   title,
-		window:  w,
-		minSize: fyne.NewSize(600, 700),
+	xwindow.Set(xwindow.Params{
+		Content: b,
+		Title:   title,
+		Window:  w,
+		MinSize: fyne.NewSize(600, 700),
 	})
 	w.Show()
 }

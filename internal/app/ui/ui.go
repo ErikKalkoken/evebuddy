@@ -125,7 +125,7 @@ type baseUI struct {
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationui.CorporationMember
 	corporationSheet        *corporationSheet
-	corporationStructures   *corporationStructures
+	corporationStructures   *corporationui.CorporationStructures
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
@@ -412,14 +412,17 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.corporationAssetSearch = newAssetSearchForCorporation(u)
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
-	u.corporationMember = corporationui.NewCorporationMember(corporationui.Params{
+
+	corpParams := corporationui.Params{
 		CharacterService:   u.cs,
 		EveImageService:    u.eis,
 		CorporationService: u.rs,
 		Signals:            u.signals,
 		UI:                 u,
-	})
-	u.corporationStructures = newCorporationStructures(u)
+	}
+	u.corporationMember = corporationui.NewCorporationMember(corpParams)
+	u.corporationStructures = corporationui.NewCorporationStructures(corpParams)
+
 	u.corporationSheet = newCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)

@@ -157,7 +157,7 @@ func (a *characterTags) exportTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				xdialog.ShowError("Failed to export tags", err, a.cw.w)
+				xdialog.ShowErrorAndLog("Failed to export tags", err, a.cw.w)
 			})
 		}
 		m.Start()
@@ -196,7 +196,7 @@ func (a *characterTags) importTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				xdialog.ShowError("Failed to import tags", err, a.cw.w)
+				xdialog.ShowErrorAndLog("Failed to import tags", err, a.cw.w)
 			})
 		}
 		m.Start()
@@ -360,7 +360,7 @@ func (a *characterTags) makeTagList() *widget.List {
 						ctx := context.Background()
 						err := a.cw.cs.DeleteTag(ctx, tag.ID)
 						if err != nil {
-							xdialog.ShowError("Failed to delete tag", err, a.cw.w)
+							xdialog.ShowErrorAndLog("Failed to delete tag", err, a.cw.w)
 							return
 						}
 						a.update(ctx)
@@ -499,7 +499,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				xdialog.ShowError("Failed to modify tag", err, a.cw.w)
+				xdialog.ShowErrorAndLog("Failed to modify tag", err, a.cw.w)
 				return
 			}
 			ctx := context.Background()
