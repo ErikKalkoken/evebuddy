@@ -182,6 +182,7 @@ type BaseUIParams struct {
 	JaniceService      *janiceservice.JaniceService
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Signals            *app.Signals
+	Settings           *settings.Settings
 	// optional
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
@@ -214,6 +215,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	if arg.JaniceService == nil {
 		panic("JaniceService")
 	}
+	if arg.Settings == nil {
+		panic("Settings")
+	}
 	if arg.StatusCacheService == nil {
 		panic("StatusCacheService")
 	}
@@ -234,7 +238,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		js:                 arg.JaniceService,
 		rs:                 arg.CorporationService,
 		scs:                arg.StatusCacheService,
-		settings:           settings.New(arg.App.Preferences()),
+		settings:           arg.Settings,
 		sig:                singleinstance.NewGroup(),
 		signals:            arg.Signals,
 		statusText:         NewStatusText(),
@@ -320,7 +324,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
 				logErr(err)
 			}
-			u.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+			u.rs.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
 	u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
@@ -452,7 +456,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					go u.UpdateCharactersIfNeeded(context.Background(), false)
-					go u.UpdateCorporationsIfNeeded(context.Background(), false)
+					go u.rs.UpdateCorporationsIfNeeded(context.Background(), false)
 					go u.eus.UpdateSectionsIfNeeded(context.Background(), false)
 				}()
 			}
@@ -538,7 +542,7 @@ func (u *baseUI) Start() bool {
 			slog.Info("Starting update ticker")
 			u.eus.StartUpdateTicker()
 			u.startUpdateTickerCharacters()
-			u.StartUpdateTickerCorporations()
+			u.rs.StartUpdateTickerCorporations(60 * time.Second)
 		} else {
 			slog.Info("Update ticker disabled")
 		}

@@ -82,7 +82,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			EveImageService:    u.eis,
 			IsMobile:           u.isMobile,
 			Signals:            u.signals,
-			UIService:          u.baseUI,
+			UIService:          u,
 		})
 	}
 
@@ -830,6 +830,7 @@ func (u *DesktopUI) defineShortcuts() {
 			},
 			func(fyne.Shortcut) {
 				statuswindow.Show(statuswindow.Params{
+					CorporationService: u.rs,
 					EveImageService:    u.eis,
 					EveUniverseService: u.eus,
 					IsMobile:           u.isMobile,

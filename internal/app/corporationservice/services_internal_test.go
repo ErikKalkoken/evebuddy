@@ -23,6 +23,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
+type SettingsFake struct {
+	MaxTransactions int
+}
+
+func (s *SettingsFake) MaxWalletTransactions() int {
+	return s.MaxTransactions
+}
+
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
 	CorporationIDs set.Set[int64]
@@ -67,6 +75,7 @@ func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
+		Settings:           new(SettingsFake),
 	}
 	if len(args) > 0 {
 		arg.CharacterService = args[0].CharacterService

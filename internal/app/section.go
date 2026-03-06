@@ -471,8 +471,7 @@ type CharacterSectionUpdateParams struct {
 }
 
 type CorporationSectionUpdateParams struct {
-	CorporationID         int64
-	ForceUpdate           bool
-	MaxWalletTransactions int
-	Section               CorporationSection
+	CorporationID int64
+	ForceUpdate   bool
+	Section       CorporationSection
 }

@@ -409,12 +409,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
 			statuswindow.Show(statuswindow.Params{
+				CorporationService: u.rs,
 				EveImageService:    u.eis,
 				EveUniverseService: u.eus,
 				IsMobile:           u.isMobile,
 				Signals:            u.signals,
 				StatusCacheService: u.scs,
-				UIService:          u.baseUI,
+				UIService:          u,
 			})
 		},
 	)

@@ -308,8 +308,9 @@ func main() {
 	rhc2.Logger = slog.Default()
 	rhc2.ResponseLogHook = logResponse
 
-	// Signals
+	// Signals & Settings
 	signals := app.NewSignals()
+	settings := settings.New(fyneApp.Preferences())
 
 	// Init StatusCache service
 	scs := statuscacheservice.New(st)
@@ -365,6 +366,7 @@ func main() {
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		HTTPClient:         rhc1.StandardClient(),
+		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -409,6 +411,7 @@ func main() {
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
 		JaniceService:      janiceservice.New(rhc1.StandardClient(), key),
+		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 	})

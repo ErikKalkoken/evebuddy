@@ -450,6 +450,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams, lastID int64, checkLastID bool) ([]esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner, error) {
 	var transactions []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
 	var fromID int64
+	maxTransactions := s.settings.MaxWalletTransactions()
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
 	for {
 		var oo []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
@@ -463,7 +464,7 @@ func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg
 			return nil, err
 		}
 		transactions = slices.Concat(transactions, oo)
-		isLimitExceeded := (arg.MaxWalletTransactions != 0 && len(transactions)+maxTransactionsPerPage > arg.MaxWalletTransactions)
+		isLimitExceeded := (maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions)
 		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
 			break
 		}

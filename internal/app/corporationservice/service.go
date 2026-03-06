@@ -20,6 +20,10 @@ type CharacterService interface {
 	TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error)
 }
 
+type Settings interface {
+	MaxWalletTransactions() int
+}
+
 // Cache defines a cache.
 type Cache interface {
 	GetInt64(string) (int64, bool)
@@ -35,6 +39,7 @@ type CorporationService struct {
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
+	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
@@ -46,6 +51,7 @@ type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
 	EveUniverseService *eveuniverseservice.EveUniverseService
+	Settings           Settings
 	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
@@ -68,6 +74,9 @@ func New(arg Params) *CorporationService {
 	if arg.EveUniverseService == nil {
 		panic("EveUniverseService")
 	}
+	if arg.Settings == nil {
+		panic("Settings")
+	}
 	if arg.Signals == nil {
 		panic("Signals")
 	}
@@ -84,6 +93,7 @@ func New(arg Params) *CorporationService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		settings:         arg.Settings,
 		signals:          arg.Signals,
 		st:               arg.Storage,
 	}

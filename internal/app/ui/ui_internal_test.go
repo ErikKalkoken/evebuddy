@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -172,6 +173,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	if err != nil {
 		panic(err)
 	}
+	settings := settings.New(fyneApp.Preferences())
 	cs := characterservice.New(characterservice.Params{
 		AuthClient:             ac,
 		Cache:                  testutil.NewCacheFake2(),
@@ -188,6 +190,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		}},
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
+		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -210,6 +213,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		IsMobile:           !isDesktop,
 		IsOffline:          true,
 		JaniceService:      janiceservice.New(http.DefaultClient, ""),
+		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 	})

@@ -293,7 +293,7 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 									slog.Int64("characterID", r.characterID),
 									slog.Any("error", err))
 							}
-							go a.cw.u.UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							go a.cw.rs.UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 					}
 					go a.cw.signals.CharacterRemoved.Emit(ctx, &app.EntityShort{

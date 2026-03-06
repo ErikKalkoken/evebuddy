@@ -18,24 +18,13 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
-
-type UIService interface {
-	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	IsOffline() bool
-	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
-	UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool)
-	UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error
-	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
-	UpdateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool)
-	UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error
-	HumanizeError(err error) string
-}
 
 type EIS interface {
 	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
@@ -51,6 +40,60 @@ type SCS interface {
 	ListCorporations() []*app.EntityShort
 	ListCorporationSections(corporationID int64) []app.CacheSectionStatus
 	ListEveUniverseSections() []app.CacheSectionStatus
+}
+
+type UIService interface {
+	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsOffline() bool
+	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
+	UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool)
+	UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error
+	HumanizeError(err error) string
+}
+
+type Params struct {
+	CorporationService *corporationservice.CorporationService // TODO: Reduce to interface
+	EveImageService    EIS
+	EveUniverseService *eveuniverseservice.EveUniverseService // TODO: Reduce to interface
+	IsMobile           bool
+	Signals            *app.Signals
+	StatusCacheService SCS
+	UIService          UIService
+}
+
+func Show(arg Params) {
+	if arg.CorporationService == nil {
+		panic("CorporationService")
+	}
+	if arg.EveImageService == nil {
+		panic("EveImageService")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService")
+	}
+	if arg.Signals == nil {
+		panic("Signals")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService")
+	}
+	if arg.UIService == nil {
+		panic("UIService")
+	}
+	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
+	if !ok {
+		w.Show()
+		return
+	}
+	a := newStatusWindow(arg, w)
+	w.SetContent(a)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	w.SetOnClosed(func() {
+		a.stop()
+		onClosed()
+	})
+	w.Show()
+	go a.update(context.Background())
 }
 
 type sectionCategory uint
@@ -99,47 +142,7 @@ type statusWindow struct {
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
 	eus               *eveuniverseservice.EveUniverseService
-}
-
-type Params struct {
-	EveImageService    EIS
-	EveUniverseService *eveuniverseservice.EveUniverseService
-	IsMobile           bool
-	Signals            *app.Signals
-	StatusCacheService SCS
-	UIService          UIService
-}
-
-func Show(arg Params) {
-	if arg.EveImageService == nil {
-		panic("EveImageService")
-	}
-	if arg.EveUniverseService == nil {
-		panic("EveUniverseService")
-	}
-	if arg.Signals == nil {
-		panic("Signals")
-	}
-	if arg.StatusCacheService == nil {
-		panic("StatusCacheService")
-	}
-	if arg.UIService == nil {
-		panic("UIService")
-	}
-	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("update-status", "Update Status")
-	if !ok {
-		w.Show()
-		return
-	}
-	a := newStatusWindow(arg, w)
-	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	w.SetOnClosed(func() {
-		a.stop()
-		onClosed()
-	})
-	w.Show()
-	go a.update(context.Background())
+	rs                *corporationservice.CorporationService
 }
 
 func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
@@ -245,7 +248,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 		}),
 		fyne.NewMenuItem("Update all corporations", func() {
 			go func() {
-				err := a.u.UpdateCorporationsIfNeeded(context.Background(), true)
+				err := a.rs.UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + a.u.HumanizeError(err))
@@ -389,7 +392,7 @@ func (a *statusWindow) makeUpdateAllAction() func() {
 		case sectionCharacter:
 			go a.u.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
-			go a.u.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
+			go a.rs.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
@@ -561,7 +564,7 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 				ctx, entityID, app.CharacterSection(sectionID), true,
 			)
 		case sectionCorporation:
-			go a.u.UpdateCorporationSectionAndRefreshIfNeeded(
+			go a.rs.UpdateSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CorporationSection(sectionID), true,
 			)
 		default:

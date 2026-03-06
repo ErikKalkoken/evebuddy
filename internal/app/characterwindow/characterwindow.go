@@ -43,7 +43,6 @@ type UIService interface {
 	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int64, forceUpdate bool)
-	UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool)
 }
 
 type EIS interface {
