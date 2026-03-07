@@ -65,7 +65,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *constellationInfo) update(ctx context.Context) error {
-	o, err := a.iw.eus.GetOrCreateConstellationESI(ctx, a.id)
+	o, err := a.iw.s.EVEUniverse().GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 			a.tabs.Refresh()
 		}
 	})
-	oo, err := a.iw.eus.GetConstellationSolarSystemsESI(ctx, o.ID)
+	oo, err := a.iw.s.EVEUniverse().GetConstellationSolarSystemsESI(ctx, o.ID)
 	if err != nil {
 		return err
 	}

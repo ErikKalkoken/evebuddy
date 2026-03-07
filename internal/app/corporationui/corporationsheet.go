@@ -16,7 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	services "github.com/ErikKalkoken/evebuddy/internal/app/services"
+	services "github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -38,13 +38,10 @@ type CorporationSheet struct {
 	roles       *widget.Label
 	taxRate     *widget.Label
 	ticker      *widget.Label
-	s           services.Services
+	s           services.UIServices
 }
 
-func NewCorporationSheet(s services.Services, isCorpMode bool) *CorporationSheet {
-	if err := s.Check(); err != nil {
-		panic(fmt.Errorf("corporation sheet: %w", err))
-	}
+func NewCorporationSheet(s services.UIServices, isCorpMode bool) *CorporationSheet {
 	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
@@ -77,11 +74,11 @@ func NewCorporationSheet(s services.Services, isCorpMode bool) *CorporationSheet
 
 	// signals
 	if isCorpMode {
-		a.s.Signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.s.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.s.Signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		a.s.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
@@ -91,11 +88,11 @@ func NewCorporationSheet(s services.Services, isCorpMode bool) *CorporationSheet
 			}
 		})
 	} else {
-		a.s.Signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.s.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.s.Signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		a.s.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
 				return
@@ -148,7 +145,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		character := a.character.Load()
 		if character != nil && character.EveCharacter != nil {
 			var roles string
-			oo, err := a.s.Character.ListRoles(ctx, character.ID)
+			oo, err := a.s.Character().ListRoles(ctx, character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
 				roles = "ERROR: " + app.ErrorDisplay(err)
@@ -168,7 +165,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 				a.roles.SetText(roles)
 			})
 			corporationID := character.EveCharacter.Corporation.ID
-			c, err := a.s.EVEUniverse.GetCorporation(ctx, corporationID)
+			c, err := a.s.EVEUniverse().GetCorporation(ctx, corporationID)
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore
 			} else if err != nil {
@@ -197,13 +194,13 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(corporation.Name)
 		a.name.OnTapped = func() {
-			a.s.UI.InfoWindow().Show(app.EveEntityCorporation, corporation.ID)
+			a.s.InfoWindow().Show(app.EveEntityCorporation, corporation.ID)
 		}
 		a.logo.OnTapped = a.name.OnTapped
 		a.members.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRate.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
 		a.ticker.SetText(corporation.Ticker)
-		a.s.EVEImage.CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
+		a.s.EVEImage().CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
 			a.logo.SetResource(r)
 		})
 	})
@@ -211,7 +208,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if alliance, ok := corporation.Alliance.Value(); ok {
 			a.alliance.SetText(alliance.Name)
 			a.alliance.OnTapped = func() {
-				a.s.UI.InfoWindow().ShowEntity(alliance)
+				a.s.InfoWindow().ShowEntity(alliance)
 			}
 		} else {
 			a.alliance.SetText("-")
@@ -222,7 +219,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if faction, ok := corporation.Faction.Value(); ok {
 			a.faction.SetText(faction.Name)
 			a.faction.OnTapped = func() {
-				a.s.UI.InfoWindow().ShowEntity(faction)
+				a.s.InfoWindow().ShowEntity(faction)
 			}
 		} else {
 			a.faction.SetText("-")
@@ -233,7 +230,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if ceo, ok := corporation.Ceo.Value(); ok {
 			a.ceo.SetText(ceo.Name)
 			a.ceo.OnTapped = func() {
-				a.s.UI.InfoWindow().ShowEntity(ceo)
+				a.s.InfoWindow().ShowEntity(ceo)
 			}
 		} else {
 			a.ceo.SetText("-")
@@ -244,7 +241,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if home, ok := corporation.HomeStation.Value(); ok {
 			a.home.SetText(home.Name)
 			a.home.OnTapped = func() {
-				a.s.UI.InfoWindow().ShowEntity(home)
+				a.s.InfoWindow().ShowEntity(home)
 			}
 		} else {
 			a.home.SetText("-")

@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/services"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -40,13 +40,10 @@ type CorporationMember struct {
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
 	searchBox    *widget.Entry
-	s            services.Services
+	s            uiservices.UIServices
 }
 
-func NewCorporationMember(s services.Services) *CorporationMember {
-	if err := s.Check(); err != nil {
-		panic(fmt.Errorf("corporation member: %w", err))
-	}
+func NewCorporationMember(s uiservices.UIServices) *CorporationMember {
 	a := &CorporationMember{
 		footer: newLabelWithTruncation(),
 		s:      s,
@@ -66,11 +63,11 @@ func NewCorporationMember(s services.Services) *CorporationMember {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.s.Signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.s.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.s.Signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -99,7 +96,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(a.s.EVEImage.CharacterPortraitAsync)
+			return newCorporationMemberItem(a.s.EVEImage().CharacterPortraitAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -114,7 +111,7 @@ func (a *CorporationMember) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.s.UI.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.s.InfoWindow().ShowEntity(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }
@@ -156,7 +153,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 	}
 	var rows []corporationMemberRow
 	var err error
-	hasData, err := a.s.Corporation.HasSection(ctx, corporationID, app.SectionCorporationMembers)
+	hasData, err := a.s.Corporation().HasSection(ctx, corporationID, app.SectionCorporationMembers)
 	if hasData {
 		rows2, err2 := a.fetchRows(ctx, corporationID, ceoID)
 		if err2 != nil {
@@ -180,7 +177,7 @@ func (a *CorporationMember) update(ctx context.Context) {
 }
 
 func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]corporationMemberRow, error) {
-	cc, err := a.s.Character.ListCharacters(ctx)
+	cc, err := a.s.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +187,7 @@ func (a *CorporationMember) fetchRows(ctx context.Context, corporationID, ceoID 
 			owned.Add(c.ID)
 		}
 	}
-	oo, err := a.s.Corporation.ListMembers(ctx, corporationID)
+	oo, err := a.s.Corporation().ListMembers(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}

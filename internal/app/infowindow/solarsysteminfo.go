@@ -104,11 +104,11 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *solarSystemInfo) update(ctx context.Context) error {
-	o, err := a.iw.eus.GetOrCreateSolarSystemESI(ctx, a.id)
+	o, err := a.iw.s.EVEUniverse().GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
-	starID, planets, stargateIDs, stations, structures, err := a.iw.eus.GetSolarSystemInfoESI(ctx, a.id)
+	starID, planets, stargateIDs, stations, structures, err := a.iw.s.EVEUniverse().GetSolarSystemInfoESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -161,12 +161,12 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	})
 	if v, ok := starID.Value(); ok {
 		g.Go(func() error {
-			id, err := a.iw.eus.GetStarTypeID(ctx, v)
+			id, err := a.iw.s.EVEUniverse().GetStarTypeID(ctx, v)
 			if err != nil {
 				return err
 			}
 			fyne.Do(func() {
-				a.iw.eis.InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+				a.iw.s.EVEImage().InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
 					a.logo.Resource = r
 					a.logo.Refresh()
 				})
@@ -175,7 +175,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 		})
 	}
 	g.Go(func() error {
-		ss, err := a.iw.eus.GetStargatesSolarSystemsESI(ctx, stargateIDs)
+		ss, err := a.iw.s.EVEUniverse().GetStargatesSolarSystemsESI(ctx, stargateIDs)
 		if err != nil {
 			return err
 		}
@@ -187,7 +187,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 		return nil
 	})
 	g.Go(func() error {
-		pp, err := a.iw.eus.GetSolarSystemPlanets(ctx, planets)
+		pp, err := a.iw.s.EVEUniverse().GetSolarSystemPlanets(ctx, planets)
 		if err != nil {
 			return err
 		}

@@ -408,29 +408,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			statuswindow.Show(statuswindow.Params{
-				CharacterService:   u.cs,
-				CorporationService: u.rs,
-				EveImageService:    u.eis,
-				EveUniverseService: u.eus,
-				Signals:            u.signals,
-				StatusCacheService: u.scs,
-				UIService:          u,
-			})
+			statuswindow.Show(u)
 		},
 	)
 	navItemManageCharacters := xwidget.NewNavListItem(
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			characterwindow.Show(characterwindow.Params{
-				CharacterService:   u.cs,
-				CorporationService: u.rs,
-				EveImageService:    u.eis,
-				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
-				Signals:            u.signals,
-				UIService:          u.baseUI,
-			})
+			characterwindow.Show(u)
 		},
 	)
 
@@ -446,11 +431,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				settingswindow.Show(settingswindow.Params{
-					Settings:  u.settings,
-					Signals:   u.signals,
-					UIService: u,
-				})
+				settingswindow.Show(u)
 			},
 		),
 		navItemManageCharacters,

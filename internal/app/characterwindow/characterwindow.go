@@ -22,62 +22,35 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type EIS interface {
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-}
-
-type UIService interface {
+type UIServices interface {
+	Character() *characterservice.CharacterService
+	Corporation() *corporationservice.CorporationService
 	CurrentCharacterID() int64
 	CurrentCorporationID() int64
+	EVEImage() *eveimageservice.EveImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HasCharacter() bool
 	HasCorporation() bool
+	IsUpdateDisabled() bool
 	LoadCharacter(id int64) error
 	LoadCorporation(id int64) error
 	SetAnyCharacter() error
 	SetAnyCorporation() error
+	Signals() *app.Signals
 }
 
-type Params struct {
-	CharacterService   *characterservice.CharacterService
-	CorporationService *corporationservice.CorporationService
-	EveImageService    EIS
-	IsUpdateDisabled   bool
-	Signals            *app.Signals
-	UIService          UIService
-}
-
-func Show(arg Params) {
-	if arg.CharacterService == nil {
-		slog.Error("characterWindow: CharacterService missing")
-		return
-	}
-	if arg.CorporationService == nil {
-		slog.Error("characterWindow: CorporationService missing")
-		return
-	}
-	if arg.EveImageService == nil {
-		slog.Error("characterWindow: EveImageService missing")
-		return
-	}
-	if arg.Signals == nil {
-		slog.Error("characterWindow: Signals missing")
-		return
-	}
-	if arg.UIService == nil {
-		slog.Error("characterWindow: UIService missing")
-		return
-	}
-	w, created, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
+func Show(s UIServices) {
+	w, created, onClosed := s.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
 	if !created {
 		w.Show()
 		return
 	}
-	cw := newCharacterWindow(arg, w)
+	cw := newCharacterWindow(s, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(cw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -100,26 +73,16 @@ type characterWindow struct {
 	characterAdmin    *characterAdmin
 	characterTags     *characterTags
 	characterTraining *characterTraining
-	cs                *characterservice.CharacterService
-	eis               EIS
-	isUpdateDisabled  bool
-	rs                *corporationservice.CorporationService
+	s                 UIServices
 	sb                *xwidget.Snackbar
-	signals           *app.Signals
-	u                 UIService
 	w                 fyne.Window
 }
 
-func newCharacterWindow(arg Params, w fyne.Window) *characterWindow {
+func newCharacterWindow(s UIServices, w fyne.Window) *characterWindow {
 	a := &characterWindow{
-		cs:               arg.CharacterService,
-		eis:              arg.EveImageService,
-		rs:               arg.CorporationService,
-		sb:               xwidget.NewSnackbar(w),
-		u:                arg.UIService,
-		w:                w,
-		isUpdateDisabled: arg.IsUpdateDisabled,
-		signals:          arg.Signals,
+		sb: xwidget.NewSnackbar(w),
+		s:  s,
+		w:  w,
 	}
 	a.ExtendBaseWidget(a)
 	a.characterAdmin = newCharacterAdmin(a)

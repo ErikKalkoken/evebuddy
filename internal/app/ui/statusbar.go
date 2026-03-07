@@ -75,14 +75,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			characterwindow.Show(characterwindow.Params{
-				CharacterService:   u.cs,
-				CorporationService: u.rs,
-				EveImageService:    u.eis,
-				IsUpdateDisabled:   u.isUpdateDisabled.Load(),
-				Signals:            u.signals,
-				UIService:          u.baseUI,
-			})
+			characterwindow.Show(u)
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
@@ -101,15 +94,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		container.NewStack(spacer, a.updatingIndicator),
 		"?",
 		func() {
-			statuswindow.Show(statuswindow.Params{
-				CharacterService:   u.cs,
-				CorporationService: u.rs,
-				EveImageService:    u.eis,
-				EveUniverseService: u.eus,
-				Signals:            u.signals,
-				StatusCacheService: u.scs,
-				UIService:          u,
-			})
+			statuswindow.Show(u)
 		},
 	)
 	a.updateStatus.SetToolTip("Current update status - click for details")

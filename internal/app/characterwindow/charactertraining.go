@@ -34,10 +34,10 @@ func newCharacterTraining(cw *characterWindow) *characterTraining {
 	a.list = a.makeList()
 
 	// Signals
-	a.cw.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.cw.s.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.cw.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.cw.s.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
 	return a
@@ -49,7 +49,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 			go func() {
 				ctx := context.Background()
 				for id, c := range a.characters {
-					d, err := a.cw.cs.TotalTrainingTime(ctx, c.ID)
+					d, err := a.cw.s.Character().TotalTrainingTime(ctx, c.ID)
 					if err != nil {
 						slog.Error("Failed to set watcher for trained characters", "error", err)
 						continue
@@ -89,7 +89,7 @@ func (a *characterTraining) makeList() *widget.List {
 				nil,
 				nil,
 				kxwidget.NewSwitch(nil),
-				awidget.NewEntityListItem(true, a.cw.eis.CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -127,7 +127,7 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 	}
 	c := a.characters[id]
 	go func() {
-		err := a.cw.cs.UpdateIsTrainingWatched(ctx, c.ID, on)
+		err := a.cw.s.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
 			a.cw.sb.Show("Failed to update training watcher: " + app.ErrorDisplay(err))
@@ -136,12 +136,12 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 			a.characters[id].IsTrainingWatched = on
 			a.list.RefreshItem(id)
 		})
-		a.cw.signals.CharacterChanged.Emit(ctx, c.ID)
+		a.cw.s.Signals().CharacterChanged.Emit(ctx, c.ID)
 	}()
 }
 
 func (a *characterTraining) update(ctx context.Context) {
-	characters, err := a.cw.cs.ListCharacters(ctx)
+	characters, err := a.cw.s.Character().ListCharacters(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to update training", err)
 		return

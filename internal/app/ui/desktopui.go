@@ -74,13 +74,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.showManageCharacters = func() {
-		characterwindow.Show(characterwindow.Params{
-			CharacterService:   u.cs,
-			CorporationService: u.rs,
-			EveImageService:    u.eis,
-			Signals:            u.signals,
-			UIService:          u,
-		})
+		characterwindow.Show(u)
 	}
 
 	u.defineShortcuts()
@@ -810,11 +804,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				settingswindow.Show(settingswindow.Params{
-					Settings:  u.settings,
-					Signals:   u.signals,
-					UIService: u,
-				})
+				settingswindow.Show(u)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{
@@ -830,15 +820,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				statuswindow.Show(statuswindow.Params{
-					CharacterService:   u.cs,
-					CorporationService: u.rs,
-					EveImageService:    u.eis,
-					EveUniverseService: u.eus,
-					Signals:            u.signals,
-					StatusCacheService: u.scs,
-					UIService:          u.baseUI,
-				})
+				statuswindow.Show(u)
 			}},
 		"quit": {
 			&desktop.CustomShortcut{

@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"context"
@@ -16,31 +16,32 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type characterAugmentations struct {
+type CharacterAugmentations struct {
 	widget.BaseWidget
 
 	character atomic.Pointer[app.Character]
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
-	u         *baseUI
+	s         uiservices.UIServices
 }
 
-func newCharacterAugmentations(u *baseUI) *characterAugmentations {
-	a := &characterAugmentations{
+func NewCharacterAugmentations(s uiservices.UIServices) *CharacterAugmentations {
+	a := &CharacterAugmentations{
 		top: newLabelWithWrapping(),
-		u:   u,
+		s:   s,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.s.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.s.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -51,20 +52,20 @@ func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	return a
 }
 
-func (a *characterAugmentations) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterAugmentations) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterAugmentations) makeImplantList() *widget.List {
+func (a *CharacterAugmentations) makeImplantList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
 			return newCharacterAugmentationItem(
-				a.u.eis.InventoryTypeIconAsync,
-				a.u.InfoWindow().ShowTypeWithCharacter,
+				a.s.EVEImage().InventoryTypeIconAsync,
+				a.s.InfoWindow().ShowTypeWithCharacter,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -81,13 +82,16 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *characterAugmentations) update(ctx context.Context) {
+func (a *CharacterAugmentations) update(ctx context.Context) {
 	var err error
 	var implants []*app.CharacterImplant
 	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterImplants)
+	hasData, err := a.s.Character().HasSection(ctx, characterID, app.SectionCharacterImplants)
+	if err != nil {
+		panic(err)
+	}
 	if hasData {
-		implants2, err2 := a.u.cs.ListImplants(ctx, characterID)
+		implants2, err2 := a.s.Character().ListImplants(ctx, characterID)
 		if err2 != nil {
 			slog.Error("Failed to refresh implants UI", "err", err)
 			err = err2

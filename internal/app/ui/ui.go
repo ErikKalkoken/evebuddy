@@ -22,13 +22,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/services"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -60,27 +60,6 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
-// type EveImageService interface {
-// 	AllianceLogo(id int64, size int) (fyne.Resource, error)
-// 	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
-// 	CharacterPortrait(id int64, size int) (fyne.Resource, error)
-// 	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-// 	CorporationLogo(id int64, size int) (fyne.Resource, error)
-// 	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
-// 	FactionLogo(id int64, size int) (fyne.Resource, error)
-// 	FactionLogoAsync(id int64, size int, setter func(r fyne.Resource))
-// 	InventoryTypeRender(id int64, size int) (fyne.Resource, error)
-// 	InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource))
-// 	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
-// 	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
-// 	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
-// 	InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource))
-// 	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
-// 	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
-// 	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
-// 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
-// }
-
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
 	// Callbacks
@@ -104,7 +83,7 @@ type baseUI struct {
 	augmentations           *augmentations
 	characterAssetBrowser   *assetBrowser
 	characterAttributes     *characterAttributes
-	characterAugmentations  *characterAugmentations
+	characterAugmentations  *characterui.CharacterAugmentations
 	characterBiography      *characterBiography
 	characterContacts       *characterContacts
 	characterCommunications *characterCommunications
@@ -379,24 +358,15 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	services := services.Services{
-		Character:   u.cs,
-		EVEImage:    u.eis,
-		EVEUniverse: u.eus,
-		Corporation: u.rs,
-		Signals:     u.signals,
-		UI:          u,
-	}
-
 	u.assetSearchAll = newCombinedAssetSearch(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
 	u.characterAttributes = newCharacterAttributes(u)
-	u.characterAugmentations = newCharacterAugmentations(u)
+	u.characterAugmentations = characterui.NewCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
 	u.characterContacts = newCharacterContacts(u)
 	u.characterCommunications = newCharacterCommunications(u)
-	u.characterCorporation = corporationui.NewCorporationSheet(services, false)
+	u.characterCorporation = corporationui.NewCorporationSheet(u, false)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMails = newCharacterMails(u)
 	u.characterOverview = newCharacterOverview(u)
@@ -413,9 +383,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.corporationContracts = newContractsForCorporation(u)
 	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
 
-	u.corporationMember = corporationui.NewCorporationMember(services)
-	u.corporationStructures = corporationui.NewCorporationStructures(services)
-	u.corporationSheet = corporationui.NewCorporationSheet(services, true)
+	u.corporationMember = corporationui.NewCorporationMember(u)
+	u.corporationStructures = corporationui.NewCorporationStructures(u)
+	u.corporationSheet = corporationui.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
@@ -431,18 +401,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
-	x, ok := infowindow.New(infowindow.Params{
-		CharacterService:   u.cs,
-		EveImageService:    u.eis,
-		EveUniverseService: u.eus,
-		JaniceService:      u.js,
-		Settings:           u.settings,
-		UIService:          u,
-	})
-	if !ok {
-		panic("Failed to init info window")
-	}
-	u.iw = x
+	u.iw = infowindow.New(u)
 
 	u.MainWindow().SetMaster()
 
@@ -571,6 +530,9 @@ func (u *baseUI) ShowAndRun() {
 	}
 }
 
+//////////////////
+// Services
+
 func (u *baseUI) ClearAllCaches() {
 	u.clearCache()
 }
@@ -588,8 +550,48 @@ func (u *baseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()
 }
 
+func (u *baseUI) IsUpdateDisabled() bool {
+	return u.isUpdateDisabled.Load()
+}
+
 func (u *baseUI) DataPaths() xmaps.OrderedMap[string, string] {
 	return u.dataPaths
+}
+
+func (u *baseUI) Character() *characterservice.CharacterService {
+	return u.cs
+}
+
+func (u *baseUI) Corporation() *corporationservice.CorporationService {
+	return u.rs
+}
+
+func (u *baseUI) EVEImage() *eveimageservice.EveImageService {
+	return u.eis
+}
+
+func (u *baseUI) ESIStatus() *esistatusservice.ESIStatusService {
+	return u.ess
+}
+
+func (u *baseUI) EVEUniverse() *eveuniverseservice.EveUniverseService {
+	return u.eus
+}
+
+func (u *baseUI) Janice() *janiceservice.JaniceService {
+	return u.js
+}
+
+func (u *baseUI) Settings() *settings.Settings {
+	return u.settings
+}
+
+func (u *baseUI) Signals() *app.Signals {
+	return u.signals
+}
+
+func (u *baseUI) StatusCache() *statuscacheservice.StatusCacheService {
+	return u.scs
 }
 
 //////////////////

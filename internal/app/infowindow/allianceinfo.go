@@ -73,14 +73,14 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *allianceInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
-		a.iw.eis.AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.s.EVEImage().AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
 	})
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		o, err := a.iw.eus.FetchAlliance(ctx, a.id)
+		o, err := a.iw.s.EVEUniverse().FetchAlliance(ctx, a.id)
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		return nil
 	})
 	g.Go(func() error {
-		members, err := a.iw.eus.FetchAllianceCorporations(ctx, a.id)
+		members, err := a.iw.s.EVEUniverse().FetchAllianceCorporations(ctx, a.id)
 		if err != nil {
 			return err
 		}

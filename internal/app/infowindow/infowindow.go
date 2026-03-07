@@ -25,94 +25,37 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type UIService interface {
+type UIServices interface {
+	Character() *characterservice.CharacterService
+	EVEImage() *eveimageservice.EveImageService
+	EVEUniverse() *eveuniverseservice.EveUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
-}
-
-type CS interface {
-	GetCharacter(ctx context.Context, id int64) (*app.Character, error)
-	GetSkill(ctx context.Context, characterID int64, typeID int64) (*app.CharacterSkill, error)
-	ListCharacterIDs(ctx context.Context) (set.Set[int64], error)
-}
-
-type EUS interface {
-	FetchAlliance(ctx context.Context, allianceID int64) (*app.EveAlliance, error)
-	FetchAllianceCorporations(ctx context.Context, allianceID int64) ([]*app.EveEntity, error)
-	FetchCharacterCorporationHistory(ctx context.Context, characterID int64) ([]app.MembershipHistoryItem, error)
-	FetchCorporationAllianceHistory(ctx context.Context, corporationID int64) ([]app.MembershipHistoryItem, error)
-	FormatDogmaValue(ctx context.Context, value float64, unitID app.EveUnitID) (string, int64)
-	GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error)
-	GetConstellationSolarSystemsESI(ctx context.Context, id int64) ([]*app.EveSolarSystem, error)
-	GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error)
-	GetOrCreateConstellationESI(ctx context.Context, id int64) (*app.EveConstellation, error)
-	GetOrCreateCorporationESI(ctx context.Context, id int64) (*app.EveCorporation, error)
-	GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error)
-	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
-	GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error)
-	GetOrCreateRegionESI(ctx context.Context, id int64) (*app.EveRegion, error)
-	GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error)
-	GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error)
-	GetRegionConstellationsESI(ctx context.Context, id int64) ([]*app.EveEntity, error)
-	GetSolarSystemInfoESI(ctx context.Context, solarSystemID int64) (starID optional.Optional[int64], planets []app.EveSolarSystemPlanet, stargateIDs []int64, stations []*app.EveEntity, structures []*app.EveLocation, err error)
-	GetSolarSystemPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error)
-	GetStargatesSolarSystemsESI(ctx context.Context, stargateIDs []int64) ([]*app.EveSolarSystem, error)
-	GetStarTypeID(ctx context.Context, id int64) (int64, error)
-	GetStationServicesESI(ctx context.Context, id int64) ([]string, error)
-	GetType(ctx context.Context, id int64) (*app.EveType, error)
-	ListTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error)
-	MarketPrice(ctx context.Context, typeID int64) (optional.Optional[float64], error)
-}
-
-type EIS interface {
-	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	FactionLogoAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
-	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
-}
-
-type Settings interface {
-	PreferMarketTab() bool
-}
-
-type Params struct {
-	CharacterService   CS
-	EveImageService    EIS
-	EveUniverseService EUS
-	Settings           Settings
-	UIService          UIService
-	// optional
-	JaniceService *janiceservice.JaniceService
+	Settings() *settings.Settings
 }
 
 // InfoWindow represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
 type InfoWindow struct {
-	cs            CS
-	eis           EIS
-	eus           EUS
-	js            *janiceservice.JaniceService
+	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
+	s             UIServices
 	sb            *xwidget.Snackbar
-	settings      Settings
-	u             UIService
 	w             fyne.Window
-	current       *showParams // parameters for currently shown info window (if any)
 }
 
 const (
@@ -125,38 +68,12 @@ const (
 )
 
 // New returns a new InfoWindow.
-func New(arg Params) (*InfoWindow, bool) {
-	if arg.CharacterService == nil {
-		slog.Error("characterWindow: CharacterService missing")
-		return nil, false
-	}
-	if arg.EveImageService == nil {
-		slog.Error("characterWindow: EveImageService missing")
-		return nil, false
-	}
-	if arg.EveUniverseService == nil {
-		slog.Error("characterWindow: EveUniverseService missing")
-		return nil, false
-	}
-	if arg.Settings == nil {
-		slog.Error("characterWindow: Settings missing")
-		return nil, false
-	}
-	if arg.UIService == nil {
-		slog.Error("characterWindow: UIService missing")
-		return nil, false
-	}
-
+func New(s UIServices) *InfoWindow {
 	iw := &InfoWindow{
-		cs:       arg.CharacterService,
-		eis:      arg.EveImageService,
-		eus:      arg.EveUniverseService,
-		js:       arg.JaniceService,
-		settings: arg.Settings,
-		u:        arg.UIService,
-		w:        arg.UIService.MainWindow(),
+		s: s,
+		w: s.MainWindow(),
 	}
-	return iw, true
+	return iw
 }
 
 func (iw *InfoWindow) Show(c app.EveEntityCategory, id int64) {
@@ -341,7 +258,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 }
 
 func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
-	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
+	w2, created := iw.s.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
 		return

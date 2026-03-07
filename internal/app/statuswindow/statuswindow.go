@@ -22,76 +22,30 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type EIS interface {
-	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
-	CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource))
-}
-
-type SCS interface {
-	CharacterSectionSummary(characterID int64) app.StatusSummary
-	CorporationSectionSummary(corporationID int64) app.StatusSummary
-	EveUniverseSectionSummary() app.StatusSummary
-	ListCharacters() []*app.EntityShort
-	ListCharacterSections(characterID int64) []app.CacheSectionStatus
-	ListCorporations() []*app.EntityShort
-	ListCorporationSections(corporationID int64) []app.CacheSectionStatus
-	ListEveUniverseSections() []app.CacheSectionStatus
-}
-
-type UIService interface {
+type UIServices interface {
+	Character() *characterservice.CharacterService
+	Corporation() *corporationservice.CorporationService
+	EVEImage() *eveimageservice.EveImageService
+	EVEUniverse() *eveuniverseservice.EveUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	Signals() *app.Signals
+	StatusCache() *statuscacheservice.StatusCacheService
 }
 
-type Params struct {
-	CharacterService   *characterservice.CharacterService     // TODO: Reduce to interface
-	CorporationService *corporationservice.CorporationService // TODO: Reduce to interface
-	EveImageService    EIS
-	EveUniverseService *eveuniverseservice.EveUniverseService // TODO: Reduce to interface
-	Signals            *app.Signals
-	StatusCacheService SCS
-	UIService          UIService
-}
-
-func Show(arg Params) {
-	if arg.CharacterService == nil {
-		slog.Error("statusWindow: CharacterService missing")
-		return
-	}
-	if arg.CorporationService == nil {
-		slog.Error("statusWindow: CorporationService missing")
-		return
-	}
-	if arg.EveImageService == nil {
-		slog.Error("statusWindow: EveImageService missing")
-		return
-	}
-	if arg.EveUniverseService == nil {
-		slog.Error("statusWindow: EveUniverseService missing")
-		return
-	}
-	if arg.Signals == nil {
-		slog.Error("statusWindow: Signals missing")
-		return
-	}
-	if arg.StatusCacheService == nil {
-		slog.Error("statusWindow: StatusCacheService missing")
-		return
-	}
-	if arg.UIService == nil {
-		slog.Error("statusWindow: UIService missing")
-		return
-	}
-	w, ok, onClosed := arg.UIService.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
+func Show(s UIServices) {
+	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
 		w.Show()
 		return
 	}
-	a := newStatusWindow(arg, w)
+	a := newStatusWindow(s, w)
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.SetOnClosed(func() {
@@ -138,21 +92,14 @@ type statusWindow struct {
 	selectedEntityID  int
 	selectedSectionID int
 	signalKey         string
-	signals           *app.Signals
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
-
-	cs  *characterservice.CharacterService
-	eis EIS
-	eus *eveuniverseservice.EveUniverseService
-	rs  *corporationservice.CorporationService
-	scs SCS
-	u   UIService
+	s                 UIServices
 }
 
-func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
+func newStatusWindow(s UIServices, w fyne.Window) *statusWindow {
 	newLabelWithWrapping := func() *widget.Label {
 		l := widget.NewLabel("")
 		l.Wrapping = fyne.TextWrapWord
@@ -162,16 +109,12 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 		charactersTop:     newLabelWithWrapping(),
 		details:           newUpdateStatusDetail(),
 		detailsTop:        newLabelWithWrapping(),
-		eis:               arg.EveImageService,
-		eus:               arg.EveUniverseService,
 		sb:                xwidget.NewSnackbar(w),
-		scs:               arg.StatusCacheService,
 		sectionsTop:       newLabelWithWrapping(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
-		signalKey:         arg.Signals.UniqueKey(),
-		signals:           arg.Signals,
-		u:                 arg.UIService,
+		signalKey:         s.Signals().UniqueKey(),
+		s:                 s,
 	}
 	a.ExtendBaseWidget(a)
 	a.entityList = a.makeEntityList()
@@ -214,19 +157,19 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 
 	// Signals
 	a.sb.Start()
-	a.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.s.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.s.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.s.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.s.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.s.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a
@@ -234,18 +177,18 @@ func newStatusWindow(arg Params, w fyne.Window) *statusWindow {
 
 func (a *statusWindow) stop() {
 	a.sb.Stop()
-	a.signals.CharacterAdded.RemoveListener(a.signalKey)
-	a.signals.CharacterRemoved.RemoveListener(a.signalKey)
-	a.signals.CharacterSectionUpdated.RemoveListener(a.signalKey)
-	a.signals.CorporationSectionUpdated.RemoveListener(a.signalKey)
-	a.signals.EveUniverseSectionUpdated.RemoveListener(a.signalKey)
+	a.s.Signals().CharacterAdded.RemoveListener(a.signalKey)
+	a.s.Signals().CharacterRemoved.RemoveListener(a.signalKey)
+	a.s.Signals().CharacterSectionUpdated.RemoveListener(a.signalKey)
+	a.s.Signals().CorporationSectionUpdated.RemoveListener(a.signalKey)
+	a.s.Signals().EveUniverseSectionUpdated.RemoveListener(a.signalKey)
 }
 
 func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
 			go func() {
-				err := a.cs.UpdateCharactersIfNeeded(context.Background(), true)
+				err := a.s.Character().UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + app.ErrorDisplay(err))
@@ -254,7 +197,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 		}),
 		fyne.NewMenuItem("Update all corporations", func() {
 			go func() {
-				err := a.rs.UpdateCorporationsIfNeeded(context.Background(), true)
+				err := a.s.Corporation().UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + app.ErrorDisplay(err))
@@ -263,7 +206,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 
 		}),
 		fyne.NewMenuItem("Update all general topics", func() {
-			go a.eus.UpdateSectionsIfNeeded(context.Background(), true)
+			go a.s.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
 		}),
 	)
 	updateEntities := xwidget.NewContextMenuButton("Force update all entities", updateMenu)
@@ -324,12 +267,12 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				name.Refresh()
 				switch c.category {
 				case sectionCharacter:
-					a.eis.CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+					a.s.EVEImage().CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
 						icon.Resource = r
 						icon.Refresh()
 					})
 				case sectionCorporation:
-					a.eis.CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
+					a.s.EVEImage().CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
 						icon.Resource = r
 						icon.Refresh()
 					})
@@ -394,11 +337,11 @@ func (a *statusWindow) makeUpdateAllAction() func() {
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.eus.UpdateSectionsIfNeeded(ctx, true)
+			go a.s.EVEUniverse().UpdateSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
-			go a.cs.UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
+			go a.s.Character().UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
-			go a.rs.UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
+			go a.s.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
@@ -420,12 +363,12 @@ func (a *statusWindow) update(ctx context.Context) {
 func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int) {
 	var count int
 	var entities []sectionEntity
-	cc := a.scs.ListCharacters()
+	cc := a.s.StatusCache().ListCharacters()
 	if len(cc) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
 		count += len(cc)
 		for _, c := range cc {
-			ss := a.scs.CharacterSectionSummary(c.ID)
+			ss := a.s.StatusCache().CharacterSectionSummary(c.ID)
 			o := sectionEntity{
 				category: sectionCharacter,
 				id:       c.ID,
@@ -435,12 +378,12 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 			entities = append(entities, o)
 		}
 	}
-	rr := a.scs.ListCorporations()
+	rr := a.s.StatusCache().ListCorporations()
 	if len(rr) > 0 {
 		entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
 		count += len(rr)
 		for _, r := range rr {
-			ss := a.scs.CorporationSectionSummary(r.ID)
+			ss := a.s.StatusCache().CorporationSectionSummary(r.ID)
 			o := sectionEntity{
 				category: sectionCorporation,
 				id:       r.ID,
@@ -451,7 +394,7 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 		}
 	}
 	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
-	ss := a.scs.EveUniverseSectionSummary()
+	ss := a.s.StatusCache().EveUniverseSectionSummary()
 	o := sectionEntity{
 		category: sectionGeneral,
 		id:       app.EveUniverseSectionEntityID,
@@ -524,11 +467,11 @@ func (a *statusWindow) refreshSections() {
 	se := a.sectionEntities[a.selectedEntityID]
 	switch se.category {
 	case sectionCharacter:
-		a.sections = a.scs.ListCharacterSections(se.id)
+		a.sections = a.s.StatusCache().ListCharacterSections(se.id)
 	case sectionCorporation:
-		a.sections = a.scs.ListCorporationSections(se.id)
+		a.sections = a.s.StatusCache().ListCorporationSections(se.id)
 	case sectionGeneral:
-		a.sections = a.scs.ListEveUniverseSections()
+		a.sections = a.s.StatusCache().ListEveUniverseSections()
 	}
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
@@ -562,15 +505,15 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.eus.UpdateSectionAndRefreshIfNeeded(
+			go a.s.EVEUniverse().UpdateSectionAndRefreshIfNeeded(
 				ctx, app.EveUniverseSection(sectionID), true,
 			)
 		case sectionCharacter:
-			go a.cs.UpdateCharacterSectionAndRefreshIfNeeded(
+			go a.s.Character().UpdateCharacterSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CharacterSection(sectionID), true,
 			)
 		case sectionCorporation:
-			go a.rs.UpdateSectionAndRefreshIfNeeded(
+			go a.s.Corporation().UpdateSectionAndRefreshIfNeeded(
 				ctx, entityID, app.CorporationSection(sectionID), true,
 			)
 		default:

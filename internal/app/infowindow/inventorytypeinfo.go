@@ -115,7 +115,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *inventoryTypeInfo) update(ctx context.Context) error {
-	et, err := a.iw.eus.GetOrCreateTypeESI(ctx, a.typeID)
+	et, err := a.iw.s.EVEUniverse().GetOrCreateTypeESI(ctx, a.typeID)
 	if err != nil {
 		return err
 	}
@@ -134,34 +134,34 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	})
 	fyne.Do(func() {
 		if et.IsSKIN() {
-			a.iw.eis.InventoryTypeSKINAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.s.EVEImage().InventoryTypeSKINAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		} else if et.IsBlueprint() {
-			a.iw.eis.InventoryTypeBPOAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.s.EVEImage().InventoryTypeBPOAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		} else {
-			a.iw.eis.InventoryTypeIconAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.s.EVEImage().InventoryTypeIconAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		}
 	})
 	if et.HasRender() {
 		a.typeIcon.OnTapped = func() {
-			a.iw.showZoomWindow(et.Name, a.typeID, a.iw.eis.InventoryTypeRenderAsync, a.iw.w)
+			a.iw.showZoomWindow(et.Name, a.typeID, a.iw.s.EVEImage().InventoryTypeRenderAsync, a.iw.w)
 		}
 	}
 
 	var character *app.EveEntity
 	if a.characterID != 0 {
-		ee, err := a.iw.eus.GetOrCreateEntityESI(ctx, a.characterID)
+		ee, err := a.iw.s.EVEUniverse().GetOrCreateEntityESI(ctx, a.characterID)
 		if err != nil {
 			return err
 		}
 		character = ee
 		fyne.Do(func() {
-			a.iw.eis.CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.s.EVEImage().CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.characterIcon.Resource = r
 				a.characterIcon.Refresh()
 			})
@@ -174,7 +174,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 		})
 	}
 
-	oo, err := a.iw.eus.ListTypeDogmaAttributesForType(ctx, et.ID)
+	oo, err := a.iw.s.EVEUniverse().ListTypeDogmaAttributesForType(ctx, et.ID)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 
 	// Set initial tab
 	fyne.Do(func() {
-		if marketTab != nil && a.iw.settings.PreferMarketTab() {
+		if marketTab != nil && a.iw.s.Settings().PreferMarketTab() {
 			a.tabs.Select(marketTab)
 		} else if requirementsTab != nil && et.Group.Category.ID == app.EveCategorySkill {
 			a.tabs.Select(requirementsTab)
@@ -491,7 +491,7 @@ func (a *inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveT
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.iw.eus.FormatDogmaValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.iw.s.EVEUniverse().FormatDogmaValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int64
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -508,9 +508,9 @@ func (a *inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveT
 	}
 	var rows []typeAttributeRow
 	if v, ok := et.Volume.Value(); ok {
-		value, _ := a.iw.eus.FormatDogmaValue(ctx, v, app.EveUnitVolume)
+		value, _ := a.iw.s.EVEUniverse().FormatDogmaValue(ctx, v, app.EveUnitVolume)
 		if pv, ok := et.PackagedVolume.Value(); ok && !optional.Equal(et.Volume, et.PackagedVolume) {
-			s, _ := a.iw.eus.FormatDogmaValue(ctx, pv, app.EveUnitVolume)
+			s, _ := a.iw.s.EVEUniverse().FormatDogmaValue(ctx, pv, app.EveUnitVolume)
 			value += fmt.Sprintf(" (%s Packaged)", s)
 		}
 		r := typeAttributeRow{
@@ -585,7 +585,7 @@ func (a *inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes
 			continue
 		}
 		r, _ := eveicon.FromID(o.DogmaAttribute.IconID.ValueOrZero())
-		v, _ := a.iw.eus.FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.iw.s.EVEUniverse().FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, typeAttributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName.ValueOrZero(),
@@ -669,7 +669,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			var items []attributeItem
 
 			var averagePrice string
-			p, err := a.iw.eus.MarketPrice(ctx, et.ID)
+			p, err := a.iw.s.EVEUniverse().MarketPrice(ctx, et.ID)
 			if err != nil {
 				slog.Error("average price", "typeID", et.ID, "error", err)
 				averagePrice = "ERROR: " + app.ErrorDisplay(err)
@@ -706,10 +706,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 }
 
 func (a *inventoryTypeInfo) addJanicePriceItems(ctx context.Context, typeID int64) ([]attributeItem, error) {
-	if a.iw.js == nil {
-		return nil, fmt.Errorf("janice prices not configured")
-	}
-	j, err := a.iw.js.FetchPrices(ctx, typeID)
+	j, err := a.iw.s.Janice().FetchPrices(ctx, typeID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch prices from janice: %w", err)
 	}
@@ -762,7 +759,7 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 			continue
 		}
 		requiredLevel := int64(daLevel.Value)
-		et, err := a.iw.eus.GetType(ctx, typeID)
+		et, err := a.iw.s.EVEUniverse().GetType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -772,7 +769,7 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.iw.cs.GetSkill(ctx, characterID, typeID)
+		cs, err := a.iw.s.Character().GetSkill(ctx, characterID, typeID)
 		if errors.Is(err, app.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
