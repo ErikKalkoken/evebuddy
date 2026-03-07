@@ -372,7 +372,7 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 			totalSP := widget.NewLabel("Template")
 			totalSP.Truncation = fyne.TextTruncateClip
 			unallocatedSP := widget.NewLabel("Template")
-			spacer := newSpacer(fyne.NewSize(1, 4*p))
+			spacer :=xwidget.NewSpacer(fyne.NewSize(1, 4*p))
 			tags := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),

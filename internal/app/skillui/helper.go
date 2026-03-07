@@ -1,10 +1,7 @@
 package skillui
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -51,12 +48,6 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	return makeLinkLabelWithWrap(o.Name, func() {
 		action(o)
 	})
-}
-
-func newSpacer(s fyne.Size) fyne.CanvasObject {
-	w := canvas.NewRectangle(color.Transparent)
-	w.SetMinSize(s)
-	return w
 }
 
 // characterIDOrZero returns the ID of a character or 0 if the c does not exist.

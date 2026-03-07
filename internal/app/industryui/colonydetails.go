@@ -255,7 +255,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	installations := container.NewBorder(
 		container.NewVBox(
 			widget.NewSeparator(),
-			newStandardSpacer(),
+		xwidget.NewStandardSpacer(),
 			filter,
 		),
 		a.footer,

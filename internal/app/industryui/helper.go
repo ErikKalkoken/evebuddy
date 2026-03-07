@@ -2,12 +2,9 @@ package industryui
 
 import (
 	"fmt"
-	"image/color"
 	"math"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -88,16 +85,6 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
-}
-
-func newSpacer(s fyne.Size) fyne.CanvasObject {
-	w := canvas.NewRectangle(color.Transparent)
-	w.SetMinSize(s)
-	return w
-}
-
-func newStandardSpacer() fyne.CanvasObject {
-	return newSpacer(fyne.NewSquareSize(theme.Padding()))
 }
 
 // corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.

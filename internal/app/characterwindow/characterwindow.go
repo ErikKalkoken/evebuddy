@@ -5,16 +5,13 @@ import (
 	"context"
 
 	"fmt"
-	"image/color"
 	"log/slog"
 
 	"sync"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
@@ -123,9 +120,4 @@ func (a *characterWindow) update(ctx context.Context) {
 func (a *characterWindow) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
-}
-func newStandardSpacer() fyne.CanvasObject {
-	r := canvas.NewRectangle(color.Transparent)
-	r.SetMinSize(fyne.NewSquareSize(theme.Padding()))
-	return r
 }

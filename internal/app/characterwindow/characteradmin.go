@@ -58,7 +58,7 @@ func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 	}
 	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
-		container.NewVBox(add, newStandardSpacer()),
+		container.NewVBox(add,xwidget.NewStandardSpacer()),
 		nil,
 		nil,
 		a.list,

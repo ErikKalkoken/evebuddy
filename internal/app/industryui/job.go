@@ -444,7 +444,7 @@ func (a *Jobs) makeDataList() *xwidget.StripedList {
 			p := theme.Padding()
 			activityIcon := widget.NewIcon(icons.BlankSvg)
 			statusIcon := widget.NewIcon(icons.BlankSvg)
-			spacer := newSpacer(fyne.NewSize(1, p))
+			spacer :=xwidget.NewSpacer(fyne.NewSize(1, p))
 			return container.NewBorder(
 				nil,
 				nil,

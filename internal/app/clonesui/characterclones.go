@@ -288,7 +288,7 @@ func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showTy
 	main.Truncation = fyne.TextTruncateEllipsis
 	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	implants := widget.NewLabel("9")
-	spacer := newSpacer(fyne.NewSize(40, 10))
+	spacer :=xwidget.NewSpacer(fyne.NewSize(40, 10))
 	prefix := widget.NewLabel("-9.9")
 	prefix.Alignment = fyne.TextAlignTrailing
 	w := &characterJumpCloneItem{

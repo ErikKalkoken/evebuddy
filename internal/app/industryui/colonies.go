@@ -393,7 +393,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-				newSpacer(fyne.NewSize(p/2, 1)),
+			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(eveicon.FromName(eveicon.PIExtractor)),
 			),
 			w.status,
@@ -403,7 +403,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-				newSpacer(fyne.NewSize(p/2, 1)),
+			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(eveicon.FromName(eveicon.PIProcessor)),
 			),
 			nil,
@@ -413,7 +413,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-				newSpacer(fyne.NewSize(p/2, 1)),
+			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(theme.AccountIcon()),
 			),
 			nil,

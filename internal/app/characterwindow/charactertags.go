@@ -78,7 +78,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	addTag.Importance = widget.HighImportance
 	main := container.NewBorder(
 		nil,
-		container.NewVBox(addTag, newStandardSpacer()),
+		container.NewVBox(addTag,xwidget.NewStandardSpacer()),
 		nil,
 		nil,
 		a.tagList,
@@ -214,7 +214,7 @@ func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
 		"",
 		container.NewBorder(
 			nil,
-			container.NewVBox(a.addCharactersButton, newStandardSpacer()),
+			container.NewVBox(a.addCharactersButton,xwidget.NewStandardSpacer()),
 			nil,
 			nil,
 			a.characterList,

@@ -1,10 +1,7 @@
 package clonesui
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -45,12 +42,6 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
-}
-
-func newSpacer(s fyne.Size) fyne.CanvasObject {
-	w := canvas.NewRectangle(color.Transparent)
-	w.SetMinSize(s)
-	return w
 }
 
 // characterIDOrZero returns the ID of a character or 0 if the c does not exist.
