@@ -56,9 +56,9 @@ type CharacterService struct {
 	authClient              AuthClient
 	cache                   Cache
 	concurrencyLimit        int
-	ens                     *evenotification.EveNotificationService
+	ens                     *evenotification.EVENotificationService
 	esiClient               *esi.APIClient
-	eus                     *eveuniverseservice.EveUniverseService
+	eus                     *eveuniverseservice.EVEUniverseService
 	httpClient              *http.Client
 	scs                     *statuscacheservice.StatusCacheService
 	sendDesktopNotification func(title, content string) // Callback for sending a desktop notification via Fyne API
@@ -74,8 +74,8 @@ type Params struct {
 	Cache                  Cache
 	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
 	ESIClient              *esi.APIClient
-	EveNotificationService *evenotification.EveNotificationService
-	EveUniverseService     *eveuniverseservice.EveUniverseService
+	EveNotificationService *evenotification.EVENotificationService
+	EveUniverseService     *eveuniverseservice.EVEUniverseService
 	Settings               Settings
 	Signals                *app.Signals
 	StatusCacheService     *statuscacheservice.StatusCacheService

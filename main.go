@@ -407,21 +407,21 @@ func main() {
 	}
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
-		App:                fyneApp,
-		Character:   cs,
-		ClearCacheFunc:     func() { pc.Clear() },
-		ConcurrencyLimit:   concurrentLimit,
-		Corporation: rs,
-		DataPaths:          dataPaths,
-		ESIStatus:   esistatusservice.New(esiClient),
-		EVEImage:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
-		EVEUniverse: eus,
-		IsFakeMobile:       *mobileFlag,
-		IsUpdateDisabled:   *disableUpdatesFlag,
-		Janice:      janiceservice.New(rhc1.StandardClient(), key),
-		Settings:           settings,
-		Signals:            signals,
-		StatusCache: scs,
+		App:              fyneApp,
+		Character:        cs,
+		ClearCacheFunc:   func() { pc.Clear() },
+		ConcurrencyLimit: concurrentLimit,
+		Corporation:      rs,
+		DataPaths:        dataPaths,
+		ESIStatus:        esistatusservice.New(esiClient),
+		EVEImage:         eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
+		EVEUniverse:      eus,
+		IsFakeMobile:     *mobileFlag,
+		IsUpdateDisabled: *disableUpdatesFlag,
+		Janice:           janiceservice.New(rhc1.StandardClient(), key),
+		Settings:         settings,
+		Signals:          signals,
+		StatusCache:      scs,
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)

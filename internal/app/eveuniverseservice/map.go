@@ -22,7 +22,7 @@ import (
 
 // FetchRoute fetches a route between two solar systems from ESi and returns it.
 // When no route can be found it returns an empty slice.
-func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHeader) ([]*app.EveSolarSystem, error) {
+func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHeader) ([]*app.EveSolarSystem, error) {
 	m := map[app.EveRoutePreference]string{
 		app.RouteShorter:    "Shorter",
 		app.RouteSafer:      "Safer",
@@ -71,7 +71,7 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 }
 
 // FetchRoutes returns routes for one or multiple headers.
-func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveRouteHeader) (map[app.EveRouteHeader][]*app.EveSolarSystem, error) {
+func (s *EVEUniverseService) FetchRoutes(ctx context.Context, headers []app.EveRouteHeader) (map[app.EveRouteHeader][]*app.EveSolarSystem, error) {
 	results := make([][]*app.EveSolarSystem, len(headers))
 	g := new(errgroup.Group)
 	g.SetLimit(s.concurrencyLimit)
@@ -96,7 +96,7 @@ func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveR
 }
 
 // GetStargatesSolarSystemsESI fetches and returns the solar systems which relates to given stargates from ESI.
-func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, stargateIDs []int64) ([]*app.EveSolarSystem, error) {
+func (s *EVEUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, stargateIDs []int64) ([]*app.EveSolarSystem, error) {
 	g := new(errgroup.Group)
 	g.SetLimit(s.concurrencyLimit)
 	systemIDs := make([]int64, len(stargateIDs))
@@ -136,7 +136,7 @@ func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, st
 }
 
 // GetSolarSystemPlanets fetches and returns the planets for a solar system from ESI.
-func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error) {
+func (s *EVEUniverseService) GetSolarSystemPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error) {
 	oo := make([]*app.EvePlanet, len(planets))
 	g := new(errgroup.Group)
 	g.SetLimit(s.concurrencyLimit)
@@ -160,7 +160,7 @@ func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets 
 }
 
 // GetSolarSystemInfoESI fetches and returns details about a solar system from ESI.
-func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int64) (starID optional.Optional[int64], planets []app.EveSolarSystemPlanet, stargateIDs []int64, stations []*app.EveEntity, structures []*app.EveLocation, err error) {
+func (s *EVEUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int64) (starID optional.Optional[int64], planets []app.EveSolarSystemPlanet, stargateIDs []int64, stations []*app.EveEntity, structures []*app.EveLocation, err error) {
 	var z optional.Optional[int64]
 	system, _, err := s.esiClient.UniverseAPI.GetUniverseSystemsSystemId(ctx, solarSystemID).Execute()
 	if err != nil {
@@ -199,7 +199,7 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 }
 
 // GetRegionConstellationsESI fetches and returns the constellations for a region.
-func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id int64) ([]*app.EveEntity, error) {
+func (s *EVEUniverseService) GetRegionConstellationsESI(ctx context.Context, id int64) ([]*app.EveEntity, error) {
 	region, _, err := s.esiClient.UniverseAPI.GetUniverseRegionsRegionId(ctx, id).Execute()
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 }
 
 // GetConstellationSolarSystemsESI fetches and returns the solar systems for a constellations from ESI.
-func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int64) ([]*app.EveSolarSystem, error) {
+func (s *EVEUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int64) ([]*app.EveSolarSystem, error) {
 	o, _, err := s.esiClient.UniverseAPI.GetUniverseConstellationsConstellationId(ctx, id).Execute()
 	if err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context
 	return systems, nil
 }
 
-func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int64) (*app.EveRegion, error) {
+func (s *EVEUniverseService) GetOrCreateRegionESI(ctx context.Context, id int64) (*app.EveRegion, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRegionESI-%d", id), func() (*app.EveRegion, error) {
 		o1, err := s.st.GetEveRegion(ctx, id)
 		if err == nil {
@@ -273,7 +273,7 @@ func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int64)
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id int64) (*app.EveConstellation, error) {
+func (s *EVEUniverseService) GetOrCreateConstellationESI(ctx context.Context, id int64) (*app.EveConstellation, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateConstellationESI-%d", id), func() (*app.EveConstellation, error) {
 		o, err := s.st.GetEveConstellation(ctx, id)
 		if err == nil {
@@ -306,7 +306,7 @@ func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
+func (s *EVEUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateSolarSystemESI-%d", id), func() (*app.EveSolarSystem, error) {
 		o, err := s.st.GetEveSolarSystem(ctx, id)
 		if err == nil {
@@ -340,7 +340,7 @@ func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id i
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
+func (s *EVEUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreatePlanetESI-%d", id), func() (*app.EvePlanet, error) {
 		o, err := s.st.GetEvePlanet(ctx, id)
 		if err == nil {
@@ -378,7 +378,7 @@ func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
+func (s *EVEUniverseService) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateMoonESI-%d", id), func() (*app.EveMoon, error) {
 		o, err := s.st.GetEveMoon(ctx, id)
 		if err == nil {
@@ -411,7 +411,7 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int64) (
 	return o, nil
 }
 
-func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int64) (int64, error) {
+func (s *EVEUniverseService) GetStarTypeID(ctx context.Context, id int64) (int64, error) {
 	x2, _, err := s.esiClient.UniverseAPI.GetUniverseStarsStarId(ctx, id).Execute()
 	if err != nil {
 		return 0, err
@@ -421,7 +421,7 @@ func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int64) (int64
 
 // AddMissingRegions fetches missing regions from ESI.
 // Invalid IDs (e.g. 0) will be ignored
-func (s *EveUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
 	if ids.Size() == 0 {
@@ -448,7 +448,7 @@ func (s *EveUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[
 
 // AddMissingSolarSystems fetches missing solar systems from ESI.
 // Invalid IDs (e.g. 0) will be ignored
-func (s *EveUniverseService) AddMissingSolarSystems(ctx context.Context, ids set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingSolarSystems(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
 	if ids.Size() == 0 {

@@ -7,7 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (s *EveUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
+func (s *EVEUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSkillGroup, error) {
 	return s.st.ListEveSkillGroups(ctx)
 }
 
@@ -23,7 +23,7 @@ var skillDogmaAttributes = []struct {
 	{app.EveDogmaAttributeSenarySkillID, app.EveDogmaAttributeSenarySkillLevel},
 }
 
-func (s *EveUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, error) {
+func (s *EVEUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, error) {
 	es, err := s.st.ListEveSkills(ctx)
 	if err != nil {
 		return nil, err
@@ -76,6 +76,6 @@ func (s *EveUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 	return skills, nil
 }
 
-func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
+func (s *EVEUniverseService) UpdateShipSkills(ctx context.Context) error {
 	return s.st.UpdateEveShipSkills(ctx)
 }

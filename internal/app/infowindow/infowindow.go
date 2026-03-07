@@ -39,8 +39,8 @@ import (
 
 type UIServices interface {
 	Character() *characterservice.CharacterService
-	EVEImage() *eveimageservice.EveImageService
-	EVEUniverse() *eveuniverseservice.EveUniverseService
+	EVEImage() *eveimageservice.EVEImageService
+	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window

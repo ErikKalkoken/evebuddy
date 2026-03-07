@@ -23,8 +23,8 @@ type UIServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ESIStatus() *esistatusservice.ESIStatusService
-	EVEImage() *eveimageservice.EveImageService
-	EVEUniverse() *eveuniverseservice.EveUniverseService
+	EVEImage() *eveimageservice.EVEImageService
+	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	Janice() *janiceservice.JaniceService
 	Settings() *settings.Settings
 	Signals() *app.Signals

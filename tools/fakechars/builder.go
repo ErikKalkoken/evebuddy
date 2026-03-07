@@ -55,14 +55,14 @@ type CharacterBuilder struct {
 	corporations  []*app.EveEntity
 	characterIDs  []int64
 	corporationID int64
-	eus           *eveuniverseservice.EveUniverseService
+	eus           *eveuniverseservice.EVEUniverseService
 	f             *testutil.Factory
 	locations     map[int64]*app.EveLocation
 	st            *storage.Storage
 	types         map[int64]*app.EveType
 }
 
-func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EveUniverseService, corporationID int64) *CharacterBuilder {
+func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EVEUniverseService, corporationID int64) *CharacterBuilder {
 	b := &CharacterBuilder{
 		corporationID: corporationID,
 		eus:           eus,

@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func NewEUS(st *storage.Storage) *eveuniverseservice.EveUniverseService {
+func NewEUS(st *storage.Storage) *eveuniverseservice.EVEUniverseService {
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})

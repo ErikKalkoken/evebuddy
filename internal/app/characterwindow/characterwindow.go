@@ -32,7 +32,7 @@ type UIServices interface {
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacterID() int64
 	CurrentCorporationID() int64
-	EVEImage() *eveimageservice.EveImageService
+	EVEImage() *eveimageservice.EVEImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HasCharacter() bool
 	HasCorporation() bool

@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EveUniverseService) StartUpdateTicker(d time.Duration) {
+func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
 	go func() {
 		for {
 			go s.UpdateSectionsIfNeeded(context.Background(), false)
@@ -26,7 +26,7 @@ func (s *EveUniverseService) StartUpdateTicker(d time.Duration) {
 	}()
 }
 
-func (s *EveUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
+func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
@@ -48,7 +48,7 @@ func (s *EveUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
+func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
@@ -81,7 +81,7 @@ func (s *EveUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 }
 
 // HasSection reports whether a section exists at all.
-func (s *EveUniverseService) HasSection(ctx context.Context, section app.EveUniverseSection) (bool, error) {
+func (s *EVEUniverseService) HasSection(ctx context.Context, section app.EveUniverseSection) (bool, error) {
 	x, err := s.st.GetGeneralSectionStatus(ctx, section)
 	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
@@ -98,7 +98,7 @@ type eveUniverseSectionUpdateParams struct {
 }
 
 // updateSectionIfNeeded updates a section from ESI and returns the IDs of changed objects if there are any.
-func (s *EveUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveUniverseSectionUpdateParams) (set.Set[int64], error) {
+func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveUniverseSectionUpdateParams) (set.Set[int64], error) {
 	var zero set.Set[int64]
 	if !arg.forceUpdate {
 		status, err := s.st.GetGeneralSectionStatus(ctx, arg.section)

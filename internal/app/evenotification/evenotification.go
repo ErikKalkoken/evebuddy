@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type EveUniverseService interface {
+type EVEUniverse interface {
 	GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error)
 	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
 	GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error)
@@ -33,7 +33,7 @@ type notificationRenderer interface {
 	// render returns the rendered title and body for a goesi.
 	render(ctx context.Context, text string, timestamp time.Time) (string, string, error)
 	// setEveUniverse initialized access to the EveUniverseService service and must be called before render().
-	setEveUniverse(EveUniverseService)
+	setEveUniverse(EVEUniverse)
 }
 
 // baseRenderer represents the base renderer for all notification types.
@@ -45,10 +45,10 @@ type notificationRenderer interface {
 // All rendered should embed baseRenderer and implement the render method.
 // Renderers that want to return Entity IDs must also overwrite entityIDs.
 type baseRenderer struct {
-	eus EveUniverseService
+	eus EVEUniverse
 }
 
-func (br *baseRenderer) setEveUniverse(eus EveUniverseService) {
+func (br *baseRenderer) setEveUniverse(eus EVEUniverse) {
 	br.eus = eus
 }
 
@@ -59,13 +59,13 @@ func (br baseRenderer) entityIDs(_ string) (set.Set[int64], error) {
 	return set.Set[int64]{}, nil
 }
 
-// EveNotificationService is a service for rendering notifications.
-type EveNotificationService struct {
-	eus EveUniverseService
+// EVENotificationService is a service for rendering notifications.
+type EVENotificationService struct {
+	eus EVEUniverse
 }
 
-func New(eus EveUniverseService) *EveNotificationService {
-	s := &EveNotificationService{eus: eus}
+func New(eus EVEUniverse) *EVENotificationService {
+	s := &EVENotificationService{eus: eus}
 	return s
 }
 
@@ -74,7 +74,7 @@ func New(eus EveUniverseService) *EveNotificationService {
 // before rendering them one by one.
 // Returns an empty set when notification does not use Entity IDs.
 // Returns [app.ErrNotFound] for unsupported notification types.
-func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
+func (s *EVENotificationService) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
 	v, ok := text.Value()
 	if !ok {
 		return set.Set[int64]{}, nil
@@ -88,7 +88,7 @@ func (s *EveNotificationService) EntityIDs(nt app.EveNotificationType, text opti
 
 // RenderESI renders title and body for all supported notification types and returns them.
 // Returns [app.ErrNotFound] for unsupported notification types.
-func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
+func (s *EVENotificationService) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
 	v, ok := text.Value()
 	if !ok {
 		return "", "", nil
@@ -104,7 +104,7 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotifi
 	return title, body, nil
 }
 
-func (s *EveNotificationService) makeRenderer(type_ app.EveNotificationType) (notificationRenderer, bool) {
+func (s *EVENotificationService) makeRenderer(type_ app.EveNotificationType) (notificationRenderer, bool) {
 	var r notificationRenderer
 	switch type_ {
 	// billing

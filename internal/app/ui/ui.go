@@ -123,9 +123,9 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      *eveimageservice.EveImageService
+	eis      *eveimageservice.EVEImageService
 	ess      *esistatusservice.ESIStatusService
-	eus      *eveuniverseservice.EveUniverseService
+	eus      *eveuniverseservice.EVEUniverseService
 	js       *janiceservice.JaniceService
 	rs       *corporationservice.CorporationService
 	scs      *statuscacheservice.StatusCacheService
@@ -155,8 +155,8 @@ type BaseUIParams struct {
 	Character   *characterservice.CharacterService
 	Corporation *corporationservice.CorporationService
 	ESIStatus   *esistatusservice.ESIStatusService
-	EVEImage    *eveimageservice.EveImageService
-	EVEUniverse *eveuniverseservice.EveUniverseService
+	EVEImage    *eveimageservice.EVEImageService
+	EVEUniverse *eveuniverseservice.EVEUniverseService
 	Janice      *janiceservice.JaniceService
 	StatusCache *statuscacheservice.StatusCacheService
 	Signals     *app.Signals
@@ -578,7 +578,7 @@ func (u *baseUI) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }
 
-func (u *baseUI) EVEImage() *eveimageservice.EveImageService {
+func (u *baseUI) EVEImage() *eveimageservice.EVEImageService {
 	return u.eis
 }
 
@@ -586,7 +586,7 @@ func (u *baseUI) ESIStatus() *esistatusservice.ESIStatusService {
 	return u.ess
 }
 
-func (u *baseUI) EVEUniverse() *eveuniverseservice.EveUniverseService {
+func (u *baseUI) EVEUniverse() *eveuniverseservice.EVEUniverseService {
 	return u.eus
 }
 

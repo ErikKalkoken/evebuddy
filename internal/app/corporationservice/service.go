@@ -36,7 +36,7 @@ type CorporationService struct {
 	concurrencyLimit int
 	cs               CharacterService
 	esiClient        *esi.APIClient
-	eus              *eveuniverseservice.EveUniverseService
+	eus              *eveuniverseservice.EVEUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
 	settings         Settings
@@ -50,7 +50,7 @@ type Params struct {
 	CharacterService   CharacterService
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
-	EveUniverseService *eveuniverseservice.EveUniverseService
+	EveUniverseService *eveuniverseservice.EVEUniverseService
 	Settings           Settings
 	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService

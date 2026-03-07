@@ -34,7 +34,7 @@ type structureInfo struct {
 	solarSystem eveObj
 }
 
-func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structureID int64, structureName string, eus EveUniverseService) (structureInfo, error) {
+func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structureID int64, structureName string, eus EVEUniverse) (structureInfo, error) {
 	var eveType *app.EveType
 	var err error
 	if typeID != 0 {

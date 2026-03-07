@@ -32,8 +32,8 @@ import (
 type UIServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
-	EVEImage() *eveimageservice.EveImageService
-	EVEUniverse() *eveuniverseservice.EveUniverseService
+	EVEImage() *eveimageservice.EVEImageService
+	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	Signals() *app.Signals
 	StatusCache() *statuscacheservice.StatusCacheService
