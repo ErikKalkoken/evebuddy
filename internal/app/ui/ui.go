@@ -907,7 +907,7 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 
 // Avatars & switch menus
 
-func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resource)) {
+func (u *baseUI) setCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource)) {
 	xwidget.LoadResourceAsyncWithCache(
 		u.characterAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
@@ -927,7 +927,7 @@ func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resourc
 	)
 }
 
-func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Resource)) {
+func (u *baseUI) setCorporationAvatarAsync(corporationID int64, setIcon func(fyne.Resource)) {
 	xwidget.LoadResourceAsyncWithCache(
 		u.corporationAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
@@ -946,8 +946,6 @@ func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Res
 		},
 	)
 }
-
-// TODO: Check for potential latency creation
 
 func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
 	cc := u.scs.ListCharacters()
@@ -979,14 +977,12 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 			it.Disabled = true
 		} else {
 			it.Icon = u.characterAvatarPlaceholder64
-			go func() {
-				fyne.Do(func() {
-					u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
-						it.Icon = r
-					})
+			fyne.Do(func() {
+				u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+					it.Icon = r
 					refresh()
 				})
-			}()
+			})
 		}
 		items = append(items, it)
 	}
@@ -1019,13 +1015,13 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	}))
 	currentID := u.CurrentCorporation().IDOrZero()
 	if currentID != 0 && !corporations.Contains(currentID) {
-		go u.SetAnyCorporation(ctx)
+		u.SetAnyCorporation(ctx)
+		return
 	}
+
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items := []*fyne.MenuItem{it}
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
@@ -1040,23 +1036,15 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
 			it.Disabled = true
 		} else {
-			g.Go(func() error {
-				fyne.Do(func() {
-					u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
-						it.Icon = r
-					})
+			fyne.Do(func() {
+				u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
+					it.Icon = r
+					refresh()
 				})
-				return nil
 			})
 		}
 		items = append(items, it)
 	}
-	go func() {
-		g.Wait()
-		fyne.Do(func() {
-			refresh()
-		})
-	}()
 	fyne.Do(func() {
 		setItems(items)
 	})

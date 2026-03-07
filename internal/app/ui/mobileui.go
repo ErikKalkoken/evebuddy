@@ -603,7 +603,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterPage.SetTitle(c.EveCharacter.Name)
 			characterNav.PopAll()
 		})
-		go u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
+		go u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
@@ -623,7 +623,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpPage.SetTitle(c.EveCorporation.Name)
 			corpNav.PopAll()
 		})
-		go u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
+		go u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				corpSelector.SetIcon(r)
 			})
