@@ -650,7 +650,7 @@ func ShowCharacterWalletTransactionWindowAsync(u uiservices.UIServices, characte
 				// )),
 			}
 
-			if app.IsDeveloperMode() {
+			if u.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem(
 					"Transaction ID",
 					xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(transactionID)),
@@ -717,7 +717,7 @@ func ShowCorporationWalletTransactionWindowAsync(u uiservices.UIServices, corpor
 				)),
 			}
 
-			if app.IsDeveloperMode() {
+			if u.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem(
 					"Transaction ID",
 					xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(transactionID)),

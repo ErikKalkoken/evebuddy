@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -76,7 +75,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 			a.iw.ShowEntity(o.Region.EveEntity())
 		}
 
-		if app.IsDeveloperMode() {
+		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))

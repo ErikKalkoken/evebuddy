@@ -34,6 +34,7 @@ type UIServices interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	InfoWindow() *infowindow.InfoWindow
+	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOfflineMode() bool
 	IsUpdateDisabled() bool

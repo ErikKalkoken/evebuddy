@@ -104,7 +104,7 @@ func (a *allianceInfo) update(ctx context.Context) error {
 		if v, ok := o.Faction.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Faction", v))
 		}
-		if app.IsDeveloperMode() {
+		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", o.ID)
 			x.Action = func(_ any) {
 				fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))

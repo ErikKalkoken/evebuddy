@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -83,7 +82,7 @@ func (a *regionInfo) update(ctx context.Context) error {
 	}
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		if !app.IsDeveloperMode() {
+		if !a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))

@@ -593,7 +593,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 			if !o.ContextIDType.IsEmpty() {
 				items = append(items, contextItem)
 			}
-			if app.IsDeveloperMode() {
+			if u.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
 			}
 
@@ -727,7 +727,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u uiservices.UIServices, corpo
 				)
 			}
 			items = append(items, contextItem)
-			if app.IsDeveloperMode() {
+			if u.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
 			}
 

@@ -146,6 +146,7 @@ type baseUI struct {
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme       fyne.Theme
+	isDeveloperMode    atomic.Bool
 	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
@@ -460,7 +461,7 @@ func (u *baseUI) Start() bool {
 		return false
 	}
 	// First app start
-	app.SetDeveloperMode(u.settings.DeveloperMode())
+	u.isDeveloperMode.Store(u.settings.DeveloperMode())
 	u.defaultTheme = theme.Current()
 	u.SetColorTheme(u.settings.ColorTheme())
 	if u.isOfflineMode {
@@ -570,6 +571,15 @@ func (u *baseUI) ShowSnackbar(text string) {
 
 func (u *baseUI) IsMobile() bool {
 	return u.isMobile
+}
+
+func (u *baseUI) SetDeveloperMode(b bool) {
+	u.settings.SetDeveloperMode(b)
+	u.isDeveloperMode.Store(b)
+}
+
+func (u *baseUI) IsDeveloperMode() bool {
+	return u.isDeveloperMode.Load()
 }
 
 func (u *baseUI) IsOfflineMode() bool {
@@ -1064,6 +1074,15 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		})
 	}()
 	return items
+}
+
+// ErrorDisplay returns a user friendly error message for an error.
+// Or returns the full error when in developer mode.
+func (u *baseUI) ErrorDisplay(err error) string {
+	if u.isDeveloperMode.Load() {
+		return err.Error()
+	}
+	return app.ErrorDisplay(err)
 }
 
 // Windows

@@ -42,6 +42,7 @@ type UIServices interface {
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOfflineMode() bool
 	Janice() *janiceservice.JaniceService

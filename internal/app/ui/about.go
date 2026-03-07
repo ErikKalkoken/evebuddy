@@ -39,7 +39,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	techInfos := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
 	)
-	if !app.IsDeveloperMode() {
+	if !u.IsDeveloperMode() {
 		techInfos.Hide()
 	}
 	discordURL, _ := url.Parse(discordServerURL)

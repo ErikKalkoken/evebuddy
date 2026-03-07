@@ -114,7 +114,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	}
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		if app.IsDeveloperMode() {
+		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))

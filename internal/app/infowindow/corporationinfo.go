@@ -212,7 +212,7 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 			attributes = append(attributes, newAttributeItem("URL", u))
 		}
 	}
-	if app.IsDeveloperMode() {
+	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))

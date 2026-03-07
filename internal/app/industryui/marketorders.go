@@ -590,7 +590,7 @@ func ShowMarketOrderWindow(u uiservices.UIServices, r marketOrderRow) {
 		u.InfoWindow().ShowEntity,
 	)))
 
-	if app.IsDeveloperMode() {
+	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Order ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(r.orderID))))
 	}
 	f := widget.NewForm(items...)

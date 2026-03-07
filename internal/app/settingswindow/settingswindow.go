@@ -36,11 +36,13 @@ type UIServices interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
 	ResetCharacter()
 	ResetCorporation()
 	SetColorTheme(s settings.ColorTheme)
+	SetDeveloperMode(b bool)
 	Settings() *settings.Settings
 	Signals() *app.Signals
 }
@@ -136,8 +138,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		hint:   "App shows additional technical information like Character IDs",
 		getter: a.u.Settings().DeveloperMode,
 		onChanged: func(b bool) {
-			a.u.Settings().SetDeveloperMode(b)
-			app.SetDeveloperMode(b)
+			a.u.SetDeveloperMode(b)
 		},
 	})
 
@@ -380,7 +381,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 			},
 		})
 	}
-	if app.IsDeveloperMode() {
+	if a.u.IsDeveloperMode() {
 		actions = append(actions, settingAction{
 			Label: "Show snackbar (debug)",
 			Action: func() {

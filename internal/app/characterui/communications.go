@@ -248,7 +248,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			fyne.CurrentApp().Clipboard().SetContent(s)
 		}),
 	)
-	if app.IsDeveloperMode() {
+	if a.u.IsDeveloperMode() {
 		toolbar.Append(widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
 			if a.current == nil {
 				return

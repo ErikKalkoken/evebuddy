@@ -66,14 +66,6 @@ func makeSolarSystemLabel(o *app.EveSolarSystem, show func(o *app.EveEntity)) fy
 	return x
 }
 
-// corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.
-func corporationIDOrZero(c *app.Corporation) int64 {
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
 // TODO: Remove this helper
 
 // makeTopText makes the content for the top label of a gui element.
