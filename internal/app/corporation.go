@@ -63,6 +63,13 @@ func (c *Corporation) IDorZero() int64 {
 	return c.ID
 }
 
+func (c *Corporation) NameOrZero() string {
+	if c == nil || c.EveCorporation == nil {
+		return ""
+	}
+	return c.EveCorporation.Name
+}
+
 type CorporationHangarName struct {
 	CorporationID int64
 	DivisionID    int64

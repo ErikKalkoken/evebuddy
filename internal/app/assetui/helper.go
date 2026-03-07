@@ -63,11 +63,3 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	x.Wrapping = fyne.TextWrapWord
 	return x
 }
-
-// corporationNameOrZero returns the name of a corporation or "" if the c does not exist.
-func corporationNameOrZero(c *app.Corporation) string {
-	if c == nil || c.EveCorporation == nil {
-		return ""
-	}
-	return c.EveCorporation.Name
-}

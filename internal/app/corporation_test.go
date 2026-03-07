@@ -17,3 +17,18 @@ func TestCorporation_IDorZero(t *testing.T) {
 		xassert.Equal(t, 42, c.IDorZero())
 	})
 }
+
+func TestCorporation_NameorZero(t *testing.T) {
+	t.Run("corp is nil", func(t *testing.T) {
+		c := new(app.Corporation)
+		xassert.Equal(t, "", c.NameOrZero())
+	})
+	t.Run("corp is not nil", func(t *testing.T) {
+		c := &app.Corporation{EveCorporation: &app.EveCorporation{Name: "Alpha"}}
+		xassert.Equal(t, "Alpha", c.NameOrZero())
+	})
+	t.Run("eve corp is nil", func(t *testing.T) {
+		c := &app.Corporation{}
+		xassert.Equal(t, "", c.NameOrZero())
+	})
+}

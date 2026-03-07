@@ -22,6 +22,21 @@ func TestCharacter_IDorZero(t *testing.T) {
 	})
 }
 
+func TestCharacater_NameorZero(t *testing.T) {
+	t.Run("char is nil", func(t *testing.T) {
+		c := new(app.Character)
+		xassert.Equal(t, "", c.NameOrZero())
+	})
+	t.Run("corp is not nil", func(t *testing.T) {
+		c := &app.Character{EveCharacter: &app.EveCharacter{Name: "Alpha"}}
+		xassert.Equal(t, "Alpha", c.NameOrZero())
+	})
+	t.Run("eve char is nil", func(t *testing.T) {
+		c := &app.Character{}
+		xassert.Equal(t, "", c.NameOrZero())
+	})
+}
+
 func TestCharacterPlanet_ExtractedTypes(t *testing.T) {
 	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
 	productType1a := &app.EveType{ID: 1}

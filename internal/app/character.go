@@ -40,6 +40,13 @@ func (c *Character) IDorZero() int64 {
 	return c.ID
 }
 
+func (c *Character) NameOrZero() string {
+	if c == nil || c.EveCharacter == nil {
+		return ""
+	}
+	return c.EveCharacter.Name
+}
+
 type CharacterAttributes struct {
 	ID            int64
 	BonusRemaps   optional.Optional[int64]

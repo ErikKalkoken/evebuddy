@@ -762,7 +762,7 @@ func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
 		if !ok {
 			return
 		}
-		name := corporationNameOrZero(a.ab.corporation.Load())
+		name := a.ab.corporation.Load().NameOrZero()
 		ShowAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
 		return
 	}
