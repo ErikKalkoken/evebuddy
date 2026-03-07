@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -14,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -118,38 +117,23 @@ func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
 }
 
 func (a *Communications) makeFolderList() *widget.List {
-	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.EveNotificationGroup) int {
-		return strings.Compare(a.String(), b.String())
-	})
+	// maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.EveNotificationGroup) int {
+	// 	return strings.Compare(a.String(), b.String())
+	// })
 	l := widget.NewList(
 		func() int {
 			return len(a.folders)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewLabel(maxGroup.String()+"WWWWWWWW"), layout.NewSpacer(), kwidget.NewBadge("999"),
-			)
+			return newFolderItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.folders) {
 				return
 			}
-			c := a.folders[id]
-			hbox := co.(*fyne.Container).Objects
-			label := hbox[0].(*widget.Label)
-			badge := hbox[2].(*kwidget.Badge)
-			text := c.Name
-			if c.Unread.ValueOrZero() > 0 {
-				label.TextStyle.Bold = true
-				badge.SetText(ihumanize.OptionalWithComma(c.Unread, "?"))
-				badge.Show()
-			} else {
-				label.TextStyle.Bold = false
-				badge.Hide()
-			}
-			label.Text = text
-			label.Refresh()
-		})
+			co.(*folderItem).set(a.folders[id])
+		},
+	)
 	l.OnSelected = func(id widget.ListItemID) {
 		a.notificationList.UnselectAll()
 		if id >= len(a.folders) {
@@ -177,8 +161,15 @@ func (a *Communications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(a.character.Load().IDOrZero(), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
-		})
+			item.Set(
+				a.character.Load().IDOrZero(),
+				n.Sender,
+				n.TitleDisplay(),
+				n.Timestamp,
+				n.IsRead.ValueOrZero(),
+			)
+		},
+	)
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
 		if id >= len(a.notifications) {
@@ -392,6 +383,41 @@ func (a *Communications) clearDetail() {
 	a.Detail.Hide()
 	a.Toolbar.Hide()
 	a.current = nil
+}
+
+type folderItem struct {
+	widget.BaseWidget
+
+	name   *widget.Label
+	unread *kxwidget.Badge
+}
+
+func newFolderItem() *folderItem {
+	w := &folderItem{
+		name:   widget.NewLabel(""),
+		unread: kxwidget.NewBadge(""),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *folderItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, nil, w.unread, w.name)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *folderItem) set(r notificationFolder) {
+	text := r.Name
+	if r.Unread.ValueOrZero() > 0 {
+		w.name.TextStyle.Bold = true
+		w.unread.SetText(ihumanize.OptionalWithComma(r.Unread, "?"))
+		w.unread.Show()
+	} else {
+		w.name.TextStyle.Bold = false
+		w.unread.Hide()
+	}
+	w.name.Text = text
+	w.name.Refresh()
 }
 
 // communicationDetail shows the complete communication for a character.
