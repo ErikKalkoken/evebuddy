@@ -11,7 +11,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // EveConstellation is a constellation in Eve Online.
@@ -123,14 +123,14 @@ func (es EveSolarSystem) EveEntity() *EveEntity {
 func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
 	return slices.Concat(
 		es.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", es.Name)),
+		xwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", es.Name)),
 	)
 }
 
 func (es EveSolarSystem) DisplayRichTextWithRegion() []widget.RichTextSegment {
 	return slices.Concat(
 		es.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s (%s)", es.Name, es.Constellation.Region.Name)),
+		xwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s (%s)", es.Name, es.Constellation.Region.Name)),
 	)
 }
 

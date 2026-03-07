@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
@@ -18,11 +19,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
 const (
@@ -155,17 +159,31 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	if err := scs.InitCache(context.Background()); err != nil {
 		panic(err)
 	}
+	signals := app.NewSignals()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	ac, err := eveauth.NewClient(eveauth.Config{
+		ClientID: "DUMMY",
+		Port:     8000,
+	})
+	if err != nil {
+		panic(err)
+	}
+	settings := settings.New(fyneApp.Preferences())
 	cs := characterservice.New(characterservice.Params{
-		Cache:              testutil.NewCacheFake2(),
-		ESIClient:          esiClient,
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
+		AuthClient:             ac,
+		Cache:                  testutil.NewCacheFake2(),
+		ESIClient:              esiClient,
+		EveNotificationService: evenotification.New(eus),
+		EveUniverseService:     eus,
+		Settings:               settings,
+		Signals:                signals,
+		StatusCacheService:     scs,
+		Storage:                st,
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		Cache: testutil.NewCacheFake2(),
@@ -174,26 +192,30 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		}},
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
+		Settings:           settings,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	// eisFake := &testutil.EveImageServiceFake{
+	// 	Character:   icons.Characterplaceholder64Jpeg,
+	// 	Alliance:    icons.Corporationplaceholder64Png,
+	// 	Corporation: icons.Corporationplaceholder64Png,
+	// 	Err:         nil,
+	// 	Faction:     icons.Factionplaceholder64Png,
+	// 	Type:        icons.Typeplaceholder64Png,
+	// }
 	bu := NewBaseUI(BaseUIParams{
 		App:                fyneApp,
-		CharacterService:   cs,
-		CorporationService: rs,
-		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService: &testutil.EveImageServiceFake{
-			Character:   icons.Characterplaceholder64Jpeg,
-			Alliance:    icons.Corporationplaceholder64Png,
-			Corporation: icons.Corporationplaceholder64Png,
-			Err:         nil,
-			Faction:     icons.Factionplaceholder64Png,
-			Type:        icons.Typeplaceholder64Png,
-		},
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		IsOffline:          true,
-		IsMobile:           !isDesktop,
+		Character:   cs,
+		Corporation: rs,
+		ESIStatus:   esistatusservice.New(esiClient),
+		EVEImage:    eveimageservice.New(testutil.NewCacheFake(), nil, true),
+		EVEUniverse: eus,
+		Janice:      janiceservice.New(http.DefaultClient, ""),
+		Settings:           settings,
+		Signals:            signals,
+		StatusCache: scs,
 	})
 	return bu
 }
@@ -203,46 +225,46 @@ func TestMakeOrFindWindow(t *testing.T) {
 	defer db.Close()
 	t.Run("should create new window when it does not yet exist", func(t *testing.T) {
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		w, ok := ui.getOrCreateWindow("abc", "title")
+		w, ok := ui.GetOrCreateWindow("abc", "title")
 		assert.True(t, ok)
 		assert.Contains(t, w.Title(), "title")
 	})
 	t.Run("should return existing window", func(t *testing.T) {
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		ui.getOrCreateWindow("abc", "title-old")
-		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		ui.GetOrCreateWindow("abc", "title-old")
+		w, ok := ui.GetOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
 		assert.Contains(t, w.Title(), "title-old")
 	})
 	t.Run("should create new window when previous one was closed", func(t *testing.T) {
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		w, _ := ui.getOrCreateWindow("abc", "title-old")
+		w, _ := ui.GetOrCreateWindow("abc", "title-old")
 		w.Close()
-		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		w, ok := ui.GetOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
 		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should create new window when previous one was reshown and then closed", func(t *testing.T) {
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		ui.getOrCreateWindow("abc", "title-old")
-		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		ui.GetOrCreateWindow("abc", "title-old")
+		w, ok := ui.GetOrCreateWindow("abc", "title-new")
 		assert.False(t, ok)
 		assert.Contains(t, w.Title(), "title-old")
 		w.Close()
-		w, ok = ui.getOrCreateWindow("abc", "title-new")
+		w, ok = ui.GetOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
 		assert.Contains(t, w.Title(), "title-new")
 	})
 	t.Run("should allow setting onClose calback by caller", func(t *testing.T) {
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		w, _, onClosed := ui.getOrCreateWindowWithOnClosed("abc", "title-old")
+		w, _, onClosed := ui.GetOrCreateWindowWithOnClosed("abc", "title-old")
 		var called bool
 		w.SetOnClosed(func() {
 			onClosed()
 			called = true
 		})
 		w.Close()
-		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		w, ok := ui.GetOrCreateWindow("abc", "title-new")
 		assert.True(t, ok)
 		assert.True(t, called)
 		assert.Contains(t, w.Title(), "title-new")

@@ -42,11 +42,11 @@ func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
 	return c2
 }
 
-func (s *EveUniverseService) GetType(ctx context.Context, id int64) (*app.EveType, error) {
+func (s *EVEUniverseService) GetType(ctx context.Context, id int64) (*app.EveType, error) {
 	return s.st.GetEveType(ctx, id)
 }
 
-func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int64) (*app.EveCategory, error) {
+func (s *EVEUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int64) (*app.EveCategory, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateCategoryESI-%d", id), func() (*app.EveCategory, error) {
 		o1, err := s.st.GetEveCategory(ctx, id)
 		if err == nil {
@@ -76,7 +76,7 @@ func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int6
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) (*app.EveGroup, error) {
+func (s *EVEUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) (*app.EveGroup, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateGroupESI-%d", id), func() (*app.EveGroup, error) {
 		o, err := s.st.GetEveGroup(ctx, id)
 		if err == nil {
@@ -110,11 +110,11 @@ func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) 
 	return o, nil
 }
 
-func (s *EveUniverseService) ListGroupsForCategory(ctx context.Context, categoryID int64) ([]*app.EveGroup, error) {
+func (s *EVEUniverseService) ListGroupsForCategory(ctx context.Context, categoryID int64) ([]*app.EveGroup, error) {
 	return s.st.ListEveGroupsForCategory(ctx, categoryID)
 }
 
-func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
+func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (*app.EveType, error) {
 		o, err := s.st.GetEveType(ctx, id)
 		if err == nil {
@@ -198,13 +198,13 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 	return o, nil
 }
 
-func (s *EveUniverseService) ListTypeIDs(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) ListTypeIDs(ctx context.Context) (set.Set[int64], error) {
 	return s.st.ListEveTypeIDs(ctx)
 }
 
 // AddMissingTypes fetches missing typeIDs from ESI.
 // Invalid IDs (e.g. 0) will be ignored
-func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
 	if ids.Size() == 0 {
@@ -229,7 +229,7 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 	return g.Wait()
 }
 
-func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int64) error {
+func (s *EVEUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int64) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID), func() (any, error) {
 		var typeIds set.Set[int64]
 		_, err := s.GetOrCreateCategoryESI(ctx, categoryID)
@@ -282,11 +282,11 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 	return nil
 }
 
-func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int64) (*app.EveDogmaAttribute, error) {
+func (s *EVEUniverseService) GetDogmaAttribute(ctx context.Context, id int64) (*app.EveDogmaAttribute, error) {
 	return s.st.GetEveDogmaAttribute(ctx, id)
 }
 
-func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int64) (*app.EveDogmaAttribute, error) {
+func (s *EVEUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int64) (*app.EveDogmaAttribute, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("createDogmaAttributeFromESI-%d", id), func() (*app.EveDogmaAttribute, error) {
 		o1, err := s.st.GetEveDogmaAttribute(ctx, id)
 		if err == nil {
@@ -328,7 +328,7 @@ func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, i
 }
 
 // FormatDogmaValue returns a formatted value.
-func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float64, unitID app.EveUnitID) (string, int64) {
+func (s *EVEUniverseService) FormatDogmaValue(ctx context.Context, value float64, unitID app.EveUnitID) (string, int64) {
 	return formatDogmaValue(ctx, formatDogmaValueParams{
 		value:                        value,
 		unitID:                       unitID,
@@ -429,12 +429,12 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 	return fmt.Sprintf("%s ???", defaultFormatter(v)), 0
 }
 
-func (s *EveUniverseService) ListTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error) {
+func (s *EVEUniverseService) ListTypeDogmaAttributesForType(ctx context.Context, typeID int64) ([]*app.EveTypeDogmaAttribute, error) {
 	return s.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
 }
 
 // MarketPrice returns the average market price for a type. Or empty when no price is known for this type.
-func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int64) (optional.Optional[float64], error) {
+func (s *EVEUniverseService) MarketPrice(ctx context.Context, typeID int64) (optional.Optional[float64], error) {
 	var v optional.Optional[float64]
 	o, err := s.st.GetEveMarketPrice(ctx, typeID)
 	if errors.Is(err, app.ErrNotFound) {
@@ -447,9 +447,9 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int64) (opt
 
 // TODO: Change to bulk create
 
-// updateMarketPricesESI updates all market prices from ESI and reports which have changed.
+// UpdateMarketPricesESI updates all market prices from ESI and reports which have changed.
 // Will only reports changes on prices for known types.
-func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) UpdateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
 	v, err, _ := xsingleflight.Do(&s.sfg, "updateMarketPricesESI", func() (set.Set[int64], error) {
 		prices, _, err := s.esiClient.MarketAPI.GetMarketsPrices(ctx).Execute()
 		if err != nil {
@@ -501,7 +501,7 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 
 // updateTypes updates all existing type from ESI
 // and returns the IDs of added types if there were any.
-func (s *EveUniverseService) updateTypes(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) updateTypes(ctx context.Context) (set.Set[int64], error) {
 	old, err := s.st.ListEveTypeIDs(ctx)
 	if err != nil {
 		return set.Set[int64]{}, err

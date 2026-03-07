@@ -20,6 +20,10 @@ type CharacterService interface {
 	TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error)
 }
 
+type Settings interface {
+	MaxWalletTransactions() int
+}
+
 // Cache defines a cache.
 type Cache interface {
 	GetInt64(string) (int64, bool)
@@ -32,10 +36,12 @@ type CorporationService struct {
 	concurrencyLimit int
 	cs               CharacterService
 	esiClient        *esi.APIClient
-	eus              *eveuniverseservice.EveUniverseService
+	eus              *eveuniverseservice.EVEUniverseService
 	httpClient       *http.Client
 	scs              *statuscacheservice.StatusCacheService
+	settings         Settings
 	sfg              singleflight.Group
+	signals          *app.Signals
 	st               *storage.Storage
 }
 
@@ -44,7 +50,9 @@ type Params struct {
 	CharacterService   CharacterService
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
-	EveUniverseService *eveuniverseservice.EveUniverseService
+	EveUniverseService *eveuniverseservice.EVEUniverseService
+	Settings           Settings
+	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 	// optional
@@ -54,8 +62,29 @@ type Params struct {
 // New creates a new corporation service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CorporationService {
+	if arg.Cache == nil {
+		panic("Cache missing")
+	}
+	if arg.CharacterService == nil {
+		panic("CharacterService missing")
+	}
 	if arg.ESIClient == nil {
-		panic("must provide esi client")
+		panic("ESIClient missing")
+	}
+	if arg.EveUniverseService == nil {
+		panic("EveUniverseService missing")
+	}
+	if arg.Settings == nil {
+		panic("Settings missing")
+	}
+	if arg.Signals == nil {
+		panic("Signals missing")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService missing")
+	}
+	if arg.Storage == nil {
+		panic("Storage missing")
 	}
 	s := &CorporationService{
 		cache:            arg.Cache,
@@ -64,6 +93,8 @@ func New(arg Params) *CorporationService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		settings:         arg.Settings,
+		signals:          arg.Signals,
 		st:               arg.Storage,
 	}
 	if arg.HTTPClient == nil {

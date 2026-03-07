@@ -276,14 +276,14 @@ func (st *Storage) UpdateCorporationAssetName(ctx context.Context, arg UpdateCor
 		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
 	}
 	if arg.CorporationID == 0 || arg.ItemID == 0 {
-		wrapErr(app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCorporationAssetName(ctx, queries.UpdateCorporationAssetNameParams{
 		CorporationID: arg.CorporationID,
 		ItemID:        arg.ItemID,
 		Name:          arg.Name,
 	}); err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	return nil
 }

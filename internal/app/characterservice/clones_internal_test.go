@@ -53,9 +53,9 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateJumpClonesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterJumpClones,
+		changed, err := s.updateJumpClonesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -95,9 +95,9 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateJumpClonesESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterJumpClones,
+		changed, err := s.updateJumpClonesESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {

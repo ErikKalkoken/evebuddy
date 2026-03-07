@@ -79,9 +79,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -172,9 +172,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -209,11 +209,10 @@ func TestUpdateContractESI(t *testing.T) {
 		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
-		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+		o1 := factory.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Availability:  app.ContractAvailabilityPublic,
 			Status:        app.ContractStatusOutstanding,
-			Type:          app.ContractTypeCourier,
 		})
 		acceptor := factory.CreateEveEntityCorporation()
 		httpmock.RegisterResponder(
@@ -241,9 +240,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -295,9 +294,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -347,9 +346,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -419,9 +418,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationContracts,
+		changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		})
 		// then
 		require.NoError(t, err)

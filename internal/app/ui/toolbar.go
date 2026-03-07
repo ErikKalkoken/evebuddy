@@ -8,7 +8,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -20,8 +21,8 @@ type toolbar struct {
 	widget.BaseWidget
 
 	searchBar  *widget.Entry
-	searchIcon *iwidget.TappableIcon
-	hamburger  *iwidget.TappableIcon
+	searchIcon *xwidget.TappableIcon
+	hamburger  *xwidget.TappableIcon
 	u          *DesktopUI
 }
 
@@ -33,22 +34,22 @@ func newToolbar(u *DesktopUI) *toolbar {
 	searchBar.OnSubmitted = func(s string) {
 		u.PerformSearch(s)
 	}
-	clearSearch := iwidget.NewTappableIcon(theme.CancelIcon(), func() {
+	clearSearch := xwidget.NewTappableIcon(theme.CancelIcon(), func() {
 		searchBar.SetText("")
 	})
 	clearSearch.SetToolTip("Clear search bar")
 	searchBar.ActionItem = container.NewPadded(clearSearch)
 
-	searchIcon := iwidget.NewTappableIcon(theme.SearchIcon(), func() {
+	searchIcon := xwidget.NewTappableIcon(theme.SearchIcon(), func() {
 		u.showAdvancedSearch(searchBar.Text)
 	})
 	searchIcon.SetToolTip("Advanced search")
 
-	makeMenuItem := func(title string, sc shortcutDef) *fyne.MenuItem {
+	makeMenuItem := func(title string, sc xdesktop.ShortcutWithHandler) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
-			sc.handler(sc.shortcut)
+			sc.Handler(sc.Shortcut)
 		})
-		it.Shortcut = sc.shortcut
+		it.Shortcut = sc.Shortcut
 		return it
 	}
 	close := fyne.NewMenuItem("Close", func() {
@@ -58,19 +59,24 @@ func newToolbar(u *DesktopUI) *toolbar {
 		KeyName:  fyne.KeyF4,
 		Modifier: fyne.KeyModifierAlt,
 	}
+	w := u.MainWindow()
+	settings, _ := xdesktop.Shortcut("settings", w)
+	characters, _ := xdesktop.Shortcut("manageCharacters", w)
+	status, _ := xdesktop.Shortcut("updateStatus", w)
+	quit, _ := xdesktop.Shortcut("quit", w)
 	menu := fyne.NewMenu(
 		"",
-		makeMenuItem("Settings", u.shortcuts["settings"]),
-		makeMenuItem("Manage Characters", u.shortcuts["manageCharacters"]),
-		makeMenuItem("Update Status", u.shortcuts["updateStatus"]),
+		makeMenuItem("Settings", settings),
+		makeMenuItem("Manage Characters", characters),
+		makeMenuItem("Update Status", status),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.showAboutDialog),
 		fyne.NewMenuItemSeparator(),
 		close,
-		makeMenuItem("Quit", u.shortcuts["quit"]),
+		makeMenuItem("Quit", quit),
 	)
-	hamburger := iwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)
+	hamburger := xwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)
 	hamburger.SetToolTip("Main menu")
 	a := &toolbar{
 		hamburger:  hamburger,

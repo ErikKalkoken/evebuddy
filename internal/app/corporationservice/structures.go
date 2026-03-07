@@ -25,21 +25,21 @@ func (s *CorporationService) ListStructures(ctx context.Context, corporationID i
 	return s.st.ListCorporationStructures(ctx, corporationID)
 }
 
-func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCorporationStructures {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCorporationStructures {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdStructures")
-			structures, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.CorporationID).Execute()
+			structures, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.corporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return structures, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			structures := data.([]esi.CorporationsCorporationIdStructuresGetInner)
 
 			structureStateFromESIValue := map[string]app.StructureState{
@@ -68,16 +68,16 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.CorporationsCorporationIdStructuresGetInner) int64 {
 				return x.StructureId
 			}))
-			current, err := s.st.ListCorporationStructureIDs(ctx, arg.CorporationID)
+			current, err := s.st.ListCorporationStructureIDs(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
 			removed := set.Difference(current, incoming)
 			if removed.Size() > 0 {
-				if err := s.st.DeleteCorporationStructures(ctx, arg.CorporationID, removed); err != nil {
+				if err := s.st.DeleteCorporationStructures(ctx, arg.corporationID, removed); err != nil {
 					return false, err
 				}
-				slog.Info("Removed vanished corporation structures", "corporationID", arg.CorporationID, "count", removed.Size())
+				slog.Info("Removed vanished corporation structures", "corporationID", arg.corporationID, "count", removed.Size())
 			}
 
 			// Update structures
@@ -108,7 +108,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					}
 				})
 				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
-					CorporationID:      arg.CorporationID,
+					CorporationID:      arg.corporationID,
 					FuelExpires:        optional.FromPtr(o.FuelExpires),
 					Name:               optional.FromPtr(o.Name),
 					NextReinforceApply: optional.FromPtr(o.NextReinforceApply),
@@ -128,7 +128,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					return false, err
 				}
 			}
-			slog.Info("Updated corporation structures", "corporationID", arg.CorporationID, "count", len(structures))
+			slog.Info("Updated corporation structures", "corporationID", arg.corporationID, "count", len(structures))
 			return true, nil
 		})
 }

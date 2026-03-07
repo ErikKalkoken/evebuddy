@@ -20,11 +20,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EVEUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	return s.st.GetLocation(ctx, id)
 }
 
-func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
+func (s *EVEUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
 	return s.st.ListEveLocation(ctx)
 }
 
@@ -32,7 +32,7 @@ func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocat
 // When the location does not yet exist in storage it tries to fetch and create a new location from ESI.
 //
 // Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
-func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EVEUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := s.st.GetLocation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateLocationESI(ctx, id)
@@ -43,7 +43,7 @@ func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int6
 // UpdateOrCreateLocationESI tries to fetch and create a new location from ESI.
 //
 // Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
-func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EVEUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("updateOrCreateLocationESI-%d", id), func() (*app.EveLocation, error) {
 		var arg storage.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
@@ -158,7 +158,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 
 // AddMissingLocations adds missing EveLocations from ESI.
 // Invalid IDs (e.g. ID 0) will be ignored.
-func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0)
 	if ids2.Size() == 0 {
@@ -191,7 +191,7 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 
 // EntityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
 // This methods allows bulk resolving EveEntities before fetching many new locations from ESI.
-func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int64], error) {
+func (s *EVEUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int64], error) {
 	if len(ids) == 0 {
 		return set.Set[int64]{}, nil
 	}
@@ -241,7 +241,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 }
 
 // GetStationServicesESI fetches and returns the services of a station from ESI.
-func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int64) ([]string, error) {
+func (s *EVEUniverseService) GetStationServicesESI(ctx context.Context, id int64) ([]string, error) {
 	o, _, err := s.esiClient.UniverseAPI.GetUniverseStationsStationId(ctx, id).Execute()
 	if err != nil {
 		return nil, err

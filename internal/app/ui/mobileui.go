@@ -19,11 +19,15 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // MobileUI creates the UI for mobile.
@@ -35,7 +39,7 @@ type MobileUI struct {
 func NewMobileUI(bu *baseUI) *MobileUI {
 	u := &MobileUI{baseUI: bu}
 
-	var navBar *iwidget.NavBar
+	var navBar *xwidget.NavBar
 
 	makeAppBarIcons := func(items ...*kxwidget.IconButton) []fyne.CanvasObject {
 		var x []fyne.CanvasObject
@@ -48,14 +52,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	// character destination
 	fallbackAvatar, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
-	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
+	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
 		items = append(items, characterSelector)
-		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
+		return xwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
-	var characterNav *iwidget.Navigator
+	var characterNav *xwidget.Navigator
 
 	const assetsTitle = "Asset Browser"
-	navItemAssetBrowser := iwidget.NewNavListItemWithIcon(
+	navItemAssetBrowser := xwidget.NewNavListItem(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -67,7 +71,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	communicationsMenu := fyne.NewMenu("")
-	navItemCommunications := iwidget.NewNavListItemWithIcon(
+	navItemCommunications := xwidget.NewNavListItem(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		func() {
@@ -87,13 +91,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	mailMenu := fyne.NewMenu("")
-	u.characterMails.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := newCharacterSendMail(bu, c, mode, mail)
+	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+		page := characterui.NewSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
 		characterNav.PushAndHideNavBar(
-			iwidget.NewAppBar(
+			xwidget.NewAppBar(
 				"Send Mail",
 				page,
 				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
@@ -104,11 +108,11 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			),
 		)
 	}
-	navItemMail := iwidget.NewNavListItemWithIcon(
+	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.characterMails.onSelected = func() {
+			u.characterMails.OnSelected = func() {
 				characterNav.PushAndHideNavBar(
 					newCharacterAppBar(
 						"Mail",
@@ -127,12 +131,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					"Mail",
 					u.characterMails.Headers,
 					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMails.makeComposeMessageAction()),
+					kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
 				))
 		},
 	)
 
-	navItemSkills := iwidget.NewNavListItemWithIcon(
+	navItemSkills := xwidget.NewNavListItem(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
@@ -148,7 +152,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	navItemWallet := iwidget.NewNavListItemWithIcon(
+	navItemWallet := xwidget.NewNavListItem(
 		"Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg),
 		func() {
@@ -157,8 +161,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	characterList := iwidget.NewNavList(
-		iwidget.NewNavListItemWithIcon(
+	characterList := xwidget.NewNavList(
+		xwidget.NewNavListItem(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
@@ -177,7 +181,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			},
 		),
 		navItemAssetBrowser,
-		iwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Contacts",
 			theme.NewThemedResource(icons.AccountSearchSvg),
 			func() {
@@ -191,7 +195,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterMails.onUpdate = func(unread, missing int) {
+	u.characterMails.OnUpdate = func(unread, missing int) {
 		var s []string
 		if unread > 0 {
 			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
@@ -219,26 +223,26 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemSkills.Refresh()
 	}
 
-	u.characterWallet.onTopUpdate = func(b string) {
+	u.characterWallet.OnTopUpdate = func(b string) {
 		navItemWallet.Supporting = b
 		navItemWallet.Refresh()
 	}
 
 	characterPage := newCharacterAppBar("Characters", characterList)
-	characterNav = iwidget.NewNavigator(characterPage)
+	characterNav = xwidget.NewNavigator(characterPage)
 
 	// corporation destination
 	fallbackAvatar2, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 	corpSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
-	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
+	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
 		items = append(items, corpSelector)
-		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
+		return xwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
 
-	var corpNav *iwidget.Navigator
+	var corpNav *xwidget.Navigator
 
 	const corpAssetBrowserTitle = "Asset Browser"
-	corpAssetBrowserNav := iwidget.NewNavListItemWithIcon(
+	corpAssetBrowserNav := xwidget.NewNavListItem(
 		corpAssetBrowserTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
@@ -250,19 +254,19 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	const corpAssetSearchTitle = "Asset Search"
-	corpAssetSearchNav := iwidget.NewNavListItemWithIcon(
+	corpAssetSearchNav := xwidget.NewNavListItem(
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(iwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
-			u.corporationAssetSearch.focus()
+			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
+			u.corporationAssetSearch.Focus()
 		},
 	)
 
-	var corpWalletItems []*iwidget.NavListItem
-	corporationWalletNavs := make(map[app.Division]*iwidget.NavListItem)
+	var corpWalletItems []*xwidget.NavListItem
+	corporationWalletNavs := make(map[app.Division]*xwidget.NavListItem)
 	for _, d := range app.Divisions {
-		corporationWalletNavs[d] = iwidget.NewNavListItemWithIcon(
+		corporationWalletNavs[d] = xwidget.NewNavListItem(
 			d.DefaultWalletName(),
 			theme.NewThemedResource(icons.CashSvg),
 			func() {
@@ -275,8 +279,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		)
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
-	corpWalletList := iwidget.NewNavList(corpWalletItems...)
-	corpWalletNav := iwidget.NewNavListItemWithIcon(
+	corpWalletList := xwidget.NewNavList(corpWalletItems...)
+	corpWalletNav := xwidget.NewNavListItem(
 		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
@@ -288,13 +292,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onTopUpdate = func(top string) {
+		u.corporationWallets[d].OnTopUpdate = func(top string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Supporting = top
 				corporationWalletNavs[d].Refresh()
 			})
 		}
-		u.corporationWallets[d].onNameUpdate = func(name string) {
+		u.corporationWallets[d].NnNameUpdate = func(name string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Headline = name
 				corporationWalletNavs[d].Refresh()
@@ -302,7 +306,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
-	corpContractsNav := iwidget.NewNavListItemWithIcon(
+	corpContractsNav := xwidget.NewNavListItem(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
@@ -310,7 +314,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpIndustryNav := iwidget.NewNavListItemWithIcon(
+	corpIndustryNav := xwidget.NewNavListItem(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
@@ -318,7 +322,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpStructuresNav := iwidget.NewNavListItemWithIcon(
+	corpStructuresNav := xwidget.NewNavListItem(
 		"Structures",
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
 		func() {
@@ -326,7 +330,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpSheetNav := iwidget.NewNavListItemWithIcon(
+	corpSheetNav := xwidget.NewNavListItem(
 		"Corporation Sheet",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
@@ -341,8 +345,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 
-	corpList := iwidget.NewNavList(
-		slices.Concat([]*iwidget.NavListItem{
+	corpList := xwidget.NewNavList(
+		slices.Concat([]*xwidget.NavListItem{
 			corpSheetNav,
 			corpAssetBrowserNav,
 			corpAssetSearchNav,
@@ -391,7 +395,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
-	corpNav = iwidget.NewNavigator(corpPage)
+	corpNav = xwidget.NewNavigator(corpPage)
 
 	// other
 
@@ -400,73 +404,73 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	searchNav := makeSearchNav(newCharacterAppBar, u)
 
 	// more destination
-	var moreNav *iwidget.Navigator
-	navItemUpdateStatus := iwidget.NewNavListItemWithIcon(
+	var moreNav *xwidget.Navigator
+	navItemUpdateStatus := xwidget.NewNavListItem(
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			showUpdateStatusWindow(u.baseUI)
+			statuswindow.Show(u)
 		},
 	)
-	navItemManageCharacters := iwidget.NewNavListItemWithIcon(
+	navItemManageCharacters := xwidget.NewNavListItem(
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			showManageCharactersWindow(u.baseUI)
+			characterwindow.Show(u)
 		},
 	)
 
-	navItemAbout := iwidget.NewNavListItemWithIcon(
+	navItemAbout := xwidget.NewNavListItem(
 		"About",
 		theme.InfoIcon(),
 		func() {
-			moreNav.Push(iwidget.NewAppBar("About", makeAboutPage(u.baseUI)))
+			moreNav.Push(xwidget.NewAppBar("About", makeAboutPage(u.baseUI)))
 		},
 	)
-	moreList := iwidget.NewNavList(
-		iwidget.NewNavListItemWithIcon(
+	moreList := xwidget.NewNavList(
+		xwidget.NewNavListItem(
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				showSettingsWindow(u.baseUI)
+				settingswindow.Show(u)
 			},
 		),
 		navItemManageCharacters,
 		navItemUpdateStatus,
 		navItemAbout,
 	)
-	moreNav = iwidget.NewNavigator(iwidget.NewAppBar("More", moreList))
+	moreNav = xwidget.NewNavigator(xwidget.NewAppBar("More", moreList))
 
 	// navigation bar
-	characterDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), characterNav)
+	characterDest := xwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), characterNav)
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
 
-	corpDest := iwidget.NewDestinationDef("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corpNav)
+	corpDest := xwidget.NewDestinationDef("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corpNav)
 	corpDest.OnSelectedAgain = func() {
 		corpNav.PopAll()
 	}
 
-	homeDest := iwidget.NewDestinationDef("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav)
+	homeDest := xwidget.NewDestinationDef("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav)
 	homeDest.OnSelectedAgain = func() {
 		homeNav.PopAll()
 	}
 
-	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
+	searchDest := xwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
 	searchDest.OnSelected = func() {
-		u.gameSearch.focus()
+		u.gameSearch.Focus()
 	}
 	searchDest.OnSelectedAgain = func() {
-		u.gameSearch.reset()
+		u.gameSearch.Reset()
 	}
 
-	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
+	moreDest := xwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}
 
-	navBar = iwidget.NewNavBar(homeDest, characterDest, corpDest, searchDest, moreDest)
+	navBar = xwidget.NewNavBar(homeDest, characterDest, corpDest, searchDest, moreDest)
 	homeNav.NavBar = navBar
 	characterNav.NavBar = navBar
 	corpNav.NavBar = navBar
@@ -505,7 +509,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	navBar.Select(4)
 
 	togglePermittedSections := func() {
-		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
+		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
 		if err != nil {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()
@@ -533,19 +537,25 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	u.onUpdateStatus = func(ctx context.Context) {
 		go togglePermittedSections()
 		go func() {
-			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
-			fyne.Do(func() {
-				characterSelector.SetMenuItems(items)
-			})
+			u.setCharacterSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					characterSelector.SetMenuItems(items)
+				},
+				characterSelector.Refresh,
+			)
 		}()
 		go func() {
-			items := u.makeCorporationSwitchMenu(corpSelector.Refresh)
-			fyne.Do(func() {
-				corpSelector.SetMenuItems(items)
-			})
+			u.setCorporationSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					corpSelector.SetMenuItems(items)
+				},
+				corpSelector.Refresh,
+			)
 		}()
 		go func() {
-			cc, err := u.ListCorporationsForSelection()
+			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
 				slog.Error("Failed to fetch corporations", "error", err)
 				return
@@ -566,11 +576,11 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
-			mailMenu.Items = u.characterMails.makeFolderMenu()
+			mailMenu.Items = u.characterMails.MakeFolderMenu()
 			mailMenu.Refresh()
-			communicationsMenu.Items = u.characterCommunications.makeFolderMenu()
+			communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
 			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
@@ -593,17 +603,19 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterPage.SetTitle(c.EveCharacter.Name)
 			characterNav.PopAll()
 		})
-		go u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
+		go u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
 		})
 		ctx := context.Background()
-		go u.characterMails.resetCurrentFolder(ctx)
-		go u.characterCommunications.resetCurrentFolder(ctx)
+		go u.characterMails.ResetCurrentFolder(ctx)
+		go u.characterCommunications.ResetCurrentFolder(ctx)
 	}
 	u.onShowCharacter = func() {
-		navBar.Select(1)
+		fyne.Do(func() {
+			navBar.Select(1)
+		})
 	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
@@ -611,7 +623,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpPage.SetTitle(c.EveCorporation.Name)
 			corpNav.PopAll()
 		})
-		go u.setCorporationAvatar(c.ID, func(r fyne.Resource) {
+		go u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				corpSelector.SetIcon(r)
 			})
@@ -644,7 +656,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	updateCharacterCount := func(_ context.Context) {
-		s := fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
+		s := fmt.Sprintf("%d characters", u.StatusCache().ListCharacterIDs().Size())
 		fyne.Do(func() {
 			navItemManageCharacters.Supporting = s
 			navItemManageCharacters.Refresh()
@@ -670,7 +682,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			return
 		}
 		isOffline.Store(false)
-		status := u.scs.Summary()
+		status := u.StatusCache().Summary()
 		var icon fyne.Resource
 		if status.Errors > 0 {
 			icon = theme.NewErrorThemedResource(theme.WarningIcon())
@@ -683,21 +695,21 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.onAppFirstStarted = func() {
 		// signals
-		u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+		u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+		u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+		u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
 
@@ -757,34 +769,34 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	return u
 }
 
-func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar, u *MobileUI) *iwidget.Navigator {
-	searchNav := iwidget.NewNavigator(
+func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar, u *MobileUI) *xwidget.Navigator {
+	searchNav := xwidget.NewNavigator(
 		newCharacterAppBar("Search", u.gameSearch),
 	)
 	return searchNav
 }
 
-func makeHomeNav(u *MobileUI) *iwidget.Navigator {
-	var homeNav *iwidget.Navigator
-	var homeList *iwidget.NavList
+func makeHomeNav(u *MobileUI) *xwidget.Navigator {
+	var homeNav *xwidget.Navigator
+	var homeList *xwidget.NavList
 
-	navItemColonies2 := iwidget.NewNavListItemWithIcon(
+	navItemColonies2 := xwidget.NewNavListItem(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Colonies", u.colonies))
+			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	u.colonies.onUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, expired int) {
 		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		navItemColonies2.Refresh()
 	}
 
-	navItemIndustry := iwidget.NewNavListItemWithIcon(
+	navItemIndustry := xwidget.NewNavListItem(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Industry",
+			homeNav.Push(xwidget.NewAppBar("Industry",
 				container.NewAppTabs(
 					container.NewTabItem("Jobs", u.industryJobs),
 					container.NewTabItem("Slots", container.NewAppTabs(
@@ -805,11 +817,11 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemIndustry.Refresh()
 	}
 
-	navItemContracts := iwidget.NewNavListItemWithIcon(
+	navItemContracts := xwidget.NewNavListItem(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
+			homeNav.Push(xwidget.NewAppBar("Contracts", u.contracts))
 		},
 	)
 	u.contracts.OnUpdate = func(count int) {
@@ -821,7 +833,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemContracts.Refresh()
 	}
 
-	navItemWealth := iwidget.NewNavListItemWithIcon(
+	navItemWealth := xwidget.NewNavListItem(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
@@ -830,53 +842,53 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			w.Show()
 		},
 	)
-	u.wealth.onUpdate = func(wallet, assets float64) {
+	u.wealth.OnUpdate = func(wallet, assets float64) {
 		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
 		navItemWealth.Supporting = s
 		navItemWealth.Refresh()
 	}
 
-	navItemAssets := iwidget.NewNavListItemWithIcon(
+	navItemAssets := xwidget.NewNavListItem(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Assets", u.assetSearchAll))
-			u.assetSearchAll.focus()
+			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll))
+			u.assetSearchAll.Focus()
 		},
 	)
 
-	navItemCharacters := iwidget.NewNavListItemWithIcon(
+	navItemCharacters := xwidget.NewNavListItem(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
+			homeNav.Push(xwidget.NewAppBar("Character Overview", u.characterOverview))
 		},
 	)
-	u.characterOverview.onUpdate = func(characters int) {
+	u.characterOverview.OnUpdate = func(characters int) {
 		navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
 		navItemCharacters.Refresh()
 	}
 
-	navItemTraining := iwidget.NewNavListItemWithIcon(
+	navItemTraining := xwidget.NewNavListItem(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Training", u.training))
+			homeNav.Push(xwidget.NewAppBar("Training", u.training))
 		},
 	)
-	u.training.onUpdate = func(expired int) {
+	u.training.OnUpdate = func(expired int) {
 		navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
 		navItemTraining.Refresh()
 	}
 
-	homeList = iwidget.NewNavList(
+	homeList = xwidget.NewNavList(
 		navItemCharacters,
 		navItemAssets,
-		iwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Clones", container.NewAppTabs(
+				homeNav.Push(xwidget.NewAppBar("Clones", container.NewAppTabs(
 					container.NewTabItem("Augmentations", u.augmentations),
 					container.NewTabItem("Jump Clones", u.clones),
 				)))
@@ -885,18 +897,18 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
-		iwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Loyalty Points",
 			theme.NewThemedResource(icons.HandHeartSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
+				homeNav.Push(xwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
 			},
 		),
-		iwidget.NewNavListItemWithIcon(
+		xwidget.NewNavListItem(
 			"Market Orders",
 			theme.NewThemedResource(icons.ChartAreasplineSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Market Orders",
+				homeNav.Push(xwidget.NewAppBar("Market Orders",
 					container.NewAppTabs(
 						container.NewTabItem("Buy", u.marketOrdersBuy),
 						container.NewTabItem("Sell", u.marketOrdersSell),
@@ -908,6 +920,6 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemWealth,
 	)
 
-	homeNav = iwidget.NewNavigator(iwidget.NewAppBar("Home", homeList))
+	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList))
 	return homeNav
 }

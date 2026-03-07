@@ -26,9 +26,9 @@ func (s *CharacterService) GetAttributes(ctx context.Context, characterID int64)
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
-func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterAttributes {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateAttributesESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterAttributes {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -206,9 +206,9 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 	return skills2, nil
 }
 
-func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterSkills {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateSkillsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterSkills {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -353,9 +353,9 @@ func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID 
 
 // updateSkillqueueESI updates the skillqueue for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterSkillqueue {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterSkillqueue {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,

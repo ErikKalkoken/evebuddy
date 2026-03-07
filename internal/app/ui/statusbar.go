@@ -24,9 +24,13 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -53,11 +57,11 @@ type statusBar struct {
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *statusBarItem
-	updatingIndicator *iwidget.Activity
+	updatingIndicator *xwidget.Activity
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
-	ac := iwidget.NewActivity()
+	ac := xwidget.NewActivity()
 	ac.SetToolTip("Synchronizing with game server...")
 	a := &statusBar{
 		updatingIndicator: ac,
@@ -71,7 +75,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			showManageCharactersWindow(u.baseUI)
+			characterwindow.Show(u)
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
@@ -84,13 +88,13 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		}
 	}
 
-	spacer := newSpacer(a.updatingIndicator.MinSize())
+	spacer := xwidget.NewSpacer(a.updatingIndicator.MinSize())
 	a.updateStatus = newStatusBarItemWithTrailing(
 		theme.NewThemedResource(icons.UpdateSvg),
 		container.NewStack(spacer, a.updatingIndicator),
 		"?",
 		func() {
-			showUpdateStatusWindow(u.baseUI)
+			statuswindow.Show(u)
 		},
 	)
 	a.updateStatus.SetToolTip("Current update status - click for details")
@@ -128,21 +132,21 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *statusBar) start() {
 	// signals
-	a.u.characterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.characterSectionUpdated.AddListener(func(ctx context.Context, _ characterSectionUpdated) {
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.corporationSectionUpdated.AddListener(func(ctx context.Context, _ corporationSectionUpdated) {
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.generalSectionUpdated.AddListener(func(ctx context.Context, _ generalSectionUpdated) {
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
 
@@ -158,7 +162,7 @@ func (a *statusBar) start() {
 		}
 		a.updateStatus.Refresh()
 	}
-	a.u.updateStarted.AddListener(func(_ context.Context, id string) {
+	a.u.Signals().UpdateStarted.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Add(id)
@@ -168,7 +172,7 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	a.u.updateStopped.AddListener(func(_ context.Context, id string) {
+	a.u.Signals().UpdateStopped.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Delete(id)
@@ -193,14 +197,14 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOffline() {
+	if a.u.IsOfflineMode() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
 		return
 	}
 
-	a.u.refreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
 		a.updateEveStatus(ctx)
 	})
 
@@ -243,7 +247,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	x, err := a.u.ess.Fetch(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
-		set(eveStatusError, "ERROR", a.u.humanizeError(err))
+		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
 		return
 	}
 	if !x.IsOK() {
@@ -255,7 +259,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 }
 
 func (a *statusBar) updateCharacterCount(_ context.Context) {
-	s := strconv.Itoa(len(a.u.scs.ListCharacters()))
+	s := strconv.Itoa(len(a.u.StatusCache().ListCharacters()))
 	fyne.Do(func() {
 		a.characterCount.SetText(s)
 	})
@@ -268,7 +272,7 @@ func (a *statusBar) updateUpdateStatus(_ context.Context) {
 		})
 		return
 	}
-	x := a.u.scs.Summary()
+	x := a.u.StatusCache().Summary()
 	fyne.Do(func() {
 		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
@@ -278,7 +282,8 @@ func (a *statusBar) showClockDialog() {
 	clock := widget.NewLabel("")
 	clock.SizeName = theme.SizeNameHeadingText
 	d := dialog.NewCustom("EVE Clock", "Close", clock, a.u.MainWindow())
-	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
+
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -314,7 +319,7 @@ func (a *statusBar) showEveStatusDialog() {
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
 	d := dialog.NewCustom("ESI status", "OK", lb, a.u.MainWindow())
-	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
+	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -471,23 +476,23 @@ func (w *updateHint) set(v github.VersionInfo) {
 }
 
 func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
-	l := iwidget.NewCustomHyperlink("Update available", func() {
+	l := xwidget.NewCustomHyperlink("Update available", func() {
 		c := container.NewVBox(
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
-			newStandardSpacer(),
+			xwidget.NewStandardSpacer(),
 		)
-		u := w.u.websiteRootURL().JoinPath("releases")
+		u := app.WebsiteRootURL().JoinPath("releases")
 		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
 			if !ok {
 				return
 			}
-			if err := w.u.App().OpenURL(u); err != nil {
-				w.u.showErrorDialog("Failed to open download page", err, w.u.MainWindow())
+			if err := fyne.CurrentApp().OpenURL(u); err != nil {
+				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.IsDeveloperMode(), w.u.MainWindow())
 			}
 		}, w.u.MainWindow(),
 		)
-		w.u.ModifyShortcutsForDialog(d, w.u.MainWindow())
+		xdesktop.DisableShortcutsForDialog(d, w.u.MainWindow())
 		d.Show()
 	})
 	c := container.NewHBox(l, widget.NewSeparator())

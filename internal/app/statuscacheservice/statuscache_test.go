@@ -58,9 +58,9 @@ func TestInit(t *testing.T) {
 			xassert.Equal(t, "Bruce", x2.EntityName)
 			xassert.Equal(t, section1.Timeout(), x2.Timeout)
 
-			y2, ok := sc.GeneralSection(section2)
+			y2, ok := sc.EveUniverseSection(section2)
 			assert.True(t, ok)
-			xassert.Equal(t, int64(app.GeneralSectionEntityID), y2.EntityID)
+			xassert.Equal(t, int64(app.EveUniverseSectionEntityID), y2.EntityID)
 			xassert.Equal(t, y1.Section.String(), y2.SectionID)
 			xassert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			xassert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
@@ -116,14 +116,14 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCorporationSection(o)
 			}
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -165,14 +165,14 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCorporationSection(o)
 			}
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -224,14 +224,14 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCorporationSection(o)
 			}
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -281,25 +281,25 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCorporationSection(o)
 			}
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
-		o := &app.GeneralSectionStatus{
+		o := &app.EveUniverseSectionStatus{
 			SectionStatus: app.SectionStatus{
 				ErrorMessage: "error",
 				Section:      app.SectionEveCharacters,
 			},
 		}
-		sc.SetGeneralSection(o)
+		sc.SetEveUniverseSection(o)
 		ss := sc.Summary()
 		// then
 		xassert.Equal(t, app.StatusError, ss.Status())
@@ -338,14 +338,14 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCorporationSection(o)
 			}
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -386,14 +386,14 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetCorporationSection(o)
 		}
-		for _, section := range app.GeneralSections {
+		for _, section := range app.EveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -422,15 +422,15 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetCharacterSection(o)
 			}
 		}
-		generalSections := app.GeneralSections[:len(app.GeneralSections)-1]
-		for _, section := range generalSections {
+		eveUniverseSections := app.EveUniverseSections[:len(app.EveUniverseSections)-1]
+		for _, section := range eveUniverseSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
 				StartedAt:    time.Now(),
 				CompletedAt:  time.Now(),
 			})
-			sc.SetGeneralSection(o)
+			sc.SetEveUniverseSection(o)
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -460,14 +460,14 @@ func TestStatusCacheSummary(t *testing.T) {
 				})
 				sc.SetCharacterSection(o)
 			}
-			for _, section := range app.GeneralSections {
+			for _, section := range app.EveUniverseSections {
 				o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 					Section:      section,
 					ErrorMessage: "",
 					StartedAt:    time.Now(),
 					CompletedAt:  time.Now(),
 				})
-				sc.SetGeneralSection(o)
+				sc.SetEveUniverseSection(o)
 			}
 		}
 		if err := sc.InitCache(ctx); err != nil {
@@ -504,26 +504,26 @@ func TestStatusCacheSummary(t *testing.T) {
 				})
 				sc.SetCharacterSection(o)
 			}
-			for _, section := range app.GeneralSections {
+			for _, section := range app.EveUniverseSections {
 				o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 					Section:      section,
 					ErrorMessage: "",
 					StartedAt:    time.Now(),
 					CompletedAt:  time.Now(),
 				})
-				sc.SetGeneralSection(o)
+				sc.SetEveUniverseSection(o)
 			}
 		}
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
-		o := &app.GeneralSectionStatus{
+		o := &app.EveUniverseSectionStatus{
 			SectionStatus: app.SectionStatus{
 				CompletedAt: time.Now().Add(-30 * time.Hour),
 				Section:     app.SectionEveCharacters,
 			},
 		}
-		sc.SetGeneralSection(o)
+		sc.SetEveUniverseSection(o)
 		// when
 		ss := sc.Summary()
 		// then
@@ -793,10 +793,10 @@ func TestGeneralSections(t *testing.T) {
 		x1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section,
 		})
-		sc.SetGeneralSection(x1)
-		x2, ok := sc.GeneralSection(section)
+		sc.SetEveUniverseSection(x1)
+		x2, ok := sc.EveUniverseSection(section)
 		assert.True(t, ok)
-		xassert.Equal(t, int64(app.GeneralSectionEntityID), x2.EntityID)
+		xassert.Equal(t, int64(app.EveUniverseSectionEntityID), x2.EntityID)
 		xassert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		xassert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		xassert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -813,7 +813,7 @@ func TestGeneralSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when/then
-		assert.True(t, sc.HasGeneralSection(app.SectionEveTypes))
+		assert.True(t, sc.HasEveUniverseSection(app.SectionEveTypes))
 	})
 	t.Run("can report whether a general section exists 2", func(t *testing.T) {
 		// given
@@ -823,7 +823,7 @@ func TestGeneralSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when/then
-		assert.False(t, sc.HasGeneralSection(app.SectionEveTypes))
+		assert.False(t, sc.HasEveUniverseSection(app.SectionEveTypes))
 	})
 	t.Run("list general sections", func(t *testing.T) {
 		// given
@@ -836,14 +836,14 @@ func TestGeneralSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		x := sc.ListGeneralSections()
+		x := sc.ListEveUniverseSections()
 		// then
-		m := make(map[app.GeneralSection]app.CacheSectionStatus)
+		m := make(map[app.EveUniverseSection]app.CacheSectionStatus)
 		for _, s := range x {
-			m[app.GeneralSection(s.SectionID)] = s
+			m[app.EveUniverseSection(s.SectionID)] = s
 		}
 		got := set.Collect(maps.Keys(m))
-		want := set.Of(app.GeneralSections...)
+		want := set.Of(app.EveUniverseSections...)
 		xassert.Equal(t, want, got)
 		assert.False(t, m[app.SectionEveTypes].IsMissing())
 		assert.True(t, m[app.SectionEveCharacters].IsMissing())
@@ -919,26 +919,26 @@ func TestGeneralSectionSummary(t *testing.T) {
 	sc := statuscacheservice.New(nil)
 	// given
 	sc.Clear()
-	sc.SetGeneralSection(&app.GeneralSectionStatus{
+	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: "error",
 			Section:      app.SectionEveTypes,
 		},
 	})
-	sc.SetGeneralSection(&app.GeneralSectionStatus{
+	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
 		SectionStatus: app.SectionStatus{
 			CompletedAt: time.Now(),
 			Section:     app.SectionEveCharacters,
 		},
 	})
-	sc.SetGeneralSection(&app.GeneralSectionStatus{
+	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
 		SectionStatus: app.SectionStatus{
 			StartedAt: time.Now().Add(-10 * time.Second),
 			Section:   app.SectionEveMarketPrices,
 		},
 	})
 	// when
-	got := sc.GeneralSectionSummary()
+	got := sc.EveUniverseSectionSummary()
 	// then
 	want := app.StatusSummary{
 		Current:   1,

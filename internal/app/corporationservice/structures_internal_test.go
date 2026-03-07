@@ -63,9 +63,9 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateStructuresESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationStructures,
+		changed, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
 		})
 		// then
 		if !assert.NoError(t, err) {

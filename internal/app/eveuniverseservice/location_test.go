@@ -347,9 +347,11 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 
 func TestGetStationServicesESI(t *testing.T) {
 	// given
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(nil)
+	s := eveuniverseservice.NewTestService(st)
 	httpmock.RegisterResponder(
 		"GET",
 		`=~^https://esi.evetech.net/universe/stations/\d+`,
@@ -442,9 +444,11 @@ func TestAddMissingLocations(t *testing.T) {
 }
 
 func TestEntityIDsFromLocationsESI(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(nil)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("can return owner from station", func(t *testing.T) {
 		// given

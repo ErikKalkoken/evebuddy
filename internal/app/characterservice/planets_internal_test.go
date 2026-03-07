@@ -82,7 +82,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	// 			},
 	// 		}))
 	// 	// when
-	// 	changed, err := s.updatePlanetsESI(ctx, app.CharacterSectionUpdateParams{
+	// 	changed, err := s.updatePlanetsESI(ctx, CharacterSectionUpdateParams{
 	// 		CharacterID: c.ID,
 	// 		Section:     app.SectionCharacterPlanets,
 	// 	})
@@ -181,9 +181,9 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updatePlanetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterPlanets,
+		changed, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterPlanets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -302,9 +302,9 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updatePlanetsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterPlanets,
+		changed, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterPlanets,
 		})
 		// then
 		if assert.NoError(t, err) {

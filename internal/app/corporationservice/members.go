@@ -16,23 +16,23 @@ func (s *CorporationService) ListMembers(ctx context.Context, corporationID int6
 	return s.st.ListCorporationMembers(ctx, corporationID)
 }
 
-func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCorporationMembers {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateMembersESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCorporationMembers {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdMembers")
-			members, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID).Execute()
+			members, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdMembers(ctx, arg.corporationID).Execute()
 			if err != nil {
 				return false, err
 			}
 			return members, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			incoming := set.Of(data.([]int64)...)
-			current, err := s.st.ListCorporationMemberIDs(ctx, arg.CorporationID)
+			current, err := s.st.ListCorporationMemberIDs(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
@@ -46,7 +46,7 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 			added := set.Difference(incoming, current)
 			for characterID := range added.All() {
 				err := s.st.CreateCorporationMember(ctx, storage.CorporationMemberParams{
-					CorporationID: arg.CorporationID,
+					CorporationID: arg.corporationID,
 					CharacterID:   characterID,
 				})
 				if err != nil {
@@ -54,12 +54,12 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 				}
 			}
 			removed := set.Difference(current, incoming)
-			if err := s.st.DeleteCorporationMembers(ctx, arg.CorporationID, removed); err != nil {
+			if err := s.st.DeleteCorporationMembers(ctx, arg.corporationID, removed); err != nil {
 				return false, err
 			}
 			slog.Info(
 				"Updated corporation members",
-				"corporationID", arg.CorporationID,
+				"corporationID", arg.corporationID,
 				"added", added.Size(),
 				"removed", removed.Size(),
 			)

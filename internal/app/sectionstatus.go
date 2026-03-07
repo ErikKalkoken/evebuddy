@@ -56,7 +56,7 @@ type CorporationSectionStatus struct {
 	CorporationName string
 }
 
-// GeneralSectionStatus represents the status of a general section.
-type GeneralSectionStatus struct {
+// EveUniverseSectionStatus represents the status of an EveUniverse section.
+type EveUniverseSectionStatus struct {
 	SectionStatus
 }

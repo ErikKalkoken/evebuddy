@@ -132,7 +132,7 @@ type orbitalInfo struct {
 	intro         string
 }
 
-func makeOrbitalBaseText(ctx context.Context, planetID, typeID int64, eus EveUniverseService) (orbitalInfo, error) {
+func makeOrbitalBaseText(ctx context.Context, planetID, typeID int64, eus EVEUniverse) (orbitalInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err

@@ -25,13 +25,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		c := factory.CreateCorporation()
 		section := app.SectionCorporationMembers
 		var hasUpdated bool
-		arg := app.CorporationSectionUpdateParams{CorporationID: c.ID, Section: section}
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})
@@ -58,13 +58,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CompletedAt:   time.Now().Add(-5 * time.Second),
 		})
 		var hasUpdated bool
-		arg := app.CorporationSectionUpdateParams{CorporationID: c.ID, Section: section}
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})
@@ -91,13 +91,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CompletedAt:   time.Now().Add(-5 * time.Second),
 		})
 		hasUpdated := false
-		arg := app.CorporationSectionUpdateParams{CorporationID: c.ID, Section: section}
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})
@@ -124,17 +124,17 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CompletedAt:   time.Now().Add(-5 * time.Second),
 		})
 		var hasUpdated bool
-		arg := app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       section,
-			ForceUpdate:   true,
+		arg := corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       section,
+			forceUpdate:   true,
 		}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})
@@ -159,9 +159,9 @@ func TestHasSectionChanged(t *testing.T) {
 			Section:       app.SectionCorporationMembers,
 		})
 		// when
-		got, err := s.hasSectionChanged(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationMembers,
+		got, err := s.hasSectionChanged(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationMembers,
 		}, "changed",
 		)
 		// then
@@ -175,9 +175,9 @@ func TestHasSectionChanged(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		got, err := s.hasSectionChanged(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationMembers,
+		got, err := s.hasSectionChanged(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationMembers,
 		}, "changed",
 		)
 		// then
@@ -195,9 +195,9 @@ func TestHasSectionChanged(t *testing.T) {
 			Section:       app.SectionCorporationMembers,
 		})
 		// when
-		got, err := s.hasSectionChanged(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationMembers,
+		got, err := s.hasSectionChanged(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationMembers,
 		}, status.ContentHash,
 		)
 		// then

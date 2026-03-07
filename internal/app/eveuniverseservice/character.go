@@ -17,11 +17,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
+func (s *EVEUniverseService) GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
 	return s.st.GetEveCharacter(ctx, characterID)
 }
 
-func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
+func (s *EVEUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	o, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCharacterESI(ctx, characterID)
@@ -34,7 +34,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 
 // UpdateOrCreateCharacterESI updates or create a character from ESI.
 // Returns [app.ErrNotFound] when the character does not exist.
-func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
+func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	c1, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		c1 = nil
@@ -121,7 +121,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI
 // and returns the IDs of all changed characters.
-func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Set[int64], error) {
 	var changed set.Set[int64]
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
@@ -138,9 +138,13 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 		g.Go(func() error {
 			_, changed, err := s.UpdateOrCreateCharacterESI(ctx, id)
 			if errors.Is(err, app.ErrNotFound) {
-				s.st.DeleteEveCharacter(ctx, id)
-				slog.Info("EVE Character no longer exists and was deleted", "characterID", id)
-				hasChanged[i] = true
+				err := s.st.DeleteEveCharacter(ctx, id)
+				if err != nil {
+					slog.Warn("Deleting character that no longer exists", "characterID", id, "error", err)
+				} else {
+					slog.Info("EVE Character no longer exists and was deleted", "characterID", id)
+					hasChanged[i] = true
+				}
 				return nil
 			}
 			if err != nil {

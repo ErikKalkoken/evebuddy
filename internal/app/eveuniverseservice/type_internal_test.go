@@ -47,7 +47,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			}}),
 		)
 		// when
-		got, err := s.updateMarketPricesESI(ctx)
+		got, err := s.UpdateMarketPricesESI(ctx)
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
@@ -88,7 +88,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			}}),
 		)
 		// when
-		got, err := s.updateMarketPricesESI(ctx)
+		got, err := s.UpdateMarketPricesESI(ctx)
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64](knownTypeID)
@@ -129,7 +129,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			}}),
 		)
 		// when
-		got, err := s.updateMarketPricesESI(ctx)
+		got, err := s.UpdateMarketPricesESI(ctx)
 		// then
 		require.NoError(t, err)
 		want := set.Of[int64]()
@@ -154,7 +154,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateMarketPricesESI(ctx)
+		_, err := s.UpdateMarketPricesESI(ctx)
 		// then
 		require.NoError(t, err)
 		got, err := s.st.ListEveMarketPriceIDs(ctx)

@@ -87,17 +87,17 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 }
 
 // updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCorporationContracts {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateContractsESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCorporationContracts {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContracts")
 			contracts, err := xgoesi.FetchPages(
 				func(page int32) ([]esi.CorporationsCorporationIdContractsGetInner, *http.Response, error) {
-					return s.esiClient.ContractsAPI.GetCorporationsCorporationIdContracts(ctx, arg.CorporationID).Page(page).Execute()
+					return s.esiClient.ContractsAPI.GetCorporationsCorporationIdContracts(ctx, arg.corporationID).Page(page).Execute()
 				},
 			)
 			if err != nil {
@@ -106,10 +106,10 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			slices.SortFunc(contracts, func(a, b esi.CorporationsCorporationIdContractsGetInner) int {
 				return cmp.Compare(a.ContractId, b.ContractId)
 			})
-			slog.Debug("Received contracts from ESI", "corporationID", arg.CorporationID, "count", len(contracts))
+			slog.Debug("Received contracts from ESI", "corporationID", arg.corporationID, "count", len(contracts))
 			return contracts, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			contracts := data.([]esi.CorporationsCorporationIdContractsGetInner)
 			// filter out unwanted contracts
 			contracts = slices.DeleteFunc(contracts, func(x esi.CorporationsCorporationIdContractsGetInner) bool {
@@ -129,7 +129,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 				return false, err
 			}
 			// identify new contracts
-			current, err := s.st.ListCorporationContracts(ctx, arg.CorporationID)
+			current, err := s.st.ListCorporationContracts(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
@@ -149,33 +149,33 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 			if len(newContracts) > 0 {
 				var count int
 				for _, c := range newContracts {
-					if err := s.createNewContract(ctx, arg.CorporationID, c); err != nil {
+					if err := s.createNewContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("create contract", "contract", c, "error", err)
 						continue
 					} else {
 						count++
 					}
 				}
-				slog.Info("Stored new contracts", "corporationID", arg.CorporationID, "count", count)
+				slog.Info("Stored new contracts", "corporationID", arg.corporationID, "count", count)
 			}
 			if len(existingContracts) > 0 {
 				var count int
 				for _, c := range existingContracts {
-					if err := s.updateContract(ctx, arg.CorporationID, c); err != nil {
+					if err := s.updateContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("update contract", "contract", c, "error", err)
 						continue
 					} else {
 						count++
 					}
 				}
-				slog.Info("Updated contracts", "corporationID", arg.CorporationID, "count", count)
+				slog.Info("Updated contracts", "corporationID", arg.corporationID, "count", count)
 			}
 			// add new bids for auctions
 			for _, c := range contracts {
 				if c.Type != "auction" {
 					continue
 				}
-				err := s.updateContractBids(ctx, arg.CorporationID, c.ContractId)
+				err := s.updateContractBids(ctx, arg.corporationID, c.ContractId)
 				if err != nil {
 					slog.Error("update contract bids", "contract", c, "error", err)
 					continue
@@ -192,7 +192,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 				return x.ContractId
 			}))
 			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
-			if err := s.st.DeleteCorporationContracts(ctx, arg.CorporationID, staleIDs); err != nil {
+			if err := s.st.DeleteCorporationContracts(ctx, arg.corporationID, staleIDs); err != nil {
 				return false, err
 			}
 			return true, nil

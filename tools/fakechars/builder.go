@@ -55,14 +55,14 @@ type CharacterBuilder struct {
 	corporations  []*app.EveEntity
 	characterIDs  []int64
 	corporationID int64
-	eus           *eveuniverseservice.EveUniverseService
+	eus           *eveuniverseservice.EVEUniverseService
 	f             *testutil.Factory
 	locations     map[int64]*app.EveLocation
 	st            *storage.Storage
 	types         map[int64]*app.EveType
 }
 
-func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EveUniverseService, corporationID int64) *CharacterBuilder {
+func NewCharacterBuilder(f *testutil.Factory, st *storage.Storage, eus *eveuniverseservice.EVEUniverseService, corporationID int64) *CharacterBuilder {
 	b := &CharacterBuilder{
 		corporationID: corporationID,
 		eus:           eus,
@@ -173,13 +173,11 @@ func (b *CharacterBuilder) loadTypes(ctx context.Context) error {
 	g.Go(func() error {
 		return b.eus.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
-	if err := g.Wait(); err != nil {
+	g.Go(func() error {
+		_, err := b.eus.UpdateMarketPricesESI(ctx)
 		return err
-	}
-	if _, err := b.eus.UpdateSectionIfNeeded(ctx, app.GeneralSectionUpdateParams{
-		ForceUpdate: true,
-		Section:     app.SectionEveMarketPrices,
-	}); err != nil {
+	})
+	if err := g.Wait(); err != nil {
 		return err
 	}
 	types, err := b.st.ListEveTypes(ctx)
@@ -534,7 +532,7 @@ func (b *CharacterBuilder) setCharacterSections() {
 }
 
 func (b *CharacterBuilder) setGeneralSections() {
-	for _, s := range app.GeneralSections {
+	for _, s := range app.EveUniverseSections {
 		b.f.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: s,
 		})

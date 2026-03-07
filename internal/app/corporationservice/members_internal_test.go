@@ -39,9 +39,9 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{m1.ID, m2.ID}),
 		)
 		// when
-		changed, err := s.updateMembersESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationMembers,
+		changed, err := s.updateMembersESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationMembers,
 		})
 		// then
 		require.NoError(t, err)
@@ -66,9 +66,9 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{m1.Character.ID}),
 		)
 		// when
-		changed, err := s.updateMembersESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationMembers,
+		changed, err := s.updateMembersESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationMembers,
 		})
 		// then
 		require.NoError(t, err)

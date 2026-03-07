@@ -10,7 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type EveLocationVariant int
@@ -50,11 +50,11 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 	}
 	es, ok := el.SolarSystem.Value()
 	if !ok {
-		return iwidget.RichTextSegmentsFromText(n)
+		return xwidget.RichTextSegmentsFromText(n)
 	}
 	return slices.Concat(
 		es.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", n)))
+		xwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", n)))
 }
 
 // DisplayName2 returns a user friendly name not including the system name.
@@ -170,7 +170,7 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	var s []widget.RichTextSegment
 	if v, ok := l.SecurityStatus.Value(); ok {
 		secType := NewSolarSystemSecurityTypeFromValue(v)
-		s = slices.Concat(s, iwidget.RichTextSegmentsFromText(
+		s = slices.Concat(s, xwidget.RichTextSegmentsFromText(
 			fmt.Sprintf("%.1f", v),
 			widget.RichTextStyle{
 				ColorName: secType.ToColorName(),
@@ -183,7 +183,7 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 		name += "   "
 	}
 	name += humanize.Optional(l.Name, "?")
-	s = slices.Concat(s, iwidget.RichTextSegmentsFromText(name))
+	s = slices.Concat(s, xwidget.RichTextSegmentsFromText(name))
 	return s
 }
 

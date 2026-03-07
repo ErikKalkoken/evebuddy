@@ -75,9 +75,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterMarketOrders,
+		changed, err := s.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -149,9 +149,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
-		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterMarketOrders,
+		changed, err := s.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -206,9 +206,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterMarketOrders,
+		changed, err := s.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -221,6 +221,8 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("should delete stale orders", func(t *testing.T) {
 		// given
+		settings := &SettingsFake{MarketOrderRetentionDaysDefault: 90}
+		s2 := NewFake(st, Params{Settings: settings})
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
@@ -258,10 +260,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID:          c.ID,
-			Section:              app.SectionCharacterMarketOrders,
-			MarketOrderRetention: time.Hour * 24 * 90,
+		changed, err := s2.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -324,9 +325,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
 		)
 		// when
-		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterMarketOrders,
+		changed, err := s.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
 		if assert.NoError(t, err) {
