@@ -148,7 +148,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			oo, err := a.u.Character().ListRoles(ctx, character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
-				roles = "ERROR: " + app.ErrorDisplay(err)
+				roles = "ERROR: " + a.u.ErrorDisplay(err)
 			} else {
 				x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
 					return x.Granted

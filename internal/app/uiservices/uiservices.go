@@ -20,6 +20,7 @@ import (
 )
 
 type UIServices interface {
+	// Individual services
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ESIStatus() *esistatusservice.ESIStatusService
@@ -30,7 +31,9 @@ type UIServices interface {
 	Signals() *app.Signals
 	StatusCache() *statuscacheservice.StatusCacheService
 
+	// UI base services
 	CurrentCharacterID() int64
+	ErrorDisplay(err error) string
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	InfoWindow() *infowindow.InfoWindow

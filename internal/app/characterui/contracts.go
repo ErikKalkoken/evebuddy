@@ -438,7 +438,7 @@ func (a *Contracts) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", app.ErrorDisplay(err))
+			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -569,7 +569,7 @@ func ShowCharacterContractWindow(u uiservices.UIServices, characterID, contractI
 	ctx := context.Background()
 	o, err := u.Character().GetContract(ctx, characterID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.MainWindow())
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -654,7 +654,7 @@ func ShowCharacterContractWindow(u uiservices.UIServices, characterID, contractI
 	case app.ContractTypeAuction:
 		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		var currentBid string
@@ -663,7 +663,7 @@ func ShowCharacterContractWindow(u uiservices.UIServices, characterID, contractI
 		} else {
 			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.MainWindow())
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -730,7 +730,7 @@ func ShowCharacterContractWindow(u uiservices.UIServices, characterID, contractI
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		main.Add(x)
@@ -750,7 +750,7 @@ func ShowCorporationContractWindow(u uiservices.UIServices, corporationID, contr
 	ctx := context.Background()
 	o, err := u.Corporation().GetContract(ctx, corporationID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.MainWindow())
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -835,7 +835,7 @@ func ShowCorporationContractWindow(u uiservices.UIServices, corporationID, contr
 	case app.ContractTypeAuction:
 		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		var currentBid string
@@ -844,7 +844,7 @@ func ShowCorporationContractWindow(u uiservices.UIServices, corporationID, contr
 		} else {
 			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.MainWindow())
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -911,7 +911,7 @@ func ShowCorporationContractWindow(u uiservices.UIServices, corporationID, contr
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		main.Add(x)

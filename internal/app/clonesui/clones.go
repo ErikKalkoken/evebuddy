@@ -366,7 +366,7 @@ func (a *Clones) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 			a.rows = xslices.Reset(a.rows)
@@ -429,7 +429,7 @@ func (a *Clones) updateRoutesAsync() {
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
-				s := "Failed to fetch routes: " + app.ErrorDisplay(err)
+				s := "Failed to fetch routes: " + a.u.ErrorDisplay(err)
 				a.originLabel.Set(xwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
 					ColorName: theme.ColorNameError,
 				}))
@@ -457,7 +457,7 @@ func (a *Clones) updateRoutesAsync() {
 func (a *Clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		xdialog.ShowErrorAndLog("Something went wrong", err, w)
+		xdialog.ShowErrorAndLog("Something went wrong", err, a.u.IsDeveloperMode(), w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity
@@ -674,7 +674,7 @@ func (a *Clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 	clone, err := a.u.Character().GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
-		xdialog.ShowErrorAndLog("failed to load clone", err, a.u.MainWindow())
+		xdialog.ShowErrorAndLog("failed to load clone", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 		return
 	}
 	list := widget.NewList(

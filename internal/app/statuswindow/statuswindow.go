@@ -33,6 +33,7 @@ import (
 type UIServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
+	ErrorDisplay(err error) string
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
@@ -189,7 +190,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 				err := a.u.Character().UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + app.ErrorDisplay(err))
+					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
 				}
 			}()
 		}),
@@ -198,7 +199,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 				err := a.u.Corporation().UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + app.ErrorDisplay(err))
+					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
 				}
 			}()
 

@@ -463,7 +463,7 @@ func (a *MarketOrders) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})

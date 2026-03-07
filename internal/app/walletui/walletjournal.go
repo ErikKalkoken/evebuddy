@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -472,7 +473,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 	go func() {
 		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 
@@ -493,7 +494,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 					slog.Any("contextID", o.ContextID),
 					slog.Any("error", err),
 				)
-				contextDefaultWidget.SetText("Failed to load related item: " + app.ErrorDisplay(err))
+				contextDefaultWidget.SetText("Failed to load related item: " + u.ErrorDisplay(err))
 			}
 			// TODO: Add support for industry jobs
 			if v, ok := o.ContextIDType.Value(); ok {
@@ -521,8 +522,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 						fyne.Do(func() {
 							contextItem.Text = "Related contract"
 							contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
-								// FIXME
-								// ShowCharacterContractWindow(u, c.CharacterID, c.ContractID)
+								characterui.ShowCharacterContractWindow(u, c.CharacterID, c.ContractID)
 							})
 							f.Refresh()
 						})
@@ -626,7 +626,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u uiservices.UIServices, corpo
 	go func() {
 		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 
@@ -643,7 +643,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u uiservices.UIServices, corpo
 			// ctx := context.Background()
 			// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
 			// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-			// 	contextDefaultWidget.SetText("Failed to load related item: " + app.ErrorDisplay(err))
+			// 	contextDefaultWidget.SetText("Failed to load related item: " + a.u.ErrorDisplay(err))
 			// }
 			// TODO: Add support for industry jobs
 			// switch o.ContextIDType {

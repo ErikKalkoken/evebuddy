@@ -237,7 +237,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 		if err != nil {
 			fyne.Do(func() {
 				d1.Hide()
-				xdialog.ShowErrorAndLog("Failed to add a new character", err, a.cw.w)
+				xdialog.ShowErrorAndLog("Failed to add a new character", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
 		} else {
 			fyne.Do(func() {
@@ -272,14 +272,14 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 						err := a.cw.u.SetAnyCharacter()
 						if err != nil {
 							slog.Error("delete character", "error", err)
-							a.cw.sb.Show("Error: " + app.ErrorDisplay(err))
+							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))
 						}
 					}
 					if wasCorpDeleted {
 						err := a.cw.u.SetAnyCorporation()
 						if err != nil {
 							slog.Error("delete corporation", "error", err)
-							a.cw.sb.Show("Error: " + app.ErrorDisplay(err))
+							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))
 						}
 
 					} else {

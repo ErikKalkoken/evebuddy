@@ -31,10 +31,16 @@ func ShowConfirm(title, message, confirm string, callback func(bool), parent fyn
 }
 
 // ShowErrorAndLog shows a error dialog and logs the error.
-func ShowErrorAndLog(message string, err error, parent fyne.Window) {
+func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyne.Window) {
 	slog.Error(message, "error", err)
 	title := widget.NewLabel(message)
-	error := widget.NewLabel(app.ErrorDisplay(err))
+	var s string
+	if IsDeveloperMode {
+		s = err.Error()
+	} else {
+		s = app.ErrorDisplay(err)
+	}
+	error := widget.NewLabel(s)
 	error.TextStyle.Monospace = true
 	error.Wrapping = fyne.TextWrapBreak
 	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))

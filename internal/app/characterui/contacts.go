@@ -404,7 +404,7 @@ func (a *Contacts) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
 		clear()
-		setFooter("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {

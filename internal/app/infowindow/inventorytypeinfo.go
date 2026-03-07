@@ -672,7 +672,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			p, err := a.iw.u.EVEUniverse().MarketPrice(ctx, et.ID)
 			if err != nil {
 				slog.Error("average price", "typeID", et.ID, "error", err)
-				averagePrice = "ERROR: " + app.ErrorDisplay(err)
+				averagePrice = "ERROR: " + a.iw.u.ErrorDisplay(err)
 			} else {
 				averagePrice = p.StringFunc("?", func(v float64) string {
 					return humanize.FormatFloat(priceFormat, v) + currencySuffix
@@ -682,7 +682,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			it, err := a.addJanicePriceItems(ctx, et.ID)
 			if err != nil {
 				slog.Error("janice pricer", "typeID", et.ID, "error", err)
-				s := "ERROR: " + app.ErrorDisplay(err)
+				s := "ERROR: " + a.iw.u.ErrorDisplay(err)
 				items = append(items, newAttributeItem("Janice prices", s))
 			} else {
 				items = slices.Concat(items, it)

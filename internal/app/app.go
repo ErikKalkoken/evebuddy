@@ -74,6 +74,8 @@ func isToday(t time.Time) bool {
 	return t.Day() == n.Day() && t.Month() == n.Month() && t.Year() == n.Year()
 }
 
+// FIXME: Migrate to UI variant, which recognizes developer state.
+
 // ErrorDisplay returns a user friendly error message for an error.
 func ErrorDisplay(err error) string {
 	if err == nil {

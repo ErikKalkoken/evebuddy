@@ -203,7 +203,7 @@ func (a *Communications) setDetail(n *app.CharacterNotification) {
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
 		fyne.Do(func() {
-			a.Detail.setError(app.ErrorDisplay(err))
+			a.Detail.setError(a.u.ErrorDisplay(err))
 		})
 		return
 	}
@@ -222,6 +222,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 				xdialog.ShowErrorAndLog(
 					"Failed to generated notification for clipboard",
 					err,
+					a.u.IsDeveloperMode(),
 					a.u.MainWindow(),
 				)
 			}

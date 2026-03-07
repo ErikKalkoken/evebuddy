@@ -614,7 +614,7 @@ func ShowCharacterWalletTransactionWindowAsync(u uiservices.UIServices, characte
 	go func() {
 		o, err := u.Character().GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		fyne.Do(func() {
@@ -690,7 +690,7 @@ func ShowCorporationWalletTransactionWindowAsync(u uiservices.UIServices, corpor
 	go func() {
 		o, err := u.Corporation().GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		fyne.Do(func() {

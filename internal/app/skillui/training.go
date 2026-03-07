@@ -372,7 +372,7 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 			totalSP := widget.NewLabel("Template")
 			totalSP.Truncation = fyne.TextTruncateClip
 			unallocatedSP := widget.NewLabel("Template")
-			spacer :=xwidget.NewSpacer(fyne.NewSize(1, 4*p))
+			spacer := xwidget.NewSpacer(fyne.NewSize(1, 4*p))
 			tags := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
@@ -497,7 +497,7 @@ func (a *Training) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -629,7 +629,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
 		if err != nil {
 			fyne.Do(func() {
-				xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.MainWindow())
+				xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			})
 			return
 		}

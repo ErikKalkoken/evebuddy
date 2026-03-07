@@ -169,7 +169,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	c2, err := a.u.Character().GetCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("Failed to fetch character for sheet", "err", err)
-		setName("ERROR: " + app.ErrorDisplay(err))
+		setName("ERROR: " + a.u.ErrorDisplay(err))
 		return
 	} else {
 		a.character.Store(c2)

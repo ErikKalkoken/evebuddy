@@ -130,7 +130,7 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err)
 		clear()
-		setBalance("Error: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	balance, ok := c.WalletBalance.Value()

@@ -93,7 +93,7 @@ func showColonyDetailsWindow(u uiservices.UIServices, r colonyRow) {
 			slog.Any("planetID", r.planetID),
 			slog.Any("error", err),
 		)
-		xdialog.ShowErrorAndLog("Failed to show colony details", err, u.MainWindow())
+		xdialog.ShowErrorAndLog("Failed to show colony details", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}
 
@@ -220,7 +220,7 @@ func newColonyDetails(u uiservices.UIServices, characterID, planetID int64, w fy
 			if err != nil {
 				slog.Error("failed to update colony installations", "error", err)
 				fyne.Do(func() {
-					a.setIssue("ERROR: " + app.ErrorDisplay(err))
+					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
 				})
 			}
 		}
@@ -256,7 +256,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	installations := container.NewBorder(
 		container.NewVBox(
 			widget.NewSeparator(),
-		xwidget.NewStandardSpacer(),
+			xwidget.NewStandardSpacer(),
 			filter,
 		),
 		a.footer,

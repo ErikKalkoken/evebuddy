@@ -42,6 +42,7 @@ type UIServices interface {
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	ErrorDisplay(err error) string
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOfflineMode() bool
@@ -255,7 +256,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 		if err != nil {
 			slog.Error("info widget load", "params", arg, "error", err)
 			fyne.Do(func() {
-				page.setError("ERROR: " + app.ErrorDisplay(err))
+				page.setError("ERROR: " + iw.u.ErrorDisplay(err))
 			})
 		}
 	}()

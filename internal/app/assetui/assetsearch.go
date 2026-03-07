@@ -700,7 +700,7 @@ func (a *AssetSearch) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
 		clear()
-		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	fyne.Do(func() {

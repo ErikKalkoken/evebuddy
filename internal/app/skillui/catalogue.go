@@ -331,7 +331,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
 		clear()
-		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	a.character.Store(c)
@@ -340,7 +340,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
 		clear()
-		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 
@@ -349,7 +349,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to update skill queue", "err", err)
 		clear()
-		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 

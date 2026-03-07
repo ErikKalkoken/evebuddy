@@ -193,7 +193,7 @@ func showAddDialog(u uiservices.UIServices, characterID int64, onSelected func(e
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		xdialog.ShowErrorAndLog("Something went wrong", err, w)
+		xdialog.ShowErrorAndLog("Something went wrong", err, u.IsDeveloperMode(), w)
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."

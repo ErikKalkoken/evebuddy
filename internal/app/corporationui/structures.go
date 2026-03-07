@@ -355,7 +355,7 @@ func (a *Structures) update(ctx context.Context) {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		clear()
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + app.ErrorDisplay(err)
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
@@ -435,8 +435,8 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 	return rows, nil
 }
 
-func showCorporationStructureWindowAsync(ctx context.Context, s uiservices.UIServices, corporationID int64, structureID int64, title string) {
-	w, created := s.GetOrCreateWindow(
+func showCorporationStructureWindowAsync(ctx context.Context, u uiservices.UIServices, corporationID int64, structureID int64, title string) {
+	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,
 	)
@@ -446,14 +446,14 @@ func showCorporationStructureWindowAsync(ctx context.Context, s uiservices.UISer
 	}
 
 	go func() {
-		structure, err := s.Corporation().GetStructure(ctx, corporationID, structureID)
+		structure, err := u.Corporation().GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, s.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
-		corporationNames, err := s.Corporation().CorporationNames(ctx)
+		corporationNames, err := u.Corporation().CorporationNames(ctx)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, s.MainWindow())
+			xdialog.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		corporationName := corporationNames[corporationID]
@@ -496,15 +496,15 @@ func showCorporationStructureWindowAsync(ctx context.Context, s uiservices.UISer
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					s.InfoWindow().ShowEntity,
+					u.InfoWindow().ShowEntity,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
-					s.InfoWindow().ShowType(structure.Type.ID)
+					u.InfoWindow().ShowType(structure.Type.ID)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, s.InfoWindow().ShowEntity)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().ShowEntity)),
 				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					s.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
+					u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
@@ -541,10 +541,10 @@ func showCorporationStructureWindowAsync(ctx context.Context, s uiservices.UISer
 			xwindow.Set(xwindow.Params{
 				Content: f,
 				ImageAction: func() {
-					s.InfoWindow().ShowType(structure.Type.ID)
+					u.InfoWindow().ShowType(structure.Type.ID)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
-					s.EVEImage().InventoryTypeIconAsync(structure.Type.ID, 512, setter)
+					u.EVEImage().InventoryTypeIconAsync(structure.Type.ID, 512, setter)
 				},
 				Title:  structure.DisplayName(),
 				Window: w,

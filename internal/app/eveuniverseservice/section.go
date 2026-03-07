@@ -147,7 +147,7 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 	})
 	if err != nil {
 		slog.Error("General section update failed", "section", arg.section, "error", err)
-		errorMessage := app.ErrorDisplay(err)
+		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
 		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
 			Error:     &errorMessage,

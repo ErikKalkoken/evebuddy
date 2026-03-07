@@ -276,7 +276,7 @@ func (a *Mails) update(ctx context.Context) {
 	td, folderAll, err := a.fetchFolders(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
-		setStatus("Error: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
@@ -629,7 +629,7 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 	headers, err := a.fetchHeaders(ctx, folder)
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
-		setStatus("Failed to load: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setStatus("Failed to load: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		clear()
 		return
 	}
@@ -705,7 +705,7 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 						slog.Int64("mailID", a.mail.MailID),
 						slog.Any("err", err),
 					)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", app.ErrorDisplay(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.ErrorDisplay(err)))
 				}
 				m.Start()
 			}, a.u.MainWindow(),
@@ -759,7 +759,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		fyne.Do(func() {
-			a.Detail.SetBody("ERROR: Failed to load: " + app.ErrorDisplay(err))
+			a.Detail.SetBody("ERROR: Failed to load: " + a.u.ErrorDisplay(err))
 		})
 		return
 	}
@@ -784,7 +784,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
-						a.Detail.SetBody("ERROR: Failed to load: " + app.ErrorDisplay(err))
+						a.Detail.SetBody("ERROR: Failed to load: " + a.u.ErrorDisplay(err))
 					})
 					return nil, nil
 				}

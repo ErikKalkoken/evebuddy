@@ -29,11 +29,13 @@ type UIServices interface {
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacterID() int64
 	CurrentCorporationID() int64
+	ErrorDisplay(err error) string
 	EVEImage() *eveimageservice.EVEImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HasCharacter() bool
 	HasCorporation() bool
 	IsMobile() bool
+	IsDeveloperMode() bool
 	IsOfflineMode() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(id int64) error

@@ -307,7 +307,7 @@ func (a *LoyaltyPoints) Update(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh loyaltyPoints UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = "ERROR: " + app.ErrorDisplay(err)
+			a.top.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.top.Importance = widget.DangerImportance
 			a.top.Refresh()
 			a.top.Show()

@@ -247,7 +247,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	x, err := a.u.ess.Fetch(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
-		set(eveStatusError, "ERROR", app.ErrorDisplay(err))
+		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
 		return
 	}
 	if !x.IsOK() {
@@ -488,7 +488,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 				return
 			}
 			if err := fyne.CurrentApp().OpenURL(u); err != nil {
-				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.MainWindow())
+				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.IsDeveloperMode(), w.u.MainWindow())
 			}
 		}, w.u.MainWindow(),
 		)

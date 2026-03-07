@@ -200,7 +200,7 @@ func (a *Queue) Update(ctx context.Context) {
 	err := a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		clear()
 		return
 	}
