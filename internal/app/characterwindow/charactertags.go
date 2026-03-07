@@ -18,7 +18,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -250,7 +250,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					nil,
 					check,
 					nil,
-					awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+					commonui.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -259,7 +259,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				}
 				border := co.(*fyne.Container).Objects
 				r := others[id]
-				border[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
+				border[0].(*commonui.EntityListItem).Set(r.ID, r.Name)
 
 				check := border[1].(*widget.Icon)
 				if selected[r.ID] {
@@ -406,7 +406,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				nil,
 				nil,
 				remove,
-				awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+				commonui.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -415,7 +415,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			}
 			r := a.characters[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
+			box[0].(*commonui.EntityListItem).Set(r.ID, r.Name)
 
 			remove := box[1].(*ttwidget.Button)
 			remove.OnTapped = func() {

@@ -15,8 +15,8 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -117,7 +117,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
-			level := awidget.NewSkillLevel()
+			level := commonui.NewSkillLevel()
 			if app.IsMobile() {
 				level.Hide()
 			}
@@ -131,7 +131,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*awidget.SkillLevel)
+			level := c[1].(*commonui.SkillLevel)
 			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel

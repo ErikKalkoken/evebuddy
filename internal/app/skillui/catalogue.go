@@ -17,8 +17,8 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -186,7 +186,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				awidget.NewSkillLevel(),
+				commonui.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -219,7 +219,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 		)
 		label.SetToolTip(tt)
 
-		level := row[1].(*awidget.SkillLevel)
+		level := row[1].(*commonui.SkillLevel)
 		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {

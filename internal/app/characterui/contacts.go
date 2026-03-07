@@ -21,9 +21,9 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -463,7 +463,7 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      awidget.EveEntityEIS
+	eis      commonui.EveEntityEIS
 	icon     *canvas.Image
 	category *widget.Label
 	npc      *widget.Label
@@ -473,7 +473,7 @@ type characterContactItem struct {
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
+func newCharacterContactItem(eis commonui.EveEntityEIS) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -530,7 +530,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	commonui.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

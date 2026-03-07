@@ -1,6 +1,8 @@
 package xwidget
 
-import "fyne.io/fyne/v2/widget"
+import (
+	"fyne.io/fyne/v2/widget"
+)
 
 // NewLabelWithSelection returns a new label with selectable text.
 func NewLabelWithSelection(s string) *widget.Label {

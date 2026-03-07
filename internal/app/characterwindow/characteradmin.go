@@ -20,7 +20,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -99,7 +99,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 					layout.NewSpacer(),
 					delete,
 				),
-				awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+				commonui.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
 			)
 			return row
 		},
@@ -110,7 +110,7 @@ func (a *characterAdmin) makeCharacterList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*awidget.EntityListItem).Set(r.characterID, r.characterName)
+			border[0].(*commonui.EntityListItem).Set(r.characterID, r.characterName)
 
 			hbox := border[1].(*fyne.Container).Objects
 			issueBox := hbox[0].(*fyne.Container)

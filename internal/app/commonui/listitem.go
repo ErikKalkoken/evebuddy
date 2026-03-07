@@ -1,4 +1,4 @@
-package widget
+package commonui
 
 import (
 	"fyne.io/fyne/v2"
