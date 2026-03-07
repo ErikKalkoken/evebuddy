@@ -33,6 +33,7 @@ type UIServices interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	HasCharacter() bool
 	HasCorporation() bool
+	IsMobile() bool
 	IsOfflineMode() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(id int64) error
@@ -42,13 +43,13 @@ type UIServices interface {
 	Signals() *app.Signals
 }
 
-func Show(s UIServices) {
-	w, created, onClosed := s.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
+func Show(u UIServices) {
+	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
 	if !created {
 		w.Show()
 		return
 	}
-	cw := newCharacterWindow(s, w)
+	cw := newCharacterWindow(u, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(cw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -71,15 +72,15 @@ type characterWindow struct {
 	characterAdmin    *characterAdmin
 	characterTags     *characterTags
 	characterTraining *characterTraining
-	s                 UIServices
+	u                 UIServices
 	sb                *xwidget.Snackbar
 	w                 fyne.Window
 }
 
-func newCharacterWindow(s UIServices, w fyne.Window) *characterWindow {
+func newCharacterWindow(u UIServices, w fyne.Window) *characterWindow {
 	a := &characterWindow{
 		sb: xwidget.NewSnackbar(w),
-		s:  s,
+		u:  u,
 		w:  w,
 	}
 	a.ExtendBaseWidget(a)

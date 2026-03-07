@@ -128,7 +128,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	forums := xwidget.NewTappableIcon(icons.EvelogoPng, func() {
 		go func() {
-			ec, err := a.iw.s.EVEUniverse().GetCharacterESI(context.Background(), a.id)
+			ec, err := a.iw.u.EVEUniverse().GetCharacterESI(context.Background(), a.id)
 			if err != nil {
 				a.iw.sb.Show("Failed to get character for forum: " + app.ErrorDisplay(err))
 				return
@@ -164,16 +164,16 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
-		a.iw.s.EVEImage().CharacterPortraitAsync(a.id, 256, func(r fyne.Resource) {
+		a.iw.u.EVEImage().CharacterPortraitAsync(a.id, 256, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
 		})
 	})
-	o, _, err := a.iw.s.EVEUniverse().GetOrCreateCharacterESI(ctx, a.id)
+	o, _, err := a.iw.u.EVEUniverse().GetOrCreateCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
 	fyne.Do(func() {
-		a.iw.s.EVEImage().CorporationLogoAsync(o.Corporation.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().CorporationLogoAsync(o.Corporation.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.corporationLogo.Resource = r
 			a.corporationLogo.Refresh()
 		})
@@ -189,7 +189,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 			a.iw.ShowEntity(o.Corporation)
 		}
 		a.portrait.OnTapped = func() {
-			a.iw.showZoomWindow(o.Name, a.id, a.iw.s.EVEImage().CharacterPortraitAsync, a.iw.w)
+			a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EVEImage().CharacterPortraitAsync, a.iw.w)
 		}
 	})
 	fyne.Do(func() {
@@ -217,7 +217,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		a.title.SetText("Title: " + v)
 	})
 
-	characterIDs, err := a.iw.s.Character().ListCharacterIDs(ctx)
+	characterIDs, err := a.iw.u.Character().ListCharacterIDs(ctx)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		a.tabs.Refresh()
 	})
 
-	history, err := a.iw.s.EVEUniverse().FetchCharacterCorporationHistory(ctx, a.id)
+	history, err := a.iw.u.EVEUniverse().FetchCharacterCorporationHistory(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
 	if isOwned {
-		c, err := a.iw.s.Character().GetCharacter(ctx, a.id)
+		c, err := a.iw.u.Character().GetCharacter(ctx, a.id)
 		if err != nil {
 			return nil, err
 		}

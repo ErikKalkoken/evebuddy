@@ -308,9 +308,6 @@ func main() {
 	rhc2.Logger = slog.Default()
 	rhc2.ResponseLogHook = logResponse
 
-	// Init global state
-	app.SetIsMobile(*mobileFlag || fyne.CurrentDevice().IsMobile())
-
 	// init shared objects
 	signals := app.NewSignals()
 	settings := settings.New(fyneApp.Preferences())
@@ -416,6 +413,7 @@ func main() {
 		EVEImage:         eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
 		EVEUniverse:      eus,
 		IsFakeMobile:     *mobileFlag,
+		IsMobile:         *mobileFlag || fyne.CurrentDevice().IsMobile(),
 		IsOfflineMode:    *offlineFlag,
 		IsUpdateDisabled: *disableUpdatesFlag,
 		Janice:           janiceservice.New(rhc1.StandardClient(), key),

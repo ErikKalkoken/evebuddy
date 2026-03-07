@@ -90,7 +90,7 @@ type Structures struct {
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	s                 uiservices.UIServices
+	u                 uiservices.UIServices
 }
 
 const (
@@ -101,7 +101,7 @@ const (
 	structuresColServices
 )
 
-func NewStructures(s uiservices.UIServices) *Structures {
+func NewStructures(u uiservices.UIServices) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
@@ -114,7 +114,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 		},
 	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[structureRow]{
 		ColumnID: structuresColType,
-		EIS:      s.EVEImage(),
+		EIS:      u.EVEImage(),
 		Label:    "Type",
 		GetEntity: func(r structureRow) *app.EveEntity {
 			return &app.EveEntity{
@@ -153,10 +153,10 @@ func NewStructures(s uiservices.UIServices) *Structures {
 	a := &Structures{
 		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
 		footer:       awidget.NewLabelWithWrapping(""),
-		s:            s,
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -167,7 +167,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r structureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), s, r.corporationID, r.structureID, r.solarSystemName)
+				go showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	} else {
@@ -192,7 +192,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 				return xwidget.RichTextSegmentsFromText("?")
 			},
 			func(r structureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), s, r.corporationID, r.structureID, r.solarSystemName)
+				go showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	}
@@ -215,7 +215,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.s.MainWindow())
+	}, a.u.MainWindow())
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
@@ -224,11 +224,11 @@ func NewStructures(s uiservices.UIServices) *Structures {
 	})
 
 	// Signals
-	a.s.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if a.corporation.Load().IDorZero() != arg.CorporationID {
 			return
 		}
@@ -237,7 +237,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 		}
 		a.update(ctx)
 	})
-	a.s.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})
@@ -247,7 +247,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 
 func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)
@@ -380,11 +380,11 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 	if corporationID == 0 {
 		return []structureRow{}, nil
 	}
-	structures, err := a.s.Corporation().ListStructures(ctx, corporationID)
+	structures, err := a.u.Corporation().ListStructures(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
-	corporationNames, err := a.s.Corporation().CorporationNames(ctx)
+	corporationNames, err := a.u.Corporation().CorporationNames(ctx)
 	if err != nil {
 		return nil, err
 	}

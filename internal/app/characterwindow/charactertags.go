@@ -60,9 +60,9 @@ func newCharacterTags(cw *characterWindow) *characterTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.cw.s.Signals().CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
 		a.update(ctx)
-		a.cw.s.Signals().TagsChanged.Emit(ctx, struct{}{})
+		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
 }
@@ -71,14 +71,14 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
 		a.modifyTag("Create Character Tag", "Create", func(name string) error {
-			_, err := a.cw.s.Character().CreateTag(context.Background(), name)
+			_, err := a.cw.u.Character().CreateTag(context.Background(), name)
 			return err
 		})
 	})
 	addTag.Importance = widget.HighImportance
 	main := container.NewBorder(
 		nil,
-		container.NewVBox(addTag,xwidget.NewStandardSpacer()),
+		container.NewVBox(addTag, xwidget.NewStandardSpacer()),
 		nil,
 		nil,
 		a.tagList,
@@ -89,7 +89,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := xwidget.NewAppBar("Tags", main, actions)
-	ab.HideBackground = !app.IsMobile()
+	ab.HideBackground = !a.cw.u.IsMobile()
 	c := container.NewVSplit(
 		container.NewStack(ab, a.emptyTagsHint),
 		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
@@ -111,12 +111,12 @@ func (a *characterTags) deleteTags() {
 				"Deleting...",
 				func() error {
 					ctx := context.Background()
-					err := a.cw.s.Character().DeleteAllTags(ctx)
+					err := a.cw.u.Character().DeleteAllTags(ctx)
 					if err != nil {
 						return err
 					}
 					a.update(ctx)
-					go a.cw.s.Signals().TagsChanged.Emit(ctx, struct{}{})
+					go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 					return nil
 				},
 				a.cw.w,
@@ -145,7 +145,7 @@ func (a *characterTags) exportTags() {
 				if err != nil {
 					return err
 				}
-				err := a.cw.s.Character().WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
+				err := a.cw.u.Character().WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
@@ -183,12 +183,12 @@ func (a *characterTags) importTags() {
 					return err
 				}
 				ctx := context.Background()
-				err = a.cw.s.Character().ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
+				err = a.cw.u.Character().ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
 				if err != nil {
 					return err
 				}
 				a.update(ctx)
-				go a.cw.s.Signals().TagsChanged.Emit(ctx, struct{}{})
+				go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 				slog.Info("Tags imported from file", "uri", reader.URI())
 				return nil
 			},
@@ -214,13 +214,13 @@ func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
 		"",
 		container.NewBorder(
 			nil,
-			container.NewVBox(a.addCharactersButton,xwidget.NewStandardSpacer()),
+			container.NewVBox(a.addCharactersButton, xwidget.NewStandardSpacer()),
 			nil,
 			nil,
 			a.characterList,
 		),
 	)
-	ab.HideBackground = !app.IsMobile()
+	ab.HideBackground = !a.cw.u.IsMobile()
 	ab.Hide()
 	return ab
 }
@@ -230,7 +230,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 		if a.selectedTag == nil {
 			return
 		}
-		_, others, err := a.cw.s.Character().ListCharactersForTag(context.Background(), a.selectedTag.ID)
+		_, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
 			a.cw.reportError("Failed to list characters", err)
 			return
@@ -250,7 +250,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					nil,
 					check,
 					nil,
-					awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+					awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -292,7 +292,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					if !v {
 						return
 					}
-					err := a.cw.s.Character().AddTagToCharacter(
+					err := a.cw.u.Character().AddTagToCharacter(
 						context.Background(),
 						characterID,
 						a.selectedTag.ID,
@@ -303,7 +303,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 					}
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.cw.s.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
 			},
 			a.cw.w,
 		)
@@ -347,7 +347,7 @@ func (a *characterTags) makeTagList() *widget.List {
 			icons := box[1].(*fyne.Container).Objects
 			icons[0].(*ttwidget.Button).OnTapped = func() {
 				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(name string) error {
-					return a.cw.s.Character().RenameTag(context.Background(), tag.ID, name)
+					return a.cw.u.Character().RenameTag(context.Background(), tag.ID, name)
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
@@ -358,13 +358,13 @@ func (a *characterTags) makeTagList() *widget.List {
 							return
 						}
 						ctx := context.Background()
-						err := a.cw.s.Character().DeleteTag(ctx, tag.ID)
+						err := a.cw.u.Character().DeleteTag(ctx, tag.ID)
 						if err != nil {
 							xdialog.ShowErrorAndLog("Failed to delete tag", err, a.cw.w)
 							return
 						}
 						a.update(ctx)
-						go a.cw.s.Signals().TagsChanged.Emit(ctx, struct{}{})
+						go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 						if len(a.tags) > 0 {
 							a.tagList.Select(0)
 							return
@@ -406,7 +406,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				nil,
 				nil,
 				remove,
-				awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -422,7 +422,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 				if a.selectedTag == nil {
 					return
 				}
-				err := a.cw.s.Character().RemoveTagFromCharacter(
+				err := a.cw.u.Character().RemoveTagFromCharacter(
 					context.Background(),
 					r.ID,
 					a.selectedTag.ID,
@@ -432,7 +432,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					return
 				}
 				a.setCharactersAsync(a.selectedTag)
-				go a.cw.s.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
 			}
 		},
 	)
@@ -454,7 +454,7 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.manageCharacters.SetTitle("Tag: " + tag.Name)
 	a.manageCharacters.Show()
 	go func() {
-		tagged, others, err := a.cw.s.Character().ListCharactersForTag(context.Background(), tag.ID)
+		tagged, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
 			a.cw.reportError("Failed to list characters for "+tag.Name, err)
 			return
@@ -504,7 +504,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 			}
 			ctx := context.Background()
 			a.update(ctx)
-			go a.cw.s.Signals().TagsChanged.Emit(ctx, struct{}{})
+			go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 		}, a.cw.w,
 	)
 	xdesktop.DisableShortcutsForDialog(d, a.cw.w)
@@ -524,7 +524,7 @@ func (a *characterTags) selectTagByName(name string) {
 }
 
 func (a *characterTags) update(ctx context.Context) {
-	tags, err := a.cw.s.Character().ListTagsByName(ctx)
+	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to list tags", err)
 		a.tags = xslices.Reset(a.tags)

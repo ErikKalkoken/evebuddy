@@ -125,7 +125,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 		)),
 	)
 	var c fyne.CanvasObject
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		c = container.NewBorder(
 			a.top,
 			nil,

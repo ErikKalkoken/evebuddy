@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
-	"strings"
 	"syscall"
 	"time"
 
@@ -60,7 +59,6 @@ var (
 // global state
 var (
 	isDeveloperMode bool
-	isMobile        bool
 )
 
 func SetDeveloperMode(b bool) {
@@ -69,14 +67,6 @@ func SetDeveloperMode(b bool) {
 
 func IsDeveloperMode() bool {
 	return isDeveloperMode
-}
-
-func SetIsMobile(b bool) {
-	isMobile = b
-}
-
-func IsMobile() bool {
-	return isMobile
 }
 
 // VariableDateFormat returns a variable format for [time.Time] values.
@@ -163,16 +153,4 @@ func WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
-}
-
-// MakeWindowTitle creates a standardized title for a window.
-func MakeWindowTitle(parts ...string) string {
-	if len(parts) == 0 {
-		parts = append(parts, "PLACEHOLDER")
-	}
-	if IsMobile() {
-		return parts[0]
-	}
-	parts = append(parts, Name())
-	return strings.Join(parts, " - ")
 }

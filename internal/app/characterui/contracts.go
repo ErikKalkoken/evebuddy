@@ -179,7 +179,7 @@ func newContracts(u uiservices.UIServices, forCorporation bool) *Contracts {
 	}
 	a.ExtendBaseWidget(a)
 
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
 		a.body = xwidget.MakeDataTable(
@@ -274,7 +274,7 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	if !a.forCorporation {
 		filter.Add(a.selectTag)
 	}
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

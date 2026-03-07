@@ -77,7 +77,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *regionInfo) update(ctx context.Context) error {
-	o, err := a.iw.s.EVEUniverse().GetOrCreateRegionESI(ctx, a.id)
+	o, err := a.iw.u.EVEUniverse().GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (a *regionInfo) update(ctx context.Context) error {
 		return nil
 	})
 	g.Go(func() error {
-		oo, err := a.iw.s.EVEUniverse().GetRegionConstellationsESI(ctx, o.ID)
+		oo, err := a.iw.u.EVEUniverse().GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
 			return err
 		}

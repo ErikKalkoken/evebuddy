@@ -159,7 +159,7 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
 	topBox := container.NewVBox(a.top)
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
@@ -232,7 +232,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, a.character.Load().IDorZero())
 		}
 	}
-	return makeGridOrList(app.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *Catalogue) filterRowsAsync() {

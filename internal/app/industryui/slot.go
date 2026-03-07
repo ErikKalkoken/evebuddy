@@ -213,7 +213,7 @@ func NewSlots(u uiservices.UIServices, slotType app.IndustryJobType) *Slots {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -300,7 +300,7 @@ func NewSlots(u uiservices.UIServices, slotType app.IndustryJobType) *Slots {
 
 func (a *Slots) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectFreeSlots, a.selectTag)
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.body)

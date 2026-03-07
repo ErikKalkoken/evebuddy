@@ -88,7 +88,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *locationInfo) update(ctx context.Context) error {
-	o, err := a.iw.s.EVEUniverse().GetOrCreateLocationESI(ctx, a.id)
+	o, err := a.iw.u.EVEUniverse().GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 	})
 	if et, ok := o.Type.Value(); ok {
 		fyne.Do(func() {
-			a.iw.s.EVEImage().InventoryTypeRenderAsync(et.ID, renderIconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().InventoryTypeRenderAsync(et.ID, renderIconPixelSize, func(r fyne.Resource) {
 				a.typeImage.SetResource(r)
 			})
 			a.typeInfo.SetText(et.Name)
@@ -105,7 +105,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 				a.iw.ShowEntity(et.EveEntity())
 			}
 			a.typeImage.OnTapped = func() {
-				a.iw.showZoomWindow(o.Name, et.ID, a.iw.s.EVEImage().InventoryTypeRenderAsync, a.iw.w)
+				a.iw.showZoomWindow(o.Name, et.ID, a.iw.u.EVEImage().InventoryTypeRenderAsync, a.iw.w)
 			}
 			description := et.Description
 			if description == "" {
@@ -116,7 +116,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 	}
 	if v, ok := o.Owner.Value(); ok {
 		fyne.Do(func() {
-			a.iw.s.EVEImage().CorporationLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().CorporationLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 				a.ownerLogo.Resource = r
 				a.ownerLogo.Refresh()
 			})
@@ -154,7 +154,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
 		}
-		ss, err := a.iw.s.EVEUniverse().GetStationServicesESI(ctx, a.id)
+		ss, err := a.iw.u.EVEUniverse().GetStationServicesESI(ctx, a.id)
 		if err != nil {
 			return err
 		}
@@ -214,13 +214,13 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *raceInfo) update(ctx context.Context) error {
-	o, err := a.iw.s.EVEUniverse().GetOrCreateRaceESI(ctx, a.id)
+	o, err := a.iw.u.EVEUniverse().GetOrCreateRaceESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
 	if factionID, ok := o.FactionID(); ok {
 		fyne.Do(func() {
-			a.iw.s.EVEImage().FactionLogoAsync(factionID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().FactionLogoAsync(factionID, app.IconPixelSize, func(r fyne.Resource) {
 				a.logo.Resource = r
 				a.logo.Refresh()
 			})

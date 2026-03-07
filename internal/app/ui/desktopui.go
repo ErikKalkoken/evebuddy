@@ -655,7 +655,7 @@ func (u *DesktopUI) saveAppState() {
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.app.NewWindow(app.MakeWindowTitle(title))
+	w := u.app.NewWindow(u.MakeWindowTitle(title))
 	page := characterui.NewSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
@@ -942,7 +942,7 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 
 func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	spacer :=xwidget.NewSpacer(w.button.MinSize())
+	spacer := xwidget.NewSpacer(w.button.MinSize())
 	c := container.NewHBox(
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
 		w.title,

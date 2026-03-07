@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -174,8 +175,9 @@ type BaseUIParams struct {
 	ConcurrencyLimit int
 	DataPaths        map[string]string
 	IsFakeMobile     bool
-	IsUpdateDisabled bool
+	IsMobile         bool
 	IsOfflineMode    bool
+	IsUpdateDisabled bool
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -218,6 +220,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		ess:                arg.ESIStatus,
 		eus:                arg.EVEUniverse,
 		isFakeMobile:       arg.IsFakeMobile,
+		isMobile:           arg.IsMobile,
 		isOfflineMode:      arg.IsOfflineMode,
 		js:                 arg.Janice,
 		rs:                 arg.Corporation,
@@ -245,7 +248,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		u.dataPaths = make(xmaps.OrderedMap[string, string])
 	}
 
-	if !app.IsMobile() {
+	if !u.isMobile {
 		xwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
@@ -421,7 +424,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		if app.IsMobile() {
+		if u.isMobile {
 			// When the app is restarted on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
@@ -563,6 +566,10 @@ func (u *baseUI) SingleInstance() *singleinstance.Group {
 
 func (u *baseUI) ShowSnackbar(text string) {
 	u.snackbar.Show(text)
+}
+
+func (u *baseUI) IsMobile() bool {
+	return u.isMobile
 }
 
 func (u *baseUI) IsOfflineMode() bool {
@@ -1061,6 +1068,18 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 
 // Windows
 
+// MakeWindowTitle creates a standardized title for a window.
+func (u *baseUI) MakeWindowTitle(parts ...string) string {
+	if len(parts) == 0 {
+		parts = append(parts, "PLACEHOLDER")
+	}
+	if u.isMobile {
+		return parts[0]
+	}
+	parts = append(parts, app.Name())
+	return strings.Join(parts, " - ")
+}
+
 // GetOrCreateWindow returns a unique window as defined by the given id string
 // and reports whether a new window was created or the window already exists.
 func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
@@ -1079,7 +1098,7 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	if ok {
 		return w, false, nil
 	}
-	w = u.app.NewWindow(app.MakeWindowTitle(titles...))
+	w = u.app.NewWindow(u.MakeWindowTitle(titles...))
 	u.windows[id] = w
 	if fyne.CurrentDevice().IsMobile() {
 		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {

@@ -36,6 +36,7 @@ type UIServices interface {
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsMobile() bool
 	IsOfflineMode() bool
 	Signals() *app.Signals
 	StatusCache() *statuscacheservice.StatusCacheService
@@ -131,7 +132,7 @@ func newStatusWindow(s UIServices, w fyne.Window) *statusWindow {
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := kxwidget.NewIconButtonWithMenu(
@@ -208,7 +209,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	)
 	updateEntities := xwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		ab := xwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,

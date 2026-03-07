@@ -214,7 +214,7 @@ func newWalletTransaction(u uiservices.UIServices, d app.Division) *WalletTransa
 	}
 	a.ExtendBaseWidget(a)
 
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
@@ -283,7 +283,7 @@ func newWalletTransaction(u uiservices.UIServices, d app.Division) *WalletTransa
 
 func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
-	if app.IsMobile() {
+	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(

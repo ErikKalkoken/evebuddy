@@ -36,6 +36,7 @@ type UIServices interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsMobile() bool
 	MainWindow() fyne.Window
 	ResetCharacter()
 	ResetCorporation()
@@ -75,14 +76,14 @@ type settingsWindow struct {
 	widget.BaseWidget
 
 	sb *xwidget.Snackbar
-	s  UIServices
+	u  UIServices
 	w  fyne.Window
 }
 
-func newSettingsWindow(s UIServices, w fyne.Window) *settingsWindow {
+func newSettingsWindow(u UIServices, w fyne.Window) *settingsWindow {
 	a := &settingsWindow{
 		sb: xwidget.NewSnackbar(w),
-		s:  s,
+		u:  u,
 		w:  w,
 	}
 	a.ExtendBaseWidget(a)
@@ -93,7 +94,7 @@ func newSettingsWindow(s UIServices, w fyne.Window) *settingsWindow {
 func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		ab := xwidget.NewAppBar(title, content, actions)
-		ab.HideBackground = !app.IsMobile()
+		ab.HideBackground = !a.u.IsMobile()
 		return ab
 	}
 	generalContent, generalActions := a.makeGeneralPage()
@@ -118,24 +119,24 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
-		options:      a.s.Settings().LogLevelNames(),
-		defaultValue: a.s.Settings().LogLevelDefault(),
-		getter:       a.s.Settings().LogLevel,
+		options:      a.u.Settings().LogLevelNames(),
+		defaultValue: a.u.Settings().LogLevelDefault(),
+		getter:       a.u.Settings().LogLevel,
 		setter: func(v string) {
-			s := a.s.Settings()
+			s := a.u.Settings()
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
 	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:  "Developer Mode",
 		hint:   "App shows additional technical information like Character IDs",
-		getter: a.s.Settings().DeveloperMode,
+		getter: a.u.Settings().DeveloperMode,
 		onChanged: func(b bool) {
-			a.s.Settings().SetDeveloperMode(b)
+			a.u.Settings().SetDeveloperMode(b)
 			app.SetDeveloperMode(b)
 		},
 	})
@@ -147,30 +148,30 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	}
 
 	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().SysTrayEnabledDefault(),
+		defaultValue: a.u.Settings().SysTrayEnabledDefault(),
 		label:        "Run in background",
 		hint:         "App will continue to run in background after window is closed (requires restart)",
-		getter:       a.s.Settings().SysTrayEnabled,
-		onChanged:    a.s.Settings().SetSysTrayEnabled,
+		getter:       a.u.Settings().SysTrayEnabled,
+		onChanged:    a.u.Settings().SetSysTrayEnabled,
 	})
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		items = append(items, sysTray)
 	}
 
 	preferMarketTab := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Prefer market tab",
 		hint:      "Show market tab first for tradeable items",
-		getter:    a.s.Settings().PreferMarketTab,
-		onChanged: a.s.Settings().SetPreferMarketTab,
+		getter:    a.u.Settings().PreferMarketTab,
+		onChanged: a.u.Settings().SetPreferMarketTab,
 	})
 	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().HideLimitedCorporationsDefault(),
+		defaultValue: a.u.Settings().HideLimitedCorporationsDefault(),
 		label:        "Hide limited corporations",
 		hint:         "Hide corporations with no privileged access, e.g. corporation wallet",
-		getter:       a.s.Settings().HideLimitedCorporations,
+		getter:       a.u.Settings().HideLimitedCorporations,
 		onChanged: func(enabled bool) {
-			a.s.Settings().SetHideLimitedCorporations(enabled)
-			go a.s.Signals().CorporationsChanged.Emit(context.Background(), struct{}{})
+			a.u.Settings().SetHideLimitedCorporations(enabled)
+			go a.u.Signals().CorporationsChanged.Emit(context.Background(), struct{}{})
 		},
 	})
 
@@ -184,16 +185,16 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
 		options:      []string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
-		defaultValue: string(a.s.Settings().ColorThemeDefault()),
+		defaultValue: string(a.u.Settings().ColorThemeDefault()),
 		getter: func() string {
-			return string(a.s.Settings().ColorTheme())
+			return string(a.u.Settings().ColorTheme())
 		},
 		setter: func(v string) {
-			s := a.s.Settings()
+			s := a.u.Settings()
 			s.SetColorTheme(settings.ColorTheme(v))
-			a.s.SetColorTheme(settings.ColorTheme(v))
+			a.u.SetColorTheme(settings.ColorTheme(v))
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
@@ -202,29 +203,29 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		hint:         "Scaling factor of the user interface in percent. Requires restart.",
 		minValue:     50,
 		maxValue:     200,
-		defaultValue: a.s.Settings().FyneScaleDefault() * 100,
+		defaultValue: a.u.Settings().FyneScaleDefault() * 100,
 		step:         5,
 		getter: func() float64 {
-			return a.s.Settings().FyneScale() * 100
+			return a.u.Settings().FyneScale() * 100
 		},
 		setter: func(v float64) {
-			a.s.Settings().SetFyneScale(v / 100.0)
+			a.u.Settings().SetFyneScale(v / 100.0)
 		},
 		formatter: func(v any) string {
 			return fmt.Sprintf("%v %%", v)
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
 	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:     "Disable DPI detection",
 		hint:      "Disables the automatic DPI detection. Requires restart.",
-		getter:    a.s.Settings().DisableDPIDetection,
-		onChanged: a.s.Settings().SetDisableDPIDetection,
+		getter:    a.u.Settings().DisableDPIDetection,
+		onChanged: a.u.Settings().SetDisableDPIDetection,
 	})
 
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		items = slices.Concat(items, []SettingItem{
 			colorTheme,
 			fyneScale,
@@ -232,7 +233,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		})
 	}
 
-	vMin, vMax, vDef := a.s.Settings().MaxMailsPresets()
+	vMin, vMax, vDef := a.u.Settings().MaxMailsPresets()
 	maxMail := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "Maximum mails",
 		hint:         "Max number of mails downloaded. 0 = unlimited.",
@@ -241,16 +242,16 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		defaultValue: float64(vDef),
 		step:         1,
 		getter: func() float64 {
-			return float64(a.s.Settings().MaxMails())
+			return float64(a.u.Settings().MaxMails())
 		},
 		setter: func(v float64) {
-			a.s.Settings().SetMaxMails(int(v))
+			a.u.Settings().SetMaxMails(int(v))
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
-	vMin, vMax, vDef = a.s.Settings().MaxWalletTransactionsPresets()
+	vMin, vMax, vDef = a.u.Settings().MaxWalletTransactionsPresets()
 	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "Maximum wallet transaction",
 		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
@@ -259,16 +260,16 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		defaultValue: float64(vDef),
 		step:         1,
 		getter: func() float64 {
-			return float64(a.s.Settings().MaxWalletTransactions())
+			return float64(a.u.Settings().MaxWalletTransactions())
 		},
 		setter: func(v float64) {
-			a.s.Settings().SetMaxWalletTransactions(int(v))
+			a.u.Settings().SetMaxWalletTransactions(int(v))
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
-	vMin, vMax, vDef = a.s.Settings().MarketOrderRetentionDaysPresets()
+	vMin, vMax, vDef = a.u.Settings().MarketOrderRetentionDaysPresets()
 	marketOrdersRetention := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "Market order retention",
 		hint:         "Number of days to keep historic market orders.",
@@ -277,12 +278,12 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		defaultValue: float64(vDef),
 		step:         1,
 		getter: func() float64 {
-			return float64(a.s.Settings().MarketOrderRetentionDays())
+			return float64(a.u.Settings().MarketOrderRetentionDays())
 		},
 		setter: func(v float64) {
-			a.s.Settings().SetMarketOrdersRetentionDay(int(v))
+			a.u.Settings().SetMarketOrdersRetentionDay(int(v))
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
@@ -311,7 +312,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 						"Clearing cache...",
 						"",
 						func() error {
-							a.s.ClearAllCaches()
+							a.u.ClearAllCaches()
 							return nil
 						},
 						w,
@@ -348,34 +349,34 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	exportAppLog := settingAction{
 		Label: "Export application log",
 		Action: func() {
-			a.showExportFileDialog(a.s.DataPaths()["log"])
+			a.showExportFileDialog(a.u.DataPaths()["log"])
 		},
 	}
 	exportCrashLog := settingAction{
 		Label: "Export crash log",
 		Action: func() {
-			a.showExportFileDialog(a.s.DataPaths()["crashfile"])
+			a.showExportFileDialog(a.u.DataPaths()["crashfile"])
 		},
 	}
 	deleteAppLog := settingAction{
 		Label: "Delete application log",
 		Action: func() {
-			a.showDeleteFileDialog("application log", a.s.DataPaths()["log"]+"*")
+			a.showDeleteFileDialog("application log", a.u.DataPaths()["log"]+"*")
 		},
 	}
 	deleteCrashLog := settingAction{
 		Label: "Delete crash log",
 		Action: func() {
-			a.showDeleteFileDialog("crash log", a.s.DataPaths()["crashfile"])
+			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
 	}
 	actions := []settingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
-	if !app.IsMobile() {
+	if !a.u.IsMobile() {
 		actions = append(actions, settingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
-				a.s.Settings().ResetWindowSize()
-				a.s.MainWindow().Resize(a.s.Settings().WindowSize())
+				a.u.Settings().ResetWindowSize()
+				a.u.MainWindow().Resize(a.u.Settings().WindowSize())
 			},
 		})
 	}
@@ -389,13 +390,13 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
-				a.s.ResetCharacter()
+				a.u.ResetCharacter()
 			},
 		})
 		actions = append(actions, settingAction{
 			Label: "Reset shown corporation (debug)",
 			Action: func() {
-				a.s.ResetCorporation()
+				a.u.ResetCorporation()
 			},
 		})
 	}
@@ -482,65 +483,65 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 		slices.Sort(groupsAndTypes[g])
 	}
 	slices.Sort(groups)
-	typesEnabled := a.s.Settings().NotificationTypesEnabled()
+	typesEnabled := a.u.Settings().NotificationTypesEnabled()
 
 	// add global items
 	notifyCommunications := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().NotifyCommunicationsEnabledDefault(),
+		defaultValue: a.u.Settings().NotifyCommunicationsEnabledDefault(),
 		label:        "Notify communications",
 		hint:         "Whether to notify new communications",
-		getter:       a.s.Settings().NotifyCommunicationsEnabled,
-		onChanged:    a.s.Settings().SetNotifyCommunicationsEnabled,
+		getter:       a.u.Settings().NotifyCommunicationsEnabled,
+		onChanged:    a.u.Settings().SetNotifyCommunicationsEnabled,
 	})
 	notifyMails := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().NotifyMailsEnabledDefault(),
+		defaultValue: a.u.Settings().NotifyMailsEnabledDefault(),
 		label:        "Notify mails",
 		hint:         "Whether to notify new mails",
-		getter:       a.s.Settings().NotifyMailsEnabled,
+		getter:       a.u.Settings().NotifyMailsEnabled,
 		onChanged: func(on bool) {
-			a.s.Settings().SetNotifyMailsEnabled(on)
+			a.u.Settings().SetNotifyMailsEnabled(on)
 			if on {
-				a.s.Settings().SetNotifyMailsEarliest(time.Now())
+				a.u.Settings().SetNotifyMailsEarliest(time.Now())
 			}
 		},
 	})
 	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().NotifyPIEnabled(),
+		defaultValue: a.u.Settings().NotifyPIEnabled(),
 		label:        "Planetary Industry",
 		hint:         "Whether to notify about expired extractions",
-		getter:       a.s.Settings().NotifyPIEnabled,
+		getter:       a.u.Settings().NotifyPIEnabled,
 		onChanged: func(on bool) {
-			a.s.Settings().SetNotifyPIEnabled(on)
+			a.u.Settings().SetNotifyPIEnabled(on)
 			if on {
-				a.s.Settings().SetNotifyPIEarliest(time.Now())
+				a.u.Settings().SetNotifyPIEarliest(time.Now())
 			}
 		},
 	})
 
 	notifyTraining := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().NotifyTrainingEnabled(),
+		defaultValue: a.u.Settings().NotifyTrainingEnabled(),
 		label:        "Notify Training",
 		hint:         "Whether to notify when skillqueue is empty for watched characters",
-		getter:       a.s.Settings().NotifyTrainingEnabled,
+		getter:       a.u.Settings().NotifyTrainingEnabled,
 		onChanged: func(on bool) {
-			a.s.Settings().SetNotifyTrainingEnabled(on)
+			a.u.Settings().SetNotifyTrainingEnabled(on)
 		},
 	})
 
 	notifyContracts := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.s.Settings().NotifyContractsEnabledDefault(),
+		defaultValue: a.u.Settings().NotifyContractsEnabledDefault(),
 		label:        "Notify Contracts",
 		hint:         "Whether to notify when contract status changes",
-		getter:       a.s.Settings().NotifyContractsEnabled,
+		getter:       a.u.Settings().NotifyContractsEnabled,
 		onChanged: func(on bool) {
-			a.s.Settings().SetNotifyContractsEnabled(on)
+			a.u.Settings().SetNotifyContractsEnabled(on)
 			if on {
-				a.s.Settings().SetNotifyContractsEarliest(time.Now())
+				a.u.Settings().SetNotifyContractsEarliest(time.Now())
 			}
 		},
 	})
 
-	vMin, vMax, vDef := a.s.Settings().NotifyTimeoutHoursPresets()
+	vMin, vMax, vDef := a.u.Settings().NotifyTimeoutHoursPresets()
 	notifTimeout := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "Notify Timeout",
 		hint:         "Events older then this value in hours will not be notified",
@@ -549,12 +550,12 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 		defaultValue: float64(vDef),
 		step:         1.0,
 		getter: func() float64 {
-			return float64(a.s.Settings().NotifyTimeoutHours())
+			return float64(a.u.Settings().NotifyTimeoutHours())
 		},
 		setter: func(v float64) {
-			a.s.Settings().SetNotifyTimeoutHours(int(v))
+			a.u.Settings().SetNotifyTimeoutHours(int(v))
 		},
-		isMobile: app.IsMobile(),
+		isMobile: a.u.IsMobile(),
 		window:   a.w,
 	})
 
@@ -594,7 +595,7 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 						} else {
 							typesEnabled.Delete(ntStr)
 						}
-						a.s.Settings().SetNotificationTypesEnabled(typesEnabled)
+						a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
 					},
 				})
 				items2 = append(items2, it)
@@ -680,12 +681,12 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 			notifyMails.Reset()
 			notifTimeout.Reset()
 			typesEnabled.Clear()
-			a.s.Settings().ResetNotificationTypesEnabled()
+			a.u.Settings().ResetNotificationTypesEnabled()
 			list.Refresh()
 		},
 	}
 	updateTypes := func() {
-		a.s.Settings().SetNotificationTypesEnabled(typesEnabled)
+		a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
 		list.Refresh()
 	}
 	none := settingAction{

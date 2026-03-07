@@ -42,9 +42,11 @@ type UIServices interface {
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	IsMobile() bool
 	IsOfflineMode() bool
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
+	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
 }
 
@@ -54,8 +56,8 @@ type InfoWindow struct {
 	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
-	s             UIServices
 	sb            *xwidget.Snackbar
+	u             UIServices
 	w             fyne.Window
 }
 
@@ -69,10 +71,10 @@ const (
 )
 
 // New returns a new InfoWindow.
-func New(s UIServices) *InfoWindow {
+func New(u UIServices) *InfoWindow {
 	iw := &InfoWindow{
-		s: s,
-		w: s.MainWindow(),
+		u: u,
+		w: u.MainWindow(),
 	}
 	return iw
 }
@@ -132,7 +134,7 @@ type showParams struct {
 }
 
 func (iw *InfoWindow) showWithCharacterID(arg showParams) {
-	if iw.s.IsOfflineMode() {
+	if iw.u.IsOfflineMode() {
 		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",
@@ -152,7 +154,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 	iw.current = &arg
 
 	makeAppBarTitle := func(s string) string {
-		if app.IsMobile() {
+		if iw.u.IsMobile() {
 			return s
 		}
 		return s + ": Information"
@@ -214,9 +216,9 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 		return
 	}
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
-	ab.HideBackground = !app.IsMobile()
+	ab.HideBackground = !iw.u.IsMobile()
 	if iw.nav == nil {
-		w := fyne.CurrentApp().NewWindow(app.MakeWindowTitle("Information"))
+		w := fyne.CurrentApp().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
 		iw.sb = xwidget.NewSnackbar(w)
 		iw.sb.Start()
@@ -259,7 +261,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 }
 
 func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
-	w2, created := iw.s.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
+	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
 		return
@@ -359,7 +361,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableI
 
 func (iw *InfoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if app.IsMobile() {
+	if iw.u.IsMobile() {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize

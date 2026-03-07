@@ -106,12 +106,12 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
-		a.iw.s.EVEImage().CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
 	})
-	o, err := a.iw.s.EVEUniverse().GetOrCreateCorporationESI(ctx, a.id)
+	o, err := a.iw.u.EVEUniverse().GetOrCreateCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		a.alliance.OnTapped = func() {
 			a.iw.ShowEntity(v)
 		}
-		a.iw.s.EVEImage().AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		})
@@ -150,7 +150,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 	})
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		history, err := a.iw.s.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
+		history, err := a.iw.u.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
 			return err
 		}
