@@ -13,10 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-type loadFuncAsync func(int64, int, func(fyne.Resource))
 
 func newLabelWithWrapping() *widget.Label {
 	l := widget.NewLabel("")
@@ -38,31 +35,6 @@ func formatISKAmount(v float64) string {
 		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
 	}
 	return t
-}
-
-func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {
-	var color fyne.ThemeColorName
-	if v, ok := amount.Value(); !ok {
-		color = theme.ColorNameDisabled
-	} else if v < 0 {
-		color = theme.ColorNameError
-	} else if v > 0 {
-		color = theme.ColorNameSuccess
-	} else {
-		color = theme.ColorNameForeground
-	}
-	return color
-}
-
-func importanceISKAmount(amount optional.Optional[float64]) widget.Importance {
-	if v, ok := amount.Value(); !ok {
-		return widget.LowImportance
-	} else if v > 0 {
-		return widget.SuccessImportance
-	} else if v < 0 {
-		return widget.DangerImportance
-	}
-	return widget.MediumImportance
 }
 
 func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
@@ -96,23 +68,6 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	})
 }
 
-// makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
-func makeEveEntityActionLabel2(o optional.Optional[*app.EveEntity], action func(o *app.EveEntity)) fyne.CanvasObject {
-	v, ok := o.Value()
-	if !ok {
-		return widget.NewLabel("-")
-	}
-	return makeLinkLabelWithWrap(v.Name, func() {
-		action(v)
-	})
-}
-
-func makeLabelWithWrap(s string) *widget.Label {
-	l := widget.NewLabel(s)
-	l.Wrapping = fyne.TextWrapWord
-	return l
-}
-
 func makeBoolLabel(v bool) *widget.Label {
 	if v {
 		l := widget.NewLabel("Yes")
@@ -135,18 +90,6 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	return x
 }
 
-func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(int64)) fyne.CanvasObject {
-	el, ok := o.Value()
-	if !ok {
-		return widget.NewLabel("?")
-	}
-	x := makeLinkLabelWithWrap(el.DisplayName(), func() {
-		show(el.ID)
-	})
-	x.Wrapping = fyne.TextWrapWord
-	return x
-}
-
 func newSpacer(s fyne.Size) fyne.CanvasObject {
 	w := canvas.NewRectangle(color.Transparent)
 	w.SetMinSize(s)
@@ -157,45 +100,10 @@ func newStandardSpacer() fyne.CanvasObject {
 	return newSpacer(fyne.NewSquareSize(theme.Padding()))
 }
 
-// characterIDOrZero returns the ID of a character or 0 if the c does not exist.
-func characterIDOrZero(c *app.Character) int64 {
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
 // corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.
 func corporationIDOrZero(c *app.Corporation) int64 {
 	if c == nil {
 		return 0
 	}
 	return c.ID
-}
-
-// corporationNameOrZero returns the name of a corporation or "" if the c does not exist.
-func corporationNameOrZero(c *app.Corporation) string {
-	if c == nil || c.EveCorporation == nil {
-		return ""
-	}
-	return c.EveCorporation.Name
-}
-
-// TODO: Remove this helper
-
-// makeTopText makes the content for the top label of a gui element.
-func makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
-	if err != nil {
-		return "ERROR: " + app.ErrorDisplay(err), widget.DangerImportance
-	}
-	if characterID == 0 {
-		return "No entity", widget.LowImportance
-	}
-	if !hasData {
-		return "No data", widget.WarningImportance
-	}
-	if make == nil {
-		return "", widget.MediumImportance
-	}
-	return make()
 }

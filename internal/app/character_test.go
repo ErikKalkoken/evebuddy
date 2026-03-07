@@ -11,7 +11,18 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestCharacterPlanetExtractedTypes(t *testing.T) {
+func TestCharacter_IDorZero(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		c := new(app.Character)
+		xassert.Equal(t, 0, c.IDorZero())
+	})
+	t.Run("not nil", func(t *testing.T) {
+		c := &app.Character{ID: 42}
+		xassert.Equal(t, 42, c.IDorZero())
+	})
+}
+
+func TestCharacterPlanet_ExtractedTypes(t *testing.T) {
 	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
 	productType1a := &app.EveType{ID: 1}
 	productType1b := &app.EveType{ID: 1}
@@ -70,7 +81,7 @@ func TestCharacterPlanetExtractedTypes(t *testing.T) {
 	})
 }
 
-func TestCharacterPlanetProducedSchematics(t *testing.T) {
+func TestCharacterPlanet_ProducedSchematics(t *testing.T) {
 	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
 	extractorPin := &app.PlanetPin{
 		Type: extractorType,

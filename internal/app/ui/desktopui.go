@@ -942,7 +942,7 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 
 func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	spacer := newSpacer(w.button.MinSize())
+	spacer :=xwidget.NewSpacer(w.button.MinSize())
 	c := container.NewHBox(
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
 		w.title,

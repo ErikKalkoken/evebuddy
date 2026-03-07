@@ -257,7 +257,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	// Signal logging and base listeners
 	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", characterIDOrZero(c))
+		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDorZero())
 		updateStatus(ctx)
 	})
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -316,7 +316,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		updateStatus(ctx)
 	})
 	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
-		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", corporationIDOrZero(c))
+		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDorZero())
 		updateStatus(ctx)
 		u.updateCorporationWalletTotal(ctx)
 	})

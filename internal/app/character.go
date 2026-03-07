@@ -33,6 +33,13 @@ type Character struct {
 	NextCloneJump optional.Optional[time.Time] // zero time == now
 }
 
+func (c *Character) IDorZero() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
 type CharacterAttributes struct {
 	ID            int64
 	BonusRemaps   optional.Optional[int64]

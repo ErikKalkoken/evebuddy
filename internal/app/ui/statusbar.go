@@ -88,7 +88,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		}
 	}
 
-	spacer := newSpacer(a.updatingIndicator.MinSize())
+	spacer :=xwidget.NewSpacer(a.updatingIndicator.MinSize())
 	a.updateStatus = newStatusBarItemWithTrailing(
 		theme.NewThemedResource(icons.UpdateSvg),
 		container.NewStack(spacer, a.updatingIndicator),
@@ -480,7 +480,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 		c := container.NewVBox(
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
-			newStandardSpacer(),
+		xwidget.NewStandardSpacer(),
 		)
 		u := app.WebsiteRootURL().JoinPath("releases")
 		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {

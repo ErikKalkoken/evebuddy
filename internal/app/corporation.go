@@ -56,6 +56,13 @@ type Corporation struct {
 	EveCorporation *EveCorporation
 }
 
+func (c *Corporation) IDorZero() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
 type CorporationHangarName struct {
 	CorporationID int64
 	DivisionID    int64
