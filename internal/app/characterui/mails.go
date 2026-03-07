@@ -769,7 +769,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 		a.toolbar.Show()
 	})
 
-	if app.IsOfflineMode() || a.u.IsUpdateDisabled() {
+	if a.u.IsOfflineMode() || a.u.IsUpdateDisabled() {
 		return
 	}
 

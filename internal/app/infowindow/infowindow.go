@@ -42,6 +42,7 @@ type UIServices interface {
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	IsOfflineMode() bool
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
 	Settings() *settings.Settings
@@ -131,7 +132,7 @@ type showParams struct {
 }
 
 func (iw *InfoWindow) showWithCharacterID(arg showParams) {
-	if app.IsOfflineMode() {
+	if iw.s.IsOfflineMode() {
 		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",

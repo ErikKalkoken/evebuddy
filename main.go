@@ -310,7 +310,6 @@ func main() {
 
 	// Init global state
 	app.SetIsMobile(*mobileFlag || fyne.CurrentDevice().IsMobile())
-	app.SetIsOfflineMode(*offlineFlag)
 
 	// init shared objects
 	signals := app.NewSignals()
@@ -417,6 +416,7 @@ func main() {
 		EVEImage:         eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
 		EVEUniverse:      eus,
 		IsFakeMobile:     *mobileFlag,
+		IsOfflineMode:    *offlineFlag,
 		IsUpdateDisabled: *disableUpdatesFlag,
 		Janice:           janiceservice.New(rhc1.StandardClient(), key),
 		Settings:         settings,

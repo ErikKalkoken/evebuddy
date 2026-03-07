@@ -53,7 +53,7 @@ func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if app.IsOfflineMode() {
+	if a.cw.s.IsOfflineMode() {
 		add.Disable()
 	}
 	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
