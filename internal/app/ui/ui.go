@@ -18,8 +18,9 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/go-set"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetui"
@@ -948,19 +949,20 @@ func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Res
 
 // TODO: Check for potential latency creation
 
-func (u *baseUI) makeCharacterSwitchMenu(ctx context.Context, refresh func()) []*fyne.MenuItem {
+func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
 	cc := u.scs.ListCharacters()
-	var items []*fyne.MenuItem
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No characters", nil)
 		it.Disabled = true
-		return append(items, it)
+		fyne.Do(func() {
+			setItems(nil)
+		})
+		return
 	}
+
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
-	items = append(items, it)
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
+	items := []*fyne.MenuItem{it}
 	currentID := u.CurrentCharacter().IDOrZero()
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
@@ -977,38 +979,41 @@ func (u *baseUI) makeCharacterSwitchMenu(ctx context.Context, refresh func()) []
 			it.Disabled = true
 		} else {
 			it.Icon = u.characterAvatarPlaceholder64
-			g.Go(func() error {
+			go func() {
 				fyne.Do(func() {
 					u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
 						it.Icon = r
 					})
+					refresh()
 				})
-				return nil
-			})
+			}()
 		}
 		items = append(items, it)
 	}
-	go func() {
-		g.Wait()
-		fyne.Do(func() {
-			refresh()
-		})
-	}()
-	return items
+	fyne.Do(func() {
+		setItems(items)
+	})
 }
 
-func (u *baseUI) makeCorporationSwitchMenu(ctx context.Context, refresh func()) []*fyne.MenuItem {
-	var items []*fyne.MenuItem
+func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
 	cc, err := u.ListCorporationsForSelection(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch corporations", "error", err)
-		return items
+		fyne.Do(func() {
+			setItems(nil)
+		})
+		return
 	}
+
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No corporations", nil)
 		it.Disabled = true
-		return append(items, it)
+		fyne.Do(func() {
+			setItems(nil)
+		})
+		return
 	}
+
 	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
@@ -1018,7 +1023,7 @@ func (u *baseUI) makeCorporationSwitchMenu(ctx context.Context, refresh func()) 
 	}
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
-	items = append(items, it)
+	items := []*fyne.MenuItem{it}
 	g := new(errgroup.Group)
 	g.SetLimit(u.concurrencyLimit)
 	for _, c := range cc {
@@ -1052,7 +1057,9 @@ func (u *baseUI) makeCorporationSwitchMenu(ctx context.Context, refresh func()) 
 			refresh()
 		})
 	}()
-	return items
+	fyne.Do(func() {
+		setItems(items)
+	})
 }
 
 // ErrorDisplay returns a user friendly error message for an error.

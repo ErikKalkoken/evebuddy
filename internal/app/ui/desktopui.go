@@ -607,20 +607,26 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onUpdateStatus = func(ctx context.Context) {
 		go func() {
-			items := u.makeCharacterSwitchMenu(ctx, func() {
-				characterHeader.Refresh()
-			})
-			fyne.Do(func() {
-				characterHeader.SetButtonMenu(items)
-			})
+			u.setCharacterSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					characterHeader.SetButtonMenu(items)
+				},
+				func() {
+					characterHeader.Refresh()
+				},
+			)
 		}()
 		go func() {
-			items := u.makeCorporationSwitchMenu(ctx, func() {
-				corporationHeader.Refresh()
-			})
-			fyne.Do(func() {
-				corporationHeader.SetButtonMenu(items)
-			})
+			u.setCorporationSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					corporationHeader.SetButtonMenu(items)
+				},
+				func() {
+					corporationHeader.Refresh()
+				},
+			)
 		}()
 		// go statusBar.update()
 		go togglePermittedSections()

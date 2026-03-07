@@ -537,16 +537,22 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	u.onUpdateStatus = func(ctx context.Context) {
 		go togglePermittedSections()
 		go func() {
-			items := u.makeCharacterSwitchMenu(ctx, characterSelector.Refresh)
-			fyne.Do(func() {
-				characterSelector.SetMenuItems(items)
-			})
+			u.setCharacterSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					characterSelector.SetMenuItems(items)
+				},
+				characterSelector.Refresh,
+			)
 		}()
 		go func() {
-			items := u.makeCorporationSwitchMenu(ctx, corpSelector.Refresh)
-			fyne.Do(func() {
-				corpSelector.SetMenuItems(items)
-			})
+			u.setCorporationSwitchMenu(
+				ctx,
+				func(items []*fyne.MenuItem) {
+					corpSelector.SetMenuItems(items)
+				},
+				corpSelector.Refresh,
+			)
 		}()
 		go func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
