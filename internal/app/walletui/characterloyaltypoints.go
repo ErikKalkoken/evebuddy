@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -45,7 +44,7 @@ type CharacterLoyaltyPoints struct {
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
-	u             uiservices.UIServices
+	u             uiServices
 }
 
 const (
@@ -53,7 +52,7 @@ const (
 	characterLoyaltyPointsColPoints
 )
 
-func NewCharacterLoyaltyPoints(u uiservices.UIServices) *CharacterLoyaltyPoints {
+func NewCharacterLoyaltyPoints(u uiServices) *CharacterLoyaltyPoints {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
 		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
@@ -104,7 +103,7 @@ func NewCharacterLoyaltyPoints(u uiservices.UIServices) *CharacterLoyaltyPoints 
 	},
 	)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section != app.SectionCharacterLoyaltyPoints {

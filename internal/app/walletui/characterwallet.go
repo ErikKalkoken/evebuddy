@@ -14,7 +14,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -31,10 +30,10 @@ type CharacterWallet struct {
 	journal       *WalletJournal
 	transactions  *WalletTransactions
 	loyaltyPoints *CharacterLoyaltyPoints
-	u             uiservices.UIServices
+	u             uiServices
 }
 
-func NewCharacterWallet(u uiservices.UIServices) *CharacterWallet {
+func NewCharacterWallet(u uiServices) *CharacterWallet {
 	a := &CharacterWallet{
 		balance:       xwidget.NewLabelWithSelection(""),
 		journal:       NewCharacterWalletJournal(u),
@@ -48,7 +47,7 @@ func NewCharacterWallet(u uiservices.UIServices) *CharacterWallet {
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterWalletBalance {
@@ -107,7 +106,7 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 			a.balance.Refresh()
 		})
 	}
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		clear()
 		setBalance("", widget.MediumImportance)

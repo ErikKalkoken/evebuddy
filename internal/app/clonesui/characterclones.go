@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -59,10 +58,10 @@ type CharacterClones struct {
 	character atomic.Pointer[app.Character]
 	top       *xwidget.RichText
 	tree      *xwidget.Tree[characterCloneNode]
-	u         uiservices.UIServices
+	u         uiServices
 }
 
-func NewCharacterClones(u uiservices.UIServices) *CharacterClones {
+func NewCharacterClones(u uiServices) *CharacterClones {
 	top := xwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
 	a := &CharacterClones{
@@ -78,7 +77,7 @@ func NewCharacterClones(u uiservices.UIServices) *CharacterClones {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterJumpClones {
@@ -123,7 +122,7 @@ func (a *CharacterClones) makeTree() *xwidget.Tree[characterCloneNode] {
 }
 
 func (a *CharacterClones) update(ctx context.Context) {
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		fyne.Do(func() {
 			a.top.SetWithText("No character", widget.RichTextStyle{

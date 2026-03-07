@@ -56,7 +56,7 @@ type Corporation struct {
 	EveCorporation *EveCorporation
 }
 
-func (c *Corporation) IDorZero() int64 {
+func (c *Corporation) IDOrZero() int64 {
 	if c == nil {
 		return 0
 	}

@@ -510,7 +510,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	togglePermittedSections := func() {
-		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporationID())
+		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
 		if err != nil {
 			slog.Error("Failed to identify permitted sections", "error", err)
 			sections.Clear()
@@ -742,7 +742,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				characterID := u.CurrentCharacterID()
+				characterID := u.CurrentCharacter().IDOrZero()
 				if characterID == 0 {
 					u.ShowSnackbar("ERROR: No character selected")
 					return

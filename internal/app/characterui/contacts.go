@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -64,10 +63,10 @@ type Contacts struct {
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              uiservices.UIServices
+	u              uiServices
 }
 
-func NewContacts(u uiservices.UIServices) *Contacts {
+func NewContacts(u uiServices) *Contacts {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[contactRow]{{
 		ID:    1,
 		Label: "Name",
@@ -138,7 +137,7 @@ func NewContacts(u uiservices.UIServices) *Contacts {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -390,7 +389,7 @@ func (a *Contacts) update(ctx context.Context) {
 			a.footer.Refresh()
 		})
 	}
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		clear()
 		setFooter("No character", widget.LowImportance)

@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -61,11 +60,11 @@ type FlyableShips struct {
 	selectGroup   *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	top           *widget.Label
-	u             uiservices.UIServices
+	u             uiServices
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
-func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
+func NewFlyableShips(u uiServices) *FlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
@@ -120,7 +119,7 @@ func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
 		},
 	)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterSkills {
@@ -129,7 +128,7 @@ func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
 	},
 	)
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		characterID := a.character.Load().IDorZero()
+		characterID := a.character.Load().IDOrZero()
 		if characterID == 0 {
 			return
 		}
@@ -185,7 +184,7 @@ func (a *FlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.rowsFiltered[id]
-		a.u.InfoWindow().ShowTypeWithCharacter(o.typeID, a.character.Load().IDorZero())
+		a.u.InfoWindow().ShowTypeWithCharacter(o.typeID, a.character.Load().IDOrZero())
 	}
 	return g
 }
@@ -280,7 +279,7 @@ func (a *FlyableShips) update(ctx context.Context) {
 		return
 	}
 
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		clear()
 		setTop("No character", widget.LowImportance)

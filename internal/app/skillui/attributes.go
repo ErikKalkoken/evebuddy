@@ -15,7 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -38,10 +37,10 @@ type Attributes struct {
 	character atomic.Pointer[app.Character]
 	list      *widget.List
 	footer    *widget.Label
-	u         uiservices.UIServices
+	u         uiServices
 }
 
-func NewAttributes(s uiservices.UIServices) *Attributes {
+func NewAttributes(s uiServices) *Attributes {
 	a := &Attributes{
 		footer: awidget.NewLabelWithTruncation(""),
 		u:      s,
@@ -53,7 +52,7 @@ func NewAttributes(s uiservices.UIServices) *Attributes {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterAttributes {
@@ -94,7 +93,7 @@ func (a *Attributes) update(ctx context.Context) {
 	var err error
 	var total int64
 	var attributes []characterAttributeRow
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(ctx, characterID)

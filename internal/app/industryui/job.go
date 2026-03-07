@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -123,7 +122,7 @@ type Jobs struct {
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	sortButton      *xwidget.SortButton
-	u               uiservices.UIServices
+	u               uiServices
 }
 
 const (
@@ -137,15 +136,15 @@ const (
 	industryJobsColInstaller
 )
 
-func NewJobsForOverview(u uiservices.UIServices) *Jobs {
+func NewJobsForOverview(u uiServices) *Jobs {
 	return newIndustryJobs(u, false)
 }
 
-func NewJobsForCorporation(u uiservices.UIServices) *Jobs {
+func NewJobsForCorporation(u uiServices) *Jobs {
 	return newIndustryJobs(u, true)
 }
 
-func newIndustryJobs(u uiservices.UIServices, forCorporation bool) *Jobs {
+func newIndustryJobs(u uiServices, forCorporation bool) *Jobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
@@ -342,7 +341,7 @@ func newIndustryJobs(u uiservices.UIServices, forCorporation bool) *Jobs {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if a.corporation.Load().IDorZero() != arg.CorporationID {
+			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section == app.SectionCorporationIndustryJobs {
@@ -752,7 +751,7 @@ func shortenBlueprintName(typ *app.EntityShort) string {
 }
 
 func (a *Jobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}

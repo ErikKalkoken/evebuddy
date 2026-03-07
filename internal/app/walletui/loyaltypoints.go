@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -57,7 +56,7 @@ type LoyaltyPoints struct {
 	sortButton       *xwidget.SortButton
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
-	u                uiservices.UIServices
+	u                uiServices
 }
 
 const (
@@ -65,7 +64,7 @@ const (
 	loyaltyPointsColPoints
 )
 
-func NewLoyaltyPoints(u uiservices.UIServices) *LoyaltyPoints {
+func NewLoyaltyPoints(u uiServices) *LoyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{

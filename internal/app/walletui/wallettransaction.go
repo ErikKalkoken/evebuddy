@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -81,17 +80,17 @@ type WalletTransactions struct {
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              uiservices.UIServices
+	u              uiServices
 }
 
-func NewCharacterWalletTransaction(u uiservices.UIServices) *WalletTransactions {
+func NewCharacterWalletTransaction(u uiServices) *WalletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterWalletTransactions {
@@ -101,14 +100,14 @@ func NewCharacterWalletTransaction(u uiservices.UIServices) *WalletTransactions 
 	return a
 }
 
-func NewCorporationWalletTransactions(u uiservices.UIServices, d app.Division) *WalletTransactions {
+func NewCorporationWalletTransactions(u uiServices, d app.Division) *WalletTransactions {
 	a := newWalletTransaction(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDorZero() != arg.CorporationID {
+		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section == app.CorporationSectionWalletTransactions(d) {
@@ -128,7 +127,7 @@ const (
 	walletTransactionColLocation
 )
 
-func newWalletTransaction(u uiservices.UIServices, d app.Division) *WalletTransactions {
+func newWalletTransaction(u uiServices, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
 		ID:    walletTransactionColDate,
 		Label: "Date",
@@ -453,7 +452,7 @@ func (a *WalletTransactions) Update(ctx context.Context) {
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	var err error
 	var rows []walletTransactionRow
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
@@ -525,7 +524,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID
 func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	var err error
 	var rows []walletTransactionRow
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
@@ -599,7 +598,7 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 }
 
 // ShowCharacterWalletTransactionWindowAsync shows the detail of a character wallet transaction in a window.
-func ShowCharacterWalletTransactionWindowAsync(u uiservices.UIServices, characterID int64, transactionID int64) {
+func ShowCharacterWalletTransactionWindowAsync(u uiServices, characterID int64, transactionID int64) {
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID),
@@ -675,7 +674,7 @@ func ShowCharacterWalletTransactionWindowAsync(u uiservices.UIServices, characte
 }
 
 // ShowCorporationWalletTransactionWindowAsync shows the detail of a corporation wallet transaction in a window.
-func ShowCorporationWalletTransactionWindowAsync(u uiservices.UIServices, corporationID int64, division app.Division, transactionID int64) {
+func ShowCorporationWalletTransactionWindowAsync(u uiServices, corporationID int64, division app.Division, transactionID int64) {
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID),

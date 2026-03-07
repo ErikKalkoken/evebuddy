@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -127,7 +126,7 @@ type Training struct {
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            uiservices.UIServices
+	u            uiServices
 }
 
 const (
@@ -142,7 +141,7 @@ const (
 	trainingColTotalSP
 )
 
-func NewTraining(u uiservices.UIServices) *Training {
+func NewTraining(u uiServices) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,

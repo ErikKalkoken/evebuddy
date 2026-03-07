@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -41,12 +40,12 @@ type Wealth struct {
 	characterSplit *prop.PieChart
 	top            *widget.Label
 	totalSplit     *prop.PieChart
-	u              uiservices.UIServices
+	u              uiServices
 	walletDetail   *coord.CartesianCategoricalChart
 	walletSplit    *prop.PieChart
 }
 
-func NewWealth(u uiservices.UIServices) *Wealth {
+func NewWealth(u uiServices) *Wealth {
 	a := &Wealth{
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),

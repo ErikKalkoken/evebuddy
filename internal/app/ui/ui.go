@@ -264,7 +264,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	// Signal logging and base listeners
 	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDorZero())
+		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDOrZero())
 		updateStatus(ctx)
 	})
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -272,7 +272,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		logErr := func(err error) {
 			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
-		isShown := arg.CharacterID == u.CurrentCharacterID()
+		isShown := arg.CharacterID == u.CurrentCharacter().IDOrZero()
 		switch arg.Section {
 		case app.SectionCharacterAssets:
 			if isShown {
@@ -323,13 +323,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		updateStatus(ctx)
 	})
 	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
-		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDorZero())
+		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDOrZero())
 		updateStatus(ctx)
 		u.updateCorporationWalletTotal(ctx)
 	})
 	u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		slog.Debug("Signal: CorporationSectionChanged", "arg", arg)
-		if u.CurrentCorporationID() != arg.CorporationID {
+		if u.CurrentCorporation().IDOrZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section == app.SectionCorporationWalletBalances {
@@ -341,7 +341,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
 		switch arg.Section {
 		case app.SectionEveCharacters:
-			if arg.Changed.Contains(u.CurrentCharacterID()) {
+			if arg.Changed.Contains(u.CurrentCharacter().IDOrZero()) {
 				u.ReloadCurrentCharacter()
 			}
 			characters := u.scs.ListCharacterIDs()
@@ -662,15 +662,7 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 	u.SetCharacter(c)
 }
 
-// CurrentCharacterID returns the ID of the current character or 0 if non is set.
-func (u *baseUI) CurrentCharacterID() int64 {
-	c := u.CurrentCharacter()
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
+// CurrentCharacter() returns the current character or nil when none is configured.
 func (u *baseUI) CurrentCharacter() *app.Character {
 	return u.character.Load()
 }
@@ -690,7 +682,7 @@ func (u *baseUI) LoadCharacter(id int64) error {
 
 // ReloadCurrentCharacter reloads the current character from storage.
 func (u *baseUI) ReloadCurrentCharacter() {
-	id := u.CurrentCharacterID()
+	id := u.CurrentCharacter().IDOrZero()
 	if id == 0 {
 		return
 	}
@@ -760,15 +752,7 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 	u.SetCorporation(c)
 }
 
-// CurrentCorporationID returns the ID of the current corporation or 0 if non is set.
-func (u *baseUI) CurrentCorporationID() int64 {
-	c := u.CurrentCorporation()
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
+// CurrentCorporation returns the current corporation or nil if not set.
 func (u *baseUI) CurrentCorporation() *app.Corporation {
 	return u.corporation.Load()
 }
@@ -888,7 +872,7 @@ func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {
 
 func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 	v, ok := func() (float64, bool) {
-		corporationID := u.CurrentCorporationID()
+		corporationID := u.CurrentCorporation().IDOrZero()
 		if corporationID == 0 {
 			return 0, false
 		}
@@ -982,7 +966,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	items = append(items, it)
 	g := new(errgroup.Group)
 	g.SetLimit(u.concurrencyLimit)
-	currentID := u.CurrentCharacterID()
+	currentID := u.CurrentCharacter().IDOrZero()
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
@@ -1033,7 +1017,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
-	currentID := u.CurrentCorporationID()
+	currentID := u.CurrentCorporation().IDOrZero()
 	if currentID != 0 && !corporations.Contains(currentID) {
 		go u.SetAnyCorporation()
 	}

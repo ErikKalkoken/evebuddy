@@ -16,7 +16,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -35,17 +34,17 @@ type Queue struct {
 	status               *ttwidget.Icon
 	statusResource       fyne.Resource
 	top                  *widget.Label
-	u                    uiservices.UIServices
+	u                    uiServices
 }
 
 // NewQueue returns a new characterSkillQueue for the current character.
-func NewQueue(u uiservices.UIServices) *Queue {
+func NewQueue(u uiServices) *Queue {
 	return NewQueueWithCharacter(u, nil)
 }
 
 // NewQueueWithCharacter returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
-func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
+func NewQueueWithCharacter(u uiServices, c *app.Character) *Queue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
@@ -72,7 +71,7 @@ func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
 		}, a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -81,7 +80,7 @@ func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
-		if a.character.Load().IDorZero() != characterID {
+		if a.character.Load().IDOrZero() != characterID {
 			return
 		}
 		c, err := a.u.Character().GetCharacter(ctx, characterID)
@@ -257,7 +256,7 @@ func (a *Queue) Update(ctx context.Context) {
 	})
 }
 
-func showSkillInTrainingWindow(u uiservices.UIServices, r *app.CharacterSkillqueueItem) {
+func showSkillInTrainingWindow(u uiServices, r *app.CharacterSkillqueueItem) {
 	characterName := u.StatusCache().CharacterName(r.CharacterID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),

@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -28,10 +27,10 @@ type CharacterAugmentations struct {
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
-	s         uiservices.UIServices
+	s         uiServices
 }
 
-func NewCharacterAugmentations(s uiservices.UIServices) *CharacterAugmentations {
+func NewCharacterAugmentations(s uiServices) *CharacterAugmentations {
 	a := &CharacterAugmentations{
 		top: awidget.NewLabelWithWrapping(""),
 		s:   s,
@@ -43,7 +42,7 @@ func NewCharacterAugmentations(s uiservices.UIServices) *CharacterAugmentations 
 		a.update(ctx)
 	})
 	a.s.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterImplants {
@@ -86,7 +85,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 func (a *CharacterAugmentations) update(ctx context.Context) {
 	var err error
 	var implants []*app.CharacterImplant
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	hasData, err := a.s.Character().HasSection(ctx, characterID, app.SectionCharacterImplants)
 	if err != nil {
 		panic(err)

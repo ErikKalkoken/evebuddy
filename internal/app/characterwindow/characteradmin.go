@@ -268,7 +268,7 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 						return err
 					}
 					a.update(ctx)
-					if a.cw.u.CurrentCharacterID() == r.characterID {
+					if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
 						err := a.cw.u.SetAnyCharacter()
 						if err != nil {
 							slog.Error("delete character", "error", err)

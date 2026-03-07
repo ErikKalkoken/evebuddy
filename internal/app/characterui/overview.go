@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
@@ -88,7 +87,7 @@ type Overview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiservices.UIServices
+	u                 uiServices
 }
 
 const (
@@ -102,7 +101,7 @@ const (
 	overviewColWallet
 )
 
-func NewOverview(u uiservices.UIServices) *Overview {
+func NewOverview(u uiServices) *Overview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",
@@ -298,7 +297,7 @@ func (a *Overview) makeGrid() *widget.GridWrap {
 		if f := a.u.OnShowCharacterFunc(); f != nil {
 			go f()
 		}
-		if a.u.CurrentCharacterID() == r.characterID {
+		if a.u.CurrentCharacter().IDOrZero() == r.characterID {
 			return
 		}
 		go func() {
@@ -345,7 +344,7 @@ func (a *Overview) makeList() *widget.List {
 		if f := a.u.OnShowCharacterFunc(); f != nil {
 			go f()
 		}
-		if a.u.CurrentCharacterID() == r.characterID {
+		if a.u.CurrentCharacter().IDOrZero() == r.characterID {
 			return
 		}
 		go func() {

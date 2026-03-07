@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
@@ -87,7 +86,7 @@ type Clones struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiservices.UIServices
+	u                 uiServices
 }
 
 const (
@@ -98,7 +97,7 @@ const (
 	clonesColJumps
 )
 
-func NewClones(u uiservices.UIServices) *Clones {
+func NewClones(u uiServices) *Clones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",

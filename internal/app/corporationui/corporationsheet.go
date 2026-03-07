@@ -16,7 +16,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	services "github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -38,10 +37,10 @@ type CorporationSheet struct {
 	roles       *widget.Label
 	taxRate     *widget.Label
 	ticker      *widget.Label
-	u           services.UIServices
+	u           uiServices
 }
 
-func NewCorporationSheet(u services.UIServices, isCorpMode bool) *CorporationSheet {
+func NewCorporationSheet(u uiServices, isCorpMode bool) *CorporationSheet {
 	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
@@ -79,7 +78,7 @@ func NewCorporationSheet(u services.UIServices, isCorpMode bool) *CorporationShe
 			a.update(ctx)
 		})
 		a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-			corporationID := a.corporation.Load().IDorZero()
+			corporationID := a.corporation.Load().IDOrZero()
 			if corporationID == 0 {
 				return
 			}

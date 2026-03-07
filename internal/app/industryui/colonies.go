@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -122,7 +121,7 @@ type Colonies struct {
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiservices.UIServices
+	u                 uiServices
 }
 
 const (
@@ -135,7 +134,7 @@ const (
 	coloniesColCharacter
 )
 
-func NewColonies(u uiservices.UIServices) *Colonies {
+func NewColonies(u uiServices) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",

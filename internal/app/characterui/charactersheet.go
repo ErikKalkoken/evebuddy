@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -39,11 +38,11 @@ type CharacterSheet struct {
 	ship        *widget.Hyperlink
 	skillpoints *widget.Label
 	tags        *widget.Label
-	u           uiservices.UIServices
+	u           uiServices
 	wealth      *widget.Label
 }
 
-func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
+func NewCharacterSheet(u uiServices) *CharacterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
 		x.Truncation = fyne.TextTruncateEllipsis
@@ -83,7 +82,7 @@ func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -101,7 +100,7 @@ func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
 		if c == nil {
 			return
 		}
-		characterID := c.IDorZero()
+		characterID := c.IDOrZero()
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			if arg.Changed.Contains(characterID) {

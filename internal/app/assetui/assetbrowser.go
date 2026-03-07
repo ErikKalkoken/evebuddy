@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
@@ -56,18 +55,18 @@ type AssetBrowser struct {
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
-	u              uiservices.UIServices
+	u              uiServices
 }
 
-func NewCharacterAssetBrowser(u uiservices.UIServices) *AssetBrowser {
+func NewCharacterAssetBrowser(u uiServices) *AssetBrowser {
 	return newAssetBrowser(u, false)
 }
 
-func NewCorporationAssetBrowser(u uiservices.UIServices) *AssetBrowser {
+func NewCorporationAssetBrowser(u uiServices) *AssetBrowser {
 	return newAssetBrowser(u, true)
 }
 
-func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *AssetBrowser {
+func newAssetBrowser(u uiServices, forCorporation bool) *AssetBrowser {
 	a := &AssetBrowser{
 		forCorporation: forCorporation,
 		u:              u,
@@ -84,7 +83,7 @@ func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *AssetBrowser
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if a.corporation.Load().IDorZero() != arg.CorporationID {
+			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section == app.SectionCorporationAssets {
@@ -97,7 +96,7 @@ func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *AssetBrowser
 			a.Update(ctx)
 		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-			if a.character.Load().IDorZero() != arg.CharacterID {
+			if a.character.Load().IDOrZero() != arg.CharacterID {
 				return
 			}
 			if arg.Section == app.SectionCharacterAssets {
@@ -137,7 +136,7 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 	}
 	var at asset.Tree
 	if a.forCorporation {
-		corporationID := a.corporation.Load().IDorZero()
+		corporationID := a.corporation.Load().IDOrZero()
 		if corporationID == 0 {
 			clear()
 			return
@@ -155,7 +154,7 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 		}
 		at = asset.NewFromCorporationAssets(assets, el)
 	} else {
-		characterID := a.character.Load().IDorZero()
+		characterID := a.character.Load().IDOrZero()
 		if characterID == 0 {
 			clear()
 			return

@@ -14,7 +14,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -33,10 +32,10 @@ type CorporationWallet struct {
 	journal      *WalletJournal
 	name         *widget.Label
 	transactions *WalletTransactions
-	u            uiservices.UIServices
+	u            uiServices
 }
 
-func NewCorporationWallet(u uiservices.UIServices, division app.Division) *CorporationWallet {
+func NewCorporationWallet(u uiServices, division app.Division) *CorporationWallet {
 	a := &CorporationWallet{
 		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,
@@ -52,7 +51,7 @@ func NewCorporationWallet(u uiservices.UIServices, division app.Division) *Corpo
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDorZero() != arg.CorporationID {
+		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
 		switch arg.Section {
@@ -113,7 +112,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 			a.balance.Refresh()
 		})
 	}
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
 		clear()
 		setBalance("", widget.MediumImportance)
@@ -155,7 +154,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 func (a *CorporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.Corporation().GetWalletName(ctx, corporationID, a.division)

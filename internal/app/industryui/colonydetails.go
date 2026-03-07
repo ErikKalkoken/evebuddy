@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -71,11 +70,11 @@ type colonyDetails struct {
 	signalKey     string
 	sortButton    *xwidget.SortButton
 	status        *xwidget.RichText
-	u             uiservices.UIServices
+	u             uiServices
 }
 
 // showColonyDetailsWindow shows the details of a colony in a window.
-func showColonyDetailsWindow(u uiservices.UIServices, r colonyRow) {
+func showColonyDetailsWindow(u uiServices, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.ownerName)
@@ -113,7 +112,7 @@ func showColonyDetailsWindow(u uiservices.UIServices, r colonyRow) {
 	w.Show()
 }
 
-func newColonyDetails(u uiservices.UIServices, characterID, planetID int64, w fyne.Window) *colonyDetails {
+func newColonyDetails(u uiServices, characterID, planetID int64, w fyne.Window) *colonyDetails {
 	if characterID == 0 || planetID == 0 {
 		panic(app.ErrInvalid)
 	}

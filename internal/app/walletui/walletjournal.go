@@ -21,8 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -72,17 +70,17 @@ type WalletJournal struct {
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	top          *widget.Label
-	u            uiservices.UIServices
+	u            uiServices
 }
 
-func NewCharacterWalletJournal(u uiservices.UIServices) *WalletJournal {
+func NewCharacterWalletJournal(u uiServices) *WalletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterWalletJournal {
@@ -92,7 +90,7 @@ func NewCharacterWalletJournal(u uiservices.UIServices) *WalletJournal {
 	return a
 }
 
-func NewCorporationWalletJournal(u uiservices.UIServices, d app.Division) *WalletJournal {
+func NewCorporationWalletJournal(u uiServices, d app.Division) *WalletJournal {
 	a := newWalletJournal(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(
 		func(ctx context.Context, c *app.Corporation) {
@@ -101,7 +99,7 @@ func NewCorporationWalletJournal(u uiservices.UIServices, d app.Division) *Walle
 		},
 	)
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDorZero() != arg.CorporationID {
+		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section == app.CorporationSectionWalletJournal(d) {
@@ -119,7 +117,7 @@ const (
 	walletJournalColDescription
 )
 
-func newWalletJournal(u uiservices.UIServices, division app.Division) *WalletJournal {
+func newWalletJournal(u uiServices, division app.Division) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		ID:    walletJournalColDate,
 		Label: "Date",
@@ -328,7 +326,7 @@ func (a *WalletJournal) Update(ctx context.Context) {
 func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	var err error
 	var rows []walletJournalRow
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
@@ -356,7 +354,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	var err error
 	var rows []walletJournalRow
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
@@ -458,7 +456,7 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 }
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
-func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, characterID int64, refID int64) {
+func ShowCharacterWalletJournalEntryWindowAsync(u uiServices, characterID int64, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
@@ -522,7 +520,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 						fyne.Do(func() {
 							contextItem.Text = "Related contract"
 							contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
-								characterui.ShowCharacterContractWindow(u, c.CharacterID, c.ContractID)
+								// characterui.ShowCharacterContractWindow(u, c.CharacterID, c.ContractID) FIXME
 							})
 							f.Refresh()
 						})
@@ -611,7 +609,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, charact
 }
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
-func ShowCorporationWalletJournalEntryWindowAsync(u uiservices.UIServices, corporationID int64, division app.Division, refID int64) {
+func ShowCorporationWalletJournalEntryWindowAsync(u uiServices, corporationID int64, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),

@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -32,11 +31,11 @@ type SendMail struct {
 	from      *awidget.EveEntityEntry
 	subject   *widget.Entry
 	to        *awidget.EveEntityEntry
-	u         uiservices.UIServices
+	u         uiServices
 	w         fyne.Window
 }
 
-func NewSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
+func NewSendMail(u uiServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		u: u,
 		w: u.MainWindow(),
@@ -145,7 +144,7 @@ func (a *SendMail) SendAction() bool {
 	return true
 }
 
-func showAddDialog(u uiservices.UIServices, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u uiServices, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	var results []*app.EveEntity
 	list := widget.NewList(

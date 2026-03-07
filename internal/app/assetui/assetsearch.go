@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -222,7 +221,7 @@ type AssetSearch struct {
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
 	top            *widget.Label
-	u              uiservices.UIServices
+	u              uiServices
 }
 
 const (
@@ -236,15 +235,15 @@ const (
 	assetsColTags
 )
 
-func NewSearchForAll(u uiservices.UIServices) *AssetSearch {
+func NewSearchForAll(u uiServices) *AssetSearch {
 	return newAssetSearch(u, false)
 }
 
-func NewSearchForCorporation(u uiservices.UIServices) *AssetSearch {
+func NewSearchForCorporation(u uiServices) *AssetSearch {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u uiservices.UIServices, forCorporation bool) *AssetSearch {
+func newAssetSearch(u uiServices, forCorporation bool) *AssetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
@@ -433,7 +432,7 @@ func newAssetSearch(u uiservices.UIServices, forCorporation bool) *AssetSearch {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if a.corporation.Load().IDorZero() != arg.CorporationID {
+			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section != app.SectionCorporationAssets {
@@ -862,7 +861,7 @@ func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, vari
 }
 
 // ShowAssetDetailWindow shows the details for an assets in a new window.
-func ShowAssetDetailWindow(u uiservices.UIServices, r assetRow) {
+func ShowAssetDetailWindow(u uiServices, r assetRow) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",

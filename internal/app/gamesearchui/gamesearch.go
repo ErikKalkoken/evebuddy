@@ -19,10 +19,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -31,6 +34,18 @@ import (
 const (
 	maxSearchResults = 500 // max results returned from the server
 )
+
+type uiServices interface {
+	Character() *characterservice.CharacterService
+	EVEImage() *eveimageservice.EVEImageService
+	EVEUniverse() *eveuniverseservice.EVEUniverseService
+	InfoWindow() *infowindow.InfoWindow
+	IsDeveloperMode() bool
+	IsOfflineMode() bool
+	MainWindow() fyne.Window
+	Settings() *settings.Settings
+	Signals() *app.Signals
+}
 
 type GameSearch struct {
 	widget.BaseWidget
@@ -48,11 +63,11 @@ type GameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   uiservices.UIServices
+	u                   uiServices
 	w                   fyne.Window
 }
 
-func NewGameSearch(u uiservices.UIServices) *GameSearch {
+func NewGameSearch(u uiServices) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),

@@ -14,11 +14,11 @@ import (
 func TestCharacter_IDorZero(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		c := new(app.Character)
-		xassert.Equal(t, 0, c.IDorZero())
+		xassert.Equal(t, 0, c.IDOrZero())
 	})
 	t.Run("not nil", func(t *testing.T) {
 		c := &app.Character{ID: 42}
-		xassert.Equal(t, 42, c.IDorZero())
+		xassert.Equal(t, 42, c.IDOrZero())
 	})
 }
 

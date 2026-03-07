@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -63,12 +62,12 @@ type Catalogue struct {
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
 	top            *widget.Label
-	u              uiservices.UIServices
+	u              uiServices
 	sortButton     *xwidget.SortButton
 	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
-func NewCatalogue(u uiservices.UIServices) *Catalogue {
+func NewCatalogue(u uiServices) *Catalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",
@@ -137,7 +136,7 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterSkills {
@@ -145,7 +144,7 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 		}
 	})
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		characterID := a.character.Load().IDorZero()
+		characterID := a.character.Load().IDOrZero()
 		if characterID == 0 {
 			return
 		}
@@ -229,7 +228,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			r := a.rowsFiltered[id]
-			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, a.character.Load().IDorZero())
+			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, a.character.Load().IDOrZero())
 		}
 	}
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
@@ -314,7 +313,7 @@ func (a *Catalogue) update(ctx context.Context) {
 		return
 	}
 
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		clear()
 		setTop("No character", widget.LowImportance)

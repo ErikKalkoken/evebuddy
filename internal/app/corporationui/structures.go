@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -90,7 +89,7 @@ type Structures struct {
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiservices.UIServices
+	u                 uiServices
 }
 
 const (
@@ -101,7 +100,7 @@ const (
 	structuresColServices
 )
 
-func NewStructures(u uiservices.UIServices) *Structures {
+func NewStructures(u uiServices) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
@@ -229,7 +228,7 @@ func NewStructures(u uiservices.UIServices) *Structures {
 		a.update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDorZero() != arg.CorporationID {
+		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section != app.SectionCorporationStructures {
@@ -345,7 +344,7 @@ func (a *Structures) update(ctx context.Context) {
 			a.filterRowsAsync(-1)
 		})
 	}
-	corporationID := a.corporation.Load().IDorZero()
+	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
 		clear()
 		return
@@ -435,7 +434,7 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 	return rows, nil
 }
 
-func showCorporationStructureWindowAsync(ctx context.Context, u uiservices.UIServices, corporationID int64, structureID int64, title string) {
+func showCorporationStructureWindowAsync(ctx context.Context, u uiServices, corporationID int64, structureID int64, title string) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,

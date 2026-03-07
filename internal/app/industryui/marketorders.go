@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -135,7 +134,7 @@ type MarketOrders struct {
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            uiservices.UIServices
+	u            uiServices
 }
 
 const (
@@ -148,7 +147,7 @@ const (
 	marketOrdersColOwner
 )
 
-func NewMarketOrders(u uiservices.UIServices, isBuyOrders bool) *MarketOrders {
+func NewMarketOrders(u uiServices, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
@@ -519,7 +518,7 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 }
 
 // ShowMarketOrderWindow shows the location of a character in a new window.
-func ShowMarketOrderWindow(u uiservices.UIServices, r marketOrderRow) {
+func ShowMarketOrderWindow(u uiServices, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),

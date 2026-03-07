@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -50,10 +49,10 @@ type Communications struct {
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	u                uiservices.UIServices
+	u                uiServices
 }
 
-func NewCommunications(u uiservices.UIServices) *Communications {
+func NewCommunications(u uiServices) *Communications {
 	a := &Communications{
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
@@ -71,7 +70,7 @@ func NewCommunications(u uiservices.UIServices) *Communications {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterNotifications {
@@ -178,7 +177,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(a.character.Load().IDorZero(), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
+			item.Set(a.character.Load().IDOrZero(), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
@@ -266,7 +265,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 
 func (a *Communications) update(ctx context.Context) {
 	var err error
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	var groups []notificationFolder
 	var unreadCount, totalCount optional.Optional[int]
@@ -335,7 +334,7 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 
 func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
 	var err error
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	var notifications []*app.CharacterNotification
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {

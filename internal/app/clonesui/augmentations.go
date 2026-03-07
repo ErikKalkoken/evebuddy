@@ -19,12 +19,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type characterAugmentationNode struct {
+type augmentationNode struct {
 	characterID            int64
 	characterName          string
 	implantCount           int
@@ -34,7 +33,7 @@ type characterAugmentationNode struct {
 	tags                   set.Set[string]
 }
 
-func (n characterAugmentationNode) IsTop() bool {
+func (n augmentationNode) IsTop() bool {
 	return n.implantTypeID == 0
 }
 
@@ -50,12 +49,12 @@ type Augmentations struct {
 	collapseBranches *ttwidget.Button
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	tree             *xwidget.Tree[characterAugmentationNode]
-	treeData         xwidget.TreeData[characterAugmentationNode]
-	u                uiservices.UIServices
+	tree             *xwidget.Tree[augmentationNode]
+	treeData         xwidget.TreeData[augmentationNode]
+	u                uiServices
 }
 
-func NewAugmentations(u uiservices.UIServices) *Augmentations {
+func NewAugmentations(u uiServices) *Augmentations {
 	a := &Augmentations{
 		footer: awidget.NewLabelWithTruncation(""),
 		u:      u,
@@ -109,7 +108,7 @@ func (a *Augmentations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
+func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newAugmentationNodeItem(
@@ -121,11 +120,11 @@ func (a *Augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
 				a.u.InfoWindow().ShowTypeWithCharacter,
 			)
 		},
-		func(n *characterAugmentationNode, _ bool, co fyne.CanvasObject) {
+		func(n *augmentationNode, _ bool, co fyne.CanvasObject) {
 			co.(*augmentationNodeItem).set(n)
 		},
 	)
-	t.OnSelectedNode = func(n *characterAugmentationNode) {
+	t.OnSelectedNode = func(n *augmentationNode) {
 		defer t.UnselectAll()
 		if n.IsTop() {
 			t.ToggleBranchNode(n)
@@ -141,20 +140,20 @@ func (a *Augmentations) filterTreeAsync() {
 	td := a.treeData.Clone()
 
 	go func() {
-		var del []func(c *characterAugmentationNode) bool // f returns true when c is to be deleted
+		var del []func(c *augmentationNode) bool // f returns true when c is to be deleted
 		if tag != "" {
-			del = append(del, func(c *characterAugmentationNode) bool {
+			del = append(del, func(c *augmentationNode) bool {
 				return !c.tags.Contains(tag)
 			})
 		}
 		if implants != "" {
 			switch implants {
 			case augmentationsImplantsNone:
-				del = append(del, func(c *characterAugmentationNode) bool {
+				del = append(del, func(c *augmentationNode) bool {
 					return c.implantCount != 0
 				})
 			case augmentationsImplantsSome:
-				del = append(del, func(c *characterAugmentationNode) bool {
+				del = append(del, func(c *augmentationNode) bool {
 					return c.implantCount == 0
 				})
 			}
@@ -177,7 +176,7 @@ func (a *Augmentations) filterTreeAsync() {
 			}
 		}
 		characters := td.Children(nil)
-		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *characterAugmentationNode) set.Set[string] {
+		tagOptions := slices.Sorted(set.Union(xslices.Map(characters, func(n *augmentationNode) set.Set[string] {
 			return n.tags
 		})...).All())
 		footer := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
@@ -209,8 +208,8 @@ func (a *Augmentations) Update(ctx context.Context) {
 	})
 }
 
-func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[characterAugmentationNode], error) {
-	var td xwidget.TreeData[characterAugmentationNode]
+func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augmentationNode], error) {
+	var td xwidget.TreeData[augmentationNode]
 	characterImplants := make(map[int64][]*app.CharacterImplant)
 	implants, err := a.u.Character().ListAllImplants(ctx)
 	if err != nil {
@@ -235,7 +234,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[charact
 			return td, err
 		}
 		implantCount := len(implants)
-		clone := &characterAugmentationNode{
+		clone := &augmentationNode{
 			characterID:   characterID,
 			characterName: characters[characterID],
 			implantCount:  implantCount,
@@ -246,7 +245,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[charact
 			return td, err
 		}
 		for _, o := range implants {
-			implant := &characterAugmentationNode{
+			implant := &augmentationNode{
 				characterID:            characterID,
 				implantTypeDescription: o.EveType.DescriptionPlain(),
 				implantTypeID:          o.EveType.ID,
@@ -313,7 +312,7 @@ func (w *augmentationNodeItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *augmentationNodeItem) set(n *characterAugmentationNode) {
+func (w *augmentationNodeItem) set(n *augmentationNode) {
 	if n.IsTop() {
 		w.loadCharacterPortrait(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
 			w.iconMain.Resource = r

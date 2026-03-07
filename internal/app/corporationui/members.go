@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -40,10 +39,10 @@ type Members struct {
 	rows         []memberRow
 	rowsFiltered []memberRow
 	searchBox    *widget.Entry
-	s            uiservices.UIServices
+	s            uiServices
 }
 
-func NewMembers(s uiservices.UIServices) *Members {
+func NewMembers(s uiServices) *Members {
 	a := &Members{
 		footer: awidget.NewLabelWithTruncation(""),
 		s:      s,
@@ -68,7 +67,7 @@ func NewMembers(s uiservices.UIServices) *Members {
 		a.update(ctx)
 	})
 	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDorZero() != arg.CorporationID {
+		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section != app.SectionCorporationMembers {

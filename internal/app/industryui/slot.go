@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -100,7 +99,7 @@ type Slots struct {
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *xwidget.SortButton
-	u               uiservices.UIServices
+	u               uiServices
 }
 
 const (
@@ -111,7 +110,7 @@ const (
 	industrySlotsColTotal
 )
 
-func NewSlots(u uiservices.UIServices, slotType app.IndustryJobType) *Slots {
+func NewSlots(u uiServices, slotType app.IndustryJobType) *Slots {
 	const columnWidthNumber = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,

@@ -509,7 +509,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	navBar.Select(4)
 
 	togglePermittedSections := func() {
-		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporationID())
+		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
 		if err != nil {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()

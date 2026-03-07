@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -108,11 +107,11 @@ type Mails struct {
 	missingPercent   atomic.Int64
 
 	toolbar     *widget.Toolbar
-	u           uiservices.UIServices
+	u           uiServices
 	unreadCount atomic.Int64
 }
 
-func NewMails(u uiservices.UIServices) *Mails {
+func NewMails(u uiServices) *Mails {
 	a := &Mails{
 		Detail:           newMailDetail(u),
 		folderDownloaded: ttwidget.NewLabel(""),
@@ -155,7 +154,7 @@ func NewMails(u uiservices.UIServices) *Mails {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDorZero() != arg.CharacterID {
+		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -261,7 +260,7 @@ func (a *Mails) update(ctx context.Context) {
 			a.compose.Disable()
 		})
 	}
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		clearAll()
 		setStatus("No character", widget.LowImportance)
@@ -310,7 +309,7 @@ func (a *Mails) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
 	func() {
-		characterID := a.character.Load().IDorZero()
+		characterID := a.character.Load().IDOrZero()
 		if characterID == 0 {
 			return
 		}
@@ -462,7 +461,7 @@ func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (xwidget.Tr
 
 func (a *Mails) updateUnreadCounts(ctx context.Context) {
 	td := a.folders.Data()
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
@@ -565,7 +564,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(a.character.Load().IDorZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(a.character.Load().IDOrZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {
@@ -751,7 +750,7 @@ func (a *Mails) clearMail() {
 }
 
 func (a *Mails) loadMail(ctx context.Context, mailID int64) {
-	characterID := a.character.Load().IDorZero()
+	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		return
 	}
@@ -834,7 +833,7 @@ type mailDetail struct {
 	subject *widget.Label
 }
 
-func newMailDetail(u uiservices.UIServices) *mailDetail {
+func newMailDetail(u uiServices) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
 		header:  awidget.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
