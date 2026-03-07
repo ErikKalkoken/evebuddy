@@ -46,7 +46,7 @@ type flyableShipRow struct {
 	typeName    string
 }
 
-type characterFlyableShips struct {
+type CharacterFlyableShips struct {
 	widget.BaseWidget
 
 	footer        *widget.Label
@@ -64,7 +64,7 @@ type characterFlyableShips struct {
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
-func newCharacterFlyableShips(u         uiservices.UIServices) *characterFlyableShips {
+func NewCharacterFlyableShips(u         uiservices.UIServices) *CharacterFlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
@@ -81,7 +81,7 @@ func newCharacterFlyableShips(u         uiservices.UIServices) *characterFlyable
 		flyableColType,
 		xwidget.SortAsc,
 	)
-	a := &characterFlyableShips{
+	a := &CharacterFlyableShips{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
 		top:          newLabelWithWrapping(),
@@ -139,7 +139,7 @@ func newCharacterFlyableShips(u         uiservices.UIServices) *characterFlyable
 	return a
 }
 
-func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)
 	topBox := container.NewVBox(a.top)
 	if app.IsMobile() {
@@ -158,7 +158,7 @@ func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
+func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.rowsFiltered)
@@ -189,7 +189,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *characterFlyableShips) filterRowsAsync() {
+func (a *CharacterFlyableShips) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	group := a.selectGroup.Selected
@@ -244,7 +244,7 @@ func (a *characterFlyableShips) filterRowsAsync() {
 	}()
 }
 
-func (a *characterFlyableShips) update(ctx context.Context) {
+func (a *CharacterFlyableShips) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)

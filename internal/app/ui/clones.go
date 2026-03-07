@@ -70,7 +70,7 @@ func (r cloneRow) jumps() string {
 	return fmt.Sprint(len(r.route) - 1)
 }
 
-type clones struct {
+type Clones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
@@ -98,7 +98,7 @@ const (
 	clonesColJumps
 )
 
-func newClones(u         uiservices.UIServices) *clones {
+func NewClones(u         uiservices.UIServices) *Clones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",
@@ -156,7 +156,7 @@ func newClones(u         uiservices.UIServices) *clones {
 			})
 		},
 	}})
-	a := &clones{
+	a := &Clones{
 		columnSorter: xwidget.NewColumnSorter(columns, clonesColLocation, xwidget.SortAsc),
 		originLabel:  xwidget.NewRichTextWithText("(not set)"),
 		footer:       newLabelWithTruncation(),
@@ -266,7 +266,7 @@ func newClones(u         uiservices.UIServices) *clones {
 	return a
 }
 
-func (a *clones) CreateRenderer() fyne.WidgetRenderer {
+func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
 	origin := container.NewBorder(
 		nil,
 		nil,
@@ -299,7 +299,7 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *clones) filterRowsAsync(sortCol int) {
+func (a *Clones) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
@@ -361,7 +361,7 @@ func (a *clones) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *clones) update(ctx context.Context) {
+func (a *Clones) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
@@ -383,7 +383,7 @@ func (a *clones) update(ctx context.Context) {
 	})
 }
 
-func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
+func (a *Clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	oo, err := a.u.Character().ListAllJumpClones(ctx)
 	if err != nil {
 		return nil, err
@@ -404,7 +404,7 @@ func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	return rows, nil
 }
 
-func (a *clones) updateRoutesAsync() {
+func (a *Clones) updateRoutesAsync() {
 	if a.origin == nil {
 		return
 	}
@@ -454,7 +454,7 @@ func (a *clones) updateRoutesAsync() {
 	}()
 }
 
-func (a *clones) setOrigin(w fyne.Window) {
+func (a *Clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
 		xdialog.ShowErrorAndLog("Something went wrong", err, w)
@@ -565,7 +565,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *clones) showRouteWindow(r cloneRow) {
+func (a *Clones) showRouteWindow(r cloneRow) {
 	if r.jc == nil {
 		return
 	}
@@ -661,7 +661,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 	w.Show()
 }
 
-func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
+func (a *Clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 	if jc == nil {
 		return
 	}

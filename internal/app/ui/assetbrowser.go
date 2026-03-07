@@ -43,8 +43,8 @@ const (
 	assetSafety
 )
 
-// assetBrowser shows the attributes for the current character.
-type assetBrowser struct {
+// AssetBrowser shows the attributes for the current character.
+type AssetBrowser struct {
 	widget.BaseWidget
 
 	Navigation *assetBrowserNavigation
@@ -57,16 +57,16 @@ type assetBrowser struct {
 	u              uiservices.UIServices
 }
 
-func newCharacterAssetBrowser(u uiservices.UIServices) *assetBrowser {
+func NewCharacterAssetBrowser(u uiservices.UIServices) *AssetBrowser {
 	return newAssetBrowser(u, false)
 }
 
-func newCorporationAssetBrowser(u uiservices.UIServices) *assetBrowser {
+func NewCorporationAssetBrowser(u uiservices.UIServices) *AssetBrowser {
 	return newAssetBrowser(u, true)
 }
 
-func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *assetBrowser {
-	a := &assetBrowser{
+func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *AssetBrowser {
+	a := &AssetBrowser{
 		forCorporation: forCorporation,
 		u:              u,
 	}
@@ -106,13 +106,13 @@ func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *assetBrowser
 	return a
 }
 
-func (a *assetBrowser) CreateRenderer() fyne.WidgetRenderer {
+func (a *AssetBrowser) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHSplit(a.Navigation, a.Selected)
 	c.SetOffset(0.33)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetBrowser) update(ctx context.Context) {
+func (a *AssetBrowser) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.Navigation.clear()
@@ -211,7 +211,7 @@ type assetBrowserNavigation struct {
 
 	OnSelected func()
 
-	ab             *assetBrowser
+	ab             *AssetBrowser
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
@@ -221,7 +221,7 @@ type assetBrowserNavigation struct {
 	footer         *widget.Label
 }
 
-func newAssetBrowserNavigation(ab *assetBrowser) *assetBrowserNavigation {
+func newAssetBrowserNavigation(ab *AssetBrowser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
 		ab:            ab,
 		filteredTrees: make(map[assetFilter]filteredTree),
@@ -568,7 +568,7 @@ type containerItem struct {
 type assetBrowserContainer struct {
 	widget.BaseWidget
 
-	ab            *assetBrowser
+	ab            *AssetBrowser
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
@@ -577,7 +577,7 @@ type assetBrowserContainer struct {
 	search        *widget.Entry
 }
 
-func newAssetBrowserContainer(ab *assetBrowser) *assetBrowserContainer {
+func newAssetBrowserContainer(ab *AssetBrowser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
 		ab:     ab,
 		footer: newLabelWithTruncation(),

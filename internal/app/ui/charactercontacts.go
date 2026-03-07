@@ -47,7 +47,7 @@ type characterContactRow struct {
 	watchedSelect    string
 }
 
-type characterContacts struct {
+type CharacterContacts struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
@@ -67,7 +67,7 @@ type characterContacts struct {
 	u              uiservices.UIServices
 }
 
-func newCharacterContacts(u uiservices.UIServices) *characterContacts {
+func NewCharacterContacts(u uiservices.UIServices) *CharacterContacts {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterContactRow]{{
 		ID:    1,
 		Label: "Name",
@@ -84,7 +84,7 @@ func newCharacterContacts(u uiservices.UIServices) *characterContacts {
 		1,
 		xwidget.SortAsc,
 	)
-	a := &characterContacts{
+	a := &CharacterContacts{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
 		u:            u,
@@ -149,7 +149,7 @@ func newCharacterContacts(u uiservices.UIServices) *characterContacts {
 	return a
 }
 
-func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterContacts) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(
 		a.selectCategory,
 		a.selectStanding,
@@ -184,7 +184,7 @@ func (a *characterContacts) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterContacts) makeList() fyne.CanvasObject {
+func (a *CharacterContacts) makeList() fyne.CanvasObject {
 	if app.IsMobile() {
 		l := xwidget.NewStripedList(
 			func() int {
@@ -237,7 +237,7 @@ func (a *characterContacts) makeList() fyne.CanvasObject {
 	return l
 }
 
-func (a *characterContacts) filterRowsAsync() {
+func (a *CharacterContacts) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	blocked := a.selectBlocked.Selected
@@ -376,7 +376,7 @@ func (a *characterContacts) filterRowsAsync() {
 	}()
 }
 
-func (a *characterContacts) update(ctx context.Context) {
+func (a *CharacterContacts) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
@@ -413,7 +413,7 @@ func (a *characterContacts) update(ctx context.Context) {
 	})
 }
 
-func (a *characterContacts) fetchRows(ctx context.Context, characterID int64) ([]characterContactRow, error) {
+func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([]characterContactRow, error) {
 	oo, err := a.u.Character().ListContacts(ctx, characterID)
 	if err != nil {
 		return nil, err

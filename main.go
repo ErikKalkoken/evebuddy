@@ -408,20 +408,20 @@ func main() {
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
-		CharacterService:   cs,
+		Character:   cs,
 		ClearCacheFunc:     func() { pc.Clear() },
 		ConcurrencyLimit:   concurrentLimit,
-		CorporationService: rs,
+		Corporation: rs,
 		DataPaths:          dataPaths,
-		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
-		EveUniverseService: eus,
+		ESIStatus:   esistatusservice.New(esiClient),
+		EVEImage:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
+		EVEUniverse: eus,
 		IsFakeMobile:       *mobileFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
-		JaniceService:      janiceservice.New(rhc1.StandardClient(), key),
+		Janice:      janiceservice.New(rhc1.StandardClient(), key),
 		Settings:           settings,
 		Signals:            signals,
-		StatusCacheService: scs,
+		StatusCache: scs,
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)

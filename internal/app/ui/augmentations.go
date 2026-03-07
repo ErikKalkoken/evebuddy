@@ -42,7 +42,7 @@ const (
 	augmentationsImplantsSome = "Has implants"
 )
 
-type augmentations struct {
+type Augmentations struct {
 	widget.BaseWidget
 
 	footer           *widget.Label
@@ -54,8 +54,8 @@ type augmentations struct {
 	u         uiservices.UIServices
 }
 
-func newAugmentations(u         uiservices.UIServices) *augmentations {
-	a := &augmentations{
+func NewAugmentations(u         uiservices.UIServices) *Augmentations {
+	a := &Augmentations{
 		footer: newLabelWithTruncation(),
 		u:      u,
 	}
@@ -92,7 +92,7 @@ func newAugmentations(u         uiservices.UIServices) *augmentations {
 	return a
 }
 
-func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
+func (a *Augmentations) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(
 		a.selectImplants,
 		a.selectTag,
@@ -108,7 +108,7 @@ func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
+func (a *Augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newAugmentationNodeItem(
@@ -133,7 +133,7 @@ func (a *augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
 	return t
 }
 
-func (a *augmentations) filterTreeAsync() {
+func (a *Augmentations) filterTreeAsync() {
 	total := a.treeData.ChildrenCount(nil)
 	tag := a.selectTag.Selected
 	implants := a.selectImplants.Selected
@@ -191,7 +191,7 @@ func (a *augmentations) filterTreeAsync() {
 	}()
 }
 
-func (a *augmentations) update(ctx context.Context) {
+func (a *Augmentations) update(ctx context.Context) {
 	td, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh augmentations UI", "err", err)
@@ -208,7 +208,7 @@ func (a *augmentations) update(ctx context.Context) {
 	})
 }
 
-func (a *augmentations) fetchData(ctx context.Context) (xwidget.TreeData[characterAugmentationNode], error) {
+func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[characterAugmentationNode], error) {
 	var td xwidget.TreeData[characterAugmentationNode]
 	characterImplants := make(map[int64][]*app.CharacterImplant)
 	implants, err := a.u.Character().ListAllImplants(ctx)

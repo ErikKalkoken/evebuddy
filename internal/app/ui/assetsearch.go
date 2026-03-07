@@ -200,7 +200,7 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 	})
 }
 
-type assetSearch struct {
+type AssetSearch struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
@@ -235,15 +235,15 @@ const (
 	assetsColTags
 )
 
-func newCombinedAssetSearch(u         uiservices.UIServices) *assetSearch {
+func NewCombinedAssetSearch(u         uiservices.UIServices) *AssetSearch {
 	return newAssetSearch(u, false)
 }
 
-func newAssetSearchForCorporation(u         uiservices.UIServices) *assetSearch {
+func NewAssetSearchForCorporation(u         uiservices.UIServices) *AssetSearch {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u         uiservices.UIServices, forCorporation bool) *assetSearch {
+func newAssetSearch(u         uiservices.UIServices, forCorporation bool) *AssetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
@@ -356,7 +356,7 @@ func newAssetSearch(u         uiservices.UIServices, forCorporation bool) *asset
 		}})
 	}
 	columns := xwidget.NewDataColumns(cols)
-	a := &assetSearch{
+	a := &AssetSearch{
 		columnSorter:   xwidget.NewColumnSorter(columns, assetsColItem, xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         newLabelWithTruncation(),
@@ -469,7 +469,7 @@ func newAssetSearch(u         uiservices.UIServices, forCorporation bool) *asset
 	return a
 }
 
-func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
+func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectCategory,
 		a.selectGroup,
@@ -494,7 +494,7 @@ func (a *assetSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetSearch) makeDataList() *xwidget.StripedList {
+func (a *AssetSearch) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
@@ -544,11 +544,11 @@ func (a *assetSearch) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *assetSearch) focus() {
+func (a *AssetSearch) focus() {
 	a.u.MainWindow().Canvas().Focus(a.search)
 }
 
-func (a *assetSearch) filterRowsAsync(sortCol int) {
+func (a *AssetSearch) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -669,7 +669,7 @@ func (a *assetSearch) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *assetSearch) update(ctx context.Context) {
+func (a *AssetSearch) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
@@ -709,7 +709,7 @@ func (a *assetSearch) update(ctx context.Context) {
 	})
 }
 
-func (a *assetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
+func (a *AssetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 	r1, err := a.fetchRowsForCharacters(ctx)
 	if err != nil {
 		return nil, err
@@ -721,7 +721,7 @@ func (a *assetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 	return slices.Concat(r1, r2), nil
 }
 
-func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
+func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
@@ -759,7 +759,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	return rows, nil
 }
 
-func (a *assetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
+func (a *AssetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
 	assets, err := a.u.Corporation().ListAllAssets(ctx)
 	if err != nil {
 		return nil, err
@@ -767,7 +767,7 @@ func (a *assetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow,
 	return a.fetchRowsForCorporations2(ctx, assets)
 }
 
-func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, error) {
+func (a *AssetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, error) {
 	c := a.corporation.Load()
 	if c == nil {
 		return []assetRow{}, nil
@@ -779,7 +779,7 @@ func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 	return a.fetchRowsForCorporations2(ctx, assets)
 }
 
-func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
+func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
 	cc, err := a.u.Corporation().ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err
@@ -810,7 +810,7 @@ func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 	return rows, nil
 }
 
-func (a *assetSearch) characterCount() int {
+func (a *AssetSearch) characterCount() int {
 	cc := a.u.StatusCache().ListCharacters()
 	validCount := 0
 	for _, c := range cc {

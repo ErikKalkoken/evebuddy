@@ -68,7 +68,7 @@ func (r characterOverviewRow) shipName() string {
 	})
 }
 
-type characterOverview struct {
+type CharacterOverview struct {
 	widget.BaseWidget
 
 	footer            *widget.Label
@@ -99,7 +99,7 @@ const (
 	overviewColWallet
 )
 
-func newCharacterOverview(u uiservices.UIServices) *characterOverview {
+func NewCharacterOverview(u uiservices.UIServices) *CharacterOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",
@@ -153,7 +153,7 @@ func newCharacterOverview(u uiservices.UIServices) *characterOverview {
 	info := widget.NewLabel("Loading...")
 	info.Importance = widget.LowImportance
 
-	a := &characterOverview{
+	a := &CharacterOverview{
 		footer:       newLabelWithTruncation(),
 		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		loadInfo:     info,
@@ -239,7 +239,7 @@ func newCharacterOverview(u uiservices.UIServices) *characterOverview {
 	return a
 }
 
-func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterOverview) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectAlliance,
 		a.selectCorporation,
@@ -264,7 +264,7 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterOverview) makeGrid() *widget.GridWrap {
+func (a *CharacterOverview) makeGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.rowsFiltered)
@@ -310,7 +310,7 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *characterOverview) makeList() *widget.List {
+func (a *CharacterOverview) makeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.rowsFiltered)
@@ -357,7 +357,7 @@ func (a *characterOverview) makeList() *widget.List {
 	return l
 }
 
-func (a *characterOverview) filterRowsAsync(sortCol int) {
+func (a *CharacterOverview) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	alliance := a.selectAlliance.Selected
@@ -435,7 +435,7 @@ func (a *characterOverview) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *characterOverview) update(ctx context.Context) {
+func (a *CharacterOverview) update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
@@ -466,7 +466,7 @@ func (a *characterOverview) update(ctx context.Context) {
 	})
 }
 
-func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
+func (a *CharacterOverview) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
@@ -492,7 +492,7 @@ func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 	})
 }
 
-func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewRow, error) {
+func (a *CharacterOverview) fetchRows(ctx context.Context) ([]characterOverviewRow, error) {
 	characters, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
@@ -511,7 +511,7 @@ func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	return rows, nil
 }
 
-func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (characterOverviewRow, error) {
+func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (characterOverviewRow, error) {
 	if c == nil || c.EveCharacter == nil {
 		return characterOverviewRow{}, app.ErrInvalid
 	}

@@ -33,7 +33,7 @@ type notificationFolder struct {
 	Total  optional.Optional[int]
 }
 
-type characterCommunications struct {
+type CharacterCommunications struct {
 	widget.BaseWidget
 
 	Detail        *communicationDetail
@@ -53,8 +53,8 @@ type characterCommunications struct {
 	u                uiservices.UIServices
 }
 
-func newCharacterCommunications(u uiservices.UIServices) *characterCommunications {
-	a := &characterCommunications{
+func NewCharacterCommunications(u uiservices.UIServices) *CharacterCommunications {
+	a := &CharacterCommunications{
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
 		u:                u,
@@ -81,7 +81,7 @@ func newCharacterCommunications(u uiservices.UIServices) *characterCommunication
 	return a
 }
 
-func (a *characterCommunications) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	split1 := container.NewHSplit(
 		a.Notifications,
 		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
@@ -103,7 +103,7 @@ func (a *characterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
+func (a *CharacterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	var items2 []*fyne.MenuItem
 	for _, f := range a.folders {
 		s := f.Name
@@ -118,7 +118,7 @@ func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	return items2
 }
 
-func (a *characterCommunications) makeFolderList() *widget.List {
+func (a *CharacterCommunications) makeFolderList() *widget.List {
 	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.EveNotificationGroup) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -164,7 +164,7 @@ func (a *characterCommunications) makeFolderList() *widget.List {
 	return l
 }
 
-func (a *characterCommunications) makeNotificationList() *widget.List {
+func (a *CharacterCommunications) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.notifications)
@@ -195,7 +195,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
+func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	if a.character.Load() == nil {
 		return
 	}
@@ -212,7 +212,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	a.Detail.Show()
 }
 
-func (a *characterCommunications) makeToolbar() *widget.Toolbar {
+func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			if a.current == nil {
@@ -263,7 +263,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *characterCommunications) update(ctx context.Context) {
+func (a *CharacterCommunications) update(ctx context.Context) {
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
@@ -325,14 +325,14 @@ func (a *characterCommunications) update(ctx context.Context) {
 	})
 }
 
-func (a *characterCommunications) resetCurrentFolder(ctx context.Context) {
+func (a *CharacterCommunications) resetCurrentFolder(ctx context.Context) {
 	a.setCurrentFolder(ctx, app.GroupUnread)
 	fyne.Do(func() {
 		a.notificationList.UnselectAll()
 	})
 }
 
-func (a *characterCommunications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
+func (a *CharacterCommunications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
 	var notifications []*app.CharacterNotification
@@ -388,7 +388,7 @@ func (a *characterCommunications) setCurrentFolder(ctx context.Context, nc app.E
 	})
 }
 
-func (a *characterCommunications) clearDetail() {
+func (a *CharacterCommunications) clearDetail() {
 	a.Detail.Hide()
 	a.Toolbar.Hide()
 	a.current = nil

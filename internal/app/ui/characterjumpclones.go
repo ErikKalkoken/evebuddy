@@ -53,7 +53,7 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
 }
 
-type characterJumpClones struct {
+type CharacterJumpClones struct {
 	widget.BaseWidget
 
 	character atomic.Pointer[app.Character]
@@ -62,10 +62,10 @@ type characterJumpClones struct {
 	u         uiservices.UIServices
 }
 
-func newCharacterJumpClones(u uiservices.UIServices) *characterJumpClones {
+func NewCharacterJumpClones(u uiservices.UIServices) *CharacterJumpClones {
 	top := xwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
-	a := &characterJumpClones{
+	a := &CharacterJumpClones{
 		top: top,
 		u:   u,
 	}
@@ -94,12 +94,12 @@ func newCharacterJumpClones(u uiservices.UIServices) *characterJumpClones {
 	return a
 }
 
-func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
+func (a *CharacterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newCharacterJumpCloneItem(
@@ -122,7 +122,7 @@ func (a *characterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *characterJumpClones) update(ctx context.Context) {
+func (a *CharacterJumpClones) update(ctx context.Context) {
 	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		fyne.Do(func() {
@@ -152,7 +152,7 @@ func (a *characterJumpClones) update(ctx context.Context) {
 	})
 }
 
-func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[jumpCloneNode], error) {
+func (a *CharacterJumpClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[jumpCloneNode], error) {
 	var td xwidget.TreeData[jumpCloneNode]
 	clones, err := a.u.Character().ListJumpClones(ctx, characterID)
 	if err != nil {
@@ -199,12 +199,12 @@ func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) 
 	return td, err
 }
 
-func (a *characterJumpClones) refreshTop(cloneCount int) {
+func (a *CharacterJumpClones) refreshTop(cloneCount int) {
 	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.StatusCache())
 	a.top.Set(segs)
 }
 
-func (*characterJumpClones) makeTopText(cloneCount int, c *app.Character, s hasCharacterSection) []widget.RichTextSegment {
+func (*CharacterJumpClones) makeTopText(cloneCount int, c *app.Character, s hasCharacterSection) []widget.RichTextSegment {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}

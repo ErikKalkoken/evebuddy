@@ -12,8 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 )
 
-// characterBiography shows the attributes for the current character.
-type characterBiography struct {
+// CharacterBiography shows the attributes for the current character.
+type CharacterBiography struct {
 	widget.BaseWidget
 
 	body      *widget.Label
@@ -21,11 +21,11 @@ type characterBiography struct {
 	u         uiservices.UIServices
 }
 
-func newCharacterBiography(u uiservices.UIServices) *characterBiography {
+func NewCharacterBiography(u uiservices.UIServices) *CharacterBiography {
 	body := widget.NewLabel("")
 	body.Wrapping = fyne.TextWrapWord
 	body.Selectable = true
-	a := &characterBiography{
+	a := &CharacterBiography{
 		body: body,
 		u:    u,
 	}
@@ -46,12 +46,12 @@ func newCharacterBiography(u uiservices.UIServices) *characterBiography {
 	return a
 }
 
-func (a *characterBiography) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterBiography) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVScroll(a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterBiography) update(_ context.Context) {
+func (a *CharacterBiography) update(_ context.Context) {
 	c := a.character.Load()
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {

@@ -57,9 +57,9 @@ type contractRow struct {
 	typeName           string
 }
 
-// contracts is a UI element for showing contracts.
-// It either shows all character contracts or the contracts for a corporation.
-type contracts struct {
+// Contracts is a UI element for showing Contracts.
+// It either shows all character Contracts or the Contracts for a corporation.
+type Contracts struct {
 	widget.BaseWidget
 
 	OnUpdate func(active int)
@@ -90,15 +90,15 @@ const (
 	contractsColExpiresAt
 )
 
-func newContractsForCorporation(u         uiservices.UIServices) *contracts {
+func NewContractsForCorporation(u         uiservices.UIServices) *Contracts {
 	return newContracts(u, true)
 }
 
-func newContractsForCharacters(u         uiservices.UIServices) *contracts {
+func NewContractsForCharacters(u         uiservices.UIServices) *Contracts {
 	return newContracts(u, false)
 }
 
-func newContracts(u         uiservices.UIServices, forCorporation bool) *contracts {
+func newContracts(u         uiservices.UIServices, forCorporation bool) *Contracts {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
 		ID:    contractsColName,
 		Label: "Contract",
@@ -170,7 +170,7 @@ func newContracts(u         uiservices.UIServices, forCorporation bool) *contrac
 			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
 		},
 	}})
-	a := &contracts{
+	a := &Contracts{
 		forCorporation: forCorporation,
 		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
 		footer:         newLabelWithTruncation(),
@@ -263,7 +263,7 @@ func newContracts(u         uiservices.UIServices, forCorporation bool) *contrac
 	return a
 }
 
-func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
+func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(
 		a.selectType,
 		a.selectIssuer,
@@ -286,7 +286,7 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *contracts) makeDataList() *xwidget.StripedList {
+func (a *Contracts) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
@@ -348,7 +348,7 @@ func (a *contracts) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *contracts) filterRowsAsync(sortCol int) {
+func (a *Contracts) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
@@ -425,7 +425,7 @@ func (a *contracts) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *contracts) update(ctx context.Context) {
+func (a *Contracts) update(ctx context.Context) {
 	var activeCount int
 	var err error
 	var rows []contractRow
@@ -452,7 +452,7 @@ func (a *contracts) update(ctx context.Context) {
 	})
 }
 
-func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return nil, 0, nil
@@ -502,7 +502,7 @@ func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 	return rows, activeCount, nil
 }
 
-func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
 	oo, err := a.u.Character().ListAllContracts(ctx)
 	if err != nil {
 		return nil, 0, err

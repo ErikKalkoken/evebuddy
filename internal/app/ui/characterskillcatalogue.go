@@ -48,7 +48,7 @@ type skillRow struct {
 	typeID           int64
 }
 
-type characterSkillCatalogue struct {
+type CharacterSkillCatalogue struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
@@ -68,7 +68,7 @@ type characterSkillCatalogue struct {
 	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
-func newCharacterSkillCatalogue(u         uiservices.UIServices) *characterSkillCatalogue {
+func NewCharacterSkillCatalogue(u         uiservices.UIServices) *CharacterSkillCatalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",
@@ -91,7 +91,7 @@ func newCharacterSkillCatalogue(u         uiservices.UIServices) *characterSkill
 		1,
 		xwidget.SortAsc,
 	)
-	a := &characterSkillCatalogue{
+	a := &CharacterSkillCatalogue{
 		columnSorter:   columnSorter,
 		footer:         newLabelWithTruncation(),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
@@ -156,7 +156,7 @@ func newCharacterSkillCatalogue(u         uiservices.UIServices) *characterSkill
 	return a
 }
 
-func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
 	topBox := container.NewVBox(a.top)
 	if app.IsMobile() {
@@ -175,7 +175,7 @@ func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
+func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	length := func() int {
 		return len(a.rowsFiltered)
 	}
@@ -235,7 +235,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(app.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *characterSkillCatalogue) filterRowsAsync() {
+func (a *CharacterSkillCatalogue) filterRowsAsync() {
 	total := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
@@ -292,7 +292,7 @@ func (a *characterSkillCatalogue) filterRowsAsync() {
 	}()
 }
 
-func (a *characterSkillCatalogue) update(ctx context.Context) {
+func (a *CharacterSkillCatalogue) update(ctx context.Context) {
 	setTop := func(t string, i widget.Importance) {
 		fyne.Do(func() {
 			a.top.Text = t

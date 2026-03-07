@@ -21,7 +21,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
-type characterSkillQueue struct {
+type CharacterSkillQueue struct {
 	widget.BaseWidget
 
 	OnUpdate func(statusShort, statusLong string)
@@ -38,19 +38,19 @@ type characterSkillQueue struct {
 	u                    uiservices.UIServices
 }
 
-// newCharacterSkillQueue returns a new characterSkillQueue for the current character.
-func newCharacterSkillQueue(u uiservices.UIServices) *characterSkillQueue {
+// NewCharacterSkillQueue returns a new characterSkillQueue for the current character.
+func NewCharacterSkillQueue(u uiservices.UIServices) *CharacterSkillQueue {
 	return newCharacterSkillQueueWithCharacter(u, nil)
 }
 
 // newCharacterSkillQueue returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
-func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Character) *characterSkillQueue {
+func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Character) *CharacterSkillQueue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
 	statusResources := theme.MediaRecordIcon()
-	a := &characterSkillQueue{
+	a := &CharacterSkillQueue{
 		emptyInfo:            emptyInfo,
 		showCurrentCharacter: c == nil,
 		signalKey:            u.Signals().UniqueKey(),
@@ -100,7 +100,7 @@ func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Charact
 	return a
 }
 
-func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewBorder(nil, nil, a.status, nil, a.top),
 		nil,
@@ -111,7 +111,7 @@ func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterSkillQueue) makeSkillQueue() *widget.List {
+func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return a.skillqueue.Size()
@@ -161,7 +161,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 }
 
 // stop frees resources and removes event listeners.
-func (a *characterSkillQueue) stop() {
+func (a *CharacterSkillQueue) stop() {
 	if a.showCurrentCharacter {
 		a.u.Signals().CurrentCharacterExchanged.RemoveListener(a.signalKey)
 	}
@@ -169,7 +169,7 @@ func (a *characterSkillQueue) stop() {
 	a.u.Signals().RefreshTickerExpired.RemoveListener(a.signalKey)
 }
 
-func (a *characterSkillQueue) update(ctx context.Context) {
+func (a *CharacterSkillQueue) update(ctx context.Context) {
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			a.top.Text = s

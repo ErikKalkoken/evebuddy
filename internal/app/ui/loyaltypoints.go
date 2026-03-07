@@ -42,7 +42,7 @@ func (n loyaltyPointsNode) IsTop() bool {
 	return n.characterID == 0
 }
 
-type loyaltyPoints struct {
+type LoyaltyPoints struct {
 	widget.BaseWidget
 
 	footer           *widget.Label
@@ -64,7 +64,7 @@ const (
 	loyaltyPointsColPoints
 )
 
-func newLoyaltyPoints(u         uiservices.UIServices) *loyaltyPoints {
+func NewLoyaltyPoints(u         uiservices.UIServices) *LoyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{
@@ -83,7 +83,7 @@ func newLoyaltyPoints(u         uiservices.UIServices) *loyaltyPoints {
 		characterLoyaltyPointsColCorporation,
 		xwidget.SortAsc,
 	)
-	a := &loyaltyPoints{
+	a := &LoyaltyPoints{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
 		top:          top,
@@ -137,7 +137,7 @@ func newLoyaltyPoints(u         uiservices.UIServices) *loyaltyPoints {
 	return a
 }
 
-func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
+func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHScroll(container.NewHBox(
 		a.selectFaction,
 		a.selectCharacter,
@@ -154,7 +154,7 @@ func (a *loyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
+func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	t := xwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			icon1 := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
@@ -214,7 +214,7 @@ func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	return t
 }
 
-func (a *loyaltyPoints) filterTreeAsync() {
+func (a *LoyaltyPoints) filterTreeAsync() {
 	data := maps.Clone(a.data)
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
@@ -301,7 +301,7 @@ func (a *loyaltyPoints) filterTreeAsync() {
 	}()
 }
 
-func (a *loyaltyPoints) update(ctx context.Context) {
+func (a *LoyaltyPoints) update(ctx context.Context) {
 	data, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh loyaltyPoints UI", "err", err)
@@ -322,7 +322,7 @@ func (a *loyaltyPoints) update(ctx context.Context) {
 	})
 }
 
-func (a *loyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][]*loyaltyPointsNode, error) {
+func (a *LoyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][]*loyaltyPointsNode, error) {
 	data := make(map[*loyaltyPointsNode][]*loyaltyPointsNode)
 
 	characterNames, err := a.u.Character().CharacterNames(ctx)

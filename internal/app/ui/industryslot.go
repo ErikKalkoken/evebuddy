@@ -87,7 +87,7 @@ func (r industrySlotRow) freeColor() fyne.ThemeColorName {
 	return c
 }
 
-type industrySlots struct {
+type IndustrySlots struct {
 	widget.BaseWidget
 
 	body            fyne.CanvasObject
@@ -110,7 +110,7 @@ const (
 	industrySlotsColTotal
 )
 
-func newIndustrySlots(u         uiservices.UIServices, slotType app.IndustryJobType) *industrySlots {
+func NewIndustrySlots(u         uiservices.UIServices, slotType app.IndustryJobType) *IndustrySlots {
 	const columnWidthNumber = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,
@@ -205,7 +205,7 @@ func newIndustrySlots(u         uiservices.UIServices, slotType app.IndustryJobT
 			})
 		},
 	}})
-	a := &industrySlots{
+	a := &IndustrySlots{
 		footer:       newLabelWithWrapping(),
 		columnSorter: xwidget.NewColumnSorter(columns, industrySlotsColCharacter, xwidget.SortAsc),
 		slotType:     slotType,
@@ -297,7 +297,7 @@ func newIndustrySlots(u         uiservices.UIServices, slotType app.IndustryJobT
 	return a
 }
 
-func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
+func (a *IndustrySlots) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectFreeSlots, a.selectTag)
 	if app.IsMobile() {
 		filter.Add(a.sortButton)
@@ -306,7 +306,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRow], makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
+func (a *IndustrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRow], makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
 	w := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.rowsFiltered), 4
@@ -347,7 +347,7 @@ func (a *industrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRo
 	return w
 }
 
-func (a *industrySlots) filterRowsAsync(sortCol int) {
+func (a *IndustrySlots) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
@@ -407,7 +407,7 @@ func (a *industrySlots) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *industrySlots) update(ctx context.Context) {
+func (a *IndustrySlots) update(ctx context.Context) {
 	rows, err := a.fetchData(ctx, a.slotType)
 	if err != nil {
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
@@ -424,7 +424,7 @@ func (a *industrySlots) update(ctx context.Context) {
 	})
 }
 
-func (a *industrySlots) fetchData(ctx context.Context, slotType app.IndustryJobType) ([]industrySlotRow, error) {
+func (a *IndustrySlots) fetchData(ctx context.Context, slotType app.IndustryJobType) ([]industrySlotRow, error) {
 	oo, err := a.u.Character().ListAllCharactersIndustrySlots(ctx, slotType)
 	if err != nil {
 		return nil, err

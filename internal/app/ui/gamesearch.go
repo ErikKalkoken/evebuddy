@@ -31,7 +31,7 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-type gameSearch struct {
+type GameSearch struct {
 	widget.BaseWidget
 
 	categories          *kxwidget.FilterChipGroup
@@ -51,8 +51,8 @@ type gameSearch struct {
 	w                   fyne.Window
 }
 
-func newGameSearch(u uiservices.UIServices) *gameSearch {
-	a := &gameSearch{
+func NewGameSearch(u uiservices.UIServices) *GameSearch {
+	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
@@ -130,7 +130,7 @@ func newGameSearch(u uiservices.UIServices) *gameSearch {
 	return a
 }
 
-func (a *gameSearch) init(ctx context.Context) {
+func (a *GameSearch) init(ctx context.Context) {
 	ids := a.u.Settings().RecentSearches()
 	if len(ids) == 0 {
 		return
@@ -154,13 +154,13 @@ func (a *gameSearch) init(ctx context.Context) {
 	})
 }
 
-func (a *gameSearch) resetOptions() {
+func (a *GameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
 	a.updateSearchOptionsTitle()
 }
 
-func (a *gameSearch) updateSearchOptionsTitle() {
+func (a *GameSearch) updateSearchOptionsTitle() {
 	isDefault := func() bool {
 		if a.strict.On {
 			return false
@@ -178,7 +178,7 @@ func (a *gameSearch) updateSearchOptionsTitle() {
 	a.searchOptions.Refresh()
 }
 
-func (a *gameSearch) toogleOptions(enabled bool) {
+func (a *GameSearch) toogleOptions(enabled bool) {
 	if enabled {
 		a.searchOptions.Open(0)
 	} else {
@@ -187,14 +187,14 @@ func (a *gameSearch) toogleOptions(enabled bool) {
 	a.searchOptions.Refresh()
 }
 
-func (a *gameSearch) storeRecentItems() {
+func (a *GameSearch) storeRecentItems() {
 	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
 	a.u.Settings().SetRecentSearches(ids)
 }
 
-func (a *gameSearch) CreateRenderer() fyne.WidgetRenderer {
+func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(
 			a.entry,
@@ -209,20 +209,20 @@ func (a *gameSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *gameSearch) focus() {
+func (a *GameSearch) focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *gameSearch) reset() {
+func (a *GameSearch) reset() {
 	a.entry.SetText("")
 	a.clearResults()
 }
 
-func (a *gameSearch) setWindow(w fyne.Window) {
+func (a *GameSearch) setWindow(w fyne.Window) {
 	a.w = w
 }
 
-func (a *gameSearch) makeResults() *xwidget.Tree[resultNode] {
+func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
 	t := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
@@ -255,14 +255,14 @@ func (a *gameSearch) makeResults() *xwidget.Tree[resultNode] {
 	return t
 }
 
-func (a *gameSearch) showSupportedResult(o *app.EveEntity) {
+func (a *GameSearch) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
 	a.u.InfoWindow().ShowEntity(o)
 }
 
-func (a *gameSearch) makeRecentSelected() *widget.List {
+func (a *GameSearch) makeRecentSelected() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.recentItems)
@@ -288,7 +288,7 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 	return l
 }
 
-func (a *gameSearch) clearResults() {
+func (a *GameSearch) clearResults() {
 	fyne.Do(func() {
 		a.results.Clear()
 		a.resultCount.Hide()
@@ -296,16 +296,16 @@ func (a *gameSearch) clearResults() {
 	})
 }
 
-func (a *gameSearch) showRecent() {
+func (a *GameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
 }
 
-func (a *gameSearch) setEntry(s string) {
+func (a *GameSearch) setEntry(s string) {
 	a.entry.SetText(s)
 }
 
-func (a *gameSearch) doSearch(ctx context.Context, search string) {
+func (a *GameSearch) doSearch(ctx context.Context, search string) {
 	if app.IsOfflineMode() {
 		fyne.Do(func() {
 			xdialog.ShowInformation(

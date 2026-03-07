@@ -120,7 +120,7 @@ func (r marketOrderRow) volumeDisplay() string {
 	return fmt.Sprintf("%s / %s", ihumanize.Comma(r.volumeRemain), ihumanize.Comma(r.volumeTotal))
 }
 
-type marketOrders struct {
+type MarketOrders struct {
 	widget.BaseWidget
 
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
@@ -148,7 +148,7 @@ const (
 	marketOrdersColOwner
 )
 
-func newMarketOrders(u uiservices.UIServices, isBuyOrders bool) *marketOrders {
+func NewMarketOrders(u uiservices.UIServices, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
@@ -229,7 +229,7 @@ func newMarketOrders(u uiservices.UIServices, isBuyOrders bool) *marketOrders {
 				co.(*xwidget.RichText).SetWithText(r.ownerName)
 			},
 		}})
-	a := &marketOrders{
+	a := &MarketOrders{
 		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
 		footer:       newLabelWithTruncation(),
 		isBuyOrders:  isBuyOrders,
@@ -302,7 +302,7 @@ func newMarketOrders(u uiservices.UIServices, isBuyOrders bool) *marketOrders {
 	return a
 }
 
-func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
+func (a *MarketOrders) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
 	if app.IsMobile() {
 		filter.Add(a.sortButton)
@@ -318,7 +318,7 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *marketOrders) makeDataList() *xwidget.StripedList {
+func (a *MarketOrders) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
@@ -379,7 +379,7 @@ func (a *marketOrders) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *marketOrders) filterRowsAsync(sortCol int) {
+func (a *MarketOrders) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -458,7 +458,7 @@ func (a *marketOrders) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *marketOrders) update(ctx context.Context) {
+func (a *MarketOrders) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
@@ -475,7 +475,7 @@ func (a *marketOrders) update(ctx context.Context) {
 	})
 }
 
-func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marketOrderRow, error) {
+func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marketOrderRow, error) {
 	orders, err := a.u.Character().ListAllMarketOrder(ctx, isBuyOrders)
 	if err != nil {
 		return nil, err

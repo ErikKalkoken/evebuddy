@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type characterSheet struct {
+type CharacterSheet struct {
 	widget.BaseWidget
 
 	born        *widget.Label
@@ -43,7 +43,7 @@ type characterSheet struct {
 	wealth      *widget.Label
 }
 
-func newCharacterSheet(u         uiservices.UIServices) *characterSheet {
+func NewCharacterSheet(u         uiservices.UIServices) *CharacterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
 		x.Truncation = fyne.TextTruncateEllipsis
@@ -59,7 +59,7 @@ func newCharacterSheet(u         uiservices.UIServices) *characterSheet {
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	portrait.SetToolTip("Show details")
-	a := &characterSheet{
+	a := &CharacterSheet{
 		born:        makeLabel(),
 		faction:     makeHyperLink(),
 		home:        makeHyperLink(),
@@ -120,7 +120,7 @@ func newCharacterSheet(u         uiservices.UIServices) *characterSheet {
 
 // TODO: Group information
 
-func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 	main := widget.NewForm(
 		widget.NewFormItem("Name", a.name),
 		widget.NewFormItem("Born", a.born),
@@ -153,7 +153,7 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterSheet) update(ctx context.Context) {
+func (a *CharacterSheet) update(ctx context.Context) {
 	setName := func(s string) {
 		fyne.Do(func() {
 			a.name.Text = s

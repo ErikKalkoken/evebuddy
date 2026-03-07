@@ -103,7 +103,7 @@ func (r industryJobRow) statusDisplay() []widget.RichTextSegment {
 	})
 }
 
-type industryJobs struct {
+type IndustryJobs struct {
 	widget.BaseWidget
 
 	OnUpdate func(count int)
@@ -136,15 +136,15 @@ const (
 	industryJobsColInstaller
 )
 
-func newIndustryJobsForOverview(u         uiservices.UIServices) *industryJobs {
+func NewIndustryJobsForOverview(u         uiservices.UIServices) *IndustryJobs {
 	return newIndustryJobs(u, false)
 }
 
-func newIndustryJobsForCorporation(u         uiservices.UIServices) *industryJobs {
+func NewIndustryJobsForCorporation(u         uiservices.UIServices) *IndustryJobs {
 	return newIndustryJobs(u, true)
 }
 
-func newIndustryJobs(u         uiservices.UIServices, forCorporation bool) *industryJobs {
+func newIndustryJobs(u         uiservices.UIServices, forCorporation bool) *IndustryJobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
@@ -258,7 +258,7 @@ func newIndustryJobs(u         uiservices.UIServices, forCorporation bool) *indu
 			co.(*xwidget.RichText).SetWithText(r.installer.Name)
 		},
 	}})
-	a := &industryJobs{
+	a := &IndustryJobs{
 		footer:         newLabelWithWrapping(),
 		columnSorter:   xwidget.NewColumnSorter(columns, industryJobsColEndDate, xwidget.SortDesc),
 		forCorporation: forCorporation,
@@ -378,7 +378,7 @@ func newIndustryJobs(u         uiservices.UIServices, forCorporation bool) *indu
 	return a
 }
 
-func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	var filter *fyne.Container
 	if a.forCorporation {
 		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
@@ -413,7 +413,7 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industryJobs) makeDataList() *xwidget.StripedList {
+func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
 	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
@@ -513,7 +513,7 @@ func (a *industryJobs) makeDataList() *xwidget.StripedList {
 
 // filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *industryJobs) filterRowsAsync(sortCol int) {
+func (a *IndustryJobs) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
@@ -615,7 +615,7 @@ func (a *industryJobs) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *industryJobs) update(ctx context.Context) {
+func (a *IndustryJobs) update(ctx context.Context) {
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {
@@ -646,7 +646,7 @@ func (a *industryJobs) update(ctx context.Context) {
 	})
 }
 
-func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {
+func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {
 	cj, err := a.u.Character().ListAllCharacterIndustryJob(ctx)
 	if err != nil {
 		return nil, err
@@ -750,7 +750,7 @@ func shortenBlueprintName(typ *app.EntityShort) string {
 	return s
 }
 
-func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
+func (a *IndustryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
 	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
@@ -802,7 +802,7 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 }
 
 // showIndustryJobWindow shows the details of a industry job in a window.
-func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
+func (a *IndustryJobs) showIndustryJobWindow(r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
 	key := fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID)
 	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(key, title, r.owner.Name)

@@ -207,15 +207,15 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	// }
 	bu := NewBaseUI(BaseUIParams{
 		App:                fyneApp,
-		CharacterService:   cs,
-		CorporationService: rs,
-		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eveimageservice.New(testutil.NewCacheFake(), nil, true),
-		EveUniverseService: eus,
-		JaniceService:      janiceservice.New(http.DefaultClient, ""),
+		Character:   cs,
+		Corporation: rs,
+		ESIStatus:   esistatusservice.New(esiClient),
+		EVEImage:    eveimageservice.New(testutil.NewCacheFake(), nil, true),
+		EVEUniverse: eus,
+		Janice:      janiceservice.New(http.DefaultClient, ""),
 		Settings:           settings,
 		Signals:            signals,
-		StatusCacheService: scs,
+		StatusCache: scs,
 	})
 	return bu
 }

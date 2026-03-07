@@ -79,46 +79,46 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assetSearchAll          *assetSearch
-	augmentations           *augmentations
-	characterAssetBrowser   *assetBrowser
+	assetSearchAll          *AssetSearch
+	augmentations           *Augmentations
+	characterAssetBrowser   *AssetBrowser
 	characterAttributes     *CharacterAttributes
 	characterAugmentations  *characterui.CharacterAugmentations
-	characterBiography      *characterBiography
-	characterContacts       *characterContacts
-	characterCommunications *characterCommunications
+	characterBiography      *CharacterBiography
+	characterContacts       *CharacterContacts
+	characterCommunications *CharacterCommunications
 	characterCorporation    *corporationui.CorporationSheet
-	characterJumpClones     *characterJumpClones
-	characterMails          *characterMails
-	characterOverview       *characterOverview
-	characterSheet          *characterSheet
-	characterShips          *characterFlyableShips
-	characterSkillCatalogue *characterSkillCatalogue
-	characterSkillQueue     *characterSkillQueue
-	characterWallet         *characterWallet
-	clones                  *clones
-	colonies                *colonies
-	contracts               *contracts
-	corporationAssetBrowser *assetBrowser
-	corporationAssetSearch  *assetSearch
-	corporationContracts    *contracts
-	corporationIndyJobs     *industryJobs
+	characterJumpClones     *CharacterJumpClones
+	characterMails          *CharacterMails
+	characterOverview       *CharacterOverview
+	characterSheet          *CharacterSheet
+	characterShips          *CharacterFlyableShips
+	characterSkillCatalogue *CharacterSkillCatalogue
+	characterSkillQueue     *CharacterSkillQueue
+	characterWallet         *CharacterWallet
+	clones                  *Clones
+	colonies                *Colonies
+	contracts               *Contracts
+	corporationAssetBrowser *AssetBrowser
+	corporationAssetSearch  *AssetSearch
+	corporationContracts    *Contracts
+	corporationIndyJobs     *IndustryJobs
 	corporationMember       *corporationui.CorporationMember
 	corporationSheet        *corporationui.CorporationSheet
 	corporationStructures   *corporationui.CorporationStructures
-	corporationWallets      map[app.Division]*corporationWallet
-	gameSearch              *gameSearch
-	industryJobs            *industryJobs
-	loyaltyPoints           *loyaltyPoints
-	marketOrdersBuy         *marketOrders
-	marketOrdersSell        *marketOrders
-	slotsManufacturing      *industrySlots
-	slotsReactions          *industrySlots
-	slotsResearch           *industrySlots
+	corporationWallets      map[app.Division]*CorporationWallet
+	gameSearch              *GameSearch
+	industryJobs            *IndustryJobs
+	loyaltyPoints           *LoyaltyPoints
+	marketOrdersBuy         *MarketOrders
+	marketOrdersSell        *MarketOrders
+	slotsManufacturing      *IndustrySlots
+	slotsReactions          *IndustrySlots
+	slotsResearch           *IndustrySlots
 	snackbar                *xwidget.Snackbar
 	statusText              *statusText
-	training                *training
-	wealth                  *wealth
+	training                *Training
+	wealth                  *Wealth
 	iw                      *infowindow.InfoWindow
 
 	// Services
@@ -151,16 +151,16 @@ type baseUI struct {
 }
 
 type BaseUIParams struct {
-	App                fyne.App
-	CharacterService   *characterservice.CharacterService
-	CorporationService *corporationservice.CorporationService
-	ESIStatusService   *esistatusservice.ESIStatusService
-	EveImageService    *eveimageservice.EveImageService
-	EveUniverseService *eveuniverseservice.EveUniverseService
-	JaniceService      *janiceservice.JaniceService
-	StatusCacheService *statuscacheservice.StatusCacheService
-	Signals            *app.Signals
-	Settings           *settings.Settings
+	App         fyne.App
+	Character   *characterservice.CharacterService
+	Corporation *corporationservice.CorporationService
+	ESIStatus   *esistatusservice.ESIStatusService
+	EVEImage    *eveimageservice.EveImageService
+	EVEUniverse *eveuniverseservice.EveUniverseService
+	Janice      *janiceservice.JaniceService
+	StatusCache *statuscacheservice.StatusCacheService
+	Signals     *app.Signals
+	Settings    *settings.Settings
 	// optional
 	ClearCacheFunc   func()
 	ConcurrencyLimit int
@@ -173,28 +173,28 @@ type BaseUIParams struct {
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(arg BaseUIParams) *baseUI {
-	if arg.CharacterService == nil {
+	if arg.Character == nil {
 		panic("CharacterService missing")
 	}
-	if arg.CorporationService == nil {
+	if arg.Corporation == nil {
 		panic("CorporationService missing")
 	}
-	if arg.ESIStatusService == nil {
+	if arg.ESIStatus == nil {
 		panic("ESIStatusService missing")
 	}
-	if arg.EveImageService == nil {
+	if arg.EVEImage == nil {
 		panic("EveImageService missing")
 	}
-	if arg.EveUniverseService == nil {
+	if arg.EVEUniverse == nil {
 		panic("EveUniverseService missing")
 	}
-	if arg.JaniceService == nil {
+	if arg.Janice == nil {
 		panic("JaniceService missing")
 	}
 	if arg.Settings == nil {
 		panic("Settings missing")
 	}
-	if arg.StatusCacheService == nil {
+	if arg.StatusCache == nil {
 		panic("StatusCacheService missing")
 	}
 	if arg.Signals == nil {
@@ -203,15 +203,15 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                arg.App,
 		concurrencyLimit:   -1, // Default is no limit
-		corporationWallets: make(map[app.Division]*corporationWallet),
-		cs:                 arg.CharacterService,
-		eis:                arg.EveImageService,
-		ess:                arg.ESIStatusService,
-		eus:                arg.EveUniverseService,
+		corporationWallets: make(map[app.Division]*CorporationWallet),
+		cs:                 arg.Character,
+		eis:                arg.EVEImage,
+		ess:                arg.ESIStatus,
+		eus:                arg.EVEUniverse,
 		isFakeMobile:       arg.IsFakeMobile,
-		js:                 arg.JaniceService,
-		rs:                 arg.CorporationService,
-		scs:                arg.StatusCacheService,
+		js:                 arg.Janice,
+		rs:                 arg.Corporation,
+		scs:                arg.StatusCache,
 		settings:           arg.Settings,
 		sig:                singleinstance.NewGroup(),
 		signals:            arg.Signals,
@@ -358,48 +358,48 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	u.assetSearchAll = newCombinedAssetSearch(u)
-	u.augmentations = newAugmentations(u)
-	u.characterAssetBrowser = newCharacterAssetBrowser(u)
+	u.assetSearchAll = NewCombinedAssetSearch(u)
+	u.augmentations = NewAugmentations(u)
+	u.characterAssetBrowser = NewCharacterAssetBrowser(u)
 	u.characterAttributes = NewCharacterAttributes(u)
 	u.characterAugmentations = characterui.NewCharacterAugmentations(u)
-	u.characterBiography = newCharacterBiography(u)
-	u.characterContacts = newCharacterContacts(u)
-	u.characterCommunications = newCharacterCommunications(u)
+	u.characterBiography = NewCharacterBiography(u)
+	u.characterContacts = NewCharacterContacts(u)
+	u.characterCommunications = NewCharacterCommunications(u)
 	u.characterCorporation = corporationui.NewCorporationSheet(u, false)
-	u.characterJumpClones = newCharacterJumpClones(u)
-	u.characterMails = newCharacterMails(u)
-	u.characterOverview = newCharacterOverview(u)
-	u.characterSheet = newCharacterSheet(u)
-	u.characterShips = newCharacterFlyableShips(u)
-	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
-	u.characterSkillQueue = newCharacterSkillQueue(u)
-	u.characterWallet = newCharacterWallet(u)
-	u.clones = newClones(u)
-	u.colonies = newColonies(u)
-	u.contracts = newContractsForCharacters(u)
-	u.corporationAssetBrowser = newCorporationAssetBrowser(u)
-	u.corporationAssetSearch = newAssetSearchForCorporation(u)
-	u.corporationContracts = newContractsForCorporation(u)
-	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
+	u.characterJumpClones = NewCharacterJumpClones(u)
+	u.characterMails = NewCharacterMails(u)
+	u.characterOverview = NewCharacterOverview(u)
+	u.characterSheet = NewCharacterSheet(u)
+	u.characterShips = NewCharacterFlyableShips(u)
+	u.characterSkillCatalogue = NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = NewCharacterSkillQueue(u)
+	u.characterWallet = NewCharacterWallet(u)
+	u.clones = NewClones(u)
+	u.colonies = NewColonies(u)
+	u.contracts = NewContractsForCharacters(u)
+	u.corporationAssetBrowser = NewCorporationAssetBrowser(u)
+	u.corporationAssetSearch = NewAssetSearchForCorporation(u)
+	u.corporationContracts = NewContractsForCorporation(u)
+	u.corporationIndyJobs = NewIndustryJobsForCorporation(u)
 
 	u.corporationMember = corporationui.NewCorporationMember(u)
 	u.corporationStructures = corporationui.NewCorporationStructures(u)
 	u.corporationSheet = corporationui.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d] = newCorporationWallet(u, d)
+		u.corporationWallets[d] = NewCorporationWallet(u, d)
 	}
-	u.gameSearch = newGameSearch(u)
-	u.industryJobs = newIndustryJobsForOverview(u)
-	u.loyaltyPoints = newLoyaltyPoints(u)
-	u.marketOrdersBuy = newMarketOrders(u, true)
-	u.marketOrdersSell = newMarketOrders(u, false)
-	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
-	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
-	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
+	u.gameSearch = NewGameSearch(u)
+	u.industryJobs = NewIndustryJobsForOverview(u)
+	u.loyaltyPoints = NewLoyaltyPoints(u)
+	u.marketOrdersBuy = NewMarketOrders(u, true)
+	u.marketOrdersSell = NewMarketOrders(u, false)
+	u.slotsManufacturing = NewIndustrySlots(u, app.ManufacturingJob)
+	u.slotsReactions = NewIndustrySlots(u, app.ReactionJob)
+	u.slotsResearch = NewIndustrySlots(u, app.ScienceJob)
 	u.snackbar = xwidget.NewSnackbar(u.window)
-	u.training = newTraining(u)
-	u.wealth = newWealth(u)
+	u.training = NewTraining(u)
+	u.wealth = NewWealth(u)
 
 	u.iw = infowindow.New(u)
 

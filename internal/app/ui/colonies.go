@@ -101,7 +101,7 @@ func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment
 	})
 }
 
-type colonies struct {
+type Colonies struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
@@ -133,7 +133,7 @@ const (
 	coloniesColCharacter
 )
 
-func newColonies(u         uiservices.UIServices) *colonies {
+func NewColonies(u         uiservices.UIServices) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",
@@ -208,7 +208,7 @@ func newColonies(u         uiservices.UIServices) *colonies {
 			co.(*xwidget.RichText).SetWithText(r.ownerName)
 		},
 	}})
-	a := &colonies{
+	a := &Colonies{
 		footer:       newLabelWithTruncation(),
 		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
 		search:       widget.NewEntry(),
@@ -297,7 +297,7 @@ func newColonies(u         uiservices.UIServices) *colonies {
 	return a
 }
 
-func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
+func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(
 		a.selectSolarSystem,
 		a.selectPlanetType,
@@ -330,7 +330,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *colonies) makeDataList() *xwidget.StripedList {
+func (a *Colonies) makeDataList() *xwidget.StripedList {
 	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
@@ -430,7 +430,7 @@ func (w *colonyListItem) set(r colonyRow) {
 	w.status.Set(r.statusDisplay())
 }
 
-func (a *colonies) filterRowsAsync(sortCol int) {
+func (a *Colonies) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
@@ -549,7 +549,7 @@ func (a *colonies) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *colonies) update(ctx context.Context) {
+func (a *Colonies) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh colony UI", "err", err)
@@ -566,7 +566,7 @@ func (a *colonies) update(ctx context.Context) {
 	})
 }
 
-func (a *colonies) setOnUpdate() {
+func (a *Colonies) setOnUpdate() {
 	var expired int
 	for _, r := range a.rows {
 		if r.isExpired() {
@@ -578,7 +578,7 @@ func (a *colonies) setOnUpdate() {
 	}
 }
 
-func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
+func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	planets, err := a.u.Character().ListAllPlanets(ctx)
 	if err != nil {
 		return nil, err

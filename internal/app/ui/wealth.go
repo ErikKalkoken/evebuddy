@@ -29,7 +29,7 @@ const (
 	wealthNameTruncationSuffix = 2
 )
 
-type wealth struct {
+type Wealth struct {
 	widget.BaseWidget
 
 	onUpdate func(wallet, assets float64)
@@ -44,8 +44,8 @@ type wealth struct {
 	walletSplit    *prop.PieChart
 }
 
-func newWealth(u         uiservices.UIServices) *wealth {
-	a := &wealth{
+func NewWealth(u         uiservices.UIServices) *Wealth {
+	a := &Wealth{
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),
 		characterSplit: prop.NewPieChart(""),
@@ -91,7 +91,7 @@ func newWealth(u         uiservices.UIServices) *wealth {
 	return a
 }
 
-func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
+func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Total", container.NewBorder(
 			container.NewPadded(),
@@ -137,7 +137,7 @@ func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *wealth) update(ctx context.Context) {
+func (a *Wealth) update(ctx context.Context) {
 	rows, characters, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
@@ -182,7 +182,7 @@ func (a *wealth) update(ctx context.Context) {
 	})
 }
 
-func (a *wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {
+func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
 		return data.CategoricalPoint{
@@ -208,7 +208,7 @@ func (a *wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAss
 	})
 }
 
-func (a *wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAssets float64) {
+func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -234,7 +234,7 @@ func (a *wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAsse
 	})
 }
 
-func (a *wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, totalAssets float64, totalWallet float64) {
+func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -260,7 +260,7 @@ func (a *wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, total
 	})
 }
 
-func (a *wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalWallet float64) {
+func (a *Wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
 	fyne.Do(func() {
 		a.totalSplit.RemoveSeries("")
@@ -286,7 +286,7 @@ func (a *wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalW
 	})
 }
 
-func (a *wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWallet float64) {
+func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
 		return data.CategoricalPoint{
@@ -311,7 +311,7 @@ func (a *wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWa
 	})
 }
 
-func (a *wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWallet float64) {
+func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
 	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
 		return data.ProportionalPoint{
@@ -395,7 +395,7 @@ type wealthRow struct {
 	total     float64
 }
 
-func (a *wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
+func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
 	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err

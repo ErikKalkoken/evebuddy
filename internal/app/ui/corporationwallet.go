@@ -20,7 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type corporationWallet struct {
+type CorporationWallet struct {
 	widget.BaseWidget
 
 	onBalanceUpdate func(balance optional.Optional[float64])
@@ -36,8 +36,8 @@ type corporationWallet struct {
 	u         uiservices.UIServices
 }
 
-func newCorporationWallet(u         uiservices.UIServices, division app.Division) *corporationWallet {
-	a := &corporationWallet{
+func NewCorporationWallet(u         uiservices.UIServices, division app.Division) *CorporationWallet {
+	a := &CorporationWallet{
 		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,
 		journal:      newCorporationWalletJournal(u, division),
@@ -65,7 +65,7 @@ func newCorporationWallet(u         uiservices.UIServices, division app.Division
 	return a
 }
 
-func (a *corporationWallet) CreateRenderer() fyne.WidgetRenderer {
+func (a *CorporationWallet) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewHBox(a.balance, a.name),
 		nil,
@@ -79,7 +79,7 @@ func (a *corporationWallet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationWallet) update(ctx context.Context) {
+func (a *CorporationWallet) update(ctx context.Context) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		a.journal.update(ctx)
@@ -96,7 +96,7 @@ func (a *corporationWallet) update(ctx context.Context) {
 	wg.Wait()
 }
 
-func (a *corporationWallet) updateBalance(ctx context.Context) {
+func (a *CorporationWallet) updateBalance(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			if a.onBalanceUpdate != nil {
@@ -152,7 +152,7 @@ func (a *corporationWallet) updateBalance(ctx context.Context) {
 	})
 }
 
-func (a *corporationWallet) updateName(ctx context.Context) {
+func (a *CorporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
 	corporationID := corporationIDOrZero(a.corporation.Load())

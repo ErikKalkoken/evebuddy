@@ -113,7 +113,7 @@ func timeUntil(t optional.Optional[time.Time]) optional.Optional[time.Duration] 
 	return optional.New(time.Duration(d))
 }
 
-type training struct {
+type Training struct {
 	widget.BaseWidget
 
 	onUpdate func(expired int)
@@ -142,7 +142,7 @@ const (
 	trainingColTotalSP
 )
 
-func newTraining(u         uiservices.UIServices) *training {
+func NewTraining(u         uiservices.UIServices) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,
@@ -255,7 +255,7 @@ func newTraining(u         uiservices.UIServices) *training {
 				return optional.Compare(a.totalSP, b.totalSP)
 			},
 		}})
-	a := &training{
+	a := &Training{
 		columnSorter: xwidget.NewColumnSorter(columns, trainingColCharacter, xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		search:       widget.NewEntry(),
@@ -331,7 +331,7 @@ func newTraining(u         uiservices.UIServices) *training {
 	return a
 }
 
-func (a *training) CreateRenderer() fyne.WidgetRenderer {
+func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
 	if app.IsMobile() {
 		filter.Add(a.sortButton)
@@ -355,7 +355,7 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *training) makeDataList() *xwidget.StripedList {
+func (a *Training) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
@@ -441,7 +441,7 @@ func (a *training) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *training) filterRowsAsync(sortCol int) {
+func (a *Training) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
@@ -492,7 +492,7 @@ func (a *training) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *training) update(ctx context.Context) {
+func (a *Training) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
@@ -510,7 +510,7 @@ func (a *training) update(ctx context.Context) {
 	})
 }
 
-func (a *training) updateItem(ctx context.Context, characterID int64) {
+func (a *Training) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
 	}
@@ -537,7 +537,7 @@ func (a *training) updateItem(ctx context.Context, characterID int64) {
 	})
 }
 
-func (a *training) refreshOnUpdate() {
+func (a *Training) refreshOnUpdate() {
 	var expired int
 	for _, r := range a.rows {
 		if !r.isActive && r.isWatched {
@@ -549,7 +549,7 @@ func (a *training) refreshOnUpdate() {
 	}
 }
 
-func (a *training) fetchRows(ctx context.Context) ([]trainingRow, error) {
+func (a *Training) fetchRows(ctx context.Context) ([]trainingRow, error) {
 	characters, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
@@ -568,7 +568,7 @@ func (a *training) fetchRows(ctx context.Context) ([]trainingRow, error) {
 	return rows, nil
 }
 
-func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow, error) {
+func (a *Training) fetchRow(ctx context.Context, c *app.Character) (trainingRow, error) {
 	var z trainingRow
 	if c == nil || c.EveCharacter == nil {
 		return z, app.ErrInvalid
@@ -618,7 +618,7 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 	return r, nil
 }
 
-func (a *training) showTrainingQueueWindow(r trainingRow) {
+func (a *Training) showTrainingQueueWindow(r trainingRow) {
 	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(fmt.Sprintf("skillqueue-%d", r.characterID), "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()
