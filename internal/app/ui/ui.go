@@ -68,6 +68,27 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
+type BaseUIParams struct {
+	App         fyne.App
+	Character   *characterservice.CharacterService
+	Corporation *corporationservice.CorporationService
+	ESIStatus   *esistatusservice.ESIStatusService
+	EVEImage    *eveimageservice.EVEImageService
+	EVEUniverse *eveuniverseservice.EVEUniverseService
+	Janice      *janiceservice.JaniceService
+	StatusCache *statuscacheservice.StatusCacheService
+	Signals     *app.Signals
+	Settings    *settings.Settings
+	// optional
+	ClearCacheFunc   func()
+	ConcurrencyLimit int
+	DataPaths        map[string]string
+	IsFakeMobile     bool
+	IsMobile         bool
+	IsOfflineMode    bool
+	IsUpdateDisabled bool
+}
+
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
 	// Callbacks
@@ -140,45 +161,27 @@ type baseUI struct {
 	settings *settings.Settings
 
 	// UI state & configuration
-	app                fyne.App
-	character          atomic.Pointer[app.Character]
-	concurrencyLimit   int
-	corporation        atomic.Pointer[app.Corporation]
-	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
-	defaultTheme       fyne.Theme
-	isDeveloperMode    atomic.Bool
-	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
-	isForeground       atomic.Bool // whether the app is currently shown in the foreground
-	isMobile           bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
-	isOfflineMode      bool
-	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
-	isUpdateDisabled   atomic.Bool // Whether to disable update tickers (useful for debugging)
-	sig                *singleinstance.Group
-	signals            *app.Signals
-	wasStarted         atomic.Bool            // whether the app has already been started at least once
-	window             fyne.Window            // main window
-	windows            map[string]fyne.Window // child windows
-}
-
-type BaseUIParams struct {
-	App         fyne.App
-	Character   *characterservice.CharacterService
-	Corporation *corporationservice.CorporationService
-	ESIStatus   *esistatusservice.ESIStatusService
-	EVEImage    *eveimageservice.EVEImageService
-	EVEUniverse *eveuniverseservice.EVEUniverseService
-	Janice      *janiceservice.JaniceService
-	StatusCache *statuscacheservice.StatusCacheService
-	Signals     *app.Signals
-	Settings    *settings.Settings
-	// optional
-	ClearCacheFunc   func()
-	ConcurrencyLimit int
-	DataPaths        map[string]string
-	IsFakeMobile     bool
-	IsMobile         bool
-	IsOfflineMode    bool
-	IsUpdateDisabled bool
+	app                            fyne.App
+	avatarCache                    xsync.Map[int64, fyne.Resource]
+	character                      atomic.Pointer[app.Character]
+	characterAvatarPlaceholder64   fyne.Resource
+	concurrencyLimit               int
+	corporation                    atomic.Pointer[app.Corporation]
+	corporationAvatarPlaceholder64 fyne.Resource
+	dataPaths                      xmaps.OrderedMap[string, string] // Paths to user data
+	defaultTheme                   fyne.Theme
+	isDeveloperMode                atomic.Bool
+	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
+	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
+	isMobile                       bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
+	isOfflineMode                  bool
+	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
+	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
+	sig                            *singleinstance.Group
+	signals                        *app.Signals
+	wasStarted                     atomic.Bool            // whether the app has already been started at least once
+	window                         fyne.Window            // main window
+	windows                        map[string]fyne.Window // child windows
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -212,25 +215,29 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	if arg.Signals == nil {
 		panic("Signals missing")
 	}
+	characterAvatarPlaceholder64, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
+	corporationAvatarPlaceholder64, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 	u := &baseUI{
-		app:                arg.App,
-		concurrencyLimit:   -1, // Default is no limit
-		corporationWallets: make(map[app.Division]*walletui.CorporationWallet),
-		cs:                 arg.Character,
-		eis:                arg.EVEImage,
-		ess:                arg.ESIStatus,
-		eus:                arg.EVEUniverse,
-		isFakeMobile:       arg.IsFakeMobile,
-		isMobile:           arg.IsMobile,
-		isOfflineMode:      arg.IsOfflineMode,
-		js:                 arg.Janice,
-		rs:                 arg.Corporation,
-		scs:                arg.StatusCache,
-		settings:           arg.Settings,
-		sig:                singleinstance.NewGroup(),
-		signals:            arg.Signals,
-		statusText:         NewStatusText(),
-		windows:            make(map[string]fyne.Window),
+		app:                            arg.App,
+		concurrencyLimit:               -1, // Default is no limit
+		corporationWallets:             make(map[app.Division]*walletui.CorporationWallet),
+		cs:                             arg.Character,
+		eis:                            arg.EVEImage,
+		ess:                            arg.ESIStatus,
+		eus:                            arg.EVEUniverse,
+		isFakeMobile:                   arg.IsFakeMobile,
+		isMobile:                       arg.IsMobile,
+		isOfflineMode:                  arg.IsOfflineMode,
+		js:                             arg.Janice,
+		rs:                             arg.Corporation,
+		scs:                            arg.StatusCache,
+		settings:                       arg.Settings,
+		sig:                            singleinstance.NewGroup(),
+		signals:                        arg.Signals,
+		statusText:                     NewStatusText(),
+		windows:                        make(map[string]fyne.Window),
+		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
+		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
 	}
 	u.window = u.app.NewWindow(app.Name())
 	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
@@ -276,7 +283,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		switch arg.Section {
 		case app.SectionCharacterAssets:
 			if isShown {
-				u.ReloadCurrentCharacter()
+				u.ReloadCurrentCharacter(ctx)
 			}
 		case
 			app.SectionCharacterJumpClones,
@@ -286,7 +293,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
 			if isShown {
-				u.ReloadCurrentCharacter()
+				u.ReloadCurrentCharacter(ctx)
 			}
 		case app.SectionCharacterMailHeaders:
 			u.UpdateMailIndicator(ctx)
@@ -342,7 +349,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			if arg.Changed.Contains(u.CurrentCharacter().IDOrZero()) {
-				u.ReloadCurrentCharacter()
+				u.ReloadCurrentCharacter(ctx)
 			}
 			characters := u.scs.ListCharacterIDs()
 			if characters.ContainsAny(arg.Changed.All()) {
@@ -365,7 +372,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 					continue
 				}
 			}
-			u.ReloadCurrentCharacter()
+			u.ReloadCurrentCharacter(ctx)
 		}
 	})
 
@@ -425,17 +432,18 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
+		ctx := context.Background()
 		if u.isMobile {
 			// When the app is restarted on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
-			go u.signals.RefreshTickerExpired.Emit(context.Background(), struct{}{})
+			go u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
 			if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
-					go u.cs.UpdateCharactersIfNeeded(context.Background(), false)
-					go u.rs.UpdateCorporationsIfNeeded(context.Background(), false)
-					go u.eus.UpdateSectionsIfNeeded(context.Background(), false)
+					go u.cs.UpdateCharactersIfNeeded(ctx, false)
+					go u.rs.UpdateCorporationsIfNeeded(ctx, false)
+					go u.eus.UpdateSectionsIfNeeded(ctx, false)
 				}()
 			}
 		}
@@ -470,8 +478,8 @@ func (u *baseUI) Start() bool {
 		slog.Info("App started")
 	}
 	u.snackbar.Start()
+	ctx := context.Background()
 	go func() {
-		ctx := context.Background()
 		var wg sync.WaitGroup
 		wg.Go(func() {
 			u.initHome(ctx)
@@ -510,7 +518,7 @@ func (u *baseUI) Start() bool {
 		u.isStartupCompleted.Store(true)
 		go func() {
 			for range time.Tick(refreshUITick) {
-				u.signals.RefreshTickerExpired.Emit(context.Background(), struct{}{})
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
 			}
 		}()
 		if u.onAppFirstStarted != nil {
@@ -574,7 +582,6 @@ func (u *baseUI) IsMobile() bool {
 }
 
 func (u *baseUI) SetDeveloperMode(b bool) {
-	u.settings.SetDeveloperMode(b)
 	u.isDeveloperMode.Store(b)
 }
 
@@ -656,10 +663,10 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 		}
 	}
 	if c == nil {
-		u.ResetCharacter()
+		u.ResetCharacter(ctx)
 		return
 	}
-	u.SetCharacter(c)
+	u.SetCharacter(ctx, c)
 }
 
 // CurrentCharacter() returns the current character or nil when none is configured.
@@ -667,59 +674,55 @@ func (u *baseUI) CurrentCharacter() *app.Character {
 	return u.character.Load()
 }
 
-func (u *baseUI) HasCharacter() bool {
-	return u.CurrentCharacter() != nil
-}
-
-func (u *baseUI) LoadCharacter(id int64) error {
-	c, err := u.cs.GetCharacter(context.Background(), id)
+func (u *baseUI) LoadCharacter(ctx context.Context, id int64) error {
+	c, err := u.cs.GetCharacter(ctx, id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
-	u.SetCharacter(c)
+	u.SetCharacter(ctx, c)
 	return nil
 }
 
 // ReloadCurrentCharacter reloads the current character from storage.
-func (u *baseUI) ReloadCurrentCharacter() {
+func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 	id := u.CurrentCharacter().IDOrZero()
 	if id == 0 {
 		return
 	}
-	c, err := u.cs.GetCharacter(context.Background(), id)
+	c, err := u.cs.GetCharacter(ctx, id)
 	if err != nil {
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
 	u.character.Store(c)
 }
 
-func (u *baseUI) ResetCharacter() {
+func (u *baseUI) ResetCharacter(ctx context.Context) {
 	u.character.Store(nil)
-	u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
+	go u.signals.CurrentCharacterExchanged.Emit(ctx, nil)
 	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
 	// }
 }
 
-func (u *baseUI) SetCharacter(c *app.Character) {
+func (u *baseUI) SetCharacter(ctx context.Context, c *app.Character) {
 	u.character.Store(c)
 	if u.onSetCharacter != nil {
 		go u.onSetCharacter(c)
 	}
-	u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
+	go u.signals.CurrentCharacterExchanged.Emit(ctx, c)
 	u.settings.SetLastCharacterID(c.ID)
 }
 
-func (u *baseUI) SetAnyCharacter() error {
-	c, err := u.cs.GetAnyCharacter(context.Background())
+func (u *baseUI) SetAnyCharacter(ctx context.Context) error {
+	c, err := u.cs.GetAnyCharacter(ctx)
 	if errors.Is(err, app.ErrNotFound) {
-		u.ResetCharacter()
+		u.ResetCharacter(ctx)
 		return nil
 	} else if err != nil {
 		return err
 	}
-	u.SetCharacter(c)
+	u.SetCharacter(ctx, c)
 	return nil
 }
 
@@ -746,10 +749,10 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 		}
 	}
 	if c == nil {
-		u.ResetCorporation()
+		u.ResetCorporation(ctx)
 		return
 	}
-	u.SetCorporation(c)
+	u.SetCorporation(ctx, c)
 }
 
 // CurrentCorporation returns the current corporation or nil if not set.
@@ -757,47 +760,43 @@ func (u *baseUI) CurrentCorporation() *app.Corporation {
 	return u.corporation.Load()
 }
 
-func (u *baseUI) HasCorporation() bool {
-	return u.CurrentCorporation() != nil
-}
-
-func (u *baseUI) LoadCorporation(id int64) error {
-	c, err := u.rs.GetCorporation(context.Background(), id)
+func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
+	c, err := u.rs.GetCorporation(ctx, id)
 	if err != nil {
 		return fmt.Errorf("load corporation ID %d: %w", id, err)
 	}
-	u.SetCorporation(c)
+	u.SetCorporation(ctx, c)
 	return nil
 }
 
-func (u *baseUI) ResetCorporation() {
+func (u *baseUI) ResetCorporation(ctx context.Context) {
 	u.corporation.Store(nil)
-	u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
+	go u.signals.CurrentCorporationExchanged.Emit(ctx, nil)
 	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
 	// }
 }
 
-func (u *baseUI) SetCorporation(c *app.Corporation) {
+func (u *baseUI) SetCorporation(ctx context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
 	if u.onSetCorporation != nil {
 		go u.onSetCorporation(c)
 	}
-	u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
+	go u.signals.CurrentCorporationExchanged.Emit(ctx, c)
 	u.settings.SetLastCorporationID(c.ID)
 }
 
-func (u *baseUI) SetAnyCorporation() error {
-	c, err := u.rs.GetAnyCorporation(context.Background())
+func (u *baseUI) SetAnyCorporation(ctx context.Context) error {
+	c, err := u.rs.GetAnyCorporation(ctx)
 	if errors.Is(err, app.ErrNotFound) {
-		u.ResetCorporation()
+		u.ResetCorporation(ctx)
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	u.SetCorporation(c)
+	u.SetCorporation(ctx, c)
 	return nil
 }
 
@@ -863,11 +862,11 @@ func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	})
 }
 
-func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort, error) {
+func (u *baseUI) ListCorporationsForSelection(ctx context.Context) ([]*app.EntityShort, error) {
 	if u.settings.HideLimitedCorporations() {
-		return u.rs.ListPrivilegedCorporations(context.Background())
+		return u.rs.ListPrivilegedCorporations(ctx)
 	}
-	return u.cs.ListCharacterCorporations(context.Background())
+	return u.cs.ListCharacterCorporations(ctx)
 }
 
 func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
@@ -907,17 +906,11 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 
 // Avatars & switch menus
 
-var (
-	avatarCache                       xsync.Map[int64, fyne.Resource]
-	characterAvatarPlaceholder64, _   = fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	corporationAvatarPlaceholder64, _ = fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
-)
-
 func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resource)) {
 	xwidget.LoadResourceAsyncWithCache(
-		characterAvatarPlaceholder64,
+		u.characterAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
-			return avatarCache.Load(characterID)
+			return u.avatarCache.Load(characterID)
 		},
 		setIcon,
 		func() (fyne.Resource, error) {
@@ -928,16 +921,16 @@ func (u *baseUI) setCharacterAvatar(characterID int64, setIcon func(fyne.Resourc
 			return fynetools.MakeAvatar(r)
 		},
 		func(r fyne.Resource) {
-			avatarCache.Store(characterID, r)
+			u.avatarCache.Store(characterID, r)
 		},
 	)
 }
 
 func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Resource)) {
 	xwidget.LoadResourceAsyncWithCache(
-		corporationAvatarPlaceholder64,
+		u.corporationAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
-			return avatarCache.Load(corporationID)
+			return u.avatarCache.Load(corporationID)
 		},
 		setIcon,
 		func() (fyne.Resource, error) {
@@ -948,12 +941,14 @@ func (u *baseUI) setCorporationAvatar(corporationID int64, setIcon func(fyne.Res
 			return fynetools.MakeAvatar(r)
 		},
 		func(r fyne.Resource) {
-			avatarCache.Store(corporationID, r)
+			u.avatarCache.Store(corporationID, r)
 		},
 	)
 }
 
-func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
+// TODO: Check for potential latency creation
+
+func (u *baseUI) makeCharacterSwitchMenu(ctx context.Context, refresh func()) []*fyne.MenuItem {
 	cc := u.scs.ListCharacters()
 	var items []*fyne.MenuItem
 	if len(cc) == 0 {
@@ -970,7 +965,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCharacter(c.ID)
+				err := u.LoadCharacter(ctx, c.ID)
 				if err != nil {
 					slog.Error("make character switch menu", "error", err)
 					u.snackbar.Show("ERROR: Failed to switch character")
@@ -981,7 +976,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
 			it.Disabled = true
 		} else {
-			it.Icon = characterAvatarPlaceholder64
+			it.Icon = u.characterAvatarPlaceholder64
 			g.Go(func() error {
 				fyne.Do(func() {
 					u.setCharacterAvatar(c.ID, func(r fyne.Resource) {
@@ -1002,9 +997,9 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	return items
 }
 
-func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
+func (u *baseUI) makeCorporationSwitchMenu(ctx context.Context, refresh func()) []*fyne.MenuItem {
 	var items []*fyne.MenuItem
-	cc, err := u.ListCorporationsForSelection()
+	cc, err := u.ListCorporationsForSelection(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch corporations", "error", err)
 		return items
@@ -1019,7 +1014,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	}))
 	currentID := u.CurrentCorporation().IDOrZero()
 	if currentID != 0 && !corporations.Contains(currentID) {
-		go u.SetAnyCorporation()
+		go u.SetAnyCorporation(ctx)
 	}
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
@@ -1029,7 +1024,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCorporation(c.ID)
+				err := u.LoadCorporation(ctx, c.ID)
 				if err != nil {
 					slog.Error("make corporation switch menu", "error", err)
 					u.snackbar.Show("ERROR: Failed to switch corporation")

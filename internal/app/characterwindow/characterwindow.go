@@ -28,19 +28,18 @@ type uiServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character
+	CurrentCorporation() *app.Corporation
 	ErrorDisplay(err error) string
 	EVEImage() *eveimageservice.EVEImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	HasCharacter() bool
-	HasCorporation() bool
 	IsMobile() bool
 	IsDeveloperMode() bool
 	IsOfflineMode() bool
 	IsUpdateDisabled() bool
-	LoadCharacter(id int64) error
-	LoadCorporation(id int64) error
-	SetAnyCharacter() error
-	SetAnyCorporation() error
+	LoadCharacter(ctx context.Context, id int64) error
+	LoadCorporation(ctx context.Context, id int64) error
+	SetAnyCharacter(ctx context.Context) error
+	SetAnyCorporation(ctx context.Context) error
 	Signals() *app.Signals
 }
 

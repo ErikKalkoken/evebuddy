@@ -30,7 +30,7 @@ type uiServices interface {
 	IsMobile() bool
 	IsOfflineMode() bool
 	IsUpdateDisabled() bool
-	LoadCharacter(id int64) error
+	LoadCharacter(ctx context.Context, id int64) error
 	MainWindow() fyne.Window
 	OnShowCharacterFunc() func()
 	Settings() *settings.Settings

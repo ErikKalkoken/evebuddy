@@ -605,9 +605,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onAppStopped = func() {
 		u.saveAppState()
 	}
-	u.onUpdateStatus = func(_ context.Context) {
+	u.onUpdateStatus = func(ctx context.Context) {
 		go func() {
-			items := u.makeCharacterSwitchMenu(func() {
+			items := u.makeCharacterSwitchMenu(ctx, func() {
 				characterHeader.Refresh()
 			})
 			fyne.Do(func() {
@@ -615,7 +615,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}()
 		go func() {
-			items := u.makeCorporationSwitchMenu(func() {
+			items := u.makeCorporationSwitchMenu(ctx, func() {
 				corporationHeader.Refresh()
 			})
 			fyne.Do(func() {
@@ -625,7 +625,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		// go statusBar.update()
 		go togglePermittedSections()
 		go func() {
-			cc, err := u.ListCorporationsForSelection()
+			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
 				slog.Error("Failed to fetch corporations", "error", err)
 				return

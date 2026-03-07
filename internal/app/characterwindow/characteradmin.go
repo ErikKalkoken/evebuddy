@@ -220,12 +220,12 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			})
 			ctx := context.Background()
 			a.update(ctx)
-			if !a.cw.u.HasCharacter() {
-				a.cw.u.LoadCharacter(character.ID)
+			if a.cw.u.CurrentCharacter() == nil {
+				a.cw.u.LoadCharacter(ctx, character.ID)
 			}
-			if !a.cw.u.HasCorporation() {
+			if a.cw.u.CurrentCorporation() == nil {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					a.cw.u.LoadCorporation(c.ID)
+					a.cw.u.LoadCorporation(ctx, c.ID)
 				}
 			}
 			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
@@ -269,14 +269,14 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 					}
 					a.update(ctx)
 					if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
-						err := a.cw.u.SetAnyCharacter()
+						err := a.cw.u.SetAnyCharacter(ctx)
 						if err != nil {
 							slog.Error("delete character", "error", err)
 							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))
 						}
 					}
 					if wasCorpDeleted {
-						err := a.cw.u.SetAnyCorporation()
+						err := a.cw.u.SetAnyCorporation(ctx)
 						if err != nil {
 							slog.Error("delete corporation", "error", err)
 							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))

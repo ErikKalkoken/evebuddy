@@ -40,8 +40,8 @@ type UIServices interface {
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
-	ResetCharacter()
-	ResetCorporation()
+	ResetCharacter(ctx context.Context)
+	ResetCorporation(ctx context.Context)
 	SetColorTheme(s settings.ColorTheme)
 	SetDeveloperMode(b bool)
 	Settings() *settings.Settings
@@ -139,6 +139,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		hint:   "App shows additional technical information like Character IDs",
 		getter: a.u.Settings().DeveloperMode,
 		onChanged: func(b bool) {
+			a.u.Settings().SetDeveloperMode(b)
 			a.u.SetDeveloperMode(b)
 		},
 	})
@@ -392,13 +393,13 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
-				a.u.ResetCharacter()
+				go a.u.ResetCharacter(context.Background())
 			},
 		})
 		actions = append(actions, settingAction{
 			Label: "Reset shown corporation (debug)",
 			Action: func() {
-				a.u.ResetCorporation()
+				go a.u.ResetCorporation(context.Background())
 			},
 		})
 	}

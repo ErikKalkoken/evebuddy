@@ -537,19 +537,19 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	u.onUpdateStatus = func(ctx context.Context) {
 		go togglePermittedSections()
 		go func() {
-			items := u.makeCharacterSwitchMenu(characterSelector.Refresh)
+			items := u.makeCharacterSwitchMenu(ctx, characterSelector.Refresh)
 			fyne.Do(func() {
 				characterSelector.SetMenuItems(items)
 			})
 		}()
 		go func() {
-			items := u.makeCorporationSwitchMenu(corpSelector.Refresh)
+			items := u.makeCorporationSwitchMenu(ctx, corpSelector.Refresh)
 			fyne.Do(func() {
 				corpSelector.SetMenuItems(items)
 			})
 		}()
 		go func() {
-			cc, err := u.ListCorporationsForSelection()
+			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
 				slog.Error("Failed to fetch corporations", "error", err)
 				return
