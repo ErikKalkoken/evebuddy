@@ -81,7 +81,7 @@ type statusWindow struct {
 	widget.BaseWidget
 
 	charactersTop     *widget.Label
-	details           *updateStatusDetail
+	details           *sectionDetails
 	detailsTop        *widget.Label
 	entities          fyne.CanvasObject
 	entityList        *widget.List
@@ -106,7 +106,7 @@ type statusWindow struct {
 func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 	a := &statusWindow{
 		charactersTop:     awidget.NewLabelWithWrapping(""),
-		details:           newUpdateStatusDetail(),
+		details:           newSectionDetails(),
 		detailsTop:        awidget.NewLabelWithWrapping(""),
 		sb:                xwidget.NewSnackbar(w),
 		sectionsTop:       awidget.NewLabelWithWrapping(""),
@@ -230,80 +230,23 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusWindow) makeEntityList() *widget.List {
+	isOfflineMode := a.u.IsOfflineMode()
 	list := widget.NewList(
 		func() int {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			name := widget.NewLabel("Template")
-			status := widget.NewLabel("Template")
-			spinner := widget.NewActivity()
-			spinner.Stop()
-			row := container.NewHBox(icon, name, spinner, layout.NewSpacer(), status)
-			return row
+			return newEntityItem(
+				isOfflineMode,
+				a.u.EVEImage().CharacterPortraitAsync,
+				a.u.EVEImage().CorporationLogoAsync,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.sectionEntities) {
 				return
 			}
-			c := a.sectionEntities[id]
-			row := co.(*fyne.Container).Objects
-			name := row[1].(*widget.Label)
-			icon := row[0].(*canvas.Image)
-			spinner := row[2].(*widget.Activity)
-			status := row[4].(*widget.Label)
-
-			name.Text = c.name
-			switch c.category {
-			case sectionGeneral:
-				name.TextStyle.Bold = false
-				name.Refresh()
-				icon.Resource = eveicon.FromName(eveicon.StarMap)
-				icon.Refresh()
-			case sectionCharacter, sectionCorporation:
-				name.TextStyle.Bold = false
-				name.Refresh()
-				switch c.category {
-				case sectionCharacter:
-					a.u.EVEImage().CharacterPortraitAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
-						icon.Resource = r
-						icon.Refresh()
-					})
-				case sectionCorporation:
-					a.u.EVEImage().CorporationLogoAsync(c.id, app.IconPixelSize, func(r fyne.Resource) {
-						icon.Resource = r
-						icon.Refresh()
-					})
-				default:
-					icon.Resource = icons.BlankSvg
-					icon.Refresh()
-				}
-			case sectionHeader:
-				name.TextStyle.Bold = true
-				name.Refresh()
-				icon.Hide()
-				spinner.Hide()
-				status.Hide()
-				return
-			}
-
-			if c.ss.IsRunning && !a.u.IsOfflineMode() {
-				spinner.Start()
-				spinner.Show()
-			} else {
-				spinner.Stop()
-				spinner.Hide()
-			}
-
-			t := c.ss.Display()
-			i := c.ss.Status().ToImportance2()
-			status.Text = t
-			status.Importance = i
-			status.Refresh()
-			status.Show()
-
-			icon.Show()
+			co.(*entityItem).set(a.sectionEntities[id])
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
@@ -406,42 +349,19 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 }
 
 func (a *statusWindow) makeSectionList() *widget.List {
+	isOfflineMode := a.u.IsOfflineMode()
 	l := widget.NewList(
 		func() int {
 			return len(a.sections)
 		},
 		func() fyne.CanvasObject {
-			spinner := widget.NewActivity()
-			spinner.Stop()
-			return container.NewHBox(
-				widget.NewLabel("Section name long"),
-				spinner,
-				layout.NewSpacer(),
-				widget.NewLabel("Status XXXX"),
-			)
+			return newSectionItem(isOfflineMode)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.sections) {
 				return
 			}
-			cs := a.sections[id]
-			hbox := co.(*fyne.Container).Objects
-			name := hbox[0].(*widget.Label)
-			status := hbox[3].(*widget.Label)
-			name.SetText(cs.SectionName)
-			s, i := cs.Display()
-			status.Text = s
-			status.Importance = i
-			status.Refresh()
-
-			spinner := hbox[1].(*widget.Activity)
-			if cs.IsRunning() && !a.u.IsOfflineMode() {
-				spinner.Start()
-				spinner.Show()
-			} else {
-				spinner.Stop()
-				spinner.Hide()
-			}
+			co.(*sectionItem).set(a.sections[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -521,7 +441,154 @@ func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string)
 	}
 }
 
-type updateStatusDetail struct {
+type loadFuncAsync func(int64, int, func(fyne.Resource))
+
+type entityItem struct {
+	widget.BaseWidget
+
+	icon                *canvas.Image
+	isOfflineMode       bool
+	loadCharacterIcon   loadFuncAsync
+	loadCorporationIcon loadFuncAsync
+	name                *widget.Label
+	spinner             *widget.Activity
+	status              *widget.Label
+	thief               *xwidget.HooverThief
+}
+
+func newEntityItem(isOfflineMode bool, loadCharacterIcon, loadCorporationIcon loadFuncAsync) *entityItem {
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	name := widget.NewLabel("Template")
+	status := widget.NewLabel("Template")
+	spinner := widget.NewActivity()
+	w := &entityItem{
+		icon:                icon,
+		isOfflineMode:       isOfflineMode,
+		loadCharacterIcon:   loadCharacterIcon,
+		loadCorporationIcon: loadCorporationIcon,
+		name:                name,
+		spinner:             spinner,
+		status:              status,
+		thief:               xwidget.NewHooverThief(),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *entityItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewStack(
+		container.NewHBox(w.icon, w.name, w.spinner, layout.NewSpacer(), w.status),
+		w.thief,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *entityItem) set(r sectionEntity) {
+	w.name.Text = r.name
+
+	switch r.category {
+	case sectionGeneral:
+		w.name.TextStyle.Bold = false
+		w.name.Refresh()
+		w.icon.Resource = eveicon.FromName(eveicon.StarMap)
+		w.icon.Refresh()
+	case sectionCharacter, sectionCorporation:
+		w.name.TextStyle.Bold = false
+		w.name.Refresh()
+		switch r.category {
+		case sectionCharacter:
+			w.loadCharacterIcon(r.id, app.IconPixelSize, func(r fyne.Resource) {
+				w.icon.Resource = r
+				w.icon.Refresh()
+			})
+		case sectionCorporation:
+			w.loadCorporationIcon(r.id, app.IconPixelSize, func(r fyne.Resource) {
+				w.icon.Resource = r
+				w.icon.Refresh()
+			})
+		default:
+			w.icon.Resource = icons.BlankSvg
+			w.icon.Refresh()
+		}
+	case sectionHeader:
+		w.name.TextStyle.Bold = true
+		w.name.Refresh()
+		w.icon.Hide()
+		w.spinner.Hide()
+		w.status.Hide()
+		w.thief.Show()
+		return
+	}
+
+	w.thief.Hide()
+	if r.ss.IsRunning && !w.isOfflineMode {
+		w.spinner.Start()
+		w.spinner.Show()
+	} else {
+		w.spinner.Stop()
+		w.spinner.Hide()
+	}
+
+	w.icon.Show()
+
+	t := r.ss.Display()
+	i := r.ss.Status().ToImportance2()
+	w.status.Text = t
+	w.status.Importance = i
+	w.status.Refresh()
+	w.status.Show()
+}
+
+type sectionItem struct {
+	widget.BaseWidget
+
+	isOfflineMode bool
+	name          *widget.Label
+	spinner       *widget.Activity
+	status        *widget.Label
+}
+
+func newSectionItem(isOfflineMode bool) *sectionItem {
+	name := widget.NewLabel("")
+	status := widget.NewLabel("")
+	spinner := widget.NewActivity()
+	w := &sectionItem{
+		name:          name,
+		spinner:       spinner,
+		status:        status,
+		isOfflineMode: isOfflineMode,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *sectionItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewHBox(
+		w.name,
+		w.spinner,
+		layout.NewSpacer(),
+		w.status,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *sectionItem) set(r app.CacheSectionStatus) {
+	w.name.SetText(r.SectionName)
+	s, i := r.Display()
+	w.status.Text = s
+	w.status.Importance = i
+	w.status.Refresh()
+
+	if r.IsRunning() && !w.isOfflineMode {
+		w.spinner.Start()
+		w.spinner.Show()
+	} else {
+		w.spinner.Stop()
+		w.spinner.Hide()
+	}
+}
+
+type sectionDetails struct {
 	widget.BaseWidget
 
 	completedAt *widget.Label
@@ -532,25 +599,33 @@ type updateStatusDetail struct {
 	timeout     *widget.Label
 }
 
-func newUpdateStatusDetail() *updateStatusDetail {
-	makeLabel := func() *widget.Label {
-		l := widget.NewLabel("")
-		l.Wrapping = fyne.TextWrapWord
-		return l
-	}
-	w := &updateStatusDetail{
-		completedAt: makeLabel(),
-		issue:       makeLabel(),
-		nextUpdate:  makeLabel(),
-		startedAt:   makeLabel(),
-		status:      makeLabel(),
-		timeout:     makeLabel(),
+func newSectionDetails() *sectionDetails {
+	w := &sectionDetails{
+		completedAt: awidget.NewLabelWithWrapping(""),
+		issue:       awidget.NewLabelWithWrapping(""),
+		nextUpdate:  awidget.NewLabelWithWrapping(""),
+		startedAt:   awidget.NewLabelWithWrapping(""),
+		status:      awidget.NewLabelWithWrapping(""),
+		timeout:     awidget.NewLabelWithWrapping(""),
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
+func (w *sectionDetails) CreateRenderer() fyne.WidgetRenderer {
+	layout := kxlayout.NewColumns(100)
+	c := container.NewVScroll(container.NewVBox(
+		container.New(layout, widget.NewLabel("Status"), w.status),
+		container.New(layout, widget.NewLabel("Started"), w.startedAt),
+		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
+		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
+		container.New(layout, widget.NewLabel("Next update"), w.nextUpdate),
+		container.New(layout, widget.NewLabel("Issue"), w.issue),
+	))
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *sectionDetails) set(ss app.CacheSectionStatus) {
 	w.status.Text, w.status.Importance = ss.Display()
 	w.status.Refresh()
 
@@ -572,17 +647,4 @@ func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
 	now := time.Now()
 	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
 	w.nextUpdate.SetText(humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "", ""))
-}
-
-func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
-	layout := kxlayout.NewColumns(100)
-	c := container.NewVScroll(container.NewVBox(
-		container.New(layout, widget.NewLabel("Status"), w.status),
-		container.New(layout, widget.NewLabel("Started"), w.startedAt),
-		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
-		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
-		container.New(layout, widget.NewLabel("Next update"), w.nextUpdate),
-		container.New(layout, widget.NewLabel("Issue"), w.issue),
-	))
-	return widget.NewSimpleRenderer(c)
 }
