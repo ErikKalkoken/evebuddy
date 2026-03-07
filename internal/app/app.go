@@ -29,6 +29,14 @@ const (
 	fallbackWebsiteURL        = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+// width of common columns in data tables
+const (
+	ColumnWidthEntity   = 200
+	ColumnWidthDateTime = 150
+	ColumnWidthLocation = 350
+	ColumnWidthRegion   = 150
+)
+
 // EntityShort is a short representation of an entity.
 type EntityShort struct {
 	ID   int64

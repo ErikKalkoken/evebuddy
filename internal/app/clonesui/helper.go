@@ -1,4 +1,4 @@
-package characterui
+package clonesui
 
 import (
 	"fmt"

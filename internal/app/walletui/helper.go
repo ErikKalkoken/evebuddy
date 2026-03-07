@@ -1,4 +1,4 @@
-package characterui
+package walletui
 
 import (
 	"fmt"

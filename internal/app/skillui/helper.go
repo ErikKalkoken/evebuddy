@@ -1,4 +1,4 @@
-package characterui
+package skillui
 
 import (
 	"fmt"

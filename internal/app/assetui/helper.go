@@ -1,4 +1,4 @@
-package characterui
+package assetui
 
 import (
 	"fmt"

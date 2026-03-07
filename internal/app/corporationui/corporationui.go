@@ -1,2 +1,2 @@
-// Package corporationui provides UI elements related to corporations.
+// Package corporationui provides the widgets for building the corporation UI.
 package corporationui

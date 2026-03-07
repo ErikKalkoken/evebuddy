@@ -92,7 +92,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	mailMenu := fyne.NewMenu("")
 	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characterui.NewCharacterSendMail(bu, c, mode, mail)
+		page := characterui.NewSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -223,7 +223,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemSkills.Refresh()
 	}
 
-	u.characterWallet.onTopUpdate = func(b string) {
+	u.characterWallet.OnTopUpdate = func(b string) {
 		navItemWallet.Supporting = b
 		navItemWallet.Refresh()
 	}
@@ -259,7 +259,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
-			u.corporationAssetSearch.focus()
+			u.corporationAssetSearch.Focus()
 		},
 	)
 
@@ -292,13 +292,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onTopUpdate = func(top string) {
+		u.corporationWallets[d].OnTopUpdate = func(top string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Supporting = top
 				corporationWalletNavs[d].Refresh()
 			})
 		}
-		u.corporationWallets[d].onNameUpdate = func(name string) {
+		u.corporationWallets[d].NnNameUpdate = func(name string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Headline = name
 				corporationWalletNavs[d].Refresh()
@@ -459,10 +459,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	searchDest := xwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
 	searchDest.OnSelected = func() {
-		u.gameSearch.focus()
+		u.gameSearch.Focus()
 	}
 	searchDest.OnSelectedAgain = func() {
-		u.gameSearch.reset()
+		u.gameSearch.Reset()
 	}
 
 	moreDest := xwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
@@ -781,7 +781,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	u.colonies.onUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, expired int) {
 		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		navItemColonies2.Refresh()
 	}
@@ -836,7 +836,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 			w.Show()
 		},
 	)
-	u.wealth.onUpdate = func(wallet, assets float64) {
+	u.wealth.OnUpdate = func(wallet, assets float64) {
 		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
 		navItemWealth.Supporting = s
 		navItemWealth.Refresh()
@@ -847,7 +847,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll))
-			u.assetSearchAll.focus()
+			u.assetSearchAll.Focus()
 		},
 	)
 
@@ -858,7 +858,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 			homeNav.Push(xwidget.NewAppBar("Character Overview", u.characterOverview))
 		},
 	)
-	u.characterOverview.onUpdate = func(characters int) {
+	u.characterOverview.OnUpdate = func(characters int) {
 		navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
 		navItemCharacters.Refresh()
 	}
@@ -870,7 +870,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 			homeNav.Push(xwidget.NewAppBar("Training", u.training))
 		},
 	)
-	u.training.onUpdate = func(expired int) {
+	u.training.OnUpdate = func(expired int) {
 		navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
 		navItemTraining.Refresh()
 	}

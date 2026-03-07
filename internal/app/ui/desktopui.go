@@ -37,14 +37,6 @@ const (
 	navDrawerMinWidth = 250
 )
 
-// width of common columns in data tables
-const (
-	columnWidthEntity   = 200
-	columnWidthDateTime = 150
-	columnWidthLocation = 350
-	columnWidthRegion   = 150
-)
-
 type shortcutDef struct {
 	shortcut fyne.Shortcut
 	handler  func(shortcut fyne.Shortcut)
@@ -130,7 +122,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.EarthSvg),
 		newContentPage("Colonies", u.colonies),
 	)
-	u.colonies.onUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, expired int) {
 		var s string
 		if expired > 0 {
 			s = fmt.Sprint(expired)
@@ -172,7 +164,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.SchoolSvg),
 		newContentPage("Training", u.training),
 	)
-	u.training.onUpdate = func(expired int) {
+	u.training.OnUpdate = func(expired int) {
 		var badge string
 		if expired > 0 {
 			badge = ihumanize.Comma(expired)
@@ -205,7 +197,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
 		if it == allAssets {
-			u.assetSearchAll.focus()
+			u.assetSearchAll.Focus()
 		}
 	}
 	homeNav.MinWidth = navDrawerMinWidth
@@ -289,7 +281,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterWalletNav,
 	)
 	characterNav.MinWidth = navDrawerMinWidth
-	u.characterWallet.onBalanceUpdate = func(balance optional.Optional[float64]) {
+	u.characterWallet.OnBalanceUpdate = func(balance optional.Optional[float64]) {
 		s := balance.StringFunc("?", func(v float64) string {
 			return ihumanize.NumberF(v, 1)
 		})
@@ -383,13 +375,13 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = navDrawerMinWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onBalanceUpdate = func(balance optional.Optional[float64]) {
+		u.corporationWallets[d].OnBalanceUpdate = func(balance optional.Optional[float64]) {
 			s := balance.StringFunc("?", func(v float64) string {
 				return ihumanize.NumberF(v, 1)
 			})
 			corporationNav.SetItemBadge(corporationWalletNavs[d], s)
 		}
-		u.corporationWallets[d].onNameUpdate = func(name string) {
+		u.corporationWallets[d].NnNameUpdate = func(name string) {
 			corporationNav.SetItemText(corporationWalletNavs[d], name)
 			corporationWalletPages[d].SetTitle(name)
 		}
@@ -664,7 +656,7 @@ func (u *DesktopUI) saveAppState() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.app.NewWindow(app.MakeWindowTitle(title))
-	page := characterui.NewCharacterSendMail(u.baseUI, c, mode, mail)
+	page := characterui.NewSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
 	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())
@@ -693,16 +685,16 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 }
 
 func (u *DesktopUI) PerformSearch(s string) {
-	u.gameSearch.resetOptions()
-	u.gameSearch.toogleOptions(false)
-	u.gameSearch.setEntry(s)
-	go u.gameSearch.doSearch(context.Background(), s)
+	u.gameSearch.ResetOptions()
+	u.gameSearch.ToogleOptions(false)
+	u.gameSearch.SetEntry(s)
+	go u.gameSearch.DoSearch(context.Background(), s)
 	u.showSearchWindow()
 }
 
 func (u *DesktopUI) showAdvancedSearch(s string) {
-	u.gameSearch.toogleOptions(true)
-	u.gameSearch.setEntry(s)
+	u.gameSearch.ToogleOptions(true)
+	u.gameSearch.SetEntry(s)
 	u.showSearchWindow()
 }
 
@@ -722,8 +714,8 @@ func (u *DesktopUI) showSearchWindow() {
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()
-	u.gameSearch.setWindow(w)
-	u.gameSearch.focus()
+	u.gameSearch.SetWindow(w)
+	u.gameSearch.Focus()
 }
 
 func (u *DesktopUI) defineShortcuts() {

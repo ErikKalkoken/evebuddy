@@ -21,16 +21,23 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/clonesui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/gamesearchui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/industryui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/skillui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/walletui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -79,46 +86,46 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assetSearchAll          *AssetSearch
-	augmentations           *Augmentations
-	characterAssetBrowser   *AssetBrowser
-	characterAttributes     *characterui.CharacterAttributes
-	characterAugmentations  *characterui.CharacterAugmentations
-	characterBiography      *characterui.CharacterBiography
-	characterContacts       *characterui.CharacterContacts
-	characterCommunications *characterui.CharacterCommunications
+	assetSearchAll          *assetui.AssetSearch
+	augmentations           *clonesui.Augmentations
+	characterAssetBrowser   *assetui.AssetBrowser
+	characterAttributes     *skillui.Attributes
+	characterAugmentations  *clonesui.CharacterAugmentations
+	characterBiography      *characterui.Biography
+	characterContacts       *characterui.Contacts
+	characterCommunications *characterui.Communications
 	characterCorporation    *corporationui.CorporationSheet
-	characterJumpClones     *characterui.CharacterJumpClones
-	characterMails          *characterui.CharacterMails
-	characterOverview       *CharacterOverview
+	characterJumpClones     *clonesui.CharacterClones
+	characterMails          *characterui.Mails
+	characterOverview       *characterui.Overview
 	characterSheet          *characterui.CharacterSheet
-	characterShips          *characterui.CharacterFlyableShips
-	characterSkillCatalogue *characterui.CharacterSkillCatalogue
-	characterSkillQueue     *characterui.CharacterSkillQueue
-	characterWallet         *CharacterWallet
-	clones                  *Clones
-	colonies                *Colonies
-	contracts               *Contracts
-	corporationAssetBrowser *AssetBrowser
-	corporationAssetSearch  *AssetSearch
-	corporationContracts    *Contracts
-	corporationIndyJobs     *IndustryJobs
-	corporationMember       *corporationui.CorporationMember
+	characterShips          *skillui.FlyableShips
+	characterSkillCatalogue *skillui.Catalogue
+	characterSkillQueue     *skillui.Queue
+	characterWallet         *walletui.CharacterWallet
+	clones                  *clonesui.Clones
+	colonies                *industryui.Colonies
+	contracts               *characterui.Contracts
+	corporationAssetBrowser *assetui.AssetBrowser
+	corporationAssetSearch  *assetui.AssetSearch
+	corporationContracts    *characterui.Contracts
+	corporationIndyJobs     *industryui.Jobs
+	corporationMember       *corporationui.Members
 	corporationSheet        *corporationui.CorporationSheet
-	corporationStructures   *corporationui.CorporationStructures
-	corporationWallets      map[app.Division]*CorporationWallet
-	gameSearch              *GameSearch
-	industryJobs            *IndustryJobs
-	loyaltyPoints           *LoyaltyPoints
-	marketOrdersBuy         *MarketOrders
-	marketOrdersSell        *MarketOrders
-	slotsManufacturing      *IndustrySlots
-	slotsReactions          *IndustrySlots
-	slotsResearch           *IndustrySlots
+	corporationStructures   *corporationui.Structures
+	corporationWallets      map[app.Division]*walletui.CorporationWallet
+	gameSearch              *gamesearchui.GameSearch
+	industryJobs            *industryui.Jobs
+	loyaltyPoints           *walletui.LoyaltyPoints
+	marketOrdersBuy         *industryui.MarketOrders
+	marketOrdersSell        *industryui.MarketOrders
+	slotsManufacturing      *industryui.Slots
+	slotsReactions          *industryui.Slots
+	slotsResearch           *industryui.Slots
 	snackbar                *xwidget.Snackbar
 	statusText              *statusText
-	training                *Training
-	wealth                  *Wealth
+	training                *skillui.Training
+	wealth                  *walletui.Wealth
 	iw                      *infowindow.InfoWindow
 
 	// Services
@@ -203,7 +210,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                arg.App,
 		concurrencyLimit:   -1, // Default is no limit
-		corporationWallets: make(map[app.Division]*CorporationWallet),
+		corporationWallets: make(map[app.Division]*walletui.CorporationWallet),
 		cs:                 arg.Character,
 		eis:                arg.EVEImage,
 		ess:                arg.ESIStatus,
@@ -355,48 +362,48 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 
-	u.assetSearchAll = NewCombinedAssetSearch(u)
-	u.augmentations = NewAugmentations(u)
-	u.characterAssetBrowser = NewCharacterAssetBrowser(u)
-	u.characterAttributes = characterui.NewCharacterAttributes(u)
-	u.characterAugmentations = characterui.NewCharacterAugmentations(u)
-	u.characterBiography = characterui.NewCharacterBiography(u)
-	u.characterContacts = characterui.NewCharacterContacts(u)
-	u.characterCommunications = characterui.NewCharacterCommunications(u)
+	u.assetSearchAll = assetui.NewSearchForAll(u)
+	u.augmentations = clonesui.NewAugmentations(u)
+	u.characterAssetBrowser = assetui.NewCharacterAssetBrowser(u)
+	u.characterAttributes = skillui.NewAttributes(u)
+	u.characterAugmentations = clonesui.NewCharacterAugmentations(u)
+	u.characterBiography = characterui.NewBiography(u)
+	u.characterContacts = characterui.NewContacts(u)
+	u.characterCommunications = characterui.NewCommunications(u)
 	u.characterCorporation = corporationui.NewCorporationSheet(u, false)
-	u.characterJumpClones = characterui.NewCharacterJumpClones(u)
-	u.characterMails = characterui.NewCharacterMails(u)
-	u.characterOverview = NewCharacterOverview(u)
+	u.characterJumpClones = clonesui.NewCharacterClones(u)
+	u.characterMails = characterui.NewMails(u)
+	u.characterOverview = characterui.NewOverview(u)
 	u.characterSheet = characterui.NewCharacterSheet(u)
-	u.characterShips = characterui.NewCharacterFlyableShips(u)
-	u.characterSkillCatalogue = characterui.NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = characterui.NewCharacterSkillQueue(u)
-	u.characterWallet = NewCharacterWallet(u)
-	u.clones = NewClones(u)
-	u.colonies = NewColonies(u)
-	u.contracts = NewContractsForCharacters(u)
-	u.corporationAssetBrowser = NewCorporationAssetBrowser(u)
-	u.corporationAssetSearch = NewAssetSearchForCorporation(u)
-	u.corporationContracts = NewContractsForCorporation(u)
-	u.corporationIndyJobs = NewIndustryJobsForCorporation(u)
+	u.characterShips = skillui.NewFlyableShips(u)
+	u.characterSkillCatalogue = skillui.NewCatalogue(u)
+	u.characterSkillQueue = skillui.NewQueue(u)
+	u.characterWallet = walletui.NewCharacterWallet(u)
+	u.clones = clonesui.NewClones(u)
+	u.colonies = industryui.NewColonies(u)
+	u.contracts = characterui.NewContractsForCharacters(u)
+	u.corporationAssetBrowser = assetui.NewCorporationAssetBrowser(u)
+	u.corporationAssetSearch = assetui.NewSearchForCorporation(u)
+	u.corporationContracts = characterui.NewContractsForCorporation(u)
+	u.corporationIndyJobs = industryui.NewJobsForCorporation(u)
 
-	u.corporationMember = corporationui.NewCorporationMember(u)
-	u.corporationStructures = corporationui.NewCorporationStructures(u)
+	u.corporationMember = corporationui.NewMembers(u)
+	u.corporationStructures = corporationui.NewStructures(u)
 	u.corporationSheet = corporationui.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d] = NewCorporationWallet(u, d)
+		u.corporationWallets[d] = walletui.NewCorporationWallet(u, d)
 	}
-	u.gameSearch = NewGameSearch(u)
-	u.industryJobs = NewIndustryJobsForOverview(u)
-	u.loyaltyPoints = NewLoyaltyPoints(u)
-	u.marketOrdersBuy = NewMarketOrders(u, true)
-	u.marketOrdersSell = NewMarketOrders(u, false)
-	u.slotsManufacturing = NewIndustrySlots(u, app.ManufacturingJob)
-	u.slotsReactions = NewIndustrySlots(u, app.ReactionJob)
-	u.slotsResearch = NewIndustrySlots(u, app.ScienceJob)
+	u.gameSearch = gamesearchui.NewGameSearch(u)
+	u.industryJobs = industryui.NewJobsForOverview(u)
+	u.loyaltyPoints = walletui.NewLoyaltyPoints(u)
+	u.marketOrdersBuy = industryui.NewMarketOrders(u, true)
+	u.marketOrdersSell = industryui.NewMarketOrders(u, false)
+	u.slotsManufacturing = industryui.NewSlots(u, app.ManufacturingJob)
+	u.slotsReactions = industryui.NewSlots(u, app.ReactionJob)
+	u.slotsResearch = industryui.NewSlots(u, app.ScienceJob)
 	u.snackbar = xwidget.NewSnackbar(u.window)
-	u.training = NewTraining(u)
-	u.wealth = NewWealth(u)
+	u.training = skillui.NewTraining(u)
+	u.wealth = walletui.NewWealth(u)
 
 	u.iw = infowindow.New(u)
 
@@ -469,7 +476,7 @@ func (u *baseUI) Start() bool {
 			u.initCorporation(ctx)
 		})
 		wg.Go(func() {
-			u.gameSearch.init(ctx)
+			u.gameSearch.Init(ctx)
 		})
 		wg.Wait()
 
@@ -793,21 +800,21 @@ func (u *baseUI) SetAnyCorporation() error {
 // initHome performs an initial load of all pages under the home tab.
 func (u *baseUI) initHome(ctx context.Context) {
 	ff := map[string]func(context.Context){
-		"characterOverview":  u.characterOverview.update,
-		"assetSearchAll":     u.assetSearchAll.update,
-		"augmentations":      u.augmentations.update,
-		"contracts":          u.contracts.update,
-		"clones":             u.clones.update,
-		"colonies":           u.colonies.update,
-		"industryJobs":       u.industryJobs.update,
-		"loyaltyPoints":      u.loyaltyPoints.update,
-		"marketOrdersSell":   u.marketOrdersSell.update,
-		"marketOrdersBuy":    u.marketOrdersBuy.update,
-		"slotsManufacturing": u.slotsManufacturing.update,
-		"slotsReactions":     u.slotsReactions.update,
-		"slotsResearch":      u.slotsResearch.update,
-		"training":           u.training.update,
-		"wealth":             u.wealth.update,
+		"characterOverview":  u.characterOverview.Update,
+		"assetSearchAll":     u.assetSearchAll.Update,
+		"augmentations":      u.augmentations.Update,
+		"contracts":          u.contracts.Update,
+		"clones":             u.clones.Update,
+		"colonies":           u.colonies.Update,
+		"industryJobs":       u.industryJobs.Update,
+		"loyaltyPoints":      u.loyaltyPoints.Update,
+		"marketOrdersSell":   u.marketOrdersSell.Update,
+		"marketOrdersBuy":    u.marketOrdersBuy.Update,
+		"slotsManufacturing": u.slotsManufacturing.Update,
+		"slotsReactions":     u.slotsReactions.Update,
+		"slotsResearch":      u.slotsResearch.Update,
+		"training":           u.training.Update,
+		"wealth":             u.wealth.Update,
 	}
 	myLog := slog.With("title", "startup")
 	myLog.Debug("started")
@@ -825,7 +832,7 @@ func (u *baseUI) initHome(ctx context.Context) {
 }
 
 func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
-	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
+	u.app.Settings().SetTheme(xtheme.New(u.defaultTheme, s))
 }
 
 func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
