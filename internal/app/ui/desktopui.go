@@ -17,7 +17,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/icrowley/fake"
-	"golang.org/x/sync/singleflight"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
@@ -45,8 +44,6 @@ type shortcutDef struct {
 // The DesktopUI creates the UI for desktop.
 type DesktopUI struct {
 	*baseUI
-
-	sfg singleflight.Group
 }
 
 // NewDesktopUI build the UI and returns it.

@@ -44,9 +44,8 @@ func (ca *httpCacheAdapter) makeKey(key string) string {
 
 // serviceCacheAdapter adopts pcache to be used with services.
 type serviceCacheAdapter struct {
-	cache   *pcache.PCache
-	prefix  string
-	timeout time.Duration
+	cache  *pcache.PCache
+	prefix string
 }
 
 // newServiceCacheAdapter returns a new cacheAdapter2.

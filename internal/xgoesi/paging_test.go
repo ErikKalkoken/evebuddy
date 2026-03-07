@@ -20,9 +20,6 @@ func TestFetchPagesConcurrently(t *testing.T) {
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})
 	ctx := context.Background()
-	const (
-		characterID = 99
-	)
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
 		httpmock.Reset()

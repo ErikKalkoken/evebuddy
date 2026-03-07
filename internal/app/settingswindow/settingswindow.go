@@ -455,7 +455,12 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 				if writer == nil {
 					return nil
 				}
-				defer writer.Close()
+				defer func() {
+					err := writer.Close()
+					if err != nil {
+						slog.Error("Tag export", "error", err)
+					}
+				}()
 				if _, err := writer.Write(data); err != nil {
 					return err
 				}

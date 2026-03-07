@@ -138,9 +138,13 @@ func (s *EVEUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 		g.Go(func() error {
 			_, changed, err := s.UpdateOrCreateCharacterESI(ctx, id)
 			if errors.Is(err, app.ErrNotFound) {
-				s.st.DeleteEveCharacter(ctx, id)
-				slog.Info("EVE Character no longer exists and was deleted", "characterID", id)
-				hasChanged[i] = true
+				err := s.st.DeleteEveCharacter(ctx, id)
+				if err != nil {
+					slog.Warn("Deleting character that no longer exists", "characterID", id, "error", err)
+				} else {
+					slog.Info("EVE Character no longer exists and was deleted", "characterID", id)
+					hasChanged[i] = true
+				}
 				return nil
 			}
 			if err != nil {

@@ -516,11 +516,14 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		))
 	}
 	if arg.InstallerID == 0 {
-		f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+		_, err := f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       character.ID,
 			Name:     character.EveCharacter.Name,
 			Category: app.EveEntityCharacter,
 		})
+		if err != nil {
+			panic(err)
+		}
 		arg.InstallerID = character.ID
 	}
 	if arg.OutputLocationID == 0 {

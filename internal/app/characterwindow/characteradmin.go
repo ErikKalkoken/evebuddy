@@ -221,11 +221,27 @@ func (a *characterAdmin) showAddCharacterDialog() {
 			ctx := context.Background()
 			a.update(ctx)
 			if a.cw.u.CurrentCharacter() == nil {
-				a.cw.u.LoadCharacter(ctx, character.ID)
+				err := a.cw.u.LoadCharacter(ctx, character.ID)
+				if err != nil {
+					slog.Error(
+						"Setting newly added character",
+						slog.Int64("characterID", character.ID),
+						slog.Any("error", err),
+					)
+					a.cw.sb.Show("Failed to load character")
+				}
 			}
 			if a.cw.u.CurrentCorporation() == nil {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					a.cw.u.LoadCorporation(ctx, c.ID)
+					err := a.cw.u.LoadCorporation(ctx, c.ID)
+					if err != nil {
+						slog.Error(
+							"Setting newly added corporation",
+							slog.Int64("corporationID", c.ID),
+							slog.Any("error", err),
+						)
+						a.cw.sb.Show("Failed to load corporation")
+					}
 				}
 			}
 			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
