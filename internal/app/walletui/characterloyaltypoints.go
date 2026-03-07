@@ -104,7 +104,7 @@ func NewCharacterLoyaltyPoints(u uiservices.UIServices) *CharacterLoyaltyPoints 
 	},
 	)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section != app.SectionCharacterLoyaltyPoints {

@@ -90,7 +90,7 @@ func NewCharacterWalletTransaction(u uiservices.UIServices) *WalletTransactions 
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterWalletTransactions {
@@ -107,7 +107,7 @@ func NewCorporationWalletTransactions(u uiservices.UIServices, d app.Division) *
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+		if a.corporation.Load().IDorZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section == app.CorporationSectionWalletTransactions(d) {
@@ -452,7 +452,7 @@ func (a *WalletTransactions) Update(ctx context.Context) {
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	var err error
 	var rows []walletTransactionRow
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
@@ -524,7 +524,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID
 func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	var err error
 	var rows []walletTransactionRow
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)

@@ -229,7 +229,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 		a.update(ctx)
 	})
 	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+		if a.corporation.Load().IDorZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section != app.SectionCorporationStructures {
@@ -345,7 +345,7 @@ func (a *Structures) update(ctx context.Context) {
 			a.filterRowsAsync(-1)
 		})
 	}
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	if corporationID == 0 {
 		clear()
 		return

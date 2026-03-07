@@ -68,7 +68,7 @@ func NewMembers(s uiservices.UIServices) *Members {
 		a.update(ctx)
 	})
 	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+		if a.corporation.Load().IDorZero() != arg.CorporationID {
 			return
 		}
 		if arg.Section != app.SectionCorporationMembers {

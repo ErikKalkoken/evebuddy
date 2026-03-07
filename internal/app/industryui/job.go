@@ -341,7 +341,7 @@ func newIndustryJobs(u uiservices.UIServices, forCorporation bool) *Jobs {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+			if a.corporation.Load().IDorZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section == app.SectionCorporationIndustryJobs {
@@ -751,7 +751,7 @@ func shortenBlueprintName(typ *app.EntityShort) string {
 }
 
 func (a *Jobs) fetchCorporationJobs(ctx context.Context) ([]industryJobRow, error) {
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}

@@ -52,7 +52,7 @@ func NewAttributes(s uiservices.UIServices) *Attributes {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterAttributes {
@@ -93,7 +93,7 @@ func (a *Attributes) update(ctx context.Context) {
 	var err error
 	var total int64
 	var attributes []characterAttributeRow
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(ctx, characterID)

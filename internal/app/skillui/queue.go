@@ -72,7 +72,7 @@ func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
 		}, a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -81,7 +81,7 @@ func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
-		if characterIDOrZero(a.character.Load()) != characterID {
+		if a.character.Load().IDorZero() != characterID {
 			return
 		}
 		c, err := a.u.Character().GetCharacter(ctx, characterID)

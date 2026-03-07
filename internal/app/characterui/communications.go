@@ -71,7 +71,7 @@ func NewCommunications(u uiservices.UIServices) *Communications {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterNotifications {
@@ -178,7 +178,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
+			item.Set(a.character.Load().IDorZero(), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
@@ -265,7 +265,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 
 func (a *Communications) update(ctx context.Context) {
 	var err error
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	var groups []notificationFolder
 	var unreadCount, totalCount optional.Optional[int]
@@ -334,7 +334,7 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 
 func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
 	var err error
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	var notifications []*app.CharacterNotification
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {

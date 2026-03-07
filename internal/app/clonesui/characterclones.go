@@ -78,7 +78,7 @@ func NewCharacterClones(u uiservices.UIServices) *CharacterClones {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterJumpClones {
@@ -123,7 +123,7 @@ func (a *CharacterClones) makeTree() *xwidget.Tree[characterCloneNode] {
 }
 
 func (a *CharacterClones) update(ctx context.Context) {
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		fyne.Do(func() {
 			a.top.SetWithText("No character", widget.RichTextStyle{

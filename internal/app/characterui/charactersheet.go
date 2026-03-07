@@ -83,7 +83,7 @@ func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -101,7 +101,7 @@ func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
 		if c == nil {
 			return
 		}
-		characterID := characterIDOrZero(c)
+		characterID := c.IDorZero()
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			if arg.Changed.Contains(characterID) {

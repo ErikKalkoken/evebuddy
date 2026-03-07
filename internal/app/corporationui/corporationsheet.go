@@ -79,7 +79,7 @@ func NewCorporationSheet(s services.UIServices, isCorpMode bool) *CorporationShe
 			a.update(ctx)
 		})
 		a.s.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-			corporationID := corporationIDOrZero(a.corporation.Load())
+			corporationID := a.corporation.Load().IDorZero()
 			if corporationID == 0 {
 				return
 			}

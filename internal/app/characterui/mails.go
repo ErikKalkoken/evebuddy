@@ -155,7 +155,7 @@ func NewMails(u uiservices.UIServices) *Mails {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -261,7 +261,7 @@ func (a *Mails) update(ctx context.Context) {
 			a.compose.Disable()
 		})
 	}
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		clearAll()
 		setStatus("No character", widget.LowImportance)
@@ -310,7 +310,7 @@ func (a *Mails) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
 	func() {
-		characterID := characterIDOrZero(a.character.Load())
+		characterID := a.character.Load().IDorZero()
 		if characterID == 0 {
 			return
 		}
@@ -462,7 +462,7 @@ func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (xwidget.Tr
 
 func (a *Mails) updateUnreadCounts(ctx context.Context) {
 	td := a.folders.Data()
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
@@ -565,7 +565,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(characterIDOrZero(a.character.Load()), m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(a.character.Load().IDorZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {
@@ -751,7 +751,7 @@ func (a *Mails) clearMail() {
 }
 
 func (a *Mails) loadMail(ctx context.Context, mailID int64) {
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		return
 	}

@@ -35,7 +35,7 @@ func NewBiography(u uiservices.UIServices) *Biography {
 		a.update(ctx)
 	})
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		characterID := characterIDOrZero(a.character.Load())
+		characterID := a.character.Load().IDorZero()
 		if characterID == 0 {
 			return
 		}

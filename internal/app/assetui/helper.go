@@ -76,22 +76,6 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	return x
 }
 
-// characterIDOrZero returns the ID of a character or 0 if the c does not exist.
-func characterIDOrZero(c *app.Character) int64 {
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
-// corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.
-func corporationIDOrZero(c *app.Corporation) int64 {
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
 // corporationNameOrZero returns the name of a corporation or "" if the c does not exist.
 func corporationNameOrZero(c *app.Corporation) string {
 	if c == nil || c.EveCorporation == nil {

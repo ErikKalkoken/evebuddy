@@ -48,7 +48,7 @@ func NewCharacterWallet(u uiservices.UIServices) *CharacterWallet {
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterWalletBalance {
@@ -107,7 +107,7 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 			a.balance.Refresh()
 		})
 	}
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		clear()
 		setBalance("", widget.MediumImportance)

@@ -50,14 +50,6 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	})
 }
 
-// characterIDOrZero returns the ID of a character or 0 if the c does not exist.
-func characterIDOrZero(c *app.Character) int64 {
-	if c == nil {
-		return 0
-	}
-	return c.ID
-}
-
 // TODO: Remove this helper
 
 // makeTopText makes the content for the top label of a gui element.

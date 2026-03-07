@@ -137,7 +137,7 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterSkills {
@@ -145,7 +145,7 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 		}
 	})
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		characterID := characterIDOrZero(a.character.Load())
+		characterID := a.character.Load().IDorZero()
 		if characterID == 0 {
 			return
 		}
@@ -229,7 +229,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			r := a.rowsFiltered[id]
-			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, characterIDOrZero(a.character.Load()))
+			a.u.InfoWindow().ShowTypeWithCharacter(r.typeID, a.character.Load().IDorZero())
 		}
 	}
 	return makeGridOrList(app.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
@@ -314,7 +314,7 @@ func (a *Catalogue) update(ctx context.Context) {
 		return
 	}
 
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		clear()
 		setTop("No character", widget.LowImportance)

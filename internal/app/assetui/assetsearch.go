@@ -432,7 +432,7 @@ func newAssetSearch(u uiservices.UIServices, forCorporation bool) *AssetSearch {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+			if a.corporation.Load().IDorZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section != app.SectionCorporationAssets {

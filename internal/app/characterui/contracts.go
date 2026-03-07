@@ -236,7 +236,7 @@ func newContracts(u uiservices.UIServices, forCorporation bool) *Contracts {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+			if a.corporation.Load().IDorZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section != app.SectionCorporationContracts {
@@ -453,7 +453,7 @@ func (a *Contracts) Update(ctx context.Context) {
 }
 
 func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	if corporationID == 0 {
 		return nil, 0, nil
 	}

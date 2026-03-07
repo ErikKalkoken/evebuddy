@@ -52,7 +52,7 @@ func NewCorporationWallet(u uiservices.UIServices, division app.Division) *Corpo
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
+		if a.corporation.Load().IDorZero() != arg.CorporationID {
 			return
 		}
 		switch arg.Section {
@@ -113,7 +113,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 			a.balance.Refresh()
 		})
 	}
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	if corporationID == 0 {
 		clear()
 		setBalance("", widget.MediumImportance)
@@ -155,7 +155,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 func (a *CorporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
-	corporationID := corporationIDOrZero(a.corporation.Load())
+	corporationID := a.corporation.Load().IDorZero()
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.Corporation().GetWalletName(ctx, corporationID, a.division)

@@ -42,7 +42,7 @@ func NewCharacterAugmentations(s uiservices.UIServices) *CharacterAugmentations 
 		a.update(ctx)
 	})
 	a.s.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterImplants {
@@ -85,7 +85,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 func (a *CharacterAugmentations) update(ctx context.Context) {
 	var err error
 	var implants []*app.CharacterImplant
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	hasData, err := a.s.Character().HasSection(ctx, characterID, app.SectionCharacterImplants)
 	if err != nil {
 		panic(err)

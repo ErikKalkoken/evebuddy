@@ -138,7 +138,7 @@ func NewContacts(u uiservices.UIServices) *Contacts {
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		switch arg.Section {
@@ -390,7 +390,7 @@ func (a *Contacts) update(ctx context.Context) {
 			a.footer.Refresh()
 		})
 	}
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		clear()
 		setFooter("No character", widget.LowImportance)

@@ -119,7 +119,7 @@ func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
 		},
 	)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
+		if a.character.Load().IDorZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterSkills {
@@ -128,7 +128,7 @@ func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
 	},
 	)
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		characterID := characterIDOrZero(a.character.Load())
+		characterID := a.character.Load().IDorZero()
 		if characterID == 0 {
 			return
 		}
@@ -184,7 +184,7 @@ func (a *FlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.rowsFiltered[id]
-		a.u.InfoWindow().ShowTypeWithCharacter(o.typeID, characterIDOrZero(a.character.Load()))
+		a.u.InfoWindow().ShowTypeWithCharacter(o.typeID, a.character.Load().IDorZero())
 	}
 	return g
 }
@@ -279,7 +279,7 @@ func (a *FlyableShips) update(ctx context.Context) {
 		return
 	}
 
-	characterID := characterIDOrZero(a.character.Load())
+	characterID := a.character.Load().IDorZero()
 	if characterID == 0 {
 		clear()
 		setTop("No character", widget.LowImportance)
