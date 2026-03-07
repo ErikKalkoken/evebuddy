@@ -20,6 +20,7 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -83,8 +84,8 @@ func NewFlyableShips(u uiservices.UIServices) *FlyableShips {
 	)
 	a := &FlyableShips{
 		columnSorter: columnSorter,
-		footer:       newLabelWithTruncation(),
-		top:          newLabelWithWrapping(),
+		footer:       awidget.NewLabelWithTruncation(""),
+		top:          awidget.NewLabelWithWrapping(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

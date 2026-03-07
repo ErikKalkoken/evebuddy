@@ -21,6 +21,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -259,7 +260,7 @@ func newIndustryJobs(u uiservices.UIServices, forCorporation bool) *Jobs {
 		},
 	}})
 	a := &Jobs{
-		footer:         newLabelWithWrapping(),
+		footer:         awidget.NewLabelWithWrapping(""),
 		columnSorter:   xwidget.NewColumnSorter(columns, industryJobsColEndDate, xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,

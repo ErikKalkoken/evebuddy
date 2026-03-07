@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -100,17 +101,12 @@ type statusWindow struct {
 }
 
 func newStatusWindow(s UIServices, w fyne.Window) *statusWindow {
-	newLabelWithWrapping := func() *widget.Label {
-		l := widget.NewLabel("")
-		l.Wrapping = fyne.TextWrapWord
-		return l
-	}
 	a := &statusWindow{
-		charactersTop:     newLabelWithWrapping(),
+		charactersTop:     awidget.NewLabelWithWrapping(""),
 		details:           newUpdateStatusDetail(),
-		detailsTop:        newLabelWithWrapping(),
+		detailsTop:        awidget.NewLabelWithWrapping(""),
 		sb:                xwidget.NewSnackbar(w),
-		sectionsTop:       newLabelWithWrapping(),
+		sectionsTop:       awidget.NewLabelWithWrapping(""),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		signalKey:         s.Signals().UniqueKey(),

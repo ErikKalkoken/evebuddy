@@ -19,6 +19,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -85,7 +86,7 @@ func NewLoyaltyPoints(u uiservices.UIServices) *LoyaltyPoints {
 	)
 	a := &LoyaltyPoints{
 		columnSorter: columnSorter,
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		top:          top,
 		u:            u,
 	}

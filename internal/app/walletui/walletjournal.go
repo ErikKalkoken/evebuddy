@@ -20,6 +20,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -171,8 +172,8 @@ func newWalletJournal(u uiservices.UIServices, division app.Division) *WalletJou
 	a := &WalletJournal{
 		columnSorter: xwidget.NewColumnSorter(columns, walletJournalColDate, xwidget.SortDesc),
 		division:     division,
-		footer:       newLabelWithTruncation(),
-		top:          newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
+		top:          awidget.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

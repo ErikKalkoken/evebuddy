@@ -15,7 +15,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -29,9 +29,9 @@ type SendMail struct {
 
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
-	from      *commonui.EveEntityEntry
+	from      *awidget.EveEntityEntry
 	subject   *widget.Entry
-	to        *commonui.EveEntityEntry
+	to        *awidget.EveEntityEntry
 	u         uiservices.UIServices
 	w         fyne.Window
 }
@@ -44,7 +44,7 @@ func NewSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMod
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = commonui.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage())
+	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage())
 	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -54,7 +54,7 @@ func NewSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMod
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = commonui.NewEveEntityEntry(toButton, labelWith, u.EVEImage())
+	a.to = awidget.NewEveEntityEntry(toButton, labelWith, u.EVEImage())
 	a.to.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -175,7 +175,7 @@ func showAddDialog(u uiservices.UIServices, characterID int64, onSelected func(e
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			commonui.LoadEveEntityIconAsync(u.EVEImage(), ee, func(r fyne.Resource) {
+			awidget.LoadEveEntityIconAsync(u.EVEImage(), ee, func(r fyne.Resource) {
 				image.Resource = r
 				image.Refresh()
 			})

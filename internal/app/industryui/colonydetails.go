@@ -19,6 +19,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -149,7 +150,7 @@ func newColonyDetails(u uiservices.UIServices, characterID, planetID int64, w fy
 	planet.Wrapping = fyne.TextWrapWord
 	a := &colonyDetails{
 		columnSorter: columnSorter,
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		owner:        makeHyperLink(),
 		planet:       planet,

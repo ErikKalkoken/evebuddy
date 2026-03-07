@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -206,7 +207,7 @@ func NewSlots(u uiservices.UIServices, slotType app.IndustryJobType) *Slots {
 		},
 	}})
 	a := &Slots{
-		footer:       newLabelWithWrapping(),
+		footer:       awidget.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, industrySlotsColCharacter, xwidget.SortAsc),
 		slotType:     slotType,
 		u:            u,

@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -173,7 +174,7 @@ func newContracts(u uiservices.UIServices, forCorporation bool) *Contracts {
 	a := &Contracts{
 		forCorporation: forCorporation,
 		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
-		footer:         newLabelWithTruncation(),
+		footer:         awidget.NewLabelWithTruncation(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

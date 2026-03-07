@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -131,7 +131,7 @@ func NewClones(u uiservices.UIServices) *Clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, commonui.MakeEveEntityColumn(commonui.MakeEveEntityColumnParams[cloneRow]{
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[cloneRow]{
 		ColumnID: clonesColCharacter,
 		EIS:      u.EVEImage(),
 		GetEntity: func(r cloneRow) *app.EveEntity {
@@ -159,7 +159,7 @@ func NewClones(u uiservices.UIServices) *Clones {
 	a := &Clones{
 		columnSorter: xwidget.NewColumnSorter(columns, clonesColLocation, xwidget.SortAsc),
 		originLabel:  xwidget.NewRichTextWithText("(not set)"),
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

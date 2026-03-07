@@ -16,7 +16,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -45,7 +45,7 @@ type Members struct {
 
 func NewMembers(s uiservices.UIServices) *Members {
 	a := &Members{
-		footer: newLabelWithTruncation(),
+		footer: awidget.NewLabelWithTruncation(""),
 		s:      s,
 	}
 	a.list = a.makeList()
@@ -209,7 +209,7 @@ type corporationMemberItem struct {
 
 	ceo    *ttwidget.Icon
 	owned  *ttwidget.Icon
-	member *commonui.EntityListItem
+	member *awidget.EntityListItem
 }
 
 func newCorporationMemberItem(loadCharacterIcon loadFuncAsync) *corporationMemberItem {
@@ -220,7 +220,7 @@ func newCorporationMemberItem(loadCharacterIcon loadFuncAsync) *corporationMembe
 	w := &corporationMemberItem{
 		ceo:    ceo,
 		owned:  owned,
-		member: commonui.NewEntityListItem(false, loadCharacterIcon),
+		member: awidget.NewEntityListItem(false, loadCharacterIcon),
 	}
 	w.ExtendBaseWidget(w)
 	return w

@@ -15,6 +15,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -32,7 +33,7 @@ type CharacterAugmentations struct {
 
 func NewCharacterAugmentations(s uiservices.UIServices) *CharacterAugmentations {
 	a := &CharacterAugmentations{
-		top: newLabelWithWrapping(),
+		top: awidget.NewLabelWithWrapping(""),
 		s:   s,
 	}
 	a.ExtendBaseWidget(a)

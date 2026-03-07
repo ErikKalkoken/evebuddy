@@ -1,4 +1,4 @@
-package commonui
+package awidget
 
 import (
 	"fyne.io/fyne/v2"

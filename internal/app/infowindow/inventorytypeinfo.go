@@ -19,7 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -608,7 +608,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				commonui.NewSkillLevel(),
+				awidget.NewSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -617,7 +617,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*commonui.SkillLevel)
+			level := row[3].(*awidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {

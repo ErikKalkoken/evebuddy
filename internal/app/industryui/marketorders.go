@@ -19,7 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -150,7 +150,7 @@ const (
 
 func NewMarketOrders(u uiservices.UIServices, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
-		commonui.MakeEveEntityColumn(commonui.MakeEveEntityColumnParams[marketOrderRow]{
+		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
 			EIS:      u.EVEImage(),
 			GetEntity: func(r marketOrderRow) *app.EveEntity {
@@ -231,7 +231,7 @@ func NewMarketOrders(u uiservices.UIServices, isBuyOrders bool) *MarketOrders {
 		}})
 	a := &MarketOrders{
 		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		isBuyOrders:  isBuyOrders,
 		u:            u,
 	}

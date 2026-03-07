@@ -15,12 +15,6 @@ import (
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
 
-func newLabelWithTruncation() *widget.Label {
-	l := widget.NewLabel("")
-	l.Truncation = fyne.TextTruncateEllipsis
-	return l
-}
-
 // formatISKAmount returns a formatted ISK amount.
 // This format is mainly used in detail windows.
 func formatISKAmount(v float64) string {

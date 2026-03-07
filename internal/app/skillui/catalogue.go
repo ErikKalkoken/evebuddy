@@ -17,7 +17,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -93,12 +93,12 @@ func NewCatalogue(u uiservices.UIServices) *Catalogue {
 	)
 	a := &Catalogue{
 		columnSorter:   columnSorter,
-		footer:         newLabelWithTruncation(),
+		footer:         awidget.NewLabelWithTruncation(""),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		search:         widget.NewEntry(),
-		top:            newLabelWithWrapping(),
+		top:            awidget.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -186,7 +186,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				commonui.NewSkillLevel(),
+				awidget.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -219,7 +219,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 		)
 		label.SetToolTip(tt)
 
-		level := row[1].(*commonui.SkillLevel)
+		level := row[1].(*awidget.SkillLevel)
 		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {

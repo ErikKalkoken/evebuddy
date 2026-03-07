@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -359,9 +360,9 @@ func newAssetSearch(u uiservices.UIServices, forCorporation bool) *AssetSearch {
 	a := &AssetSearch{
 		columnSorter:   xwidget.NewColumnSorter(columns, assetsColItem, xwidget.SortAsc),
 		forCorporation: forCorporation,
-		footer:         newLabelWithTruncation(),
+		footer:         awidget.NewLabelWithTruncation(""),
 		search:         widget.NewEntry(),
-		top:            newLabelWithWrapping(),
+		top:            awidget.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

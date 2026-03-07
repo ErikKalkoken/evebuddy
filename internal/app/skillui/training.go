@@ -20,7 +20,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -144,7 +144,7 @@ const (
 
 func NewTraining(u uiservices.UIServices) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
-		commonui.MakeEveEntityColumn(commonui.MakeEveEntityColumnParams[trainingRow]{
+		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,
 			EIS:      u.EVEImage(),
 			GetEntity: func(r trainingRow) *app.EveEntity {

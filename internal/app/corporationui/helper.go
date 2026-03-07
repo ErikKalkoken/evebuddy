@@ -13,18 +13,6 @@ import (
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
 
-func newLabelWithWrapping() *widget.Label {
-	l := widget.NewLabel("")
-	l.Wrapping = fyne.TextWrapWord
-	return l
-}
-
-func newLabelWithTruncation() *widget.Label {
-	l := widget.NewLabel("")
-	l.Truncation = fyne.TextTruncateEllipsis
-	return l
-}
-
 func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
 	x := makeLinkLabel(text, action)
 	x.Wrapping = fyne.TextWrapWord

@@ -15,7 +15,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -72,7 +72,7 @@ func NewCharacterLoyaltyPoints(u uiservices.UIServices) *CharacterLoyaltyPoints 
 	)
 	a := &CharacterLoyaltyPoints{
 		columnSorter: columnSorter,
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.list = a.makeList()
@@ -148,7 +148,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			corporation := commonui.NewEntityListItem(false, a.u.EVEImage().CorporationLogoAsync)
+			corporation := awidget.NewEntityListItem(false, a.u.EVEImage().CorporationLogoAsync)
 			points := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
@@ -164,7 +164,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 			}
 			r := a.rowsFiltered[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*commonui.EntityListItem).Set(r.corporationID, r.corporationName)
+			box[0].(*awidget.EntityListItem).Set(r.corporationID, r.corporationName)
 			hbox := box[1].(*fyne.Container).Objects
 			points := hbox[0].(*widget.Label)
 			points.SetText(ihumanize.Comma(r.points))

@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
@@ -478,7 +478,7 @@ func (w *searchResult) set(o *app.EveEntity) {
 					return w.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return commonui.EntityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
+				return awidget.EntityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
 			}
 		},
 		func(r fyne.Resource) {

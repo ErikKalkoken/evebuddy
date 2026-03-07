@@ -18,7 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -170,14 +170,14 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return commonui.NewMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*commonui.MailHeaderItem)
+			item := co.(*awidget.MailHeaderItem)
 			item.Set(a.character.Load().IDorZero(), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -399,11 +399,11 @@ type communicationDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *commonui.MailHeader
+	header  *awidget.MailHeader
 	subject *widget.Label
 }
 
-func newCommunicationDetail(eis commonui.EveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
@@ -413,7 +413,7 @@ func newCommunicationDetail(eis commonui.EveEntityEIS, show func(*app.EveEntity)
 	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
-		header:  commonui.NewMailHeader(eis, show),
+		header:  awidget.NewMailHeader(eis, show),
 		subject: subject,
 	}
 	w.ExtendBaseWidget(w)

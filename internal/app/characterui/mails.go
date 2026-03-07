@@ -19,7 +19,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -554,7 +554,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return commonui.NewMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -564,7 +564,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			if a.character.Load() == nil {
 				return
 			}
-			item := co.(*commonui.MailHeaderItem)
+			item := co.(*awidget.MailHeaderItem)
 			item.Set(a.character.Load().IDorZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -830,14 +830,14 @@ type mailDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *commonui.MailHeader
+	header  *awidget.MailHeader
 	subject *widget.Label
 }
 
 func newMailDetail(u uiservices.UIServices) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  commonui.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
+		header:  awidget.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

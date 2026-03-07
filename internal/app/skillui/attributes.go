@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
@@ -42,7 +43,7 @@ type Attributes struct {
 
 func NewAttributes(s uiservices.UIServices) *Attributes {
 	a := &Attributes{
-		footer: newLabelWithTruncation(),
+		footer: awidget.NewLabelWithTruncation(""),
 		u:      s,
 	}
 	a.list = a.makeAttributeList()

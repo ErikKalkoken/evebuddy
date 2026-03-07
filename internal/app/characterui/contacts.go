@@ -21,7 +21,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -86,7 +86,7 @@ func NewContacts(u uiservices.UIServices) *Contacts {
 	)
 	a := &Contacts{
 		columnSorter: columnSorter,
-		footer:       newLabelWithTruncation(),
+		footer:       awidget.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.list = a.makeList()
@@ -463,7 +463,7 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      commonui.EveEntityEIS
+	eis      awidget.EveEntityEIS
 	icon     *canvas.Image
 	category *widget.Label
 	npc      *widget.Label
@@ -473,7 +473,7 @@ type characterContactItem struct {
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis commonui.EveEntityEIS) *characterContactItem {
+func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -530,7 +530,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	commonui.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

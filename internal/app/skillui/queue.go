@@ -15,7 +15,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -57,7 +57,7 @@ func NewQueueWithCharacter(u uiservices.UIServices, c *app.Character) *Queue {
 		skillqueue:           app.NewCharacterSkillqueue(),
 		statusResource:       statusResources,
 		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
-		top:                  newLabelWithWrapping(),
+		top:                  awidget.NewLabelWithWrapping(""),
 		u:                    u,
 	}
 	a.ExtendBaseWidget(a)
@@ -117,7 +117,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
-			level := commonui.NewSkillLevel()
+			level := awidget.NewSkillLevel()
 			if app.IsMobile() {
 				level.Hide()
 			}
@@ -131,7 +131,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*commonui.SkillLevel)
+			level := c[1].(*awidget.SkillLevel)
 			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel

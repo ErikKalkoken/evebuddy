@@ -13,7 +13,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -89,7 +89,7 @@ func (a *characterTraining) makeList() *widget.List {
 				nil,
 				nil,
 				kxwidget.NewSwitch(nil),
-				commonui.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
+				awidget.NewEntityListItem(true, a.cw.s.EVEImage().CharacterPortraitAsync),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -99,7 +99,7 @@ func (a *characterTraining) makeList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*commonui.EntityListItem).Set(r.EveCharacter.ID, r.EveCharacter.Name)
+			border[0].(*awidget.EntityListItem).Set(r.EveCharacter.ID, r.EveCharacter.Name)
 
 			sw := border[1].(*kxwidget.Switch)
 			sw.On = r.IsTrainingWatched

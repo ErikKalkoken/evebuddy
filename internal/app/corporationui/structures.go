@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
@@ -112,7 +112,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 		Update: func(r structureRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.structureName)
 		},
-	}, commonui.MakeEveEntityColumn(commonui.MakeEveEntityColumnParams[structureRow]{
+	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[structureRow]{
 		ColumnID: structuresColType,
 		EIS:      s.EVEImage(),
 		Label:    "Type",
@@ -152,7 +152,7 @@ func NewStructures(s uiservices.UIServices) *Structures {
 	}})
 	a := &Structures{
 		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
-		footer:       newLabelWithWrapping(),
+		footer:       awidget.NewLabelWithWrapping(""),
 		s:            s,
 	}
 	a.ExtendBaseWidget(a)

@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -227,7 +228,7 @@ func newAssetBrowserNavigation(ab *AssetBrowser) *assetBrowserNavigation {
 		ab:            ab,
 		filteredTrees: make(map[assetFilter]filteredTree),
 		search:        widget.NewEntry(),
-		footer:        newLabelWithWrapping(),
+		footer:        awidget.NewLabelWithWrapping(""),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -581,7 +582,7 @@ type assetBrowserContainer struct {
 func newAssetBrowserContainer(ab *AssetBrowser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
 		ab:     ab,
-		footer: newLabelWithTruncation(),
+		footer: awidget.NewLabelWithTruncation(""),
 		search: widget.NewEntry(),
 	}
 	a.ExtendBaseWidget(a)
