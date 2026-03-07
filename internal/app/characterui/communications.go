@@ -49,10 +49,10 @@ type Communications struct {
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	u                uiServices
+	u                ui
 }
 
-func NewCommunications(u uiServices) *Communications {
+func NewCommunications(u ui) *Communications {
 	a := &Communications{
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),

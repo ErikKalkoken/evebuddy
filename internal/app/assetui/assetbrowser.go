@@ -55,18 +55,18 @@ type AssetBrowser struct {
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
-	u              uiServices
+	u              ui
 }
 
-func NewCharacterAssetBrowser(u uiServices) *AssetBrowser {
+func NewCharacterAssetBrowser(u ui) *AssetBrowser {
 	return newAssetBrowser(u, false)
 }
 
-func NewCorporationAssetBrowser(u uiServices) *AssetBrowser {
+func NewCorporationAssetBrowser(u ui) *AssetBrowser {
 	return newAssetBrowser(u, true)
 }
 
-func newAssetBrowser(u uiServices, forCorporation bool) *AssetBrowser {
+func newAssetBrowser(u ui, forCorporation bool) *AssetBrowser {
 	a := &AssetBrowser{
 		forCorporation: forCorporation,
 		u:              u,

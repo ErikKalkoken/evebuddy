@@ -86,7 +86,7 @@ type Clones struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiServices
+	u                 ui
 }
 
 const (
@@ -97,7 +97,7 @@ const (
 	clonesColJumps
 )
 
-func NewClones(u uiServices) *Clones {
+func NewClones(u ui) *Clones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",

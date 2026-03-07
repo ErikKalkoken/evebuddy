@@ -122,7 +122,7 @@ type Jobs struct {
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	sortButton      *xwidget.SortButton
-	u               uiServices
+	u               ui
 }
 
 const (
@@ -136,15 +136,15 @@ const (
 	industryJobsColInstaller
 )
 
-func NewJobsForOverview(u uiServices) *Jobs {
+func NewJobsForOverview(u ui) *Jobs {
 	return newIndustryJobs(u, false)
 }
 
-func NewJobsForCorporation(u uiServices) *Jobs {
+func NewJobsForCorporation(u ui) *Jobs {
 	return newIndustryJobs(u, true)
 }
 
-func newIndustryJobs(u uiServices, forCorporation bool) *Jobs {
+func newIndustryJobs(u ui, forCorporation bool) *Jobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,

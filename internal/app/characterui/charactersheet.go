@@ -38,11 +38,11 @@ type CharacterSheet struct {
 	ship        *widget.Hyperlink
 	skillpoints *widget.Label
 	tags        *widget.Label
-	u           uiServices
+	u           ui
 	wealth      *widget.Label
 }
 
-func NewCharacterSheet(u uiServices) *CharacterSheet {
+func NewCharacterSheet(u ui) *CharacterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
 		x.Truncation = fyne.TextTruncateEllipsis

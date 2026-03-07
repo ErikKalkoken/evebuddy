@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
 
-type uiServices interface {
+type ui interface {
 	Character() *characterservice.CharacterService
 	ErrorDisplay(err error) string
 	EVEImage() *eveimageservice.EVEImageService

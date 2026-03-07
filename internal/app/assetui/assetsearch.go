@@ -221,7 +221,7 @@ type AssetSearch struct {
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
 	top            *widget.Label
-	u              uiServices
+	u              ui
 }
 
 const (
@@ -235,15 +235,15 @@ const (
 	assetsColTags
 )
 
-func NewSearchForAll(u uiServices) *AssetSearch {
+func NewSearchForAll(u ui) *AssetSearch {
 	return newAssetSearch(u, false)
 }
 
-func NewSearchForCorporation(u uiServices) *AssetSearch {
+func NewSearchForCorporation(u ui) *AssetSearch {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u uiServices, forCorporation bool) *AssetSearch {
+func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
@@ -861,7 +861,7 @@ func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, vari
 }
 
 // ShowAssetDetailWindow shows the details for an assets in a new window.
-func ShowAssetDetailWindow(u uiServices, r assetRow) {
+func ShowAssetDetailWindow(u ui, r assetRow) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",

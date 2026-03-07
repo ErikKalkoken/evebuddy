@@ -107,11 +107,11 @@ type Mails struct {
 	missingPercent   atomic.Int64
 
 	toolbar     *widget.Toolbar
-	u           uiServices
+	u           ui
 	unreadCount atomic.Int64
 }
 
-func NewMails(u uiServices) *Mails {
+func NewMails(u ui) *Mails {
 	a := &Mails{
 		Detail:           newMailDetail(u),
 		folderDownloaded: ttwidget.NewLabel(""),
@@ -833,7 +833,7 @@ type mailDetail struct {
 	subject *widget.Label
 }
 
-func newMailDetail(u uiServices) *mailDetail {
+func newMailDetail(u ui) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
 		header:  awidget.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),

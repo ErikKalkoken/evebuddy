@@ -35,7 +35,7 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-type uiServices interface {
+type ui interface {
 	Character() *characterservice.CharacterService
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
@@ -63,11 +63,11 @@ type GameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   uiServices
+	u                   ui
 	w                   fyne.Window
 }
 
-func NewGameSearch(u uiServices) *GameSearch {
+func NewGameSearch(u ui) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),

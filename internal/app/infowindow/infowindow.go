@@ -37,7 +37,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type UIServices interface {
+type ui interface {
 	Character() *characterservice.CharacterService
 	EVEImage() *eveimageservice.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
@@ -59,7 +59,7 @@ type InfoWindow struct {
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
 	sb            *xwidget.Snackbar
-	u             UIServices
+	u             ui
 	w             fyne.Window
 }
 
@@ -73,7 +73,7 @@ const (
 )
 
 // New returns a new InfoWindow.
-func New(u UIServices) *InfoWindow {
+func New(u ui) *InfoWindow {
 	iw := &InfoWindow{
 		u: u,
 		w: u.MainWindow(),

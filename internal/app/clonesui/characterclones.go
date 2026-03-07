@@ -58,10 +58,10 @@ type CharacterClones struct {
 	character atomic.Pointer[app.Character]
 	top       *xwidget.RichText
 	tree      *xwidget.Tree[characterCloneNode]
-	u         uiServices
+	u         ui
 }
 
-func NewCharacterClones(u uiServices) *CharacterClones {
+func NewCharacterClones(u ui) *CharacterClones {
 	top := xwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
 	a := &CharacterClones{

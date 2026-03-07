@@ -44,7 +44,7 @@ type CharacterLoyaltyPoints struct {
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
-	u             uiServices
+	u             ui
 }
 
 const (
@@ -52,7 +52,7 @@ const (
 	characterLoyaltyPointsColPoints
 )
 
-func NewCharacterLoyaltyPoints(u uiServices) *CharacterLoyaltyPoints {
+func NewCharacterLoyaltyPoints(u ui) *CharacterLoyaltyPoints {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
 		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",

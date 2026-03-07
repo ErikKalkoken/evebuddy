@@ -37,10 +37,10 @@ type Attributes struct {
 	character atomic.Pointer[app.Character]
 	list      *widget.List
 	footer    *widget.Label
-	u         uiServices
+	u         ui
 }
 
-func NewAttributes(s uiServices) *Attributes {
+func NewAttributes(s ui) *Attributes {
 	a := &Attributes{
 		footer: awidget.NewLabelWithTruncation(""),
 		u:      s,

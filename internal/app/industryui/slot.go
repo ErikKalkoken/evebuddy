@@ -99,7 +99,7 @@ type Slots struct {
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *xwidget.SortButton
-	u               uiServices
+	u               ui
 }
 
 const (
@@ -110,7 +110,7 @@ const (
 	industrySlotsColTotal
 )
 
-func NewSlots(u uiServices, slotType app.IndustryJobType) *Slots {
+func NewSlots(u ui, slotType app.IndustryJobType) *Slots {
 	const columnWidthNumber = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,

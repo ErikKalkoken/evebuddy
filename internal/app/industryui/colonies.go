@@ -121,7 +121,7 @@ type Colonies struct {
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiServices
+	u                 ui
 }
 
 const (
@@ -134,7 +134,7 @@ const (
 	coloniesColCharacter
 )
 
-func NewColonies(u uiServices) *Colonies {
+func NewColonies(u ui) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",

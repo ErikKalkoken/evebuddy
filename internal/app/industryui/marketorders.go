@@ -134,7 +134,7 @@ type MarketOrders struct {
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            uiServices
+	u            ui
 }
 
 const (
@@ -147,7 +147,7 @@ const (
 	marketOrdersColOwner
 )
 
-func NewMarketOrders(u uiServices, isBuyOrders bool) *MarketOrders {
+func NewMarketOrders(u ui, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
@@ -518,7 +518,7 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 }
 
 // ShowMarketOrderWindow shows the location of a character in a new window.
-func ShowMarketOrderWindow(u uiServices, r marketOrderRow) {
+func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),

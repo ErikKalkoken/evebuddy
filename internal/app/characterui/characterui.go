@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
-type uiServices interface {
+type ui interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character

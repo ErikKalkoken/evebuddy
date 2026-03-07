@@ -30,10 +30,10 @@ type CharacterWallet struct {
 	journal       *WalletJournal
 	transactions  *WalletTransactions
 	loyaltyPoints *CharacterLoyaltyPoints
-	u             uiServices
+	u             ui
 }
 
-func NewCharacterWallet(u uiServices) *CharacterWallet {
+func NewCharacterWallet(u ui) *CharacterWallet {
 	a := &CharacterWallet{
 		balance:       xwidget.NewLabelWithSelection(""),
 		journal:       NewCharacterWalletJournal(u),

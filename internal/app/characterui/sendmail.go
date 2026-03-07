@@ -31,11 +31,11 @@ type SendMail struct {
 	from      *awidget.EveEntityEntry
 	subject   *widget.Entry
 	to        *awidget.EveEntityEntry
-	u         uiServices
+	u         ui
 	w         fyne.Window
 }
 
-func NewSendMail(u uiServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
+func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		u: u,
 		w: u.MainWindow(),
@@ -144,7 +144,7 @@ func (a *SendMail) SendAction() bool {
 	return true
 }
 
-func showAddDialog(u uiServices, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	var results []*app.EveEntity
 	list := widget.NewList(

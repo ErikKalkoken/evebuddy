@@ -89,7 +89,7 @@ type Structures struct {
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 uiServices
+	u                 ui
 }
 
 const (
@@ -100,7 +100,7 @@ const (
 	structuresColServices
 )
 
-func NewStructures(u uiServices) *Structures {
+func NewStructures(u ui) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
 		ID:    structuresColName,
 		Label: "Name",
@@ -434,7 +434,7 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 	return rows, nil
 }
 
-func showCorporationStructureWindowAsync(ctx context.Context, u uiServices, corporationID int64, structureID int64, title string) {
+func showCorporationStructureWindowAsync(ctx context.Context, u ui, corporationID int64, structureID int64, title string) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		title,
