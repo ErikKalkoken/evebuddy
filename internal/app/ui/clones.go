@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
@@ -86,7 +87,7 @@ type clones struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -97,7 +98,7 @@ const (
 	clonesColJumps
 )
 
-func newClones(u *baseUI) *clones {
+func newClones(u         uiservices.UIServices) *clones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",
@@ -132,7 +133,7 @@ func newClones(u *baseUI) *clones {
 		},
 	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[cloneRow]{
 		ColumnID: clonesColCharacter,
-		EIS:      u.eis,
+		EIS:      u.EVEImage(),
 		GetEntity: func(r cloneRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.jc.Character.ID,
@@ -231,11 +232,11 @@ func newClones(u *baseUI) *clones {
 
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRowsAsync(-1)
@@ -245,21 +246,21 @@ func newClones(u *baseUI) *clones {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// signals
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterJumpClones {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 	return a
@@ -383,7 +384,7 @@ func (a *clones) update(ctx context.Context) {
 }
 
 func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
-	oo, err := a.u.cs.ListAllJumpClones(ctx)
+	oo, err := a.u.Character().ListAllJumpClones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +394,7 @@ func (a *clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	var rows []cloneRow
 	for _, o := range oo {
 		r := cloneRow{jc: o}
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.Character.ID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.Character.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -424,7 +425,7 @@ func (a *clones) updateRoutesAsync() {
 		})
 	}
 	go func() {
-		routes, err := a.u.eus.FetchRoutes(context.Background(), headers)
+		routes, err := a.u.EVEUniverse().FetchRoutes(context.Background(), headers)
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
@@ -486,7 +487,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 			return
 		}
 		r := results[id]
-		s, err := a.u.eus.GetOrCreateSolarSystemESI(context.Background(), r.ID)
+		s, err := a.u.EVEUniverse().GetOrCreateSolarSystemESI(context.Background(), r.ID)
 		if err != nil {
 			showErrorDialog("Could not load solar system", err)
 			return
@@ -514,7 +515,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 		}
 		go func() {
 			ctx := context.Background()
-			ee, _, err := a.u.cs.SearchESI(
+			ee, _, err := a.u.Character().SearchESI(
 				ctx,
 				search,
 				[]app.SearchCategory{app.SearchSolarSystem},
@@ -670,7 +671,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		w.Show()
 		return
 	}
-	clone, err := a.u.cs.GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
+	clone, err := a.u.Character().GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		xdialog.ShowErrorAndLog("failed to load clone", err, a.u.MainWindow())
@@ -702,7 +703,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 			im := clone.Implants[id]
 			border := co.(*fyne.Container).Objects
 			icon := border[1].(*canvas.Image)
-			a.u.eis.InventoryTypeIconAsync(im.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.u.EVEImage().InventoryTypeIconAsync(im.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
 				icon.Resource = r
 				icon.Refresh()
 			})

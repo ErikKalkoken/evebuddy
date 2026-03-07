@@ -20,6 +20,7 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -59,11 +60,11 @@ type characterFlyableShips struct {
 	selectGroup   *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	top           *widget.Label
-	u             *baseUI
+	u         uiservices.UIServices
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
-func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
+func newCharacterFlyableShips(u         uiservices.UIServices) *characterFlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
@@ -100,24 +101,24 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
 		a.filterRowsAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
 		a.filterRowsAsync()
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.grid = a.makeShipsGrid()
 
 	// Signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(
+	a.u.Signals().CurrentCharacterExchanged.AddListener(
 		func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		},
 	)
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -126,7 +127,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		}
 	},
 	)
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
@@ -164,7 +165,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return NewShipItem(
-				a.u.eis.InventoryTypeRender,
+				a.u.EVEImage().InventoryTypeRender,
 				a.imageCache.Load,
 				a.imageCache.Store,
 			)
@@ -266,7 +267,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 		setTop(app.ErrorDisplay(err), widget.DangerImportance)
 	}
 
-	ok1, err := a.u.eus.HasSection(ctx, app.SectionEveTypes)
+	ok1, err := a.u.EVEUniverse().HasSection(ctx, app.SectionEveTypes)
 	if err != nil {
 		clear()
 		reportError(err)
@@ -285,7 +286,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 		return
 	}
 
-	exists, err := a.u.cs.HasSection(ctx, characterID, app.SectionCharacterSkills)
+	exists, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterSkills)
 	if err != nil {
 		clear()
 		reportError(err)
@@ -297,7 +298,7 @@ func (a *characterFlyableShips) update(ctx context.Context) {
 		return
 	}
 
-	oo, err := a.u.cs.ListShipsAbilities(ctx, characterID)
+	oo, err := a.u.Character().ListShipsAbilities(ctx, characterID)
 	if err != nil {
 		clear()
 		reportError(err)

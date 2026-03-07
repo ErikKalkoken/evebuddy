@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -126,7 +127,7 @@ type training struct {
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -141,11 +142,11 @@ const (
 	trainingColTotalSP
 )
 
-func newTraining(u *baseUI) *training {
+func newTraining(u         uiservices.UIServices) *training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,
-			EIS:      u.eis,
+			EIS:      u.EVEImage(),
 			GetEntity: func(r trainingRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -301,28 +302,28 @@ func newTraining(u *baseUI) *training {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// Signals
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
 			a.updateItem(ctx, arg.CharacterID)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
+	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -513,7 +514,7 @@ func (a *training) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
 	}
-	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
 		logErr(err)
 		return
@@ -549,7 +550,7 @@ func (a *training) refreshOnUpdate() {
 }
 
 func (a *training) fetchRows(ctx context.Context) ([]trainingRow, error) {
-	characters, err := a.u.cs.ListCharacters(ctx)
+	characters, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +573,7 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 	if c == nil || c.EveCharacter == nil {
 		return z, app.ErrInvalid
 	}
-	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
 		return z, err
 	}
@@ -596,7 +597,7 @@ func (a *training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		return humanize.Comma(v)
 	})
 	queue := app.NewCharacterSkillqueue()
-	if err := queue.Update(ctx, a.u.cs, c.ID); err != nil {
+	if err := queue.Update(ctx, a.u.Character(), c.ID); err != nil {
 		return z, err
 	}
 	r.skill = queue.Active()
@@ -623,7 +624,7 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 		w.Show()
 		return
 	}
-	c, err := a.u.cs.GetCharacter(context.Background(), r.characterID)
+	c, err := a.u.Character().GetCharacter(context.Background(), r.characterID)
 	if err != nil {
 		xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.MainWindow())
 		return

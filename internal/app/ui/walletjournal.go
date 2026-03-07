@@ -20,6 +20,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -69,16 +70,16 @@ type walletJournal struct {
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	top          *widget.Label
-	u            *baseUI
+	u            uiservices.UIServices
 }
 
-func newCharacterWalletJournal(u *baseUI) *walletJournal {
+func newCharacterWalletJournal(u uiservices.UIServices) *walletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -89,15 +90,15 @@ func newCharacterWalletJournal(u *baseUI) *walletJournal {
 	return a
 }
 
-func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
+func newCorporationWalletJournal(u uiservices.UIServices, d app.Division) *walletJournal {
 	a := newWalletJournal(u, d)
-	a.u.signals.CurrentCorporationExchanged.AddListener(
+	a.u.Signals().CurrentCorporationExchanged.AddListener(
 		func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		},
 	)
-	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -116,7 +117,7 @@ const (
 	walletJournalColDescription
 )
 
-func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
+func newWalletJournal(u uiservices.UIServices, division app.Division) *walletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		ID:    walletJournalColDate,
 		Label: "Date",
@@ -200,10 +201,10 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	return a
 }
 
@@ -326,7 +327,7 @@ func (a *walletJournal) updateCharacter(ctx context.Context) {
 	var err error
 	var rows []walletJournalRow
 	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
 		if err2 != nil {
@@ -354,7 +355,7 @@ func (a *walletJournal) updateCorporation(ctx context.Context) {
 	var err error
 	var rows []walletJournalRow
 	corporationID := corporationIDOrZero(a.corporation.Load())
-	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
+	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
 		if err2 != nil {
@@ -379,7 +380,7 @@ func (a *walletJournal) updateCorporation(ctx context.Context) {
 }
 
 func (a *walletJournal) fetchCharacterRows(ctx context.Context, characterID int64) ([]walletJournalRow, error) {
-	entries, err := a.u.cs.ListWalletJournalEntries(ctx, characterID)
+	entries, err := a.u.Character().ListWalletJournalEntries(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +417,7 @@ func (a *walletJournal) fetchCharacterRows(ctx context.Context, characterID int6
 }
 
 func (a *walletJournal) fetchCorporationRows(ctx context.Context, corporationID int64, division app.Division) ([]walletJournalRow, error) {
-	entries, err := a.u.rs.ListWalletJournalEntries(ctx, corporationID, division)
+	entries, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporationID, division)
 	if err != nil {
 		return nil, err
 	}
@@ -455,12 +456,12 @@ func (a *walletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 }
 
 // showCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
-func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, refID int64) {
+func showCharacterWalletJournalEntryWindowAsync(u uiservices.UIServices, characterID int64, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
 		title,
-		u.scs.CharacterName(characterID),
+		u.StatusCache().CharacterName(characterID),
 	)
 	if !created {
 		w.Show()
@@ -468,9 +469,9 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 	}
 
 	go func() {
-		o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
+		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.MainWindow())
 			return
 		}
 
@@ -485,7 +486,12 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 			contextDefaultWidget := widget.NewLabel("?")
 			contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
 			reportError := func(o *app.CharacterWalletJournalEntry, err error) {
-				slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
+				slog.Error(
+					"Failed to fetch related context",
+					slog.Any("contextIDType", o.ContextIDType),
+					slog.Any("contextID", o.ContextID),
+					slog.Any("error", err),
+				)
 				contextDefaultWidget.SetText("Failed to load related item: " + app.ErrorDisplay(err))
 			}
 			// TODO: Add support for industry jobs
@@ -493,7 +499,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 				switch v {
 				case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
 					go func() {
-						ee, err := u.eus.GetOrCreateEntityESI(context.Background(), o.ContextID.ValueOrZero())
+						ee, err := u.EVEUniverse().GetOrCreateEntityESI(context.Background(), o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
 							return
@@ -506,7 +512,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 					}()
 				case "contract_id":
 					go func() {
-						c, err := u.cs.GetContract(context.Background(), characterID, o.ContextID.ValueOrZero())
+						c, err := u.Character().GetContract(context.Background(), characterID, o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
 							return
@@ -529,13 +535,13 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 					contextItem.Text = "Related location"
 					go func() {
 						ctx := context.Background()
-						ts, err := u.cs.TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
+						ts, err := u.Character().TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
 						if err != nil {
 							reportError(o, err)
 							return
 						}
 						ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
-						el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
+						el, err := u.EVEUniverse().GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
 							return
@@ -550,7 +556,7 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					characterID,
-					u.scs.CharacterName(characterID),
+					u.StatusCache().CharacterName(characterID),
 					u.InfoWindow().ShowEntity,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
@@ -603,12 +609,12 @@ func showCharacterWalletJournalEntryWindowAsync(u *baseUI, characterID int64, re
 }
 
 // showCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
-func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64, division app.Division, refID int64) {
+func showCorporationWalletJournalEntryWindowAsync(u uiservices.UIServices, corporationID int64, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),
 		title,
-		u.scs.CorporationName(corporationID),
+		u.StatusCache().CorporationName(corporationID),
 	)
 	if !created {
 		w.Show()
@@ -616,9 +622,9 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 	}
 
 	go func() {
-		o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
+		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.MainWindow())
 			return
 		}
 
@@ -641,7 +647,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			// switch o.ContextIDType {
 			// case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
 			// 	go func() {
-			// 		ee, err := u.eus.GetOrCreateEntityESI(ctx, int64(o.ContextID))
+			// 		ee, err := u.EVEUniverse().GetOrCreateEntityESI(ctx, int64(o.ContextID))
 			// 		if err != nil {
 			// 			reportError(o, err)
 			// 			return
@@ -651,7 +657,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			// 		f.Refresh()
 			// 	}()
 			// case "contract_id":
-			// 	c, err := u.cs.GetContract(ctx, corporationID, int64(o.ContextID))
+			// 	c, err := u.Character().GetContract(ctx, corporationID, int64(o.ContextID))
 			// 	if err != nil {
 			// 		reportError(o, err)
 			// 		break
@@ -668,13 +674,13 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			// case "station_id", "structure_id":
 			// 	contextItem.Text = "Related location"
 			// 	go func() {
-			// 		token, err := u.cs.GetValidCorporationToken(ctx, corporationID)
+			// 		token, err := u.Character().GetValidCorporationToken(ctx, corporationID)
 			// 		if err != nil {
 			// 			reportError(o, err)
 			// 			return
 			// 		}
 			// 		ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-			// 		el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
+			// 		el, err := u.EVEUniverse().GetOrCreateLocationESI(ctx, o.ContextID)
 			// 		if err != nil {
 			// 			reportError(o, err)
 			// 			return
@@ -686,7 +692,7 @@ func showCorporationWalletJournalEntryWindowAsync(u *baseUI, corporationID int64
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					corporationID,
-					u.scs.CorporationName(corporationID),
+					u.StatusCache().CorporationName(corporationID),
 					u.InfoWindow().ShowEntity,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),

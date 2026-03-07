@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -105,11 +106,11 @@ type characterMails struct {
 	onSendMessage    func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 	onUpdate         func(unread, missing int)
 	toolbar          *widget.Toolbar
-	u                *baseUI
+	u                uiservices.UIServices
 	unreadCount      atomic.Int64
 }
 
-func newCharacterMails(u *baseUI) *characterMails {
+func newCharacterMails(u uiservices.UIServices) *characterMails {
 	a := &characterMails{
 		Detail:           newMailDetail(u),
 		folderDownloaded: ttwidget.NewLabel(""),
@@ -147,11 +148,11 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -163,7 +164,7 @@ func newCharacterMails(u *baseUI) *characterMails {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		a.updateDownloaded(ctx)
 	})
 	return a
@@ -264,7 +265,7 @@ func (a *characterMails) update(ctx context.Context) {
 		setStatus("No character", widget.LowImportance)
 		return
 	}
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		clearAll()
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
@@ -311,7 +312,7 @@ func (a *characterMails) updateDownloaded(ctx context.Context) {
 		if characterID == 0 {
 			return
 		}
-		total, missing, err := a.u.cs.DownloadedBodiesPercentage(ctx, characterID)
+		total, missing, err := a.u.Character().DownloadedBodiesPercentage(ctx, characterID)
 		if err != nil {
 			slog.Error("updateDownloaded", "error", err)
 			total2 = "ERROR"
@@ -384,7 +385,7 @@ func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (x
 	}
 
 	// Add custom labels
-	labels, err := a.u.cs.ListMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.Character().ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return td, nil, err
 	}
@@ -414,7 +415,7 @@ func (a *characterMails) fetchFolders(ctx context.Context, characterID int64) (x
 	}
 
 	// Add mailing lists
-	lists, err := a.u.cs.ListMailLists(ctx, characterID)
+	lists, err := a.u.Character().ListMailLists(ctx, characterID)
 	if err != nil {
 		return td, nil, err
 	}
@@ -476,11 +477,11 @@ func (a *characterMails) updateCountsInTree(ctx context.Context, characterID int
 	if td.IsEmpty() {
 		return 0, nil
 	}
-	labelUnreadCounts, err := a.u.cs.GetMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.Character().GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
-	listUnreadCounts, err := a.u.cs.GetMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.Character().GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
@@ -551,7 +552,7 @@ func (a *characterMails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return newMailHeaderItem(a.u.eis)
+			return newMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -616,7 +617,7 @@ func (a *characterMails) headerUpdate(ctx context.Context) {
 		clear()
 		return
 	}
-	hasData := a.u.scs.HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
+	hasData := a.u.StatusCache().HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
 		clear()
@@ -646,9 +647,9 @@ func (a *characterMails) fetchHeaders(ctx context.Context, f *mailFolderNode) ([
 	var err error
 	switch f.Category {
 	case nodeCategoryLabel:
-		h, err = a.u.cs.ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
+		h, err = a.u.Character().ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
 	case nodeCategoryList:
-		h, err = a.u.cs.ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
+		h, err = a.u.Character().ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
 	}
 	return h, err
 }
@@ -685,7 +686,7 @@ func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 					"Deleting mail...",
 					"",
 					func() error {
-						return a.u.cs.DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
+						return a.u.Character().DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
 					},
 					a.u.MainWindow(),
 				)
@@ -697,7 +698,11 @@ func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 					a.u.ShowSnackbar(fmt.Sprintf("Mail \"%s\" deleted", a.mail.Subject))
 				}
 				m.OnError = func(err error) {
-					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
+					slog.Error("Failed to delete mail",
+						slog.Int64("characterID", a.mail.CharacterID),
+						slog.Int64("mailID", a.mail.MailID),
+						slog.Any("err", err),
+					)
 					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", app.ErrorDisplay(err)))
 				}
 				m.Start()
@@ -748,7 +753,7 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 	if characterID == 0 {
 		return
 	}
-	mail, err := a.u.cs.GetMail(ctx, characterID, mailID)
+	mail, err := a.u.Character().GetMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		fyne.Do(func() {
@@ -762,15 +767,15 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 		a.toolbar.Show()
 	})
 
-	if app.IsOfflineMode() || a.u.isUpdateDisabled.Load() {
+	if app.IsOfflineMode() || a.u.IsUpdateDisabled() {
 		return
 	}
 
 	// try to fetch mail body if missing
 	if mail.Body.IsEmpty() {
 		go func() {
-			a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
-				body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, mail.MailID)
+			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
+				body, err := a.u.Character().UpdateMailBodyESI(ctx, characterID, mail.MailID)
 				if err != nil {
 					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
 					fyne.Do(func() {
@@ -796,8 +801,8 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 	// try to update mail as read if unread
 	if !mail.IsRead.ValueOrZero() {
 		go func() {
-			a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
-				err := a.u.cs.UpdateMailRead(ctx, characterID, mail.MailID, true)
+			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
+				err := a.u.Character().UpdateMailRead(ctx, characterID, mail.MailID, true)
 				if err != nil {
 					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
 					a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
@@ -805,8 +810,8 @@ func (a *characterMails) loadMail(ctx context.Context, mailID int64) {
 				}
 				a.updateUnreadCounts(ctx)
 				a.headerUpdate(ctx)
-				a.u.characterOverview.updateItem(ctx, characterID)
-				a.u.updateMailIndicator(ctx)
+				go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
+				a.u.UpdateMailIndicator(ctx)
 				fyne.Do(func() {
 					if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 						return
@@ -827,10 +832,10 @@ type mailDetail struct {
 	subject *widget.Label
 }
 
-func newMailDetail(u *baseUI) *mailDetail {
+func newMailDetail(u uiservices.UIServices) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  newMailHeader(u.eis, u.InfoWindow().ShowEntity),
+		header:  newMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

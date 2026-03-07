@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -76,7 +77,7 @@ type contracts struct {
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -89,15 +90,15 @@ const (
 	contractsColExpiresAt
 )
 
-func newContractsForCorporation(u *baseUI) *contracts {
+func newContractsForCorporation(u         uiservices.UIServices) *contracts {
 	return newContracts(u, true)
 }
 
-func newContractsForCharacters(u *baseUI) *contracts {
+func newContractsForCharacters(u         uiservices.UIServices) *contracts {
 	return newContracts(u, false)
 }
 
-func newContracts(u *baseUI, forCorporation bool) *contracts {
+func newContracts(u         uiservices.UIServices, forCorporation bool) *contracts {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
 		ID:    contractsColName,
 		Label: "Contract",
@@ -202,10 +203,10 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -226,15 +227,15 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// Signals
 	if a.forCorporation {
-		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
@@ -244,18 +245,18 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 			a.update(ctx)
 		})
 	} else {
-		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterContracts {
 				a.update(ctx)
 			}
 		})
-		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
 	}
@@ -456,7 +457,7 @@ func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 	if corporationID == 0 {
 		return nil, 0, nil
 	}
-	oo, err := a.u.rs.ListCorporationContracts(ctx, corporationID)
+	oo, err := a.u.Corporation().ListCorporationContracts(ctx, corporationID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -502,7 +503,7 @@ func (a *contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 }
 
 func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
-	oo, err := a.u.cs.ListAllContracts(ctx)
+	oo, err := a.u.Character().ListAllContracts(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -547,7 +548,7 @@ func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 		r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 			ColorName: color,
 		})
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.CharacterID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -563,15 +564,15 @@ func (a *contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 // FIXME: Remove DB access from main go routine
 
 // showCharacterContractWindow shows the details of a character contract in a window.
-func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
+func showCharacterContractWindow(u         uiservices.UIServices, characterID, contractID int64) {
 	ctx := context.Background()
-	o, err := u.cs.GetContract(ctx, characterID, contractID)
+	o, err := u.Character().GetContract(ctx, characterID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.window)
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
-	characterName := u.scs.CharacterName(characterID)
+	characterName := u.StatusCache().CharacterName(characterID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("character-contract-%d-%d", characterID, contractID),
 		title,
@@ -650,18 +651,18 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
 	case app.ContractTypeAuction:
-		total, err := u.cs.CountContractBids(ctx, o.ID)
+		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.MainWindow())
 			return
 		}
 		var currentBid string
 		if total == 0 {
 			currentBid = "(None)"
 		} else {
-			top, err := u.cs.GetContractTopBid(ctx, o.ID)
+			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.window)
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -676,7 +677,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 
 	makeItemsInfo := func(c *app.CharacterContract) (fyne.CanvasObject, error) {
 		vb := container.NewVBox()
-		items, err := u.cs.ListContractItems(ctx, c.ID)
+		items, err := u.Character().ListContractItems(ctx, c.ID)
 		if err != nil {
 			return nil, err
 
@@ -728,7 +729,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.MainWindow())
 			return
 		}
 		main.Add(x)
@@ -744,15 +745,15 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int64) {
 // FIXME: Remove DB access from main go routine
 
 // showCorporationContractWindow shows the details of a corporation contract in a window.
-func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
+func showCorporationContractWindow(u         uiservices.UIServices, corporationID, contractID int64) {
 	ctx := context.Background()
-	o, err := u.rs.GetContract(ctx, corporationID, contractID)
+	o, err := u.Corporation().GetContract(ctx, corporationID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.window)
+		xdialog.ShowErrorAndLog("Failed to show contract", err, u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
-	corporationName := u.scs.CorporationName(corporationID)
+	corporationName := u.StatusCache().CorporationName(corporationID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporation-contract-%d-%d", corporationID, contractID),
 		title,
@@ -831,18 +832,18 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
 	case app.ContractTypeAuction:
-		total, err := u.cs.CountContractBids(ctx, o.ID)
+		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.MainWindow())
 			return
 		}
 		var currentBid string
 		if total == 0 {
 			currentBid = "(None)"
 		} else {
-			top, err := u.cs.GetContractTopBid(ctx, o.ID)
+			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.window)
+				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -857,7 +858,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 
 	makeItemsInfo := func(c *app.CorporationContract) (fyne.CanvasObject, error) {
 		vb := container.NewVBox()
-		items, err := u.rs.ListContractItems(ctx, c.ID)
+		items, err := u.Corporation().ListContractItems(ctx, c.ID)
 		if err != nil {
 			return nil, err
 
@@ -909,7 +910,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int64) {
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.window)
+			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.MainWindow())
 			return
 		}
 		main.Add(x)

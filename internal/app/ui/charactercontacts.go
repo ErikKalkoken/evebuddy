@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -63,10 +64,10 @@ type characterContacts struct {
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              *baseUI
+	u              uiservices.UIServices
 }
 
-func newCharacterContacts(u *baseUI) *characterContacts {
+func newCharacterContacts(u uiservices.UIServices) *characterContacts {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterContactRow]{{
 		ID:    1,
 		Label: "Name",
@@ -129,14 +130,14 @@ func newCharacterContacts(u *baseUI) *characterContacts {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -190,7 +191,7 @@ func (a *characterContacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(a.u.eis)
+				return newCharacterContactItem(a.u.EVEImage())
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -215,7 +216,7 @@ func (a *characterContacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(a.u.eis)
+			return newCharacterContactItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -395,7 +396,7 @@ func (a *characterContacts) update(ctx context.Context) {
 		setFooter("No character", widget.LowImportance)
 		return
 	}
-	if !a.u.scs.HasCharacterSection(characterID, app.SectionCharacterContacts) {
+	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterContacts) {
 		clear()
 		setFooter("Loading data...", widget.WarningImportance)
 		return
@@ -413,7 +414,7 @@ func (a *characterContacts) update(ctx context.Context) {
 }
 
 func (a *characterContacts) fetchRows(ctx context.Context, characterID int64) ([]characterContactRow, error) {
-	oo, err := a.u.cs.ListContacts(ctx, characterID)
+	oo, err := a.u.Character().ListContacts(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}

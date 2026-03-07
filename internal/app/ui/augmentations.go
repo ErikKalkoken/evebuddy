@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -50,10 +51,10 @@ type augmentations struct {
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[characterAugmentationNode]
 	treeData         xwidget.TreeData[characterAugmentationNode]
-	u                *baseUI
+	u         uiservices.UIServices
 }
 
-func newAugmentations(u *baseUI) *augmentations {
+func newAugmentations(u         uiservices.UIServices) *augmentations {
 	a := &augmentations{
 		footer: newLabelWithTruncation(),
 		u:      u,
@@ -74,18 +75,18 @@ func newAugmentations(u *baseUI) *augmentations {
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
 
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterImplants {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 	return a
@@ -111,8 +112,8 @@ func (a *augmentations) makeTree() *xwidget.Tree[characterAugmentationNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newAugmentationNodeItem(
-				a.u.eis.CharacterPortraitAsync,
-				a.u.eis.InventoryTypeIconAsync,
+				a.u.EVEImage().CharacterPortraitAsync,
+				a.u.EVEImage().InventoryTypeIconAsync,
 				func(id int64) {
 					a.u.InfoWindow().Show(app.EveEntityCharacter, id)
 				},
@@ -210,7 +211,7 @@ func (a *augmentations) update(ctx context.Context) {
 func (a *augmentations) fetchData(ctx context.Context) (xwidget.TreeData[characterAugmentationNode], error) {
 	var td xwidget.TreeData[characterAugmentationNode]
 	characterImplants := make(map[int64][]*app.CharacterImplant)
-	implants, err := a.u.cs.ListAllImplants(ctx)
+	implants, err := a.u.Character().ListAllImplants(ctx)
 	if err != nil {
 		return td, err
 	}
@@ -223,12 +224,12 @@ func (a *augmentations) fetchData(ctx context.Context) (xwidget.TreeData[charact
 		})
 	}
 
-	characters, err := a.u.cs.CharacterNames(ctx)
+	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return td, err
 	}
 	for characterID, implants := range characterImplants {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, characterID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, characterID)
 		if err != nil {
 			return td, err
 		}

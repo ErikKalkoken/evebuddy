@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -220,7 +221,7 @@ type assetSearch struct {
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
 	top            *widget.Label
-	u              *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -234,15 +235,15 @@ const (
 	assetsColTags
 )
 
-func newCombinedAssetSearch(u *baseUI) *assetSearch {
+func newCombinedAssetSearch(u         uiservices.UIServices) *assetSearch {
 	return newAssetSearch(u, false)
 }
 
-func newAssetSearchForCorporation(u *baseUI) *assetSearch {
+func newAssetSearchForCorporation(u         uiservices.UIServices) *assetSearch {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
+func newAssetSearch(u         uiservices.UIServices, forCorporation bool) *assetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    assetsColItem,
@@ -264,7 +265,7 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.typeName)
 			x := border[1].(*canvas.Image)
-			loadAssetIconAsync(u.eis, x, r.typeID, r.variant)
+			loadAssetIconAsync(u.EVEImage(), x, r.typeID, r.variant)
 		},
 	}, {
 		ID:    assetsColGroup,
@@ -392,19 +393,19 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	a.search.PlaceHolder = "Search items"
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectOwner = kxwidget.NewFilterChipSelectWithSearch("Owner", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -422,15 +423,15 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// Signals
 	if a.forCorporation {
-		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
@@ -440,27 +441,27 @@ func newAssetSearch(u *baseUI, forCorporation bool) *assetSearch {
 			a.update(ctx)
 		})
 	} else {
-		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterAssets {
 				a.update(ctx)
 			}
 		})
-		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if arg.Section == app.SectionCorporationAssets {
 				a.update(ctx)
 			}
 		})
 	}
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}
@@ -721,7 +722,7 @@ func (a *assetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 }
 
 func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
-	characters, err := a.u.cs.CharacterNames(ctx)
+	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -730,17 +731,17 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	}
 	tagsPerCharacter := make(map[int64]set.Set[string])
 	for id := range characters {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, id)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, id)
 		if err != nil {
 			return nil, nil
 		}
 		tagsPerCharacter[id] = tags
 	}
-	assets, err := a.u.cs.ListAllAssets(ctx)
+	assets, err := a.u.Character().ListAllAssets(ctx)
 	if err != nil {
 		return nil, err
 	}
-	locations, err := a.u.eus.ListLocations(ctx)
+	locations, err := a.u.EVEUniverse().ListLocations(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +760,7 @@ func (a *assetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 }
 
 func (a *assetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
-	assets, err := a.u.rs.ListAllAssets(ctx)
+	assets, err := a.u.Corporation().ListAllAssets(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -771,7 +772,7 @@ func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 	if c == nil {
 		return []assetRow{}, nil
 	}
-	assets, err := a.u.rs.ListAssets(ctx, c.ID)
+	assets, err := a.u.Corporation().ListAssets(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -779,7 +780,7 @@ func (a *assetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 }
 
 func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
-	cc, err := a.u.rs.ListCorporationsShort(ctx)
+	cc, err := a.u.Corporation().ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -790,7 +791,7 @@ func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 	for _, o := range cc {
 		corporationNames[o.ID] = o.Name
 	}
-	locations, err := a.u.eus.ListLocations(ctx)
+	locations, err := a.u.EVEUniverse().ListLocations(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -810,10 +811,10 @@ func (a *assetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 }
 
 func (a *assetSearch) characterCount() int {
-	cc := a.u.scs.ListCharacters()
+	cc := a.u.StatusCache().ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets) {
+		if a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterAssets) {
 			validCount++
 		}
 	}
@@ -860,7 +861,7 @@ func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, vari
 }
 
 // showAssetDetailWindow shows the details for an assets in a new window.
-func showAssetDetailWindow(u *baseUI, r assetRow) {
+func showAssetDetailWindow(u         uiservices.UIServices, r assetRow) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",
@@ -940,13 +941,13 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {
 			case app.VariantSKIN:
-				u.eis.InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
 			case app.VariantBPO:
-				u.eis.InventoryTypeBPOAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeBPOAsync(r.typeID, app.IconPixelSize, setter)
 			case app.VariantBPC:
-				u.eis.InventoryTypeBPCAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeBPCAsync(r.typeID, app.IconPixelSize, setter)
 			default:
-				u.eis.InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
 			}
 		},
 		MinSize: fyne.NewSize(500, 450),

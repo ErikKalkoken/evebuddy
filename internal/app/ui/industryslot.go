@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -98,7 +99,7 @@ type industrySlots struct {
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *xwidget.SortButton
-	u               *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -109,7 +110,7 @@ const (
 	industrySlotsColTotal
 )
 
-func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
+func newIndustrySlots(u         uiservices.UIServices, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,
@@ -142,7 +143,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 				label.Text = r.characterName
 				label.TextStyle = fyne.TextStyle{}
 				label.Refresh()
-				u.eis.CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
+				u.EVEImage().CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
 					icon.Resource = r
 					icon.Refresh()
 				})
@@ -271,26 +272,26 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterIndustryJobs, app.SectionCharacterSkills:
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if arg.Section == app.SectionCorporationIndustryJobs {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 	return a
@@ -424,7 +425,7 @@ func (a *industrySlots) update(ctx context.Context) {
 }
 
 func (a *industrySlots) fetchData(ctx context.Context, slotType app.IndustryJobType) ([]industrySlotRow, error) {
-	oo, err := a.u.cs.ListAllCharactersIndustrySlots(ctx, slotType)
+	oo, err := a.u.Character().ListAllCharactersIndustrySlots(ctx, slotType)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +439,7 @@ func (a *industrySlots) fetchData(ctx context.Context, slotType app.IndustryJobT
 			free:          o.Free,
 			total:         o.Total,
 		}
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.CharacterID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.CharacterID)
 		if err != nil {
 			return nil, err
 		}

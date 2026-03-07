@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -53,18 +54,18 @@ type assetBrowser struct {
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
-	u              *baseUI
+	u              uiservices.UIServices
 }
 
-func newCharacterAssetBrowser(u *baseUI) *assetBrowser {
+func newCharacterAssetBrowser(u uiservices.UIServices) *assetBrowser {
 	return newAssetBrowser(u, false)
 }
 
-func newCorporationAssetBrowser(u *baseUI) *assetBrowser {
+func newCorporationAssetBrowser(u uiservices.UIServices) *assetBrowser {
 	return newAssetBrowser(u, true)
 }
 
-func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
+func newAssetBrowser(u uiservices.UIServices, forCorporation bool) *assetBrowser {
 	a := &assetBrowser{
 		forCorporation: forCorporation,
 		u:              u,
@@ -76,11 +77,11 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 
 	// Signals
 	if a.forCorporation {
-		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
@@ -89,11 +90,11 @@ func newAssetBrowser(u *baseUI, forCorporation bool) *assetBrowser {
 			}
 		})
 	} else {
-		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 				return
 			}
@@ -127,7 +128,7 @@ func (a *assetBrowser) update(ctx context.Context) {
 		slog.Error("Failed to update asset browser", "error", err)
 		setFooter(app.ErrorDisplay(err), widget.DangerImportance)
 	}
-	el, err := a.u.eus.ListLocations(ctx)
+	el, err := a.u.EVEUniverse().ListLocations(ctx)
 	if err != nil {
 		reportError(err)
 		return
@@ -139,13 +140,13 @@ func (a *assetBrowser) update(ctx context.Context) {
 			clear()
 			return
 		}
-		hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationAssets)
+		hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationAssets)
 		if !hasData {
 			clear()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
-		assets, err := a.u.rs.ListAssets(ctx, corporationID)
+		assets, err := a.u.Corporation().ListAssets(ctx, corporationID)
 		if err != nil {
 			reportError(err)
 			return
@@ -157,13 +158,13 @@ func (a *assetBrowser) update(ctx context.Context) {
 			clear()
 			return
 		}
-		hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAssets)
+		hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAssets)
 		if !hasData {
 			clear()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
-		assets, err := a.u.cs.ListAssets(ctx, characterID)
+		assets, err := a.u.Character().ListAssets(ctx, characterID)
 		if err != nil {
 			reportError(err)
 			return
@@ -620,7 +621,7 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 			return len(a.itemsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newAssetIcon(a.ab.u.eis)
+			return newAssetIcon(a.ab.u.EVEImage())
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.itemsFiltered) {
@@ -767,7 +768,7 @@ func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
 	if !ok {
 		return
 	}
-	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, a.ab.u.scs.CharacterName))
+	showAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, a.ab.u.StatusCache().CharacterName))
 }
 
 type assetBrowserLocation struct {

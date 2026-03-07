@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -58,10 +59,10 @@ type characterJumpClones struct {
 	character atomic.Pointer[app.Character]
 	top       *xwidget.RichText
 	tree      *xwidget.Tree[jumpCloneNode]
-	u         *baseUI
+	u         uiservices.UIServices
 }
 
-func newCharacterJumpClones(u *baseUI) *characterJumpClones {
+func newCharacterJumpClones(u uiservices.UIServices) *characterJumpClones {
 	top := xwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
 	a := &characterJumpClones{
@@ -72,11 +73,11 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	a.tree = a.makeTree()
 
 	// Signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -84,7 +85,7 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			n := a.tree.Data().ChildrenCount(nil)
 			a.refreshTop(n)
@@ -103,7 +104,7 @@ func (a *characterJumpClones) makeTree() *xwidget.Tree[jumpCloneNode] {
 		func(_ bool) fyne.CanvasObject {
 			return newCharacterJumpCloneItem(
 				app.IsMobile(),
-				a.u.eis.InventoryTypeIconAsync,
+				a.u.EVEImage().InventoryTypeIconAsync,
 				a.u.InfoWindow().ShowTypeWithCharacter,
 				a.u.InfoWindow().ShowLocation,
 			)
@@ -153,7 +154,7 @@ func (a *characterJumpClones) update(ctx context.Context) {
 
 func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[jumpCloneNode], error) {
 	var td xwidget.TreeData[jumpCloneNode]
-	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
+	clones, err := a.u.Character().ListJumpClones(ctx, characterID)
 	if err != nil {
 		return td, err
 	}
@@ -199,7 +200,7 @@ func (a *characterJumpClones) fetchData(ctx context.Context, characterID int64) 
 }
 
 func (a *characterJumpClones) refreshTop(cloneCount int) {
-	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.scs)
+	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.StatusCache())
 	a.top.Set(segs)
 }
 

@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 )
 
 // characterBiography shows the attributes for the current character.
@@ -17,10 +18,10 @@ type characterBiography struct {
 
 	body      *widget.Label
 	character atomic.Pointer[app.Character]
-	u         *baseUI
+	u         uiservices.UIServices
 }
 
-func newCharacterBiography(u *baseUI) *characterBiography {
+func newCharacterBiography(u uiservices.UIServices) *characterBiography {
 	body := widget.NewLabel("")
 	body.Wrapping = fyne.TextWrapWord
 	body.Selectable = true
@@ -29,11 +30,11 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return

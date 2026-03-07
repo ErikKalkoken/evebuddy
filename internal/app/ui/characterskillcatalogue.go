@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -62,12 +63,12 @@ type characterSkillCatalogue struct {
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
 	top            *widget.Label
-	u              *baseUI
+	u         uiservices.UIServices
 	sortButton     *xwidget.SortButton
 	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
-func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
+func newCharacterSkillCatalogue(u         uiservices.UIServices) *characterSkillCatalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",
@@ -128,14 +129,14 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.selectMain.SortDisabled = true
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -143,7 +144,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		characterID := characterIDOrZero(a.character.Load())
 		if characterID == 0 {
 			return
@@ -307,7 +308,7 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		})
 	}
 
-	if !a.u.scs.HasEveUniverseSection(app.SectionEveTypes) {
+	if !a.u.StatusCache().HasEveUniverseSection(app.SectionEveTypes) {
 		clear()
 		setTop("No data yet", widget.WarningImportance)
 		return
@@ -320,13 +321,13 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 		return
 	}
 
-	if !a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills) {
+	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterSkills) {
 		clear()
 		setTop("No data yet", widget.WarningImportance)
 		return
 	}
 
-	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
 		clear()
@@ -335,7 +336,7 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 	}
 	a.character.Store(c)
 
-	skills, err := a.u.cs.ListSkills(ctx, characterID)
+	skills, err := a.u.Character().ListSkills(ctx, characterID)
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
 		clear()
@@ -344,7 +345,7 @@ func (a *characterSkillCatalogue) update(ctx context.Context) {
 	}
 
 	sq := app.NewCharacterSkillqueue()
-	err = sq.Update(ctx, a.u.cs, c.ID)
+	err = sq.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to update skill queue", "err", err)
 		clear()

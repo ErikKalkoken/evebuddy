@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
@@ -68,11 +69,11 @@ type colonyDetails struct {
 	signalKey     string
 	sortButton    *xwidget.SortButton
 	status        *xwidget.RichText
-	u             *baseUI
+	u         uiservices.UIServices
 }
 
 // showColonyDetailsWindow shows the details of a colony in a window.
-func showColonyDetailsWindow(u *baseUI, r colonyRow) {
+func showColonyDetailsWindow(u         uiservices.UIServices, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.ownerName)
@@ -110,7 +111,7 @@ func showColonyDetailsWindow(u *baseUI, r colonyRow) {
 	w.Show()
 }
 
-func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *colonyDetails {
+func newColonyDetails(u         uiservices.UIServices, characterID, planetID int64, w fyne.Window) *colonyDetails {
 	if characterID == 0 || planetID == 0 {
 		panic(app.ErrInvalid)
 	}
@@ -155,7 +156,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 		region:       widget.NewLabel(""),
 		search:       widget.NewEntry(),
 		security:     xwidget.NewRichText(),
-		signalKey:    u.signals.UniqueKey(),
+		signalKey:    u.Signals().UniqueKey(),
 		status:       xwidget.NewRichText(),
 		u:            u,
 	}
@@ -205,13 +206,13 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 	a.search.PlaceHolder = "Search"
 
 	// signals
-	a.u.signals.RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.filterRowsAsync()
 			a.refreshStatus()
 		})
 	}, a.signalKey)
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.CharacterID == a.characterID.Load() && arg.Section == app.SectionCharacterPlanets {
 			err := a.update(ctx)
 			if err != nil {
@@ -222,7 +223,7 @@ func newColonyDetails(u *baseUI, characterID, planetID int64, w fyne.Window) *co
 			}
 		}
 	}, a.signalKey)
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.setIssue("Character has been removed")
@@ -273,9 +274,9 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *colonyDetails) stop() {
-	a.u.signals.RefreshTickerExpired.RemoveListener(a.signalKey)
-	a.u.signals.CharacterSectionChanged.RemoveListener(a.signalKey)
-	a.u.signals.CharacterRemoved.RemoveListener(a.signalKey)
+	a.u.Signals().RefreshTickerExpired.RemoveListener(a.signalKey)
+	a.u.Signals().CharacterSectionChanged.RemoveListener(a.signalKey)
+	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 }
 
 func (a *colonyDetails) setIssue(s string) {
@@ -331,11 +332,11 @@ func (a *colonyDetails) update(ctx context.Context) error {
 		return err
 	}
 
-	ownerName := a.u.scs.CharacterName(a.characterID.Load())
+	ownerName := a.u.StatusCache().CharacterName(a.characterID.Load())
 	expiryTimes := cp.ExtractionsExpiryTimes()
 
 	fyne.Do(func() {
-		a.u.eis.InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
+		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
 			a.icon.Resource = res
 			a.icon.Refresh()
 		})
@@ -387,7 +388,7 @@ var installationShortNames = map[string]colonyPinType{
 }
 
 func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []colonyDetailsRow, error) {
-	cp, err := a.u.cs.GetPlanet(ctx, a.characterID.Load(), a.planetID.Load())
+	cp, err := a.u.Character().GetPlanet(ctx, a.characterID.Load(), a.planetID.Load())
 	if err != nil {
 		return nil, nil, err
 	}

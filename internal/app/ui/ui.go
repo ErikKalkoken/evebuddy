@@ -82,7 +82,7 @@ type baseUI struct {
 	assetSearchAll          *assetSearch
 	augmentations           *augmentations
 	characterAssetBrowser   *assetBrowser
-	characterAttributes     *characterAttributes
+	characterAttributes     *CharacterAttributes
 	characterAugmentations  *characterui.CharacterAugmentations
 	characterBiography      *characterBiography
 	characterContacts       *characterContacts
@@ -275,7 +275,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				u.ReloadCurrentCharacter()
 			}
 		case app.SectionCharacterMailHeaders:
-			u.updateMailIndicator(ctx)
+			u.UpdateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
 			updateStatus(ctx)
 			if isShown {
@@ -361,7 +361,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.assetSearchAll = newCombinedAssetSearch(u)
 	u.augmentations = newAugmentations(u)
 	u.characterAssetBrowser = newCharacterAssetBrowser(u)
-	u.characterAttributes = newCharacterAttributes(u)
+	u.characterAttributes = NewCharacterAttributes(u)
 	u.characterAugmentations = characterui.NewCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
 	u.characterContacts = newCharacterContacts(u)
@@ -533,6 +533,10 @@ func (u *baseUI) ShowAndRun() {
 //////////////////
 // Services
 
+func (u *baseUI) OnShowCharacterFunc() func() {
+	return u.onShowCharacter
+}
+
 func (u *baseUI) ClearAllCaches() {
 	u.clearCache()
 }
@@ -544,6 +548,14 @@ func (u *baseUI) MainWindow() fyne.Window {
 // InfoWindow returns the info window.
 func (u *baseUI) InfoWindow() *infowindow.InfoWindow {
 	return u.iw
+}
+
+func (u *baseUI) SingleInstance() *singleinstance.Group {
+	return u.sig
+}
+
+func (u *baseUI) ShowSnackbar(text string) {
+	u.snackbar.Show(text)
 }
 
 func (u *baseUI) IsStartupCompleted() bool {
@@ -819,7 +831,7 @@ func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
 }
 
-func (u *baseUI) updateMailIndicator(ctx context.Context) {
+func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	if u.showMailIndicator == nil || u.hideMailIndicator == nil {
 		return
 	}
@@ -880,10 +892,6 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 		return github.VersionInfo{}, err
 	}
 	return v, nil
-}
-
-func (u *baseUI) ShowSnackbar(text string) {
-	u.snackbar.Show(text)
 }
 
 // Avatars & switch menus

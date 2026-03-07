@@ -14,6 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -32,10 +33,10 @@ type corporationWallet struct {
 	journal      *walletJournal
 	name         *widget.Label
 	transactions *walletTransactions
-	u            *baseUI
+	u         uiservices.UIServices
 }
 
-func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
+func newCorporationWallet(u         uiservices.UIServices, division app.Division) *corporationWallet {
 	a := &corporationWallet{
 		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,
@@ -46,11 +47,11 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
-	a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 			return
 		}
@@ -118,13 +119,13 @@ func (a *corporationWallet) updateBalance(ctx context.Context) {
 		setBalance("", widget.MediumImportance)
 		return
 	}
-	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
+	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if !hasData {
 		clear()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
-	balance, err := a.u.rs.GetWalletBalance(ctx, corporationID, a.division)
+	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, a.division)
 	if errors.Is(err, app.ErrNotFound) {
 		clear()
 		setBalance("No data", widget.WarningImportance)
@@ -155,9 +156,9 @@ func (a *corporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
 	corporationID := corporationIDOrZero(a.corporation.Load())
-	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationDivisions)
+	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
-		n, err2 := a.u.rs.GetWalletName(ctx, corporationID, a.division)
+		n, err2 := a.u.Corporation().GetWalletName(ctx, corporationID, a.division)
 		if errors.Is(err2, app.ErrNotFound) {
 			hasData = false
 		} else if err2 != nil {

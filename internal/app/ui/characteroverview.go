@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -84,7 +85,7 @@ type characterOverview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 *baseUI
+	u                 uiservices.UIServices
 }
 
 const (
@@ -98,7 +99,7 @@ const (
 	overviewColWallet
 )
 
-func newCharacterOverview(u *baseUI) *characterOverview {
+func newCharacterOverview(u uiservices.UIServices) *characterOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",
@@ -192,10 +193,10 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// Signals
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		switch arg.Section {
 		case app.SectionEveCharacters:
 			characters := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int64 {
@@ -206,16 +207,16 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			}
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case
 			app.SectionCharacterLocation,
@@ -225,14 +226,14 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			a.updateItem(ctx, arg.CharacterID)
 		}
 	})
-	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case
 			app.SectionCharacterSkillqueue:
 			a.updateItem(ctx, arg.CharacterID)
 		}
 	})
-	a.u.signals.CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
+	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
 	return a
@@ -270,9 +271,9 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return newCharacterCard(
-				a.u.eis.CharacterPortraitAsync,
-				a.u.eis.CorporationLogoAsync,
-				a.u.eis.AllianceLogoAsync,
+				a.u.EVEImage().CharacterPortraitAsync,
+				a.u.EVEImage().CorporationLogoAsync,
+				a.u.EVEImage().AllianceLogoAsync,
 				false,
 				a.u.InfoWindow().Show,
 			)
@@ -291,8 +292,8 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if a.u.onShowCharacter != nil {
-			a.u.onShowCharacter()
+		if f := a.u.OnShowCharacterFunc(); f != nil {
+			go f()
 		}
 		if a.u.CurrentCharacterID() == r.characterID {
 			return
@@ -316,9 +317,9 @@ func (a *characterOverview) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return newCharacterCard(
-				a.u.eis.CharacterPortraitAsync,
-				a.u.eis.CorporationLogoAsync,
-				a.u.eis.AllianceLogoAsync,
+				a.u.EVEImage().CharacterPortraitAsync,
+				a.u.EVEImage().CorporationLogoAsync,
+				a.u.EVEImage().AllianceLogoAsync,
 				true,
 				a.u.InfoWindow().Show,
 			)
@@ -338,8 +339,8 @@ func (a *characterOverview) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if a.u.onShowCharacter != nil {
-			a.u.onShowCharacter()
+		if f := a.u.OnShowCharacterFunc(); f != nil {
+			go f()
 		}
 		if a.u.CurrentCharacterID() == r.characterID {
 			return
@@ -469,7 +470,7 @@ func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
 		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
-	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
 		logErr(err)
 		return
@@ -492,7 +493,7 @@ func (a *characterOverview) updateItem(ctx context.Context, characterID int64) {
 }
 
 func (a *characterOverview) fetchRows(ctx context.Context) ([]characterOverviewRow, error) {
-	characters, err := a.u.cs.ListCharacters(ctx)
+	characters, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -534,21 +535,21 @@ func (a *characterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 			r.searchTarget += "~" + strings.ToLower(es.Name)
 		}
 	}
-	total, unread, err := a.u.cs.GetMailCounts(ctx, c.ID)
+	total, unread, err := a.u.Character().GetMailCounts(ctx, c.ID)
 	if err != nil {
 		return r, err
 	}
 	if total > 0 {
 		r.unreadCount = optional.New(unread)
 	}
-	d, err := a.u.cs.TotalTrainingTime(ctx, c.ID)
+	d, err := a.u.Character().TotalTrainingTime(ctx, c.ID)
 	if err != nil {
 		return r, err
 	}
 	if v, ok := d.Value(); ok {
 		r.trainingActive.Set(v > 0)
 	}
-	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
 		return r, err
 	}

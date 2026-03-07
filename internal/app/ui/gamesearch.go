@@ -20,6 +20,7 @@ import (
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -46,11 +47,11 @@ type gameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *baseUI
+	u                   uiservices.UIServices
 	w                   fyne.Window
 }
 
-func newGameSearch(u *baseUI) *gameSearch {
+func newGameSearch(u uiservices.UIServices) *gameSearch {
 	a := &gameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),
@@ -130,11 +131,11 @@ func newGameSearch(u *baseUI) *gameSearch {
 }
 
 func (a *gameSearch) init(ctx context.Context) {
-	ids := a.u.settings.RecentSearches()
+	ids := a.u.Settings().RecentSearches()
 	if len(ids) == 0 {
 		return
 	}
-	ee, err := a.u.eus.ListEntitiesForIDs(ctx, ids)
+	ee, err := a.u.EVEUniverse().ListEntitiesForIDs(ctx, ids)
 	if errors.Is(err, app.ErrNotFound) {
 		fyne.Do(func() {
 			a.recentItems = xslices.Reset(a.recentItems)
@@ -190,7 +191,7 @@ func (a *gameSearch) storeRecentItems() {
 	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
-	a.u.settings.SetRecentSearches(ids)
+	a.u.Settings().SetRecentSearches(ids)
 }
 
 func (a *gameSearch) CreateRenderer() fyne.WidgetRenderer {
@@ -227,7 +228,7 @@ func (a *gameSearch) makeResults() *xwidget.Tree[resultNode] {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return newSearchResult(a.u.eis, a.u.eus, a.supportedCategories)
+			return newSearchResult(a.u.EVEImage(), a.u.EVEUniverse(), a.supportedCategories)
 		},
 		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -267,7 +268,7 @@ func (a *gameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.u.eis, a.u.eus, infowindow.SupportedCategories())
+			return newSearchResult(a.u.EVEImage(), a.u.EVEUniverse(), infowindow.SupportedCategories())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {
@@ -334,7 +335,7 @@ func (a *gameSearch) doSearch(ctx context.Context, search string) {
 	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
 	})
-	results, total, err := a.u.cs.SearchESI(
+	results, total, err := a.u.Character().SearchESI(
 		ctx,
 		search,
 		categories,

@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -28,29 +29,29 @@ func (a characterAttributeRow) isComment() bool {
 	return a.points == 0
 }
 
-// characterAttributes shows the attributes for the current character.
-type characterAttributes struct {
+// CharacterAttributes shows the attributes for the current character.
+type CharacterAttributes struct {
 	widget.BaseWidget
 
 	rows      []characterAttributeRow
 	character atomic.Pointer[app.Character]
 	list      *widget.List
 	footer    *widget.Label
-	u         *baseUI
+	u         uiservices.UIServices
 }
 
-func newCharacterAttributes(u *baseUI) *characterAttributes {
-	a := &characterAttributes{
+func NewCharacterAttributes(s uiservices.UIServices) *CharacterAttributes {
+	a := &CharacterAttributes{
 		footer: newLabelWithTruncation(),
-		u:      u,
+		u:      s,
 	}
 	a.list = a.makeAttributeList()
 	a.ExtendBaseWidget(a)
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -61,12 +62,12 @@ func newCharacterAttributes(u *baseUI) *characterAttributes {
 	return a
 }
 
-func (a *characterAttributes) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterAttributes) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.footer, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterAttributes) makeAttributeList() *widget.List {
+func (a *CharacterAttributes) makeAttributeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.rows)
@@ -88,12 +89,12 @@ func (a *characterAttributes) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *characterAttributes) update(ctx context.Context) {
+func (a *CharacterAttributes) update(ctx context.Context) {
 	var err error
 	var total int64
 	var attributes []characterAttributeRow
 	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(ctx, characterID)
 		if err2 != nil {
@@ -117,12 +118,12 @@ func (a *characterAttributes) update(ctx context.Context) {
 	})
 }
 
-func (a *characterAttributes) fetchData(ctx context.Context, characterID int64) (int64, []characterAttributeRow, error) {
+func (a *CharacterAttributes) fetchData(ctx context.Context, characterID int64) (int64, []characterAttributeRow, error) {
 	attributes := make([]characterAttributeRow, 0, 6)
 	if characterID == 0 {
 		return 0, attributes, nil
 	}
-	ca, err := a.u.cs.GetAttributes(ctx, characterID)
+	ca, err := a.u.Character().GetAttributes(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return 0, attributes, nil
 	} else if err != nil {

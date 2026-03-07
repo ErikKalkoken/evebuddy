@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -49,10 +50,10 @@ type characterCommunications struct {
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	u                *baseUI
+	u                uiservices.UIServices
 }
 
-func newCharacterCommunications(u *baseUI) *characterCommunications {
+func newCharacterCommunications(u uiservices.UIServices) *characterCommunications {
 	a := &characterCommunications{
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
@@ -62,14 +63,14 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(a.u.eis, u.InfoWindow().ShowEntity)
+	a.Detail = newCommunicationDetail(a.u.EVEImage(), u.InfoWindow().ShowEntity)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -169,7 +170,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return newMailHeaderItem(a.u.eis)
+			return newMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -198,7 +199,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if a.character.Load() == nil {
 		return
 	}
-	err := a.Detail.set(n, a.u.cs.NotificationRecipient(n))
+	err := a.Detail.set(n, a.u.Character().NotificationRecipient(n))
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
 		fyne.Do(func() {
@@ -225,7 +226,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				)
 			}
 			cn := a.current
-			recipient := a.u.cs.NotificationRecipient(cn)
+			recipient := a.u.Character().NotificationRecipient(cn)
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
@@ -255,8 +256,8 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.character.Load() == nil {
 				return
 			}
-			title, content := a.u.cs.RenderNotificationSummary(a.current)
-			a.u.app.SendNotification(fyne.NewNotification(title, content))
+			title, content := a.u.Character().RenderNotificationSummary(a.current)
+			fyne.CurrentApp().SendNotification(fyne.NewNotification(title, content))
 		}))
 	}
 	return toolbar
@@ -265,11 +266,11 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 func (a *characterCommunications) update(ctx context.Context) {
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	var groups []notificationFolder
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
-		groupCounts, err2 := a.u.cs.CountNotifications(ctx, characterID)
+		groupCounts, err2 := a.u.Character().CountNotifications(ctx, characterID)
 		if err2 != nil {
 			slog.Error("communications update", "error", err)
 			err = err2
@@ -335,17 +336,17 @@ func (a *characterCommunications) setCurrentFolder(ctx context.Context, nc app.E
 	var err error
 	characterID := characterIDOrZero(a.character.Load())
 	var notifications []*app.CharacterNotification
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification
 		switch nc {
 		case app.GroupAll:
-			n, err2 = a.u.cs.ListNotificationsAll(ctx, characterID)
+			n, err2 = a.u.Character().ListNotificationsAll(ctx, characterID)
 		case app.GroupUnread:
-			n, err2 = a.u.cs.ListNotificationsUnread(ctx, characterID)
+			n, err2 = a.u.Character().ListNotificationsUnread(ctx, characterID)
 		default:
-			n, err2 = a.u.cs.ListNotificationsForGroup(ctx, characterID, nc)
+			n, err2 = a.u.Character().ListNotificationsForGroup(ctx, characterID, nc)
 		}
 		if err2 != nil {
 			slog.Error("communications set group", "characterID", characterID, "error", err2)

@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -34,17 +35,17 @@ type characterSkillQueue struct {
 	status               *ttwidget.Icon
 	statusResource       fyne.Resource
 	top                  *widget.Label
-	u                    *baseUI
+	u                    uiservices.UIServices
 }
 
 // newCharacterSkillQueue returns a new characterSkillQueue for the current character.
-func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
+func newCharacterSkillQueue(u uiservices.UIServices) *characterSkillQueue {
 	return newCharacterSkillQueueWithCharacter(u, nil)
 }
 
 // newCharacterSkillQueue returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
-func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *characterSkillQueue {
+func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Character) *characterSkillQueue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
@@ -52,7 +53,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	a := &characterSkillQueue{
 		emptyInfo:            emptyInfo,
 		showCurrentCharacter: c == nil,
-		signalKey:            u.signals.UniqueKey(),
+		signalKey:            u.Signals().UniqueKey(),
 		skillqueue:           app.NewCharacterSkillqueue(),
 		statusResource:       statusResources,
 		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
@@ -65,12 +66,12 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 
 	// Signals
 	if a.showCurrentCharacter {
-		a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			a.update(ctx)
 		}, a.signalKey)
 	}
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -79,11 +80,11 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 			a.update(ctx)
 		}
 	}, a.signalKey)
-	a.u.signals.CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
+	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		if characterIDOrZero(a.character.Load()) != characterID {
 			return
 		}
-		c, err := a.u.cs.GetCharacter(ctx, characterID)
+		c, err := a.u.Character().GetCharacter(ctx, characterID)
 		if err != nil {
 			slog.Error("characterSkillQueue: update character", "error", err)
 			return
@@ -91,7 +92,7 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 		a.character.Store(c)
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.update(ctx)
 		})
@@ -162,10 +163,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 // stop frees resources and removes event listeners.
 func (a *characterSkillQueue) stop() {
 	if a.showCurrentCharacter {
-		a.u.signals.CurrentCharacterExchanged.RemoveListener(a.signalKey)
+		a.u.Signals().CurrentCharacterExchanged.RemoveListener(a.signalKey)
 	}
-	a.u.signals.CharacterSectionChanged.RemoveListener(a.signalKey)
-	a.u.signals.RefreshTickerExpired.RemoveListener(a.signalKey)
+	a.u.Signals().CharacterSectionChanged.RemoveListener(a.signalKey)
+	a.u.Signals().RefreshTickerExpired.RemoveListener(a.signalKey)
 }
 
 func (a *characterSkillQueue) update(ctx context.Context) {
@@ -190,13 +191,13 @@ func (a *characterSkillQueue) update(ctx context.Context) {
 		clear()
 		return
 	}
-	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
+	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
 		clear()
 		return
 	}
-	err := a.skillqueue.Update(ctx, a.u.cs, c.ID)
+	err := a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+app.ErrorDisplay(err), widget.DangerImportance)
@@ -256,8 +257,8 @@ func (a *characterSkillQueue) update(ctx context.Context) {
 	})
 }
 
-func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
-	characterName := u.scs.CharacterName(r.CharacterID)
+func showSkillInTrainingWindow(u uiservices.UIServices, r *app.CharacterSkillqueueItem) {
+	characterName := u.StatusCache().CharacterName(r.CharacterID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),
 		"Skill: Information",
@@ -320,7 +321,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 			u.InfoWindow().ShowTypeWithCharacter(r.SkillID, r.CharacterID)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
-			u.eis.InventoryTypeIconAsync(r.SkillID, 256, setter)
+			u.EVEImage().InventoryTypeIconAsync(r.SkillID, 256, setter)
 		},
 		MinSize: fyne.NewSize(500, 450),
 		Title:   subTitle,

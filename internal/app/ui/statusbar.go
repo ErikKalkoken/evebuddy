@@ -132,21 +132,21 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *statusBar) start() {
 	// signals
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.updateCharacterCount(ctx)
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
-	a.u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 		a.updateUpdateStatus(ctx)
 	})
 
@@ -162,7 +162,7 @@ func (a *statusBar) start() {
 		}
 		a.updateStatus.Refresh()
 	}
-	a.u.signals.UpdateStarted.AddListener(func(_ context.Context, id string) {
+	a.u.Signals().UpdateStarted.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Add(id)
@@ -172,7 +172,7 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	a.u.signals.UpdateStopped.AddListener(func(_ context.Context, id string) {
+	a.u.Signals().UpdateStopped.AddListener(func(_ context.Context, id string) {
 		var on bool
 		mu.Lock()
 		updating.Delete(id)
@@ -204,7 +204,7 @@ func (a *statusBar) start() {
 		return
 	}
 
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
 		a.updateEveStatus(ctx)
 	})
 
@@ -259,7 +259,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 }
 
 func (a *statusBar) updateCharacterCount(_ context.Context) {
-	s := strconv.Itoa(len(a.u.scs.ListCharacters()))
+	s := strconv.Itoa(len(a.u.StatusCache().ListCharacters()))
 	fyne.Do(func() {
 		a.characterCount.SetText(s)
 	})
@@ -272,7 +272,7 @@ func (a *statusBar) updateUpdateStatus(_ context.Context) {
 		})
 		return
 	}
-	x := a.u.scs.Summary()
+	x := a.u.StatusCache().Summary()
 	fyne.Do(func() {
 		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})

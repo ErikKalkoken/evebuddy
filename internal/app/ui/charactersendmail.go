@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -31,11 +32,11 @@ type characterSendMail struct {
 	from      *awidget.EveEntityEntry
 	subject   *widget.Entry
 	to        *awidget.EveEntityEntry
-	u         *baseUI
+	u         uiservices.UIServices
 	w         fyne.Window
 }
 
-func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
+func newCharacterSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
 	a := &characterSendMail{
 		u: u,
 		w: u.MainWindow(),
@@ -43,7 +44,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
+	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage())
 	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -53,7 +54,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = awidget.NewEveEntityEntry(toButton, labelWith, u.eis)
+	a.to = awidget.NewEveEntityEntry(toButton, labelWith, u.EVEImage())
 	a.to.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -125,7 +126,7 @@ func (a *characterSendMail) SendAction() bool {
 	}
 	ctx := context.Background()
 	c := a.character.Load()
-	_, err := a.u.cs.SendMail(
+	_, err := a.u.Character().SendMail(
 		ctx,
 		c.ID,
 		a.subject.Text,
@@ -136,7 +137,7 @@ func (a *characterSendMail) SendAction() bool {
 		showErrorDialog(err.Error())
 		return false
 	}
-	go a.u.signals.CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
+	go a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
 		CharacterID: c.ID,
 		Section:     app.SectionCharacterMailHeaders,
 	})
@@ -144,7 +145,7 @@ func (a *characterSendMail) SendAction() bool {
 	return true
 }
 
-func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u uiservices.UIServices, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	var results []*app.EveEntity
 	list := widget.NewList(
@@ -174,7 +175,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			awidget.LoadEveEntityIconAsync(u.eis, ee, func(r fyne.Resource) {
+			awidget.LoadEveEntityIconAsync(u.EVEImage(), ee, func(r fyne.Resource) {
 				image.Resource = r
 				image.Refresh()
 			})
@@ -207,7 +208,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 		}
 		go func() {
 			var err error
-			results, err = u.eus.ListEntitiesByPartialName(context.Background(), search)
+			results, err = u.EVEUniverse().ListEntitiesByPartialName(context.Background(), search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)
@@ -220,7 +221,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 		}()
 		go func() {
 			ctx := context.Background()
-			missingIDs, err := u.cs.AddEveEntitiesFromSearchESI(
+			missingIDs, err := u.Character().AddEveEntitiesFromSearchESI(
 				ctx,
 				characterID,
 				search,
@@ -234,7 +235,7 @@ func showAddDialog(u *baseUI, characterID int64, onSelected func(ee *app.EveEnti
 			if missingIDs.Size() == 0 {
 				return // no need to update when not changed
 			}
-			results, err = u.eus.ListEntitiesByPartialName(ctx, search)
+			results, err = u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)

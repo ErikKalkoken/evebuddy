@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -38,11 +39,11 @@ type characterSheet struct {
 	ship        *widget.Hyperlink
 	skillpoints *widget.Label
 	tags        *widget.Label
-	u           *baseUI
+	u         uiservices.UIServices
 	wealth      *widget.Label
 }
 
-func newCharacterSheet(u *baseUI) *characterSheet {
+func newCharacterSheet(u         uiservices.UIServices) *characterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
 		x.Truncation = fyne.TextTruncateEllipsis
@@ -77,11 +78,11 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	a.ExtendBaseWidget(a)
 
 	// Signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -95,7 +96,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		c := a.character.Load()
 		if c == nil {
 			return
@@ -165,7 +166,7 @@ func (a *characterSheet) update(ctx context.Context) {
 		setName("No character...")
 		return
 	}
-	c2, err := a.u.cs.GetCharacter(ctx, c.ID)
+	c2, err := a.u.Character().GetCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("Failed to fetch character for sheet", "err", err)
 		setName("ERROR: " + app.ErrorDisplay(err))
@@ -196,7 +197,7 @@ func (a *characterSheet) update(ctx context.Context) {
 		}))
 	})
 	fyne.Do(func() {
-		a.u.eis.CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
+		a.u.EVEImage().CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
 		})
 		el, ok := c.Location.Value()
@@ -254,7 +255,7 @@ func (a *characterSheet) update(ctx context.Context) {
 	})
 
 	var s string
-	tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+	tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("character sheet: update", "characterID", c.ID, "error", "err")
 		s = "?"

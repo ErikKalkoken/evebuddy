@@ -511,11 +511,13 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}()
 	}
 	u.onShowCharacter = func() {
-		tabs.Select(characterTab)
+		fyne.Do(func() {
+			tabs.Select(characterTab)
+		})
 	}
 
 	togglePermittedSections := func() {
-		sections, err := u.rs.PermittedSections(context.Background(), u.CurrentCorporationID())
+		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporationID())
 		if err != nil {
 			slog.Error("Failed to identify permitted sections", "error", err)
 			sections.Clear()
@@ -582,7 +584,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go togglePermittedSections()
 	}
 
-	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
 				tabs.DisableItem(characterTab)
@@ -604,7 +606,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onAppFirstStarted = func() {
 		xdesktop.EnableShortcuts(u.MainWindow())
-		go u.updateMailIndicator(context.Background())
+		go u.UpdateMailIndicator(context.Background())
 		go statusBar.start()
 	}
 	u.onAppStopped = func() {

@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -119,7 +120,7 @@ type colonies struct {
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -132,7 +133,7 @@ const (
 	coloniesColCharacter
 )
 
-func newColonies(u *baseUI) *colonies {
+func newColonies(u         uiservices.UIServices) *colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		ID:    coloniesColPlanet,
 		Label: "Planet",
@@ -153,7 +154,7 @@ func newColonies(u *baseUI) *colonies {
 			border := co.(*fyne.Container).Objects
 			border[0].(*xwidget.RichText).Set(r.nameDisplay)
 			x := border[1].(*canvas.Image)
-			u.eis.InventoryTypeIconAsync(r.planetTypeID, app.IconPixelSize, func(r fyne.Resource) {
+			u.EVEImage().InventoryTypeIconAsync(r.planetTypeID, app.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
@@ -234,19 +235,19 @@ func newColonies(u *baseUI) *colonies {
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusAllIdle,
@@ -261,7 +262,7 @@ func newColonies(u *baseUI) *colonies {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
@@ -272,24 +273,24 @@ func newColonies(u *baseUI) *colonies {
 	a.search.PlaceHolder = "Search systems & output"
 
 	// Signals
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 			a.setOnUpdate()
 		})
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterPlanets {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 
@@ -578,7 +579,7 @@ func (a *colonies) setOnUpdate() {
 }
 
 func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
-	planets, err := a.u.cs.ListAllPlanets(ctx)
+	planets, err := a.u.Character().ListAllPlanets(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -603,7 +604,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			extracting:        extracting,
 			name:              name,
 			nameDisplay:       p.NameRichText(),
-			ownerName:         a.u.scs.CharacterName(p.CharacterID),
+			ownerName:         a.u.StatusCache().CharacterName(p.CharacterID),
 			planetID:          p.EvePlanet.ID,
 			planetName:        p.EvePlanet.Name,
 			producing:         producing,
@@ -624,7 +625,7 @@ func (a *colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		} else {
 			r.producingText = strings.Join(slices.Sorted(producing.All()), ", ")
 		}
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, p.CharacterID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, p.CharacterID)
 		if err != nil {
 			return nil, err
 		}

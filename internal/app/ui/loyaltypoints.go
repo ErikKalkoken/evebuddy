@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -55,7 +56,7 @@ type loyaltyPoints struct {
 	sortButton       *xwidget.SortButton
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
-	u                *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -63,7 +64,7 @@ const (
 	loyaltyPointsColPoints
 )
 
-func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
+func newLoyaltyPoints(u         uiservices.UIServices) *loyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{
@@ -102,7 +103,7 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	a.collapseBranches.SetToolTip("Collapse branches")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterTreeAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Search corporations")
 	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
@@ -119,18 +120,18 @@ func newLoyaltyPoints(u *baseUI) *loyaltyPoints {
 	})
 
 	// signals
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterLoyaltyPoints {
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
 	return a
@@ -177,7 +178,7 @@ func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 			points := hbox[0].(*widget.Label)
 			icon2 := hbox[1].(*xwidget.TappableIcon)
 			if n.IsTop() {
-				a.u.eis.CorporationLogoAsync(n.corporationID, app.IconPixelSize, func(r fyne.Resource) {
+				a.u.EVEImage().CorporationLogoAsync(n.corporationID, app.IconPixelSize, func(r fyne.Resource) {
 					icon1.Resource = r
 					icon1.CornerRadius = 0
 					icon1.Refresh()
@@ -189,7 +190,7 @@ func (a *loyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 					a.u.InfoWindow().Show(app.EveEntityCorporation, n.corporationID)
 				}
 			} else {
-				a.u.eis.CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
+				a.u.EVEImage().CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
 					icon1.Resource = r
 					icon1.CornerRadius = app.IconUnitSize / 2
 					icon1.Refresh()
@@ -324,21 +325,21 @@ func (a *loyaltyPoints) update(ctx context.Context) {
 func (a *loyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][]*loyaltyPointsNode, error) {
 	data := make(map[*loyaltyPointsNode][]*loyaltyPointsNode)
 
-	characterNames, err := a.u.cs.CharacterNames(ctx)
+	characterNames, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	characterTags := make(map[int64]set.Set[string])
 	for id := range characterNames {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, id)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 		characterTags[id] = tags
 	}
 
-	entries, err := a.u.cs.ListAllLoyaltyPointEntries(ctx)
+	entries, err := a.u.Character().ListAllLoyaltyPointEntries(ctx)
 	if err != nil {
 		return nil, err
 	}

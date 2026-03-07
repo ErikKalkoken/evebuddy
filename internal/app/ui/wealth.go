@@ -18,6 +18,7 @@ import (
 	"github.com/s-daehling/fyne-charts/pkg/style"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -38,12 +39,12 @@ type wealth struct {
 	characterSplit *prop.PieChart
 	top            *widget.Label
 	totalSplit     *prop.PieChart
-	u              *baseUI
+	u         uiservices.UIServices
 	walletDetail   *coord.CartesianCategoricalChart
 	walletSplit    *prop.PieChart
 }
 
-func newWealth(u *baseUI) *wealth {
+func newWealth(u         uiservices.UIServices) *wealth {
 	a := &wealth{
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),
@@ -76,13 +77,13 @@ func newWealth(u *baseUI) *wealth {
 	a.totalSplit.SetTitleStyle(ts)
 	a.characterSplit.SetTitleStyle(ts)
 
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
 			a.update(ctx)
 		}
 	})
-	a.u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}
@@ -395,21 +396,21 @@ type wealthRow struct {
 }
 
 func (a *wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
-	cc, err := a.u.cs.ListCharacters(ctx)
+	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	var selected []*app.Character
 	for _, c := range cc {
-		hasAssets := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
-		hasWallet := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
+		hasAssets := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterAssets)
+		hasWallet := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
 	}
 	var rows []wealthRow
 	for _, c := range selected {
-		assetTotal, err := a.u.cs.AssetTotalValue(ctx, c.ID)
+		assetTotal, err := a.u.Character().AssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

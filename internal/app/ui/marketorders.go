@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -134,7 +135,7 @@ type marketOrders struct {
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            *baseUI
+	u            uiservices.UIServices
 }
 
 const (
@@ -147,11 +148,11 @@ const (
 	marketOrdersColOwner
 )
 
-func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
+func newMarketOrders(u uiservices.UIServices, isBuyOrders bool) *marketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
-			EIS:      u.eis,
+			EIS:      u.EVEImage(),
 			GetEntity: func(r marketOrderRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.typeID,
@@ -269,31 +270,31 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.selectState.SortDisabled = true
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// Signals
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterMarketOrders:
 			a.update(ctx)
 		}
 	})
-	a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
-	a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 		a.update(ctx)
 	})
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -475,7 +476,7 @@ func (a *marketOrders) update(ctx context.Context) {
 }
 
 func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marketOrderRow, error) {
-	orders, err := a.u.cs.ListAllMarketOrder(ctx, isBuyOrders)
+	orders, err := a.u.Character().ListAllMarketOrder(ctx, isBuyOrders)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +484,7 @@ func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 	for _, o := range orders {
 		r := marketOrderRow{
 			characterID:   o.CharacterID,
-			characterName: a.u.scs.CharacterName(o.CharacterID),
+			characterName: a.u.StatusCache().CharacterName(o.CharacterID),
 			escrow:        o.Escrow,
 			expires:       o.Issued.Add(time.Duration(o.Duration) * time.Hour * 24),
 			IsBuyOrder:    o.IsBuyOrder,
@@ -507,7 +508,7 @@ func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 			volumeRemain:  o.VolumeRemains,
 			volumeTotal:   o.VolumeTotal,
 		}
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, o.CharacterID)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.CharacterID)
 		if err != nil {
 			return nil, err
 		}
@@ -518,7 +519,7 @@ func (a *marketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 }
 
 // showMarketOrderWindow shows the location of a character in a new window.
-func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
+func showMarketOrderWindow(u uiservices.UIServices, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),
@@ -600,7 +601,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 			u.InfoWindow().ShowType(r.typeID)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
-			u.eis.InventoryTypeIconAsync(r.typeID, 256, setter)
+			u.EVEImage().InventoryTypeIconAsync(r.typeID, 256, setter)
 		},
 		Title:  title,
 		Window: w,

@@ -508,7 +508,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	navBar.Select(4)
 
 	togglePermittedSections := func() {
-		sections, err := u.rs.PermittedSections(context.Background(), u.CurrentCorporationID())
+		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporationID())
 		if err != nil {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()
@@ -569,7 +569,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.makeFolderMenu()
 			mailMenu.Refresh()
@@ -606,7 +606,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		go u.characterCommunications.resetCurrentFolder(ctx)
 	}
 	u.onShowCharacter = func() {
-		navBar.Select(1)
+		fyne.Do(func() {
+			navBar.Select(1)
+		})
 	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
@@ -647,7 +649,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 
 	updateCharacterCount := func(_ context.Context) {
-		s := fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
+		s := fmt.Sprintf("%d characters", u.StatusCache().ListCharacterIDs().Size())
 		fyne.Do(func() {
 			navItemManageCharacters.Supporting = s
 			navItemManageCharacters.Refresh()
@@ -673,7 +675,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			return
 		}
 		isOffline.Store(false)
-		status := u.scs.Summary()
+		status := u.StatusCache().Summary()
 		var icon fyne.Resource
 		if status.Errors > 0 {
 			icon = theme.NewErrorThemedResource(theme.WarningIcon())
@@ -686,21 +688,21 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.onAppFirstStarted = func() {
 		// signals
-		u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			updateCharacterCount(ctx)
 			updateUpdateStatus(ctx)
 		})
-		u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
+		u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.signals.CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
+		u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
-		u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
+		u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 			updateUpdateStatus(ctx)
 		})
 

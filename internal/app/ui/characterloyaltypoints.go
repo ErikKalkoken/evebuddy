@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -44,7 +45,7 @@ type characterLoyaltyPoints struct {
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
-	u             *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -52,7 +53,7 @@ const (
 	characterLoyaltyPointsColPoints
 )
 
-func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
+func newCharacterLoyaltyPoints(u         uiservices.UIServices) *characterLoyaltyPoints {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
 		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
@@ -94,15 +95,15 @@ func newCharacterLoyaltyPoints(u *baseUI) *characterLoyaltyPoints {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.window)
+	}, a.u.MainWindow())
 
 	// signals
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	},
 	)
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -147,7 +148,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			corporation := awidget.NewEntityListItem(false, a.u.eis.CorporationLogoAsync)
+			corporation := awidget.NewEntityListItem(false, a.u.EVEImage().CorporationLogoAsync)
 			points := widget.NewLabel("Template")
 			return container.NewBorder(
 				nil,
@@ -237,7 +238,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 		return
 	}
 
-	if !a.u.scs.HasCharacterSection(character.ID, app.SectionCharacterLoyaltyPoints) {
+	if !a.u.StatusCache().HasCharacterSection(character.ID, app.SectionCharacterLoyaltyPoints) {
 		clear()
 		setFooter("Loading data...", widget.WarningImportance)
 		return
@@ -256,7 +257,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 }
 
 func (a *characterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]characterLoyaltyPointsRow, error) {
-	entries, err := a.u.cs.ListLoyaltyPointEntries(ctx, characterID)
+	entries, err := a.u.Character().ListLoyaltyPointEntries(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}

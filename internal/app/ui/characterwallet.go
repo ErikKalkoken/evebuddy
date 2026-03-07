@@ -14,6 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -30,10 +31,10 @@ type characterWallet struct {
 	journal       *walletJournal
 	transactions  *walletTransactions
 	loyaltyPoints *characterLoyaltyPoints
-	u             *baseUI
+	u         uiservices.UIServices
 }
 
-func newCharacterWallet(u *baseUI) *characterWallet {
+func newCharacterWallet(u         uiservices.UIServices) *characterWallet {
 	a := &characterWallet{
 		balance:       xwidget.NewLabelWithSelection(""),
 		journal:       newCharacterWalletJournal(u),
@@ -42,11 +43,11 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if characterIDOrZero(a.character.Load()) != arg.CharacterID {
 			return
 		}
@@ -113,14 +114,14 @@ func (a *characterWallet) updateBalance(ctx context.Context) {
 		return
 	}
 
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
+	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if !hasData {
 		clear()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
 
-	c, err := a.u.cs.GetCharacter(ctx, characterID)
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		clear()
 		setBalance("No data", widget.WarningImportance)

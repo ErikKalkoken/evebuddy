@@ -22,6 +22,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -121,7 +122,7 @@ type industryJobs struct {
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	sortButton      *xwidget.SortButton
-	u               *baseUI
+	u         uiservices.UIServices
 }
 
 const (
@@ -135,15 +136,15 @@ const (
 	industryJobsColInstaller
 )
 
-func newIndustryJobsForOverview(u *baseUI) *industryJobs {
+func newIndustryJobsForOverview(u         uiservices.UIServices) *industryJobs {
 	return newIndustryJobs(u, false)
 }
 
-func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
+func newIndustryJobsForCorporation(u         uiservices.UIServices) *industryJobs {
 	return newIndustryJobs(u, true)
 }
 
-func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
+func newIndustryJobs(u         uiservices.UIServices, forCorporation bool) *industryJobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
 		ID:    industryJobsColBlueprint,
@@ -165,7 +166,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.blueprintTypeName)
 			x := border[1].(*canvas.Image)
-			u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, app.IconPixelSize, func(r fyne.Resource) {
+			u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, app.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
@@ -332,14 +333,14 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.window, 6, 7)
+	}, a.u.MainWindow(), 6, 7)
 
 	if forCorporation {
-		a.u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			a.update(ctx)
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if corporationIDOrZero(a.corporation.Load()) != arg.CorporationID {
 				return
 			}
@@ -349,27 +350,27 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		})
 	} else {
 		a.selectInstaller.Selected = industryInstallerMe
-		a.u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterIndustryJobs {
 				a.update(ctx)
 			}
 		})
-		a.u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if arg.Section == app.SectionCorporationIndustryJobs {
 				a.update(ctx)
 			}
 		})
-		a.u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			a.update(ctx)
 		})
-		a.u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
 		})
-		a.u.signals.TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
 			a.update(ctx)
 		})
 	}
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 		})
@@ -646,11 +647,11 @@ func (a *industryJobs) update(ctx context.Context) {
 }
 
 func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {
-	cj, err := a.u.cs.ListAllCharacterIndustryJob(ctx)
+	cj, err := a.u.Character().ListAllCharacterIndustryJob(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rj, err := a.u.rs.ListAllCorporationIndustryJobs(ctx)
+	rj, err := a.u.Corporation().ListAllCorporationIndustryJobs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -661,17 +662,17 @@ func (a *industryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 		return x.CorporationID
 	}))
 	ids := set.Union(ids1, ids2)
-	eeMap, err := a.u.eus.ToEntities(ctx, ids)
+	eeMap, err := a.u.EVEUniverse().ToEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	myCharacters, err := a.u.cs.ListCharacterIDs(ctx)
+	myCharacters, err := a.u.Character().ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
 	tagsPerCharacter := make(map[int64]set.Set[string])
 	for id := range myCharacters.All() {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, id)
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -754,18 +755,18 @@ func (a *industryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}
-	rj, err := a.u.rs.ListCorporationIndustryJobs(ctx, corporationID)
+	rj, err := a.u.Corporation().ListCorporationIndustryJobs(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
 	ids := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int64 {
 		return x.CorporationID
 	}))
-	eeMap, err := a.u.eus.ToEntities(ctx, ids)
+	eeMap, err := a.u.EVEUniverse().ToEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	myCharacters, err := a.u.cs.ListCharacterIDs(ctx)
+	myCharacters, err := a.u.Character().ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -884,7 +885,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	a.u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			status.Set(r.statusDisplay())
 		})
@@ -893,7 +894,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 		if onClosed != nil {
 			onClosed()
 		}
-		a.u.signals.RefreshTickerExpired.RemoveListener(key)
+		a.u.Signals().RefreshTickerExpired.RemoveListener(key)
 	})
 	xwindow.Set(xwindow.Params{
 		Content: f,
@@ -901,7 +902,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 			a.u.InfoWindow().ShowType(r.blueprintType.ID)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
-			a.u.eis.InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)
+			a.u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)
 		},
 		Title:  title,
 		Window: w,
