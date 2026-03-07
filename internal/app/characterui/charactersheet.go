@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"context"
@@ -39,11 +39,11 @@ type CharacterSheet struct {
 	ship        *widget.Hyperlink
 	skillpoints *widget.Label
 	tags        *widget.Label
-	u         uiservices.UIServices
+	u           uiservices.UIServices
 	wealth      *widget.Label
 }
 
-func NewCharacterSheet(u         uiservices.UIServices) *CharacterSheet {
+func NewCharacterSheet(u uiservices.UIServices) *CharacterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
 		x.Truncation = fyne.TextTruncateEllipsis

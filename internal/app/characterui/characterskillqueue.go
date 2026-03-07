@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"context"
@@ -40,12 +40,12 @@ type CharacterSkillQueue struct {
 
 // NewCharacterSkillQueue returns a new characterSkillQueue for the current character.
 func NewCharacterSkillQueue(u uiservices.UIServices) *CharacterSkillQueue {
-	return newCharacterSkillQueueWithCharacter(u, nil)
+	return NewCharacterSkillQueueWithCharacter(u, nil)
 }
 
-// newCharacterSkillQueue returns a new characterSkillQueue for character c.
+// NewCharacterSkillQueueWithCharacter returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
-func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Character) *CharacterSkillQueue {
+func NewCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Character) *CharacterSkillQueue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
@@ -68,7 +68,7 @@ func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Charact
 	if a.showCurrentCharacter {
 		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
-			a.update(ctx)
+			a.Update(ctx)
 		}, a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -77,7 +77,7 @@ func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Charact
 		}
 		switch arg.Section {
 		case app.SectionCharacterSkillqueue:
-			a.update(ctx)
+			a.Update(ctx)
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
@@ -90,11 +90,11 @@ func newCharacterSkillQueueWithCharacter(u uiservices.UIServices, c *app.Charact
 			return
 		}
 		a.character.Store(c)
-		a.update(ctx)
+		a.Update(ctx)
 	}, a.signalKey)
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.update(ctx)
+			a.Update(ctx)
 		})
 	}, a.signalKey)
 	return a
@@ -121,7 +121,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 			if app.IsMobile() {
 				level.Hide()
 			}
-			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem(app.IsMobile()))
+			return container.NewBorder(nil, nil, level, nil, NewSkillQueueItem(app.IsMobile()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			qi := a.skillqueue.Item(id)
@@ -129,7 +129,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 				return
 			}
 			c := co.(*fyne.Container).Objects
-			c[0].(*skillQueueItem).Set(qi)
+			c[0].(*SkillQueueItem).Set(qi)
 
 			level := c[1].(*awidget.SkillLevel)
 			var active, trained, queued int64
@@ -160,8 +160,8 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 	return list
 }
 
-// stop frees resources and removes event listeners.
-func (a *CharacterSkillQueue) stop() {
+// Stop frees resources and removes event listeners.
+func (a *CharacterSkillQueue) Stop() {
 	if a.showCurrentCharacter {
 		a.u.Signals().CurrentCharacterExchanged.RemoveListener(a.signalKey)
 	}
@@ -169,7 +169,7 @@ func (a *CharacterSkillQueue) stop() {
 	a.u.Signals().RefreshTickerExpired.RemoveListener(a.signalKey)
 }
 
-func (a *CharacterSkillQueue) update(ctx context.Context) {
+func (a *CharacterSkillQueue) Update(ctx context.Context) {
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			a.top.Text = s
@@ -330,7 +330,7 @@ func showSkillInTrainingWindow(u uiservices.UIServices, r *app.CharacterSkillque
 	w.Show()
 }
 
-type skillQueueItem struct {
+type SkillQueueItem struct {
 	widget.BaseWidget
 
 	Placeholder string
@@ -341,9 +341,9 @@ type skillQueueItem struct {
 	progress *widget.ProgressBar
 }
 
-func newSkillQueueItem(isMobile bool) *skillQueueItem {
+func NewSkillQueueItem(isMobile bool) *SkillQueueItem {
 	pb := widget.NewProgressBar()
-	w := &skillQueueItem{
+	w := &SkillQueueItem{
 		Placeholder: "N/A",
 		duration:    widget.NewLabel(""),
 		progress:    pb,
@@ -361,7 +361,7 @@ func newSkillQueueItem(isMobile bool) *skillQueueItem {
 	return w
 }
 
-func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
+func (w *SkillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 	var (
 		completionP float64
 		importance  widget.Importance
@@ -408,7 +408,7 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 	}
 }
 
-func (w *skillQueueItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewStack(
 		w.progress,
 		container.NewBorder(nil, nil, nil, w.duration, w.name),

@@ -30,9 +30,9 @@ type CorporationWallet struct {
 	balance      *widget.Label
 	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
-	journal      *walletJournal
+	journal      *WalletJournal
 	name         *widget.Label
-	transactions *walletTransactions
+	transactions *WalletTransactions
 	u         uiservices.UIServices
 }
 
@@ -40,9 +40,9 @@ func NewCorporationWallet(u         uiservices.UIServices, division app.Division
 	a := &CorporationWallet{
 		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,
-		journal:      newCorporationWalletJournal(u, division),
+		journal:      NewCorporationWalletJournal(u, division),
 		name:         widget.NewLabel(""),
-		transactions: newCorporationWalletTransactions(u, division),
+		transactions: NewCorporationWalletTransactions(u, division),
 		u:            u,
 	}
 	a.name.TextStyle.Italic = true
@@ -82,10 +82,10 @@ func (a *CorporationWallet) CreateRenderer() fyne.WidgetRenderer {
 func (a *CorporationWallet) update(ctx context.Context) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		a.journal.update(ctx)
+		a.journal.Update(ctx)
 	})
 	wg.Go(func() {
-		a.transactions.update(ctx)
+		a.transactions.Update(ctx)
 	})
 	wg.Go(func() {
 		a.updateBalance(ctx)

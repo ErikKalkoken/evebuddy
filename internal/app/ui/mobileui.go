@@ -19,6 +19,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
@@ -90,8 +91,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	)
 
 	mailMenu := fyne.NewMenu("")
-	u.characterMails.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := newCharacterSendMail(bu, c, mode, mail)
+	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+		page := characterui.NewCharacterSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -111,7 +112,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.characterMails.onSelected = func() {
+			u.characterMails.OnSelected = func() {
 				characterNav.PushAndHideNavBar(
 					newCharacterAppBar(
 						"Mail",
@@ -130,7 +131,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					"Mail",
 					u.characterMails.Headers,
 					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMails.makeComposeMessageAction()),
+					kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
 				))
 		},
 	)
@@ -194,7 +195,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterMails.onUpdate = func(unread, missing int) {
+	u.characterMails.OnUpdate = func(unread, missing int) {
 		var s []string
 		if unread > 0 {
 			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
@@ -571,9 +572,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
-			mailMenu.Items = u.characterMails.makeFolderMenu()
+			mailMenu.Items = u.characterMails.MakeFolderMenu()
 			mailMenu.Refresh()
-			communicationsMenu.Items = u.characterCommunications.makeFolderMenu()
+			communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
 			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
@@ -602,8 +603,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			})
 		})
 		ctx := context.Background()
-		go u.characterMails.resetCurrentFolder(ctx)
-		go u.characterCommunications.resetCurrentFolder(ctx)
+		go u.characterMails.ResetCurrentFolder(ctx)
+		go u.characterCommunications.ResetCurrentFolder(ctx)
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {

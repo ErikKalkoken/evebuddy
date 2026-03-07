@@ -20,6 +20,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -127,7 +128,7 @@ type Training struct {
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u         uiservices.UIServices
+	u            uiservices.UIServices
 }
 
 const (
@@ -142,7 +143,7 @@ const (
 	trainingColTotalSP
 )
 
-func NewTraining(u         uiservices.UIServices) *Training {
+func NewTraining(u uiservices.UIServices) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,
@@ -377,7 +378,7 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
 				tags,
-				newSkillQueueItem(app.IsMobile()),
+				characterui.NewSkillQueueItem(app.IsMobile()),
 				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
 				spacer,
@@ -402,7 +403,7 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 			}
 			vbox[1].(*widget.Label).SetText(s)
 
-			b1 := vbox[2].(*skillQueueItem)
+			b1 := vbox[2].(*characterui.SkillQueueItem)
 			b1.Set(r.skill)
 
 			b2 := vbox[3].(*fyne.Container).Objects
@@ -624,26 +625,32 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		w.Show()
 		return
 	}
-	c, err := a.u.Character().GetCharacter(context.Background(), r.characterID)
-	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.MainWindow())
-		return
-	}
-	sq := newCharacterSkillQueueWithCharacter(a.u, c)
-	w.SetOnClosed(func() {
-		if onClosed != nil {
-			onClosed()
+	go func() {
+		ctx := context.Background()
+		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
+		if err != nil {
+			fyne.Do(func() {
+				xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.MainWindow())
+			})
+			return
 		}
-		sq.stop()
-	})
-	go sq.update(context.Background())
-	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
-	xwindow.Set(xwindow.Params{
-		Content:        sq,
-		EnableTooltips: true,
-		MinSize:        fyne.NewSize(800, 450),
-		Title:          subTitle,
-		Window:         w,
-	})
-	w.Show()
+		fyne.Do(func() {
+			sq := characterui.NewCharacterSkillQueueWithCharacter(a.u, c)
+			go sq.Update(ctx)
+			xwindow.Set(xwindow.Params{
+				Content:        sq,
+				EnableTooltips: true,
+				MinSize:        fyne.NewSize(800, 450),
+				Title:          fmt.Sprintf("Skill Queue for %s", r.characterName),
+				Window:         w,
+			})
+			w.SetOnClosed(func() {
+				if onClosed != nil {
+					onClosed()
+				}
+				sq.Stop()
+			})
+			w.Show()
+		})
+	}()
 }

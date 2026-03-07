@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 // FIXME: This test is flakey and therefore disabled for now.
 // See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847

@@ -33,7 +33,7 @@ type characterLoyaltyPointsRow struct {
 	searchTarget    string
 }
 
-type characterLoyaltyPoints struct {
+type CharacterLoyaltyPoints struct {
 	widget.BaseWidget
 
 	footer        *widget.Label
@@ -45,7 +45,7 @@ type characterLoyaltyPoints struct {
 	searchBox     *widget.Entry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
-	u         uiservices.UIServices
+	u             uiservices.UIServices
 }
 
 const (
@@ -53,7 +53,7 @@ const (
 	characterLoyaltyPointsColPoints
 )
 
-func newCharacterLoyaltyPoints(u         uiservices.UIServices) *characterLoyaltyPoints {
+func NewCharacterLoyaltyPoints(u uiservices.UIServices) *CharacterLoyaltyPoints {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
 		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
@@ -70,7 +70,7 @@ func newCharacterLoyaltyPoints(u         uiservices.UIServices) *characterLoyalt
 		characterLoyaltyPointsColCorporation,
 		xwidget.SortAsc,
 	)
-	a := &characterLoyaltyPoints{
+	a := &CharacterLoyaltyPoints{
 		columnSorter: columnSorter,
 		footer:       newLabelWithTruncation(),
 		u:            u,
@@ -100,7 +100,7 @@ func newCharacterLoyaltyPoints(u         uiservices.UIServices) *characterLoyalt
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.update(ctx)
+		a.Update(ctx)
 	},
 	)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -110,12 +110,12 @@ func newCharacterLoyaltyPoints(u         uiservices.UIServices) *characterLoyalt
 		if arg.Section != app.SectionCharacterLoyaltyPoints {
 			return
 		}
-		a.update(ctx)
+		a.Update(ctx)
 	})
 	return a
 }
 
-func (a *characterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if app.IsMobile() {
 		topBox = container.NewVBox(
@@ -141,7 +141,7 @@ func (a *characterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterLoyaltyPoints) makeList() *widget.List {
+func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.rowsFiltered)
@@ -180,7 +180,7 @@ func (a *characterLoyaltyPoints) makeList() *widget.List {
 	return l
 }
 
-func (a *characterLoyaltyPoints) filterRowsAsync() {
+func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchBox.Text)
@@ -216,7 +216,7 @@ func (a *characterLoyaltyPoints) filterRowsAsync() {
 	}()
 }
 
-func (a *characterLoyaltyPoints) update(ctx context.Context) {
+func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
@@ -256,7 +256,7 @@ func (a *characterLoyaltyPoints) update(ctx context.Context) {
 	})
 }
 
-func (a *characterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]characterLoyaltyPointsRow, error) {
+func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int64) ([]characterLoyaltyPointsRow, error) {
 	entries, err := a.u.Character().ListLoyaltyPointEntries(ctx, characterID)
 	if err != nil {
 		return nil, err

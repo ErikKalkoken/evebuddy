@@ -61,13 +61,13 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 			IsBuy:       true,
 		})
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		a := newCharacterWalletTransaction(ui)
+		a := NewCharacterWalletTransaction(ui)
 		w := test.NewWindow(a)
 		defer w.Close()
 		w.Resize(fyne.NewSize(1700, 300))
 
 		a.character.Store(character)
-		a.update(t.Context())
+		a.Update(t.Context())
 
 		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
 	})
@@ -121,13 +121,13 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 			IsBuy:         true,
 		})
 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-		x := newCorporationWalletTransactions(ui, app.Division1)
+		x := NewCorporationWalletTransactions(ui, app.Division1)
 		w := test.NewWindow(x)
 		defer w.Close()
 		w.Resize(fyne.NewSize(1700, 300))
 
 		ui.SetCorporation(corporation)
-		x.update(t.Context())
+		x.Update(t.Context())
 
 		// fmt.Println(testutil.DumpTables(db))
 		test.AssertImageMatches(t, "wallettransactions/corporation.png", w.Canvas().Capture())

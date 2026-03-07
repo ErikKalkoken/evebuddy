@@ -28,18 +28,18 @@ type CharacterWallet struct {
 
 	balance       *widget.Label
 	character     atomic.Pointer[app.Character]
-	journal       *walletJournal
-	transactions  *walletTransactions
-	loyaltyPoints *characterLoyaltyPoints
-	u         uiservices.UIServices
+	journal       *WalletJournal
+	transactions  *WalletTransactions
+	loyaltyPoints *CharacterLoyaltyPoints
+	u             uiservices.UIServices
 }
 
-func NewCharacterWallet(u         uiservices.UIServices) *CharacterWallet {
+func NewCharacterWallet(u uiservices.UIServices) *CharacterWallet {
 	a := &CharacterWallet{
 		balance:       xwidget.NewLabelWithSelection(""),
-		journal:       newCharacterWalletJournal(u),
-		transactions:  newCharacterWalletTransaction(u),
-		loyaltyPoints: newCharacterLoyaltyPoints(u),
+		journal:       NewCharacterWalletJournal(u),
+		transactions:  NewCharacterWalletTransaction(u),
+		loyaltyPoints: NewCharacterLoyaltyPoints(u),
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
@@ -76,13 +76,13 @@ func (a *CharacterWallet) CreateRenderer() fyne.WidgetRenderer {
 func (a *CharacterWallet) update(ctx context.Context) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		a.journal.update(ctx)
+		a.journal.Update(ctx)
 	})
 	wg.Go(func() {
-		a.transactions.update(ctx)
+		a.transactions.Update(ctx)
 	})
 	wg.Go(func() {
-		a.loyaltyPoints.update(ctx)
+		a.loyaltyPoints.Update(ctx)
 	})
 	wg.Go(func() {
 		a.updateBalance(ctx)

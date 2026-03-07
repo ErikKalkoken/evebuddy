@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"bytes"
@@ -60,11 +60,11 @@ type CharacterFlyableShips struct {
 	selectGroup   *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	top           *widget.Label
-	u         uiservices.UIServices
+	u             uiservices.UIServices
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
-func NewCharacterFlyableShips(u         uiservices.UIServices) *CharacterFlyableShips {
+func NewCharacterFlyableShips(u uiservices.UIServices) *CharacterFlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
@@ -354,7 +354,7 @@ func NewShipItem(
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
-	image.ScaleMode = defaultImageScaleMode
+	// image.ScaleMode = defaultImageScaleMode  // FIXME
 	image.CornerRadius = theme.InputRadiusSize()
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &ShipItem{

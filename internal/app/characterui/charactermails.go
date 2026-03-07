@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/uiservices"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
@@ -83,8 +84,11 @@ func (f mailFolderNode) icon() fyne.Resource {
 type CharacterMails struct {
 	widget.BaseWidget
 
-	Detail  *mailDetail
-	Headers *fyne.Container
+	Detail        *mailDetail
+	Headers       *fyne.Container
+	OnUpdate      func(unread, missing int)
+	OnSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
+	OnSelected    func()
 
 	character        atomic.Pointer[app.Character]
 	compose          *widget.Button
@@ -102,12 +106,10 @@ type CharacterMails struct {
 	lastSelected     widget.ListItemID
 	mail             *app.CharacterMail
 	missingPercent   atomic.Int64
-	onSelected       func()
-	onSendMessage    func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
-	onUpdate         func(unread, missing int)
-	toolbar          *widget.Toolbar
-	u                uiservices.UIServices
-	unreadCount      atomic.Int64
+
+	toolbar     *widget.Toolbar
+	u           uiservices.UIServices
+	unreadCount atomic.Int64
 }
 
 func NewCharacterMails(u uiservices.UIServices) *CharacterMails {
@@ -125,7 +127,7 @@ func NewCharacterMails(u uiservices.UIServices) *CharacterMails {
 	// Folders
 	a.folders = a.makeFolderTree()
 	a.folderStatus.Hide()
-	r, f := a.makeComposeMessageAction()
+	r, f := a.MakeComposeMessageAction()
 	a.compose = widget.NewButtonWithIcon("Compose", r, f)
 	a.compose.Importance = widget.HighImportance
 	a.compose.Disable()
@@ -298,10 +300,10 @@ func (a *CharacterMails) update(ctx context.Context) {
 }
 
 func (a *CharacterMails) callOnUpdate() {
-	if a.onUpdate == nil {
+	if a.OnUpdate == nil {
 		return
 	}
-	a.onUpdate(int(a.unreadCount.Load()), int(a.missingPercent.Load()))
+	a.OnUpdate(int(a.unreadCount.Load()), int(a.missingPercent.Load()))
 }
 
 func (a *CharacterMails) updateDownloaded(ctx context.Context) {
@@ -526,7 +528,7 @@ func (a *CharacterMails) updateCountsInTree(ctx context.Context, characterID int
 	return totalCount, nil
 }
 
-func (a *CharacterMails) makeFolderMenu() []*fyne.MenuItem {
+func (a *CharacterMails) MakeFolderMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	var items1 []*fyne.MenuItem
 	a.folders.Data().Walk(nil, func(f *mailFolderNode) bool {
@@ -552,7 +554,7 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return newMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -562,7 +564,7 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 			if a.character.Load() == nil {
 				return
 			}
-			item := co.(*mailHeaderItem)
+			item := co.(*awidget.MailHeaderItem)
 			item.Set(characterIDOrZero(a.character.Load()), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -572,15 +574,15 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 		r := a.headers[id]
 		go a.loadMail(context.Background(), r.MailID)
 		a.lastSelected = id
-		if a.onSelected != nil {
-			a.onSelected()
+		if a.OnSelected != nil {
+			a.OnSelected()
 			l.UnselectAll()
 		}
 	}
 	return l
 }
 
-func (a *CharacterMails) resetCurrentFolder(ctx context.Context) {
+func (a *CharacterMails) ResetCurrentFolder(ctx context.Context) {
 	a.setCurrentFolder(ctx, a.folderDefault)
 }
 
@@ -655,17 +657,17 @@ func (a *CharacterMails) fetchHeaders(ctx context.Context, f *mailFolderNode) ([
 }
 
 func (a *CharacterMails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
-	if a.onSendMessage == nil {
+	if a.OnSendMessage == nil {
 		return
 	}
 	c := a.character.Load()
 	if c == nil {
 		return
 	}
-	a.onSendMessage(c, mode, mail)
+	a.OnSendMessage(c, mode, mail)
 }
 
-func (a *CharacterMails) makeComposeMessageAction() (fyne.Resource, func()) {
+func (a *CharacterMails) MakeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
 		a.doOnSendMessage(app.SendMailNew, nil)
 	}
@@ -828,14 +830,14 @@ type mailDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *mailHeader
+	header  *awidget.MailHeader
 	subject *widget.Label
 }
 
 func newMailDetail(u uiservices.UIServices) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  newMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
+		header:  awidget.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

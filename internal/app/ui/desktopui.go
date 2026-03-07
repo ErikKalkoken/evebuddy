@@ -22,6 +22,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settingswindow"
@@ -217,10 +218,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.MailComposeIcon(),
 		newContentPage("Mail", u.characterMails),
 	)
-	u.characterMails.onUpdate = func(unread, _ int) {
+	u.characterMails.OnUpdate = func(unread, _ int) {
 		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 	}
-	u.characterMails.onSendMessage = u.showSendMailWindow
+	u.characterMails.OnSendMessage = u.showSendMailWindow
 
 	characterCommunicationsNav := xwidget.NewNavPage(
 		"Communications",
@@ -663,7 +664,7 @@ func (u *DesktopUI) saveAppState() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.app.NewWindow(app.MakeWindowTitle(title))
-	page := newCharacterSendMail(u.baseUI, c, mode, mail)
+	page := characterui.NewCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
 	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())

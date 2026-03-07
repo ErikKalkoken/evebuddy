@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"cmp"
@@ -103,7 +103,7 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterCommunications) makeFolderMenu() []*fyne.MenuItem {
+func (a *CharacterCommunications) MakeFolderMenu() []*fyne.MenuItem {
 	var items2 []*fyne.MenuItem
 	for _, f := range a.folders {
 		s := f.Name
@@ -170,14 +170,14 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return newMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(a.u.EVEImage())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*mailHeaderItem)
+			item := co.(*awidget.MailHeaderItem)
 			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead.ValueOrZero())
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -311,7 +311,7 @@ func (a *CharacterCommunications) update(ctx context.Context) {
 	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?")), widget.MediumImportance
 	})
-	a.resetCurrentFolder(ctx)
+	a.ResetCurrentFolder(ctx)
 	fyne.Do(func() {
 		a.clearDetail()
 		a.folders = groups
@@ -325,7 +325,7 @@ func (a *CharacterCommunications) update(ctx context.Context) {
 	})
 }
 
-func (a *CharacterCommunications) resetCurrentFolder(ctx context.Context) {
+func (a *CharacterCommunications) ResetCurrentFolder(ctx context.Context) {
 	a.setCurrentFolder(ctx, app.GroupUnread)
 	fyne.Do(func() {
 		a.notificationList.UnselectAll()
@@ -399,7 +399,7 @@ type communicationDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *mailHeader
+	header  *awidget.MailHeader
 	subject *widget.Label
 }
 
@@ -413,7 +413,7 @@ func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity))
 	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
-		header:  newMailHeader(eis, show),
+		header:  awidget.NewMailHeader(eis, show),
 		subject: subject,
 	}
 	w.ExtendBaseWidget(w)

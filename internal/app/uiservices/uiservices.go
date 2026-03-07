@@ -1,4 +1,4 @@
-// Package uiservices defines the services using by UI elements.
+// Package uiservices defines a shared interface for UI services.
 package uiservices
 
 import (

@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"cmp"
@@ -63,12 +63,12 @@ type CharacterSkillCatalogue struct {
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
 	top            *widget.Label
-	u         uiservices.UIServices
+	u              uiservices.UIServices
 	sortButton     *xwidget.SortButton
 	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
-func NewCharacterSkillCatalogue(u         uiservices.UIServices) *CharacterSkillCatalogue {
+func NewCharacterSkillCatalogue(u uiservices.UIServices) *CharacterSkillCatalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",

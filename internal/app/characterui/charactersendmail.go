@@ -1,4 +1,4 @@
-package ui
+package characterui
 
 import (
 	"context"
@@ -36,7 +36,7 @@ type characterSendMail struct {
 	w         fyne.Window
 }
 
-func newCharacterSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
+func NewCharacterSendMail(u uiservices.UIServices, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
 	a := &characterSendMail{
 		u: u,
 		w: u.MainWindow(),

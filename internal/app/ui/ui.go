@@ -82,19 +82,19 @@ type baseUI struct {
 	assetSearchAll          *AssetSearch
 	augmentations           *Augmentations
 	characterAssetBrowser   *AssetBrowser
-	characterAttributes     *CharacterAttributes
+	characterAttributes     *characterui.CharacterAttributes
 	characterAugmentations  *characterui.CharacterAugmentations
-	characterBiography      *CharacterBiography
-	characterContacts       *CharacterContacts
-	characterCommunications *CharacterCommunications
+	characterBiography      *characterui.CharacterBiography
+	characterContacts       *characterui.CharacterContacts
+	characterCommunications *characterui.CharacterCommunications
 	characterCorporation    *corporationui.CorporationSheet
-	characterJumpClones     *CharacterJumpClones
-	characterMails          *CharacterMails
+	characterJumpClones     *characterui.CharacterJumpClones
+	characterMails          *characterui.CharacterMails
 	characterOverview       *CharacterOverview
-	characterSheet          *CharacterSheet
-	characterShips          *CharacterFlyableShips
-	characterSkillCatalogue *CharacterSkillCatalogue
-	characterSkillQueue     *CharacterSkillQueue
+	characterSheet          *characterui.CharacterSheet
+	characterShips          *characterui.CharacterFlyableShips
+	characterSkillCatalogue *characterui.CharacterSkillCatalogue
+	characterSkillQueue     *characterui.CharacterSkillQueue
 	characterWallet         *CharacterWallet
 	clones                  *Clones
 	colonies                *Colonies
@@ -278,9 +278,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.UpdateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
 			updateStatus(ctx)
-			if isShown {
-				go u.characterSheet.update(ctx)
-			}
 			character, err := u.cs.GetCharacter(ctx, arg.CharacterID)
 			if err != nil {
 				logErr(err)
@@ -361,19 +358,19 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.assetSearchAll = NewCombinedAssetSearch(u)
 	u.augmentations = NewAugmentations(u)
 	u.characterAssetBrowser = NewCharacterAssetBrowser(u)
-	u.characterAttributes = NewCharacterAttributes(u)
+	u.characterAttributes = characterui.NewCharacterAttributes(u)
 	u.characterAugmentations = characterui.NewCharacterAugmentations(u)
-	u.characterBiography = NewCharacterBiography(u)
-	u.characterContacts = NewCharacterContacts(u)
-	u.characterCommunications = NewCharacterCommunications(u)
+	u.characterBiography = characterui.NewCharacterBiography(u)
+	u.characterContacts = characterui.NewCharacterContacts(u)
+	u.characterCommunications = characterui.NewCharacterCommunications(u)
 	u.characterCorporation = corporationui.NewCorporationSheet(u, false)
-	u.characterJumpClones = NewCharacterJumpClones(u)
-	u.characterMails = NewCharacterMails(u)
+	u.characterJumpClones = characterui.NewCharacterJumpClones(u)
+	u.characterMails = characterui.NewCharacterMails(u)
 	u.characterOverview = NewCharacterOverview(u)
-	u.characterSheet = NewCharacterSheet(u)
-	u.characterShips = NewCharacterFlyableShips(u)
-	u.characterSkillCatalogue = NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = NewCharacterSkillQueue(u)
+	u.characterSheet = characterui.NewCharacterSheet(u)
+	u.characterShips = characterui.NewCharacterFlyableShips(u)
+	u.characterSkillCatalogue = characterui.NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = characterui.NewCharacterSkillQueue(u)
 	u.characterWallet = NewCharacterWallet(u)
 	u.clones = NewClones(u)
 	u.colonies = NewColonies(u)

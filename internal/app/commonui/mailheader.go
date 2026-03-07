@@ -1,4 +1,4 @@
-package ui
+package commonui
 
 import (
 	"time"
@@ -12,30 +12,29 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	awidget "github.com/ErikKalkoken/evebuddy/internal/app/commonui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type mailHeaderItem struct {
+type MailHeaderItem struct {
 	widget.BaseWidget
 
 	FallbackIcon fyne.Resource
 
-	eis       awidget.EveEntityEIS
+	eis       EveEntityEIS
 	from      *widget.Label
 	icon      *canvas.Image
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func newMailHeaderItem(eis awidget.EveEntityEIS) *mailHeaderItem {
+func NewMailHeaderItem(eis EveEntityEIS) *MailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis
-	w := &mailHeaderItem{
+	w := &MailHeaderItem{
 		eis:          eis,
 		from:         from,
 		FallbackIcon: icons.Questionmark32Png,
@@ -48,28 +47,28 @@ func newMailHeaderItem(eis awidget.EveEntityEIS) *mailHeaderItem {
 	return w
 }
 
-func (w *mailHeaderItem) Set(characterID int64, from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *MailHeaderItem) Set(characterID int64, from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	awidget.LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
 	w.Refresh()
 }
 
-func (w *mailHeaderItem) Refresh() {
+func (w *MailHeaderItem) Refresh() {
 	w.from.Refresh()
 	w.subject.Refresh()
 	w.timestamp.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *mailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
@@ -81,10 +80,10 @@ func (w *mailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type mailHeader struct {
+type MailHeader struct {
 	widget.BaseWidget
 
-	eis        awidget.EveEntityEIS
+	eis        EveEntityEIS
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
 	recipients *fyne.Container
@@ -93,11 +92,11 @@ type mailHeader struct {
 	timestamp  *widget.Label
 }
 
-func newMailHeader(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *mailHeader {
+func NewMailHeader(eis EveEntityEIS, show func(*app.EveEntity)) *MailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
-	w := &mailHeader{
+	w := &MailHeader{
 		eis:        eis,
 		from:       from,
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
@@ -114,7 +113,7 @@ func newMailHeader(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *mailHea
 	return w
 }
 
-func (w *mailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
@@ -131,13 +130,13 @@ func (w *mailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.
 		w.showInfo(from)
 	}
 	w.to.Show()
-	awidget.LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()
 }
 
-func (w *mailHeader) Clear() {
+func (w *MailHeader) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
 	w.recipients.RemoveAll()
@@ -148,14 +147,14 @@ func (w *mailHeader) Clear() {
 	w.Refresh()
 }
 
-func (w *mailHeader) Refresh() {
+func (w *MailHeader) Refresh() {
 	w.from.Refresh()
 	w.recipients.Refresh()
 	w.timestamp.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *mailHeader) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
