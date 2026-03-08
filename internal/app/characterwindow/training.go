@@ -17,8 +17,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// characterTraining is a UI component that allows to configure training watchers for characters.
-type characterTraining struct {
+// training is a UI component that allows to configure training watchers for characters.
+type training struct {
 	widget.BaseWidget
 
 	characters []*app.Character
@@ -26,8 +26,8 @@ type characterTraining struct {
 	list       *widget.List
 }
 
-func newCharacterTraining(cw *characterWindow) *characterTraining {
-	a := &characterTraining{
+func newTraining(cw *characterWindow) *training {
+	a := &training{
 		cw: cw,
 	}
 	a.ExtendBaseWidget(a)
@@ -43,7 +43,7 @@ func newCharacterTraining(cw *characterWindow) *characterTraining {
 	return a
 }
 
-func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
+func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Set to currently trained", func() {
 			go func() {
@@ -78,7 +78,7 @@ func (a *characterTraining) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(ab)
 }
 
-func (a *characterTraining) makeList() *widget.List {
+func (a *training) makeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -121,7 +121,7 @@ func (a *characterTraining) makeList() *widget.List {
 	return l
 }
 
-func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, on bool) {
+func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) {
 	if id >= len(a.characters) {
 		return
 	}
@@ -140,7 +140,7 @@ func (a *characterTraining) updateCharacterWatched(ctx context.Context, id int, 
 	}()
 }
 
-func (a *characterTraining) update(ctx context.Context) {
+func (a *training) update(ctx context.Context) {
 	characters, err := a.cw.u.Character().ListCharacters(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to update training", err)
