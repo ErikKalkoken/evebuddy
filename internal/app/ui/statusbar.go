@@ -106,7 +106,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	a.eveClock.SetToolTip("Current EVE time - click to enlarge")
 	a.eveStatus = newStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	a.eveStatus.SetToolTip("EVE server status - click for details")
-	a.updateHint = newUpdateHint(u)
+	a.updateHint = newUpdateHint(u.IsDeveloperMode(), u.MainWindow())
 	a.updateHint.Hide()
 	return a
 }
@@ -461,16 +461,18 @@ func (w *statusBarItem) MouseOut() {
 type updateHint struct {
 	widget.BaseWidget
 
-	latest  *widget.Label
-	current *widget.Label
-	u       *DesktopUI
+	current         *widget.Label
+	isDeveloperMode bool
+	latest          *widget.Label
+	window          fyne.Window
 }
 
-func newUpdateHint(u *DesktopUI) *updateHint {
+func newUpdateHint(isDeveloperMode bool, window fyne.Window) *updateHint {
 	w := &updateHint{
-		latest:  widget.NewLabel(""),
-		current: widget.NewLabel(""),
-		u:       u,
+		current:         widget.NewLabel(""),
+		isDeveloperMode: isDeveloperMode,
+		latest:          widget.NewLabel(""),
+		window:          window,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -489,16 +491,18 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 		)
 		u := app.WebsiteRootURL().JoinPath("releases")
-		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
-			if !ok {
-				return
-			}
-			if err := fyne.CurrentApp().OpenURL(u); err != nil {
-				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.IsDeveloperMode(), w.u.MainWindow())
-			}
-		}, w.u.MainWindow(),
+		d := dialog.NewCustomConfirm(
+			"Update available", "Download", "Close", c, func(ok bool) {
+				if !ok {
+					return
+				}
+				if err := fyne.CurrentApp().OpenURL(u); err != nil {
+					xdialog.ShowErrorAndLog("Failed to open download page", err, w.isDeveloperMode, w.window)
+				}
+			},
+			w.window,
 		)
-		xdesktop.DisableShortcutsForDialog(d, w.u.MainWindow())
+		xdesktop.DisableShortcutsForDialog(d, w.window)
 		d.Show()
 	})
 	c := container.NewHBox(l, widget.NewSeparator())
