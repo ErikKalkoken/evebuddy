@@ -61,7 +61,7 @@ func NewCommunications(u ui) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(a.u.EVEImage(), u.InfoWindow().ShowEntity)
+	a.Detail = newCommunicationDetail(awidget.LoadIconFunc(u.EVEImage()), u.InfoWindow().ShowEntity)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -150,7 +150,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return awidget.NewMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(awidget.LoadIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -426,7 +426,7 @@ type communicationDetail struct {
 	subject *widget.Label
 }
 
-func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource)), show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
@@ -436,7 +436,7 @@ func newCommunicationDetail(eis awidget.EveEntityEIS, show func(*app.EveEntity))
 	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
-		header:  awidget.NewMailHeader(eis, show),
+		header:  awidget.NewMailHeader(loadIcon, show),
 		subject: subject,
 	}
 	w.ExtendBaseWidget(w)

@@ -190,7 +190,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(a.u.EVEImage())
+				return newCharacterContactItem(awidget.LoadIconFunc(a.u.EVEImage()))
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -215,7 +215,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(a.u.EVEImage())
+			return newCharacterContactItem(awidget.LoadIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -462,17 +462,17 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      awidget.EveEntityEIS
-	icon     *canvas.Image
 	category *widget.Label
-	npc      *widget.Label
+	icon     *canvas.Image
 	labels   *widget.Label
+	loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))
 	name     *widget.Label
+	npc      *widget.Label
 	symbol   *standingSymbol
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
+func newCharacterContactItem(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -491,9 +491,9 @@ func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
 	w := &characterContactItem{
 		blocked:  blocked,
 		category: category,
-		eis:      eis,
 		icon:     icon,
 		labels:   labels,
+		loadIcon: loadIcon,
 		name:     name,
 		npc:      npc,
 		symbol:   newStandingSymbol(),
@@ -529,7 +529,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	w.loadIcon(r.contact, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
