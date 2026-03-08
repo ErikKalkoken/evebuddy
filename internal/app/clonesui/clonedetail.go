@@ -18,23 +18,55 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-func showCloneDetailWindow(u ui, jc *app.CharacterJumpClone2) {
-	if jc == nil {
+func showCloneDetailWindow(u ui, r cloneRow, origin *app.EveSolarSystem, routePref app.EveRoutePreference) {
+	if r.jc == nil {
 		return
 	}
-	title := fmt.Sprintf("Clone #%d", jc.CloneID)
-	w, ok := u.GetOrCreateWindow(fmt.Sprintf("clone-%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
+
+	title := fmt.Sprintf("Clone #%d", r.jc.CloneID)
+	w, ok := u.GetOrCreateWindow(fmt.Sprintf("clone-%d-%d", r.jc.Character.ID, r.jc.ID), title, r.jc.Character.Name)
 	if !ok {
 		w.Show()
 		return
 	}
-	location := makeLocationLabel(jc.Location.ToShort(), u.InfoWindow().ShowLocation)
-	character := makeLinkLabelWithWrap(jc.Character.Name, func() {
-		u.InfoWindow().Show(app.EveEntityCharacter, jc.Character.ID)
+	hasOrigin := origin != nil
+	hasRoute := len(r.route) > 0
+
+	var jumps string
+	if !hasOrigin {
+		jumps = "Not calculated"
+	} else if !hasRoute {
+		jumps = "No route found"
+	} else {
+		jumps = fmt.Sprintf("%s (%s)", r.jumps(), routePref.String())
+	}
+
+	location := xwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
+		u.InfoWindow().ShowLocation(r.jc.Location.ID)
 	})
+	character := makeLinkLabelWithWrap(r.jc.Character.Name, func() {
+		u.InfoWindow().Show(app.EveEntityCharacter, r.jc.Character.ID)
+	})
+
+	var originInfo fyne.CanvasObject
+	if hasOrigin {
+		originInfo = xwidget.NewTappableRichText(origin.DisplayRichText(), func() {
+			u.InfoWindow().Show(app.EveEntitySolarSystem, origin.ID)
+		})
+	} else {
+		l := widget.NewLabel("No origin")
+		l.Importance = widget.WarningImportance
+		originInfo = l
+	}
+
 	col := kxlayout.NewColumns(80)
 	top := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Character", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			character,
+		),
 		container.New(
 			col,
 			widget.NewLabelWithStyle("Location", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
@@ -42,27 +74,63 @@ func showCloneDetailWindow(u ui, jc *app.CharacterJumpClone2) {
 		),
 		container.New(
 			col,
-			widget.NewLabelWithStyle("Character", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			character,
+			widget.NewLabelWithStyle("Origin", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			originInfo,
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Jumps", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			widget.NewLabel(jumps),
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Implants", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			widget.NewLabel(fmt.Sprint(r.jc.ImplantsCount)),
 		),
 	)
-	implants := makeImplantsList(
-		u.Character(),
-		u.EVEImage(),
-		u.InfoWindow().ShowType,
-		jc.Character.ID,
-		jc.CloneID,
-		u.IsDeveloperMode(),
-		w,
+	var implants fyne.CanvasObject
+	if r.jc.ImplantsCount > 0 {
+		implants = makeImplantsList(
+			u.Character(),
+			u.EVEImage(),
+			u.InfoWindow().ShowType,
+			r.jc.Character.ID,
+			r.jc.CloneID,
+			u.IsDeveloperMode(),
+			w,
+		)
+	} else {
+		l := widget.NewLabel("No implants")
+		l.Importance = widget.LowImportance
+		implants = l
+	}
+
+	var route fyne.CanvasObject
+	if hasRoute {
+		route = makeRoute(u, r)
+	} else {
+		l := widget.NewLabel("No data")
+		l.Importance = widget.LowImportance
+		route = l
+	}
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Implants", implants),
+		container.NewTabItem("Route", route),
 	)
+	if r.jc.ImplantsCount == 0 {
+		tabs.DisableIndex(0)
+	}
+	if !hasRoute {
+		tabs.DisableIndex(1)
+	} else {
+		tabs.SelectIndex(1)
+	}
 	c := container.NewBorder(
 		container.NewVBox(top, widget.NewSeparator()),
 		nil,
 		nil,
 		nil,
-		container.NewAppTabs(
-			container.NewTabItem("Implants", implants),
-		),
+		tabs,
 	)
 	xwindow.Set(xwindow.Params{
 		Title:   title,
@@ -70,6 +138,13 @@ func showCloneDetailWindow(u ui, jc *app.CharacterJumpClone2) {
 		Window:  w,
 	})
 	w.Show()
+}
+
+func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
+	x := widget.NewHyperlink(text, nil)
+	x.OnTapped = action
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }
 
 type implantsCS interface {
@@ -121,16 +196,7 @@ func makeImplantsList(cs implantsCS, eis implantsEIS, showTypeInfo func(int64), 
 	return list
 }
 
-func showRouteWindow(u ui, origin *app.EveSolarSystem, routePref string, r cloneRow) {
-	if r.jc == nil {
-		return
-	}
-	title := fmt.Sprintf("Route: %s -> %s", origin.Name, r.jc.Location.SolarSystemName())
-	w, ok := u.GetOrCreateWindow(fmt.Sprintf("route-%s", r.id()), title, r.jc.Character.Name)
-	if !ok {
-		w.Show()
-		return
-	}
+func makeRoute(u ui, r cloneRow) *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(r.route)
@@ -154,62 +220,7 @@ func showRouteWindow(u ui, origin *app.EveSolarSystem, routePref string, r clone
 		s := r.route[id]
 		u.InfoWindow().Show(app.EveEntitySolarSystem, s.ID)
 	}
-
-	var fromText []widget.RichTextSegment
-	if origin != nil {
-		fromText = origin.DisplayRichTextWithRegion()
-	}
-	from := xwidget.NewTappableRichText(fromText, func() {
-		if origin != nil {
-			u.InfoWindow().Show(app.EveEntitySolarSystem, origin.ID)
-		}
-	})
-	from.Wrapping = fyne.TextWrapWord
-
-	var toText []widget.RichTextSegment
-	if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-		toText = v.DisplayRichTextWithRegion()
-	}
-	to := xwidget.NewTappableRichText(toText, func() {
-		if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-			u.InfoWindow().Show(app.EveEntitySolarSystem, v.ID)
-		}
-	})
-	to.Wrapping = fyne.TextWrapWord
-
-	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), routePref))
-	col := kxlayout.NewColumns(firstColumnWidth)
-	top := container.New(
-		layout.NewCustomPaddedVBoxLayout(0),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("From", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			from,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("To", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			to,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("Jumps", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			jumps,
-		),
-	)
-	c := container.NewBorder(
-		container.NewVBox(top, widget.NewSeparator()),
-		nil,
-		nil,
-		nil,
-		list,
-	)
-	xwindow.Set(xwindow.Params{
-		Title:   title,
-		Content: c,
-		Window:  w,
-	})
-	w.Show()
+	return list
 }
 
 type routeListItem struct {

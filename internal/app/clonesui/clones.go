@@ -29,17 +29,6 @@ type cloneRow struct {
 	tags  set.Set[string]
 }
 
-func (r cloneRow) id() string {
-	if r.jc == nil {
-		return ""
-	}
-	id := fmt.Sprint(r.jc.ID)
-	for _, s := range r.route {
-		id += fmt.Sprintf("-%d", s.ID)
-	}
-	return id
-}
-
 func (r cloneRow) compare(other cloneRow) int {
 	return cmp.Compare(r.sortValue(), other.sortValue())
 }
@@ -172,27 +161,8 @@ func NewClones(u ui) *Clones {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(c int, r cloneRow) {
-				switch c {
-				case 0:
-					a.u.InfoWindow().ShowLocation(r.jc.Location.ID)
-				case 1:
-					if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-						a.u.InfoWindow().Show(app.EveEntityRegion, v.Constellation.Region.ID)
-					}
-				case 2:
-					if r.jc == nil || r.jc.ImplantsCount == 0 {
-						return
-					}
-					showCloneDetailWindow(a.u, r.jc)
-				case 3:
-					a.u.InfoWindow().Show(app.EveEntityCharacter, r.jc.Character.ID)
-				case 4:
-					if len(r.route) == 0 {
-						return
-					}
-					showRouteWindow(a.u, a.origin, a.routePref.String(), r)
-				}
+			func(_ int, r cloneRow) {
+				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
 	} else {
@@ -216,10 +186,7 @@ func NewClones(u ui) *Clones {
 				return s
 			},
 			func(r cloneRow) {
-				if len(r.route) == 0 {
-					return
-				}
-				showRouteWindow(a.u, a.origin, a.routePref.String(), r)
+				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
 	}
