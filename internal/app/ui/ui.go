@@ -109,9 +109,9 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assetSearchAll          *assetui.AssetSearch
+	assetSearchAll          *assetui.Search
 	augmentations           *clonesui.Augmentations
-	characterAssetBrowser   *assetui.AssetBrowser
+	characterAssetBrowser   *assetui.Browser
 	characterAttributes     *skillui.Attributes
 	characterAugmentations  *clonesui.CharacterAugmentations
 	characterBiography      *characterui.Biography
@@ -129,8 +129,8 @@ type baseUI struct {
 	clones                  *clonesui.Clones
 	colonies                *industryui.Colonies
 	contracts               *characterui.Contracts
-	corporationAssetBrowser *assetui.AssetBrowser
-	corporationAssetSearch  *assetui.AssetSearch
+	corporationAssetBrowser *assetui.Browser
+	corporationAssetSearch  *assetui.Search
 	corporationContracts    *characterui.Contracts
 	corporationIndyJobs     *industryui.Jobs
 	corporationMember       *corporationui.Members
@@ -381,7 +381,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	u.assetSearchAll = assetui.NewSearchForAll(u)
 	u.augmentations = clonesui.NewAugmentations(u)
-	u.characterAssetBrowser = assetui.NewCharacterAssetBrowser(u)
+	u.characterAssetBrowser = assetui.NewCharacterBrowser(u)
 	u.characterAttributes = skillui.NewAttributes(u)
 	u.characterAugmentations = clonesui.NewCharacterAugmentations(u)
 	u.characterBiography = characterui.NewBiography(u)
@@ -399,7 +399,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.clones = clonesui.NewClones(u)
 	u.colonies = industryui.NewColonies(u)
 	u.contracts = characterui.NewContractsForCharacters(u)
-	u.corporationAssetBrowser = assetui.NewCorporationAssetBrowser(u)
+	u.corporationAssetBrowser = assetui.NewCorporationBrowser(u)
 	u.corporationAssetSearch = assetui.NewSearchForCorporation(u)
 	u.corporationContracts = characterui.NewContractsForCorporation(u)
 	u.corporationIndyJobs = industryui.NewJobsForCorporation(u)

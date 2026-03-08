@@ -44,8 +44,8 @@ const (
 	assetSafety
 )
 
-// AssetBrowser shows the attributes for the current character.
-type AssetBrowser struct {
+// Browser shows the attributes for the current character.
+type Browser struct {
 	widget.BaseWidget
 
 	Navigation *assetBrowserNavigation
@@ -58,16 +58,16 @@ type AssetBrowser struct {
 	u              ui
 }
 
-func NewCharacterAssetBrowser(u ui) *AssetBrowser {
-	return newAssetBrowser(u, false)
+func NewCharacterBrowser(u ui) *Browser {
+	return newBrowser(u, false)
 }
 
-func NewCorporationAssetBrowser(u ui) *AssetBrowser {
-	return newAssetBrowser(u, true)
+func NewCorporationBrowser(u ui) *Browser {
+	return newBrowser(u, true)
 }
 
-func newAssetBrowser(u ui, forCorporation bool) *AssetBrowser {
-	a := &AssetBrowser{
+func newBrowser(u ui, forCorporation bool) *Browser {
+	a := &Browser{
 		forCorporation: forCorporation,
 		u:              u,
 	}
@@ -107,13 +107,13 @@ func newAssetBrowser(u ui, forCorporation bool) *AssetBrowser {
 	return a
 }
 
-func (a *AssetBrowser) CreateRenderer() fyne.WidgetRenderer {
+func (a *Browser) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHSplit(a.Navigation, a.Selected)
 	c.SetOffset(0.33)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *AssetBrowser) Update(ctx context.Context) {
+func (a *Browser) Update(ctx context.Context) {
 	clear := func() {
 		fyne.Do(func() {
 			a.Navigation.clear()
@@ -212,7 +212,7 @@ type assetBrowserNavigation struct {
 
 	OnSelected func()
 
-	ab             *AssetBrowser
+	ab             *Browser
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
@@ -222,7 +222,7 @@ type assetBrowserNavigation struct {
 	footer         *widget.Label
 }
 
-func newAssetBrowserNavigation(ab *AssetBrowser) *assetBrowserNavigation {
+func newAssetBrowserNavigation(ab *Browser) *assetBrowserNavigation {
 	a := &assetBrowserNavigation{
 		ab:            ab,
 		filteredTrees: make(map[assetFilter]filteredTree),
@@ -569,7 +569,7 @@ type containerItem struct {
 type assetBrowserContainer struct {
 	widget.BaseWidget
 
-	ab            *AssetBrowser
+	ab            *Browser
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
@@ -578,7 +578,7 @@ type assetBrowserContainer struct {
 	search        *widget.Entry
 }
 
-func newAssetBrowserContainer(ab *AssetBrowser) *assetBrowserContainer {
+func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
 	a := &assetBrowserContainer{
 		ab:     ab,
 		footer: awidget.NewLabelWithTruncation(""),
@@ -622,7 +622,9 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 			return len(a.itemsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newAssetIcon(a.ab.u.EVEImage())
+			return newAssetIcon(func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource)) {
+				loadAssetIconAsync(a.ab.u.EVEImage(), typeID, variant, setIcon)
+			})
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.itemsFiltered) {
@@ -864,19 +866,19 @@ const (
 type assetItem struct {
 	widget.BaseWidget
 
-	badge *assetQuantityBadge
-	eis   assetIconEIS
-	icon  *canvas.Image
-	label *assetLabel
+	badge    *assetQuantityBadge
+	loadIcon func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource))
+	icon     *canvas.Image
+	label    *assetLabel
 }
 
-func newAssetIcon(eis assetIconEIS) *assetItem {
+func newAssetIcon(loadIcon func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource))) *assetItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
 	w := &assetItem{
-		icon:  icon,
-		label: newAssetLabel(),
-		eis:   eis,
-		badge: newAssetQuantityBadge(),
+		badge:    newAssetQuantityBadge(),
+		icon:     icon,
+		label:    newAssetLabel(),
+		loadIcon: loadIcon,
 	}
 	w.badge.Hide()
 	w.ExtendBaseWidget(w)
@@ -931,7 +933,10 @@ func (w *assetItem) Set(n *asset.Node) {
 		w.badge.Hide()
 	}
 
-	loadAssetIconAsync(w.eis, w.icon, as.Type.ID, as.Variant())
+	w.loadIcon(as.Type.ID, as.Variant(), func(r fyne.Resource) {
+		w.icon.Resource = r
+		w.icon.Refresh()
+	})
 }
 
 type assetLabel struct {
