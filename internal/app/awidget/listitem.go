@@ -17,9 +17,9 @@ import (
 type EntityListItem struct {
 	widget.BaseWidget
 
-	name     *widget.Label
-	icon     *canvas.Image
-	loadIcon func(id int64, size int, setter func(r fyne.Resource))
+	name          *widget.Label
+	icon          *canvas.Image
+	loadIconAsync func(id int64, size int, setter func(r fyne.Resource))
 }
 
 func NewEntityListItem(isAvatar bool, loadIconAsync func(id int64, size int, setter func(r fyne.Resource))) *EntityListItem {
@@ -30,9 +30,9 @@ func NewEntityListItem(isAvatar bool, loadIconAsync func(id int64, size int, set
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	w := &EntityListItem{
-		name:     name,
-		icon:     portrait,
-		loadIcon: loadIconAsync,
+		name:          name,
+		icon:          portrait,
+		loadIconAsync: loadIconAsync,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -59,7 +59,7 @@ func (w *EntityListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *EntityListItem) Set(id int64, name string) {
-	w.loadIcon(id, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -49,6 +50,10 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 	a.from.Disable()
 
 	toButton := widget.NewButton("To", func() {
+		if a.u.IsOfflineMode() {
+			xdialog.ShowInformation("OFFLINE", "Search not available while offline", a.w)
+			return
+		}
 		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
 			a.to.Add(ee)
 		}, a.w)
@@ -152,33 +157,15 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 			return len(results)
 		},
 		func() fyne.CanvasObject {
-			name := widget.NewLabel("Template")
-			name.Truncation = fyne.TextTruncateClip
-			category := widget.NewLabel("Template")
-			category.SizeName = theme.SizeNameCaptionText
-			icon := xwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
-			icon.CornerRadius = app.IconUnitSize / 2
-			return container.NewBorder(
-				nil,
-				nil,
-				icon,
-				category,
-				name,
-			)
+			return newEntityItem(func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
+				awidget.LoadEveEntityIconAsync(u.EVEImage(), o, setIcon)
+			})
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(results) {
 				return
 			}
-			ee := results[id]
-			row := co.(*fyne.Container).Objects
-			row[0].(*widget.Label).SetText(ee.Name)
-			image := row[1].(*canvas.Image)
-			awidget.LoadEveEntityIconAsync(u.EVEImage(), ee, func(r fyne.Resource) {
-				image.Resource = r
-				image.Refresh()
-			})
-			row[2].(*widget.Label).SetText(ee.CategoryDisplay())
+			co.(*entityItem).set(results[id])
 		},
 	)
 	list.HideSeparators = true
@@ -205,9 +192,9 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 			list.Refresh()
 			return
 		}
+		ctx := context.Background()
 		go func() {
-			var err error
-			results, err = u.EVEUniverse().ListEntitiesByPartialName(context.Background(), search)
+			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)
@@ -215,11 +202,11 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 				return
 			}
 			fyne.Do(func() {
+				results = r
 				list.Refresh()
 			})
 		}()
 		go func() {
-			ctx := context.Background()
 			missingIDs, err := u.Character().AddEveEntitiesFromSearchESI(
 				ctx,
 				characterID,
@@ -234,7 +221,7 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 			if missingIDs.Size() == 0 {
 				return // no need to update when not changed
 			}
-			results, err = u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
+			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)
@@ -242,6 +229,7 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 				return
 			}
 			fyne.Do(func() {
+				results = r
 				list.Refresh()
 			})
 		}()
@@ -266,4 +254,60 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 	modal.Resize(fyne.NewSize(s.Width, s.Height))
 	modal.Show()
 	w.Canvas().Focus(entry)
+}
+
+type entityItem struct {
+	widget.BaseWidget
+
+	category      *widget.Label
+	eis           awidget.EveEntityEIS
+	icon          *canvas.Image
+	name          *widget.Label
+	loadIconAsync func(o *app.EveEntity, setIcon func(r fyne.Resource))
+}
+
+func newEntityItem(loadIconAsync func(o *app.EveEntity, setIcon func(r fyne.Resource))) *entityItem {
+	name := widget.NewLabel("")
+	name.Truncation = fyne.TextTruncateClip
+	category := widget.NewLabel("")
+	category.SizeName = theme.SizeNameCaptionText
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	w := &entityItem{
+		category:      category,
+		loadIconAsync: loadIconAsync,
+		icon:          icon,
+		name:          name,
+	}
+	w.ExtendBaseWidget(w)
+
+	return w
+}
+
+func (w *entityItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.New(layout.NewCustomPaddedLayout(p, p, p, -p), w.icon),
+			layout.NewSpacer(),
+		),
+		w.category,
+		container.NewVBox(
+			layout.NewSpacer(),
+			w.name,
+			layout.NewSpacer(),
+		),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *entityItem) set(o *app.EveEntity) {
+	w.name.SetText(o.Name)
+	w.category.SetText(o.CategoryDisplay())
+	w.loadIconAsync(o, func(r fyne.Resource) {
+		w.icon.Resource = r
+		w.icon.Refresh()
+	})
 }

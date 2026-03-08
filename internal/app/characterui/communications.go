@@ -117,9 +117,6 @@ func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
 }
 
 func (a *Communications) makeFolderList() *widget.List {
-	// maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.EveNotificationGroup) int {
-	// 	return strings.Compare(a.String(), b.String())
-	// })
 	l := widget.NewList(
 		func() int {
 			return len(a.folders)
