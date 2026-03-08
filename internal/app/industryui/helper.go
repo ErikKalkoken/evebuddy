@@ -1,26 +1,11 @@
 package industryui
 
 import (
-	"fmt"
-	"math"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
-
-// formatISKAmount returns a formatted ISK amount.
-// This format is mainly used in detail windows.
-func formatISKAmount(v float64) string {
-	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
-	if math.Abs(v) > 999 {
-		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
-	}
-	return t
-}
 
 func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
 	x := makeLinkLabel(text, action)
@@ -51,17 +36,6 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 	return makeLinkLabelWithWrap(o.Name, func() {
 		action(o)
 	})
-}
-
-func makeBoolLabel(v bool) *widget.Label {
-	if v {
-		l := widget.NewLabel("Yes")
-		l.Importance = widget.SuccessImportance
-		return l
-	}
-	l := widget.NewLabel("No")
-	l.Importance = widget.DangerImportance
-	return l
 }
 
 func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObject {
