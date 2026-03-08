@@ -146,31 +146,18 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			corporation := awidget.NewEntityListItem(false, a.u.EVEImage().CorporationLogoAsync)
-			points := widget.NewLabel("Template")
-			return container.NewBorder(
-				nil,
-				nil,
-				nil,
-				container.NewHBox(points, icon),
-				corporation,
-			)
+			return newLoyaltyPointsListItem(
+				a.u.EVEImage().CorporationLogoAsync,
+				func(id int64) {
+					a.u.InfoWindow().Show(app.EveEntityCorporation, id)
+				})
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			box := co.(*fyne.Container).Objects
-			box[0].(*awidget.EntityListItem).Set(r.corporationID, r.corporationName)
-			hbox := box[1].(*fyne.Container).Objects
-			points := hbox[0].(*widget.Label)
-			points.SetText(ihumanize.Comma(r.points))
-			icon2 := hbox[1].(*xwidget.TappableIcon)
-			icon2.OnTapped = func() {
-				a.u.InfoWindow().Show(app.EveEntityCorporation, r.corporationID)
-			}
+			co.(*loyaltyPointsListItem).set(r)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -280,4 +267,47 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+type loyaltyPointsListItem struct {
+	widget.BaseWidget
+
+	icon            *xwidget.TappableIcon
+	corporation     *awidget.EntityListItem
+	points          *widget.Label
+	loadIcon        func(id int64, size int, setter func(r fyne.Resource))
+	showCorporation func(id int64)
+}
+
+func newLoyaltyPointsListItem(loadIcon func(id int64, size int, setter func(r fyne.Resource)), showCorporation func(id int64)) *loyaltyPointsListItem {
+	icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	corporation := awidget.NewEntityListItem(false, loadIcon)
+	points := widget.NewLabel("Template")
+	w := &loyaltyPointsListItem{
+		corporation:     corporation,
+		icon:            icon,
+		points:          points,
+		showCorporation: showCorporation,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *loyaltyPointsListItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewHBox(w.points, w.icon),
+		w.corporation,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *loyaltyPointsListItem) set(r characterLoyaltyPointsRow) {
+	w.corporation.Set(r.corporationID, r.corporationName)
+	w.points.SetText(ihumanize.Comma(r.points))
+	w.icon.OnTapped = func() {
+		w.showCorporation(r.corporationID)
+	}
 }
