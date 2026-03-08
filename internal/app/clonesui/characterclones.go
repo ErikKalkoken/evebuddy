@@ -22,10 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type hasCharacterSection interface {
-	HasCharacterSection(characterID int64, section app.CharacterSection) bool
-}
-
 type characterCloneNode struct {
 	characterID            int64
 	implantCount           int
@@ -199,11 +195,10 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (xwi
 }
 
 func (a *CharacterClones) refreshTop(cloneCount int) {
-	segs := a.makeTopText(cloneCount, a.character.Load(), a.u.StatusCache())
-	a.top.Set(segs)
-}
+	setTop := func(segs []widget.RichTextSegment) {
+		a.top.Set(segs)
 
-func (*CharacterClones) makeTopText(cloneCount int, c *app.Character, s hasCharacterSection) []widget.RichTextSegment {
+	}
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
@@ -211,16 +206,21 @@ func (*CharacterClones) makeTopText(cloneCount int, c *app.Character, s hasChara
 		Text:  "",
 		Style: defaultStyle,
 	}
+
+	c := a.character.Load()
 	if c == nil {
 		ts.Text = "No character"
 		ts.Style.ColorName = theme.ColorNameDisabled
-		return []widget.RichTextSegment{ts}
+		setTop([]widget.RichTextSegment{ts})
+		return
 	}
-	hasData := s.HasCharacterSection(c.ID, app.SectionCharacterJumpClones)
+
+	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterJumpClones)
 	if !hasData {
 		ts.Text = "Waiting for character data to be loaded..."
 		ts.Style.ColorName = theme.ColorNameWarning
-		return []widget.RichTextSegment{ts}
+		setTop([]widget.RichTextSegment{ts})
+		return
 	}
 
 	var nextJumpColor fyne.ThemeColorName
@@ -263,7 +263,7 @@ func (*CharacterClones) makeTopText(cloneCount int, c *app.Character, s hasChara
 			Style: defaultStyle,
 		},
 	}
-	return segs
+	setTop(segs)
 }
 
 type characterJumpCloneItem struct {
@@ -287,7 +287,7 @@ func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showTy
 	main.Truncation = fyne.TextTruncateEllipsis
 	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	implants := widget.NewLabel("9")
-	spacer :=xwidget.NewSpacer(fyne.NewSize(40, 10))
+	spacer := xwidget.NewSpacer(fyne.NewSize(40, 10))
 	prefix := widget.NewLabel("-9.9")
 	prefix.Alignment = fyne.TextAlignTrailing
 	w := &characterJumpCloneItem{
