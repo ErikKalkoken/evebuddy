@@ -17,7 +17,7 @@ func TestMakeStructureBaseText(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := testutil.NewEveUniverseService(st)
+	eus := NewEveUniverseService(st)
 	ctx := context.Background()
 	t.Run("can create base text from complete input data", func(t *testing.T) {
 		// given

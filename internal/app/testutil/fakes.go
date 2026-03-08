@@ -3,19 +3,14 @@ package testutil
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
-	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -335,19 +330,6 @@ func (s *SettingsFake) NotifyTrainingEnabled() bool {
 
 func (s *SettingsFake) NotifyPIEarliest() time.Time {
 	return time.Now()
-}
-
-func NewEveUniverseService(st *storage.Storage) *eveuniverseservice.EVEUniverseService {
-	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
-		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
-	})
-	s := eveuniverseservice.New(eveuniverseservice.Params{
-		ESIClient:          client,
-		Signals:            app.NewSignals(),
-		StatusCacheService: statuscacheservice.New(st),
-		Storage:            st,
-	})
-	return s
 }
 
 // func NewX() *characterservice.CharacterService {

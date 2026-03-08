@@ -23,7 +23,7 @@ func TestBilling_RenderESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := testutil.NewEveUniverseService(st)
+	eus := evenotification.NewEveUniverseService(st)
 	en := evenotification.New(eus)
 	ctx := context.Background()
 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
@@ -78,7 +78,7 @@ externalID2: 0`
 func TestBilling_EntityIDs(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	eus := testutil.NewEveUniverseService(st)
+	eus := evenotification.NewEveUniverseService(st)
 	en := evenotification.New(eus)
 	t.Run("Can retrieve all entity IDs", func(t *testing.T) {
 		// given
