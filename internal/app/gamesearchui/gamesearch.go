@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -27,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -45,6 +43,23 @@ type ui interface {
 	MainWindow() fyne.Window
 	Settings() *settings.Settings
 	Signals() *app.Signals
+}
+
+type resultNode struct {
+	category app.SearchCategory
+	count    int
+	ee       *app.EveEntity
+}
+
+func (sn resultNode) isCategory() bool {
+	return sn.ee == nil
+}
+
+func (sn resultNode) String() string {
+	if sn.isCategory() {
+		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
+	}
+	return sn.ee.Name
 }
 
 type GameSearch struct {
@@ -244,7 +259,7 @@ func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return newSearchResult(a.u.EVEImage(), a.u.EVEUniverse(), a.supportedCategories)
+			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), a.supportedCategories)
 		},
 		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -284,7 +299,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.u.EVEImage(), a.u.EVEUniverse(), infowindow.SupportedCategories())
+			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), infowindow.SupportedCategories())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {
@@ -411,40 +426,22 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 	})
 }
 
-type searchResultEIS interface {
-	AllianceLogo(int64, int) (fyne.Resource, error)
-	CharacterPortrait(int64, int) (fyne.Resource, error)
-	CorporationLogo(int64, int) (fyne.Resource, error)
-	FactionLogo(int64, int) (fyne.Resource, error)
-	InventoryTypeIcon(int64, int) (fyne.Resource, error)
-	InventoryTypeSKIN(int64, int) (fyne.Resource, error)
-	InventoryTypeBPO(int64, int) (fyne.Resource, error)
-}
-
-type searchResultEUS interface {
-	GetOrCreateTypeESI(context.Context, int64) (*app.EveType, error)
-}
-
-var searchResultResourceCache xsync.Map[int64, fyne.Resource]
-
 type searchResult struct {
 	widget.BaseWidget
 
-	eis                 searchResultEIS
-	eus                 searchResultEUS
+	loadIcon            func(o *app.EveEntity, setIcon func(r fyne.Resource))
 	image               *canvas.Image
 	name                *widget.Label
 	supportedCategories set.Set[app.EveEntityCategory]
 }
 
-func newSearchResult(eis searchResultEIS, eus searchResultEUS, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
+func newSearchResult(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource)), supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
 	image := xwidget.NewImageFromResource(
 		icons.BlankSvg,
 		fyne.NewSquareSize(app.IconUnitSize),
 	)
 	w := &searchResult{
-		eis:                 eis,
-		eus:                 eus,
+		loadIcon:            loadIcon,
 		image:               image,
 		name:                widget.NewLabel(""),
 		supportedCategories: supportedCategories,
@@ -467,39 +464,10 @@ func (w *searchResult) set(o *app.EveEntity) {
 	w.name.Text = o.Name
 	w.name.Refresh()
 
-	xwidget.LoadResourceAsyncWithCache(
-		icons.BlankSvg,
-		func() (fyne.Resource, bool) {
-			return searchResultResourceCache.Load(o.ID)
-		},
-		func(r fyne.Resource) {
-			w.image.Resource = r
-			w.image.Refresh()
-
-		},
-		func() (fyne.Resource, error) {
-			switch o.Category {
-			case app.EveEntityInventoryType:
-				et, err := w.eus.GetOrCreateTypeESI(context.Background(), o.ID)
-				if err != nil {
-					return nil, err
-				}
-				switch et.Group.Category.ID {
-				case app.EveCategorySKINs:
-					return w.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
-				case app.EveCategoryBlueprint:
-					return w.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
-				default:
-					return w.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
-				}
-			default:
-				return awidget.EntityIcon(w.eis, o, app.IconPixelSize, icons.BlankSvg)
-			}
-		},
-		func(r fyne.Resource) {
-			searchResultResourceCache.Store(o.ID, r)
-		},
-	)
+	w.loadIcon(o, func(r fyne.Resource) {
+		w.image.Resource = r
+		w.image.Refresh()
+	})
 }
 
 var searchCategory2optionMap = map[app.SearchCategory]string{
@@ -538,21 +506,4 @@ func makeOptions() []string {
 	})
 	slices.Sort(options)
 	return options
-}
-
-type resultNode struct {
-	category app.SearchCategory
-	count    int
-	ee       *app.EveEntity
-}
-
-func (sn resultNode) isCategory() bool {
-	return sn.ee == nil
-}
-
-func (sn resultNode) String() string {
-	if sn.isCategory() {
-		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
-	}
-	return sn.ee.Name
 }
