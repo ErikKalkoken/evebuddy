@@ -436,15 +436,13 @@ func TestFetchRoute(t *testing.T) {
 		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		dest := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
+		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: dest,
 			Origin:      orig,
 			Preference:  app.RouteShorter,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
-		}
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return error when called with invalid systems", func(t *testing.T) {
 		// given
@@ -474,7 +472,7 @@ func TestFetchRoute(t *testing.T) {
 			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
-	t.Run("return empty slice when no route found", func(t *testing.T) {
+	t.Run("return not found error when no route found", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		s1 := factory.CreateEveSolarSystem()
@@ -486,15 +484,13 @@ func TestFetchRoute(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(404, map[string]string{"error": "no route found"}),
 		)
 		// when
-		got, err := s.FetchRoute(ctx, app.EveRouteHeader{
+		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
 			Destination: s2,
 			Origin:      s1,
 			Preference:  app.RouteShorter,
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []*app.EveSolarSystem{}, got)
-		}
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 
