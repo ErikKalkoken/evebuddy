@@ -37,7 +37,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := evenotification.NewEUS(st)
+	eus := testutil.NewEveUniverseService(st)
 	ens := evenotification.New(eus)
 	ctx := context.Background()
 	solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30002537})
