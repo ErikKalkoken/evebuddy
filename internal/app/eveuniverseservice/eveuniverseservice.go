@@ -19,8 +19,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-// EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
-type EveUniverseService struct {
+// EVEUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
+type EVEUniverseService struct {
 	// Now returns the current time in UTC. Can be overwritten for tests.
 	Now func() time.Time
 
@@ -28,36 +28,46 @@ type EveUniverseService struct {
 	esiClient        *esi.APIClient
 	scs              *statuscacheservice.StatusCacheService
 	sfg              singleflight.Group
+	signals          *app.Signals
 	st               *storage.Storage
 }
 
 type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
+	Signals            *app.Signals
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 }
 
 // New returns a new instance of an Eve universe service.
-func New(arg Params) *EveUniverseService {
-	if arg.StatusCacheService == nil {
-		arg.StatusCacheService = statuscacheservice.New(arg.Storage)
+func New(arg Params) *EVEUniverseService {
+	if arg.ESIClient == nil {
+		panic("ESIClient missing")
 	}
-	s := &EveUniverseService{
+	if arg.Signals == nil {
+		panic("Signals missing")
+	}
+	if arg.Storage == nil {
+		panic("Storage missing")
+	}
+	if arg.StatusCacheService == nil {
+		panic("StatusCacheService missing")
+	}
+	s := &EVEUniverseService{
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
+		Now:              func() time.Time { return time.Now().UTC() },
 		scs:              arg.StatusCacheService,
+		signals:          arg.Signals,
 		st:               arg.Storage,
-		Now: func() time.Time {
-			return time.Now().UTC()
-		},
 	}
 	if arg.ConcurrencyLimit > 0 {
 		s.concurrencyLimit = arg.ConcurrencyLimit
 	}
 	return s
 }
-func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
+func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (*app.EveRace, error) {
 		o, err := s.st.GetEveRace(ctx, id)
 		if err == nil {
@@ -92,7 +102,7 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (
 	return o, nil
 }
 
-func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int64) (*app.EveSchematic, error) {
+func (s *EVEUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int64) (*app.EveSchematic, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (*app.EveSchematic, error) {
 		o, err := s.st.GetEveSchematic(ctx, id)
 		if err == nil {
@@ -121,7 +131,7 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 	return o, nil
 }
 
-func (s *EveUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
 	g := new(errgroup.Group)
 	if entityIDs.Size() > 0 {
 		g.Go(func() error {

@@ -26,7 +26,7 @@ import (
 )
 
 // FetchAlliance fetches an alliance from ESI and returns it.
-func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int64) (*app.EveAlliance, error) {
+func (s *EVEUniverseService) FetchAlliance(ctx context.Context, allianceID int64) (*app.EveAlliance, error) {
 	a, _, err := s.esiClient.AllianceAPI.GetAlliancesAllianceId(ctx, allianceID).Execute()
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int64
 }
 
 // FetchAllianceCorporations fetches the corporations for an alliance from ESI and returns them.
-func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, allianceID int64) ([]*app.EveEntity, error) {
+func (s *EVEUniverseService) FetchAllianceCorporations(ctx context.Context, allianceID int64) ([]*app.EveEntity, error) {
 	ids, _, err := s.esiClient.AllianceAPI.GetAlliancesAllianceIdCorporations(ctx, allianceID).Execute()
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 }
 
 // RandomizeAllAllianceNames randomizes the names of all alliances.
-func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) error {
+func (s *EVEUniverseService) RandomizeAllAllianceNames(ctx context.Context) error {
 	ee, err := s.st.ListEveEntities(ctx)
 	if err != nil {
 		return err
@@ -104,11 +104,11 @@ func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) erro
 	return nil
 }
 
-func (s *EveUniverseService) GetCorporation(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
+func (s *EVEUniverseService) GetCorporation(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
 	return s.st.GetEveCorporation(ctx, corporationID)
 }
 
-func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int64) (*app.EveCorporation, error) {
+func (s *EVEUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int64) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCorporationFromESI(ctx, id)
@@ -119,7 +119,7 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 	return o, nil
 }
 
-func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
+func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", corporationID), func() (*app.EveCorporation, error) {
 		r, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationId(ctx, corporationID).Execute()
 		if err != nil {
@@ -185,7 +185,7 @@ func optionalFromSpecialEntityID(v int64) optional.Optional[int64] {
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.
-func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.Set[int64], error) {
 	var changed set.Set[int64]
 	ids, err := s.st.ListEveCorporationIDs(ctx)
 	if err != nil {
@@ -230,7 +230,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 }
 
 // RandomizeAllCorporationNames randomizes the names of all characters.
-func (s *EveUniverseService) RandomizeAllCorporationNames(ctx context.Context) error {
+func (s *EVEUniverseService) RandomizeAllCorporationNames(ctx context.Context) error {
 	ids, err := s.st.ListEveCorporationIDs(ctx)
 	if err != nil {
 		return err
@@ -254,7 +254,7 @@ func (s *EveUniverseService) RandomizeAllCorporationNames(ctx context.Context) e
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
-func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Context, characterID int64) ([]app.MembershipHistoryItem, error) {
+func (s *EVEUniverseService) FetchCharacterCorporationHistory(ctx context.Context, characterID int64) ([]app.MembershipHistoryItem, error) {
 	items, _, err := s.esiClient.CharacterAPI.GetCharactersCharacterIdCorporationhistory(ctx, characterID).Execute()
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Contex
 }
 
 // FetchCorporationAllianceHistory returns a list of all the alliances a corporation has been a member of in descending order.
-func (s *EveUniverseService) FetchCorporationAllianceHistory(ctx context.Context, corporationID int64) ([]app.MembershipHistoryItem, error) {
+func (s *EVEUniverseService) FetchCorporationAllianceHistory(ctx context.Context, corporationID int64) ([]app.MembershipHistoryItem, error) {
 	items, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdAlliancehistory(ctx, corporationID).Execute()
 	if err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ type organizationHistoryItem struct {
 	StartDate      time.Time
 }
 
-func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
+func (s *EVEUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
 	ids := set.Collect(xiter.Map(slices.Values(items), func(x organizationHistoryItem) int64 {
 		return x.OrganizationID.ValueOrZero()
 	}))

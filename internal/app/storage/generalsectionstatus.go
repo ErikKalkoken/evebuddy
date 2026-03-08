@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
+func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.EveUniverseSection) (*app.EveUniverseSectionStatus, error) {
 	s, err := st.qRO.GetGeneralSectionStatus(ctx, section.String())
 	if err != nil {
 		return nil, fmt.Errorf("get status for general section %s: %w", section, convertGetError(err))
@@ -21,12 +21,12 @@ func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.Gene
 	return s2, nil
 }
 
-func (st *Storage) ListGeneralSectionStatus(ctx context.Context) ([]*app.GeneralSectionStatus, error) {
+func (st *Storage) ListGeneralSectionStatus(ctx context.Context) ([]*app.EveUniverseSectionStatus, error) {
 	rows, err := st.qRO.ListGeneralSectionStatus(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list general section status: %w", err)
 	}
-	oo := make([]*app.GeneralSectionStatus, len(rows))
+	oo := make([]*app.EveUniverseSectionStatus, len(rows))
 	for i, row := range rows {
 		oo[i] = generalSectionStatusFromDBModel(row)
 	}
@@ -35,7 +35,7 @@ func (st *Storage) ListGeneralSectionStatus(ctx context.Context) ([]*app.General
 
 type UpdateOrCreateGeneralSectionStatusParams struct {
 	// Mandatory
-	Section app.GeneralSection
+	Section app.EveUniverseSection
 	// Optional
 	CompletedAt *sql.NullTime
 	ContentHash *string
@@ -43,7 +43,7 @@ type UpdateOrCreateGeneralSectionStatusParams struct {
 	StartedAt   *optional.Optional[time.Time]
 }
 
-func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg UpdateOrCreateGeneralSectionStatusParams) (*app.GeneralSectionStatus, error) {
+func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg UpdateOrCreateGeneralSectionStatusParams) (*app.EveUniverseSectionStatus, error) {
 	if arg.Section.String() == "" {
 		return nil, fmt.Errorf("UpdateOrCreateGeneralSectionStatus: %+v: %w", arg, app.ErrInvalid)
 	}
@@ -92,12 +92,12 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 	return generalSectionStatusFromDBModel(o), nil
 }
 
-func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.GeneralSectionStatus {
-	x := &app.GeneralSectionStatus{
+func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.EveUniverseSectionStatus {
+	x := &app.EveUniverseSectionStatus{
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: o.Error,
 			ContentHash:  o.ContentHash,
-			Section:      app.GeneralSection(o.SectionID),
+			Section:      app.EveUniverseSection(o.SectionID),
 			UpdatedAt:    o.UpdatedAt,
 		},
 	}

@@ -1,0 +1,28 @@
+// Package clonesui provides widgets for building clone related UIs.
+package clonesui
+
+import (
+	"fyne.io/fyne/v2"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+)
+
+type ui interface {
+	Character() *characterservice.CharacterService
+	ErrorDisplay(err error) string
+	EVEImage() *eveimageservice.EVEImageService
+	EVEUniverse() *eveuniverseservice.EVEUniverseService
+	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	InfoWindow() *infowindow.InfoWindow
+	IsDeveloperMode() bool
+	IsMobile() bool
+	MainWindow() fyne.Window
+	ShowSnackbar(text string)
+	Signals() *app.Signals
+	StatusCache() *statuscacheservice.StatusCacheService
+}

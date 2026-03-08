@@ -146,9 +146,9 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 }
 
 // updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterContracts {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateContractsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterContracts {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,

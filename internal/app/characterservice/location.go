@@ -13,9 +13,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterLocation {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateLocationESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterLocation {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -66,9 +66,9 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 		})
 }
 
-func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterOnline {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateOnlineESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterOnline {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -90,9 +90,9 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 		})
 }
 
-func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterShip {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateShipESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterShip {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,

@@ -13,7 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -24,9 +23,7 @@ func TestBilling_RenderESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
-	})
+	eus := evenotification.NewEUS(st)
 	en := evenotification.New(eus)
 	ctx := context.Background()
 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
@@ -81,9 +78,7 @@ externalID2: 0`
 func TestBilling_EntityIDs(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
-	})
+	eus := evenotification.NewEUS(st)
 	en := evenotification.New(eus)
 	t.Run("Can retrieve all entity IDs", func(t *testing.T) {
 		// given

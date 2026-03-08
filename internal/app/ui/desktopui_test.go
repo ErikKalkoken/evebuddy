@@ -33,12 +33,12 @@ func TestDesktopUI_StartEmpty(t *testing.T) {
 		for {
 			<-ticker.C
 			if u.IsStartupCompleted() {
-				u.App().Quit()
+				fyne.CurrentApp().Quit()
 			}
 		}
 	}()
 	u.ShowAndRun()
-xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+	xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
 func TestDesktopUI_StartWithCharacter(t *testing.T) {
@@ -73,12 +73,12 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 		for {
 			<-ticker.C
 			if u.IsStartupCompleted() {
-				u.App().Quit()
+				fyne.CurrentApp().Quit()
 			}
 		}
 	}()
 	u.ShowAndRun()
-xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+	xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
 func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {

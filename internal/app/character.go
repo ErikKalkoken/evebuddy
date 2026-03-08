@@ -10,9 +10,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Character is an Eve Online character owned by the user.
@@ -31,6 +31,20 @@ type Character struct {
 	WalletBalance     optional.Optional[float64]
 	// Calculated fields
 	NextCloneJump optional.Optional[time.Time] // zero time == now
+}
+
+func (c *Character) IDOrZero() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
+func (c *Character) NameOrZero() string {
+	if c == nil || c.EveCharacter == nil {
+		return ""
+	}
+	return c.EveCharacter.Name
 }
 
 type CharacterAttributes struct {
@@ -234,7 +248,7 @@ type CharacterPlanet struct {
 func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 	return slices.Concat(
 		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
-		iwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
+		xwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
 	)
 }
 

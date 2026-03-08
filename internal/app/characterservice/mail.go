@@ -326,9 +326,9 @@ func eveEntitiesToESIMailRecipients(ee []*app.EveEntity) ([]esi.PostCharactersCh
 
 // updateMailLabelsESI updates the mail labels for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMailLabels {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterMailLabels {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -365,9 +365,9 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 
 // updateMailListsESI updates the mailing lists for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMailLists {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateMailListsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterMailLists {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
@@ -400,14 +400,14 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 
 // updateMailHeadersESI updates the mail headers for a character from ESI
 // and reports whether they have changed.
-func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMailHeaders {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterMailHeaders {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
-			mail, err := s.fetchMailHeadersESI(ctx, characterID, arg.MaxMails)
+			mail, err := s.fetchMailHeadersESI(ctx, characterID, s.settings.MaxMails())
 			if err != nil {
 				return false, err
 			}

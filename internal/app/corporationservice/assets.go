@@ -174,17 +174,17 @@ var (
 	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
 )
 
-func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCorporationAssets {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCorporationAssets {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdAssets")
 			assets, err := xgoesi.FetchPages(
 				func(page int32) ([]esi.CorporationsCorporationIdAssetsGetInner, *http.Response, error) {
-					return s.esiClient.AssetsAPI.GetCorporationsCorporationIdAssets(ctx, arg.CorporationID).Page(page).Execute()
+					return s.esiClient.AssetsAPI.GetCorporationsCorporationIdAssets(ctx, arg.corporationID).Page(page).Execute()
 				})
 			if err != nil {
 				return false, err
@@ -192,10 +192,10 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			slices.SortFunc(assets, func(a, b esi.CorporationsCorporationIdAssetsGetInner) int {
 				return cmp.Compare(a.ItemId, b.ItemId)
 			})
-			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.CorporationID)
+			slog.Debug("Received corporation assets from ESI", "count", len(assets), "corporationID", arg.corporationID)
 			return assets, nil
 		},
-		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error) {
+		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			assets := data.([]esi.CorporationsCorporationIdAssetsGetInner)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
@@ -219,7 +219,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			if err := g.Wait(); err != nil {
 				return false, err
 			}
-			currentIDs, err := s.st.ListCorporationAssetIDs(ctx, arg.CorporationID)
+			currentIDs, err := s.st.ListCorporationAssetIDs(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
@@ -228,16 +228,16 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 				locationFlag, found := locationFlagFromESIValue[a.LocationFlag]
 				if !found {
 					locationFlag = app.FlagUnknown
-					slog.Warn("Unknown location flag encountered", "corporationID", arg.CorporationID, "item", a)
+					slog.Warn("Unknown location flag encountered", "corporationID", arg.corporationID, "item", a)
 				}
 				locationType, found := locationTypeFromESIValue[a.LocationType]
 				if !found {
 					locationType = app.TypeUnknown
-					slog.Warn("Unknown location type encountered", "corporationID", arg.CorporationID, "item", a)
+					slog.Warn("Unknown location type encountered", "corporationID", arg.corporationID, "item", a)
 				}
 				if currentIDs.Contains(a.ItemId) {
 					err := s.st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
-						CorporationID: arg.CorporationID,
+						CorporationID: arg.corporationID,
 						ItemID:        a.ItemId,
 						LocationFlag:  locationFlag,
 						LocationID:    a.LocationId,
@@ -250,7 +250,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					updated++
 				} else {
 					err := s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
-						CorporationID:   arg.CorporationID,
+						CorporationID:   arg.corporationID,
 						EveTypeID:       a.TypeId,
 						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
 						IsSingleton:     a.IsSingleton,
@@ -266,18 +266,18 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					created++
 				}
 			}
-			slog.Info("Stored corporation assets", "corporationID", arg.CorporationID, "created", created, "updated", updated)
+			slog.Info("Stored corporation assets", "corporationID", arg.corporationID, "created", created, "updated", updated)
 
 			// remove obsolete assets
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCorporationAssets(ctx, arg.CorporationID, ids); err != nil {
+				if err := s.st.DeleteCorporationAssets(ctx, arg.corporationID, ids); err != nil {
 					return false, err
 				}
-				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.CorporationID, "count", ids.Size())
+				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.corporationID, "count", ids.Size())
 			}
 
 			// update names
-			assets2, err := s.st.ListCorporationAssets(ctx, arg.CorporationID)
+			assets2, err := s.st.ListCorporationAssets(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
@@ -287,8 +287,8 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, _ := s.fetchAssetNamesESI(ctx, arg.CorporationID, slices.Collect(maps.Keys(names)))
-			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.CorporationID)
+			names2, _ := s.fetchAssetNamesESI(ctx, arg.corporationID, slices.Collect(maps.Keys(names)))
+			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.corporationID)
 
 			modifyAssetNames(assets2, names2)
 
@@ -300,7 +300,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg app.Corpor
 			}
 			for id := range changed.All() {
 				err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
-					CorporationID: arg.CorporationID,
+					CorporationID: arg.corporationID,
 					ItemID:        id,
 					Name:          names2[id],
 				})

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -21,9 +20,7 @@ func TestTowerNotification(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
-	})
+	eus := evenotification.NewEUS(st)
 	en := evenotification.New(eus)
 	ctx := context.Background()
 	t.Run("TowerAlertMsg full data", func(t *testing.T) {

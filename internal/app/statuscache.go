@@ -103,8 +103,8 @@ func (ss StatusSummary) display(isShort bool) string {
 
 // Entity ID for general sections
 const (
-	GeneralSectionEntityID   = 1
-	GeneralSectionEntityName = "Eve Universe"
+	EveUniverseSectionEntityID   = 1
+	EveUniverseSectionEntityName = "Eve Universe"
 )
 
 type CacheSectionStatus struct {
@@ -120,8 +120,8 @@ type CacheSectionStatus struct {
 	Timeout      time.Duration
 }
 
-func (ss CacheSectionStatus) IsGeneralSection() bool {
-	return ss.EntityID == GeneralSectionEntityID
+func (ss CacheSectionStatus) IsEveUniverseSection() bool {
+	return ss.EntityID == EveUniverseSectionEntityID
 }
 
 func (ss CacheSectionStatus) HasError() bool {

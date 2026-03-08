@@ -24,19 +24,19 @@ var invalidEveEntityIDs = []int64{
 	1, // ID is used for fields, which are technically mandatory, but have no value (e.g. creator for NPC corps)
 }
 
-func (s *EveUniverseService) GetEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
+func (s *EVEUniverseService) GetEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
 	return s.st.GetEveEntity(ctx, id)
 }
 
 // getValidEntity returns an EveEntity from storage for valid IDs and nil for invalid IDs.
-func (s *EveUniverseService) getValidEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
+func (s *EVEUniverseService) getValidEntity(ctx context.Context, id int64) (*app.EveEntity, error) {
 	if id == 0 || id == 1 {
 		return nil, nil
 	}
 	return s.GetEntity(ctx, id)
 }
 
-func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error) {
+func (s *EVEUniverseService) GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error) {
 	o, err := s.st.GetEveEntity(ctx, id)
 	if err == nil {
 		return o, nil
@@ -53,7 +53,7 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int64)
 
 // ToEntities returns the resolved EveEntities for a list of valid entity IDs.
 // It guarantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
-func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error) {
+func (s *EVEUniverseService) ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error) {
 	r := make(map[int64]*app.EveEntity)
 	if ids.Size() == 0 {
 		return r, nil
@@ -83,7 +83,7 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int64])
 // and returns which IDs where indeed missing.
 //
 // ID 0 will be ignored
-func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
+func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("AddMissingEntities: %w", err)
 	}
@@ -169,7 +169,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 	return set.Union(missing, bad), nil
 }
 
-func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int64) ([]esi.UniverseNamesPostInner, []int64, error) {
+func (s *EVEUniverseService) resolveIDsFromESI(ctx context.Context, ids []int64) ([]esi.UniverseNamesPostInner, []int64, error) {
 	slog.Debug("Trying to resolve IDs from ESI", "count", len(ids))
 	ee, resp, err := s.esiClient.UniverseAPI.PostUniverseNames(ctx).RequestBody(ids).Execute()
 	if err != nil {
@@ -194,15 +194,15 @@ func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int64)
 	return ee, []int64{}, nil
 }
 
-func (s *EveUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
+func (s *EVEUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
 }
 
-func (s *EveUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
+func (s *EVEUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesForIDs(ctx, ids)
 }
 
-func (s *EveUniverseService) UpdateAllEntitiesESI(ctx context.Context) (set.Set[int64], error) {
+func (s *EVEUniverseService) UpdateAllEntitiesESI(ctx context.Context) (set.Set[int64], error) {
 	var changed set.Set[int64]
 	ee, err := s.st.ListEveEntities(ctx)
 	if err != nil {
@@ -244,7 +244,7 @@ func (s *EveUniverseService) UpdateAllEntitiesESI(ctx context.Context) (set.Set[
 	return changed, nil
 }
 
-func (s *EveUniverseService) updateEntityNameIfExists(ctx context.Context, id int64, name string) error {
+func (s *EVEUniverseService) updateEntityNameIfExists(ctx context.Context, id int64, name string) error {
 	o, err := s.st.GetEveEntity(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil

@@ -82,9 +82,9 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationAssets,
+		changed, err := s.updateAssetsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)
@@ -161,9 +161,9 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationAssets,
+		changed, err := s.updateAssetsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)
@@ -236,9 +236,9 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CorporationSectionUpdateParams{
-			CorporationID: c.ID,
-			Section:       app.SectionCorporationAssets,
+		changed, err := s.updateAssetsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationAssets,
 		})
 		// then
 		require.NoError(t, err)

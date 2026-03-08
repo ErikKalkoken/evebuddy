@@ -42,9 +42,9 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int64) ([]
 }
 
 // Roles
-func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterRoles {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateRolesESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterRoles {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	roleMap := map[string]app.Role{
 		"Account_Take_1":            app.RoleAccountTake1,

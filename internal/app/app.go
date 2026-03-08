@@ -5,11 +5,13 @@ package app
 
 import (
 	"errors"
+	"log/slog"
 	"net"
 	"net/url"
 	"syscall"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"github.com/fnt-eve/goesi-openapi/esi"
 	"github.com/mattn/go-sqlite3"
 )
@@ -23,6 +25,15 @@ const (
 	FloatFormat               = "#,###.##"
 	IconPixelSize             = 64
 	IconUnitSize              = 28
+	fallbackWebsiteURL        = "https://github.com/ErikKalkoken/evebuddy"
+)
+
+// width of common columns in data tables
+const (
+	ColumnWidthEntity   = 200
+	ColumnWidthDateTime = 150
+	ColumnWidthLocation = 350
+	ColumnWidthRegion   = 150
 )
 
 // EntityShort is a short representation of an entity.
@@ -63,6 +74,8 @@ func isToday(t time.Time) bool {
 	return t.Day() == n.Day() && t.Month() == n.Month() && t.Year() == n.Year()
 }
 
+// FIXME: Migrate to UI variant, which recognizes developer state.
+
 // ErrorDisplay returns a user friendly error message for an error.
 func ErrorDisplay(err error) string {
 	if err == nil {
@@ -101,4 +114,28 @@ func ErrorDisplay(err error) string {
 		return "network error"
 	}
 	return "general error"
+}
+
+// Name returns the name for this app.
+func Name() string {
+	info := fyne.CurrentApp().Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
+}
+
+// WebsiteRootURL returns the URL of the app's website.
+func WebsiteRootURL() *url.URL {
+	s := fyne.CurrentApp().Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
 }

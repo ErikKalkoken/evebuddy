@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/ErikKalkoken/eveauth"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -16,13 +18,44 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
+type SettingsFake struct {
+	MaxWalletTransactionsDefault    int
+	MaxMailsDefault                 int
+	MarketOrderRetentionDaysDefault int
+}
+
+func (s *SettingsFake) MaxMails() int {
+	return s.MaxMailsDefault
+}
+
+func (s *SettingsFake) MaxWalletTransactions() int {
+	return s.MaxWalletTransactionsDefault
+}
+
+func (s *SettingsFake) MarketOrderRetentionDays() int {
+	return s.MarketOrderRetentionDaysDefault
+}
+
+func (s *SettingsFake) NotificationTypesEnabled() set.Set[string] { return set.Set[string]{} }
+func (s *SettingsFake) NotifyCommunicationsEarliest() time.Time   { return time.Now() }
+func (s *SettingsFake) NotifyCommunicationsEnabled() bool         { return true }
+func (s *SettingsFake) NotifyContractsEarliest() time.Time        { return time.Now() }
+func (s *SettingsFake) NotifyContractsEnabled() bool              { return true }
+func (s *SettingsFake) NotifyMailsEarliest() time.Time            { return time.Now() }
+func (s *SettingsFake) NotifyMailsEnabled() bool                  { return true }
+func (s *SettingsFake) NotifyPIEnabled() bool                     { return true }
+func (s *SettingsFake) NotifyTrainingEnabled() bool               { return true }
+func (s *SettingsFake) NotifyPIEarliest() time.Time               { return time.Now() }
+
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(st)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})
+	signals := app.NewSignals()
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          client,
+		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
@@ -31,6 +64,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		ESIClient:              client,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
+		Signals:                signals,
 		StatusCacheService:     scs,
 		Storage:                st,
 	}
@@ -39,6 +73,22 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		if a.AuthClient != nil {
 			arg.AuthClient = a.AuthClient
 		}
+		if a.Settings != nil {
+			arg.Settings = a.Settings
+		}
+	}
+	if arg.AuthClient == nil {
+		ac, err := eveauth.NewClient(eveauth.Config{
+			ClientID: "DUMMY",
+			Port:     8000,
+		})
+		if err != nil {
+			panic(err)
+		}
+		arg.AuthClient = ac
+	}
+	if arg.Settings == nil {
+		arg.Settings = new(SettingsFake)
 	}
 	s := New(arg)
 	return s

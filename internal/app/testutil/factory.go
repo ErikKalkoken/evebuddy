@@ -516,11 +516,14 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		))
 	}
 	if arg.InstallerID == 0 {
-		f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+		_, err := f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       character.ID,
 			Name:     character.EveCharacter.Name,
 			Category: app.EveEntityCharacter,
 		})
+		if err != nil {
+			panic(err)
+		}
 		arg.InstallerID = character.ID
 	}
 	if arg.OutputLocationID == 0 {
@@ -2030,14 +2033,14 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 }
 
 type GeneralSectionStatusParams struct {
-	Section      app.GeneralSection
+	Section      app.EveUniverseSection
 	ErrorMessage string
 	CompletedAt  time.Time
 	StartedAt    time.Time
 	Data         any
 }
 
-func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.GeneralSectionStatus {
+func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.EveUniverseSectionStatus {
 	ctx := context.Background()
 	var arg GeneralSectionStatusParams
 	if len(args) > 0 {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -19,6 +20,102 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
+
+func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
+	go func() {
+		for {
+			go func() {
+				if err := s.UpdateCorporationsIfNeeded(context.Background(), false); err != nil {
+					slog.Error("Failed to update corporations", "error", err)
+				}
+			}()
+			<-time.Tick(d)
+		}
+	}()
+}
+
+func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && xgoesi.IsDailyDowntime() {
+		slog.Info("Skipping regular update of corporations during daily downtime")
+		return nil
+	}
+
+	id := "corporations-" + s.signals.PseudoUniqueID()
+	s.signals.UpdateStarted.Emit(ctx, id)
+	defer s.signals.UpdateStopped.Emit(ctx, id)
+
+	changed, err := s.UpdateCorporations(ctx)
+	if err != nil {
+		return err
+	}
+	if changed {
+		s.signals.CorporationsChanged.Emit(ctx, struct{}{})
+	}
+	corporations, err := s.ListCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	var wg sync.WaitGroup
+	for id := range corporations.All() {
+		wg.Go(func() {
+			s.UpdateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+		})
+	}
+	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Debug("Finished updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
+	return nil
+}
+
+// UpdateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
+// and refreshes the UI accordingly.
+func (s *CorporationService) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
+	sections := app.CorporationSections
+	var wg sync.WaitGroup
+	for _, section := range sections {
+		wg.Go(func() {
+			s.UpdateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+		})
+	}
+	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Debug("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
+}
+
+// UpdateSectionAndRefreshIfNeeded runs update for a corporation section if needed
+// and refreshes the UI accordingly.
+//
+// All UI areas showing data based on corporation sections needs to be included
+// to make sure they are refreshed when data changes.
+func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
+	hasChanged, err := s.updateSectionIfNeeded(
+		ctx, corporationSectionUpdateParams{
+			corporationID: corporationID,
+			forceUpdate:   forceUpdate,
+			section:       section,
+		},
+	)
+	if err != nil {
+		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
+		return
+	}
+	needsRefresh := hasChanged || forceUpdate
+	arg := app.CorporationSectionUpdated{
+		CorporationID: corporationID,
+		Section:       section,
+		NeedsRefresh:  needsRefresh,
+	}
+	var wg sync.WaitGroup
+	if needsRefresh {
+		wg.Go(func() {
+			s.signals.CorporationSectionChanged.Emit(ctx, arg)
+		})
+	}
+	wg.Go(func() {
+		s.signals.CorporationSectionUpdated.Emit(ctx, arg)
+	})
+	wg.Wait()
+}
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
 // This can happen after a character has lost a role or a character was deleted.
@@ -78,6 +175,18 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 	return nil
 }
 
+// HasSection reports whether a section exists at all.
+func (s *CorporationService) HasSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
+	x, err := s.st.GetCorporationSectionStatus(ctx, corporationID, section)
+	if errors.Is(err, app.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !x.IsMissing(), nil
+}
+
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
 func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
@@ -113,20 +222,26 @@ func (s *CorporationService) PermittedSection(ctx context.Context, corporationID
 	return sections.Contains(section), nil
 }
 
-// UpdateSectionIfNeeded updates a section from ESI if has expired and changed
+type corporationSectionUpdateParams struct {
+	corporationID int64
+	forceUpdate   bool
+	section       app.CorporationSection
+}
+
+// updateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
-	if arg.CorporationID == 0 || arg.Section == "" {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
+	if arg.corporationID == 0 || arg.section == "" {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	if !arg.ForceUpdate {
-		status, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
+	if !arg.forceUpdate {
+		status, err := s.st.GetCorporationSectionStatus(ctx, arg.corporationID, arg.section)
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				return false, err
 			}
 		} else {
-			enabled, err := s.PermittedSection(ctx, arg.CorporationID, arg.Section)
+			enabled, err := s.PermittedSection(ctx, arg.corporationID, arg.section)
 			if err != nil {
 				slog.Error("Failed to check enabled sections", "error", err)
 				enabled = false
@@ -140,8 +255,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			}
 		}
 	}
-	var f func(context.Context, app.CorporationSectionUpdateParams) (bool, error)
-	switch arg.Section {
+	var f func(context.Context, corporationSectionUpdateParams) (bool, error)
+	switch arg.section {
 	case app.SectionCorporationAssets:
 		f = s.updateAssetsESI
 	case app.SectionCorporationContracts:
@@ -175,20 +290,20 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		app.SectionCorporationWalletTransactions7:
 		f = s.updateWalletTransactionESI
 	default:
-		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
+		return false, fmt.Errorf("update section: unknown section: %s", arg.section)
 	}
-	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
+	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.section, arg.corporationID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
-		slog.Error("Corporation section update failed", "corporationID", arg.CorporationID, "section", arg.Section, "error", err)
+		slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
 		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
-			CorporationID: arg.CorporationID,
+			CorporationID: arg.corporationID,
 			ErrorMessage:  &errorMessage,
-			Section:       arg.Section,
+			Section:       arg.section,
 			StartedAt:     &startedAt,
 		})
 		if err2 != nil {
@@ -199,9 +314,9 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	slog.Info(
 		"Corporation section update completed",
-		"corporationID", arg.CorporationID,
-		"section", arg.Section,
-		"forced", arg.ForceUpdate,
+		"corporationID", arg.corporationID,
+		"section", arg.section,
+		"forced", arg.forceUpdate,
 		"hasChanged", hasChanged,
 	)
 	return hasChanged, err
@@ -211,15 +326,15 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 // and reports whether it has changed
 func (s *CorporationService) updateSectionIfChanged(
 	ctx context.Context,
-	arg app.CorporationSectionUpdateParams,
+	arg corporationSectionUpdateParams,
 	skipChangeDetection bool,
-	fetch func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error), // returns data from ESI
-	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) (bool, error), // reports whether it has changed
+	fetch func(ctx context.Context, arg corporationSectionUpdateParams) (any, error), // returns data from ESI
+	update func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error), // reports whether it has changed
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
 	o, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
-		CorporationID: arg.CorporationID,
-		Section:       arg.Section,
+		CorporationID: arg.corporationID,
+		Section:       arg.section,
 		StartedAt:     &startedAt,
 	})
 	if err != nil {
@@ -228,23 +343,23 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var hasChanged bool
-	ts, characterID, err := s.cs.TokenSourceForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes())
+	ts, characterID, err := s.cs.TokenSourceForCorporation(ctx, arg.corporationID, arg.section.Roles(), arg.section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
 			"update skipped due to missing corporation member with required roles %s and/or missing or invalid token",
-			arg.Section.Roles(),
+			arg.section.Roles(),
 		)
 		slog.Info(
 			"Section "+comment,
-			"corporationID", arg.CorporationID,
-			"section", arg.Section,
-			"role", arg.Section.Roles(),
-			"scopes", arg.Section.Scopes(),
+			"corporationID", arg.corporationID,
+			"section", arg.section,
+			"role", arg.section.Roles(),
+			"scopes", arg.section.Scopes(),
 		)
 	} else if err != nil {
 		return false, err
 	} else {
-		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", characterID)
+		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.corporationID, "section", arg.section, "characterID", characterID)
 		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		data, err := fetch(ctx, arg)
 		if err != nil {
@@ -258,7 +373,7 @@ func (s *CorporationService) updateSectionIfChanged(
 
 		// identify whether update is needed
 		var needsUpdate bool
-		if arg.ForceUpdate || skipChangeDetection {
+		if arg.forceUpdate || skipChangeDetection {
 			needsUpdate = true
 		} else {
 			hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
@@ -285,9 +400,9 @@ func (s *CorporationService) updateSectionIfChanged(
 		Comment:       &comment,
 		CompletedAt:   &completedAt,
 		ContentHash:   &hash,
-		CorporationID: arg.CorporationID,
+		CorporationID: arg.corporationID,
 		ErrorMessage:  &errorMessage,
-		Section:       arg.Section,
+		Section:       arg.section,
 		StartedAt:     &startedAt2,
 	})
 	if err != nil {
@@ -296,15 +411,15 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	slog.Debug(
 		"Has section changed",
-		slog.Any("corporationID", arg.CorporationID),
-		slog.Any("section", arg.Section),
+		slog.Any("corporationID", arg.corporationID),
+		slog.Any("section", arg.section),
 		slog.Any("hasChanged", hasChanged),
 	)
 	return hasChanged, nil
 }
 
-func (s *CorporationService) hasSectionChanged(ctx context.Context, arg app.CorporationSectionUpdateParams, hash string) (bool, error) {
-	status, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
+func (s *CorporationService) hasSectionChanged(ctx context.Context, arg corporationSectionUpdateParams, hash string) (bool, error) {
+	status, err := s.st.GetCorporationSectionStatus(ctx, arg.corporationID, arg.section)
 	if errors.Is(err, app.ErrNotFound) {
 		return true, nil
 	}

@@ -9,8 +9,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestContractStatusString(t *testing.T) {

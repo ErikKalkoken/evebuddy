@@ -19,7 +19,7 @@ type towerInfo struct {
 	intro string
 }
 
-func makeTowerBaseText(ctx context.Context, moonID, typeID int64, eus EveUniverseService) (towerInfo, error) {
+func makeTowerBaseText(ctx context.Context, moonID, typeID int64, eus EVEUniverse) (towerInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err

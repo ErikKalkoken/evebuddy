@@ -72,9 +72,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -148,9 +148,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -237,9 +237,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -272,11 +272,10 @@ func TestUpdateContractESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		o1 := factory.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
 			Availability: app.ContractAvailabilityPublic,
 			Status:       app.ContractStatusOutstanding,
-			Type:         app.ContractTypeCourier,
 		})
 		acceptor := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
@@ -304,9 +303,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -356,9 +355,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -414,9 +413,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		_, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)
@@ -482,9 +481,9 @@ func TestUpdateContractESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterContracts,
+		_, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContracts,
 		})
 		// then
 		require.NoError(t, err)

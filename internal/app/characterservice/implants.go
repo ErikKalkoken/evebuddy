@@ -20,9 +20,9 @@ func (s *CharacterService) ListAllImplants(ctx context.Context) ([]*app.Characte
 	return s.st.ListAllCharacterImplants(ctx)
 }
 
-func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterImplants {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+func (s *CharacterService) updateImplantsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
+	if arg.section != app.SectionCharacterImplants {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
