@@ -38,7 +38,7 @@ type ui interface {
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	Signals() *app.Signals
 	StatusCache() *statuscacheservice.StatusCacheService
 }
@@ -230,7 +230,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusWindow) makeEntityList() *widget.List {
-	isOfflineMode := a.u.IsOfflineMode()
+	isOfflineMode := a.u.IsOffline()
 	list := widget.NewList(
 		func() int {
 			return len(a.sectionEntities)
@@ -259,7 +259,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
 
-		if !a.u.IsOfflineMode() {
+		if !a.u.IsOffline() {
 			a.updateAllSections.OnTapped = a.makeUpdateAllAction()
 			a.updateAllSections.Enable()
 		}
@@ -349,7 +349,7 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 }
 
 func (a *statusWindow) makeSectionList() *widget.List {
-	isOfflineMode := a.u.IsOfflineMode()
+	isOfflineMode := a.u.IsOffline()
 	l := widget.NewList(
 		func() int {
 			return len(a.sections)
@@ -410,7 +410,7 @@ func (a *statusWindow) refreshDetails() {
 	} else {
 		a.detailsTop.SetText("")
 	}
-	if !a.u.IsOfflineMode() {
+	if !a.u.IsOffline() {
 		a.updateSection.OnTapped = a.makeUpdateSectionAction(ss.EntityID, ss.SectionID)
 		a.updateSection.Enable()
 	}

@@ -46,11 +46,15 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 
 	a.from = awidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage())
 	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
-	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
+	a.from.Set([]*app.EveEntity{{
+		ID:       c.ID,
+		Name:     c.EveCharacter.Name,
+		Category: app.EveEntityCharacter,
+	}})
 	a.from.Disable()
 
 	toButton := widget.NewButton("To", func() {
-		if a.u.IsOfflineMode() {
+		if a.u.IsOffline() {
 			xdialog.ShowInformation("OFFLINE", "Search not available while offline", a.w)
 			return
 		}

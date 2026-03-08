@@ -310,13 +310,13 @@ func (w *eveEntityBadge) MouseOut() {
 var eveEntityResourceCache xsync.Map[int64, fyne.Resource]
 
 // LoadEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
-func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, setter func(r fyne.Resource)) {
+func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, setIcon func(r fyne.Resource)) {
 	if ee == nil {
-		setter(theme.BrokenImageIcon())
+		setIcon(theme.BrokenImageIcon())
 		return
 	}
 	if ee.Category == app.EveEntityMailList {
-		setter(theme.MailComposeIcon())
+		setIcon(theme.MailComposeIcon())
 		return
 	}
 	xwidget.LoadResourceAsyncWithCache(
@@ -325,7 +325,7 @@ func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, setter func(r f
 			return eveEntityResourceCache.Load(ee.ID)
 		},
 		func(r fyne.Resource) {
-			setter(r)
+			setIcon(r)
 		},
 		func() (fyne.Resource, error) {
 			return EntityIcon(eis, ee, app.IconPixelSize, theme.NewThemedResource(icons.QuestionmarkSvg))

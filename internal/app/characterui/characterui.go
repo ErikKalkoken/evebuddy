@@ -28,7 +28,7 @@ type ui interface {
 	InfoWindow() *infowindow.InfoWindow
 	IsDeveloperMode() bool
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	MainWindow() fyne.Window

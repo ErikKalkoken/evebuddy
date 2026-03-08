@@ -631,13 +631,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		go togglePermittedSections()
 	}
 
-	var hasUpdateError, isOffline, hasUpdate, hasScopeError atomic.Bool
+	var hasUpdateError, hasUpdate, hasScopeError atomic.Bool
 	refreshMoreBadge := func() {
-		if hasUpdateError.Load() || hasUpdate.Load() || hasScopeError.Load() || isOffline.Load() {
+		if hasUpdateError.Load() || hasUpdate.Load() || hasScopeError.Load() || u.isOffline.Load() {
 			var importance widget.Importance
 			if hasUpdateError.Load() {
 				importance = widget.DangerImportance
-			} else if hasScopeError.Load() || isOffline.Load() {
+			} else if hasScopeError.Load() || u.isOffline.Load() {
 				importance = widget.WarningImportance
 			} else if hasUpdate.Load() {
 				importance = widget.HighImportance
@@ -674,14 +674,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 
 		if u.ess.IsDailyDowntime() {
-			isOffline.Store(true)
+			u.isOffline.Store(true)
 			set(
 				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
 				theme.NewWarningThemedResource(theme.WarningIcon()),
 			)
 			return
 		}
-		isOffline.Store(false)
+		u.isOffline.Store(false)
 		status := u.StatusCache().Summary()
 		var icon fyne.Resource
 		if status.Errors > 0 {

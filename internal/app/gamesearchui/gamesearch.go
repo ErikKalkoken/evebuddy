@@ -41,7 +41,7 @@ type ui interface {
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoWindow() *infowindow.InfoWindow
 	IsDeveloperMode() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	MainWindow() fyne.Window
 	Settings() *settings.Settings
 	Signals() *app.Signals
@@ -322,7 +322,7 @@ func (a *GameSearch) SetEntry(s string) {
 }
 
 func (a *GameSearch) DoSearch(ctx context.Context, search string) {
-	if a.u.IsOfflineMode() {
+	if a.u.IsOffline() {
 		fyne.Do(func() {
 			xdialog.ShowInformation(
 				"Offline",

@@ -45,7 +45,7 @@ type ui interface {
 	ErrorDisplay(err error) string
 	IsDeveloperMode() bool
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
@@ -136,7 +136,7 @@ type showParams struct {
 }
 
 func (iw *InfoWindow) showWithCharacterID(arg showParams) {
-	if iw.u.IsOfflineMode() {
+	if iw.u.IsOffline() {
 		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",

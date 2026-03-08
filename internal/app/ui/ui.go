@@ -175,6 +175,7 @@ type baseUI struct {
 	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
 	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
 	isMobile                       bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
+	isOffline                      atomic.Bool
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
@@ -240,6 +241,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
 	}
+
 	u.window = u.app.NewWindow(app.Name())
 	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
 
@@ -590,8 +592,8 @@ func (u *baseUI) IsDeveloperMode() bool {
 	return u.isDeveloperMode.Load()
 }
 
-func (u *baseUI) IsOfflineMode() bool {
-	return u.isOfflineMode
+func (u *baseUI) IsOffline() bool {
+	return u.isOfflineMode || u.isOffline.Load()
 }
 func (u *baseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()

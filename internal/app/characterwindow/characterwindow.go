@@ -34,7 +34,7 @@ type ui interface {
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
 	IsDeveloperMode() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	LoadCorporation(ctx context.Context, id int64) error

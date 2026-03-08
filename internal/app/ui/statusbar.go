@@ -197,7 +197,7 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOfflineMode() {
+	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
@@ -236,26 +236,32 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 			a.setEveStatus(status, title, errorMessage)
 		})
 	}
+
 	if a.u.ess.IsDailyDowntime() {
 		s := fmt.Sprintf(
 			"Offline during planned daily downtime:\n%s",
 			a.u.ess.DailyDowntime(),
 		)
 		set(eveStatusOffline, "OFFLINE", s)
+		a.u.isOffline.Store(true)
 		return
 	}
-	x, err := a.u.ess.Fetch(ctx)
+
+	status, err := a.u.ess.Fetch(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
 		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
 		return
 	}
-	if !x.IsOK() {
-		set(eveStatusOffline, "OFFLINE", x.ErrorMessage)
+	if !status.IsOK() {
+		set(eveStatusOffline, "OFFLINE", status.ErrorMessage)
+		a.u.isOffline.Store(true)
 		return
 	}
+
 	p := message.NewPrinter(language.English)
-	set(eveStatusOnline, p.Sprintf("%d players", x.PlayerCount), "")
+	set(eveStatusOnline, p.Sprintf("%d players", status.PlayerCount), "")
+	a.u.isOffline.Store(false)
 }
 
 func (a *statusBar) updateCharacterCount(_ context.Context) {
