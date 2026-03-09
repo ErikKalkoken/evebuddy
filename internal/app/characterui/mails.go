@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -201,29 +201,10 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 func (a *Mails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(icons.BlankSvg),
-				widget.NewLabel("template template"),
-				layout.NewSpacer(),
-				kwidget.NewBadge("999"),
-			)
+			return NewMailFolderItem()
 		},
 		func(n *mailFolderNode, _ bool, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container).Objects
-			icon := hbox[0].(*widget.Icon)
-			icon.SetResource(n.icon())
-			label := hbox[1].(*widget.Label)
-			badge := hbox[3].(*kwidget.Badge)
-			if n.UnreadCount == 0 {
-				label.TextStyle.Bold = false
-				badge.Hide()
-			} else {
-				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(n.UnreadCount))
-				badge.Show()
-			}
-			label.Text = n.Name
-			label.Refresh()
+			co.(*mailFolderItem).set(n)
 		},
 	)
 	t.OnSelectedNode = func(n *mailFolderNode) {
@@ -823,6 +804,45 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 			})
 		}()
 	}
+}
+
+type mailFolderItem struct {
+	widget.BaseWidget
+
+	icon   *widget.Icon
+	name   *widget.Label
+	unread *kxwidget.Badge
+}
+
+func NewMailFolderItem() *mailFolderItem {
+	w := &mailFolderItem{
+		name:   widget.NewLabel(""),
+		icon:   widget.NewIcon(icons.BlankSvg),
+		unread: kxwidget.NewBadge("999"),
+	}
+	w.ExtendBaseWidget(w)
+	w.name.Truncation = fyne.TextTruncateClip
+	return w
+}
+
+func (w *mailFolderItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, w.icon, w.unread, w.name)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *mailFolderItem) set(n *mailFolderNode) {
+	w.icon.SetResource(n.icon())
+	if n.UnreadCount == 0 {
+		w.name.TextStyle.Bold = false
+		w.unread.Hide()
+	} else {
+		w.name.TextStyle.Bold = true
+		w.unread.SetText(strconv.Itoa(n.UnreadCount))
+		w.unread.Show()
+	}
+	w.name.Text = n.Name
+	w.name.Refresh()
+
 }
 
 type mailDetail struct {

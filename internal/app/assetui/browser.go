@@ -48,7 +48,7 @@ const (
 type Browser struct {
 	widget.BaseWidget
 
-	Navigation *assetBrowserNavigation
+	Navigation *browserNavigation
 	Selected   *assetBrowserContainer
 
 	at             asset.Tree
@@ -73,7 +73,7 @@ func newBrowser(u ui, forCorporation bool) *Browser {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.Navigation = newAssetBrowserNavigation(a)
+	a.Navigation = newBrowserNavigation(a)
 	a.Selected = newAssetBrowserContainer(a)
 
 	// Signals
@@ -207,12 +207,12 @@ type filteredTree struct {
 	nodeLookup map[*asset.Node]*assetContainerNode
 }
 
-type assetBrowserNavigation struct {
+type browserNavigation struct {
 	widget.BaseWidget
 
 	OnSelected func()
 
-	ab             *Browser
+	b              *Browser
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
@@ -222,9 +222,9 @@ type assetBrowserNavigation struct {
 	footer         *widget.Label
 }
 
-func newAssetBrowserNavigation(ab *Browser) *assetBrowserNavigation {
-	a := &assetBrowserNavigation{
-		ab:            ab,
+func newBrowserNavigation(b *Browser) *browserNavigation {
+	a := &browserNavigation{
+		b:             b,
 		filteredTrees: make(map[assetFilter]filteredTree),
 		search:        widget.NewEntry(),
 		footer:        awidget.NewLabelWithWrapping(""),
@@ -233,37 +233,22 @@ func newAssetBrowserNavigation(ab *Browser) *assetBrowserNavigation {
 
 	a.locations = xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
-			count := widget.NewLabel("99.999.999")
-			name := widget.NewLabel("Template")
-			name.Truncation = fyne.TextTruncateEllipsis
-			return container.NewBorder(
-				nil,
-				nil,
-				nil,
-				count,
-				name,
-			)
+			return newNavItem()
 		},
 		func(cn *assetContainerNode, _ bool, co fyne.CanvasObject) {
-			b := co.(*fyne.Container).Objects
-			b[0].(*widget.Label).SetText(cn.node.String())
-			var s string
-			if v, ok := cn.itemCount.Value(); ok {
-				s = humanize.Comma(int64(v))
-			}
-			b[1].(*widget.Label).SetText(s)
+			co.(*navItem).set(cn.node.String(), cn.itemCount)
 		},
 	)
 	a.locations.OnSelectedNode = func(cn *assetContainerNode) {
-		a.ab.Selected.set(cn)
+		a.b.Selected.set(cn)
 		if a.OnSelected != nil {
 			a.OnSelected()
 		}
-		if a.ab.u.IsMobile() {
+		if a.b.u.IsMobile() {
 			a.locations.UnselectAll()
 		}
 	}
-	if a.ab.forCorporation {
+	if a.b.forCorporation {
 		a.filters = []assetFilter{
 			assetOffice,
 			assetImpounded,
@@ -322,7 +307,7 @@ func newAssetBrowserNavigation(ab *Browser) *assetBrowserNavigation {
 	return a
 }
 
-func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
+func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
 		container.NewBorder(
 			container.NewHBox(a.selectCategory, layout.NewSpacer(), a.collapseAll),
@@ -338,16 +323,16 @@ func (a *assetBrowserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	))
 }
 
-func (a *assetBrowserNavigation) clear() {
+func (a *browserNavigation) clear() {
 	a.locations.Clear()
 	a.locations.UnselectAll()
 	a.footer.SetText("")
 }
 
-func (a *assetBrowserNavigation) update(_ context.Context, trees []*asset.Node) {
+func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
-		td := generateTreeData(trees, f, a.ab.forCorporation)
+		td := generateTreeData(trees, f, a.b.forCorporation)
 		lookup := make(map[*asset.Node]*assetContainerNode)
 		td.Walk(nil, func(n *assetContainerNode) bool {
 			lookup[n.node] = n
@@ -362,6 +347,37 @@ func (a *assetBrowserNavigation) update(_ context.Context, trees []*asset.Node) 
 		a.filteredTrees = filteredTrees
 		a.filterLocationsAsync()
 	})
+}
+
+type navItem struct {
+	widget.BaseWidget
+
+	count *widget.Label
+	name  *widget.Label
+}
+
+func newNavItem() *navItem {
+	w := &navItem{
+		count: widget.NewLabel(""),
+		name:  widget.NewLabel(""),
+	}
+	w.ExtendBaseWidget(w)
+	w.name.Truncation = fyne.TextTruncateEllipsis
+	return w
+}
+
+func (w *navItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, nil, w.count, w.name)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *navItem) set(name string, count optional.Optional[int]) {
+	w.name.SetText(name)
+	var s string
+	if v, ok := count.Value(); ok {
+		s = humanize.Comma(int64(v))
+	}
+	w.count.SetText(s)
 }
 
 func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) xwidget.TreeData[assetContainerNode] {
@@ -504,7 +520,7 @@ var assetFilterLookup = map[string]assetFilter{
 	assetCategorySafety:     assetSafety,
 }
 
-func (a *assetBrowserNavigation) filterLocationsAsync() {
+func (a *browserNavigation) filterLocationsAsync() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft := a.filteredTrees[filter]
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
@@ -525,12 +541,12 @@ func (a *assetBrowserNavigation) filterLocationsAsync() {
 			a.setFooter(footer, widget.MediumImportance)
 			a.locations.UnselectAll()
 			a.locations.Set(td)
-			a.ab.Selected.clear()
+			a.b.Selected.clear()
 		})
 	}()
 }
 
-func (a *assetBrowserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode, bool) {
+func (a *browserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode, bool) {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft, ok := a.filteredTrees[filter]
 	if !ok {
@@ -543,15 +559,15 @@ func (a *assetBrowserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode,
 	return cn, true
 }
 
-func (a *assetBrowserNavigation) setFooter(s string, i widget.Importance) {
+func (a *browserNavigation) setFooter(s string, i widget.Importance) {
 	a.footer.Text = s
 	a.footer.Importance = i
 	a.footer.Refresh()
 }
 
-func (a *assetBrowserNavigation) selectContainer(cn *assetContainerNode) {
+func (a *browserNavigation) selectContainer(cn *assetContainerNode) {
 	a.locations.UnselectAll()
-	if !a.ab.u.IsMobile() {
+	if !a.b.u.IsMobile() {
 		a.locations.SelectNode(cn)
 	}
 	for _, cn2 := range a.locations.Data().Path(nil, cn) {
