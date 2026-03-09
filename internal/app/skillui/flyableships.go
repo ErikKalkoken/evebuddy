@@ -99,11 +99,11 @@ func NewFlyableShips(u ui) *FlyableShips {
 		a.filterRowsAsync()
 	}
 
-	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
+	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(_ string) {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
+	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(_ string) {
 		a.filterRowsAsync()
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {

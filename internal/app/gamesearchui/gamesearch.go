@@ -94,7 +94,7 @@ func NewGameSearch(u ui) *GameSearch {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.categories = kxwidget.NewFilterChipGroup(a.defaultCategories, func(s []string) {
+	a.categories = kxwidget.NewFilterChipGroup(a.defaultCategories, func(_ []string) {
 		a.updateSearchOptionsTitle()
 	})
 	a.categories.Selected = a.defaultCategories

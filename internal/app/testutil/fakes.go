@@ -134,7 +134,10 @@ func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id 
 }
 
 func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
-	ss, nil := s.GetOrCreateSolarSystemESI(ctx, 30002537)
+	ss, err := s.GetOrCreateSolarSystemESI(ctx, 30002537)
+	if err != nil {
+		return nil, err
+	}
 	o := &app.EveMoon{
 		ID:          id,
 		Name:        fmt.Sprintf("Moon%d", id),

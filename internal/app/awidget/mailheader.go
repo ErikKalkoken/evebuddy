@@ -113,7 +113,7 @@ func NewMailHeader(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource)
 	return w
 }
 
-func (w *MailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {

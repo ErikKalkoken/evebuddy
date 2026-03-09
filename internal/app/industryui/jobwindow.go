@@ -105,7 +105,7 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			status.Set(r.statusDisplay())
 		})

@@ -24,7 +24,7 @@ var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // logResponse is a callback for retryablehttp.
 // It logs all HTTP errors and also the complete response when log level is DEBUG.
-func logResponse(l retryablehttp.Logger, r *http.Response) {
+func logResponse(_ retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
 	isHTTPError := r.StatusCode >= 400
 	if !isDebug && !isHTTPError {

@@ -305,7 +305,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000003})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 13})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{ID: 13})
 		data := map[string]any{
 			"name":      "Akpivem III",
 			"planet_id": 40000046,
@@ -328,7 +328,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 			xassert.Equal(t, int64(40000046), x1.ID)
 			xassert.Equal(t, "Akpivem III", x1.Name)
 			xassert.Equal(t, solarSystem, x1.SolarSystem)
-			xassert.Equal(t, type_, x1.Type)
+			xassert.Equal(t, et, x1.Type)
 		}
 	})
 }

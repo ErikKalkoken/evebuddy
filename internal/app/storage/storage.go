@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"slices"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // required for this package to work in tests
 
 	"github.com/ErikKalkoken/go-set"
 

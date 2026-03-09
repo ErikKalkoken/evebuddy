@@ -399,7 +399,7 @@ func (w *eveEntityBadge) Cursor() desktop.Cursor {
 }
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
-func (w *eveEntityBadge) MouseIn(e *desktop.MouseEvent) {
+func (w *eveEntityBadge) MouseIn(_ *desktop.MouseEvent) {
 	if w.Disabled() {
 		return
 	}

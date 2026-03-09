@@ -370,7 +370,7 @@ func (s *EVEUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 		if err != nil {
 			return nil, err
 		}
-		type_, err := s.GetOrCreateTypeESI(ctx, planet.TypeId)
+		et, err := s.GetOrCreateTypeESI(ctx, planet.TypeId)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +378,7 @@ func (s *EVEUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 			ID:            planet.PlanetId,
 			Name:          planet.Name,
 			SolarSystemID: system.ID,
-			TypeID:        type_.ID,
+			TypeID:        et.ID,
 		}
 		if err := s.st.CreateEvePlanet(ctx, arg); err != nil {
 			return nil, err

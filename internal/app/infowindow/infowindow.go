@@ -757,7 +757,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 		},
 	)
 	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		defer l.UnselectAll()
 	}
 	return widget.NewSimpleRenderer(l)

@@ -449,7 +449,7 @@ func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
 
 func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
 	w.subject.SetText(n.TitleDisplay())
-	w.header.Set(n.CharacterID, n.Sender, n.Timestamp, recipient)
+	w.header.Set(n.Sender, n.Timestamp, recipient)
 	b, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown for notification %+v: %w", n, err)

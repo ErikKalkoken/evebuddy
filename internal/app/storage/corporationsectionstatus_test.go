@@ -38,11 +38,11 @@ func TestCorporationSectionStatus(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		error := "error"
+		x := "error"
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
-			ErrorMessage:  &error,
+			ErrorMessage:  &x,
 		}
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then

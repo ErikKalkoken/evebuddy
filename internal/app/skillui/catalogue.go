@@ -103,7 +103,7 @@ func NewCatalogue(u ui) *Catalogue {
 	a.ExtendBaseWidget(a)
 	a.skills = a.makeSkillsGrid()
 
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {

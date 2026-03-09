@@ -410,9 +410,8 @@ func addNodes(td *xwidget.TreeData[assetContainerNode], parent *assetContainerNo
 		case assetSafety:
 			if isCorporation {
 				return category != asset.NodeAssetSafetyCorporation
-			} else {
-				return category != asset.NodeAssetSafetyCharacter
 			}
+			return category != asset.NodeAssetSafetyCharacter
 		}
 		return false
 	}
@@ -588,7 +587,7 @@ func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
 	a.grid = a.makeAssetGrid()
 	a.location = newAssetBrowserLocation(a)
 
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterItemsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {

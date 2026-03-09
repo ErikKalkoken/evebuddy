@@ -19,12 +19,12 @@ func TestEvePlanet(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		solarSystem := factory.CreateEveSolarSystem()
-		type_ := factory.CreateEveType()
+		et := factory.CreateEveType()
 		arg := storage.CreateEvePlanetParams{
 			ID:            42,
 			Name:          "name",
 			SolarSystemID: solarSystem.ID,
-			TypeID:        type_.ID,
+			TypeID:        et.ID,
 		}
 		// when
 		err := st.CreateEvePlanet(ctx, arg)
@@ -35,7 +35,7 @@ func TestEvePlanet(t *testing.T) {
 				xassert.Equal(t, 42, o.ID)
 				xassert.Equal(t, "name", o.Name)
 				xassert.Equal(t, solarSystem, o.SolarSystem)
-				xassert.Equal(t, type_, o.Type)
+				xassert.Equal(t, et, o.Type)
 			}
 		}
 	})

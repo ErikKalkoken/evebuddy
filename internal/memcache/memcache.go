@@ -76,7 +76,7 @@ func (c *Cache) CleanUp() {
 
 // Clear removes all items.
 func (c *Cache) Clear() {
-	c.items.Range(func(key, value any) bool {
+	c.items.Range(func(key, _ any) bool {
 		c.items.Delete(key)
 		return true
 	})

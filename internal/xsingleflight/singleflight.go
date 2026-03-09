@@ -11,7 +11,7 @@ import (
 func Do[T any](g *singleflight.Group, key string, fn func() (T, error)) (T, error, bool) {
 	if g == nil {
 		var z T
-		return z, fmt.Errorf("xsingleflight: missing singleflight group: %s", key), false
+		return z, fmt.Errorf("xsingleflight: group missing: %s", key), false
 	}
 	x, err, shared := g.Do(key, func() (any, error) {
 		v, err := fn()

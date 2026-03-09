@@ -263,9 +263,8 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 		x := f(a, b)
 		if dir == SortAsc {
 			return x
-		} else {
-			return -1 * x
 		}
+		return -1 * x
 	})
 }
 

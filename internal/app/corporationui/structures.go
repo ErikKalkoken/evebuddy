@@ -260,7 +260,7 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 	solarSystem := a.selectSolarSystem.Selected
 	state := a.selectState.Selected
 	service := a.selectService.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	power := a.selectPower.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -286,9 +286,9 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 				return !r.services.Contains(service)
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if power != "" {

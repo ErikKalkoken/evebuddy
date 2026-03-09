@@ -366,7 +366,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol int) {
 	client := a.selectClient.Selected
 	location := a.selectLocation.Selected
 	region := a.selectRegion.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
@@ -402,9 +402,9 @@ func (a *WalletTransactions) filterRowsAsync(sortCol int) {
 				return r.regionName != region
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)

@@ -221,7 +221,7 @@ func NewClones(u ui) *Clones {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	return a

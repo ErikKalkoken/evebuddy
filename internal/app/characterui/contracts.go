@@ -212,7 +212,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(column int, r contractRow) {
+			func(_ int, r contractRow) {
 				if a.forCorporation {
 					ShowCorporationContractWindow(a.u, r.corporationID, r.contractID)
 				} else {
@@ -277,7 +277,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.Update(ctx)
 		})
-		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 			a.Update(ctx)
 		})
 	}
@@ -315,14 +315,14 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			type_ := widget.NewLabel("Template")
+			et := widget.NewLabel("Template")
 			status := xwidget.NewRichTextWithText("Template")
 			issuer := widget.NewLabel("Template")
 			assignee := widget.NewLabel("Template")
 			dateExpired := xwidget.NewRichTextWithText("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
-				container.NewHBox(type_, layout.NewSpacer(), status),
+				container.NewHBox(et, layout.NewSpacer(), status),
 				issuer,
 				assignee,
 				dateExpired,
@@ -374,7 +374,7 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
 	assignee := a.selectAssignee.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -405,9 +405,9 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 				return r.assigneeName != assignee
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if tag != "" {

@@ -50,7 +50,7 @@ type marketOrderRow struct {
 	owner         *app.EveEntity
 	ownerName     string
 	price         float64
-	range_        string
+	rangeInfo     string
 	regionID      int64
 	regionName    string
 	state         app.MarketOrderState
@@ -293,7 +293,7 @@ func NewMarketOrders(u ui, isBuyOrders bool) *MarketOrders {
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -383,7 +383,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	owner := a.selectOwner.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -409,9 +409,9 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 				return r.characterName != owner
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if tag != "" {
@@ -498,7 +498,7 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 			owner:         o.Owner,
 			ownerName:     o.Owner.Name,
 			price:         o.Price,
-			range_:        o.Range,
+			rangeInfo:     o.Range,
 			regionID:      o.Region.ID,
 			regionName:    o.Region.Name,
 			state:         o.State,

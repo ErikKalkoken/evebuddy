@@ -868,7 +868,7 @@ func (w *mailDetail) clear() {
 func (w *mailDetail) SetMail(m *app.CharacterMail) {
 	w.subject.SetText(m.Subject.ValueOrZero())
 	w.SetBody(m.BodyPlain())
-	w.header.Set(m.CharacterID, m.From, m.Timestamp, m.Recipients...)
+	w.header.Set(m.From, m.Timestamp, m.Recipients...)
 }
 
 func (w *mailDetail) SetBody(s string) {

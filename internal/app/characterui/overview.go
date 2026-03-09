@@ -168,7 +168,7 @@ func NewOverview(u ui) *Overview {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters and systems"
@@ -215,7 +215,7 @@ func NewOverview(u ui) *Overview {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {

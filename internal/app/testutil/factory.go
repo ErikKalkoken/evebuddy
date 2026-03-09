@@ -2720,44 +2720,44 @@ func (f *Factory) calcNewID(table, idField string, start int64) int64 {
 }
 
 func (f *Factory) calcNewIDWithCharacter(table, idField string, characterID int64) int64 {
-	var max sql.NullInt64
+	var m sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", idField, table)
-	if err := f.dbRO.QueryRow(sql, characterID).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql, characterID).Scan(&m); err != nil {
 		panic(err)
 	}
-	return max.Int64 + 1
+	return m.Int64 + 1
 }
 
 func (f *Factory) calcNewIDWithCorporation(table, idField string, corporationID int64) int64 {
-	var max sql.NullInt64
+	var m sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE corporation_id = ?;", idField, table)
-	if err := f.dbRO.QueryRow(sql, corporationID).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql, corporationID).Scan(&m); err != nil {
 		panic(err)
 	}
-	return max.Int64 + 1
+	return m.Int64 + 1
 }
 
 func (f *Factory) calcNewIDWithParam(table, idField, whereField string, whereValue int64) int64 {
-	var max sql.NullInt64
+	var m sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", idField, table, whereField)
-	if err := f.dbRO.QueryRow(sql, whereValue).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql, whereValue).Scan(&m); err != nil {
 		panic(err)
 	}
-	return max.Int64 + 1
+	return m.Int64 + 1
 }
 
 func (f *Factory) calcNewIDWithParams(table, idField string, clauses map[string]any) int64 {
-	var max sql.NullInt64
+	var m sql.NullInt64
 	var parts []string
 	for f, v := range clauses {
 		parts = append(parts, fmt.Sprintf("%s = %v", f, v))
 	}
 	clausesStr := strings.Join(parts, " AND ")
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s;", idField, table, clausesStr)
-	if err := f.dbRO.QueryRow(sql).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql).Scan(&m); err != nil {
 		panic(err)
 	}
-	return max.Int64 + 1
+	return m.Int64 + 1
 }
 
 func calcContentHash(data any) (string, error) {

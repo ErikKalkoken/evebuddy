@@ -156,7 +156,7 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	t := xwidget.NewTree(
-		func(branch bool) fyne.CanvasObject {
+		func(_ bool) fyne.CanvasObject {
 			icon1 := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			icon2 := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			name := widget.NewLabel("Template")

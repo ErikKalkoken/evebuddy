@@ -416,7 +416,7 @@ func newAssetSearch(u ui, forCorporation bool) *Search {
 			assetsTotalYes,
 			assetsTotalNo,
 		},
-		func(s string) {
+		func(_ string) {
 			a.filterRowsAsync(-1)
 		},
 	)
@@ -454,7 +454,7 @@ func newAssetSearch(u ui, forCorporation bool) *Search {
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.Update(ctx)
 		})
-		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {

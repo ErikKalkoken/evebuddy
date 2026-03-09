@@ -79,7 +79,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 			})),
 		))
 	}
-	items = append(items, widget.NewFormItem("Range", widget.NewLabel(xstrings.Title(r.range_))))
+	items = append(items, widget.NewFormItem("Range", widget.NewLabel(xstrings.Title(r.rangeInfo))))
 	items = append(items, widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)))
 	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
 		r.characterID,

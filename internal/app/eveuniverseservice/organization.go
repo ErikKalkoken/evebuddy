@@ -45,7 +45,7 @@ func (s *EVEUniverseService) FetchAlliance(ctx context.Context, allianceID int64
 	if err != nil {
 		return nil, err
 	}
-	maps.DeleteFunc(eeMap, func(id int64, o *app.EveEntity) bool {
+	maps.DeleteFunc(eeMap, func(_ int64, o *app.EveEntity) bool {
 		return !o.Category.IsKnown()
 	})
 	o := &app.EveAlliance{

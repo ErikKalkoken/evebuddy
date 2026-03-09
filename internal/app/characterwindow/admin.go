@@ -303,9 +303,9 @@ type adminListItem struct {
 
 func newAdminListItem(showDeleteDialog func(adminRow), loadIcon func(id int64, size int, setter func(r fyne.Resource))) *adminListItem {
 	p := theme.Padding()
-	delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
-	delete.Importance = widget.DangerImportance
-	delete.SetToolTip("Delete character")
+	del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
+	del.Importance = widget.DangerImportance
+	del.SetToolTip("Delete character")
 	issueLabel := ttwidget.NewLabel("Missing scopes")
 	issueLabel.Importance = widget.WarningImportance
 	issueIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
@@ -316,7 +316,7 @@ func newAdminListItem(showDeleteDialog func(adminRow), loadIcon func(id int64, s
 	)
 	issue.Hide()
 	w := &adminListItem{
-		delete:           delete,
+		delete:           del,
 		entityItem:       awidget.NewEntityListItem(true, loadIcon),
 		issue:            issue,
 		issueIcon:        issueIcon,
