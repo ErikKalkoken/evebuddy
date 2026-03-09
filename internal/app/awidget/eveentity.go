@@ -96,10 +96,10 @@ func EveEntityIcon(eis EveEntityEIS, ee *app.EveEntity, size int, fallback fyne.
 type EveEntityListItem struct {
 	widget.BaseWidget
 
-	IconPixelSize int
-	IconUnitSize  float32
-	IsAvatar      bool
-	Truncation    fyne.TextTruncation
+	IconPixelSize int                 // can be set before first render
+	IconUnitSize  float32             // can be set before first render
+	IsAvatar      bool                // can be set always
+	Truncation    fyne.TextTruncation // can be set before first render
 
 	icon     *canvas.Image
 	loadIcon EveEntityIconLoader
@@ -148,8 +148,8 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
-	if w.name == nil || w.icon == nil {
-		return
+	if w.IsAvatar {
+		w.icon.CornerRadius = w.IconUnitSize / 2
 	}
 	w.loadIcon(o, w.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r

@@ -148,8 +148,8 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 		func() fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
 				awidget.LoadEveEntityIconFunc(a.u.EVEImage()),
-				func(id int64) {
-					a.u.InfoWindow().Show(app.EveEntityCorporation, id)
+				func(o *app.EveEntity) {
+					a.u.InfoWindow().ShowEntity(o)
 				})
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -157,7 +157,12 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 				return
 			}
 			r := a.rowsFiltered[id]
-			co.(*loyaltyPointsListItem).set(r)
+			o := &app.EveEntity{
+				Category: app.EveEntityCorporation,
+				ID:       r.corporationID,
+				Name:     r.corporationName,
+			}
+			co.(*loyaltyPointsListItem).set(o, r.points, false)
 		},
 	)
 	l.OnSelected = func(_ widget.ListItemID) {
@@ -272,19 +277,19 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 type loyaltyPointsListItem struct {
 	widget.BaseWidget
 
-	icon            *xwidget.TappableIcon
-	entity          *awidget.EveEntityListItem
-	points          *widget.Label
-	loadIcon        awidget.EveEntityIconLoader
-	showCorporation func(id int64)
+	icon     *xwidget.TappableIcon
+	entity   *awidget.EveEntityListItem
+	points   *widget.Label
+	loadIcon awidget.EveEntityIconLoader
+	showInfo func(*app.EveEntity)
 }
 
-func newLoyaltyPointsListItem(loadIcon awidget.EveEntityIconLoader, showCorporation func(id int64)) *loyaltyPointsListItem {
+func newLoyaltyPointsListItem(loadIcon awidget.EveEntityIconLoader, showInfo func(*app.EveEntity)) *loyaltyPointsListItem {
 	w := &loyaltyPointsListItem{
-		entity:          awidget.NewEveEntityListItem(loadIcon),
-		icon:            xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
-		points:          widget.NewLabel("Template"),
-		showCorporation: showCorporation,
+		entity:   awidget.NewEveEntityListItem(loadIcon),
+		icon:     xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
+		points:   widget.NewLabel(""),
+		showInfo: showInfo,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -301,14 +306,13 @@ func (w *loyaltyPointsListItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *loyaltyPointsListItem) set(r characterLoyaltyPointsRow) {
-	w.entity.Set(&app.EveEntity{
-		Category: app.EveEntityCorporation,
-		ID:       r.corporationID,
-		Name:     r.corporationName,
-	})
-	w.points.SetText(ihumanize.Comma(r.points))
+func (w *loyaltyPointsListItem) set(o *app.EveEntity, points int64, isHeader bool) {
+	w.entity.IsAvatar = !isHeader
+	w.entity.Set(o)
+	w.points.Text = ihumanize.Comma(points)
+	w.points.TextStyle.Bold = isHeader
+	w.points.Refresh()
 	w.icon.OnTapped = func() {
-		w.showCorporation(r.corporationID)
+		w.showInfo(o)
 	}
 }
