@@ -1,18 +1,17 @@
-// Package statuscacheservice is a service which provides cached access
-// to the current update status of general and character sections.
-package statuscacheservice
+// Package statuscache provides cached access to the current update status
+// of entity sections.
+package statuscache
 
 import (
 	"context"
 	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -54,36 +53,39 @@ type cacheValue struct {
 	StartedAt    time.Time
 }
 
-// StatusCacheService provides cached access to the current update status
-// of all characters to improve performance of UI refresh tickers.
-type StatusCacheService struct {
-	cache *memcache.Cache
-	st    *storage.Storage
+type Storage interface {
+	ListCharacterSectionStatus(ctx context.Context, characterID int64) ([]*app.CharacterSectionStatus, error)
+	ListCharactersShort(ctx context.Context) ([]*app.EntityShort, error)
+	ListCorporationSectionStatus(ctx context.Context, corporationID int64) ([]*app.CorporationSectionStatus, error)
+	ListCorporationsShort(ctx context.Context) ([]*app.EntityShort, error)
+	ListGeneralSectionStatus(ctx context.Context) ([]*app.EveUniverseSectionStatus, error)
 }
 
-// New creates and returns a new instance of a character status service.
-// When nil is provided it will create and use it's own cache instance.
-func New(st *storage.Storage) *StatusCacheService {
-	sc := &StatusCacheService{
-		cache: memcache.NewWithTimeout(0),
-		st:    st,
-	}
-	return sc
+// StatusCache provides cached access to the current update status
+// of all sections to improve performance of UI refresh tickers.
+// The zero value is ready to use.
+// The struct is save for concurrent use.
+type StatusCache struct {
+	cache sync.Map
 }
 
-func (sc *StatusCacheService) Clear() {
+// Clear removes all items.
+func (sc *StatusCache) Clear() {
 	sc.cache.Clear()
 }
 
-// InitCache initializes the internal state from local storage.
+// Init initializes the internal state from local storage.
 // It should always be called once for a new instance to ensure the cache is current.
-func (sc *StatusCacheService) InitCache(ctx context.Context) error {
-	cc, err := sc.updateCharacters(ctx)
+func (sc *StatusCache) Init(ctx context.Context, st Storage) error {
+	if sc == nil || st == nil {
+		return fmt.Errorf("StatusCache.Init: %w", app.ErrInvalid)
+	}
+	cc, err := sc.updateCharacters(ctx, st)
 	if err != nil {
 		return err
 	}
 	for _, c := range cc {
-		oo, err := sc.st.ListCharacterSectionStatus(ctx, c.ID)
+		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
 		if err != nil {
 			return err
 		}
@@ -91,12 +93,12 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 			sc.SetCharacterSection(o)
 		}
 	}
-	rr, err := sc.updateCorporations(ctx)
+	rr, err := sc.updateCorporations(ctx, st)
 	if err != nil {
 		return err
 	}
 	for _, r := range rr {
-		oo, err := sc.st.ListCorporationSectionStatus(ctx, r.ID)
+		oo, err := st.ListCorporationSectionStatus(ctx, r.ID)
 		if err != nil {
 			return err
 		}
@@ -104,7 +106,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 			sc.SetCorporationSection(o)
 		}
 	}
-	oo, err := sc.st.ListGeneralSectionStatus(ctx)
+	oo, err := st.ListGeneralSectionStatus(ctx)
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,10 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 
 // Summary returns the current summary status in percent of fresh sections
 // and the number of missing and errors.
-func (sc *StatusCacheService) Summary() app.StatusSummary {
+func (sc *StatusCache) Summary() app.StatusSummary {
+	if sc == nil {
+		return app.StatusSummary{}
+	}
 	var ss statusSummary
 	cc := sc.ListCharacters()
 	for _, c := range cc {
@@ -142,8 +147,8 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 // Character sections
 
 // HasCharacterSection reports whether a character section exists.
-func (sc *StatusCacheService) HasCharacterSection(characterID int64, section app.CharacterSection) bool {
-	if characterID == 0 {
+func (sc *StatusCache) HasCharacterSection(characterID int64, section app.CharacterSection) bool {
+	if sc == nil || characterID == 0 {
 		return false
 	}
 	x, ok := sc.CharacterSection(characterID, section)
@@ -153,7 +158,11 @@ func (sc *StatusCacheService) HasCharacterSection(characterID int64, section app
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSection(characterID int64, section app.CharacterSection) (app.CacheSectionStatus, bool) {
+// CharacterSection tries to return a character section and reports whether it was found.
+func (sc *StatusCache) CharacterSection(characterID int64, section app.CharacterSection) (app.CacheSectionStatus, bool) {
+	if sc == nil || characterID == 0 {
+		return app.CacheSectionStatus{}, false
+	}
 	o := app.CacheSectionStatus{
 		EntityID:    characterID,
 		EntityName:  sc.CharacterName(characterID),
@@ -162,7 +171,7 @@ func (sc *StatusCacheService) CharacterSection(characterID int64, section app.Ch
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: characterID, section: section.String()}
-	x, ok := sc.cache.Get(k.String())
+	x, ok := sc.cache.Load(k.String())
 	if ok {
 		v := x.(cacheValue)
 		o.CompletedAt = v.CompletedAt
@@ -172,7 +181,12 @@ func (sc *StatusCacheService) CharacterSection(characterID int64, section app.Ch
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCharacterSections(characterID int64) []app.CacheSectionStatus {
+// ListCharacterSections returns all character sections.
+func (sc *StatusCache) ListCharacterSections(characterID int64) []app.CacheSectionStatus {
+	if sc == nil || characterID == 0 {
+		return nil
+	}
+
 	var list []app.CacheSectionStatus
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSection(characterID, section)
@@ -190,7 +204,11 @@ func (sc *StatusCacheService) ListCharacterSections(characterID int64) []app.Cac
 	return list
 }
 
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int64) app.StatusSummary {
+// CharacterSectionSummary returns the summary for a character.
+func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSummary {
+	if sc == nil || characterID == 0 {
+		return app.StatusSummary{}
+	}
 	total := len(app.CharacterSections)
 	ss := sc.calcCharacterSectionSummary(characterID)
 	s := app.StatusSummary{
@@ -202,7 +220,7 @@ func (sc *StatusCacheService) CharacterSectionSummary(characterID int64) app.Sta
 	return s
 }
 
-func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int64) statusSummary {
+func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSummary {
 	var ss statusSummary
 	csl := sc.ListCharacterSections(characterID)
 	for _, o := range csl {
@@ -218,8 +236,9 @@ func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int64) sta
 	return ss
 }
 
-func (sc *StatusCacheService) SetCharacterSection(o *app.CharacterSectionStatus) {
-	if o == nil {
+// SetCharacterSection updates a character section.
+func (sc *StatusCache) SetCharacterSection(o *app.CharacterSectionStatus) {
+	if sc == nil || o == nil {
 		return
 	}
 	k := cacheKey{
@@ -231,11 +250,14 @@ func (sc *StatusCacheService) SetCharacterSection(o *app.CharacterSectionStatus)
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Set(k.String(), v, 0)
+	sc.cache.Store(k.String(), v)
 }
 
 // CharacterName returns the name of a character by ID or an empty string if not found.
-func (sc *StatusCacheService) CharacterName(characterID int64) string {
+func (sc *StatusCache) CharacterName(characterID int64) string {
+	if sc == nil || characterID == 0 {
+		return ""
+	}
 	cc := sc.ListCharacters()
 	if len(cc) == 0 {
 		return ""
@@ -249,40 +271,50 @@ func (sc *StatusCacheService) CharacterName(characterID int64) string {
 }
 
 // ListCharacterIDs returns the user's character IDs.
-func (sc *StatusCacheService) ListCharacterIDs() set.Set[int64] {
+func (sc *StatusCache) ListCharacterIDs() set.Set[int64] {
+	if sc == nil {
+		return set.Set[int64]{}
+	}
 	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
 }
 
 // ListCharacters returns the user's characters in alphabetical order.
-func (sc *StatusCacheService) ListCharacters() []*app.EntityShort {
-	x, ok := sc.cache.Get(keyCharacters)
+func (sc *StatusCache) ListCharacters() []*app.EntityShort {
+	if sc == nil {
+		return nil
+	}
+	x, ok := sc.cache.Load(keyCharacters)
 	if !ok {
 		return nil
 	}
 	return x.([]*app.EntityShort)
 }
 
-func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
-	_, err := sc.updateCharacters(ctx)
+// UpdateCharacters updates all characters from storage.
+func (sc *StatusCache) UpdateCharacters(ctx context.Context, st Storage) error {
+	if sc == nil || st == nil {
+		return fmt.Errorf("StatusCache.UpdateCharacters: %w", app.ErrInvalid)
+	}
+	_, err := sc.updateCharacters(ctx, st)
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort, error) {
-	cc, err := sc.st.ListCharactersShort(ctx)
+func (sc *StatusCache) updateCharacters(ctx context.Context, st Storage) ([]*app.EntityShort, error) {
+	cc, err := st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sc.cache.Set(keyCharacters, cc, 0)
+	sc.cache.Store(keyCharacters, cc)
 	return cc, nil
 }
 
 // Corporation sections
 
 // HasCorporationSection reports whether a corporation section exists.
-func (sc *StatusCacheService) HasCorporationSection(corporationID int64, section app.CorporationSection) bool {
-	if corporationID == 0 {
+func (sc *StatusCache) HasCorporationSection(corporationID int64, section app.CorporationSection) bool {
+	if sc == nil || corporationID == 0 {
 		return false
 	}
 	x, ok := sc.CorporationSection(corporationID, section)
@@ -292,7 +324,10 @@ func (sc *StatusCacheService) HasCorporationSection(corporationID int64, section
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CorporationSection(corporationID int64, section app.CorporationSection) (app.CacheSectionStatus, bool) {
+func (sc *StatusCache) CorporationSection(corporationID int64, section app.CorporationSection) (app.CacheSectionStatus, bool) {
+	if sc == nil || corporationID == 0 {
+		return app.CacheSectionStatus{}, false
+	}
 	o := app.CacheSectionStatus{
 		EntityID:    corporationID,
 		EntityName:  sc.CorporationName(corporationID),
@@ -301,7 +336,7 @@ func (sc *StatusCacheService) CorporationSection(corporationID int64, section ap
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: corporationID, section: section.String()}
-	x, ok := sc.cache.Get(k.String())
+	x, ok := sc.cache.Load(k.String())
 	if ok {
 		v := x.(cacheValue)
 		o.Comment = v.Comment
@@ -312,7 +347,10 @@ func (sc *StatusCacheService) CorporationSection(corporationID int64, section ap
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCorporationSections(corporationID int64) []app.CacheSectionStatus {
+func (sc *StatusCache) ListCorporationSections(corporationID int64) []app.CacheSectionStatus {
+	if sc == nil || corporationID == 0 {
+		return nil
+	}
 	var list []app.CacheSectionStatus
 	for _, section := range app.CorporationSections {
 		v, ok := sc.CorporationSection(corporationID, section)
@@ -330,7 +368,10 @@ func (sc *StatusCacheService) ListCorporationSections(corporationID int64) []app
 	return list
 }
 
-func (sc *StatusCacheService) CorporationSectionSummary(corporationID int64) app.StatusSummary {
+func (sc *StatusCache) CorporationSectionSummary(corporationID int64) app.StatusSummary {
+	if sc == nil || corporationID == 0 {
+		return app.StatusSummary{}
+	}
 	total := len(app.CorporationSections)
 	ss := sc.calcCorporationSectionSummary(corporationID)
 	s := app.StatusSummary{
@@ -344,7 +385,7 @@ func (sc *StatusCacheService) CorporationSectionSummary(corporationID int64) app
 	return s
 }
 
-func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int64) statusSummary {
+func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) statusSummary {
 	var ss statusSummary
 	csl := sc.ListCorporationSections(corporationID)
 	for _, o := range csl {
@@ -364,8 +405,8 @@ func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int64)
 	return ss
 }
 
-func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionStatus) {
-	if o == nil {
+func (sc *StatusCache) SetCorporationSection(o *app.CorporationSectionStatus) {
+	if sc == nil || o == nil {
 		return
 	}
 	k := cacheKey{
@@ -378,11 +419,14 @@ func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionSta
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Set(k.String(), v, 0)
+	sc.cache.Store(k.String(), v)
 }
 
 // CorporationName return the name of a corporation by ID or an empty string if not found.
-func (sc *StatusCacheService) CorporationName(corporationID int64) string {
+func (sc *StatusCache) CorporationName(corporationID int64) string {
+	if sc == nil || corporationID == 0 {
+		return ""
+	}
 	cc := sc.ListCorporations()
 	if len(cc) == 0 {
 		return ""
@@ -396,31 +440,40 @@ func (sc *StatusCacheService) CorporationName(corporationID int64) string {
 }
 
 // ListCorporations returns the user's corporations in alphabetical order.
-func (sc *StatusCacheService) ListCorporations() []*app.EntityShort {
-	x, ok := sc.cache.Get(keyCorporations)
+func (sc *StatusCache) ListCorporations() []*app.EntityShort {
+	if sc == nil {
+		return nil
+	}
+	x, ok := sc.cache.Load(keyCorporations)
 	if !ok {
 		return nil
 	}
 	return x.([]*app.EntityShort)
 }
 
-func (sc *StatusCacheService) UpdateCorporations(ctx context.Context) error {
-	_, err := sc.updateCorporations(ctx)
+func (sc *StatusCache) UpdateCorporations(ctx context.Context, st Storage) error {
+	if sc == nil || st == nil {
+		return fmt.Errorf("StatusCache.UpdateCorporations: %w", app.ErrInvalid)
+	}
+	_, err := sc.updateCorporations(ctx, st)
 	return err
 }
 
-func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.EntityShort, error) {
-	cc, err := sc.st.ListCorporationsShort(ctx)
+func (sc *StatusCache) updateCorporations(ctx context.Context, st Storage) ([]*app.EntityShort, error) {
+	cc, err := st.ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sc.cache.Set(keyCorporations, cc, 0)
+	sc.cache.Store(keyCorporations, cc)
 	return cc, nil
 }
 
 // general sections
 
-func (sc *StatusCacheService) HasEveUniverseSection(section app.EveUniverseSection) bool {
+func (sc *StatusCache) HasEveUniverseSection(section app.EveUniverseSection) bool {
+	if sc == nil {
+		return false
+	}
 	x, ok := sc.EveUniverseSection(section)
 	if !ok {
 		return false
@@ -428,7 +481,10 @@ func (sc *StatusCacheService) HasEveUniverseSection(section app.EveUniverseSecti
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) EveUniverseSection(section app.EveUniverseSection) (app.CacheSectionStatus, bool) {
+func (sc *StatusCache) EveUniverseSection(section app.EveUniverseSection) (app.CacheSectionStatus, bool) {
+	if sc == nil {
+		return app.CacheSectionStatus{}, false
+	}
 	o := app.CacheSectionStatus{
 		EntityID:    app.EveUniverseSectionEntityID,
 		EntityName:  app.EveUniverseSectionEntityName,
@@ -437,7 +493,7 @@ func (sc *StatusCacheService) EveUniverseSection(section app.EveUniverseSection)
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: app.EveUniverseSectionEntityID, section: section.String()}
-	x, ok := sc.cache.Get(k.String())
+	x, ok := sc.cache.Load(k.String())
 	if ok {
 		v := x.(cacheValue)
 		o.CompletedAt = v.CompletedAt
@@ -447,7 +503,10 @@ func (sc *StatusCacheService) EveUniverseSection(section app.EveUniverseSection)
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListEveUniverseSections() []app.CacheSectionStatus {
+func (sc *StatusCache) ListEveUniverseSections() []app.CacheSectionStatus {
+	if sc == nil {
+		return []app.CacheSectionStatus{}
+	}
 	var list []app.CacheSectionStatus
 	for _, section := range app.EveUniverseSections {
 		v, ok := sc.EveUniverseSection(section)
@@ -465,8 +524,8 @@ func (sc *StatusCacheService) ListEveUniverseSections() []app.CacheSectionStatus
 	return list
 }
 
-func (sc *StatusCacheService) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {
-	if o == nil {
+func (sc *StatusCache) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {
+	if sc == nil || o == nil {
 		return
 	}
 	k := cacheKey{
@@ -478,10 +537,13 @@ func (sc *StatusCacheService) SetEveUniverseSection(o *app.EveUniverseSectionSta
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Set(k.String(), v, 0)
+	sc.cache.Store(k.String(), v)
 }
 
-func (sc *StatusCacheService) EveUniverseSectionSummary() app.StatusSummary {
+func (sc *StatusCache) EveUniverseSectionSummary() app.StatusSummary {
+	if sc == nil {
+		return app.StatusSummary{}
+	}
 	ss := sc.calcEveUniverseSectionSummary()
 	s := app.StatusSummary{
 		Current:   ss.current,
@@ -492,7 +554,7 @@ func (sc *StatusCacheService) EveUniverseSectionSummary() app.StatusSummary {
 	return s
 }
 
-func (sc *StatusCacheService) calcEveUniverseSectionSummary() statusSummary {
+func (sc *StatusCache) calcEveUniverseSectionSummary() statusSummary {
 	var ss statusSummary
 	gsl := sc.ListEveUniverseSections()
 	for _, o := range gsl {

@@ -24,7 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -55,7 +55,7 @@ type contractUIServices interface {
 	IsMobile() bool
 	MainWindow() fyne.Window
 	Signals() *app.Signals
-	StatusCache() *statuscacheservice.StatusCacheService
+	StatusCache() *statuscache.StatusCache
 }
 
 type contractRow struct {

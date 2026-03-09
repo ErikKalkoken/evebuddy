@@ -42,7 +42,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
@@ -313,8 +313,8 @@ func main() {
 	settings := settings.New(fyneApp.Preferences())
 
 	// Init StatusCache service
-	scs := statuscacheservice.New(st)
-	if err := scs.InitCache(context.Background()); err != nil {
+	scs := new(statuscache.StatusCache)
+	if err := scs.Init(context.Background(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
 	}

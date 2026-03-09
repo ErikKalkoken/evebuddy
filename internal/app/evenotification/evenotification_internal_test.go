@@ -9,7 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -32,7 +32,7 @@ func NewEveUniverseService(st *storage.Storage) *eveuniverseservice.EVEUniverseS
 	s := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          client,
 		Signals:            app.NewSignals(),
-		StatusCacheService: statuscacheservice.New(st),
+		StatusCacheService: new(statuscache.StatusCache),
 		Storage:            st,
 	})
 	return s

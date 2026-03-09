@@ -6,7 +6,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
@@ -18,7 +18,7 @@ func NewTestService(st *storage.Storage) *EVEUniverseService {
 	s := New(Params{
 		ESIClient:          client,
 		Signals:            app.NewSignals(),
-		StatusCacheService: statuscacheservice.New(st),
+		StatusCacheService: new(statuscache.StatusCache),
 		Storage:            st,
 	})
 	return s

@@ -250,7 +250,7 @@ func (s *EVEUniverseService) RandomizeAllCorporationNames(ctx context.Context) e
 		}
 
 	}
-	return s.scs.UpdateCorporations(ctx)
+	return s.scs.UpdateCorporations(ctx, s.st)
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.

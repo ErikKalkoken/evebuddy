@@ -1,4 +1,4 @@
-package statuscacheservice_test
+package statuscache_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -20,7 +20,7 @@ import (
 func TestInit(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("Can init a status cache with character, corporation and general sections", func(t *testing.T) {
 		// given
@@ -45,7 +45,7 @@ func TestInit(t *testing.T) {
 			Section:       section3,
 		})
 		// when
-		err := sc.InitCache(ctx)
+		err := sc.Init(ctx, st)
 		// then
 		if assert.NoError(t, err) {
 			x2, ok := sc.CharacterSection(c.ID, section1)
@@ -84,7 +84,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
@@ -125,7 +125,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -174,7 +174,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
@@ -233,7 +233,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.CorporationSectionStatus{
@@ -290,7 +290,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.EveUniverseSectionStatus{
@@ -347,7 +347,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -395,7 +395,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -432,7 +432,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.SetEveUniverseSection(o)
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -470,7 +470,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetEveUniverseSection(o)
 			}
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
@@ -514,7 +514,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.SetEveUniverseSection(o)
 			}
 		}
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.EveUniverseSectionStatus{
@@ -537,7 +537,7 @@ func TestCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("update and list characters", func(t *testing.T) {
 		// given
@@ -545,7 +545,7 @@ func TestCharacter(t *testing.T) {
 		sc.Clear()
 		c := factory.CreateCharacterFull()
 		// when
-		if err := sc.UpdateCharacters(ctx); err != nil {
+		if err := sc.UpdateCharacters(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// then
@@ -560,7 +560,7 @@ func TestCharacter(t *testing.T) {
 		sc.Clear()
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
-		err := sc.UpdateCharacters(ctx)
+		err := sc.UpdateCharacters(ctx, st)
 		require.NoError(t, err)
 		// when
 		got := sc.ListCharacterIDs()
@@ -574,7 +574,7 @@ func TestCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("update and list corporations", func(t *testing.T) {
 		// given
@@ -583,7 +583,7 @@ func TestCorporations(t *testing.T) {
 		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
 		c := factory.CreateCorporation(ec.ID)
 		// when
-		if err := sc.UpdateCorporations(ctx); err != nil {
+		if err := sc.UpdateCorporations(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// then
@@ -598,7 +598,7 @@ func TestCharacterSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("Can get and set a character section status", func(t *testing.T) {
 		// given
@@ -632,7 +632,7 @@ func TestCharacterSections(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -650,7 +650,7 @@ func TestCharacterSections(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterAssets,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -671,7 +671,7 @@ func TestCharacterSections(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		sc.Clear()
 		c := factory.CreateCharacterFull()
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -692,7 +692,7 @@ func TestCorporationSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("Can get and set a corporation section status", func(t *testing.T) {
 		// given
@@ -728,7 +728,7 @@ func TestCorporationSections(t *testing.T) {
 			CorporationID: c.ID,
 			Section:       section,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -743,7 +743,7 @@ func TestCorporationSections(t *testing.T) {
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -763,7 +763,7 @@ func TestCorporationSections(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		sc.Clear()
 		c := factory.CreateCorporation()
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -784,7 +784,7 @@ func TestGeneralSections(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	sc := statuscacheservice.New(st)
+	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
 	t.Run("Can get and set a general section status", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -809,7 +809,7 @@ func TestGeneralSections(t *testing.T) {
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -819,7 +819,7 @@ func TestGeneralSections(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		sc.Clear()
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -832,7 +832,7 @@ func TestGeneralSections(t *testing.T) {
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})
-		if err := sc.InitCache(ctx); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -851,7 +851,7 @@ func TestGeneralSections(t *testing.T) {
 }
 
 func TestCharacterSectionSummary(t *testing.T) {
-	sc := statuscacheservice.New(nil)
+	sc := new(statuscache.StatusCache)
 	// given
 	const (
 		characterID = 42
@@ -891,7 +891,7 @@ func TestCharacterSectionSummary(t *testing.T) {
 }
 
 func TestCorporationSectionSummary(t *testing.T) {
-	sc := statuscacheservice.New(nil)
+	sc := new(statuscache.StatusCache)
 	// given
 	const (
 		corporationID = 42
@@ -916,7 +916,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 	xassert.Equal(t, want, got)
 }
 func TestGeneralSectionSummary(t *testing.T) {
-	sc := statuscacheservice.New(nil)
+	sc := new(statuscache.StatusCache)
 	// given
 	sc.Clear()
 	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{

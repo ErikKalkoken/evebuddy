@@ -9,13 +9,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
-	scs := statuscacheservice.New(st)
+	scs := new(statuscache.StatusCache)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})

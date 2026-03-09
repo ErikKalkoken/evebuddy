@@ -22,7 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -155,8 +155,8 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})
-	scs := statuscacheservice.New(st)
-	if err := scs.InitCache(context.Background()); err != nil {
+	scs := new(statuscache.StatusCache)
+	if err := scs.Init(context.Background(), st); err != nil {
 		panic(err)
 	}
 	signals := app.NewSignals()

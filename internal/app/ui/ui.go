@@ -37,7 +37,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/skillui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/walletui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -77,7 +77,7 @@ type BaseUIParams struct {
 	EVEImage    *eveimageservice.EVEImageService
 	EVEUniverse *eveuniverseservice.EVEUniverseService
 	Janice      *janiceservice.JaniceService
-	StatusCache *statuscacheservice.StatusCacheService
+	StatusCache *statuscache.StatusCache
 	Signals     *app.Signals
 	Settings    *settings.Settings
 	// optional
@@ -158,7 +158,7 @@ type baseUI struct {
 	eus      *eveuniverseservice.EVEUniverseService
 	js       *janiceservice.JaniceService
 	rs       *corporationservice.CorporationService
-	scs      *statuscacheservice.StatusCacheService
+	scs      *statuscache.StatusCache
 	settings *settings.Settings
 
 	// UI state & configuration
@@ -639,7 +639,7 @@ func (u *baseUI) Signals() *app.Signals {
 	return u.signals
 }
 
-func (u *baseUI) StatusCache() *statuscacheservice.StatusCacheService {
+func (u *baseUI) StatusCache() *statuscache.StatusCache {
 	return u.scs
 }
 

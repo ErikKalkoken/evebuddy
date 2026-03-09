@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -40,7 +40,7 @@ type ui interface {
 	IsMobile() bool
 	IsOffline() bool
 	Signals() *app.Signals
-	StatusCache() *statuscacheservice.StatusCacheService
+	StatusCache() *statuscache.StatusCache
 }
 
 func Show(s ui) {

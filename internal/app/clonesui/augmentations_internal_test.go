@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
@@ -70,12 +70,12 @@ type uiFake struct {
 	eis *eveimageservice.EVEImageService
 	eus *eveuniverseservice.EVEUniverseService
 	iw  *infowindow.InfoWindow
-	scs *statuscacheservice.StatusCacheService
+	scs *statuscache.StatusCache
 	sig *app.Signals
 }
 
 func newUIFake(st *storage.Storage, a fyne.App) *uiFake {
-	scs := statuscacheservice.New(st)
+	scs := new(statuscache.StatusCache)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})
@@ -154,6 +154,6 @@ func (u *uiFake) Signals() *app.Signals {
 	return u.sig
 }
 
-func (u *uiFake) StatusCache() *statuscacheservice.StatusCacheService {
+func (u *uiFake) StatusCache() *statuscache.StatusCache {
 	return u.scs
 }

@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
@@ -26,7 +26,7 @@ type EVEUniverseService struct {
 
 	concurrencyLimit int
 	esiClient        *esi.APIClient
-	scs              *statuscacheservice.StatusCacheService
+	scs              *statuscache.StatusCache
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
@@ -36,7 +36,7 @@ type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
 	Signals            *app.Signals
-	StatusCacheService *statuscacheservice.StatusCacheService
+	StatusCacheService *statuscache.StatusCache
 	Storage            *storage.Storage
 }
 

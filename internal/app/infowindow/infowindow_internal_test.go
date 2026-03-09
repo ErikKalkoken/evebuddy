@@ -50,7 +50,7 @@ func (s *SettingsFake) PreferMarketTab() bool {
 // 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 // 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 // 	})
-// 	scs := statuscacheservice.New(st)
+// 	scs := new(statuscacheservice.StatusCacheService)
 // 	if err := scs.InitCache(t.Context()); err != nil {
 // 		panic(err)
 // 	}

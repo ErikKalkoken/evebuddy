@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
@@ -38,7 +38,7 @@ type CorporationService struct {
 	esiClient        *esi.APIClient
 	eus              *eveuniverseservice.EVEUniverseService
 	httpClient       *http.Client
-	scs              *statuscacheservice.StatusCacheService
+	scs              *statuscache.StatusCache
 	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
@@ -53,7 +53,7 @@ type Params struct {
 	EveUniverseService *eveuniverseservice.EVEUniverseService
 	Settings           Settings
 	Signals            *app.Signals
-	StatusCacheService *statuscacheservice.StatusCacheService
+	StatusCacheService *statuscache.StatusCache
 	Storage            *storage.Storage
 	// optional
 	HTTPClient *http.Client
