@@ -69,7 +69,6 @@ func TestMap_Concurrency(_ *testing.T) {
 
 	// Concurrent Readers
 	wg.Go(func() {
-		defer wg.Done()
 		for i := range iterations {
 			myMap.Load(i)
 		}
