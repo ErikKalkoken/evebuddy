@@ -77,9 +77,7 @@ func (a *admin) makeCharacterList() *widget.List {
 			return len(a.rows)
 		},
 		func() fyne.CanvasObject {
-			return newAdminListItem(a.showDeleteDialog, func(id int64, size int, setter func(r fyne.Resource)) {
-				a.cw.u.EVEImage().CharacterPortraitAsync(id, size, setter)
-			})
+			return newAdminListItem(a.showDeleteDialog, awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rows) {
@@ -294,14 +292,14 @@ type adminListItem struct {
 	widget.BaseWidget
 
 	delete           *ttwidget.Button
-	entityItem       *awidget.EntityListItem
+	entityItem       *awidget.EveEntityListItem
 	issue            *fyne.Container
 	issueIcon        *ttwidget.Icon
 	issueLabel       *ttwidget.Label
 	showDeleteDialog func(adminRow)
 }
 
-func newAdminListItem(showDeleteDialog func(adminRow), loadIcon func(id int64, size int, setter func(r fyne.Resource))) *adminListItem {
+func newAdminListItem(showDeleteDialog func(adminRow), loadIcon awidget.EveEntityIconLoader) *adminListItem {
 	p := theme.Padding()
 	del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 	del.Importance = widget.DangerImportance
@@ -315,16 +313,17 @@ func newAdminListItem(showDeleteDialog func(adminRow), loadIcon func(id int64, s
 		issueLabel,
 	)
 	issue.Hide()
+	character := awidget.NewEveEntityListItem(loadIcon)
+	character.IsAvatar = true
 	w := &adminListItem{
 		delete:           del,
-		entityItem:       awidget.NewEntityListItem(true, loadIcon),
+		entityItem:       character,
 		issue:            issue,
 		issueIcon:        issueIcon,
 		issueLabel:       issueLabel,
 		showDeleteDialog: showDeleteDialog,
 	}
 	w.ExtendBaseWidget(w)
-
 	return w
 }
 
@@ -344,7 +343,7 @@ func (w *adminListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *adminListItem) set(r adminRow) {
-	w.entityItem.Set(r.characterID, r.characterName)
+	w.entityItem.Set2(r.characterID, r.characterName, app.EveEntityCharacter)
 	if r.missingScopes.Size() != 0 {
 		x := slices.Sorted(r.missingScopes.All())
 		s := "Please re-add to approve missing scopes: " + strings.Join(x, ", ")

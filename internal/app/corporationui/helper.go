@@ -11,8 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type loadFuncAsync func(int64, int, func(fyne.Resource))
-
 func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
 	x := makeLinkLabel(text, action)
 	x.Wrapping = fyne.TextWrapWord

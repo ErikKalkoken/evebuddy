@@ -23,12 +23,12 @@ type MailHeaderItem struct {
 
 	from      *widget.Label
 	icon      *canvas.Image
-	loadIcon  func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon  EveEntityIconLoader
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *MailHeaderItem {
+func NewMailHeaderItem(loadIcon EveEntityIconLoader) *MailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
@@ -54,7 +54,7 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.loadIcon(from, func(r fyne.Resource) {
+	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
@@ -85,14 +85,14 @@ type MailHeader struct {
 
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
-	loadIcon   func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon   EveEntityIconLoader
 	recipients *fyne.Container
 	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
 	to         *widget.Label
 }
 
-func NewMailHeader(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource)), show func(*app.EveEntity)) *MailHeader {
+func NewMailHeader(loadIcon EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
@@ -130,7 +130,7 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 		w.showInfo(from)
 	}
 	w.to.Show()
-	w.loadIcon(from, func(r fyne.Resource) {
+	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()

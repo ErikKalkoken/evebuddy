@@ -48,7 +48,7 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, awidget.LoadIconFunc(u.EVEImage()))
+	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
 	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
@@ -66,7 +66,7 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, awidget.LoadIconFunc(u.EVEImage()))
+	a.to = newEveEntityEntry(toButton, labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
 	a.to.ShowInfoWindow = u.InfoWindow().ShowEntity
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -164,7 +164,7 @@ type eveEntityEntry struct {
 	Placeholder    string
 	ShowInfoWindow func(*app.EveEntity)
 
-	loadIcon    func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon    awidget.EveEntityIconLoader
 	field       *canvas.Rectangle
 	items       []*app.EveEntity
 	label       fyne.CanvasObject
@@ -173,7 +173,7 @@ type eveEntityEntry struct {
 	placeholder *xwidget.RichText
 }
 
-func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *eveEntityEntry {
+func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, loadIcon awidget.EveEntityIconLoader) *eveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -282,7 +282,7 @@ func (w *eveEntityEntry) update() {
 				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
-				w.loadIcon(ee, func(r fyne.Resource) {
+				w.loadIcon(ee, app.IconPixelSize, func(r fyne.Resource) {
 					nameItem.Icon = r
 					pm.Refresh()
 				})
@@ -328,13 +328,13 @@ type eveEntityBadge struct {
 	ee           *app.EveEntity
 	fallbackIcon fyne.Resource
 	hovered      bool
-	loadIcon     func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon     awidget.EveEntityIconLoader
 }
 
 var _ fyne.Tappable = (*eveEntityBadge)(nil)
 var _ desktop.Hoverable = (*eveEntityBadge)(nil)
 
-func newEveEntityBadge(ee *app.EveEntity, loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *eveEntityBadge {
+func newEveEntityBadge(ee *app.EveEntity, loadIcon awidget.EveEntityIconLoader) *eveEntityBadge {
 	w := &eveEntityBadge{
 		ee:           ee,
 		fallbackIcon: icons.Questionmark32Png,
@@ -371,7 +371,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 					))),
 		),
 	)
-	w.loadIcon(w.ee, func(r fyne.Resource) {
+	w.loadIcon(w.ee, app.IconPixelSize, func(r fyne.Resource) {
 		icon.Resource = r
 		icon.Refresh()
 	})
@@ -426,7 +426,7 @@ func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), 
 			return len(results)
 		},
 		func() fyne.CanvasObject {
-			return newEntityItem(awidget.LoadIconFunc(u.EVEImage()))
+			return newEntityItem(awidget.LoadEveEntityIconFunc(u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(results) {
@@ -529,10 +529,10 @@ type entityItem struct {
 	category *widget.Label
 	icon     *canvas.Image
 	name     *widget.Label
-	loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon awidget.EveEntityIconLoader
 }
 
-func newEntityItem(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *entityItem {
+func newEntityItem(loadIcon awidget.EveEntityIconLoader) *entityItem {
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
 	category := widget.NewLabel("")
@@ -572,7 +572,7 @@ func (w *entityItem) CreateRenderer() fyne.WidgetRenderer {
 func (w *entityItem) set(o *app.EveEntity) {
 	w.name.SetText(o.Name)
 	w.category.SetText(o.CategoryDisplay())
-	w.loadIcon(o, func(r fyne.Resource) {
+	w.loadIcon(o, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

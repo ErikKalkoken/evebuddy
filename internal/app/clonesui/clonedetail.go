@@ -151,25 +151,23 @@ type implantsCS interface {
 	GetJumpClone(ctx context.Context, characterID int64, cloneID int64) (*app.CharacterJumpClone, error)
 }
 
-type implantsEIS interface {
-	InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource))
-}
-
-func makeImplantsList(cs implantsCS, eis implantsEIS, showTypeInfo func(int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
+func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func(int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
 	var implants []*app.CharacterJumpCloneImplant
 	list := widget.NewList(
 		func() int {
 			return len(implants)
 		},
 		func() fyne.CanvasObject {
-			return awidget.NewEntityListItem(false, eis.InventoryTypeIconAsync)
+			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(eis))
+			character.IsAvatar = true
+			return character
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(implants) {
 				return
 			}
 			r := implants[id]
-			co.(*awidget.EntityListItem).Set(r.EveType.ID, r.EveType.Name)
+			co.(*awidget.EveEntityListItem).Set(r.EveType.EveEntity())
 		},
 	)
 	list.HideSeparators = true

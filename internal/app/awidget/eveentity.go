@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type eis interface {
+type EveEntityEIS interface {
 	AllianceLogo(int64, int) (fyne.Resource, error)
 	CharacterPortrait(int64, int) (fyne.Resource, error)
 	CorporationLogo(int64, int) (fyne.Resource, error)
@@ -28,7 +29,7 @@ type eis interface {
 var eveEntityResourceCache xsync.Map[int64, fyne.Resource]
 
 // LoadEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
-func LoadEveEntityIconAsync(eis eis, ee *app.EveEntity, setIcon func(r fyne.Resource)) {
+func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
 	if ee == nil {
 		setIcon(theme.BrokenImageIcon())
 		return
@@ -46,7 +47,7 @@ func LoadEveEntityIconAsync(eis eis, ee *app.EveEntity, setIcon func(r fyne.Reso
 			setIcon(r)
 		},
 		func() (fyne.Resource, error) {
-			return EntityIcon(eis, ee, app.IconPixelSize, theme.NewThemedResource(icons.QuestionmarkSvg))
+			return EveEntityIcon(eis, ee, size, theme.BrokenImageIcon())
 		},
 		func(r fyne.Resource) {
 			eveEntityResourceCache.Store(ee.ID, r)
@@ -54,9 +55,18 @@ func LoadEveEntityIconAsync(eis eis, ee *app.EveEntity, setIcon func(r fyne.Reso
 	)
 }
 
-// EntityIcon returns an icon form EveImageService for several entity categories.
-// It returns the fallback for unsupported categories.
-func EntityIcon(eis eis, ee *app.EveEntity, size int, fallback fyne.Resource) (fyne.Resource, error) {
+type EveEntityIconLoader func(*app.EveEntity, int, func(r fyne.Resource))
+
+// LoadEveEntityIconFunc is an adapter that returns a loadIcon function for LoadEveEntityIconAsync.
+func LoadEveEntityIconFunc(eis EveEntityEIS) EveEntityIconLoader {
+	return func(o *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
+		LoadEveEntityIconAsync(eis, o, size, setIcon)
+	}
+}
+
+// EveEntityIcon returns an icon from EveImageService for supported categories.
+// Or the fallback for unsupported categories.
+func EveEntityIcon(eis EveEntityEIS, ee *app.EveEntity, size int, fallback fyne.Resource) (fyne.Resource, error) {
 	var r fyne.Resource
 	var err error
 	switch ee.Category {
@@ -75,7 +85,7 @@ func EntityIcon(eis eis, ee *app.EveEntity, size int, fallback fyne.Resource) (f
 			return fallback, nil
 		}
 		slog.Warn("unsupported category. Falling back to default", "entity", ee)
-		return icons.Questionmark32Png, nil
+		return theme.BrokenImageIcon(), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("entity icon %v %d: %w", ee, size, err)
@@ -83,17 +93,83 @@ func EntityIcon(eis eis, ee *app.EveEntity, size int, fallback fyne.Resource) (f
 	return r, nil
 }
 
-// LoadIconFunc is an adaptor that returns a loadIcon function for LoadEveEntityIconAsync.
-func LoadIconFunc(eis eis) func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
-	return func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
-		LoadEveEntityIconAsync(eis, o, setIcon)
+type EveEntityListItem struct {
+	widget.BaseWidget
+
+	IconPixelSize int
+	IconUnitSize  float32
+	IsAvatar      bool
+	Truncation    fyne.TextTruncation
+
+	icon     *canvas.Image
+	loadIcon EveEntityIconLoader
+	name     *widget.Label
+}
+
+func NewEveEntityListItem(loadIcon EveEntityIconLoader) *EveEntityListItem {
+	w := &EveEntityListItem{
+		icon: xwidget.NewImageFromResource(
+			icons.BlankSvg,
+			fyne.NewSquareSize(app.IconUnitSize),
+		),
+		IconPixelSize: app.IconPixelSize,
+		IconUnitSize:  app.IconUnitSize,
+		loadIcon:      loadIcon,
+		name:          widget.NewLabel(""),
+		Truncation:    fyne.TextTruncateClip,
 	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
+	w.name.Truncation = w.Truncation
+	w.icon.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
+	if w.IsAvatar {
+		w.icon.CornerRadius = w.IconUnitSize / 2
+	}
+	p := theme.Padding()
+	c := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.New(layout.NewCustomPaddedLayout(p, p, 2*p, -p), w.icon),
+			layout.NewSpacer(),
+		),
+		nil,
+		container.NewVBox(
+			layout.NewSpacer(),
+			w.name,
+			layout.NewSpacer(),
+		),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *EveEntityListItem) Set(o *app.EveEntity) {
+	if w.name == nil || w.icon == nil {
+		return
+	}
+	w.loadIcon(o, w.IconPixelSize, func(r fyne.Resource) {
+		w.icon.Resource = r
+		w.icon.Refresh()
+	})
+	w.name.SetText(o.Name)
+}
+
+func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCategory) {
+	w.Set(&app.EveEntity{
+		Category: category,
+		ID:       id,
+		Name:     name,
+	})
 }
 
 // MakeEveEntityColumnParams represents the parameters for MakeEveEntityColumn()
 type MakeEveEntityColumnParams[T any] struct {
 	ColumnID  int
-	EIS       eis
+	EIS       EveEntityEIS
 	GetEntity func(r T) *app.EveEntity
 	IsAvatar  bool
 	Label     string
@@ -117,26 +193,12 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 		Label: arg.Label,
 		Width: float32(arg.Width),
 		Create: func() fyne.CanvasObject {
-			icon := xwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			if arg.IsAvatar {
-				icon.CornerRadius = app.IconUnitSize / 2
-			}
-			name := widget.NewLabel(arg.Label)
-			name.Truncation = fyne.TextTruncateClip
-			return container.NewBorder(nil, nil, icon, nil, name)
+			x := NewEveEntityListItem(LoadEveEntityIconFunc(arg.EIS))
+			x.IsAvatar = arg.IsAvatar
+			return x
 		},
 		Update: func(r T, co fyne.CanvasObject) {
-			ee := arg.GetEntity(r)
-			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(ee.Name)
-			x := border[1].(*canvas.Image)
-			LoadEveEntityIconAsync(arg.EIS, ee, func(r fyne.Resource) {
-				x.Resource = r
-				x.Refresh()
-			})
+			co.(*EveEntityListItem).Set(arg.GetEntity(r))
 		},
 		Sort: func(a, b T) int {
 			return xstrings.CompareIgnoreCase(arg.GetEntity(a).Name, arg.GetEntity(b).Name)

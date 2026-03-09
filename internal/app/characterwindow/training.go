@@ -84,12 +84,14 @@ func (a *training) makeList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
+			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character.IsAvatar = true
 			return container.NewBorder(
 				nil,
 				nil,
 				nil,
 				kxwidget.NewSwitch(nil),
-				awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
+				character,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -99,7 +101,7 @@ func (a *training) makeList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*awidget.EntityListItem).Set(r.EveCharacter.ID, r.EveCharacter.Name)
+			border[0].(*awidget.EveEntityListItem).Set(r.EveCharacter.EveEntity())
 
 			sw := border[1].(*kxwidget.Switch)
 			sw.On = r.IsTrainingWatched

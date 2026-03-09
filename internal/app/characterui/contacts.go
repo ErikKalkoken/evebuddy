@@ -190,7 +190,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(awidget.LoadIconFunc(a.u.EVEImage()))
+				return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -215,7 +215,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(awidget.LoadIconFunc(a.u.EVEImage()))
+			return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -465,14 +465,14 @@ type characterContactItem struct {
 	category *widget.Label
 	icon     *canvas.Image
 	labels   *widget.Label
-	loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))
+	loadIcon awidget.EveEntityIconLoader
 	name     *widget.Label
 	npc      *widget.Label
 	symbol   *standingSymbol
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource))) *characterContactItem {
+func newCharacterContactItem(loadIcon awidget.EveEntityIconLoader) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -529,7 +529,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	w.loadIcon(r.contact, func(r fyne.Resource) {
+	w.loadIcon(r.contact, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

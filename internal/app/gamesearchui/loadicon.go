@@ -52,7 +52,7 @@ func loadIconFunc(eis searchResultEIS, eus searchResultEUS) func(o *app.EveEntit
 						return eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 					}
 				default:
-					return awidget.EntityIcon(eis, o, app.IconPixelSize, icons.BlankSvg)
+					return awidget.EveEntityIcon(eis, o, app.IconPixelSize, icons.BlankSvg)
 				}
 			},
 			func(r fyne.Resource) {

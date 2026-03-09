@@ -147,7 +147,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
-				a.u.EVEImage().CorporationLogoAsync,
+				awidget.LoadEveEntityIconFunc(a.u.EVEImage()),
 				func(id int64) {
 					a.u.InfoWindow().Show(app.EveEntityCorporation, id)
 				})
@@ -273,20 +273,17 @@ type loyaltyPointsListItem struct {
 	widget.BaseWidget
 
 	icon            *xwidget.TappableIcon
-	corporation     *awidget.EntityListItem
+	entity          *awidget.EveEntityListItem
 	points          *widget.Label
-	loadIcon        func(id int64, size int, setter func(r fyne.Resource))
+	loadIcon        awidget.EveEntityIconLoader
 	showCorporation func(id int64)
 }
 
-func newLoyaltyPointsListItem(loadIcon func(id int64, size int, setter func(r fyne.Resource)), showCorporation func(id int64)) *loyaltyPointsListItem {
-	icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-	corporation := awidget.NewEntityListItem(false, loadIcon)
-	points := widget.NewLabel("Template")
+func newLoyaltyPointsListItem(loadIcon awidget.EveEntityIconLoader, showCorporation func(id int64)) *loyaltyPointsListItem {
 	w := &loyaltyPointsListItem{
-		corporation:     corporation,
-		icon:            icon,
-		points:          points,
+		entity:          awidget.NewEveEntityListItem(loadIcon),
+		icon:            xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
+		points:          widget.NewLabel("Template"),
 		showCorporation: showCorporation,
 	}
 	w.ExtendBaseWidget(w)
@@ -299,13 +296,17 @@ func (w *loyaltyPointsListItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		container.NewHBox(w.points, w.icon),
-		w.corporation,
+		w.entity,
 	)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (w *loyaltyPointsListItem) set(r characterLoyaltyPointsRow) {
-	w.corporation.Set(r.corporationID, r.corporationName)
+	w.entity.Set(&app.EveEntity{
+		Category: app.EveEntityCorporation,
+		ID:       r.corporationID,
+		Name:     r.corporationName,
+	})
 	w.points.SetText(ihumanize.Comma(r.points))
 	w.icon.OnTapped = func() {
 		w.showCorporation(r.corporationID)
