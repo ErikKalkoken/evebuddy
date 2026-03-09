@@ -6,17 +6,14 @@ package optional
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"golang.org/x/exp/constraints"
 )
 
-type Numeric interface {
+type numeric interface {
 	constraints.Integer | constraints.Float
 }
-
-var ErrIsEmpty = errors.New("optional is empty")
 
 // Optional represents a variable that may contain a value or not.
 //
@@ -79,7 +76,7 @@ func (o Optional[T]) MarshalJSON() ([]byte, error) {
 // MustValue returns the value of an Optional or panics if it is empty.
 func (o Optional[T]) MustValue() T {
 	if !o.isPresent {
-		panic(ErrIsEmpty)
+		panic("optional is empty")
 	}
 	return o.value
 }
@@ -166,7 +163,7 @@ func (o *Optional[T]) UnmarshalJSON(b []byte) error {
 }
 
 // ConvertNumeric converts between numeric optionals.
-func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
+func ConvertNumeric[X numeric, Y numeric](o Optional[X]) Optional[Y] {
 	if !o.isPresent {
 		return Optional[Y]{}
 	}
@@ -216,13 +213,13 @@ func Equal[T comparable](a, b Optional[T]) bool {
 	return a.value == b.value
 }
 
-type Equaler[T any] interface {
+type equaler[T any] interface {
 	Equal(other T) bool
 }
 
 // Equal2 reports whether two optionals with values
 // that satisfy the Equaler interface are equal.
-func Equal2[T Equaler[T]](a, b Optional[T]) bool {
+func Equal2[T equaler[T]](a, b Optional[T]) bool {
 	if a.isPresent != b.isPresent {
 		return false
 	}
@@ -264,7 +261,7 @@ func FlatMap[X, Y any](o Optional[X], mapper func(v X) Optional[Y]) Optional[Y] 
 // Sum returns the sum of values v.
 // Empty values are added with their zero value (e.g. 0).
 // When all values are empty it returns an empty value.
-func Sum[T Numeric](v ...Optional[T]) Optional[T] {
+func Sum[T numeric](v ...Optional[T]) Optional[T] {
 	var s T
 	var isPresent bool
 	for _, u := range v {
