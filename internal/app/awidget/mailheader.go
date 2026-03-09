@@ -47,7 +47,7 @@ func NewMailHeaderItem(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resou
 	return w
 }
 
-func (w *MailHeaderItem) Set(characterID int64, from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))

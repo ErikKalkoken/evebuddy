@@ -23,6 +23,7 @@ type SkillLevel struct {
 	trained  fyne.Resource
 }
 
+// NewSkillLevel returns a new SkillLevel widget.
 func NewSkillLevel() *SkillLevel {
 	const s = 12
 	size := fyne.Size{Width: s, Height: s}

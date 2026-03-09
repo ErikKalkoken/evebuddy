@@ -152,9 +152,9 @@ func (s Settings) MaxMails() int {
 	return s.p.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 }
 
-func (s Settings) MaxMailsPresets() (min int, max int, def int) {
-	min = 0
-	max = settingMaxMailsMax
+func (s Settings) MaxMailsPresets() (minimum int, maximum int, def int) {
+	minimum = 0
+	maximum = settingMaxMailsMax
 	def = settingMaxMailsDefault
 	return
 }
@@ -167,9 +167,9 @@ func (s Settings) MarketOrderRetentionDays() int {
 	return s.p.IntWithFallback(settingMarketOrdersRetentionDays, settingMarketOrderRetentionDaysDefault)
 }
 
-func (s Settings) MarketOrderRetentionDaysPresets() (min int, max int, def int) {
-	min = settingMarketOrderRetentionDaysMin
-	max = settingMarketOrderRetentionDaysMax
+func (s Settings) MarketOrderRetentionDaysPresets() (minimum int, maximum int, def int) {
+	minimum = settingMarketOrderRetentionDaysMin
+	maximum = settingMarketOrderRetentionDaysMax
 	def = settingMarketOrderRetentionDaysDefault
 	return
 }
@@ -242,9 +242,9 @@ func (s Settings) MaxWalletTransactions() int {
 	return s.p.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 }
 
-func (s Settings) MaxWalletTransactionsPresets() (min int, max int, def int) {
-	min = 0
-	max = settingMaxWalletTransactionsMax
+func (s Settings) MaxWalletTransactionsPresets() (minimum int, maximum int, def int) {
+	minimum = 0
+	maximum = settingMaxWalletTransactionsMax
 	def = settingMaxWalletTransactionsDefault
 	return
 }
@@ -261,9 +261,9 @@ func (s Settings) NotifyTimeoutHours() int {
 	return s.p.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 }
 
-func (s Settings) NotifyTimeoutHoursPresets() (min int, max int, def int) {
-	min = settingNotifyTimeoutHoursMin
-	max = settingNotifyTimeoutHoursMax
+func (s Settings) NotifyTimeoutHoursPresets() (minimum int, maximum int, def int) {
+	minimum = settingNotifyTimeoutHoursMin
+	maximum = settingNotifyTimeoutHoursMax
 	def = settingNotifyTimeoutHoursDefault
 	return
 }

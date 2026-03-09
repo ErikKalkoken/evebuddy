@@ -77,7 +77,7 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 		}
 		for _, r := range industry1 {
 			if r.Level > 0 {
-				total[r.CharacterID] += 1
+				total[r.CharacterID]++
 			}
 		}
 		industry2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassProduction)

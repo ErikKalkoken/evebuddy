@@ -232,6 +232,7 @@ func (n *Node) Children() []*Node {
 	})
 }
 
+// ChildrenCount returns the number of children.
 func (n *Node) ChildrenCount() int {
 	if n == nil {
 		return 0

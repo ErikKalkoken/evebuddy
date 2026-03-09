@@ -576,7 +576,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.MakeFolderMenu()
 			mailMenu.Refresh()

@@ -344,7 +344,7 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 		ss:       ss,
 	}
 	entities = append(entities, o)
-	count += 1
+	count++
 	return entities, count
 }
 

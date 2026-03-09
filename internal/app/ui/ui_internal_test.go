@@ -144,14 +144,14 @@ func (ts tokenSourceFake) Token() (*oauth2.Token, error) {
 	return ts.token.OauthToken(), nil
 }
 
-func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ int64, _ set.Set[app.Role], _ set.Set[string]) (oauth2.TokenSource, int64, error) {
 	if s.Error != nil {
 		return &tokenSourceFake{token: s.Token, err: s.Error}, 0, nil
 	}
 	return &tokenSourceFake{token: s.Token, err: nil}, s.Token.CharacterID, nil
 }
 
-func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
+func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})
@@ -206,15 +206,15 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 	// 	Type:        icons.Typeplaceholder64Png,
 	// }
 	bu := NewBaseUI(BaseUIParams{
-		App:                fyneApp,
+		App:         fyneApp,
 		Character:   cs,
 		Corporation: rs,
 		ESIStatus:   esistatusservice.New(esiClient),
 		EVEImage:    eveimageservice.New(testutil.NewCacheFake(), nil, true),
 		EVEUniverse: eus,
 		Janice:      janiceservice.New(http.DefaultClient, ""),
-		Settings:           settings,
-		Signals:            signals,
+		Settings:    settings,
+		Signals:     signals,
 		StatusCache: scs,
 	})
 	return bu

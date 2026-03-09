@@ -564,7 +564,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(a.character.Load().IDOrZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {

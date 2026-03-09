@@ -34,7 +34,7 @@ func ToMarkdown(xml string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+	doc.Find("a").Each(func(_ int, s *goquery.Selection) {
 		href, ok := s.Attr("href")
 		if !ok {
 			return

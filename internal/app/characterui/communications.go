@@ -159,7 +159,6 @@ func (a *Communications) makeNotificationList() *widget.List {
 			n := a.notifications[id]
 			item := co.(*awidget.MailHeaderItem)
 			item.Set(
-				a.character.Load().IDOrZero(),
 				n.Sender,
 				n.TitleDisplay(),
 				n.Timestamp,

@@ -90,6 +90,7 @@ func LoadIconFunc(eis eis) func(o *app.EveEntity, setIcon func(r fyne.Resource))
 	}
 }
 
+// MakeEveEntityColumnParams represents the parameters for MakeEveEntityColumn()
 type MakeEveEntityColumnParams[T any] struct {
 	ColumnID  int
 	EIS       eis

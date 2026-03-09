@@ -204,7 +204,7 @@ func (a *statusBar) start() {
 		return
 	}
 
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		a.updateEveStatus(ctx)
 	})
 
