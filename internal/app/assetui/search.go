@@ -389,7 +389,7 @@ func newAssetSearch(u ui, forCorporation bool) *Search {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search items"
@@ -672,7 +672,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 }
 
 func (a *Search) Update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
@@ -687,7 +687,7 @@ func (a *Search) Update(ctx context.Context) {
 		})
 	}
 	if !a.forCorporation && a.characterCount() == 0 {
-		clear()
+		reset()
 		setTop("No characters", widget.LowImportance)
 		return
 	}
@@ -700,7 +700,7 @@ func (a *Search) Update(ctx context.Context) {
 	}
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
-		clear()
+		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}

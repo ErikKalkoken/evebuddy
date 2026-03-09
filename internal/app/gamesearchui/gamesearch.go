@@ -99,7 +99,7 @@ func NewGameSearch(u ui) *GameSearch {
 	})
 	a.categories.Selected = a.defaultCategories
 
-	a.strict = kxwidget.NewSwitch(func(on bool) {
+	a.strict = kxwidget.NewSwitch(func(_ bool) {
 		a.updateSearchOptionsTitle()
 	})
 	a.strict.On = false

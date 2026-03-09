@@ -152,9 +152,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 					if err := s.createNewContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("create contract", "contract", c, "error", err)
 						continue
-					} else {
-						count++
 					}
+					count++
 				}
 				slog.Info("Stored new contracts", "corporationID", arg.corporationID, "count", count)
 			}
@@ -164,9 +163,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 					if err := s.updateContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("update contract", "contract", c, "error", err)
 						continue
-					} else {
-						count++
 					}
+					count++
 				}
 				slog.Info("Updated contracts", "corporationID", arg.corporationID, "count", count)
 			}

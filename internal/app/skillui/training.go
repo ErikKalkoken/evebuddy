@@ -265,7 +265,7 @@ func NewTraining(u ui) *Training {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters"

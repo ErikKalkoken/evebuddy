@@ -236,7 +236,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		settings:                       arg.Settings,
 		sig:                            singleinstance.NewGroup(),
 		signals:                        arg.Signals,
-		statusText:                     NewStatusText(),
+		statusText:                     newStatusText(),
 		windows:                        make(map[string]fyne.Window),
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
@@ -1118,7 +1118,7 @@ type statusText struct {
 	spinner  *widget.Activity
 }
 
-func NewStatusText() *statusText {
+func newStatusText() *statusText {
 	w := &statusText{
 		messages: make(map[string]string),
 		label:    widget.NewLabel(""),

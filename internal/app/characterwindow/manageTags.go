@@ -60,7 +60,7 @@ func newManageTags(cw *characterWindow) *manageTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 	})
@@ -323,9 +323,9 @@ func (a *manageTags) makeTagList() *widget.List {
 			return len(a.tags)
 		},
 		func() fyne.CanvasObject {
-			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
-			delete.Importance = widget.DangerImportance
-			delete.SetToolTip("Delete tag")
+			del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
+			del.Importance = widget.DangerImportance
+			del.SetToolTip("Delete tag")
 			rename := ttwidget.NewButtonWithIcon("", theme.DocumentCreateIcon(), nil)
 			rename.SetToolTip("Rename tag")
 			name := widget.NewLabel("Template")
@@ -333,7 +333,7 @@ func (a *manageTags) makeTagList() *widget.List {
 				nil,
 				nil,
 				nil,
-				container.NewHBox(rename, delete),
+				container.NewHBox(rename, del),
 				name,
 			)
 		},
@@ -437,7 +437,7 @@ func (a *manageTags) makeCharacterList() *widget.List {
 		},
 	)
 	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		l.UnselectAll()
 	}
 	return l

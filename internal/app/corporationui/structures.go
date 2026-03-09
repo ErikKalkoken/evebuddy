@@ -338,7 +338,7 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 }
 
 func (a *Structures) update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
@@ -346,13 +346,13 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
-		clear()
+		reset()
 		return
 	}
 	rows, err := a.fetchData(ctx, corporationID)
 	if err != nil {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
-		clear()
+		reset()
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance

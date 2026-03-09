@@ -131,7 +131,7 @@ func NewLoyaltyPoints(u ui) *LoyaltyPoints {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	return a
@@ -169,7 +169,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 				name,
 			)
 		},
-		func(n *loyaltyPointsNode, b bool, co fyne.CanvasObject) {
+		func(n *loyaltyPointsNode, _ bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			name := border[0].(*widget.Label)
 			name.Truncation = fyne.TextTruncateEllipsis

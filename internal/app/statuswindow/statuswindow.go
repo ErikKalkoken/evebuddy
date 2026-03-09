@@ -43,6 +43,7 @@ type ui interface {
 	StatusCache() *statuscache.StatusCache
 }
 
+// Show shows the status window.
 func Show(s ui) {
 	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
@@ -140,7 +141,7 @@ func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
-		a.onEntitySelected = func(id int) {
+		a.onEntitySelected = func(_ int) {
 			a.nav.Push(xwidget.NewAppBar("Sections", sections, menu))
 		}
 		a.onSectionSelected = func(id int) {
@@ -162,13 +163,13 @@ func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a

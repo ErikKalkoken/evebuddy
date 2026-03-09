@@ -96,7 +96,7 @@ func (a *CorporationWallet) Update(ctx context.Context) {
 }
 
 func (a *CorporationWallet) updateBalance(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			if a.OnBalanceUpdate != nil {
 				a.OnBalanceUpdate(optional.Optional[float64]{})
@@ -114,25 +114,25 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 	}
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
-		clear()
+		reset()
 		setBalance("", widget.MediumImportance)
 		return
 	}
 	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if !hasData {
-		clear()
+		reset()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
 	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, a.division)
 	if errors.Is(err, app.ErrNotFound) {
-		clear()
+		reset()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
 	if err != nil {
 		slog.Error("Failed to update corp wallet ballance UI", "corporationID", corporationID, "err", err)
-		clear()
+		reset()
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}

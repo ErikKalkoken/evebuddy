@@ -176,7 +176,7 @@ func (a *Queue) Update(ctx context.Context) {
 			a.top.Refresh()
 		})
 	}
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.list.Hide()
 			a.emptyInfo.Hide()
@@ -187,20 +187,20 @@ func (a *Queue) Update(ctx context.Context) {
 	c := a.character.Load()
 	if c == nil {
 		setTop("No character", widget.LowImportance)
-		clear()
+		reset()
 		return
 	}
 	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
-		clear()
+		reset()
 		return
 	}
 	err := a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		clear()
+		reset()
 		return
 	}
 

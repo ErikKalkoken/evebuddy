@@ -506,12 +506,12 @@ func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool
 
 // customBackoff is a custom backoff policy for a retryablehttp client
 // that adds backoff for 420s.
-func customBackoff(min time.Duration, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+func customBackoff(minimum time.Duration, maximum time.Duration, attemptNum int, resp *http.Response) time.Duration {
 	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
 		if sleep, ok := xgoesi.ParseErrorLimitResetHeader(resp); ok {
 			return sleep
 		}
 		return xgoesi.ErrorLimitResetFallback
 	}
-	return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
+	return retryablehttp.DefaultBackoff(minimum, maximum, attemptNum, resp)
 }

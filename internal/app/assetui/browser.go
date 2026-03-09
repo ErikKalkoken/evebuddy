@@ -114,7 +114,7 @@ func (a *Browser) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Browser) Update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.Navigation.clear()
 			a.Selected.clear()
@@ -138,12 +138,12 @@ func (a *Browser) Update(ctx context.Context) {
 	if a.forCorporation {
 		corporationID := a.corporation.Load().IDOrZero()
 		if corporationID == 0 {
-			clear()
+			reset()
 			return
 		}
 		hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationAssets)
 		if !hasData {
-			clear()
+			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
@@ -156,12 +156,12 @@ func (a *Browser) Update(ctx context.Context) {
 	} else {
 		characterID := a.character.Load().IDOrZero()
 		if characterID == 0 {
-			clear()
+			reset()
 			return
 		}
 		hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAssets)
 		if !hasData {
-			clear()
+			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
 			return
 		}
@@ -311,7 +311,7 @@ func newAssetBrowserNavigation(ab *Browser) *assetBrowserNavigation {
 	})
 	a.collapseAll.SetToolTip("Collapse branches")
 
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterLocationsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {

@@ -366,11 +366,11 @@ func newIndustryJobs(u ui, forCorporation bool) *Jobs {
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.Update(ctx)
 		})
-		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 			a.Update(ctx)
 		})
 	}
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 		})

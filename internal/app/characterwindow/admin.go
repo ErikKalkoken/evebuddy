@@ -88,7 +88,7 @@ func (a *admin) makeCharacterList() *widget.List {
 			co.(*adminListItem).set(a.rows[id])
 		})
 
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		l.UnselectAll()
 	}
 	return l

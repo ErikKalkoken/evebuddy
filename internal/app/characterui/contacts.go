@@ -376,7 +376,7 @@ func (a *Contacts) filterRowsAsync() {
 }
 
 func (a *Contacts) update(ctx context.Context) {
-	clear := func() {
+	rest := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
@@ -391,18 +391,18 @@ func (a *Contacts) update(ctx context.Context) {
 	}
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		clear()
+		rest()
 		setFooter("No character", widget.LowImportance)
 		return
 	}
 	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterContacts) {
-		clear()
+		rest()
 		setFooter("Loading data...", widget.WarningImportance)
 		return
 	}
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
-		clear()
+		rest()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}

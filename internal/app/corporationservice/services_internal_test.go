@@ -49,7 +49,7 @@ func (ts tokenSourceFake) Token() (*oauth2.Token, error) {
 	return ts.token.OauthToken(), nil
 }
 
-func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ int64, _ set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
 	if s.Error != nil {
 		return &tokenSourceFake{token: s.Token, err: s.Error}, 0, nil
 	}

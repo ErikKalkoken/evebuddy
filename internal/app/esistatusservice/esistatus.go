@@ -27,6 +27,7 @@ func New(client *esi.APIClient) *ESIStatusService {
 	return ess
 }
 
+// Fetch retrieves an update from ESI and returns it.
 func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
@@ -69,12 +70,14 @@ func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 // 	return fmt.Sprintf("%s: %s", err.Error(), detail)
 // }
 
+// DailyDowntime returns the daily downtime as string.
 func (s *ESIStatusService) DailyDowntime() string {
 	const timeOnly = "15:04"
 	start, finish := xgoesi.DailyDowntime()
 	return fmt.Sprintf("%s - %s", start.Format(timeOnly), finish.Format(timeOnly))
 }
 
+// IsDailyDowntime reports whether the daily downtime is currently planned to happen.
 func (s *ESIStatusService) IsDailyDowntime() bool {
 	return xgoesi.IsDailyDowntime()
 }

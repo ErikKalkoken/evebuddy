@@ -32,6 +32,7 @@ func (s *CorporationService) ListAssets(ctx context.Context, corporationID int64
 	return assets, nil
 }
 
+// ListAllAssets returns the assets from all corporations.
 func (s *CorporationService) ListAllAssets(ctx context.Context) ([]*app.CorporationAsset, error) {
 	return s.st.ListAllCorporationAssets(ctx)
 }

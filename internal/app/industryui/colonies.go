@@ -268,13 +268,13 @@ func NewColonies(u ui) *Colonies {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search systems & output"
 
 	// Signals
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()
 			a.setOnUpdate()
@@ -291,7 +291,7 @@ func NewColonies(u ui) *Colonies {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 
@@ -393,7 +393,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
+				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(eveicon.FromName(eveicon.PIExtractor)),
 			),
 			w.status,
@@ -403,7 +403,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
+				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(eveicon.FromName(eveicon.PIProcessor)),
 			),
 			nil,
@@ -413,7 +413,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-			xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
+				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
 				widget.NewIcon(theme.AccountIcon()),
 			),
 			nil,

@@ -160,7 +160,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 			co.(*loyaltyPointsListItem).set(r)
 		},
 	)
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		defer l.UnselectAll()
 	}
 	return l
@@ -203,7 +203,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 }
 
 func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
@@ -219,20 +219,20 @@ func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 
 	character := a.character.Load()
 	if character == nil {
-		clear()
+		reset()
 		setFooter("No character", widget.LowImportance)
 		return
 	}
 
 	if !a.u.StatusCache().HasCharacterSection(character.ID, app.SectionCharacterLoyaltyPoints) {
-		clear()
+		reset()
 		setFooter("Loading data...", widget.WarningImportance)
 		return
 	}
 
 	rows, err := a.fetchRows(ctx, character.ID)
 	if err != nil {
-		clear()
+		reset()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}

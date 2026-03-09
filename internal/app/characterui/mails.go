@@ -200,7 +200,7 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Mails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 	t := xwidget.NewTree(
-		func(isBranch bool) fyne.CanvasObject {
+		func(_ bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icons.BlankSvg),
 				widget.NewLabel("template template"),
@@ -208,7 +208,7 @@ func (a *Mails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 				kwidget.NewBadge("999"),
 			)
 		},
-		func(n *mailFolderNode, b bool, co fyne.CanvasObject) {
+		func(n *mailFolderNode, _ bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container).Objects
 			icon := hbox[0].(*widget.Icon)
 			icon.SetResource(n.icon())
@@ -597,7 +597,7 @@ func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 }
 
 func (a *Mails) headerUpdate(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
@@ -615,13 +615,13 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 	}
 	folder := a.currentFolder.Load()
 	if folder == nil {
-		clear()
+		reset()
 		return
 	}
 	hasData := a.u.StatusCache().HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
-		clear()
+		reset()
 		return
 	}
 
@@ -629,7 +629,7 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		clear()
+		reset()
 		return
 	}
 
