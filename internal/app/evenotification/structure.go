@@ -141,7 +141,7 @@ func (n ownershipTransferred) unmarshal(text string) (goesi.OwnershipTransferred
 	return data, ids, nil
 }
 
-func (n ownershipTransferred) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n ownershipTransferred) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	d, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -174,7 +174,7 @@ type structureAnchoring struct {
 	baseRenderer
 }
 
-func (n structureAnchoring) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureAnchoring) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureAnchoring
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -197,7 +197,7 @@ type structureDestroyed struct {
 	baseRenderer
 }
 
-func (n structureDestroyed) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureDestroyed) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureDestroyed
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -223,7 +223,7 @@ type structureFuelAlert struct {
 	baseRenderer
 }
 
-func (n structureFuelAlert) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureFuelAlert) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureFuelAlert
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -246,7 +246,7 @@ type structureImpendingAbandonmentAssetsAtRisk struct {
 	baseRenderer
 }
 
-func (n structureImpendingAbandonmentAssetsAtRisk) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureImpendingAbandonmentAssetsAtRisk) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureImpendingAbandonmentAssetsAtRisk
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -293,7 +293,7 @@ func (n structureItemsDelivered) unmarshal(text string) (goesi.StructureItemsDel
 	return data, ids, nil
 }
 
-func (n structureItemsDelivered) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureItemsDelivered) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -353,7 +353,7 @@ func (n structureItemsMovedToSafety) unmarshal(text string) (goesi.StructureItem
 	return data, ids, nil
 }
 
-func (n structureItemsMovedToSafety) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureItemsMovedToSafety) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
@@ -386,7 +386,7 @@ type structureLostArmor struct {
 	baseRenderer
 }
 
-func (n structureLostArmor) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureLostArmor) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureLostArmor
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -413,7 +413,7 @@ type structureLostShields struct {
 	baseRenderer
 }
 
-func (n structureLostShields) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureLostShields) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureLostShields
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -441,7 +441,7 @@ type structureOnline struct {
 	baseRenderer
 }
 
-func (n structureOnline) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureOnline) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureOnline
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -490,7 +490,7 @@ type structureReinforcementInfo struct {
 	typeID      int64
 }
 
-func (n structuresReinforcementChanged) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structuresReinforcementChanged) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, typeIDs, err := n.unmarshal(text)
 	if err != nil {
@@ -549,7 +549,7 @@ func (n structureServicesOffline) unmarshal(text string) (goesi.StructureService
 	return data, ids, nil
 }
 
-func (n structureServicesOffline) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureServicesOffline) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -630,7 +630,7 @@ func (n structureUnderAttack) unmarshal(text string) (goesi.StructureUnderAttack
 	return data, ids, nil
 }
 
-func (n structureUnderAttack) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureUnderAttack) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
@@ -670,7 +670,7 @@ type structureWentHighPower struct {
 	baseRenderer
 }
 
-func (n structureWentHighPower) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureWentHighPower) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureWentHighPower
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -689,7 +689,7 @@ type structureWentLowPower struct {
 	baseRenderer
 }
 
-func (n structureWentLowPower) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n structureWentLowPower) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.StructureWentLowPower
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -725,7 +725,7 @@ func (n mercenaryDenAttacked) unmarshal(text string) (notification2.MercenaryDen
 	return data, ids, nil
 }
 
-func (n mercenaryDenAttacked) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n mercenaryDenAttacked) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -796,7 +796,7 @@ func (n mercenaryDenReinforced) unmarshal(text string) (notification2.MercenaryD
 	return data, ids, nil
 }
 
-func (n mercenaryDenReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n mercenaryDenReinforced) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {

@@ -33,7 +33,7 @@ func (n orbitalAttacked) unmarshal(text string) (goesi.OrbitalAttacked, set.Set[
 	return data, ids, nil
 }
 
-func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n orbitalAttacked) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -90,7 +90,7 @@ func (n orbitalReinforced) unmarshal(text string) (goesi.OrbitalReinforced, set.
 	return data, ids, nil
 }
 
-func (n orbitalReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n orbitalReinforced) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {

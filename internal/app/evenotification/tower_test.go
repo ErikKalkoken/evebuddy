@@ -30,7 +30,7 @@ func TestTowerNotification(t *testing.T) {
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
 		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
 		text := `
 aggressorAllianceID: 3011
@@ -48,7 +48,7 @@ typeID: 16213`
 			assert.Contains(t, title, "is under attack")
 			assert.Contains(t, body, aggressorAlliance.Name)
 			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, type_.Name)
+			assert.Contains(t, body, et.Name)
 		}
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
@@ -58,7 +58,7 @@ typeID: 16213`
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
 		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
 		text := `
 aggressorAllianceID: 3011
@@ -76,7 +76,7 @@ typeID: 16213`
 			assert.Contains(t, title, "is under attack")
 			assert.Contains(t, body, aggressorAlliance.Name)
 			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, type_.Name)
+			assert.Contains(t, body, et.Name)
 		}
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
@@ -86,7 +86,7 @@ typeID: 16213`
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
 		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
 		text := `
 aggressorAllianceID: 3011
@@ -104,7 +104,7 @@ typeID: 16213`
 			assert.Contains(t, title, "is under attack")
 			assert.Contains(t, body, aggressorAlliance.Name)
 			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, type_.Name)
+			assert.Contains(t, body, et.Name)
 		}
 	})
 }

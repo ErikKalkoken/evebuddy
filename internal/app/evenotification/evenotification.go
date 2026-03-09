@@ -31,7 +31,7 @@ type notificationRenderer interface {
 	// entityIDs returns the Entity IDs used by a notification (if any).
 	entityIDs(text string) (set.Set[int64], error)
 	// render returns the rendered title and body for a goesi.
-	render(ctx context.Context, text string, timestamp time.Time) (string, string, error)
+	render(ctx context.Context, text string, _ time.Time) (string, string, error)
 	// setEveUniverse initialized access to the EveUniverseService service and must be called before render().
 	setEveUniverse(EVEUniverse)
 }
@@ -104,9 +104,9 @@ func (s *EVENotificationService) RenderESI(ctx context.Context, nt app.EveNotifi
 	return title, body, nil
 }
 
-func (s *EVENotificationService) makeRenderer(type_ app.EveNotificationType) (notificationRenderer, bool) {
+func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notificationRenderer, bool) {
 	var r notificationRenderer
-	switch type_ {
+	switch nt {
 	// billing
 	case app.BillOutOfMoneyMsg:
 		r = new(billOutOfMoneyMsg)

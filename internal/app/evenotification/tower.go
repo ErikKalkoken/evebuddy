@@ -14,7 +14,7 @@ import (
 )
 
 type towerInfo struct {
-	type_ *app.EveType
+	et    *app.EveType
 	moon  *app.EveMoon
 	intro string
 }
@@ -30,7 +30,7 @@ func makeTowerBaseText(ctx context.Context, moonID, typeID int64, eus EVEUnivers
 	}
 	intro := fmt.Sprintf("The %s at %s in %s ", structureType.Name, moon.Name, makeSolarSystemLink(moon.SolarSystem))
 	x := towerInfo{
-		type_: structureType,
+		et:    structureType,
 		moon:  moon,
 		intro: intro,
 	}
@@ -58,7 +58,7 @@ func (n towerAlertMsg) unmarshal(text string) (goesi.TowerAlertMsg, set.Set[int6
 	return data, ids, nil
 }
 
-func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n towerAlertMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -95,7 +95,7 @@ type towerResourceAlertMsg struct {
 	baseRenderer
 }
 
-func (n towerResourceAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n towerResourceAlertMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.TowerResourceAlertMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {

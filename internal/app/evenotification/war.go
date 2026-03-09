@@ -33,7 +33,7 @@ func (n allWarSurrenderMsg) unmarshal(text string) (goesi.AllWarSurrenderMsg, se
 	return data, ids, nil
 }
 
-func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n allWarSurrenderMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return "", "", err
@@ -78,7 +78,7 @@ func (n corpWarSurrenderMsg) unmarshal(text string) (goesi.CorpWarSurrenderMsg, 
 	return data, ids, nil
 }
 
-func (n corpWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n corpWarSurrenderMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -120,7 +120,7 @@ func (n declareWar) unmarshal(text string) (goesi.DeclareWar, set.Set[int64], er
 	return data, ids, nil
 }
 
-func (n declareWar) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n declareWar) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -162,7 +162,7 @@ func (n warAdopted) unmarshal(text string) (goesi.WarAdopted, set.Set[int64], er
 	return data, ids, nil
 }
 
-func (n warAdopted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warAdopted) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -216,7 +216,7 @@ func (n warDeclared) unmarshal(text string) (goesi.WarDeclared, set.Set[int64], 
 	return data, ids, nil
 }
 
-func (n warDeclared) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warDeclared) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -265,7 +265,7 @@ func (n warHQRemovedFromSpace) unmarshal(text string) (goesi.WarHQRemovedFromSpa
 	return data, ids, nil
 }
 
-func (n warHQRemovedFromSpace) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warHQRemovedFromSpace) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -316,7 +316,7 @@ func (n warInherited) unmarshal(text string) (goesi.WarInherited, set.Set[int64]
 	return data, ids, nil
 }
 
-func (n warInherited) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warInherited) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -369,7 +369,7 @@ func (n warInvalid) unmarshal(text string) (goesi.WarInvalid, set.Set[int64], er
 	return data, ids, nil
 }
 
-func (n warInvalid) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warInvalid) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -415,7 +415,7 @@ func (n warRetractedByConcord) unmarshal(text string) (goesi.WarRetractedByConco
 	return data, ids, nil
 }
 
-func (n warRetractedByConcord) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n warRetractedByConcord) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {

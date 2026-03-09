@@ -35,7 +35,7 @@ type billOutOfMoneyMsg struct {
 	baseRenderer
 }
 
-func (n billOutOfMoneyMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n billOutOfMoneyMsg) render(_ context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.CorpAllBillMsgV2
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -59,7 +59,7 @@ type billPaidCorpAllMsg struct {
 	baseRenderer
 }
 
-func (n billPaidCorpAllMsg) render(_ context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n billPaidCorpAllMsg) render(_ context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	title = "Bill payed"
 	var data goesi.BillPaidCorpAllMsg
@@ -102,7 +102,7 @@ func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, set.Set[
 	return data, ids, nil
 }
 
-func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -152,7 +152,7 @@ type infrastructureHubBillAboutToExpire struct {
 	baseRenderer
 }
 
-func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	title = "IHub Bill About to Expire"
 	var data goesi.InfrastructureHubBillAboutToExpire
@@ -176,7 +176,7 @@ type iHubDestroyedByBillFailure struct {
 	baseRenderer
 }
 
-func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.IHubDestroyedByBillFailure
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
