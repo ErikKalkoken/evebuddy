@@ -97,15 +97,9 @@ func (n *Navigator) showNavBarWhenRequired() {
 	if n.NavBar == nil {
 		return
 	}
-	v, err := n.hideNavBar.Peek()
-	if err != nil {
-		fyne.LogError("showNavBarWhenRequired: peek failed", err)
-		return
-	}
-	if !v {
+	if v, ok := n.hideNavBar.Peek(); ok && !v {
 		n.NavBar.ShowBar()
 	}
-
 }
 
 func (n *Navigator) topPage() fyne.CanvasObject {

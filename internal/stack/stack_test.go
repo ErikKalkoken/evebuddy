@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/stack"
 )
@@ -14,19 +15,17 @@ func TestStack(t *testing.T) {
 		var s stack.Stack[int]
 		s.Push(99)
 		s.Push(42)
-		v, err := s.Pop()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 42, v)
-		}
-		v, err = s.Pop()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 99, v)
-		}
+		v, ok := s.Pop()
+		require.True(t, ok)
+		assert.Equal(t, 42, v)
+		v, ok = s.Pop()
+		require.True(t, ok)
+		assert.Equal(t, 99, v)
 	})
-	t.Run("should return specific error when trying to pop from empty stack", func(t *testing.T) {
+	t.Run("should report false when trying to pop from empty stack", func(t *testing.T) {
 		var s stack.Stack[int]
-		_, err := s.Pop()
-		assert.ErrorIs(t, stack.ErrEmpty, err)
+		_, ok := s.Pop()
+		assert.False(t, ok)
 	})
 	t.Run("should return correct stack size", func(t *testing.T) {
 		var s stack.Stack[int]
@@ -44,16 +43,15 @@ func TestStack(t *testing.T) {
 	t.Run("can return the current value without popping", func(t *testing.T) {
 		var s stack.Stack[int]
 		s.Push(99)
-		v, err := s.Peek()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 99, v)
-			assert.Equal(t, 1, s.Size())
-		}
+		v, ok := s.Peek()
+		require.True(t, ok)
+		assert.Equal(t, 99, v)
+		assert.Equal(t, 1, s.Size())
 	})
-	t.Run("should return specific error when trying to peek at empty stack", func(t *testing.T) {
+	t.Run("should report false when trying to peek at empty stack", func(t *testing.T) {
 		var s stack.Stack[int]
-		_, err := s.Peek()
-		assert.ErrorIs(t, stack.ErrEmpty, err)
+		_, ok := s.Peek()
+		assert.False(t, ok)
 	})
 	t.Run("can print stack", func(t *testing.T) {
 		var s stack.Stack[int]
