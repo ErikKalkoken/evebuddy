@@ -24,9 +24,9 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
@@ -497,7 +497,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 					return
 				}
 				if err := fyne.CurrentApp().OpenURL(u); err != nil {
-					xdialog.ShowErrorAndLog("Failed to open download page", err, w.isDeveloperMode, w.window)
+					ui.ShowErrorAndLog("Failed to open download page", err, w.isDeveloperMode, w.window)
 				}
 			},
 			w.window,

@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -418,7 +417,7 @@ func (a *Clones) updateRoutesAsync() {
 func (a *Clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		xdialog.ShowErrorAndLog("Something went wrong", err, a.u.IsDeveloperMode(), w)
+		ui.ShowErrorAndLog("Something went wrong", err, a.u.IsDeveloperMode(), w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity

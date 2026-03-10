@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -586,7 +585,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 	ctx := context.Background()
 	o, err := u.Character().GetContract(ctx, characterID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -671,7 +670,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 	case app.ContractTypeAuction:
 		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		var currentBid string
@@ -680,7 +679,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		} else {
 			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
+				ui.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -747,7 +746,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		main.Add(x)
@@ -767,7 +766,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 	ctx := context.Background()
 	o, err := u.Corporation().GetContract(ctx, corporationID, contractID)
 	if err != nil {
-		xdialog.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
@@ -852,7 +851,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 	case app.ContractTypeAuction:
 		total, err := u.Character().CountContractBids(ctx, o.ID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		var currentBid string
@@ -861,7 +860,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		} else {
 			top, err := u.Character().GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				xdialog.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
+				ui.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
@@ -928,7 +927,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		main.Add(widget.NewSeparator())
 		x, err := makeItemsInfo(o)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		main.Add(x)

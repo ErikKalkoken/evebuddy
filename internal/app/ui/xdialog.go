@@ -1,5 +1,4 @@
-// Package xdialog extends Fyne's dialog package.
-package xdialog
+package ui
 
 import (
 	"log/slog"

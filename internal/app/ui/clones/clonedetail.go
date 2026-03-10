@@ -13,7 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -183,7 +182,7 @@ func makeImplantsList(cs implantsCS, eis ui.EveEntityEIS, showTypeInfo func(int6
 		clone, err := cs.GetJumpClone(context.Background(), characterID, cloneID)
 		if err != nil {
 			slog.Error("show clone", "error", err)
-			xdialog.ShowErrorAndLog("failed to load clone", err, IsDeveloperMode, w)
+			ui.ShowErrorAndLog("failed to load clone", err, IsDeveloperMode, w)
 			return
 		}
 		fyne.Do(func() {

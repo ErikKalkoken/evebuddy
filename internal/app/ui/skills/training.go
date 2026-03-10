@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -627,7 +626,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
 		if err != nil {
 			fyne.Do(func() {
-				xdialog.ShowErrorAndLog("Failed to fetch character", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+				ui.ShowErrorAndLog("Failed to fetch character", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			})
 			return
 		}

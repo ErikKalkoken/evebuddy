@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -446,12 +445,12 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 	go func() {
 		structure, err := u.Corporation().GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		corporationNames, err := u.Corporation().CorporationNames(ctx)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		corporationName := corporationNames[corporationID]

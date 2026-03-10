@@ -29,7 +29,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -124,7 +123,7 @@ type showParams struct {
 
 func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 	if iw.u.IsOffline() {
-		xdialog.ShowInformation(
+		ui.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",
 			iw.w,
@@ -154,7 +153,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 		case app.EveLocationSolarSystem:
 			arg.variant = infoSolarSystem
 		case app.EveLocationUnknown:
-			xdialog.ShowInformation(
+			ui.ShowInformation(
 				"Unknown location",
 				"Can't show info window for an unknown location",
 				iw.w,
@@ -197,7 +196,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 		title = "Location"
 		page = newLocationInfo(iw, arg.entityID)
 	default:
-		xdialog.ShowInformation(
+		ui.ShowInformation(
 			"Warning",
 			"Can't show info window for unknown category",
 			iw.w,

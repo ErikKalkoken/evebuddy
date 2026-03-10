@@ -25,7 +25,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	asettings "github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -303,7 +303,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		Label: "Clear cache",
 		Action: func() {
 			w := a.w
-			xdialog.ShowConfirm(
+			ui.ShowConfirm(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
 				"Clear",
@@ -407,7 +407,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 }
 
 func (a *settings) showDeleteFileDialog(name, path string) {
-	xdialog.ShowConfirm(
+	ui.ShowConfirm(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
 		"Delete",
@@ -443,7 +443,7 @@ func (a *settings) showExportFileDialog(path string) {
 		a.sb.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		xdialog.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
+		ui.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -468,7 +468,7 @@ func (a *settings) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				xdialog.ShowErrorAndLog("Failed to export "+filename, err, a.u.IsDeveloperMode(), a.w)
+				ui.ShowErrorAndLog("Failed to export "+filename, err, a.u.IsDeveloperMode(), a.w)
 			}
 		}, a.w,
 	)

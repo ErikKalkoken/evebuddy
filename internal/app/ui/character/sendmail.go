@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -59,7 +58,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 
 	toButton := widget.NewButton("To", func() {
 		if a.u.IsOffline() {
-			xdialog.ShowInformation("OFFLINE", "Search not available while offline", a.w)
+			ui.ShowInformation("OFFLINE", "Search not available while offline", a.w)
 			return
 		}
 		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
@@ -122,7 +121,7 @@ func (a *SendMail) SetWindow(w fyne.Window) {
 // SendAction tries to send the current mail and reports whether it was successful
 func (a *SendMail) SendAction() bool {
 	showErrorDialog := func(message string) {
-		xdialog.ShowInformation("Failed to send mail", message, a.u.MainWindow())
+		ui.ShowInformation("Failed to send mail", message, a.u.MainWindow())
 	}
 	if a.to.IsEmpty() {
 		showErrorDialog("A mail needs to have at least one recipient.")
@@ -446,7 +445,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		xdialog.ShowErrorAndLog("Something went wrong", err, u.IsDeveloperMode(), w)
+		ui.ShowErrorAndLog("Something went wrong", err, u.IsDeveloperMode(), w)
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."

@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -98,7 +97,7 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *manageTags) deleteTags() {
-	xdialog.ShowConfirm(
+	ui.ShowConfirm(
 		"Delete All Tags",
 		"Are you sure you want to delete all tags?",
 		"Delete",
@@ -157,7 +156,7 @@ func (a *manageTags) exportTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				xdialog.ShowErrorAndLog("Failed to export tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+				ui.ShowErrorAndLog("Failed to export tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
 		}
 		m.Start()
@@ -196,7 +195,7 @@ func (a *manageTags) importTags() {
 		)
 		m.OnError = func(err error) {
 			fyne.Do(func() {
-				xdialog.ShowErrorAndLog("Failed to import tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+				ui.ShowErrorAndLog("Failed to import tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
 		}
 		m.Start()
@@ -354,7 +353,7 @@ func (a *manageTags) makeTagList() *widget.List {
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
 				s := "Are you sure you want to delete tag " + tag.Name + "?"
-				xdialog.ShowConfirm(
+				ui.ShowConfirm(
 					"Delete Tag", s, "Delete", func(confirmed bool) {
 						if !confirmed {
 							return
@@ -362,7 +361,7 @@ func (a *manageTags) makeTagList() *widget.List {
 						ctx := context.Background()
 						err := a.cw.u.Character().DeleteTag(ctx, tag.ID)
 						if err != nil {
-							xdialog.ShowErrorAndLog("Failed to delete tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+							ui.ShowErrorAndLog("Failed to delete tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 							return
 						}
 						a.update(ctx)
@@ -503,7 +502,7 @@ func (a *manageTags) modifyTag(title, confirm string, execute func(name string) 
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				xdialog.ShowErrorAndLog("Failed to modify tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+				ui.ShowErrorAndLog("Failed to modify tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 				return
 			}
 			ctx := context.Background()

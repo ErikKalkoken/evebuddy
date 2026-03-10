@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -470,7 +469,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 	go func() {
 		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 
@@ -623,7 +622,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 	go func() {
 		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 

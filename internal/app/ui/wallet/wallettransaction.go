@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -612,7 +611,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 	go func() {
 		o, err := u.Character().GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		fyne.Do(func() {
@@ -688,7 +687,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 	go func() {
 		o, err := u.Corporation().GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
-			xdialog.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			ui.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
 			return
 		}
 		fyne.Do(func() {
