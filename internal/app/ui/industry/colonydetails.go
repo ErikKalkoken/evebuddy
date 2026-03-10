@@ -344,16 +344,16 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntitySolarSystem, cp.EvePlanet.SolarSystem.ID)
+			a.u.InfoWindow().Show(cp.EvePlanet.SolarSystem.EveEntity())
 		}
 		a.region.SetText(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name))
 		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
 		a.planetType.OnTapped = func() {
-			a.u.InfoWindow().ShowEveEntity(cp.EvePlanet.Type.EveEntity())
+			a.u.InfoWindow().Show(cp.EvePlanet.Type.EveEntity())
 		}
 		a.owner.SetText(ownerName)
 		a.owner.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityCharacter, cp.CharacterID)
+			a.u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
 
 		a.expiryTimes = expiryTimes

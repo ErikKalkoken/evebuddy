@@ -177,7 +177,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityCharacter, c.ID)
+			a.u.InfoWindow().Show(c.EveCharacter.EveEntity())
 		}
 		a.portrait.OnTapped = a.name.OnTapped
 
@@ -219,7 +219,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.ship.SetText(ship.Name)
 		a.ship.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityInventoryType, ship.ID)
+			a.u.InfoWindow().Show(ship.EveEntity())
 		}
 	})
 	fyne.Do(func() {
@@ -249,7 +249,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.faction.SetText(faction.Name)
 		a.faction.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityFaction, faction.ID)
+			a.u.InfoWindow().Show(faction)
 		}
 	})
 

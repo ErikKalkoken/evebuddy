@@ -630,17 +630,17 @@ func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transact
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					characterID,
 					u.StatusCache().CharacterName(characterID),
-					u.InfoWindow().ShowEveEntity,
+					u.InfoWindow().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Activity", widget.NewLabel(activity)),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoWindow().Show(app.EveEntityInventoryType, o.Type.ID)
+					u.InfoWindow().Show(o.Type.EveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", total),
-				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEveEntity)),
+				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
 				// widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 				// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
@@ -698,16 +698,16 @@ func ShowCorporationWalletTransactionWindowAsync(u ui, corporationID int64, divi
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					corporationID,
 					u.StatusCache().CorporationName(corporationID),
-					u.InfoWindow().ShowEveEntity,
+					u.InfoWindow().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoWindow().Show(app.EveEntityInventoryType, o.Type.ID)
+					u.InfoWindow().Show(o.Type.EveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
-				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEveEntity)),
+				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
 				widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 					fmt.Sprintf("#%d", o.JournalRefID), func() {

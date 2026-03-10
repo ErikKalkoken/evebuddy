@@ -856,7 +856,7 @@ type mailDetail struct {
 func newMailDetail(u ui) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  NewMailHeader(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().ShowEveEntity),
+		header:  NewMailHeader(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().Show),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

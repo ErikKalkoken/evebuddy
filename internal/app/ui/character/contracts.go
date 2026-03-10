@@ -611,7 +611,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 			nil,
 			availabilityLabel,
 			nil,
-			makeEveEntityActionLabel(v, u.InfoWindow().ShowEveEntity),
+			makeEveEntityActionLabel(v, u.InfoWindow().Show),
 		)
 	} else {
 		availability = availabilityLabel
@@ -620,18 +620,18 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			characterName,
-			u.InfoWindow().ShowEveEntity,
+			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().ShowEveEntity)),
+		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
 		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().ShowEveEntity)))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().Show)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoWindow().ShowLocation)))
@@ -792,7 +792,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 			nil,
 			availabilityLabel,
 			nil,
-			makeEveEntityActionLabel(v, u.InfoWindow().ShowEveEntity),
+			makeEveEntityActionLabel(v, u.InfoWindow().Show),
 		)
 	} else {
 		availability = availabilityLabel
@@ -801,18 +801,18 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			corporationID,
 			corporationName,
-			u.InfoWindow().ShowEveEntity,
+			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().ShowEveEntity)),
+		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
 		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().ShowEveEntity)))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().Show)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoWindow().ShowLocation)))

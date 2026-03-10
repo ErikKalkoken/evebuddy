@@ -80,12 +80,8 @@ func New(u ui) *InfoWindow {
 	return iw
 }
 
-func (iw *InfoWindow) Show(c app.EveEntityCategory, id int64) {
-	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), id)
-}
-
-func (iw *InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	iw.show(eveEntity2InfoVariant(ee), ee.ID)
+func (iw *InfoWindow) Show(o *app.EveEntity) {
+	iw.show(eveEntity2InfoVariant(o), o.ID)
 }
 
 func (iw *InfoWindow) ShowLocation(id int64) {
@@ -568,7 +564,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			case *app.EveEntity:
 				if x != nil && supportedCategories.Contains(x.Category) {
 					f = func() {
-						w.iw.ShowEveEntity(x)
+						w.iw.Show(x)
 					}
 				}
 			case *app.EveLocation:

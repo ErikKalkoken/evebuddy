@@ -39,7 +39,7 @@ func ShowAssetDetailWindow(u ui, r assetRow) {
 	if r.location != nil {
 		location = makeLocationLabel(r.location, u.InfoWindow().ShowLocation)
 		region = makeLinkLabel(r.regionName, func() {
-			u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
+			u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 		})
 	} else {
 		location = widget.NewLabel("?")
@@ -59,7 +59,7 @@ func ShowAssetDetailWindow(u ui, r assetRow) {
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().ShowEveEntity,
+			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Item", item),
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),

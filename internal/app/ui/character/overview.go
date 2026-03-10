@@ -577,7 +577,7 @@ type characterCard struct {
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
-	showInfoWindow           func(c app.EveEntityCategory, id int64)
+	showInfoWindow           func(*app.EveEntity)
 	skillpoints              *widget.Label
 	solarSystem              *xwidget.RichText
 	trainingStatus           *ttwidget.Icon
@@ -587,7 +587,7 @@ type characterCard struct {
 	loadAlliance             loadFuncAsync
 }
 
-func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfoWindow func(c app.EveEntityCategory, id int64)) *characterCard {
+func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfoWindow func(*app.EveEntity)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -818,7 +818,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 
 	if !w.isSmall {
 		w.corporationLogo.OnTapped = func() {
-			w.showInfoWindow(app.EveEntityCorporation, c.corporation.ID)
+			w.showInfoWindow(c.corporation)
 		}
 		w.corporationLogo.SetToolTip(c.corporationName())
 	}
@@ -830,7 +830,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 	if alliance, ok := c.alliance.Value(); ok {
 		if !w.isSmall {
 			w.allianceLogo.OnTapped = func() {
-				w.showInfoWindow(app.EveEntityAlliance, alliance.ID)
+				w.showInfoWindow(alliance)
 			}
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}

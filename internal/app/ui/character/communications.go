@@ -61,7 +61,7 @@ func NewCommunications(u ui) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().ShowEveEntity)
+	a.Detail = newCommunicationDetail(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().Show)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {

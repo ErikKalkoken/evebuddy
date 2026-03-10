@@ -29,10 +29,10 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().ShowEveEntity,
+			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Blueprint", makeLinkLabelWithWrap(r.blueprintType.Name, func() {
-			u.InfoWindow().Show(app.EveEntityInventoryType, r.blueprintType.ID)
+			u.InfoWindow().ShowType(r.blueprintType.ID, 0)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 	}
@@ -40,7 +40,7 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 		items = append(items, widget.NewFormItem(
 			"Product Type",
 			makeLinkLabelWithWrap(v.Name, func() {
-				u.InfoWindow().Show(app.EveEntityInventoryType, v.ID)
+				u.InfoWindow().ShowType(v.ID, 0)
 			}),
 		))
 	}
@@ -88,13 +88,13 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 	items = slices.Concat(items, []*widget.FormItem{
 		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
 		widget.NewFormItem("Installer", makeLinkLabelWithWrap(r.installer.Name, func() {
-			u.InfoWindow().ShowEveEntity(r.installer)
+			u.InfoWindow().Show(r.installer)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if v, ok := r.completedCharacter.Value(); ok {
 		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(v.Name, func() {
-			u.InfoWindow().ShowEveEntity(v)
+			u.InfoWindow().Show(v)
 		})))
 	}
 	if u.IsDeveloperMode() {

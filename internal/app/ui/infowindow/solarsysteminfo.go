@@ -129,11 +129,11 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 			a.name.SetText(o.Name)
 			a.region.SetText(o.Constellation.Region.Name)
 			a.region.OnTapped = func() {
-				a.iw.ShowEveEntity(o.Constellation.Region.EveEntity())
+				a.iw.Show(o.Constellation.Region.EveEntity())
 			}
 			a.constellation.SetText(o.Constellation.Name)
 			a.constellation.OnTapped = func() {
-				a.iw.ShowEveEntity(o.Constellation.EveEntity())
+				a.iw.Show(o.Constellation.EveEntity())
 			}
 			a.security.Text = o.SecurityStatusDisplay()
 			a.security.Importance = o.SecurityType().ToImportance()

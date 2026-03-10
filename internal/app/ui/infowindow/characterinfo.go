@@ -186,7 +186,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		})))
 		a.corporation.SetText(o.Corporation.Name)
 		a.corporation.OnTapped = func() {
-			a.iw.ShowEveEntity(o.Corporation)
+			a.iw.Show(o.Corporation)
 		}
 		a.portrait.OnTapped = func() {
 			a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EVEImage().CharacterPortraitAsync, a.iw.w)
@@ -205,7 +205,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.ShowEveEntity(v)
+			a.iw.Show(v)
 		}
 	})
 	fyne.Do(func() {

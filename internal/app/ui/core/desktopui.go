@@ -489,7 +489,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		fyne.Do(func() {
 			characterHeader.SetTitle(s)
 			characterHeader.SetTitleAction(func() {
-				u.InfoWindow().Show(app.EveEntityCharacter, c.ID)
+				u.InfoWindow().Show(c.EveCharacter.EveEntity())
 			})
 		})
 		go func() {
@@ -561,7 +561,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		fyne.Do(func() {
 			corporationHeader.SetTitle(s)
 			corporationHeader.SetTitleAction(func() {
-				u.InfoWindow().Show(app.EveEntityCorporation, c.ID)
+				u.InfoWindow().Show(c.EveCorporation.EveEntity())
 			})
 		})
 		go func() {
@@ -745,12 +745,12 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				characterID := u.CurrentCharacter().IDOrZero()
-				if characterID == 0 {
+				c := u.CurrentCharacter()
+				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				u.InfoWindow().Show(app.EveEntityCharacter, characterID)
+				u.InfoWindow().Show(c.EveCharacter.EveEntity())
 			}},
 		"currentLocation": {
 			&desktop.CustomShortcut{

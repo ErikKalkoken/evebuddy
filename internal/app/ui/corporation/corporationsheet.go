@@ -194,7 +194,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(corporation.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoWindow().Show(app.EveEntityCorporation, corporation.ID)
+			a.u.InfoWindow().Show(corporation.EveEntity())
 		}
 		a.logo.OnTapped = a.name.OnTapped
 		a.members.SetText(humanize.Comma(corporation.MemberCount))
@@ -208,7 +208,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if alliance, ok := corporation.Alliance.Value(); ok {
 			a.alliance.SetText(alliance.Name)
 			a.alliance.OnTapped = func() {
-				a.u.InfoWindow().ShowEveEntity(alliance)
+				a.u.InfoWindow().Show(alliance)
 			}
 		} else {
 			a.alliance.SetText("-")
@@ -219,7 +219,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if faction, ok := corporation.Faction.Value(); ok {
 			a.faction.SetText(faction.Name)
 			a.faction.OnTapped = func() {
-				a.u.InfoWindow().ShowEveEntity(faction)
+				a.u.InfoWindow().Show(faction)
 			}
 		} else {
 			a.faction.SetText("-")
@@ -230,7 +230,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if ceo, ok := corporation.Ceo.Value(); ok {
 			a.ceo.SetText(ceo.Name)
 			a.ceo.OnTapped = func() {
-				a.u.InfoWindow().ShowEveEntity(ceo)
+				a.u.InfoWindow().Show(ceo)
 			}
 		} else {
 			a.ceo.SetText("-")
@@ -241,7 +241,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		if home, ok := corporation.HomeStation.Value(); ok {
 			a.home.SetText(home.Name)
 			a.home.OnTapped = func() {
-				a.u.InfoWindow().ShowEveEntity(home)
+				a.u.InfoWindow().Show(home)
 			}
 		} else {
 			a.home.SetText("-")

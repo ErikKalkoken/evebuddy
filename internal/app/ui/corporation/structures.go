@@ -495,15 +495,15 @@ func showCorporationStructureWindowAsync(ctx context.Context, u ui, corporationI
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					u.InfoWindow().ShowEveEntity,
+					u.InfoWindow().Show,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
 					u.InfoWindow().ShowType(structure.Type.ID, 0)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().ShowEveEntity)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().Show)),
 				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
+					u.InfoWindow().Show(structure.System.Constellation.Region.EveEntity())
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{

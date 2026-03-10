@@ -45,13 +45,13 @@ func showCloneDetailWindow(u ui, r cloneRow, origin *app.EveSolarSystem, routePr
 		u.InfoWindow().ShowLocation(r.jc.Location.ID)
 	})
 	character := makeLinkLabelWithWrap(r.jc.Character.Name, func() {
-		u.InfoWindow().Show(app.EveEntityCharacter, r.jc.Character.ID)
+		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: r.jc.Character.ID})
 	})
 
 	var originInfo fyne.CanvasObject
 	if hasOrigin {
 		originInfo = xwidget.NewTappableRichText(origin.DisplayRichText(), func() {
-			u.InfoWindow().Show(app.EveEntitySolarSystem, origin.ID)
+			u.InfoWindow().Show(origin.EveEntity())
 		})
 	} else {
 		l := widget.NewLabel("No origin")
@@ -217,7 +217,7 @@ func makeRoute(u ui, r cloneRow) *widget.List {
 			return
 		}
 		s := r.route[id]
-		u.InfoWindow().Show(app.EveEntitySolarSystem, s.ID)
+		u.InfoWindow().Show(s.EveEntity())
 	}
 	return list
 }

@@ -130,7 +130,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		}
 		a.alliance.SetText(v.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.ShowEveEntity(v)
+			a.iw.Show(v)
 		}
 		a.iw.u.EVEImage().AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
@@ -145,7 +145,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		}
 		a.hq.SetText("Headquarters: " + v.Name)
 		a.hq.OnTapped = func() {
-			a.iw.ShowEveEntity(v)
+			a.iw.Show(v)
 		}
 	})
 	g := new(errgroup.Group)

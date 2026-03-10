@@ -72,7 +72,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Region.Name)
 		a.region.OnTapped = func() {
-			a.iw.ShowEveEntity(o.Region.EveEntity())
+			a.iw.Show(o.Region.EveEntity())
 		}
 
 		if a.iw.u.IsDeveloperMode() {

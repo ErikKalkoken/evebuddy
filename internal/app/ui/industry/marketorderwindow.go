@@ -31,7 +31,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 		u.InfoWindow().ShowType(r.typeID, r.characterID)
 	})
 	region := makeLinkLabel(r.regionName, func() {
-		u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
+		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 	})
 	var buySell string
 	if r.IsBuyOrder.ValueOrZero() {
@@ -52,7 +52,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeEveEntityActionLabel(
 			r.owner,
-			u.InfoWindow().ShowEveEntity,
+			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Type", item),
 		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
@@ -84,7 +84,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
 		r.characterID,
 		r.characterName,
-		u.InfoWindow().ShowEveEntity,
+		u.InfoWindow().Show,
 	)))
 
 	if u.IsDeveloperMode() {
