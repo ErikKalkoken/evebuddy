@@ -1,4 +1,4 @@
-package characterwindow
+package managecharacters
 
 // func TestCharacterAdmin_CanRenderWithData(t *testing.T) {
 // 	if testing.Short() {

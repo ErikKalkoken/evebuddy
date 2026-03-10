@@ -1,5 +1,5 @@
-// Package characterwindow provides a window for managing Characters.
-package characterwindow
+// Package managecharacters provides a window for managing Characters.
+package managecharacters
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func Show(u ui) {
 		w.Show()
 		return
 	}
-	cw := newCharacterWindow(u, w)
+	cw := newManageCharacters(u, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(cw, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -65,7 +65,7 @@ func Show(u ui) {
 	go cw.update(context.Background())
 }
 
-type characterWindow struct {
+type manageCharacters struct {
 	widget.BaseWidget
 
 	characterAdmin    *admin
@@ -76,8 +76,8 @@ type characterWindow struct {
 	w                 fyne.Window
 }
 
-func newCharacterWindow(u ui, w fyne.Window) *characterWindow {
-	a := &characterWindow{
+func newManageCharacters(u ui, w fyne.Window) *manageCharacters {
+	a := &manageCharacters{
 		sb: xwidget.NewSnackbar(w),
 		u:  u,
 		w:  w,
@@ -90,7 +90,7 @@ func newCharacterWindow(u ui, w fyne.Window) *characterWindow {
 	return a
 }
 
-func (a *characterWindow) CreateRenderer() fyne.WidgetRenderer {
+func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewAppTabs(
 		container.NewTabItem("Characters", a.characterAdmin),
 		container.NewTabItem("Tags", a.characterTags),
@@ -100,11 +100,11 @@ func (a *characterWindow) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWindow) stop() {
+func (a *manageCharacters) stop() {
 	a.sb.Stop()
 }
 
-func (a *characterWindow) update(ctx context.Context) {
+func (a *manageCharacters) update(ctx context.Context) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		a.characterAdmin.update(ctx)
@@ -118,7 +118,7 @@ func (a *characterWindow) update(ctx context.Context) {
 	wg.Wait()
 }
 
-func (a *characterWindow) reportError(text string, err error) {
+func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
 }

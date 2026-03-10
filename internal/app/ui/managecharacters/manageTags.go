@@ -1,4 +1,4 @@
-package characterwindow
+package managecharacters
 
 import (
 	"context"
@@ -34,13 +34,13 @@ type manageTags struct {
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *xwidget.AppBar
-	cw                  *characterWindow
+	cw                  *manageCharacters
 	selectedTag         *app.CharacterTag
 	tagList             *widget.List
 	tags                []*app.CharacterTag
 }
 
-func newManageTags(cw *characterWindow) *manageTags {
+func newManageTags(cw *manageCharacters) *manageTags {
 	a := &manageTags{
 		cw: cw,
 	}

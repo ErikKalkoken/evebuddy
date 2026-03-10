@@ -1,5 +1,5 @@
-// Package statuswindow provides a window that shows the current update status.
-package statuswindow
+// Package updatestatus provides a window that shows the current update status.
+package updatestatus
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func Show(s ui) {
 		w.Show()
 		return
 	}
-	a := newStatusWindow(s, w)
+	a := newUpdateStatus(s, w)
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.SetOnClosed(func() {
@@ -77,7 +77,7 @@ type sectionEntity struct {
 	ss       app.StatusSummary
 }
 
-type statusWindow struct {
+type updateStatus struct {
 	widget.BaseWidget
 
 	charactersTop     *widget.Label
@@ -103,8 +103,8 @@ type statusWindow struct {
 	u                 ui
 }
 
-func newStatusWindow(s ui, w fyne.Window) *statusWindow {
-	a := &statusWindow{
+func newUpdateStatus(s ui, w fyne.Window) *updateStatus {
+	a := &updateStatus{
 		charactersTop:     awidget.NewLabelWithWrapping(""),
 		details:           newSectionDetails(),
 		detailsTop:        awidget.NewLabelWithWrapping(""),
@@ -174,7 +174,7 @@ func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 	return a
 }
 
-func (a *statusWindow) stop() {
+func (a *updateStatus) stop() {
 	a.sb.Stop()
 	a.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
@@ -183,7 +183,7 @@ func (a *statusWindow) stop() {
 	a.u.Signals().EveUniverseSectionUpdated.RemoveListener(a.signalKey)
 }
 
-func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
+func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
 			go func() {
@@ -229,7 +229,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *statusWindow) makeEntityList() *widget.List {
+func (a *updateStatus) makeEntityList() *widget.List {
 	isOfflineMode := a.u.IsOffline()
 	list := widget.NewList(
 		func() int {
@@ -273,7 +273,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *statusWindow) makeUpdateAllAction() func() {
+func (a *updateStatus) makeUpdateAllAction() func() {
 	return func() {
 		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]
@@ -290,7 +290,7 @@ func (a *statusWindow) makeUpdateAllAction() func() {
 	}
 }
 
-func (a *statusWindow) update(ctx context.Context) {
+func (a *updateStatus) update(ctx context.Context) {
 	entities, count := a.updateEntityList(ctx)
 
 	fyne.Do(func() {
@@ -302,7 +302,7 @@ func (a *statusWindow) update(ctx context.Context) {
 	})
 }
 
-func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int) {
+func (a *updateStatus) updateEntityList(_ context.Context) ([]sectionEntity, int) {
 	var count int
 	var entities []sectionEntity
 	cc := a.u.StatusCache().ListCharacters()
@@ -348,7 +348,7 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 	return entities, count
 }
 
-func (a *statusWindow) makeSectionList() *widget.List {
+func (a *updateStatus) makeSectionList() *widget.List {
 	isOfflineMode := a.u.IsOffline()
 	l := widget.NewList(
 		func() int {
@@ -379,7 +379,7 @@ func (a *statusWindow) makeSectionList() *widget.List {
 	return l
 }
 
-func (a *statusWindow) refreshSections() {
+func (a *updateStatus) refreshSections() {
 	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 		return
 	}
@@ -396,7 +396,7 @@ func (a *statusWindow) refreshSections() {
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
 }
 
-func (a *statusWindow) refreshDetails() {
+func (a *updateStatus) refreshDetails() {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
 		a.details.Hide()
@@ -418,7 +418,7 @@ func (a *statusWindow) refreshDetails() {
 	a.details.Show()
 }
 
-func (a *statusWindow) makeUpdateSectionAction(entityID int64, sectionID string) func() {
+func (a *updateStatus) makeUpdateSectionAction(entityID int64, sectionID string) func() {
 	return func() {
 		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]

@@ -1,4 +1,4 @@
-package characterwindow
+package managecharacters
 
 import (
 	"context"
@@ -22,11 +22,11 @@ type training struct {
 	widget.BaseWidget
 
 	characters []*app.Character
-	cw         *characterWindow
+	cw         *manageCharacters
 	list       *widget.List
 }
 
-func newTraining(cw *characterWindow) *training {
+func newTraining(cw *manageCharacters) *training {
 	a := &training{
 		cw: cw,
 	}

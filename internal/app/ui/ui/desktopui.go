@@ -22,10 +22,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settingswindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/statuswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
@@ -64,7 +64,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.showManageCharacters = func() {
-		characterwindow.Show(u)
+		managecharacters.Show(u)
 	}
 
 	u.defineShortcuts()
@@ -802,7 +802,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				settingswindow.Show(u)
+				settings.Show(u)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{
@@ -818,7 +818,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				statuswindow.Show(u)
+				updatestatus.Show(u)
 			}},
 		"quit": {
 			&desktop.CustomShortcut{

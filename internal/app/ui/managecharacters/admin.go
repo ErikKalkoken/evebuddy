@@ -1,4 +1,4 @@
-package characterwindow
+package managecharacters
 
 import (
 	"context"
@@ -38,12 +38,12 @@ type admin struct {
 	widget.BaseWidget
 
 	ab         *xwidget.AppBar
-	cw         *characterWindow
+	cw         *manageCharacters
 	characters *widget.List
 	rows       []adminRow
 }
 
-func newAdmin(cw *characterWindow) *admin {
+func newAdmin(cw *manageCharacters) *admin {
 	a := &admin{
 		cw: cw,
 	}

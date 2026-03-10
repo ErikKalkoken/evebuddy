@@ -20,10 +20,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settingswindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/statuswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -409,14 +409,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			statuswindow.Show(u)
+			updatestatus.Show(u)
 		},
 	)
 	navItemManageCharacters := xwidget.NewNavListItem(
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			characterwindow.Show(u)
+			managecharacters.Show(u)
 		},
 	)
 
@@ -432,7 +432,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				settingswindow.Show(u)
+				settings.Show(u)
 			},
 		),
 		navItemManageCharacters,

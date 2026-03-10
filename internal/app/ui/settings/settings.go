@@ -1,5 +1,5 @@
-// Package settingswindow provides a window to view and configure user settings.
-package settingswindow
+// Package settings provides a window to view and configure user settings.
+package settings
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	asettings "github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
@@ -42,9 +42,9 @@ type ui interface {
 	MainWindow() fyne.Window
 	ResetCharacter(ctx context.Context)
 	ResetCorporation(ctx context.Context)
-	SetColorTheme(s settings.ColorTheme)
+	SetColorTheme(s asettings.ColorTheme)
 	SetDeveloperMode(b bool)
-	Settings() *settings.Settings
+	Settings() *asettings.Settings
 	Signals() *app.Signals
 }
 
@@ -54,7 +54,7 @@ func Show(s ui) {
 		w.Show()
 		return
 	}
-	a := newSettingsWindow(s, w)
+	a := newSettings(s, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
@@ -75,7 +75,7 @@ type settingAction struct {
 	Action func()
 }
 
-type settingsWindow struct {
+type settings struct {
 	widget.BaseWidget
 
 	sb *xwidget.Snackbar
@@ -83,8 +83,8 @@ type settingsWindow struct {
 	w  fyne.Window
 }
 
-func newSettingsWindow(u ui, w fyne.Window) *settingsWindow {
-	a := &settingsWindow{
+func newSettings(u ui, w fyne.Window) *settings {
+	a := &settings{
 		sb: xwidget.NewSnackbar(w),
 		u:  u,
 		w:  w,
@@ -94,7 +94,7 @@ func newSettingsWindow(u ui, w fyne.Window) *settingsWindow {
 	return a
 }
 
-func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
+func (a *settings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		ab := xwidget.NewAppBar(title, content, actions)
 		ab.HideBackground = !a.u.IsMobile()
@@ -118,7 +118,7 @@ func (a *settingsWindow) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
@@ -187,15 +187,15 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	colorTheme := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
-		options:      []string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
+		options:      []string{string(asettings.Auto), string(asettings.Light), string(asettings.Dark)},
 		defaultValue: string(a.u.Settings().ColorThemeDefault()),
 		getter: func() string {
 			return string(a.u.Settings().ColorTheme())
 		},
 		setter: func(v string) {
 			s := a.u.Settings()
-			s.SetColorTheme(settings.ColorTheme(v))
-			a.u.SetColorTheme(settings.ColorTheme(v))
+			s.SetColorTheme(asettings.ColorTheme(v))
+			a.u.SetColorTheme(asettings.ColorTheme(v))
 		},
 		isMobile: a.u.IsMobile(),
 		window:   a.w,
@@ -406,7 +406,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 	return list, makeIconButtonFromActions(actions)
 }
 
-func (a *settingsWindow) showDeleteFileDialog(name, path string) {
+func (a *settings) showDeleteFileDialog(name, path string) {
 	xdialog.ShowConfirm(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
@@ -436,7 +436,7 @@ func (a *settingsWindow) showDeleteFileDialog(name, path string) {
 		}, a.w)
 }
 
-func (a *settingsWindow) showExportFileDialog(path string) {
+func (a *settings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -477,7 +477,7 @@ func (a *settingsWindow) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	groupsAndTypes := make(map[app.EveNotificationGroup][]app.EveNotificationType)
 	for n := range app.NotificationTypesSupported().All() {
 		g := n.Group()

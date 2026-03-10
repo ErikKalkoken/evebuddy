@@ -24,9 +24,9 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characterwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/statuswindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
@@ -75,7 +75,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			characterwindow.Show(u)
+			managecharacters.Show(u)
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")
@@ -94,7 +94,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		container.NewStack(spacer, a.updatingIndicator),
 		"?",
 		func() {
-			statuswindow.Show(u)
+			updatestatus.Show(u)
 		},
 	)
 	a.updateStatus.SetToolTip("Current update status - click for details")
