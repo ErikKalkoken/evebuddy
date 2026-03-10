@@ -653,17 +653,17 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%s m3", o.Volume.StringFunc("?", func(v float64) string {
 				return fmt.Sprint(v)
 			})))},
-			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", formatISKAmount))},
-			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", formatISKAmount))},
+			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
+			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
 			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoWindow().ShowLocation)},
 		})
 	case app.ContractTypeItemExchange:
 		if o.Price.ValueOrZero() > 0 {
-			x := widget.NewLabel(o.Price.StringFunc("?", formatISKAmount))
+			x := widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))
 			x.Importance = widget.DangerImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
 		} else {
-			x := widget.NewLabel(o.Reward.StringFunc("?", formatISKAmount))
+			x := widget.NewLabel(o.Reward.StringFunc("?", ui.FormatISKAmount))
 			x.Importance = widget.SuccessImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
@@ -682,11 +682,11 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 				ui.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
-			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
+			currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(float64(top.Amount)), total)
 		}
 		fi = slices.Concat(fi, []*widget.FormItem{
-			{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", formatISKAmount))},
-			{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", formatISKAmount))},
+			{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))},
+			{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", ui.FormatISKAmount))},
 			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
 			{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
 		})
@@ -834,17 +834,17 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%s m3", o.Volume.StringFunc("?", func(v float64) string {
 				return fmt.Sprint(v)
 			})))},
-			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", formatISKAmount))},
-			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", formatISKAmount))},
+			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
+			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
 			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoWindow().ShowLocation)},
 		})
 	case app.ContractTypeItemExchange:
 		if o.Price.ValueOrZero() > 0 {
-			x := widget.NewLabel(o.Price.StringFunc("?", formatISKAmount))
+			x := widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))
 			x.Importance = widget.DangerImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
 		} else {
-			x := widget.NewLabel(o.Reward.StringFunc("?", formatISKAmount))
+			x := widget.NewLabel(o.Reward.StringFunc("?", ui.FormatISKAmount))
 			x.Importance = widget.SuccessImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
@@ -863,11 +863,11 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 				ui.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
 				return
 			}
-			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
+			currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(float64(top.Amount)), total)
 		}
 		fi = slices.Concat(fi, []*widget.FormItem{
-			{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", formatISKAmount))},
-			{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", formatISKAmount))},
+			{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))},
+			{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", ui.FormatISKAmount))},
 			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
 			{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
 		})

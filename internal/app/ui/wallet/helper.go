@@ -1,28 +1,13 @@
 package wallet
 
 import (
-	"fmt"
-	"math"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-// formatISKAmount returns a formatted ISK amount.
-// This format is mainly used in detail windows.
-func formatISKAmount(v float64) string {
-	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
-	if math.Abs(v) > 999 {
-		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
-	}
-	return t
-}
 
 func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {
 	var color fyne.ThemeColorName

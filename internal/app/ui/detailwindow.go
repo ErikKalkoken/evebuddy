@@ -1,13 +1,19 @@
 package ui
 
 import (
+	"fmt"
+	"math"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -76,4 +82,14 @@ func MakeDetailWindow(arg MakeDetailWindowParams) {
 	} else {
 		arg.Window.SetContent(c)
 	}
+}
+
+// FormatISKAmount returns a formatted ISK amount.
+// This format is mainly used in detail windows.
+func FormatISKAmount(v float64) string {
+	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
+	if math.Abs(v) > 999 {
+		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
+	}
+	return t
 }

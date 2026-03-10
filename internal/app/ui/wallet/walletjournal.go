@@ -477,7 +477,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 			f := widget.NewForm()
 			f.Orientation = widget.Adaptive
 
-			amount := widget.NewLabel(o.Amount.StringFunc("?", formatISKAmount))
+			amount := widget.NewLabel(o.Amount.StringFunc("?", ui.FormatISKAmount))
 			amount.Importance = importanceISKAmount(o.Amount)
 			reason := o.Reason.ValueOrFallback("-")
 
@@ -560,7 +560,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 				widget.NewFormItem("Amount", amount),
-				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", formatISKAmount))),
+				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", ui.FormatISKAmount))),
 				widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 				widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 			}
@@ -579,7 +579,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 			if v, ok := o.TaxReceiver.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Tax",
-					widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
+					widget.NewLabel(o.Tax.StringFunc("?", ui.FormatISKAmount)),
 				))
 				items = append(items, widget.NewFormItem(
 					"Tax Receiver",
@@ -630,7 +630,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			f := widget.NewForm()
 			f.Orientation = widget.Adaptive
 
-			amount := widget.NewLabel(o.Amount.StringFunc("?", formatISKAmount))
+			amount := widget.NewLabel(o.Amount.StringFunc("?", ui.FormatISKAmount))
 			amount.Importance = importanceISKAmount(o.Amount)
 			reason := o.Reason.ValueOrFallback("-")
 
@@ -696,7 +696,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 				widget.NewFormItem("Amount", amount),
-				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", formatISKAmount))),
+				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", ui.FormatISKAmount))),
 				widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
 				widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 			}
@@ -715,7 +715,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			if v, ok := o.FirstParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Tax",
-					widget.NewLabel(o.Tax.StringFunc("?", formatISKAmount)),
+					widget.NewLabel(o.Tax.StringFunc("?", ui.FormatISKAmount)),
 				))
 				items = append(items, widget.NewFormItem(
 					"Tax Receiver",

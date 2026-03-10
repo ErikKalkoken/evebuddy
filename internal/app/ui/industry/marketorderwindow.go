@@ -2,7 +2,6 @@ package industry
 
 import (
 	"fmt"
-	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -55,7 +54,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Type", item),
-		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
+		widget.NewFormItem("Price", widget.NewLabel(ui.FormatISKAmount(r.price))),
 		widget.NewFormItem("Variant", widget.NewLabel(buySell)),
 		widget.NewFormItem("State", state),
 		widget.NewFormItem("Volume Total", widget.NewLabel(ihumanize.Comma(r.volumeTotal))),
@@ -115,14 +114,4 @@ func makeBoolLabel(v bool) *widget.Label {
 	l := widget.NewLabel("No")
 	l.Importance = widget.DangerImportance
 	return l
-}
-
-// formatISKAmount returns a formatted ISK amount.
-// This format is mainly used in detail windows.
-func formatISKAmount(v float64) string {
-	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
-	if math.Abs(v) > 999 {
-		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
-	}
-	return t
 }

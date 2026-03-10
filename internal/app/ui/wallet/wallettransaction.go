@@ -616,7 +616,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 		}
 		fyne.Do(func() {
 			var activity string
-			total := widget.NewLabel(formatISKAmount(o.Total()))
+			total := widget.NewLabel(ui.FormatISKAmount(o.Total()))
 			if o.IsBuy {
 				total.Importance = widget.DangerImportance
 				activity = "Buy"
@@ -636,7 +636,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
 					u.InfoWindow().Show(o.Type.EveEntity())
 				})),
-				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
+				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", total),
 				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
@@ -703,8 +703,8 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
 					u.InfoWindow().Show(o.Type.EveEntity())
 				})),
-				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
-				widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
+				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
+				widget.NewFormItem("Total", widget.NewLabel(ui.FormatISKAmount(totalAmount))),
 				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
 				widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
