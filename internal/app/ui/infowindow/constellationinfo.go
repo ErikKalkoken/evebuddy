@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
