@@ -10,6 +10,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
+// Width of common columns in data tables
+const (
+	ColumnWidthEntity   = 200
+	ColumnWidthDateTime = 150
+	ColumnWidthLocation = 350
+	ColumnWidthRegion   = 150
+)
+
+// Global UI constants
+const (
+	IconPixelSize      = 64
+	IconUnitSize       = 28
+	FloatFormat        = "#,###.##"
+	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+)
+
+// EVEImageService defines which methods from the EVE image service is used in the UI.
 type EVEImageService interface {
 	AllianceLogo(id int64, size int) (fyne.Resource, error)
 	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
@@ -31,6 +48,7 @@ type EVEImageService interface {
 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
+// InfoViewer defines which methods from the info viewer is used in the UI.
 type InfoViewer interface {
 	Show(o *app.EveEntity)
 	ShowLocation(id int64)
@@ -38,20 +56,15 @@ type InfoViewer interface {
 	ShowType(typeID, characterID int64)
 }
 
-// width of common columns in data tables
-const (
-	ColumnWidthEntity   = 200
-	ColumnWidthDateTime = 150
-	ColumnWidthLocation = 350
-	ColumnWidthRegion   = 150
-)
-
-const (
-	IconPixelSize      = 64
-	IconUnitSize       = 28
-	FloatFormat        = "#,###.##"
-	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
-)
+// Name returns the name for this app.
+func Name() string {
+	info := fyne.CurrentApp().Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
+}
 
 // WebsiteRootURL returns the URL of the app's website.
 func WebsiteRootURL() *url.URL {
@@ -65,14 +78,4 @@ func WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
-}
-
-// Name returns the name for this app.
-func Name() string {
-	info := fyne.CurrentApp().Metadata()
-	name := info.Name
-	if name == "" {
-		return "EVE Buddy"
-	}
-	return name
 }

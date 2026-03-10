@@ -18,6 +18,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// EveEntityEIS defines the methods needed from the EVE image service
+// to render EveEntity widgets.
 type EveEntityEIS interface {
 	AllianceLogo(int64, int) (fyne.Resource, error)
 	CharacterPortrait(int64, int) (fyne.Resource, error)
@@ -28,7 +30,7 @@ type EveEntityEIS interface {
 
 var eveEntityResourceCache xsync.Map[int64, fyne.Resource]
 
-// LoadEveEntityIconAsync fetches an icon for an EveEntity and returns it in avatar style.
+// LoadEveEntityIconAsync loads a cached item asynchronous for an EveEntity object.
 func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
 	if ee == nil {
 		setIcon(theme.BrokenImageIcon())
@@ -55,9 +57,10 @@ func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, size int, setIc
 	)
 }
 
+// EveEntityIconLoader is defines the function signature for a EveEntity icon loader
 type EveEntityIconLoader func(*app.EveEntity, int, func(r fyne.Resource))
 
-// LoadEveEntityIconFunc is an adapter that returns a loadIcon function for LoadEveEntityIconAsync.
+// LoadEveEntityIconFunc is an adapter that returns an icon loader for LoadEveEntityIconAsync.
 func LoadEveEntityIconFunc(eis EveEntityEIS) EveEntityIconLoader {
 	return func(o *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
 		LoadEveEntityIconAsync(eis, o, size, setIcon)
@@ -93,6 +96,7 @@ func EveEntityIcon(eis EveEntityEIS, ee *app.EveEntity, size int, fallback fyne.
 	return r, nil
 }
 
+// EveEntityListItem is a list item widget that renders an EveEntity with icon and name.
 type EveEntityListItem struct {
 	widget.BaseWidget
 
@@ -106,6 +110,7 @@ type EveEntityListItem struct {
 	name     *widget.Label
 }
 
+// NewEveEntityListItem returns a new EveEntityListItem widget.
 func NewEveEntityListItem(loadIcon EveEntityIconLoader) *EveEntityListItem {
 	w := &EveEntityListItem{
 		icon: xwidget.NewImageFromResource(
@@ -147,6 +152,7 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+// Set updates the widget.
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
 	if w.IsAvatar {
 		w.icon.CornerRadius = w.IconUnitSize / 2
@@ -158,6 +164,7 @@ func (w *EveEntityListItem) Set(o *app.EveEntity) {
 	w.name.SetText(o.Name)
 }
 
+// Set2 updates the widget.
 func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCategory) {
 	w.Set(&app.EveEntity{
 		Category: category,

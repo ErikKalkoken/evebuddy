@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 )
 
+// Theme color
 const (
 	ColorNameInfo      fyne.ThemeColorName = "info"
 	ColorNameCreative  fyne.ThemeColorName = "creative"
