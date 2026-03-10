@@ -490,7 +490,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
 			xwidget.NewStandardSpacer(),
 		)
-		u := app.WebsiteRootURL().JoinPath("releases")
+		u := ui.WebsiteRootURL().JoinPath("releases")
 		d := dialog.NewCustomConfirm(
 			"Update available", "Download", "Close", c, func(ok bool) {
 				if !ok {

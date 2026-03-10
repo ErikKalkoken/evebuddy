@@ -45,14 +45,14 @@ func loadIconFunc(eis searchResultEIS, eus searchResultEUS) func(o *app.EveEntit
 					}
 					switch et.Group.Category.ID {
 					case app.EveCategorySKINs:
-						return eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+						return eis.InventoryTypeSKIN(et.ID, ui.IconPixelSize)
 					case app.EveCategoryBlueprint:
-						return eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
+						return eis.InventoryTypeBPO(et.ID, ui.IconPixelSize)
 					default:
-						return eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
+						return eis.InventoryTypeIcon(et.ID, ui.IconPixelSize)
 					}
 				default:
-					return ui.EveEntityIcon(eis, o, app.IconPixelSize, icons.BlankSvg)
+					return ui.EveEntityIcon(eis, o, ui.IconPixelSize, icons.BlankSvg)
 				}
 			},
 			func(r fyne.Resource) {

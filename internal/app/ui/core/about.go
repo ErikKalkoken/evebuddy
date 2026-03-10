@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
 
@@ -21,7 +21,7 @@ const (
 )
 
 func makeAboutPage(u *baseUI) fyne.CanvasObject {
-	title := widget.NewLabel(app.Name())
+	title := widget.NewLabel(ui.Name())
 	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
 
@@ -31,7 +31,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		v = "?"
 	}
 	currentVersion := widget.NewLabel(v)
-	rootURL := app.WebsiteRootURL()
+	rootURL := ui.WebsiteRootURL()
 	releaseNotes := widget.NewHyperlink("What's new", rootURL.JoinPath("releases", "v"+v))
 
 	_, size := u.MainWindow().Canvas().InteractiveArea()

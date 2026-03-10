@@ -437,7 +437,7 @@ type searchResult struct {
 func newSearchResult(loadIcon func(o *app.EveEntity, setIcon func(r fyne.Resource)), supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
 	image := xwidget.NewImageFromResource(
 		icons.BlankSvg,
-		fyne.NewSquareSize(app.IconUnitSize),
+		fyne.NewSquareSize(ui.IconUnitSize),
 	)
 	w := &searchResult{
 		loadIcon:            loadIcon,

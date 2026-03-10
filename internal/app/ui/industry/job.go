@@ -156,7 +156,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 		Create: func() fyne.CanvasObject {
 			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
-				fyne.NewSquareSize(app.IconUnitSize),
+				fyne.NewSquareSize(ui.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
@@ -166,7 +166,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.blueprintTypeName)
 			x := border[1].(*canvas.Image)
-			u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, app.IconPixelSize, func(r fyne.Resource) {
+			u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
@@ -207,7 +207,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 	}, {
 		ID:    industryJobsColEndDate,
 		Label: "End date",
-		Width: app.ColumnWidthDateTime,
+		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b industryJobRow) int {
 			return a.endDate.Compare(b.endDate)
 		},
@@ -217,7 +217,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 	}, {
 		ID:    industryJobsColLocation,
 		Label: "Location",
-		Width: app.ColumnWidthLocation,
+		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b industryJobRow) int {
 			return optional.Compare(a.location.Name, b.location.Name)
 		},
@@ -250,7 +250,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 	}, {
 		ID:    industryJobsColInstaller,
 		Label: "Installer",
-		Width: app.ColumnWidthEntity,
+		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b industryJobRow) int {
 			return strings.Compare(a.installer.Name, b.installer.Name)
 		},

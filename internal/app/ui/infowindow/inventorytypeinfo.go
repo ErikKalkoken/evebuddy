@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/skills"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -51,7 +52,7 @@ func newInventoryTypeInfo(iw *InfoWindow, typeID, characterID int64) *inventoryT
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
 	a := &inventoryTypeInfo{
-		characterIcon: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		characterIcon: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		characterID:   characterID,
 		checkIcon:     widget.NewIcon(icons.BlankSvg),
 		description:   newLabelWithWrapAndSelectable(""),
@@ -134,15 +135,15 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 	})
 	fyne.Do(func() {
 		if et.IsSKIN() {
-			a.iw.u.EVEImage().InventoryTypeSKINAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().InventoryTypeSKINAsync(et.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		} else if et.IsBlueprint() {
-			a.iw.u.EVEImage().InventoryTypeBPOAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().InventoryTypeBPOAsync(et.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		} else {
-			a.iw.u.EVEImage().InventoryTypeIconAsync(et.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().InventoryTypeIconAsync(et.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.typeIcon.SetResource(r)
 			})
 		}
@@ -161,7 +162,7 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 		}
 		character = ee
 		fyne.Do(func() {
-			a.iw.u.EVEImage().CharacterPortraitAsync(character.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().CharacterPortraitAsync(character.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.characterIcon.Resource = r
 				a.characterIcon.Refresh()
 			})

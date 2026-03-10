@@ -241,7 +241,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
 	}
 
-	u.window = u.app.NewWindow(app.Name())
+	u.window = u.app.NewWindow(ui.Name())
 	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
 
 	if arg.ClearCacheFunc != nil {
@@ -916,7 +916,7 @@ func (u *baseUI) setCharacterAvatarAsync(characterID int64, setIcon func(fyne.Re
 		},
 		setIcon,
 		func() (fyne.Resource, error) {
-			r, err := u.eis.CharacterPortrait(characterID, app.IconPixelSize)
+			r, err := u.eis.CharacterPortrait(characterID, ui.IconPixelSize)
 			if err != nil {
 				return nil, err
 			}
@@ -936,7 +936,7 @@ func (u *baseUI) setCorporationAvatarAsync(corporationID int64, setIcon func(fyn
 		},
 		setIcon,
 		func() (fyne.Resource, error) {
-			r, err := u.eis.CorporationLogo(corporationID, app.IconPixelSize)
+			r, err := u.eis.CorporationLogo(corporationID, ui.IconPixelSize)
 			if err != nil {
 				return nil, err
 			}
@@ -1070,7 +1070,7 @@ func (u *baseUI) MakeWindowTitle(parts ...string) string {
 	if u.isMobile {
 		return parts[0]
 	}
-	parts = append(parts, app.Name())
+	parts = append(parts, ui.Name())
 	return strings.Join(parts, " - ")
 }
 

@@ -130,7 +130,7 @@ func newCharacterAugmentationItem(
 ) *characterAugmentationItem {
 	iconMain := xwidget.NewImageFromResource(
 		icons.BlankSvg,
-		fyne.NewSquareSize(app.IconUnitSize*1.2),
+		fyne.NewSquareSize(ui.IconUnitSize*1.2),
 	)
 	iconInfo := xwidget.NewTappableIcon(
 		theme.NewThemedResource(icons.InformationSlabCircleSvg),
@@ -174,7 +174,7 @@ func (w *characterAugmentationItem) set(o *app.CharacterImplant) {
 	w.name.SetText(o.EveType.Name)
 	w.name.SetToolTip(o.EveType.Description)
 	w.slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
-	w.loadTypeIcon(o.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadTypeIcon(o.EveType.ID, ui.IconPixelSize, func(r fyne.Resource) {
 		w.iconMain.Resource = r
 		w.iconMain.Refresh()
 	})

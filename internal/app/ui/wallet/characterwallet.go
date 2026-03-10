@@ -14,6 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -139,7 +140,7 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 		return
 	}
 
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormat, balance))
 	if balance > 1000 {
 		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
 	}

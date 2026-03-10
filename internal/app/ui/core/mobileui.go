@@ -19,6 +19,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
@@ -385,7 +386,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		if !ok {
 			s = ""
 		} else {
-			s = fmt.Sprintf("%s ISK", humanize.FormatFloat(app.FloatFormat, balance))
+			s = fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormat, balance))
 			if balance > 1000 {
 				s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
 			}

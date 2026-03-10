@@ -21,6 +21,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
@@ -465,7 +466,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
-		name := app.Name()
+		name := ui.Name()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
 		m := fyne.NewMenu(
@@ -924,7 +925,7 @@ func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 	} else {
 		fb = icons.BlankSvg
 	}
-	icon := xwidget.NewImageFromResource(fb, fyne.NewSquareSize(app.IconUnitSize))
+	icon := xwidget.NewImageFromResource(fb, fyne.NewSquareSize(ui.IconUnitSize))
 	button := xwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
 	w := &PageHeader{
 		title:         title2,

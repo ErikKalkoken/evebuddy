@@ -84,7 +84,7 @@ func NewClones(u baseUI) *Clones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
 		ID:    clonesColLocation,
 		Label: "Location",
-		Width: app.ColumnWidthLocation,
+		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
 		},
@@ -94,7 +94,7 @@ func NewClones(u baseUI) *Clones {
 	}, {
 		ID:    clonesColRegion,
 		Label: "Region",
-		Width: app.ColumnWidthRegion,
+		Width: ui.ColumnWidthRegion,
 		Sort: func(a, b cloneRow) int {
 			return cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
 		},

@@ -152,7 +152,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			}), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			},
@@ -387,11 +387,11 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, characterID int6
 		r := walletJournalRow{
 			amount: o.Amount,
 			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
 			balance: o.Balance,
 			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
 			characterID:    characterID,
 			date:           o.Date,
@@ -424,11 +424,11 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 		r := walletJournalRow{
 			amount: o.Amount,
 			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
 			balance: o.Balance,
 			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
 			corporationID:  corporationID,
 			division:       division,

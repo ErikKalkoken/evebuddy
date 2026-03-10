@@ -281,7 +281,7 @@ func (w *eveEntityEntry) update() {
 				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
-				w.loadIcon(ee, app.IconPixelSize, func(r fyne.Resource) {
+				w.loadIcon(ee, ui.IconPixelSize, func(r fyne.Resource) {
 					nameItem.Icon = r
 					pm.Refresh()
 				})
@@ -370,7 +370,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 					))),
 		),
 	)
-	w.loadIcon(w.ee, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIcon(w.ee, ui.IconPixelSize, func(r fyne.Resource) {
 		icon.Resource = r
 		icon.Refresh()
 	})
@@ -536,7 +536,7 @@ func newEntityItem(loadIcon ui.EveEntityIconLoader) *entityItem {
 	name.Truncation = fyne.TextTruncateClip
 	category := widget.NewLabel("")
 	category.SizeName = theme.SizeNameCaptionText
-	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize))
 	w := &entityItem{
 		category: category,
 		loadIcon: loadIcon,
@@ -571,7 +571,7 @@ func (w *entityItem) CreateRenderer() fyne.WidgetRenderer {
 func (w *entityItem) set(o *app.EveEntity) {
 	w.name.SetText(o.Name)
 	w.category.SetText(o.CategoryDisplay())
-	w.loadIcon(o, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIcon(o, ui.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

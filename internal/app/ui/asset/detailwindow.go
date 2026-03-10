@@ -94,13 +94,13 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {
 			case app.VariantSKIN:
-				u.EVEImage().InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeSKINAsync(r.typeID, ui.IconPixelSize, setter)
 			case app.VariantBPO:
-				u.EVEImage().InventoryTypeBPOAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeBPOAsync(r.typeID, ui.IconPixelSize, setter)
 			case app.VariantBPC:
-				u.EVEImage().InventoryTypeBPCAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeBPCAsync(r.typeID, ui.IconPixelSize, setter)
 			default:
-				u.EVEImage().InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
+				u.EVEImage().InventoryTypeIconAsync(r.typeID, ui.IconPixelSize, setter)
 			}
 		},
 		MinSize: fyne.NewSize(500, 450),

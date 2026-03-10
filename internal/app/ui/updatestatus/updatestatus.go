@@ -457,7 +457,7 @@ type entityItem struct {
 }
 
 func newEntityItem(isOfflineMode bool, loadCharacterIcon, loadCorporationIcon loadFuncAsync) *entityItem {
-	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize))
 	name := widget.NewLabel("Template")
 	status := widget.NewLabel("Template")
 	spinner := widget.NewActivity()
@@ -497,12 +497,12 @@ func (w *entityItem) set(r sectionEntity) {
 		w.name.Refresh()
 		switch r.category {
 		case sectionCharacter:
-			w.loadCharacterIcon(r.id, app.IconPixelSize, func(r fyne.Resource) {
+			w.loadCharacterIcon(r.id, ui.IconPixelSize, func(r fyne.Resource) {
 				w.icon.Resource = r
 				w.icon.Refresh()
 			})
 		case sectionCorporation:
-			w.loadCorporationIcon(r.id, app.IconPixelSize, func(r fyne.Resource) {
+			w.loadCorporationIcon(r.id, ui.IconPixelSize, func(r fyne.Resource) {
 				w.icon.Resource = r
 				w.icon.Refresh()
 			})

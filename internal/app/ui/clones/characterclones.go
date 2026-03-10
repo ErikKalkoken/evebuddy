@@ -16,6 +16,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -282,7 +283,7 @@ type characterJumpCloneItem struct {
 }
 
 func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showType func(int64, int64), showLocation func(int64)) *characterJumpCloneItem {
-	iconMain := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	iconMain := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize))
 	main := ttwidget.NewLabel("Template")
 	main.Truncation = fyne.TextTruncateEllipsis
 	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
@@ -354,7 +355,7 @@ func (w *characterJumpCloneItem) set(n *characterCloneNode) {
 		w.iconMain.Show()
 	}
 	w.implants.Hide()
-	w.loadTypeIcon(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadTypeIcon(n.implantTypeID, ui.IconPixelSize, func(r fyne.Resource) {
 		w.iconMain.Resource = r
 		w.iconMain.Refresh()
 	})

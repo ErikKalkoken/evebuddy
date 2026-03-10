@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 // allianceInfo shows public information about a character.
@@ -73,7 +73,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *allianceInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
-		a.iw.u.EVEImage().AllianceLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().AllianceLogoAsync(a.id, ui.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})

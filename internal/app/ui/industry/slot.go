@@ -115,16 +115,16 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
 		ID:    industrySlotsColCharacter,
 		Label: "Character",
-		Width: app.ColumnWidthEntity,
+		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b industrySlotRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
 		Create: func() fyne.CanvasObject {
 			icon := xwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
+				fyne.NewSquareSize(ui.IconUnitSize),
 			)
-			icon.CornerRadius = app.IconUnitSize / 2
+			icon.CornerRadius = ui.IconUnitSize / 2
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			return container.NewBorder(nil, nil, icon, nil, name)
@@ -143,7 +143,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 				label.Text = r.characterName
 				label.TextStyle = fyne.TextStyle{}
 				label.Refresh()
-				u.EVEImage().CharacterPortraitAsync(r.characterID, app.IconPixelSize, func(r fyne.Resource) {
+				u.EVEImage().CharacterPortraitAsync(r.characterID, ui.IconPixelSize, func(r fyne.Resource) {
 					icon.Resource = r
 					icon.Refresh()
 				})

@@ -169,7 +169,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 	}, {
 		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
-		Width: app.ColumnWidthDateTime,
+		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b contractRow) int {
 			return a.dateIssued.Compare(b.dateIssued)
 		},

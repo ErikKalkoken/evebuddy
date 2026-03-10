@@ -86,7 +86,7 @@ func MakeDetailWindow(arg MakeDetailWindowParams) {
 
 // FormatISKAmount returns a formatted ISK amount.
 func FormatISKAmount(v float64) string {
-	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
+	t := humanize.FormatFloat(FloatFormat, v) + " ISK"
 	if math.Abs(v) > 999 {
 		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
 	}

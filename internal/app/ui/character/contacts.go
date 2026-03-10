@@ -529,7 +529,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	w.loadIcon(r.contact, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIcon(r.contact, ui.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

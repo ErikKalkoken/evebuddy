@@ -181,7 +181,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				return cmp.Compare(a.price, b.price)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(humanize.FormatFloat(ui.FloatFormat, r.price), widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 			},
@@ -200,7 +200,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		}, {
 			ID:    marketOrdersColLocation,
 			Label: "Location",
-			Width: app.ColumnWidthLocation,
+			Width: ui.ColumnWidthLocation,
 			Sort: func(a, b marketOrderRow) int {
 				return strings.Compare(a.locationName, b.locationName)
 			},
@@ -210,7 +210,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		}, {
 			ID:    marketOrdersColRegion,
 			Label: "Region",
-			Width: app.ColumnWidthRegion,
+			Width: ui.ColumnWidthRegion,
 			Sort: func(a, b marketOrderRow) int {
 				return strings.Compare(a.regionName, b.regionName)
 			},
@@ -220,7 +220,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		}, {
 			ID:    marketOrdersColOwner,
 			Label: "Owner",
-			Width: app.ColumnWidthEntity,
+			Width: ui.ColumnWidthEntity,
 			Sort: func(a, b marketOrderRow) int {
 				return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 			},

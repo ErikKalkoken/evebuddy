@@ -42,8 +42,8 @@ func NewMailHeaderItem(loadIcon ui.EveEntityIconLoader) *MailHeaderItem {
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}
-	w.icon = xwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
-	w.icon.CornerRadius = app.IconUnitSize / 2
+	w.icon = xwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(ui.IconUnitSize))
+	w.icon.CornerRadius = ui.IconUnitSize / 2
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -55,7 +55,7 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIcon(from, ui.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
@@ -108,8 +108,8 @@ func NewMailHeader(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *
 	w.ExtendBaseWidget(w)
 	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
-	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	w.icon.SetCornerRadius(app.IconUnitSize / 2)
+	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
+	w.icon.SetCornerRadius(ui.IconUnitSize / 2)
 	w.to.Hide()
 	return w
 }
@@ -131,7 +131,7 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 		w.showInfo(from)
 	}
 	w.to.Show()
-	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
+	w.loadIcon(from, ui.IconPixelSize, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()

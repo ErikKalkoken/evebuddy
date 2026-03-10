@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -43,7 +44,7 @@ func newCorporationInfo(iw *InfoWindow, id int64) *corporationInfo {
 	hq.Wrapping = fyne.TextWrapWord
 	a := &corporationInfo{
 		alliance:     alliance,
-		allianceLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		allianceLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		description:  newLabelWithWrapAndSelectable(""),
 		hq:           hq,
 		id:           id,
@@ -106,7 +107,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) update(ctx context.Context) error {
 	fyne.Do(func() {
-		a.iw.u.EVEImage().CorporationLogoAsync(a.id, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().CorporationLogoAsync(a.id, ui.IconPixelSize, func(r fyne.Resource) {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
@@ -132,7 +133,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		a.alliance.OnTapped = func() {
 			a.iw.Show(v)
 		}
-		a.iw.u.EVEImage().AllianceLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().AllianceLogoAsync(v.ID, ui.IconPixelSize, func(r fyne.Resource) {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		})

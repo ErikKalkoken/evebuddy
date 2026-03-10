@@ -145,7 +145,7 @@ func NewColonies(u baseUI) *Colonies {
 		Create: func() fyne.CanvasObject {
 			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
-				fyne.NewSquareSize(app.IconUnitSize),
+				fyne.NewSquareSize(ui.IconUnitSize),
 			)
 			name := xwidget.NewRichText()
 			name.Truncation = fyne.TextTruncateClip
@@ -155,7 +155,7 @@ func NewColonies(u baseUI) *Colonies {
 			border := co.(*fyne.Container).Objects
 			border[0].(*xwidget.RichText).Set(r.nameDisplay)
 			x := border[1].(*canvas.Image)
-			u.EVEImage().InventoryTypeIconAsync(r.planetTypeID, app.IconPixelSize, func(r fyne.Resource) {
+			u.EVEImage().InventoryTypeIconAsync(r.planetTypeID, ui.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
@@ -180,7 +180,7 @@ func NewColonies(u baseUI) *Colonies {
 	}, {
 		ID:    coloniesColEndDate,
 		Label: "End data",
-		Width: app.ColumnWidthDateTime,
+		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
 			return optional.CompareFunc(a.extractorExpiry, b.extractorExpiry, func(x, y time.Time) int {
 				return x.Compare(y)
@@ -201,7 +201,7 @@ func NewColonies(u baseUI) *Colonies {
 	}, {
 		ID:    coloniesColCharacter,
 		Label: "Character",
-		Width: app.ColumnWidthEntity,
+		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b colonyRow) int {
 			return xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 		},

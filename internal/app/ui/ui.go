@@ -2,6 +2,9 @@
 package ui
 
 import (
+	"log/slog"
+	"net/url"
+
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -33,4 +36,43 @@ type InfoWindow interface {
 	ShowLocation(id int64)
 	ShowRace(id int64)
 	ShowType(typeID, characterID int64)
+}
+
+// width of common columns in data tables
+const (
+	ColumnWidthEntity   = 200
+	ColumnWidthDateTime = 150
+	ColumnWidthLocation = 350
+	ColumnWidthRegion   = 150
+)
+
+const (
+	IconPixelSize      = 64
+	IconUnitSize       = 28
+	FloatFormat        = "#,###.##"
+	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+)
+
+// WebsiteRootURL returns the URL of the app's website.
+func WebsiteRootURL() *url.URL {
+	s := fyne.CurrentApp().Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
+}
+
+// Name returns the name for this app.
+func Name() string {
+	info := fyne.CurrentApp().Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
 }

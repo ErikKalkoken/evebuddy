@@ -74,7 +74,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		items = append(items, widget.NewFormItem(
 			"Escrow",
 			widget.NewLabel(r.escrow.StringFunc("-", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
+				return humanize.FormatFloat(ui.FloatFormat, v)
 			})),
 		))
 	}

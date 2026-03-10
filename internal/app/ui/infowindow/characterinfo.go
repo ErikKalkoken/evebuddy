@@ -16,6 +16,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -61,7 +62,7 @@ func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
 		alliance:        alliance,
 		bio:             bio,
 		corporation:     corporation,
-		corporationLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		description:     newLabelWithWrapAndSelectable(""),
 		id:              id,
 		membership:      widget.NewLabel(""),
@@ -173,7 +174,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		return err
 	}
 	fyne.Do(func() {
-		a.iw.u.EVEImage().CorporationLogoAsync(o.Corporation.ID, app.IconPixelSize, func(r fyne.Resource) {
+		a.iw.u.EVEImage().CorporationLogoAsync(o.Corporation.ID, ui.IconPixelSize, func(r fyne.Resource) {
 			a.corporationLogo.Resource = r
 			a.corporationLogo.Refresh()
 		})

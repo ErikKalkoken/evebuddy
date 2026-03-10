@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -32,13 +33,13 @@ func loadAssetIconAsync(eis assetIconEIS, typeID int64, variant app.InventoryTyp
 		func() (fyne.Resource, error) {
 			switch variant {
 			case app.VariantBPO:
-				return eis.InventoryTypeBPO(typeID, app.IconPixelSize)
+				return eis.InventoryTypeBPO(typeID, ui.IconPixelSize)
 			case app.VariantBPC:
-				return eis.InventoryTypeBPC(typeID, app.IconPixelSize)
+				return eis.InventoryTypeBPC(typeID, ui.IconPixelSize)
 			case app.VariantSKIN:
-				return eis.InventoryTypeSKIN(typeID, app.IconPixelSize)
+				return eis.InventoryTypeSKIN(typeID, ui.IconPixelSize)
 			default:
-				return eis.InventoryTypeIcon(typeID, app.IconPixelSize)
+				return eis.InventoryTypeIcon(typeID, ui.IconPixelSize)
 			}
 		},
 		func(r fyne.Resource) {

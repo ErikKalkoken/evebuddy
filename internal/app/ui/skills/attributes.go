@@ -180,7 +180,7 @@ type characterAttributeItem struct {
 func newCharacterAttributeItem() *characterAttributeItem {
 	icon := xwidget.NewImageFromResource(
 		icons.BlankSvg,
-		fyne.NewSquareSize(app.IconUnitSize),
+		fyne.NewSquareSize(ui.IconUnitSize),
 	)
 	w := &characterAttributeItem{
 		icon:   icon,

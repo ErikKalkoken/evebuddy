@@ -129,7 +129,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
 		ID:    walletTransactionColDate,
 		Label: "Date",
-		Width: app.ColumnWidthDateTime,
+		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b walletTransactionRow) int {
 			return a.date.Compare(b.date)
 		},
@@ -185,7 +185,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	}, {
 		ID:    walletTransactionColClient,
 		Label: "Client",
-		Width: app.ColumnWidthEntity,
+		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b walletTransactionRow) int {
 			return xstrings.CompareIgnoreCase(a.clientName, b.clientName)
 		},
@@ -195,7 +195,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	}, {
 		ID:    walletTransactionColLocation,
 		Label: "Where",
-		Width: app.ColumnWidthLocation,
+		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b walletTransactionRow) int {
 			return strings.Compare(a.locationName, b.locationName)
 		},
@@ -497,12 +497,12 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalFormatted:   humanize.FormatFloat(app.FloatFormat, total),
+			totalFormatted:   humanize.FormatFloat(ui.FloatFormat, total),
 			transactionID:    o.TransactionID,
 			typeID:           o.Type.ID,
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormat, o.UnitPrice),
 		}
 		if o.IsBuy {
 			r.totalColor = theme.ColorNameError
@@ -573,12 +573,12 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalFormatted:   humanize.FormatFloat(app.FloatFormat, total),
+			totalFormatted:   humanize.FormatFloat(ui.FloatFormat, total),
 			transactionID:    o.TransactionID,
 			typeID:           o.Type.ID,
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormat, o.UnitPrice),
 		}
 		if o.IsBuy {
 			r.totalColor = theme.ColorNameError

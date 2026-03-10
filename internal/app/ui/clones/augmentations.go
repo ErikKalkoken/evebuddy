@@ -280,7 +280,7 @@ func newAugmentationNodeItem(
 ) *augmentationNodeItem {
 	iconMain := xwidget.NewImageFromResource(
 		icons.BlankSvg,
-		fyne.NewSquareSize(app.IconUnitSize),
+		fyne.NewSquareSize(ui.IconUnitSize),
 	)
 	main := ttwidget.NewLabel("")
 	main.Truncation = fyne.TextTruncateEllipsis
@@ -314,9 +314,9 @@ func (w *augmentationNodeItem) CreateRenderer() fyne.WidgetRenderer {
 
 func (w *augmentationNodeItem) set(n *augmentationNode) {
 	if n.IsTop() {
-		w.loadCharacterPortrait(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
+		w.loadCharacterPortrait(n.characterID, ui.IconPixelSize, func(r fyne.Resource) {
 			w.iconMain.Resource = r
-			w.iconMain.CornerRadius = app.IconUnitSize / 2
+			w.iconMain.CornerRadius = ui.IconUnitSize / 2
 			w.iconMain.Refresh()
 		})
 		if n.implantCount > 0 {
@@ -333,7 +333,7 @@ func (w *augmentationNodeItem) set(n *augmentationNode) {
 			w.showCharacter(n.characterID)
 		}
 	} else {
-		w.loadTypeIcon(n.implantTypeID, app.IconPixelSize, func(r fyne.Resource) {
+		w.loadTypeIcon(n.implantTypeID, ui.IconPixelSize, func(r fyne.Resource) {
 			w.iconMain.Resource = r
 			w.iconMain.CornerRadius = 0
 			w.iconMain.Refresh()

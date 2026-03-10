@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -166,7 +167,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 				return err
 			}
 			fyne.Do(func() {
-				a.iw.u.EVEImage().InventoryTypeIconAsync(id, app.IconPixelSize, func(r fyne.Resource) {
+				a.iw.u.EVEImage().InventoryTypeIconAsync(id, ui.IconPixelSize, func(r fyne.Resource) {
 					a.logo.Resource = r
 					a.logo.Refresh()
 				})

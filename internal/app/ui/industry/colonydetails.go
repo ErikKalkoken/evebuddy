@@ -147,7 +147,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       ui.NewLabelWithTruncation(""),
-		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
@@ -334,7 +334,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	expiryTimes := cp.ExtractionsExpiryTimes()
 
 	fyne.Do(func() {
-		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, app.IconPixelSize, func(res fyne.Resource) {
+		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, ui.IconPixelSize, func(res fyne.Resource) {
 			a.icon.Resource = res
 			a.icon.Refresh()
 		})

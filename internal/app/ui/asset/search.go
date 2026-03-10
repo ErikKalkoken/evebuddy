@@ -195,7 +195,7 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 		r.total.Set(v * float64(quantity))
 	}
 	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
-		return humanize.FormatFloat(app.FloatFormat, v)
+		return humanize.FormatFloat(ui.FloatFormat, v)
 	})
 }
 
@@ -254,7 +254,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 		Create: func() fyne.CanvasObject {
 			icon := xwidget.NewImageFromResource(
 				icons.BlankSvg,
-				fyne.NewSquareSize(app.IconUnitSize),
+				fyne.NewSquareSize(ui.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
@@ -282,7 +282,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 	}, {
 		ID:    searchColLocation,
 		Label: "Location",
-		Width: app.ColumnWidthLocation,
+		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b assetRow) int {
 			return strings.Compare(a.locationName, b.locationName)
 		},
@@ -351,7 +351,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 		}, {
 			ID:    searchColTags,
 			Label: "Tags",
-			Width: app.ColumnWidthEntity,
+			Width: ui.ColumnWidthEntity,
 			Update: func(r assetRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
 			},

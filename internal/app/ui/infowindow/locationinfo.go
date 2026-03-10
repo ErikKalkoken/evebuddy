@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -48,7 +49,7 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
 		owner:       owner,
-		ownerLogo:   xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		ownerLogo:   xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		typeImage:   typeImage,
 		typeInfo:    typeInfo,
 	}
@@ -116,7 +117,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 	}
 	if v, ok := o.Owner.Value(); ok {
 		fyne.Do(func() {
-			a.iw.u.EVEImage().CorporationLogoAsync(v.ID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().CorporationLogoAsync(v.ID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.ownerLogo.Resource = r
 				a.ownerLogo.Refresh()
 			})
@@ -220,7 +221,7 @@ func (a *raceInfo) update(ctx context.Context) error {
 	}
 	if factionID, ok := o.FactionID(); ok {
 		fyne.Do(func() {
-			a.iw.u.EVEImage().FactionLogoAsync(factionID, app.IconPixelSize, func(r fyne.Resource) {
+			a.iw.u.EVEImage().FactionLogoAsync(factionID, ui.IconPixelSize, func(r fyne.Resource) {
 				a.logo.Resource = r
 				a.logo.Refresh()
 			})

@@ -110,10 +110,10 @@ func NewEveEntityListItem(loadIcon EveEntityIconLoader) *EveEntityListItem {
 	w := &EveEntityListItem{
 		icon: xwidget.NewImageFromResource(
 			icons.BlankSvg,
-			fyne.NewSquareSize(app.IconUnitSize),
+			fyne.NewSquareSize(IconUnitSize),
 		),
-		IconPixelSize: app.IconPixelSize,
-		IconUnitSize:  app.IconUnitSize,
+		IconPixelSize: IconPixelSize,
+		IconUnitSize:  IconUnitSize,
 		loadIcon:      loadIcon,
 		name:          widget.NewLabel(""),
 		Truncation:    fyne.TextTruncateClip,

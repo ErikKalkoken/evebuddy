@@ -635,7 +635,7 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	w.ExtendBaseWidget(w)
 	var logoSize float32
 	if isSmall {
-		logoSize = app.IconUnitSize
+		logoSize = ui.IconUnitSize
 	} else {
 		logoSize = 40
 	}
