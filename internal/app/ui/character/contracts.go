@@ -608,20 +608,20 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 			nil,
 			availabilityLabel,
 			nil,
-			makeEveEntityActionLabel(v, u.InfoWindow().Show),
+			ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
 		)
 	} else {
 		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
+		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			characterID,
 			characterName,
 			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
+		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
@@ -709,7 +709,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
-				makeLinkLabel(it.Type.Name, func() {
+				ui.MakeLinkLabel(it.Type.Name, func() {
 					u.InfoWindow().ShowType(it.Type.ID, characterID)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
@@ -789,20 +789,20 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 			nil,
 			availabilityLabel,
 			nil,
-			makeEveEntityActionLabel(v, u.InfoWindow().Show),
+			ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
 		)
 	} else {
 		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
+		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			corporationID,
 			corporationName,
 			u.InfoWindow().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
+		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
@@ -890,7 +890,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		}
 		makeItem := func(it *app.CorporationContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
-				makeLinkLabel(it.Type.Name, func() {
+				ui.MakeLinkLabel(it.Type.Name, func() {
 					u.InfoWindow().ShowType(it.Type.ID, 0)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
@@ -949,4 +949,27 @@ func makeContractExpiresString(dateExpired time.Time, isExpired bool) string {
 		ds = ihumanize.RelTime(dateExpired)
 	}
 	return fmt.Sprintf("%s (%s)", ts, ds)
+}
+
+// ui.MakeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
+func makeEveEntityActionLabel2(o optional.Optional[*app.EveEntity], action func(o *app.EveEntity)) fyne.CanvasObject {
+	v, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("-")
+	}
+	return ui.MakeLinkLabelWithWrap(v.Name, func() {
+		action(v)
+	})
+}
+
+func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(int64)) fyne.CanvasObject {
+	el, ok := o.Value()
+	if !ok {
+		return widget.NewLabel("?")
+	}
+	x := ui.MakeLinkLabelWithWrap(el.DisplayName(), func() {
+		show(el.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }

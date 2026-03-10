@@ -105,7 +105,7 @@ func (a *Attributes) update(ctx context.Context) {
 			total = total2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 	})
 	fyne.Do(func() {

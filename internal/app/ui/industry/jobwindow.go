@@ -26,12 +26,12 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
+		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
 			u.InfoWindow().Show,
 		)),
-		widget.NewFormItem("Blueprint", makeLinkLabelWithWrap(r.blueprintType.Name, func() {
+		widget.NewFormItem("Blueprint", ui.MakeLinkLabelWithWrap(r.blueprintType.Name, func() {
 			u.InfoWindow().ShowType(r.blueprintType.ID, 0)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
@@ -39,7 +39,7 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 	if v, ok := r.productType.Value(); ok {
 		items = append(items, widget.NewFormItem(
 			"Product Type",
-			makeLinkLabelWithWrap(v.Name, func() {
+			ui.MakeLinkLabelWithWrap(v.Name, func() {
 				u.InfoWindow().ShowType(v.ID, 0)
 			}),
 		))
@@ -86,14 +86,14 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 		)
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
-		widget.NewFormItem("Installer", makeLinkLabelWithWrap(r.installer.Name, func() {
+		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
+		widget.NewFormItem("Installer", ui.MakeLinkLabelWithWrap(r.installer.Name, func() {
 			u.InfoWindow().Show(r.installer)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if v, ok := r.completedCharacter.Value(); ok {
-		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(v.Name, func() {
+		items = append(items, widget.NewFormItem("Completed By", ui.MakeLinkLabelWithWrap(v.Name, func() {
 			u.InfoWindow().Show(v)
 		})))
 	}

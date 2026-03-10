@@ -26,10 +26,10 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		w.Show()
 		return
 	}
-	item := makeLinkLabelWithWrap(r.typeName, func() {
+	item := ui.MakeLinkLabelWithWrap(r.typeName, func() {
 		u.InfoWindow().ShowType(r.typeID, r.characterID)
 	})
-	region := makeLinkLabel(r.regionName, func() {
+	region := ui.MakeLinkLabel(r.regionName, func() {
 		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 	})
 	var buySell string
@@ -49,7 +49,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	state := widget.NewLabel(r.stateCorrectedDisplay())
 	state.Importance = r.stateImportance()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeEveEntityActionLabel(
+		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
 			r.owner,
 			u.InfoWindow().Show,
 		)),
@@ -61,7 +61,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
 		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
 		widget.NewFormItem("Expires", widget.NewLabel(expires)),
-		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
+		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
 		widget.NewFormItem("Region", region),
 	}
 	if r.IsBuyOrder.ValueOrZero() {
@@ -80,7 +80,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	}
 	items = append(items, widget.NewFormItem("Range", widget.NewLabel(xstrings.Title(r.rangeInfo))))
 	items = append(items, widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)))
-	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
+	items = append(items, widget.NewFormItem("Character", ui.MakeCharacterActionLabel(
 		r.characterID,
 		r.characterName,
 		u.InfoWindow().Show,

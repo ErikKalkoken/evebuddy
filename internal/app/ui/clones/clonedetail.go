@@ -42,7 +42,7 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 	location := xwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
 		u.InfoWindow().ShowLocation(r.jc.Location.ID)
 	})
-	character := makeLinkLabelWithWrap(r.jc.Character.Name, func() {
+	character := ui.MakeLinkLabelWithWrap(r.jc.Character.Name, func() {
 		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: r.jc.Character.ID})
 	})
 
@@ -136,13 +136,6 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 		Window:  w,
 	})
 	w.Show()
-}
-
-func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
-	x := widget.NewHyperlink(text, nil)
-	x.OnTapped = action
-	x.Wrapping = fyne.TextWrapWord
-	return x
 }
 
 type implantsCS interface {

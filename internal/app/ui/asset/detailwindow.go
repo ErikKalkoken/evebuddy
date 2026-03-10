@@ -24,7 +24,7 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 		w.Show()
 		return
 	}
-	item := makeLinkLabelWithWrap(r.typeName, func() {
+	item := ui.MakeLinkLabelWithWrap(r.typeName, func() {
 		if r.owner.IsCharacter() {
 			u.InfoWindow().ShowType(r.typeID, r.owner.ID)
 		} else {
@@ -33,8 +33,8 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 	})
 	var location, region fyne.CanvasObject
 	if r.location != nil {
-		location = makeLocationLabel(r.location, u.InfoWindow().ShowLocation)
-		region = makeLinkLabel(r.regionName, func() {
+		location = ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)
+		region = ui.MakeLinkLabel(r.regionName, func() {
 			u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 		})
 	} else {
@@ -52,7 +52,7 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 	path.Wrapping = fyne.TextWrapWord
 
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
+		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
 			u.InfoWindow().Show,
@@ -108,46 +108,4 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 		Window:  w,
 	})
 	w.Show()
-}
-
-func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObject {
-	if o == nil {
-		return widget.NewLabel("?")
-	}
-	x := makeLinkLabelWithWrap(o.DisplayName(), func() {
-		show(o.ID)
-	})
-	x.Wrapping = fyne.TextWrapWord
-	return x
-}
-
-func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
-	x := makeLinkLabel(text, action)
-	x.Wrapping = fyne.TextWrapWord
-	return x
-}
-
-func makeLinkLabel(text string, action func()) *widget.Hyperlink {
-	x := widget.NewHyperlink(text, nil)
-	x.OnTapped = action
-	return x
-}
-
-func makeCharacterActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
-	o := &app.EveEntity{
-		ID:       id,
-		Name:     name,
-		Category: app.EveEntityCharacter,
-	}
-	return makeEveEntityActionLabel(o, action)
-}
-
-// makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
-func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
-	if o == nil {
-		return widget.NewLabel("-")
-	}
-	return makeLinkLabelWithWrap(o.Name, func() {
-		action(o)
-	})
 }

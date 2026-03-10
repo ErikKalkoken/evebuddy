@@ -279,9 +279,9 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
 	items := []*widget.FormItem{
 		widget.NewFormItem(
 			"Owner",
-			makeCharacterActionLabel(r.CharacterID, characterName, u.InfoWindow().Show),
+			ui.MakeCharacterActionLabel(r.CharacterID, characterName, u.InfoWindow().Show),
 		),
-		widget.NewFormItem("Skill", makeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
+		widget.NewFormItem("Skill", ui.MakeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
 			u.InfoWindow().ShowType(r.SkillID, r.CharacterID)
 		})),
 		widget.NewFormItem("Group", widget.NewLabel(r.GroupName)),

@@ -39,3 +39,5 @@ type baseUI interface {
 	StatusCache() *statuscache.StatusCache
 	UpdateMailIndicator(ctx context.Context)
 }
+
+type loadFuncAsync func(int64, int, func(fyne.Resource))

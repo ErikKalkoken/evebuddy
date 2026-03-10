@@ -496,11 +496,11 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 					u.InfoWindow().Show,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
-				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
+				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(structure.Type.Name, func() {
 					u.InfoWindow().ShowType(structure.Type.ID, 0)
 				})),
 				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().Show)),
-				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
+				widget.NewFormItem("Region", ui.MakeLinkLabel(structure.System.Constellation.Region.Name, func() {
 					u.InfoWindow().Show(structure.System.Constellation.Region.EveEntity())
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
@@ -549,4 +549,35 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 			w.Show()
 		})
 	}()
+}
+
+func makeCorporationActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+	o := &app.EveEntity{
+		ID:       id,
+		Name:     name,
+		Category: app.EveEntityCorporation,
+	}
+	return ui.MakeEveEntityActionLabel(o, action)
+}
+
+func makeSolarSystemLabel(o *app.EveSolarSystem, show func(o *app.EveEntity)) fyne.CanvasObject {
+	if o == nil {
+		return widget.NewLabel("?")
+	}
+	segs := slices.Concat(
+		o.SecurityStatusRichText(),
+		xwidget.RichTextSegmentsFromText(" ", widget.RichTextStyleInline),
+		xwidget.RichTextSegmentsFromText(o.Name, widget.RichTextStyle{
+			ColorName: theme.ColorNamePrimary,
+		}))
+	x := xwidget.NewTappableRichText(segs, func() {
+		o := &app.EveEntity{
+			ID:       o.ID,
+			Name:     o.Name,
+			Category: app.EveEntitySolarSystem,
+		}
+		show(o)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }

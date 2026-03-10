@@ -162,7 +162,7 @@ func (a *Members) update(ctx context.Context) {
 			hasData = len(rows2) > 0
 		}
 	}
-	t, i := makeTopText(corporationID, hasData, err, nil)
+	t, i := ui.MakeTopText(corporationID, hasData, err, nil)
 	if t != "" {
 		fyne.Do(func() {
 			a.footer.Text, a.footer.Importance = t, i

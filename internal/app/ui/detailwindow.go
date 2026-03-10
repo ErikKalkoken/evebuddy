@@ -85,11 +85,52 @@ func MakeDetailWindow(arg MakeDetailWindowParams) {
 }
 
 // FormatISKAmount returns a formatted ISK amount.
-// This format is mainly used in detail windows.
 func FormatISKAmount(v float64) string {
 	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
 	if math.Abs(v) > 999 {
 		t += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 2))
 	}
 	return t
+}
+
+func MakeCharacterActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+	o := &app.EveEntity{
+		ID:       id,
+		Name:     name,
+		Category: app.EveEntityCharacter,
+	}
+	return MakeEveEntityActionLabel(o, action)
+}
+
+// MakeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
+func MakeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
+	if o == nil {
+		return widget.NewLabel("-")
+	}
+	return MakeLinkLabelWithWrap(o.Name, func() {
+		action(o)
+	})
+}
+
+func MakeLinkLabel(text string, action func()) *widget.Hyperlink {
+	x := widget.NewHyperlink(text, nil)
+	x.OnTapped = action
+	return x
+}
+
+func MakeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
+	x := MakeLinkLabel(text, action)
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func MakeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObject {
+	if o == nil {
+		return widget.NewLabel("?")
+	}
+	x := MakeLinkLabelWithWrap(o.DisplayName(), func() {
+		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }
