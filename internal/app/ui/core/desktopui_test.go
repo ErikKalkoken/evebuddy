@@ -1,4 +1,4 @@
-package ui_test
+package core_test
 
 import (
 	"testing"
@@ -12,22 +12,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/core"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestDesktopUI_StartEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(core.SkipUIReason)
 	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.MakeFakeBaseUI(st, ui.NewFakeApp(t), true)
-	u := ui.NewDesktopUI(bu)
+	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+	u := core.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
 		for {
@@ -43,7 +43,7 @@ func TestDesktopUI_StartEmpty(t *testing.T) {
 
 func TestDesktopUI_StartWithCharacter(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(core.SkipUIReason)
 	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -66,8 +66,8 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
 
-	bu := ui.MakeFakeBaseUI(st, ui.NewFakeApp(t), true)
-	u := ui.NewDesktopUI(bu)
+	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+	u := core.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
 		for {
@@ -83,14 +83,14 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 
 func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(core.SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
-	bu := ui.MakeFakeBaseUI(st, ui.NewFakeApp(t), true)
+	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
 
-	du := ui.NewDesktopUI(bu)
+	du := core.NewDesktopUI(bu)
 	w := test.NewWindow(du.MainWindow().Content())
 	defer w.Close()
 	w.Resize(fyne.NewSize(1000, 600))
@@ -104,12 +104,12 @@ func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 
 func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(core.SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
-	bu := ui.MakeFakeBaseUI(st, ui.NewFakeApp(t), true)
+	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
 
 	er := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
 		Name: "Wayne Technology",
@@ -171,7 +171,7 @@ func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 			Section:       s,
 		})
 	}
-	du := ui.NewDesktopUI(bu)
+	du := core.NewDesktopUI(bu)
 	w := test.NewWindow(du.MainWindow().Content())
 	defer w.Close()
 	w.Resize(fyne.NewSize(1000, 600))

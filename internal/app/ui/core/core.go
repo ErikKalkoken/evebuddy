@@ -1,5 +1,5 @@
-// Package ui implements the graphical user interface of the app.
-package ui
+// Package core provides the core components to construct the UI.
+package core
 
 import (
 	"context"

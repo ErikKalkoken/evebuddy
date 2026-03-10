@@ -44,7 +44,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/core"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -402,7 +402,7 @@ func main() {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
-	bu := ui.NewBaseUI(ui.BaseUIParams{
+	bu := core.NewBaseUI(core.BaseUIParams{
 		App:              fyneApp,
 		Character:        cs,
 		ClearCacheFunc:   func() { pc.Clear() },
@@ -422,7 +422,7 @@ func main() {
 		StatusCache:      scs,
 	})
 	if isDesktop {
-		u := ui.NewDesktopUI(bu)
+		u := core.NewDesktopUI(bu)
 		stop, err := remoteservice.Start(remotePort, func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()
@@ -434,7 +434,7 @@ func main() {
 		defer stop()
 		u.ShowAndRun()
 	} else {
-		u := ui.NewMobileUI(bu)
+		u := core.NewMobileUI(bu)
 		u.ShowAndRun()
 	}
 }
