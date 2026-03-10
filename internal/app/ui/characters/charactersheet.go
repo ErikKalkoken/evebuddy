@@ -177,13 +177,13 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoWindow().Show(c.EveCharacter.EveEntity())
+			a.u.InfoViewer().Show(c.EveCharacter.EveEntity())
 		}
 		a.portrait.OnTapped = a.name.OnTapped
 
 		a.race.SetText(c.EveCharacter.Race.Name)
 		a.race.OnTapped = func() {
-			a.u.InfoWindow().ShowRace(c.EveCharacter.Race.ID)
+			a.u.InfoViewer().ShowRace(c.EveCharacter.Race.ID)
 		}
 
 		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
@@ -207,7 +207,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.location.SetText(el.DisplayName())
 		a.location.OnTapped = func() {
-			a.u.InfoWindow().ShowLocation(el.ID)
+			a.u.InfoViewer().ShowLocation(el.ID)
 		}
 	})
 	fyne.Do(func() {
@@ -219,7 +219,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.ship.SetText(ship.Name)
 		a.ship.OnTapped = func() {
-			a.u.InfoWindow().Show(ship.EveEntity())
+			a.u.InfoViewer().Show(ship.EveEntity())
 		}
 	})
 	fyne.Do(func() {
@@ -231,7 +231,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.home.SetText(home.DisplayName())
 		a.home.OnTapped = func() {
-			a.u.InfoWindow().ShowLocation(home.ID)
+			a.u.InfoViewer().ShowLocation(home.ID)
 		}
 	})
 	fyne.Do(func() {
@@ -249,7 +249,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.faction.SetText(faction.Name)
 		a.faction.OnTapped = func() {
-			a.u.InfoWindow().Show(faction)
+			a.u.InfoViewer().Show(faction)
 		}
 	})
 

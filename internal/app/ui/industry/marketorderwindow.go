@@ -27,10 +27,10 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		return
 	}
 	item := ui.MakeLinkLabelWithWrap(r.typeName, func() {
-		u.InfoWindow().ShowType(r.typeID, r.characterID)
+		u.InfoViewer().ShowType(r.typeID, r.characterID)
 	})
 	region := ui.MakeLinkLabel(r.regionName, func() {
-		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
+		u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 	})
 	var buySell string
 	if r.IsBuyOrder.ValueOrZero() {
@@ -51,7 +51,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
 			r.owner,
-			u.InfoWindow().Show,
+			u.InfoViewer().Show,
 		)),
 		widget.NewFormItem("Type", item),
 		widget.NewFormItem("Price", widget.NewLabel(ui.FormatISKAmount(r.price))),
@@ -61,7 +61,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
 		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
 		widget.NewFormItem("Expires", widget.NewLabel(expires)),
-		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
+		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoViewer().ShowLocation)),
 		widget.NewFormItem("Region", region),
 	}
 	if r.IsBuyOrder.ValueOrZero() {
@@ -83,7 +83,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	items = append(items, widget.NewFormItem("Character", ui.MakeCharacterActionLabel(
 		r.characterID,
 		r.characterName,
-		u.InfoWindow().Show,
+		u.InfoViewer().Show,
 	)))
 
 	if u.IsDeveloperMode() {
@@ -94,7 +94,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID, 0)
+			u.InfoViewer().ShowType(r.typeID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.EVEImage().InventoryTypeIconAsync(r.typeID, 256, setter)

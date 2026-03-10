@@ -110,7 +110,7 @@ func (a *Members) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.s.InfoWindow().Show(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.s.InfoViewer().Show(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }

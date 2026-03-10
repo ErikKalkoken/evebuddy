@@ -277,7 +277,7 @@ func (a *Overview) makeGrid() *widget.GridWrap {
 				a.u.EVEImage().CorporationLogoAsync,
 				a.u.EVEImage().AllianceLogoAsync,
 				false,
-				a.u.InfoWindow().Show,
+				a.u.InfoViewer().Show,
 			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
@@ -323,7 +323,7 @@ func (a *Overview) makeList() *widget.List {
 				a.u.EVEImage().CorporationLogoAsync,
 				a.u.EVEImage().AllianceLogoAsync,
 				true,
-				a.u.InfoWindow().Show,
+				a.u.InfoViewer().Show,
 			)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
@@ -577,7 +577,7 @@ type characterCard struct {
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
-	showInfoWindow           func(*app.EveEntity)
+	showInfo                 func(*app.EveEntity)
 	skillpoints              *widget.Label
 	solarSystem              *xwidget.RichText
 	trainingStatus           *ttwidget.Icon
@@ -587,7 +587,7 @@ type characterCard struct {
 	loadAlliance             loadFuncAsync
 }
 
-func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfoWindow func(*app.EveEntity)) *characterCard {
+func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -626,7 +626,7 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
 		resourceTrainingUnknown:  trainingUnknown,
 		ship:                     makeLabel("Merlin"),
-		showInfoWindow:           showInfoWindow,
+		showInfo:                 showInfo,
 		skillpoints:              makeLabel(numberTemplate),
 		solarSystem:              xwidget.NewRichText(),
 		trainingStatus:           ttwidget.NewIcon(trainingUnknown),
@@ -818,7 +818,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 
 	if !w.isSmall {
 		w.corporationLogo.OnTapped = func() {
-			w.showInfoWindow(c.corporation)
+			w.showInfo(c.corporation)
 		}
 		w.corporationLogo.SetToolTip(c.corporationName())
 	}
@@ -830,7 +830,7 @@ func (w *characterCard) set(c characterOverviewRow) {
 	if alliance, ok := c.alliance.Value(); ok {
 		if !w.isSmall {
 			w.allianceLogo.OnTapped = func() {
-				w.showInfoWindow(alliance)
+				w.showInfo(alliance)
 			}
 			w.allianceLogo.SetToolTip(c.allianceName())
 		}

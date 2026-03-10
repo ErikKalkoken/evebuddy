@@ -490,7 +490,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		fyne.Do(func() {
 			characterHeader.SetTitle(s)
 			characterHeader.SetTitleAction(func() {
-				u.InfoWindow().Show(c.EveCharacter.EveEntity())
+				u.InfoViewer().Show(c.EveCharacter.EveEntity())
 			})
 		})
 		go func() {
@@ -562,7 +562,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		fyne.Do(func() {
 			corporationHeader.SetTitle(s)
 			corporationHeader.SetTitleAction(func() {
-				u.InfoWindow().Show(c.EveCorporation.EveEntity())
+				u.InfoViewer().Show(c.EveCorporation.EveEntity())
 			})
 		})
 		go func() {
@@ -751,7 +751,7 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				u.InfoWindow().Show(c.EveCharacter.EveEntity())
+				u.InfoViewer().Show(c.EveCharacter.EveEntity())
 			}},
 		"currentLocation": {
 			&desktop.CustomShortcut{
@@ -769,7 +769,7 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: Missing location for current character.")
 					return
 				}
-				u.InfoWindow().ShowLocation(el.ID)
+				u.InfoViewer().ShowLocation(el.ID)
 			}},
 		"currentShip": {
 			&desktop.CustomShortcut{
@@ -787,7 +787,7 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: Missing ship for current character.")
 					return
 				}
-				u.InfoWindow().ShowType(ship.ID, 0)
+				u.InfoViewer().ShowType(ship.ID, 0)
 			}},
 		"search": {
 			&desktop.CustomShortcut{

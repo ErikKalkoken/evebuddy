@@ -24,7 +24,7 @@ type baseUI interface {
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
-	InfoWindow() ui.InfoWindow
+	InfoViewer() ui.InfoViewer
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool

@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -28,7 +28,7 @@ type allianceInfo struct {
 	tabs       *container.AppTabs
 }
 
-func newAllianceInfo(iw *InfoWindow, id int64) *allianceInfo {
+func newAllianceInfo(iw *InfoViewer, id int64) *allianceInfo {
 	hq := widget.NewHyperlink("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{

@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"strings"
@@ -80,7 +80,7 @@ func (s *SettingsFake) PreferMarketTab() bool {
 // 		StatusCacheService:     scs,
 // 		Storage:                st,
 // 	})
-// 	makeInfoWindow := func() *InfoWindow {
+// 	makeInfoWindow := func() *InfoViewer {
 // 		iw := New(&UIServiceFake{app: app})
 // 		return iw
 // 	}

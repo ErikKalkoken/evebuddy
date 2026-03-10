@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -47,7 +47,7 @@ type inventoryTypeInfo struct {
 	typeID           int64
 }
 
-func newInventoryTypeInfo(iw *InfoWindow, typeID, characterID int64) *inventoryTypeInfo {
+func newInventoryTypeInfo(iw *InfoViewer, typeID, characterID int64) *inventoryTypeInfo {
 	typeIcon := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))

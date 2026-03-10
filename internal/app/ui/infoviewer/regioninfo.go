@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type regionInfo struct {
 	tabs           *container.AppTabs
 }
 
-func newRegionInfo(iw *InfoWindow, id int64) *regionInfo {
+func newRegionInfo(iw *InfoViewer, id int64) *regionInfo {
 	a := &regionInfo{
 		id:          id,
 		description: newLabelWithWrapAndSelectable(""),

@@ -36,7 +36,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/corporations"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/gamesearch"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/industry"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/skills"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/wallets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -148,7 +148,7 @@ type baseUI struct {
 	statusText              *statusText
 	training                *skills.Training
 	wealth                  *wallets.Wealth
-	iw                      *infowindow.InfoWindow
+	iw                      *infoviewer.InfoViewer
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -421,7 +421,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = skills.NewTraining(u)
 	u.wealth = wallets.NewWealth(u)
 
-	u.iw = infowindow.New(u)
+	u.iw = infoviewer.New(u)
 
 	u.MainWindow().SetMaster()
 
@@ -566,8 +566,8 @@ func (u *baseUI) MainWindow() fyne.Window {
 	return u.window
 }
 
-// InfoWindow returns the info window.
-func (u *baseUI) InfoWindow() ui.InfoWindow {
+// InfoViewer returns the info window.
+func (u *baseUI) InfoViewer() ui.InfoViewer {
 	return u.iw
 }
 

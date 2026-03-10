@@ -628,18 +628,18 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					characterID,
 					u.StatusCache().CharacterName(characterID),
-					u.InfoWindow().Show,
+					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Activity", widget.NewLabel(activity)),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoWindow().Show(o.Type.EveEntity())
+					u.InfoViewer().Show(o.Type.EveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", total),
-				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
-				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
+				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoViewer().Show)),
+				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoViewer().ShowLocation)),
 				// widget.NewFormItem("Related Journal Entry", ui.MakeLinkLabelWithWrap(
 				// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
 				// 		showCharacterWalletJournalEntryWindow(u, characterID, o.JournalRefID)
@@ -658,7 +658,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(o.Type.ID, 0)
+					u.InfoViewer().ShowType(o.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)
@@ -696,17 +696,17 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					corporationID,
 					u.StatusCache().CorporationName(corporationID),
-					u.InfoWindow().Show,
+					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoWindow().Show(o.Type.EveEntity())
+					u.InfoViewer().Show(o.Type.EveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", widget.NewLabel(ui.FormatISKAmount(totalAmount))),
-				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoWindow().Show)),
-				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
+				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoViewer().Show)),
+				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoViewer().ShowLocation)),
 				widget.NewFormItem("Related Journal Entry", ui.MakeLinkLabelWithWrap(
 					fmt.Sprintf("#%d", o.JournalRefID), func() {
 						go ShowCorporationWalletJournalEntryWindowAsync(u, corporationID, division, o.JournalRefID)
@@ -725,7 +725,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(o.Type.ID, 0)
+					u.InfoViewer().ShowType(o.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)

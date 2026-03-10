@@ -504,7 +504,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 						}
 						fyne.Do(func() {
 							contextItem.Text = "Related " + ee.CategoryDisplay()
-							contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoWindow().Show)
+							contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoViewer().Show)
 							f.Refresh()
 						})
 					}()
@@ -545,7 +545,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 							return
 						}
 						fyne.Do(func() {
-							contextItem.Widget = ui.MakeLocationLabel(el.ToShort(), u.InfoWindow().ShowLocation)
+							contextItem.Widget = ui.MakeLocationLabel(el.ToShort(), u.InfoViewer().ShowLocation)
 							f.Refresh()
 						})
 					}()
@@ -555,7 +555,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					characterID,
 					u.StatusCache().CharacterName(characterID),
-					u.InfoWindow().Show,
+					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
@@ -567,13 +567,13 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 			if v, ok := o.FirstParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"First Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
 			if v, ok := o.SecondParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Second Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
 			if v, ok := o.TaxReceiver.Value(); ok {
@@ -583,7 +583,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 				))
 				items = append(items, widget.NewFormItem(
 					"Tax Receiver",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show)),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
 				)
 			}
 			if !o.ContextIDType.IsEmpty() {
@@ -651,7 +651,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			// 			return
 			// 		}
 			// 		contextItem.Text = "Related " + ee.CategoryDisplay()
-			// 		contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoWindow().ShowEntity)
+			// 		contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoViewer().ShowEntity)
 			// 		f.Refresh()
 			// 	}()
 			// case "contract_id":
@@ -683,7 +683,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			// 			reportError(o, err)
 			// 			return
 			// 		}
-			// 		contextItem.Widget = ui.MakeLocationLabel(el.ToShort(), u.InfoWindow().ShowLocation)
+			// 		contextItem.Widget = ui.MakeLocationLabel(el.ToShort(), u.InfoViewer().ShowLocation)
 			// 		f.Refresh()
 			// 	}()
 			// }
@@ -691,7 +691,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					corporationID,
 					u.StatusCache().CorporationName(corporationID),
-					u.InfoWindow().Show,
+					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
@@ -703,13 +703,13 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			if v, ok := o.FirstParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"First Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
 			if v, ok := o.FirstParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Second Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
 			if v, ok := o.FirstParty.Value(); ok {
@@ -719,7 +719,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 				))
 				items = append(items, widget.NewFormItem(
 					"Tax Receiver",
-					ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show)),
+					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
 				)
 			}
 			items = append(items, contextItem)

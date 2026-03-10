@@ -31,7 +31,7 @@ type EVEImageService interface {
 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
 }
 
-type InfoWindow interface {
+type InfoViewer interface {
 	Show(o *app.EveEntity)
 	ShowLocation(id int64)
 	ShowRace(id int64)

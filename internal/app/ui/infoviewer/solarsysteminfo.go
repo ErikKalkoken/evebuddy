@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw *InfoWindow, id int64) *solarSystemInfo {
+func newSolarSystemInfo(iw *InfoViewer, id int64) *solarSystemInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := widget.NewHyperlink("", nil)

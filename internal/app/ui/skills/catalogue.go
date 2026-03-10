@@ -228,7 +228,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			r := a.rowsFiltered[id]
-			a.u.InfoWindow().ShowType(r.typeID, a.character.Load().IDOrZero())
+			a.u.InfoViewer().ShowType(r.typeID, a.character.Load().IDOrZero())
 		}
 	}
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)

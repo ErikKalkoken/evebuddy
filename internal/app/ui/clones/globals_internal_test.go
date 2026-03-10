@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
@@ -23,7 +23,7 @@ type UIFake struct {
 	cs       *characterservice.CharacterService
 	eis      ui.EVEImageService
 	eus      *eveuniverseservice.EVEUniverseService
-	iw       *infowindow.InfoWindow
+	iw       *infoviewer.InfoViewer
 	scs      *statuscache.StatusCache
 	sig      *app.Signals
 	isMobile bool
@@ -90,7 +90,7 @@ func (u *UIFake) EVEUniverse() *eveuniverseservice.EVEUniverseService {
 func (u *UIFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
 	return u.a.NewWindow("Dummy"), true
 }
-func (u *UIFake) InfoWindow() ui.InfoWindow {
+func (u *UIFake) InfoViewer() ui.InfoViewer {
 	return u.iw
 }
 

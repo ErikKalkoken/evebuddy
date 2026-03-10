@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type constellationInfo struct {
 	tabs    *container.AppTabs
 }
 
-func newConstellationInfo(iw *InfoWindow, id int64) *constellationInfo {
+func newConstellationInfo(iw *InfoViewer, id int64) *constellationInfo {
 	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{

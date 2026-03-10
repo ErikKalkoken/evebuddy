@@ -65,7 +65,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 		func() fyne.CanvasObject {
 			return newCharacterAugmentationItem(
 				a.s.EVEImage().InventoryTypeIconAsync,
-				a.s.InfoWindow().ShowType,
+				a.s.InfoViewer().ShowType,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

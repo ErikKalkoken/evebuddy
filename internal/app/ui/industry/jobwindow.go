@@ -29,10 +29,10 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().Show,
+			u.InfoViewer().Show,
 		)),
 		widget.NewFormItem("Blueprint", ui.MakeLinkLabelWithWrap(r.blueprintType.Name, func() {
-			u.InfoWindow().ShowType(r.blueprintType.ID, 0)
+			u.InfoViewer().ShowType(r.blueprintType.ID, 0)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 	}
@@ -40,7 +40,7 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 		items = append(items, widget.NewFormItem(
 			"Product Type",
 			ui.MakeLinkLabelWithWrap(v.Name, func() {
-				u.InfoWindow().ShowType(v.ID, 0)
+				u.InfoViewer().ShowType(v.ID, 0)
 			}),
 		))
 	}
@@ -86,15 +86,15 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 		)
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
+		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoViewer().ShowLocation)),
 		widget.NewFormItem("Installer", ui.MakeLinkLabelWithWrap(r.installer.Name, func() {
-			u.InfoWindow().Show(r.installer)
+			u.InfoViewer().Show(r.installer)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if v, ok := r.completedCharacter.Value(); ok {
 		items = append(items, widget.NewFormItem("Completed By", ui.MakeLinkLabelWithWrap(v.Name, func() {
-			u.InfoWindow().Show(v)
+			u.InfoViewer().Show(v)
 		})))
 	}
 	if u.IsDeveloperMode() {
@@ -119,7 +119,7 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.blueprintType.ID, 0)
+			u.InfoViewer().ShowType(r.blueprintType.ID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)

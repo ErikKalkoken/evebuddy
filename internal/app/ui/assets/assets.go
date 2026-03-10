@@ -20,7 +20,7 @@ type coreUI interface {
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	InfoWindow() ui.InfoWindow
+	InfoViewer() ui.InfoViewer
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window

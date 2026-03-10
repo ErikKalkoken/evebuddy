@@ -115,9 +115,9 @@ func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 				a.u.EVEImage().CharacterPortraitAsync,
 				a.u.EVEImage().InventoryTypeIconAsync,
 				func(id int64) {
-					a.u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: id})
+					a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: id})
 				},
-				a.u.InfoWindow().ShowType,
+				a.u.InfoViewer().ShowType,
 			)
 		},
 		func(n *augmentationNode, _ bool, co fyne.CanvasObject) {

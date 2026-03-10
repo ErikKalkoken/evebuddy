@@ -279,10 +279,10 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
 	items := []*widget.FormItem{
 		widget.NewFormItem(
 			"Owner",
-			ui.MakeCharacterActionLabel(r.CharacterID, characterName, u.InfoWindow().Show),
+			ui.MakeCharacterActionLabel(r.CharacterID, characterName, u.InfoViewer().Show),
 		),
 		widget.NewFormItem("Skill", ui.MakeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
-			u.InfoWindow().ShowType(r.SkillID, r.CharacterID)
+			u.InfoViewer().ShowType(r.SkillID, r.CharacterID)
 		})),
 		widget.NewFormItem("Group", widget.NewLabel(r.GroupName)),
 		widget.NewFormItem("Description", description),
@@ -316,7 +316,7 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.SkillID, r.CharacterID)
+			u.InfoViewer().ShowType(r.SkillID, r.CharacterID)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.EVEImage().InventoryTypeIconAsync(r.SkillID, 256, setter)

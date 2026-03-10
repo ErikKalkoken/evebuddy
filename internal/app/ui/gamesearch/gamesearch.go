@@ -22,7 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -36,7 +36,7 @@ type baseUI interface {
 	Character() *characterservice.CharacterService
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
-	InfoWindow() ui.InfoWindow
+	InfoViewer() ui.InfoViewer
 	IsDeveloperMode() bool
 	IsOffline() bool
 	MainWindow() fyne.Window
@@ -87,7 +87,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
-		supportedCategories: infowindow.SupportedCategories(),
+		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
 	}
@@ -289,7 +289,7 @@ func (a *GameSearch) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
-	a.u.InfoWindow().Show(o)
+	a.u.InfoViewer().Show(o)
 }
 
 func (a *GameSearch) makeRecentSelected() *widget.List {
@@ -298,7 +298,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), infowindow.SupportedCategories())
+			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), infoviewer.SupportedCategories())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {

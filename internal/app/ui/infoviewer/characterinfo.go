@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -43,7 +43,7 @@ type characterInfo struct {
 	title           *widget.Label
 }
 
-func newCharacterInfo(iw *InfoWindow, id int64) *characterInfo {
+func newCharacterInfo(iw *InfoViewer, id int64) *characterInfo {
 	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)

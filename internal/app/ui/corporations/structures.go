@@ -493,15 +493,15 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					u.InfoWindow().Show,
+					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(structure.Type.Name, func() {
-					u.InfoWindow().ShowType(structure.Type.ID, 0)
+					u.InfoViewer().ShowType(structure.Type.ID, 0)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().Show)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoViewer().Show)),
 				widget.NewFormItem("Region", ui.MakeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					u.InfoWindow().Show(structure.System.Constellation.Region.EveEntity())
+					u.InfoViewer().Show(structure.System.Constellation.Region.EveEntity())
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
@@ -538,7 +538,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(structure.Type.ID, 0)
+					u.InfoViewer().ShowType(structure.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(structure.Type.ID, 512, setter)

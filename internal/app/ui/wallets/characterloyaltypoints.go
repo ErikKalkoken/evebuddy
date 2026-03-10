@@ -149,7 +149,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 			return newLoyaltyPointsListItem(
 				ui.LoadEveEntityIconFunc(a.u.EVEImage()),
 				func(o *app.EveEntity) {
-					a.u.InfoWindow().Show(o)
+					a.u.InfoViewer().Show(o)
 				})
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

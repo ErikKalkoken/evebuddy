@@ -46,7 +46,7 @@ type contractUIServices interface {
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
-	InfoWindow() ui.InfoWindow
+	InfoViewer() ui.InfoViewer
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
@@ -608,7 +608,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 			nil,
 			availabilityLabel,
 			nil,
-			ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+			ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 		)
 	} else {
 		availability = availabilityLabel
@@ -617,21 +617,21 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			characterID,
 			characterName,
-			u.InfoWindow().Show,
+			u.InfoViewer().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
+		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoViewer().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
 		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().Show)))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoViewer().Show)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
-	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoWindow().ShowLocation)))
+	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoViewer().ShowLocation)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
 		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
@@ -655,7 +655,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 			})))},
 			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
 			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
-			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoWindow().ShowLocation)},
+			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoViewer().ShowLocation)},
 		})
 	case app.ContractTypeItemExchange:
 		if o.Price.ValueOrZero() > 0 {
@@ -710,7 +710,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
 				ui.MakeLinkLabel(it.Type.Name, func() {
-					u.InfoWindow().ShowType(it.Type.ID, characterID)
+					u.InfoViewer().ShowType(it.Type.ID, characterID)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
@@ -789,7 +789,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 			nil,
 			availabilityLabel,
 			nil,
-			ui.MakeEveEntityActionLabel(v, u.InfoWindow().Show),
+			ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 		)
 	} else {
 		availability = availabilityLabel
@@ -798,21 +798,21 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			corporationID,
 			corporationName,
-			u.InfoWindow().Show,
+			u.InfoViewer().Show,
 		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
 		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoWindow().Show)),
+		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoViewer().Show)),
 		widget.NewFormItem("Availability", availability),
 	}
 	if u.IsDeveloperMode() {
 		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoWindow().Show)))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoViewer().Show)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
-	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoWindow().ShowLocation)))
+	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoViewer().ShowLocation)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
 		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
@@ -836,7 +836,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 			})))},
 			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
 			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
-			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoWindow().ShowLocation)},
+			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoViewer().ShowLocation)},
 		})
 	case app.ContractTypeItemExchange:
 		if o.Price.ValueOrZero() > 0 {
@@ -891,7 +891,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		makeItem := func(it *app.CorporationContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
 				ui.MakeLinkLabel(it.Type.Name, func() {
-					u.InfoWindow().ShowType(it.Type.ID, 0)
+					u.InfoViewer().ShowType(it.Type.ID, 0)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),

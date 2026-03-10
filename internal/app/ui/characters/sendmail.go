@@ -48,7 +48,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	a.ExtendBaseWidget(a)
 
 	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
-	a.from.ShowInfoWindow = u.InfoWindow().Show
+	a.from.showInfo = u.InfoViewer().Show
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
 		Name:     c.EveCharacter.Name,
@@ -66,8 +66,8 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 		}, a.w)
 	})
 	a.to = newEveEntityEntry(toButton, labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
-	a.to.ShowInfoWindow = u.InfoWindow().Show
-	a.to.Placeholder = "Tap To-Button to add recipients..."
+	a.to.showInfo = u.InfoViewer().Show
+	a.to.placeholderText = "Tap To-Button to add recipients..."
 
 	a.subject = widget.NewEntry()
 	a.subject.PlaceHolder = "Subject"
@@ -160,8 +160,8 @@ func (a *SendMail) SendAction() bool {
 type eveEntityEntry struct {
 	widget.DisableableWidget
 
-	Placeholder    string
-	ShowInfoWindow func(*app.EveEntity)
+	placeholderText string
+	showInfo        func(*app.EveEntity)
 
 	loadIcon    ui.EveEntityIconLoader
 	field       *canvas.Rectangle
@@ -250,7 +250,7 @@ func (w *eveEntityEntry) update() {
 	w.main.RemoveAll()
 	columns := kxlayout.NewColumns(w.labelWidth)
 	if len(w.items) == 0 {
-		w.placeholder.SetWithText(w.Placeholder)
+		w.placeholder.SetWithText(w.placeholderText)
 		w.main.Add(container.New(columns, w.label, w.placeholder))
 	} else {
 		firstRow := true
@@ -268,9 +268,9 @@ func (w *eveEntityEntry) update() {
 				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
 				nameItem := fyne.NewMenuItem(s, nil)
 				nameItem.Icon = icons.Questionmark32Png
-				if ee.Category == app.EveEntityCharacter && w.ShowInfoWindow != nil {
+				if ee.Category == app.EveEntityCharacter && w.showInfo != nil {
 					nameItem.Action = func() {
-						w.ShowInfoWindow(ee)
+						w.showInfo(ee)
 					}
 				}
 				removeItem := fyne.NewMenuItem("Remove", func() {

@@ -1,5 +1,5 @@
-// Package infowindow provides a window for displaying information about Eve objects.
-package infowindow
+// Package infoviewer provides a window for displaying information about Eve objects.
+package infoviewer
 
 import (
 	"context"
@@ -51,9 +51,9 @@ type coreUI interface {
 	Settings() *settings.Settings
 }
 
-// InfoWindow represents a dedicated window for showing information about Eve objects
+// InfoViewer represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
-type InfoWindow struct {
+type InfoViewer struct {
 	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
@@ -63,36 +63,36 @@ type InfoWindow struct {
 }
 
 const (
-	infoWindowHeight    = 600
-	infoWindowWidth     = 600
+	windowHeight        = 600
+	windowWidth         = 600
 	logoUnitSize        = 64
 	renderIconPixelSize = 256
 	renderIconUnitSize  = 128
 	zoomImagePixelSize  = 512
 )
 
-// New returns a new InfoWindow.
-func New(u coreUI) *InfoWindow {
-	iw := &InfoWindow{
+// New returns a new InfoViewer.
+func New(u coreUI) *InfoViewer {
+	iw := &InfoViewer{
 		u: u,
 		w: u.MainWindow(),
 	}
 	return iw
 }
 
-func (iw *InfoWindow) Show(o *app.EveEntity) {
+func (iw *InfoViewer) Show(o *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(o), o.ID)
 }
 
-func (iw *InfoWindow) ShowLocation(id int64) {
+func (iw *InfoViewer) ShowLocation(id int64) {
 	iw.show(infoLocation, id)
 }
 
-func (iw *InfoWindow) ShowRace(id int64) {
+func (iw *InfoViewer) ShowRace(id int64) {
 	iw.show(infoRace, id)
 }
 
-func (iw *InfoWindow) ShowType(typeID, characterID int64) {
+func (iw *InfoViewer) ShowType(typeID, characterID int64) {
 	iw.showWithCharacterID(showParams{
 		variant:     infoInventoryType,
 		entityID:    typeID,
@@ -100,7 +100,7 @@ func (iw *InfoWindow) ShowType(typeID, characterID int64) {
 	})
 }
 
-func (iw *InfoWindow) show(v infoVariant, id int64) {
+func (iw *InfoViewer) show(v infoVariant, id int64) {
 	iw.showWithCharacterID(showParams{
 		variant:     v,
 		entityID:    id,
@@ -121,7 +121,7 @@ type showParams struct {
 	characterID int64
 }
 
-func (iw *InfoWindow) showWithCharacterID(arg showParams) {
+func (iw *InfoViewer) showWithCharacterID(arg showParams) {
 	if iw.u.IsOffline() {
 		ui.ShowInformation(
 			"Offline",
@@ -212,7 +212,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
-		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
+		w.Resize(fyne.NewSize(windowWidth, windowHeight))
 		w.SetCloseIntercept(func() {
 			w.Close()
 			fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
@@ -248,7 +248,7 @@ func (iw *InfoWindow) showWithCharacterID(arg showParams) {
 	}()
 }
 
-func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
+func (iw *InfoViewer) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
 	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
 	if !created {
 		w2.Show()
@@ -265,7 +265,7 @@ func (iw *InfoWindow) showZoomWindow(title string, id int64, load func(int64, in
 	w2.Show()
 }
 
-func (iw *InfoWindow) openURL(s string) {
+func (iw *InfoViewer) openURL(s string) {
 	x, err := url.ParseRequestURI(s)
 	if err != nil {
 		slog.Error("Constructing URL", "url", s, "error", err)
@@ -278,7 +278,7 @@ func (iw *InfoWindow) openURL(s string) {
 	}
 }
 
-func (iw *InfoWindow) makeZKillboardIcon(id int64, v infoVariant) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeZKillboardIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -302,7 +302,7 @@ func (iw *InfoWindow) makeZKillboardIcon(id int64, v infoVariant) *xwidget.Tappa
 	return icon
 }
 
-func (iw *InfoWindow) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corp",
@@ -325,7 +325,7 @@ func (iw *InfoWindow) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corporation",
@@ -347,7 +347,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) renderIconSize() fyne.Size {
+func (iw *InfoViewer) renderIconSize() fyne.Size {
 	var s float32
 	if iw.u.IsMobile() {
 		s = logoUnitSize
@@ -420,10 +420,10 @@ func SupportedCategories() set.Set[app.EveEntityCategory] {
 // baseInfo represents shared functionality between all info widgets.
 type baseInfo struct {
 	name *widget.Label
-	iw   *InfoWindow
+	iw   *InfoViewer
 }
 
-func (b *baseInfo) initBase(iw *InfoWindow) {
+func (b *baseInfo) initBase(iw *InfoViewer) {
 	b.iw = iw
 	b.name = newLabelWithWrapAndSelectable("Loading...")
 }
@@ -454,11 +454,11 @@ type attributeList struct {
 	widget.BaseWidget
 
 	items   []attributeItem
-	iw      *InfoWindow
+	iw      *InfoViewer
 	openURL func(*url.URL) error
 }
 
-func newAttributeList(iw *InfoWindow, items ...attributeItem) *attributeList {
+func newAttributeList(iw *InfoViewer, items ...attributeItem) *attributeList {
 	w := &attributeList{
 		items:   items,
 		iw:      iw,

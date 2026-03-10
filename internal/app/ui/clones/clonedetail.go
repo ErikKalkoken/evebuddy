@@ -40,16 +40,16 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 	}
 
 	location := xwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
-		u.InfoWindow().ShowLocation(r.jc.Location.ID)
+		u.InfoViewer().ShowLocation(r.jc.Location.ID)
 	})
 	character := ui.MakeLinkLabelWithWrap(r.jc.Character.Name, func() {
-		u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: r.jc.Character.ID})
+		u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: r.jc.Character.ID})
 	})
 
 	var originInfo fyne.CanvasObject
 	if hasOrigin {
 		originInfo = xwidget.NewTappableRichText(origin.DisplayRichText(), func() {
-			u.InfoWindow().Show(origin.EveEntity())
+			u.InfoViewer().Show(origin.EveEntity())
 		})
 	} else {
 		l := widget.NewLabel("No origin")
@@ -91,7 +91,7 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 		implants = makeImplantsList(
 			u.Character(),
 			u.EVEImage(),
-			u.InfoWindow().ShowType,
+			u.InfoViewer().ShowType,
 			r.jc.Character.ID,
 			r.jc.CloneID,
 			u.IsDeveloperMode(),
@@ -208,7 +208,7 @@ func makeRoute(u baseUI, r cloneRow) *widget.List {
 			return
 		}
 		s := r.route[id]
-		u.InfoWindow().Show(s.EveEntity())
+		u.InfoViewer().Show(s.EveEntity())
 	}
 	return list
 }

@@ -1,4 +1,4 @@
-package infowindow
+package infoviewer
 
 import (
 	"context"
@@ -37,7 +37,7 @@ type locationInfo struct {
 	typeInfo    *widget.Hyperlink
 }
 
-func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
+func newLocationInfo(iw *InfoViewer, id int64) *locationInfo {
 	typeInfo := widget.NewHyperlink("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := widget.NewHyperlink("", nil)
@@ -186,7 +186,7 @@ type raceInfo struct {
 	description *widget.Label
 }
 
-func newRaceInfo(iw *InfoWindow, id int64) *raceInfo {
+func newRaceInfo(iw *InfoViewer, id int64) *raceInfo {
 	a := &raceInfo{
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,

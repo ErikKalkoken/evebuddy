@@ -26,16 +26,16 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 	}
 	item := ui.MakeLinkLabelWithWrap(r.typeName, func() {
 		if r.owner.IsCharacter() {
-			u.InfoWindow().ShowType(r.typeID, r.owner.ID)
+			u.InfoViewer().ShowType(r.typeID, r.owner.ID)
 		} else {
-			u.InfoWindow().ShowType(r.typeID, 0)
+			u.InfoViewer().ShowType(r.typeID, 0)
 		}
 	})
 	var location, region fyne.CanvasObject
 	if r.location != nil {
-		location = ui.MakeLocationLabel(r.location, u.InfoWindow().ShowLocation)
+		location = ui.MakeLocationLabel(r.location, u.InfoViewer().ShowLocation)
 		region = ui.MakeLinkLabel(r.regionName, func() {
-			u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
+			u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 		})
 	} else {
 		location = widget.NewLabel("?")
@@ -55,7 +55,7 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().Show,
+			u.InfoViewer().Show,
 		)),
 		widget.NewFormItem("Item", item),
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
@@ -89,7 +89,7 @@ func ShowAssetDetailWindow(u coreUI, r assetRow) {
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID, 0)
+			u.InfoViewer().ShowType(r.typeID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {

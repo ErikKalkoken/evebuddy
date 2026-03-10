@@ -183,7 +183,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 		if id >= len(a.rowsFiltered) {
 			return
 		}
-		a.u.InfoWindow().ShowType(a.rowsFiltered[id].typeID, 0)
+		a.u.InfoViewer().ShowType(a.rowsFiltered[id].typeID, 0)
 	}
 	a.installations = list
 
@@ -341,16 +341,16 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
-			a.u.InfoWindow().Show(cp.EvePlanet.SolarSystem.EveEntity())
+			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.EveEntity())
 		}
 		a.region.SetText(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name))
 		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
 		a.planetType.OnTapped = func() {
-			a.u.InfoWindow().Show(cp.EvePlanet.Type.EveEntity())
+			a.u.InfoViewer().Show(cp.EvePlanet.Type.EveEntity())
 		}
 		a.owner.SetText(ownerName)
 		a.owner.OnTapped = func() {
-			a.u.InfoWindow().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
+			a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
 
 		a.expiryTimes = expiryTimes
