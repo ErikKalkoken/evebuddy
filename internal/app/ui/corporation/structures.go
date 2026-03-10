@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -112,7 +111,7 @@ func NewStructures(u baseUI) *Structures {
 		Update: func(r structureRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.structureName)
 		},
-	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[structureRow]{
+	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[structureRow]{
 		ColumnID: structuresColType,
 		EIS:      u.EVEImage(),
 		Label:    "Type",

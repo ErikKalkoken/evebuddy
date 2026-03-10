@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -150,7 +149,7 @@ const (
 
 func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
-		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
+		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,
 			EIS:      u.EVEImage(),
 			GetEntity: func(r marketOrderRow) *app.EveEntity {

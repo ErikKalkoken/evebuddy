@@ -20,7 +20,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -77,7 +77,7 @@ func (a *admin) makeCharacterList() *widget.List {
 			return len(a.rows)
 		},
 		func() fyne.CanvasObject {
-			return newAdminListItem(a.showDeleteDialog, awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			return newAdminListItem(a.showDeleteDialog, ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rows) {
@@ -292,14 +292,14 @@ type adminListItem struct {
 	widget.BaseWidget
 
 	delete           *ttwidget.Button
-	entityItem       *awidget.EveEntityListItem
+	entityItem       *ui.EveEntityListItem
 	issue            *fyne.Container
 	issueIcon        *ttwidget.Icon
 	issueLabel       *ttwidget.Label
 	showDeleteDialog func(adminRow)
 }
 
-func newAdminListItem(showDeleteDialog func(adminRow), loadIcon awidget.EveEntityIconLoader) *adminListItem {
+func newAdminListItem(showDeleteDialog func(adminRow), loadIcon ui.EveEntityIconLoader) *adminListItem {
 	p := theme.Padding()
 	del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 	del.Importance = widget.DangerImportance
@@ -313,7 +313,7 @@ func newAdminListItem(showDeleteDialog func(adminRow), loadIcon awidget.EveEntit
 		issueLabel,
 	)
 	issue.Hide()
-	character := awidget.NewEveEntityListItem(loadIcon)
+	character := ui.NewEveEntityListItem(loadIcon)
 	character.IsAvatar = true
 	w := &adminListItem{
 		delete:           del,

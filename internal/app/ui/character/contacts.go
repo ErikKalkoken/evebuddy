@@ -22,7 +22,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -191,7 +190,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
+				return newCharacterContactItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -216,7 +215,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return newCharacterContactItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -466,14 +465,14 @@ type characterContactItem struct {
 	category *widget.Label
 	icon     *canvas.Image
 	labels   *widget.Label
-	loadIcon awidget.EveEntityIconLoader
+	loadIcon ui.EveEntityIconLoader
 	name     *widget.Label
 	npc      *widget.Label
 	symbol   *standingSymbol
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(loadIcon awidget.EveEntityIconLoader) *characterContactItem {
+func newCharacterContactItem(loadIcon ui.EveEntityIconLoader) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip

@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -115,7 +114,7 @@ func NewClones(u baseUI) *Clones {
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[cloneRow]{
+	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[cloneRow]{
 		ColumnID: clonesColCharacter,
 		EIS:      u.EVEImage(),
 		GetEntity: func(r cloneRow) *app.EveEntity {

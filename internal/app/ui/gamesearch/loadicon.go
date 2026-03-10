@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -52,7 +52,7 @@ func loadIconFunc(eis searchResultEIS, eus searchResultEUS) func(o *app.EveEntit
 						return eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 					}
 				default:
-					return awidget.EveEntityIcon(eis, o, app.IconPixelSize, icons.BlankSvg)
+					return ui.EveEntityIcon(eis, o, app.IconPixelSize, icons.BlankSvg)
 				}
 			},
 			func(r fyne.Resource) {

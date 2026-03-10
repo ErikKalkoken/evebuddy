@@ -13,7 +13,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -84,7 +84,7 @@ func (a *training) makeList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 			character.IsAvatar = true
 			return container.NewBorder(
 				nil,
@@ -101,7 +101,7 @@ func (a *training) makeList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*awidget.EveEntityListItem).Set(r.EveCharacter.EveEntity())
+			border[0].(*ui.EveEntityListItem).Set(r.EveCharacter.EveEntity())
 
 			sw := border[1].(*kxwidget.Switch)
 			sw.On = r.IsTrainingWatched

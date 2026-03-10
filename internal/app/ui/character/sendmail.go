@@ -20,7 +20,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -48,7 +48,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
+	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
 	a.from.ShowInfoWindow = u.InfoWindow().Show
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
@@ -66,7 +66,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
+	a.to = newEveEntityEntry(toButton, labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
 	a.to.ShowInfoWindow = u.InfoWindow().Show
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -164,7 +164,7 @@ type eveEntityEntry struct {
 	Placeholder    string
 	ShowInfoWindow func(*app.EveEntity)
 
-	loadIcon    awidget.EveEntityIconLoader
+	loadIcon    ui.EveEntityIconLoader
 	field       *canvas.Rectangle
 	items       []*app.EveEntity
 	label       fyne.CanvasObject
@@ -173,7 +173,7 @@ type eveEntityEntry struct {
 	placeholder *xwidget.RichText
 }
 
-func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, loadIcon awidget.EveEntityIconLoader) *eveEntityEntry {
+func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, loadIcon ui.EveEntityIconLoader) *eveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -328,13 +328,13 @@ type eveEntityBadge struct {
 	ee           *app.EveEntity
 	fallbackIcon fyne.Resource
 	hovered      bool
-	loadIcon     awidget.EveEntityIconLoader
+	loadIcon     ui.EveEntityIconLoader
 }
 
 var _ fyne.Tappable = (*eveEntityBadge)(nil)
 var _ desktop.Hoverable = (*eveEntityBadge)(nil)
 
-func newEveEntityBadge(ee *app.EveEntity, loadIcon awidget.EveEntityIconLoader) *eveEntityBadge {
+func newEveEntityBadge(ee *app.EveEntity, loadIcon ui.EveEntityIconLoader) *eveEntityBadge {
 	w := &eveEntityBadge{
 		ee:           ee,
 		fallbackIcon: icons.Questionmark32Png,
@@ -426,7 +426,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 			return len(results)
 		},
 		func() fyne.CanvasObject {
-			return newEntityItem(awidget.LoadEveEntityIconFunc(u.EVEImage()))
+			return newEntityItem(ui.LoadEveEntityIconFunc(u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(results) {
@@ -529,10 +529,10 @@ type entityItem struct {
 	category *widget.Label
 	icon     *canvas.Image
 	name     *widget.Label
-	loadIcon awidget.EveEntityIconLoader
+	loadIcon ui.EveEntityIconLoader
 }
 
-func newEntityItem(loadIcon awidget.EveEntityIconLoader) *entityItem {
+func newEntityItem(loadIcon ui.EveEntityIconLoader) *entityItem {
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
 	category := widget.NewLabel("")

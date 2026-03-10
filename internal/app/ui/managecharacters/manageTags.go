@@ -18,7 +18,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -245,7 +245,7 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 			},
 			func() fyne.CanvasObject {
 				check := widget.NewIcon(theme.CheckButtonIcon())
-				character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+				character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 				character.IsAvatar = true
 				return container.NewBorder(
 					nil,
@@ -261,7 +261,7 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 				}
 				border := co.(*fyne.Container).Objects
 				r := others[id]
-				border[0].(*awidget.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
+				border[0].(*ui.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
 
 				check := border[1].(*widget.Icon)
 				if selected[r.ID] {
@@ -403,7 +403,7 @@ func (a *manageTags) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			remove := ttwidget.NewButtonWithIcon("", theme.CancelIcon(), nil)
 			remove.SetToolTip("Remove character from tag")
-			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 			character.IsAvatar = true
 			return container.NewBorder(
 				nil,
@@ -419,7 +419,7 @@ func (a *manageTags) makeCharacterList() *widget.List {
 			}
 			r := a.characters[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*awidget.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
+			box[0].(*ui.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
 
 			remove := box[1].(*ttwidget.Button)
 			remove.OnTapped = func() {

@@ -1,4 +1,4 @@
-package awidget
+package ui
 
 import (
 	"fmt"

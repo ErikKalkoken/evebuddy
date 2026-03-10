@@ -17,7 +17,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -61,7 +61,7 @@ func NewCommunications(u baseUI) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().Show)
+	a.Detail = newCommunicationDetail(ui.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().Show)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -150,7 +150,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -425,7 +425,7 @@ type communicationDetail struct {
 	subject *widget.Label
 }
 
-func newCommunicationDetail(loadIcon awidget.EveEntityIconLoader, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord

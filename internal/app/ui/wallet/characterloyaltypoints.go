@@ -16,7 +16,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -148,7 +147,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
-				awidget.LoadEveEntityIconFunc(a.u.EVEImage()),
+				ui.LoadEveEntityIconFunc(a.u.EVEImage()),
 				func(o *app.EveEntity) {
 					a.u.InfoWindow().Show(o)
 				})
@@ -279,15 +278,15 @@ type loyaltyPointsListItem struct {
 	widget.BaseWidget
 
 	icon     *xwidget.TappableIcon
-	entity   *awidget.EveEntityListItem
+	entity   *ui.EveEntityListItem
 	points   *widget.Label
-	loadIcon awidget.EveEntityIconLoader
+	loadIcon ui.EveEntityIconLoader
 	showInfo func(*app.EveEntity)
 }
 
-func newLoyaltyPointsListItem(loadIcon awidget.EveEntityIconLoader, showInfo func(*app.EveEntity)) *loyaltyPointsListItem {
+func newLoyaltyPointsListItem(loadIcon ui.EveEntityIconLoader, showInfo func(*app.EveEntity)) *loyaltyPointsListItem {
 	w := &loyaltyPointsListItem{
-		entity:   awidget.NewEveEntityListItem(loadIcon),
+		entity:   ui.NewEveEntityListItem(loadIcon),
 		icon:     xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		points:   widget.NewLabel(""),
 		showInfo: showInfo,

@@ -12,7 +12,7 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -151,14 +151,14 @@ type implantsCS interface {
 	GetJumpClone(ctx context.Context, characterID int64, cloneID int64) (*app.CharacterJumpClone, error)
 }
 
-func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func(int64, int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
+func makeImplantsList(cs implantsCS, eis ui.EveEntityEIS, showTypeInfo func(int64, int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
 	var implants []*app.CharacterJumpCloneImplant
 	list := widget.NewList(
 		func() int {
 			return len(implants)
 		},
 		func() fyne.CanvasObject {
-			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(eis))
+			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(eis))
 			character.IsAvatar = true
 			return character
 		},
@@ -167,7 +167,7 @@ func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func
 				return
 			}
 			r := implants[id]
-			co.(*awidget.EveEntityListItem).Set(r.EveType.EveEntity())
+			co.(*ui.EveEntityListItem).Set(r.EveType.EveEntity())
 		},
 	)
 	list.HideSeparators = true

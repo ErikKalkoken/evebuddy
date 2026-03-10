@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -96,7 +95,7 @@ func (a *Members) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(awidget.LoadEveEntityIconFunc(a.s.EVEImage()))
+			return newCorporationMemberItem(ui.LoadEveEntityIconFunc(a.s.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -209,10 +208,10 @@ type corporationMemberItem struct {
 
 	ceo    *ttwidget.Icon
 	owned  *ttwidget.Icon
-	member *awidget.EveEntityListItem
+	member *ui.EveEntityListItem
 }
 
-func newCorporationMemberItem(loadCharacterIcon awidget.EveEntityIconLoader) *corporationMemberItem {
+func newCorporationMemberItem(loadCharacterIcon ui.EveEntityIconLoader) *corporationMemberItem {
 	ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
 	ceo.SetToolTip("CEO of this corporation")
 	owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
@@ -220,7 +219,7 @@ func newCorporationMemberItem(loadCharacterIcon awidget.EveEntityIconLoader) *co
 	w := &corporationMemberItem{
 		ceo:    ceo,
 		owned:  owned,
-		member: awidget.NewEveEntityListItem(loadCharacterIcon),
+		member: ui.NewEveEntityListItem(loadCharacterIcon),
 	}
 	w.ExtendBaseWidget(w)
 	return w

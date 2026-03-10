@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -157,7 +156,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
-				awidget.LoadEveEntityIconFunc(a.u.EVEImage()),
+				ui.LoadEveEntityIconFunc(a.u.EVEImage()),
 				a.u.InfoWindow().Show,
 			)
 		},
