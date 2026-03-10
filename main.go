@@ -402,7 +402,7 @@ func main() {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
-	bu := core.NewBaseUI(core.BaseUIParams{
+	params := core.UIParams{
 		App:              fyneApp,
 		Character:        cs,
 		ClearCacheFunc:   func() { pc.Clear() },
@@ -420,9 +420,9 @@ func main() {
 		Settings:         settings,
 		Signals:          signals,
 		StatusCache:      scs,
-	})
+	}
 	if isDesktop {
-		u := core.NewDesktopUI(bu)
+		u := core.NewDesktopUI(params)
 		stop, err := remoteservice.Start(remotePort, func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()
@@ -434,7 +434,7 @@ func main() {
 		defer stop()
 		u.ShowAndRun()
 	} else {
-		u := core.NewMobileUI(bu)
+		u := core.NewMobileUI(params)
 		u.ShowAndRun()
 	}
 }

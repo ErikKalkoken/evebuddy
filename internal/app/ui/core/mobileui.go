@@ -37,8 +37,8 @@ type MobileUI struct {
 }
 
 // NewMobileUI builds the UI and returns it.
-func NewMobileUI(bu *baseUI) *MobileUI {
-	u := &MobileUI{baseUI: bu}
+func NewMobileUI(params UIParams) *MobileUI {
+	u := &MobileUI{baseUI: newBaseUI(params)}
 
 	var navBar *xwidget.NavBar
 
@@ -93,7 +93,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	mailMenu := fyne.NewMenu("")
 	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characters.NewSendMail(bu, c, mode, mail)
+		page := characters.NewSendMail(u, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}

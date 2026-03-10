@@ -48,9 +48,9 @@ type DesktopUI struct {
 }
 
 // NewDesktopUI build the UI and returns it.
-func NewDesktopUI(bu *baseUI) *DesktopUI {
+func NewDesktopUI(params UIParams) *DesktopUI {
 	u := &DesktopUI{
-		baseUI: bu,
+		baseUI: newBaseUI(params),
 	}
 	deskApp, ok := u.app.(desktop.App)
 	if !ok {
@@ -660,7 +660,7 @@ func (u *DesktopUI) saveAppState() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.app.NewWindow(u.MakeWindowTitle(title))
-	page := characters.NewSendMail(u.baseUI, c, mode, mail)
+	page := characters.NewSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
 	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())

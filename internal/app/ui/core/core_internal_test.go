@@ -205,7 +205,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 		Faction:     icons.Factionplaceholder64Png,
 		Type:        icons.Typeplaceholder64Png,
 	}
-	bu := NewBaseUI(BaseUIParams{
+	bu := newBaseUI(UIParams{
 		App:         fyneApp,
 		Character:   cs,
 		Corporation: rs,

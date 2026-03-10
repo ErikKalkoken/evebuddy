@@ -68,7 +68,7 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
-type BaseUIParams struct {
+type UIParams struct {
 	App         fyne.App
 	Character   *characterservice.CharacterService
 	Corporation *corporationservice.CorporationService
@@ -185,10 +185,10 @@ type baseUI struct {
 	windows                        map[string]fyne.Window // child windows
 }
 
-// NewBaseUI constructs and returns a new BaseUI.
+// newBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
-func NewBaseUI(arg BaseUIParams) *baseUI {
+func newBaseUI(arg UIParams) *baseUI {
 	if arg.Character == nil {
 		panic("CharacterService missing")
 	}
