@@ -150,14 +150,14 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return awidget.NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*awidget.MailHeaderItem)
+			item := co.(*MailHeaderItem)
 			item.Set(
 				n.Sender,
 				n.TitleDisplay(),
@@ -421,7 +421,7 @@ type communicationDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *awidget.MailHeader
+	header  *MailHeader
 	subject *widget.Label
 }
 
@@ -435,7 +435,7 @@ func newCommunicationDetail(loadIcon awidget.EveEntityIconLoader, show func(*app
 	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
-		header:  awidget.NewMailHeader(loadIcon, show),
+		header:  NewMailHeader(loadIcon, show),
 		subject: subject,
 	}
 	w.ExtendBaseWidget(w)

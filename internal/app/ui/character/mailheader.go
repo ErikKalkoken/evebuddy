@@ -1,4 +1,4 @@
-package awidget
+package character
 
 import (
 	"time"
@@ -12,6 +12,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -23,12 +24,12 @@ type MailHeaderItem struct {
 
 	from      *widget.Label
 	icon      *canvas.Image
-	loadIcon  EveEntityIconLoader
+	loadIcon  awidget.EveEntityIconLoader
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(loadIcon EveEntityIconLoader) *MailHeaderItem {
+func NewMailHeaderItem(loadIcon awidget.EveEntityIconLoader) *MailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
@@ -85,14 +86,14 @@ type MailHeader struct {
 
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
-	loadIcon   EveEntityIconLoader
+	loadIcon   awidget.EveEntityIconLoader
 	recipients *fyne.Container
 	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
 	to         *widget.Label
 }
 
-func NewMailHeader(loadIcon EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
+func NewMailHeader(loadIcon awidget.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()

@@ -534,7 +534,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return awidget.NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -544,7 +544,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			if a.character.Load() == nil {
 				return
 			}
-			item := co.(*awidget.MailHeaderItem)
+			item := co.(*MailHeaderItem)
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -849,14 +849,14 @@ type mailDetail struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *awidget.MailHeader
+	header  *MailHeader
 	subject *widget.Label
 }
 
 func newMailDetail(u ui) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  awidget.NewMailHeader(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().ShowEntity),
+		header:  NewMailHeader(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().ShowEntity),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText
