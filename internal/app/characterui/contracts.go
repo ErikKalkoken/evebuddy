@@ -27,7 +27,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -47,7 +46,7 @@ type contractUIServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	InfoWindow() *infowindow.InfoWindow

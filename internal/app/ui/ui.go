@@ -40,7 +40,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/walletui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -74,7 +73,7 @@ type BaseUIParams struct {
 	Character   *characterservice.CharacterService
 	Corporation *corporationservice.CorporationService
 	ESIStatus   *esistatusservice.ESIStatusService
-	EVEImage    *eveimageservice.EVEImageService
+	EVEImage    app.EVEImageService
 	EVEUniverse *eveuniverseservice.EVEUniverseService
 	Janice      *janiceservice.JaniceService
 	StatusCache *statuscache.StatusCache
@@ -153,7 +152,7 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      *eveimageservice.EVEImageService
+	eis      app.EVEImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EVEUniverseService
 	js       *janiceservice.JaniceService
@@ -615,7 +614,7 @@ func (u *baseUI) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }
 
-func (u *baseUI) EVEImage() *eveimageservice.EVEImageService {
+func (u *baseUI) EVEImage() app.EVEImageService {
 	return u.eis
 }
 

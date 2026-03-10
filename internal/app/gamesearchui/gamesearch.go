@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -35,7 +34,7 @@ const (
 
 type ui interface {
 	Character() *characterservice.CharacterService
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoWindow() *infowindow.InfoWindow
 	IsDeveloperMode() bool

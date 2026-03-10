@@ -67,7 +67,7 @@ func TestAugmentations_CanRenderWithData(t *testing.T) {
 type uiFake struct {
 	a   fyne.App
 	cs  *characterservice.CharacterService
-	eis *eveimageservice.EVEImageService
+	eis app.EVEImageService
 	eus *eveuniverseservice.EVEUniverseService
 	iw  *infowindow.InfoWindow
 	scs *statuscache.StatusCache
@@ -116,7 +116,7 @@ func (u *uiFake) ErrorDisplay(err error) string {
 	return err.Error()
 }
 
-func (u *uiFake) EVEImage() *eveimageservice.EVEImageService {
+func (u *uiFake) EVEImage() app.EVEImageService {
 	return u.eis
 }
 

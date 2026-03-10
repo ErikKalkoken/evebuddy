@@ -10,14 +10,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
 
 type ui interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())

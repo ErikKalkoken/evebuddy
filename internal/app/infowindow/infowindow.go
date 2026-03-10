@@ -30,7 +30,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -39,7 +38,7 @@ import (
 
 type ui interface {
 	Character() *characterservice.CharacterService
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	ErrorDisplay(err error) string

@@ -25,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -34,7 +33,7 @@ type ui interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
