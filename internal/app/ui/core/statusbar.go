@@ -25,7 +25,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -75,7 +75,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		warningIcon,
 		"?",
 		func() {
-			managecharacters.Show(u)
+			charactermanager.Show(u)
 		},
 	)
 	a.characterCount.SetToolTip("Number of characters - click to manage")

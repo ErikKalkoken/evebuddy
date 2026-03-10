@@ -22,8 +22,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -65,7 +65,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.showManageCharacters = func() {
-		managecharacters.Show(u)
+		charactermanager.Show(u)
 	}
 
 	u.defineShortcuts()
@@ -660,7 +660,7 @@ func (u *DesktopUI) saveAppState() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.app.NewWindow(u.MakeWindowTitle(title))
-	page := character.NewSendMail(u.baseUI, c, mode, mail)
+	page := characters.NewSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
 	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())

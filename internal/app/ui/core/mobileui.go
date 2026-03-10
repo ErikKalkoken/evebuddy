@@ -20,8 +20,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/managecharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -93,7 +93,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	mailMenu := fyne.NewMenu("")
 	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := character.NewSendMail(bu, c, mode, mail)
+		page := characters.NewSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -417,7 +417,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			managecharacters.Show(u)
+			charactermanager.Show(u)
 		},
 	)
 
