@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -657,7 +656,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 			}
 			f := widget.NewForm(items...)
 			f.Orientation = widget.Adaptive
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
 					u.InfoWindow().ShowType(o.Type.ID, 0)
@@ -724,7 +723,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 			}
 			f := widget.NewForm(items...)
 			f.Orientation = widget.Adaptive
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
 					u.InfoWindow().ShowType(o.Type.ID, 0)

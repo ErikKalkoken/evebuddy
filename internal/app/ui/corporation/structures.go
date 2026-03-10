@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -537,7 +536,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 
 			f := widget.NewForm(fi...)
 			f.Orientation = widget.Adaptive
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content: f,
 				ImageAction: func() {
 					u.InfoWindow().ShowType(structure.Type.ID, 0)

@@ -1,5 +1,4 @@
-// Package xwindow provides an extension to Fyne's window package.
-package xwindow
+package ui
 
 import (
 	"fyne.io/fyne/v2"
@@ -13,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type Params struct {
+type MakeDetailWindowParams struct {
 	Content        fyne.CanvasObject
 	EnableTooltips bool
 	ImageAction    func()
@@ -24,9 +23,9 @@ type Params struct {
 	Window         fyne.Window
 }
 
-// Set sets the content of a window to create a "detail window".
+// MakeDetailWindow sets the content of a window to create a "detail window".
 // Detail windows are used to show more information about objects in data lists.
-func Set(arg Params) {
+func MakeDetailWindow(arg MakeDetailWindowParams) {
 	if arg.Window == nil {
 		panic("must define window for detailWindow")
 	}

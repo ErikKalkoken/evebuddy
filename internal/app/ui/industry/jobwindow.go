@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -116,7 +116,7 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 		}
 		u.Signals().RefreshTickerExpired.RemoveListener(key)
 	})
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
 			u.InfoWindow().ShowType(r.blueprintType.ID, 0)

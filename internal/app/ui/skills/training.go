@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -635,7 +634,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		fyne.Do(func() {
 			sq := NewQueueWithCharacter(a.u, c)
 			go sq.Update(ctx)
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content:        sq,
 				EnableTooltips: true,
 				MinSize:        fyne.NewSize(800, 450),

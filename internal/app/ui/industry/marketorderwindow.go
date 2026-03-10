@@ -9,7 +9,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -92,7 +92,7 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
 			u.InfoWindow().ShowType(r.typeID, 0)

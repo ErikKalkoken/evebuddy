@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -103,7 +102,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 		b.stop()
 	})
 
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: b,
 		Title:   title,
 		Window:  w,

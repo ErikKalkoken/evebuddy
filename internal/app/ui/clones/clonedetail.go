@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -132,7 +131,7 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 		nil,
 		tabs,
 	)
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Title:   title,
 		Content: c,
 		Window:  w,

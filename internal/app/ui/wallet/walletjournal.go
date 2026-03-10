@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -598,7 +597,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 			for _, it := range items {
 				f.AppendItem(it)
 			}
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Title:   title,
 				Content: f,
 				Window:  w,
@@ -732,7 +731,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			for _, it := range items {
 				f.AppendItem(it)
 			}
-			xwindow.Set(xwindow.Params{
+			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Title:   title,
 				Content: f,
 				Window:  w,

@@ -25,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -753,7 +752,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		}
 		main.Add(x)
 	}
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Title:   subTitle,
 		Content: main,
 		Window:  w,
@@ -934,7 +933,7 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		}
 		main.Add(x)
 	}
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Title:   subTitle,
 		Content: main,
 		Window:  w,

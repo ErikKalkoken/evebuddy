@@ -16,7 +16,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -314,7 +313,7 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
-	xwindow.Set(xwindow.Params{
+	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {
 			u.InfoWindow().ShowType(r.SkillID, r.CharacterID)
