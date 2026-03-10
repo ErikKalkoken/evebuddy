@@ -231,7 +231,7 @@ func (s *EVEUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 
 func (s *EVEUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int64) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID), func() (any, error) {
-		var typeIds set.Set[int64]
+		var typeIDs set.Set[int64]
 		_, err := s.GetOrCreateCategoryESI(ctx, categoryID)
 		if err != nil {
 			return nil, err
@@ -268,12 +268,12 @@ func (s *EVEUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 			return nil, err
 		}
 		for _, ids := range groupTypes {
-			typeIds.AddSeq(slices.Values(ids))
+			typeIDs.AddSeq(slices.Values(ids))
 		}
-		if err := s.AddMissingTypes(ctx, typeIds); err != nil {
+		if err := s.AddMissingTypes(ctx, typeIDs); err != nil {
 			return nil, err
 		}
-		slog.Info("Updated eve types", "categoryID", categoryID, "count", typeIds.Size())
+		slog.Info("Updated eve types", "categoryID", categoryID, "count", typeIDs.Size())
 		return nil, nil
 	})
 	if err != nil {
@@ -384,9 +384,8 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 	case app.EveUnitLength:
 		if v > 1000 {
 			return fmt.Sprintf("%s km", defaultFormatter(v/1000)), 0
-		} else {
-			return fmt.Sprintf("%s m", defaultFormatter(v)), 0
 		}
+		return fmt.Sprintf("%s m", defaultFormatter(v)), 0
 	case app.EveUnitLevel:
 		return fmt.Sprintf("Level %s", defaultFormatter(v)), 0
 	case app.EveUnitLightYear:

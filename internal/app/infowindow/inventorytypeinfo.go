@@ -571,7 +571,7 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
-	list.OnSelected = func(id widget.ListItemID) {
+	list.OnSelected = func(_ widget.ListItemID) {
 		list.UnselectAll()
 	}
 	return container.NewTabItem("Fittings", list)

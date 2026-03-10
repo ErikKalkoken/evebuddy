@@ -37,10 +37,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/skillui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/walletui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xtheme"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -74,10 +73,10 @@ type BaseUIParams struct {
 	Character   *characterservice.CharacterService
 	Corporation *corporationservice.CorporationService
 	ESIStatus   *esistatusservice.ESIStatusService
-	EVEImage    *eveimageservice.EVEImageService
+	EVEImage    app.EVEImageService
 	EVEUniverse *eveuniverseservice.EVEUniverseService
 	Janice      *janiceservice.JaniceService
-	StatusCache *statuscacheservice.StatusCacheService
+	StatusCache *statuscache.StatusCache
 	Signals     *app.Signals
 	Settings    *settings.Settings
 	// optional
@@ -109,9 +108,9 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assetSearchAll          *assetui.AssetSearch
+	assetSearchAll          *assetui.Search
 	augmentations           *clonesui.Augmentations
-	characterAssetBrowser   *assetui.AssetBrowser
+	characterAssetBrowser   *assetui.Browser
 	characterAttributes     *skillui.Attributes
 	characterAugmentations  *clonesui.CharacterAugmentations
 	characterBiography      *characterui.Biography
@@ -129,8 +128,8 @@ type baseUI struct {
 	clones                  *clonesui.Clones
 	colonies                *industryui.Colonies
 	contracts               *characterui.Contracts
-	corporationAssetBrowser *assetui.AssetBrowser
-	corporationAssetSearch  *assetui.AssetSearch
+	corporationAssetBrowser *assetui.Browser
+	corporationAssetSearch  *assetui.Search
 	corporationContracts    *characterui.Contracts
 	corporationIndyJobs     *industryui.Jobs
 	corporationMember       *corporationui.Members
@@ -153,12 +152,12 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      *eveimageservice.EVEImageService
+	eis      app.EVEImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EVEUniverseService
 	js       *janiceservice.JaniceService
 	rs       *corporationservice.CorporationService
-	scs      *statuscacheservice.StatusCacheService
+	scs      *statuscache.StatusCache
 	settings *settings.Settings
 
 	// UI state & configuration
@@ -175,6 +174,7 @@ type baseUI struct {
 	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
 	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
 	isMobile                       bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
+	isOffline                      atomic.Bool
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
@@ -235,11 +235,12 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		settings:                       arg.Settings,
 		sig:                            singleinstance.NewGroup(),
 		signals:                        arg.Signals,
-		statusText:                     NewStatusText(),
+		statusText:                     newStatusText(),
 		windows:                        make(map[string]fyne.Window),
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
 	}
+
 	u.window = u.app.NewWindow(app.Name())
 	u.isUpdateDisabled.Store(arg.IsUpdateDisabled)
 
@@ -379,7 +380,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	u.assetSearchAll = assetui.NewSearchForAll(u)
 	u.augmentations = clonesui.NewAugmentations(u)
-	u.characterAssetBrowser = assetui.NewCharacterAssetBrowser(u)
+	u.characterAssetBrowser = assetui.NewCharacterBrowser(u)
 	u.characterAttributes = skillui.NewAttributes(u)
 	u.characterAugmentations = clonesui.NewCharacterAugmentations(u)
 	u.characterBiography = characterui.NewBiography(u)
@@ -397,7 +398,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.clones = clonesui.NewClones(u)
 	u.colonies = industryui.NewColonies(u)
 	u.contracts = characterui.NewContractsForCharacters(u)
-	u.corporationAssetBrowser = assetui.NewCorporationAssetBrowser(u)
+	u.corporationAssetBrowser = assetui.NewCorporationBrowser(u)
 	u.corporationAssetSearch = assetui.NewSearchForCorporation(u)
 	u.corporationContracts = characterui.NewContractsForCorporation(u)
 	u.corporationIndyJobs = industryui.NewJobsForCorporation(u)
@@ -590,8 +591,8 @@ func (u *baseUI) IsDeveloperMode() bool {
 	return u.isDeveloperMode.Load()
 }
 
-func (u *baseUI) IsOfflineMode() bool {
-	return u.isOfflineMode
+func (u *baseUI) IsOffline() bool {
+	return u.isOfflineMode || u.isOffline.Load()
 }
 func (u *baseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()
@@ -613,7 +614,7 @@ func (u *baseUI) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }
 
-func (u *baseUI) EVEImage() *eveimageservice.EVEImageService {
+func (u *baseUI) EVEImage() app.EVEImageService {
 	return u.eis
 }
 
@@ -637,7 +638,7 @@ func (u *baseUI) Signals() *app.Signals {
 	return u.signals
 }
 
-func (u *baseUI) StatusCache() *statuscacheservice.StatusCacheService {
+func (u *baseUI) StatusCache() *statuscache.StatusCache {
 	return u.scs
 }
 
@@ -1116,7 +1117,7 @@ type statusText struct {
 	spinner  *widget.Activity
 }
 
-func NewStatusText() *statusText {
+func newStatusText() *statusText {
 	w := &statusText{
 		messages: make(map[string]string),
 		label:    widget.NewLabel(""),

@@ -95,15 +95,15 @@ func NewFlyableShips(u ui) *FlyableShips {
 		a.search.SetText("")
 		a.filterRowsAsync()
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync()
 	}
 
-	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
+	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(_ string) {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
+	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(_ string) {
 		a.filterRowsAsync()
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
@@ -245,7 +245,7 @@ func (a *FlyableShips) filterRowsAsync() {
 }
 
 func (a *FlyableShips) update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.search.Disable()
@@ -269,38 +269,38 @@ func (a *FlyableShips) update(ctx context.Context) {
 
 	ok1, err := a.u.EVEUniverse().HasSection(ctx, app.SectionEveTypes)
 	if err != nil {
-		clear()
+		reset()
 		reportError(err)
 		return
 	}
 	if !ok1 {
-		clear()
+		reset()
 		setTop("Waiting for universe data to be loaded...", widget.WarningImportance)
 		return
 	}
 
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		clear()
+		reset()
 		setTop("No character", widget.LowImportance)
 		return
 	}
 
 	exists, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterSkills)
 	if err != nil {
-		clear()
+		reset()
 		reportError(err)
 		return
 	}
 	if !exists {
-		clear()
+		reset()
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
 		return
 	}
 
 	oo, err := a.u.Character().ListShipsAbilities(ctx, characterID)
 	if err != nil {
-		clear()
+		reset()
 		reportError(err)
 		return
 	}

@@ -12,8 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
@@ -22,13 +21,13 @@ type ui interface {
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	InfoWindow() *infowindow.InfoWindow
 	IsDeveloperMode() bool
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	MainWindow() fyne.Window
@@ -37,6 +36,6 @@ type ui interface {
 	ShowSnackbar(text string)
 	Signals() *app.Signals
 	SingleInstance() *singleinstance.Group
-	StatusCache() *statuscacheservice.StatusCacheService
+	StatusCache() *statuscache.StatusCache
 	UpdateMailIndicator(ctx context.Context)
 }

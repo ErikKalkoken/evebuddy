@@ -94,7 +94,7 @@ func (n moonminingAutomaticFracture) unmarshal(text string) (goesi.MoonminingAut
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingAutomaticFracture) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n moonminingAutomaticFracture) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
@@ -138,7 +138,7 @@ func (n moonminingExtractionStarted) unmarshal(text string) (goesi.MoonminingExt
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingExtractionStarted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n moonminingExtractionStarted) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
@@ -185,7 +185,7 @@ func (n moonminingExtractionFinished) unmarshal(text string) (goesi.MoonminingEx
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingExtractionFinished) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n moonminingExtractionFinished) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
@@ -235,7 +235,7 @@ func (n moonminingExtractionCancelled) unmarshal(text string) (goesi.MoonminingE
 	return data, ids, nil
 }
 
-func (n moonminingExtractionCancelled) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n moonminingExtractionCancelled) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	var data goesi.MoonminingExtractionCancelled
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -286,7 +286,7 @@ func (n moonminingLaserFired) unmarshal(text string) (goesi.MoonminingLaserFired
 	}
 	return data, ids, nil
 }
-func (n moonminingLaserFired) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n moonminingLaserFired) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {

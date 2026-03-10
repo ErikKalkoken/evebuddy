@@ -40,10 +40,10 @@ func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyn
 	} else {
 		s = app.ErrorDisplay(err)
 	}
-	error := widget.NewLabel(s)
-	error.TextStyle.Monospace = true
-	error.Wrapping = fyne.TextWrapBreak
-	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, error))
+	l := widget.NewLabel(s)
+	l.TextStyle.Monospace = true
+	l.Wrapping = fyne.TextWrapBreak
+	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, l))
 	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", c, parent)
 	xdesktop.DisableShortcutsForDialog(d, parent)

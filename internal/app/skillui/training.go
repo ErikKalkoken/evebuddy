@@ -265,7 +265,7 @@ func NewTraining(u ui) *Training {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
@@ -316,13 +316,13 @@ func NewTraining(u ui) *Training {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
 	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})

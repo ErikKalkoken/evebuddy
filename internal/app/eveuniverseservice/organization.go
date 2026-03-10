@@ -45,7 +45,7 @@ func (s *EVEUniverseService) FetchAlliance(ctx context.Context, allianceID int64
 	if err != nil {
 		return nil, err
 	}
-	maps.DeleteFunc(eeMap, func(id int64, o *app.EveEntity) bool {
+	maps.DeleteFunc(eeMap, func(_ int64, o *app.EveEntity) bool {
 		return !o.Category.IsKnown()
 	})
 	o := &app.EveAlliance{
@@ -250,7 +250,7 @@ func (s *EVEUniverseService) RandomizeAllCorporationNames(ctx context.Context) e
 		}
 
 	}
-	return s.scs.UpdateCorporations(ctx)
+	return s.scs.UpdateCorporations(ctx, s.st)
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.

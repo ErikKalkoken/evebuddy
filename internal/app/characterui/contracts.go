@@ -24,10 +24,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -47,7 +46,7 @@ type contractUIServices interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	InfoWindow() *infowindow.InfoWindow
@@ -55,7 +54,7 @@ type contractUIServices interface {
 	IsMobile() bool
 	MainWindow() fyne.Window
 	Signals() *app.Signals
-	StatusCache() *statuscacheservice.StatusCacheService
+	StatusCache() *statuscache.StatusCache
 }
 
 type contractRow struct {
@@ -212,7 +211,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(column int, r contractRow) {
+			func(_ int, r contractRow) {
 				if a.forCorporation {
 					ShowCorporationContractWindow(a.u, r.corporationID, r.contractID)
 				} else {
@@ -277,7 +276,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.Update(ctx)
 		})
-		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 			a.Update(ctx)
 		})
 	}
@@ -315,14 +314,14 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			type_ := widget.NewLabel("Template")
+			et := widget.NewLabel("Template")
 			status := xwidget.NewRichTextWithText("Template")
 			issuer := widget.NewLabel("Template")
 			assignee := widget.NewLabel("Template")
 			dateExpired := xwidget.NewRichTextWithText("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
-				container.NewHBox(type_, layout.NewSpacer(), status),
+				container.NewHBox(et, layout.NewSpacer(), status),
 				issuer,
 				assignee,
 				dateExpired,
@@ -374,7 +373,7 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
 	assignee := a.selectAssignee.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -405,9 +404,9 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 				return r.assigneeName != assignee
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if tag != "" {

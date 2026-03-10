@@ -299,7 +299,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 
 	list := newSettingList(items)
 
-	clear := settingAction{
+	clearCache := settingAction{
 		Label: "Clear cache",
 		Action: func() {
 			w := a.w
@@ -373,7 +373,7 @@ func (a *settingsWindow) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconBut
 			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
 	}
-	actions := []settingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
+	actions := []settingAction{reset, clearCache, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
 	if !a.u.IsMobile() {
 		actions = append(actions, settingAction{
 			Label: "Resets main window size to defaults",
@@ -650,7 +650,7 @@ func (a *settingsWindow) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Ic
 				}
 				return "Off"
 			},
-			onSelected: func(it SettingItem, refresh func()) {
+			onSelected: func(_ SettingItem, refresh func()) {
 				p := groupPages[g]
 				title := g.String()
 				hint := widget.NewLabel(groupHint)

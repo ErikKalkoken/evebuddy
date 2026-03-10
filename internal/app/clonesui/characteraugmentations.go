@@ -75,7 +75,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 			co.(*characterAugmentationItem).set(a.implants[id])
 		})
 
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		defer l.UnselectAll()
 	}
 	l.HideSeparators = true

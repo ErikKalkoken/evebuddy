@@ -574,7 +574,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go togglePermittedSections()
 	}
 
-	u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
 				tabs.DisableItem(characterTab)

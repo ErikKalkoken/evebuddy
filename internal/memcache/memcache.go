@@ -63,7 +63,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 func (c *Cache) CleanUp() {
 	slog.Debug("cache clean-up: started")
 	n := 0
-	c.items.Range(func(key, value any) bool {
+	c.items.Range(func(key, _ any) bool {
 		_, found := c.Get(key.(string))
 		if !found {
 			c.Delete(key.(string))
@@ -76,7 +76,7 @@ func (c *Cache) CleanUp() {
 
 // Clear removes all items.
 func (c *Cache) Clear() {
-	c.items.Range(func(key, value any) bool {
+	c.items.Range(func(key, _ any) bool {
 		c.items.Delete(key)
 		return true
 	})

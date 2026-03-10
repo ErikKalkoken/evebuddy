@@ -11,7 +11,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	_ "image/jpeg"
+	_ "image/jpeg" // required for the images package to support jpeg
 	"image/png"
 )
 

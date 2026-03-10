@@ -20,7 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
+
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -50,7 +50,7 @@ type marketOrderRow struct {
 	owner         *app.EveEntity
 	ownerName     string
 	price         float64
-	range_        string
+	rangeInfo     string
 	regionID      int64
 	regionName    string
 	state         app.MarketOrderState
@@ -290,10 +290,10 @@ func NewMarketOrders(u ui, isBuyOrders bool) *MarketOrders {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()
 		})
@@ -383,7 +383,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
 	owner := a.selectOwner.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -409,9 +409,9 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 				return r.characterName != owner
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if tag != "" {
@@ -498,7 +498,7 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 			owner:         o.Owner,
 			ownerName:     o.Owner.Name,
 			price:         o.Price,
-			range_:        o.Range,
+			rangeInfo:     o.Range,
 			regionID:      o.Region.ID,
 			regionName:    o.Region.Name,
 			state:         o.State,
@@ -515,95 +515,4 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 		rows = append(rows, r)
 	}
 	return rows, nil
-}
-
-// ShowMarketOrderWindow shows the location of a character in a new window.
-func ShowMarketOrderWindow(u ui, r marketOrderRow) {
-	title := fmt.Sprintf("Market Order #%d", r.orderID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),
-		title,
-		r.characterName,
-	)
-	if !created {
-		w.Show()
-		return
-	}
-	item := makeLinkLabelWithWrap(r.typeName, func() {
-		u.InfoWindow().ShowTypeWithCharacter(r.typeID, r.characterID)
-	})
-	region := makeLinkLabel(r.regionName, func() {
-		u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
-	})
-	var buySell string
-	if r.IsBuyOrder.ValueOrZero() {
-		buySell = "buy"
-	} else {
-		buySell = "sell"
-	}
-
-	var expires string
-	if r.isExpired() {
-		expires = "-"
-	} else {
-		expires = r.expires.Format(app.DateTimeFormat)
-	}
-
-	state := widget.NewLabel(r.stateCorrectedDisplay())
-	state.Importance = r.stateImportance()
-	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeEveEntityActionLabel(
-			r.owner,
-			u.InfoWindow().ShowEntity,
-		)),
-		widget.NewFormItem("Type", item),
-		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
-		widget.NewFormItem("Variant", widget.NewLabel(buySell)),
-		widget.NewFormItem("State", state),
-		widget.NewFormItem("Volume Total", widget.NewLabel(ihumanize.Comma(r.volumeTotal))),
-		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
-		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
-		widget.NewFormItem("Expires", widget.NewLabel(expires)),
-		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
-		widget.NewFormItem("Region", region),
-	}
-	if r.IsBuyOrder.ValueOrZero() {
-		items = append(items, widget.NewFormItem(
-			"Volume Min",
-			widget.NewLabel(r.minVolume.StringFunc("?", func(v int64) string {
-				return ihumanize.Comma(v)
-			})),
-		))
-		items = append(items, widget.NewFormItem(
-			"Escrow",
-			widget.NewLabel(r.escrow.StringFunc("-", func(v float64) string {
-				return humanize.FormatFloat(app.FloatFormat, v)
-			})),
-		))
-	}
-	items = append(items, widget.NewFormItem("Range", widget.NewLabel(xstrings.Title(r.range_))))
-	items = append(items, widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)))
-	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
-		r.characterID,
-		r.characterName,
-		u.InfoWindow().ShowEntity,
-	)))
-
-	if u.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Order ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(r.orderID))))
-	}
-	f := widget.NewForm(items...)
-	f.Orientation = widget.Adaptive
-	xwindow.Set(xwindow.Params{
-		Content: f,
-		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID)
-		},
-		ImageLoader: func(setter func(r fyne.Resource)) {
-			u.EVEImage().InventoryTypeIconAsync(r.typeID, 256, setter)
-		},
-		Title:  title,
-		Window: w,
-	})
-	w.Show()
 }

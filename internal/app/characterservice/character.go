@@ -19,7 +19,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool,
 		return false, err
 	}
 	slog.Info("Character deleted", "characterID", id)
-	if err := s.scs.UpdateCharacters(ctx); err != nil {
+	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
 		return false, err
 	}
 	ids, err := s.st.ListOrphanedCorporationIDs(ctx)
@@ -36,7 +36,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool,
 		}
 		slog.Info("Corporation deleted", "corporationID", id)
 	}
-	if err := s.scs.UpdateCorporations(ctx); err != nil {
+	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -157,14 +157,14 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
 		return nil, err
 	}
-	if err := s.scs.UpdateCharacters(ctx); err != nil {
+	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
 		return nil, err
 	}
 	if isNPC, _ := character.Corporation.IsNPC().Value(); !isNPC {
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 			return nil, err
 		}
-		if err := s.scs.UpdateCorporations(ctx); err != nil {
+		if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
 			return nil, err
 		}
 	}

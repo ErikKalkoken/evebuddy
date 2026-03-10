@@ -260,7 +260,7 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 	solarSystem := a.selectSolarSystem.Selected
 	state := a.selectState.Selected
 	service := a.selectService.Selected
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	power := a.selectPower.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
@@ -286,9 +286,9 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 				return !r.services.Contains(service)
 			})
 		}
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.typeName != type_
+				return r.typeName != et
 			})
 		}
 		if power != "" {
@@ -338,7 +338,7 @@ func (a *Structures) filterRowsAsync(sortCol int) {
 }
 
 func (a *Structures) update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
@@ -346,13 +346,13 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
-		clear()
+		reset()
 		return
 	}
 	rows, err := a.fetchData(ctx, corporationID)
 	if err != nil {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
-		clear()
+		reset()
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance

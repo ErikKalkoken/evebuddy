@@ -90,7 +90,7 @@ func (a *CharacterWallet) Update(ctx context.Context) {
 }
 
 func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			if a.OnBalanceUpdate != nil {
 				a.OnBalanceUpdate(optional.Optional[float64]{})
@@ -108,33 +108,33 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 	}
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		clear()
+		reset()
 		setBalance("", widget.MediumImportance)
 		return
 	}
 
 	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if !hasData {
-		clear()
+		reset()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
 
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
-		clear()
+		reset()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}
 	if err != nil {
 		slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err)
-		clear()
+		reset()
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	balance, ok := c.WalletBalance.Value()
 	if !ok {
-		clear()
+		reset()
 		setBalance("No data", widget.WarningImportance)
 		return
 	}

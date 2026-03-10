@@ -8,21 +8,16 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -32,17 +27,6 @@ type cloneRow struct {
 	jc    *app.CharacterJumpClone2
 	route []*app.EveSolarSystem
 	tags  set.Set[string]
-}
-
-func (r cloneRow) id() string {
-	if r.jc == nil {
-		return ""
-	}
-	id := fmt.Sprint(r.jc.ID)
-	for _, s := range r.route {
-		id += fmt.Sprintf("-%d", s.ID)
-	}
-	return id
 }
 
 func (r cloneRow) compare(other cloneRow) int {
@@ -177,27 +161,8 @@ func NewClones(u ui) *Clones {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(c int, r cloneRow) {
-				switch c {
-				case 0:
-					a.u.InfoWindow().ShowLocation(r.jc.Location.ID)
-				case 1:
-					if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-						a.u.InfoWindow().Show(app.EveEntityRegion, v.Constellation.Region.ID)
-					}
-				case 2:
-					if r.jc == nil || r.jc.ImplantsCount == 0 {
-						return
-					}
-					a.showCloneWindow(r.jc)
-				case 3:
-					a.u.InfoWindow().Show(app.EveEntityCharacter, r.jc.Character.ID)
-				case 4:
-					if len(r.route) == 0 {
-						return
-					}
-					a.showRouteWindow(r)
-				}
+			func(_ int, r cloneRow) {
+				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
 	} else {
@@ -221,10 +186,7 @@ func NewClones(u ui) *Clones {
 				return s
 			},
 			func(r cloneRow) {
-				if len(r.route) == 0 {
-					return
-				}
-				a.showRouteWindow(r)
+				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
 	}
@@ -259,7 +221,7 @@ func NewClones(u ui) *Clones {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	return a
@@ -564,198 +526,6 @@ func (a *Clones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *Clones) showRouteWindow(r cloneRow) {
-	if r.jc == nil {
-		return
-	}
-	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
-	w, ok := a.u.GetOrCreateWindow(fmt.Sprintf("route-%s", r.id()), title, r.jc.Character.Name)
-	if !ok {
-		w.Show()
-		return
-	}
-	col := kxlayout.NewColumns(60)
-	list := widget.NewList(
-		func() int {
-			return len(r.route)
-		},
-		func() fyne.CanvasObject {
-			return container.New(col, widget.NewLabel(""), xwidget.NewRichText())
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(r.route) {
-				return
-			}
-			s := r.route[id]
-			border := co.(*fyne.Container).Objects
-			num := border[0].(*widget.Label)
-			num.SetText(fmt.Sprint(id))
-			border[1].(*xwidget.RichText).Set(s.DisplayRichTextWithRegion())
-		},
-	)
-	list.HideSeparators = true
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if id >= len(r.route) {
-			return
-		}
-		s := r.route[id]
-		a.u.InfoWindow().Show(app.EveEntitySolarSystem, s.ID)
-
-	}
-
-	var fromText []widget.RichTextSegment
-	if a.origin != nil {
-		fromText = a.origin.DisplayRichTextWithRegion()
-	}
-	from := xwidget.NewTappableRichText(fromText, func() {
-		if a.origin != nil {
-			a.u.InfoWindow().Show(app.EveEntitySolarSystem, a.origin.ID)
-		}
-	})
-	from.Wrapping = fyne.TextWrapWord
-
-	var toText []widget.RichTextSegment
-	if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-		toText = v.DisplayRichTextWithRegion()
-	}
-	to := xwidget.NewTappableRichText(toText, func() {
-		if v, ok := r.jc.Location.SolarSystem.Value(); ok {
-			a.u.InfoWindow().Show(app.EveEntitySolarSystem, v.ID)
-		}
-	})
-	to.Wrapping = fyne.TextWrapWord
-
-	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
-	top := container.New(
-		layout.NewCustomPaddedVBoxLayout(0),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("From", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			from,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("To", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			to,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("Jumps", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			jumps,
-		),
-	)
-	c := container.NewBorder(
-		container.NewVBox(top, widget.NewSeparator()),
-		nil,
-		nil,
-		nil,
-		list,
-	)
-	xwindow.Set(xwindow.Params{
-		Title:   title,
-		Content: c,
-		Window:  w,
-	})
-	w.Show()
-}
-
-func (a *Clones) showCloneWindow(jc *app.CharacterJumpClone2) {
-	if jc == nil {
-		return
-	}
-	title := fmt.Sprintf("Clone #%d", jc.CloneID)
-	w, ok := a.u.GetOrCreateWindow(fmt.Sprintf("clone-%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
-	if !ok {
-		w.Show()
-		return
-	}
-	clone, err := a.u.Character().GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
-	if err != nil {
-		slog.Error("show clone", "error", err)
-		xdialog.ShowErrorAndLog("failed to load clone", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-		return
-	}
-	list := widget.NewList(
-		func() int {
-			return len(clone.Implants)
-		},
-		func() fyne.CanvasObject {
-			icon := xwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
-			name := widget.NewLabel("")
-			name.Truncation = fyne.TextTruncateEllipsis
-			return container.NewBorder(
-				nil,
-				nil,
-				icon,
-				nil,
-				name,
-			)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(clone.Implants) {
-				return
-			}
-			im := clone.Implants[id]
-			border := co.(*fyne.Container).Objects
-			icon := border[1].(*canvas.Image)
-			a.u.EVEImage().InventoryTypeIconAsync(im.EveType.ID, app.IconPixelSize, func(r fyne.Resource) {
-				icon.Resource = r
-				icon.Refresh()
-			})
-			name := border[0]
-			name.(*widget.Label).SetText(im.EveType.Name)
-		},
-	)
-	list.HideSeparators = true
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if id >= len(clone.Implants) {
-			return
-		}
-		im := clone.Implants[id]
-		a.u.InfoWindow().Show(app.EveEntityInventoryType, im.EveType.ID)
-
-	}
-
-	location := makeLocationLabel(jc.Location.ToShort(), a.u.InfoWindow().ShowLocation)
-	character := makeLinkLabelWithWrap(jc.Character.Name, func() {
-		a.u.InfoWindow().Show(app.EveEntityCharacter, jc.Character.ID)
-	})
-	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
-	col := kxlayout.NewColumns(80)
-	top := container.New(
-		layout.NewCustomPaddedVBoxLayout(0),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("Location", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			location,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("Character", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			character,
-		),
-		container.New(
-			col,
-			widget.NewLabelWithStyle("Implants", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			implants,
-		),
-	)
-	c := container.NewBorder(
-		container.NewVBox(top, widget.NewSeparator()),
-		nil,
-		nil,
-		nil,
-		list,
-	)
-	xwindow.Set(xwindow.Params{
-		Title:   title,
-		Content: c,
-		Window:  w,
-	})
-	w.Show()
-}
+const (
+	firstColumnWidth = 60
+)

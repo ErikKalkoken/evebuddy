@@ -34,7 +34,9 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 			CharacterName: character.EveCharacter.Name,
 			RefreshToken:  "refresh-new",
 		})
-		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: AuthTokenFromAppToken(token2)}})
+		cs := NewFake(st, Params{AuthClient: testutil.AuthClientFake{
+			Token: testutil.AuthTokenFromAppToken(token2),
+		}})
 		// when
 		changed, err := cs.ensureValidToken(ctx, token1)
 		// then
@@ -59,7 +61,9 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 			CharacterName: character.EveCharacter.Name,
 			RefreshToken:  "refresh-new",
 		})
-		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: AuthTokenFromAppToken(token2)}})
+		cs := NewFake(st, Params{AuthClient: testutil.AuthClientFake{
+			Token: testutil.AuthTokenFromAppToken(token2),
+		}})
 		// when
 		changed, err := cs.ensureValidToken(ctx, token)
 		// then

@@ -40,10 +40,10 @@ func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID i
 	if len(bids) == 0 {
 		return nil, app.ErrNotFound
 	}
-	var max float64
+	var maximum float64
 	var top *app.CorporationContractBid
 	for _, b := range bids {
-		if top == nil || b.Amount > max {
+		if top == nil || b.Amount > maximum {
 			top = b
 		}
 	}
@@ -152,9 +152,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 					if err := s.createNewContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("create contract", "contract", c, "error", err)
 						continue
-					} else {
-						count++
 					}
+					count++
 				}
 				slog.Info("Stored new contracts", "corporationID", arg.corporationID, "count", count)
 			}
@@ -164,9 +163,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 					if err := s.updateContract(ctx, arg.corporationID, c); err != nil {
 						slog.Error("update contract", "contract", c, "error", err)
 						continue
-					} else {
-						count++
 					}
+					count++
 				}
 				slog.Info("Updated contracts", "corporationID", arg.corporationID, "count", count)
 			}

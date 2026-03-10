@@ -25,7 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type characterTags struct {
+type manageTags struct {
 	widget.BaseWidget
 
 	addCharactersButton *widget.Button
@@ -40,8 +40,8 @@ type characterTags struct {
 	tags                []*app.CharacterTag
 }
 
-func newCharacterTags(cw *characterWindow) *characterTags {
-	a := &characterTags{
+func newManageTags(cw *characterWindow) *manageTags {
+	a := &manageTags{
 		cw: cw,
 	}
 	a.ExtendBaseWidget(a)
@@ -60,14 +60,14 @@ func newCharacterTags(cw *characterWindow) *characterTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
-	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 	})
 	return a
 }
 
-func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
+func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
 		a.modifyTag("Create Character Tag", "Create", func(name string) error {
@@ -97,7 +97,7 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterTags) deleteTags() {
+func (a *manageTags) deleteTags() {
 	xdialog.ShowConfirm(
 		"Delete All Tags",
 		"Are you sure you want to delete all tags?",
@@ -132,7 +132,7 @@ func (a *characterTags) deleteTags() {
 	)
 }
 
-func (a *characterTags) exportTags() {
+func (a *manageTags) exportTags() {
 	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if writer == nil {
 			return
@@ -169,7 +169,7 @@ func (a *characterTags) exportTags() {
 	d.Show()
 }
 
-func (a *characterTags) importTags() {
+func (a *manageTags) importTags() {
 	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 		m := kmodal.NewProgressInfinite(
 			"Replacing tags from file",
@@ -209,7 +209,7 @@ func (a *characterTags) importTags() {
 	d.Show()
 }
 
-func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
+func (a *manageTags) makeManageCharacters() *xwidget.AppBar {
 	ab := xwidget.NewAppBar(
 		"",
 		container.NewBorder(
@@ -225,7 +225,7 @@ func (a *characterTags) makeManageCharacters() *xwidget.AppBar {
 	return ab
 }
 
-func (a *characterTags) makeAddCharacterButton() *widget.Button {
+func (a *manageTags) makeAddCharacterButton() *widget.Button {
 	w := widget.NewButtonWithIcon("Add characters to tag", theme.ContentAddIcon(), func() {
 		if a.selectedTag == nil {
 			return
@@ -245,12 +245,14 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 			},
 			func() fyne.CanvasObject {
 				check := widget.NewIcon(theme.CheckButtonIcon())
+				character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+				character.IsAvatar = true
 				return container.NewBorder(
 					nil,
 					nil,
 					check,
 					nil,
-					awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
+					character,
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -259,7 +261,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				}
 				border := co.(*fyne.Container).Objects
 				r := others[id]
-				border[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
+				border[0].(*awidget.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
 
 				check := border[1].(*widget.Icon)
 				if selected[r.ID] {
@@ -317,15 +319,15 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 	return w
 }
 
-func (a *characterTags) makeTagList() *widget.List {
+func (a *manageTags) makeTagList() *widget.List {
 	tagList := widget.NewList(
 		func() int {
 			return len(a.tags)
 		},
 		func() fyne.CanvasObject {
-			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
-			delete.Importance = widget.DangerImportance
-			delete.SetToolTip("Delete tag")
+			del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
+			del.Importance = widget.DangerImportance
+			del.SetToolTip("Delete tag")
 			rename := ttwidget.NewButtonWithIcon("", theme.DocumentCreateIcon(), nil)
 			rename.SetToolTip("Rename tag")
 			name := widget.NewLabel("Template")
@@ -333,7 +335,7 @@ func (a *characterTags) makeTagList() *widget.List {
 				nil,
 				nil,
 				nil,
-				container.NewHBox(rename, delete),
+				container.NewHBox(rename, del),
 				name,
 			)
 		},
@@ -393,7 +395,7 @@ func (a *characterTags) makeTagList() *widget.List {
 	return tagList
 }
 
-func (a *characterTags) makeCharacterList() *widget.List {
+func (a *manageTags) makeCharacterList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -401,12 +403,14 @@ func (a *characterTags) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			remove := ttwidget.NewButtonWithIcon("", theme.CancelIcon(), nil)
 			remove.SetToolTip("Remove character from tag")
+			character := awidget.NewEveEntityListItem(awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character.IsAvatar = true
 			return container.NewBorder(
 				nil,
 				nil,
 				nil,
 				remove,
-				awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
+				character,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -415,7 +419,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			}
 			r := a.characters[id]
 			box := co.(*fyne.Container).Objects
-			box[0].(*awidget.EntityListItem).Set(r.ID, r.Name)
+			box[0].(*awidget.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
 
 			remove := box[1].(*ttwidget.Button)
 			remove.OnTapped = func() {
@@ -437,13 +441,13 @@ func (a *characterTags) makeCharacterList() *widget.List {
 		},
 	)
 	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		l.UnselectAll()
 	}
 	return l
 }
 
-func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
+func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
 		a.characters = xslices.Reset(a.characters)
@@ -476,7 +480,7 @@ func (a *characterTags) setCharactersAsync(tag *app.CharacterTag) {
 	}()
 }
 
-func (a *characterTags) modifyTag(title, confirm string, execute func(name string) error) {
+func (a *manageTags) modifyTag(title, confirm string, execute func(name string) error) {
 	names := set.Of(xslices.Map(a.tags, func(x *app.CharacterTag) string {
 		return strings.ToLower(x.Name)
 	})...)
@@ -513,7 +517,7 @@ func (a *characterTags) modifyTag(title, confirm string, execute func(name strin
 	a.cw.w.Canvas().Focus(name)
 }
 
-func (a *characterTags) selectTagByName(name string) {
+func (a *manageTags) selectTagByName(name string) {
 	a.tagList.UnselectAll()
 	for id, t := range a.tags {
 		if t.Name == name {
@@ -523,7 +527,7 @@ func (a *characterTags) selectTagByName(name string) {
 	}
 }
 
-func (a *characterTags) update(ctx context.Context) {
+func (a *manageTags) update(ctx context.Context) {
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to list tags", err)

@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
@@ -60,7 +60,7 @@ type CharacterService struct {
 	esiClient               *esi.APIClient
 	eus                     *eveuniverseservice.EVEUniverseService
 	httpClient              *http.Client
-	scs                     *statuscacheservice.StatusCacheService
+	scs                     *statuscache.StatusCache
 	sendDesktopNotification func(title, content string) // Callback for sending a desktop notification via Fyne API
 	settings                Settings
 	sfg                     singleflight.Group
@@ -78,7 +78,7 @@ type Params struct {
 	EveUniverseService     *eveuniverseservice.EVEUniverseService
 	Settings               Settings
 	Signals                *app.Signals
-	StatusCacheService     *statuscacheservice.StatusCacheService
+	StatusCacheService     *statuscache.StatusCache
 	Storage                *storage.Storage
 	// optional
 	HTTPClient              *http.Client

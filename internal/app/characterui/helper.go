@@ -82,7 +82,7 @@ func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(in
 // TODO: Remove this helper
 
 // makeTopText makes the content for the top label of a gui element.
-func makeTopText(characterID int64, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+func makeTopText(characterID int64, hasData bool, err error, create func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + app.ErrorDisplay(err), widget.DangerImportance
 	}
@@ -92,8 +92,8 @@ func makeTopText(characterID int64, hasData bool, err error, make func() (string
 	if !hasData {
 		return "No data", widget.WarningImportance
 	}
-	if make == nil {
+	if create == nil {
 		return "", widget.MediumImportance
 	}
-	return make()
+	return create()
 }

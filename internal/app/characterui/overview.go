@@ -168,7 +168,7 @@ func NewOverview(u ui) *Overview {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters and systems"
@@ -215,7 +215,7 @@ func NewOverview(u ui) *Overview {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -438,7 +438,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 }
 
 func (a *Overview) Update(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
@@ -453,7 +453,7 @@ func (a *Overview) Update(ctx context.Context) {
 	}
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
-		clear()
+		reset()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
 		return

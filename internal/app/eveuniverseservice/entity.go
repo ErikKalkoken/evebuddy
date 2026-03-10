@@ -127,17 +127,21 @@ func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			ee = append(ee, eeChunk...)
 			bad.AddSeq(slices.Values(badChunk))
 		}
-		for _, entity := range ee {
-			_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
-				ID:       entity.Id,
-				Name:     entity.Name,
-				Category: eveEntityCategoryFromESICategory(entity.Category),
-			})
-			if err != nil {
-				return set.Set[int64]{}, wrapErr(err)
+
+		if len(ee) > 0 {
+			for _, entity := range ee {
+				_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+					ID:       entity.Id,
+					Name:     entity.Name,
+					Category: eveEntityCategoryFromESICategory(entity.Category),
+				})
+				if err != nil {
+					return set.Set[int64]{}, wrapErr(err)
+				}
 			}
+			slog.Info("Stored newly resolved EveEntities", "count", len(ee))
 		}
-		slog.Info("Stored newly resolved EveEntities", "count", len(ee))
+
 		resolved := set.Collect(xiter.MapSlice(ee, func(x esi.UniverseNamesPostInner) int64 {
 			return x.Id
 		}))
@@ -145,7 +149,7 @@ func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 		unresolved := set.Difference(requested, resolved)
 		if unresolved.Size() > 0 {
 			return set.Set[int64]{}, wrapErr(
-				fmt.Errorf("ESI failed to resolve some IDs: requested %v, unresolved %v", requested, unresolved),
+				fmt.Errorf("AddMissingEntities: incomplete: missing %v, bad %v, unresolved %v", missing, bad, unresolved),
 			)
 		}
 	}

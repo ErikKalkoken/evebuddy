@@ -140,6 +140,8 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 	return fmt.Sprint(v)
 }
 
+// OptionalWithComma produces a string form of the given number in base 10
+// with commas after every three orders of magnitude or a fallback when empty.
 func OptionalWithComma[T constraints.Integer](o optional.Optional[T], fallback string) string {
 	v, ok := o.Value()
 	if !ok {
@@ -148,6 +150,9 @@ func OptionalWithComma[T constraints.Integer](o optional.Optional[T], fallback s
 	return humanize.Comma(int64(v))
 }
 
+// OptionalWithDecimals returns a humanized float number,
+// e.g. 1234 becomes 1.23K or a fallback
+// when the optional is empty
 func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals uint, fallback string) string {
 	v, ok := o.Value()
 	if !ok {

@@ -82,7 +82,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 			co.(*characterAttributeItem).set(a.rows[id])
 		},
 	)
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		l.UnselectAll()
 	}
 	l.HideSeparators = true

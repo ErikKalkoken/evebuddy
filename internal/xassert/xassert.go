@@ -20,7 +20,7 @@ func EqualDuration(t *testing.T, want, got, delta time.Duration) {
 	assert.True(t, diff <= delta, "%s is not almost equal to %s (+/- %s)", got, want, delta)
 }
 
-type Equaler[T any] interface {
+type equaler[T any] interface {
 	Equal(other T) bool
 }
 
@@ -29,13 +29,14 @@ type Equaler[T any] interface {
 // and will also compare objects with their Equal() methods if available.
 func Equal[T any](t *testing.T, want, got T) bool {
 	t.Helper()
-	got2, ok := any(got).(Equaler[T])
+	got2, ok := any(got).(equaler[T])
 	if ok {
 		return assert.Truef(t, got2.Equal(want), "Not equal:\nexpected: %s\nactual  : %s", want, got)
 	}
 	return assert.Equal(t, want, got)
 }
 
+// Empty asserts that an optional is empty.
 func Empty[T any](t *testing.T, v optional.Optional[T]) bool {
 	t.Helper()
 	return assert.Truef(t, v.IsEmpty(), "Not empty:\n%v", v)

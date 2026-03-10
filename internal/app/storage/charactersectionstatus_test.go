@@ -41,11 +41,11 @@ func TestCharacterSectionStatus(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
-		error := "error"
+		x := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  c.ID,
 			Section:      app.SectionCharacterImplants,
-			ErrorMessage: &error,
+			ErrorMessage: &x,
 		}
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then

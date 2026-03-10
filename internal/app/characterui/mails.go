@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -200,30 +200,11 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Mails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 	t := xwidget.NewTree(
-		func(isBranch bool) fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(icons.BlankSvg),
-				widget.NewLabel("template template"),
-				layout.NewSpacer(),
-				kwidget.NewBadge("999"),
-			)
+		func(_ bool) fyne.CanvasObject {
+			return NewMailFolderItem()
 		},
-		func(n *mailFolderNode, b bool, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container).Objects
-			icon := hbox[0].(*widget.Icon)
-			icon.SetResource(n.icon())
-			label := hbox[1].(*widget.Label)
-			badge := hbox[3].(*kwidget.Badge)
-			if n.UnreadCount == 0 {
-				label.TextStyle.Bold = false
-				badge.Hide()
-			} else {
-				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(n.UnreadCount))
-				badge.Show()
-			}
-			label.Text = n.Name
-			label.Refresh()
+		func(n *mailFolderNode, _ bool, co fyne.CanvasObject) {
+			co.(*mailFolderItem).set(n)
 		},
 	)
 	t.OnSelectedNode = func(n *mailFolderNode) {
@@ -553,7 +534,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return awidget.NewMailHeaderItem(a.u.EVEImage())
+			return awidget.NewMailHeaderItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -564,7 +545,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*awidget.MailHeaderItem)
-			item.Set(a.character.Load().IDOrZero(), m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {
@@ -597,7 +578,7 @@ func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 }
 
 func (a *Mails) headerUpdate(ctx context.Context) {
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
@@ -615,13 +596,13 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 	}
 	folder := a.currentFolder.Load()
 	if folder == nil {
-		clear()
+		reset()
 		return
 	}
 	hasData := a.u.StatusCache().HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
-		clear()
+		reset()
 		return
 	}
 
@@ -629,7 +610,7 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 	if err != nil {
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		clear()
+		reset()
 		return
 	}
 
@@ -768,7 +749,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 		a.toolbar.Show()
 	})
 
-	if a.u.IsOfflineMode() || a.u.IsUpdateDisabled() {
+	if a.u.IsOffline() || a.u.IsUpdateDisabled() {
 		return
 	}
 
@@ -825,6 +806,45 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	}
 }
 
+type mailFolderItem struct {
+	widget.BaseWidget
+
+	icon   *widget.Icon
+	name   *widget.Label
+	unread *kxwidget.Badge
+}
+
+func NewMailFolderItem() *mailFolderItem {
+	w := &mailFolderItem{
+		name:   widget.NewLabel(""),
+		icon:   widget.NewIcon(icons.BlankSvg),
+		unread: kxwidget.NewBadge("999"),
+	}
+	w.ExtendBaseWidget(w)
+	w.name.Truncation = fyne.TextTruncateClip
+	return w
+}
+
+func (w *mailFolderItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, w.icon, w.unread, w.name)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *mailFolderItem) set(n *mailFolderNode) {
+	w.icon.SetResource(n.icon())
+	if n.UnreadCount == 0 {
+		w.name.TextStyle.Bold = false
+		w.unread.Hide()
+	} else {
+		w.name.TextStyle.Bold = true
+		w.unread.SetText(strconv.Itoa(n.UnreadCount))
+		w.unread.Show()
+	}
+	w.name.Text = n.Name
+	w.name.Refresh()
+
+}
+
 type mailDetail struct {
 	widget.BaseWidget
 
@@ -836,7 +856,7 @@ type mailDetail struct {
 func newMailDetail(u ui) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  awidget.NewMailHeader(u.EVEImage(), u.InfoWindow().ShowEntity),
+		header:  awidget.NewMailHeader(awidget.LoadEveEntityIconFunc(u.EVEImage()), u.InfoWindow().ShowEntity),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText
@@ -868,7 +888,7 @@ func (w *mailDetail) clear() {
 func (w *mailDetail) SetMail(m *app.CharacterMail) {
 	w.subject.SetText(m.Subject.ValueOrZero())
 	w.SetBody(m.BodyPlain())
-	w.header.Set(m.CharacterID, m.From, m.Timestamp, m.Recipients...)
+	w.header.Set(m.From, m.Timestamp, m.Recipients...)
 }
 
 func (w *mailDetail) SetBody(s string) {

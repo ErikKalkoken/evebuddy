@@ -21,23 +21,23 @@ type MailHeaderItem struct {
 
 	FallbackIcon fyne.Resource
 
-	eis       EveEntityEIS
 	from      *widget.Label
 	icon      *canvas.Image
+	loadIcon  EveEntityIconLoader
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(eis EveEntityEIS) *MailHeaderItem {
+func NewMailHeaderItem(loadIcon EveEntityIconLoader) *MailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis
 	w := &MailHeaderItem{
-		eis:          eis,
-		from:         from,
 		FallbackIcon: icons.Questionmark32Png,
+		from:         from,
+		loadIcon:     loadIcon,
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}
@@ -47,14 +47,14 @@ func NewMailHeaderItem(eis EveEntityEIS) *MailHeaderItem {
 	return w
 }
 
-func (w *MailHeaderItem) Set(characterID int64, from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
@@ -83,22 +83,22 @@ func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 type MailHeader struct {
 	widget.BaseWidget
 
-	eis        EveEntityEIS
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
+	loadIcon   EveEntityIconLoader
 	recipients *fyne.Container
-	to         *widget.Label
 	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
+	to         *widget.Label
 }
 
-func NewMailHeader(eis EveEntityEIS, show func(*app.EveEntity)) *MailHeader {
+func NewMailHeader(loadIcon EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
 	w := &MailHeader{
-		eis:        eis,
 		from:       from,
+		loadIcon:   loadIcon,
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
@@ -113,7 +113,7 @@ func NewMailHeader(eis EveEntityEIS, show func(*app.EveEntity)) *MailHeader {
 	return w
 }
 
-func (w *MailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
@@ -130,7 +130,7 @@ func (w *MailHeader) Set(characterID int64, from *app.EveEntity, timestamp time.
 		w.showInfo(from)
 	}
 	w.to.Show()
-	LoadEveEntityIconAsync(w.eis, from, func(r fyne.Resource) {
+	w.loadIcon(from, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.SetResource(r)
 	})
 	w.Refresh()

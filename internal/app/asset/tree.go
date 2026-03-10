@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
+// Item represents a asset item.
 type Item interface {
 	ID() int64
 	Unwrap() app.Asset
@@ -26,24 +27,26 @@ type Tree struct {
 	locations      map[int64]*Node // Map of location IDs to location nodes.
 }
 
+// NewFromCharacterAssets returns a new tree from character assets.
 func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Tree {
 	var items []Item
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
-	return new(items, locations, false)
+	return newTree(items, locations, false)
 }
 
+// NewFromCorporationAssets returns a new tree from corporation assets.
 func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Tree {
 	var items []Item
 	for _, ca := range assets {
 		items = append(items, ca)
 	}
-	return new(items, locations, true)
+	return newTree(items, locations, true)
 }
 
-// new returns a new asset tree.
-func new(items []Item, locations []*app.EveLocation, isCorporation bool) Tree {
+// newTree returns a newTree asset tree.
+func newTree(items []Item, locations []*app.EveLocation, isCorporation bool) Tree {
 	// map of location ID to eve locations
 	locationLookup := make(map[int64]*app.EveLocation)
 	for _, loc := range locations {

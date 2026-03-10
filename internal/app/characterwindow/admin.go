@@ -26,34 +26,34 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type characterAdminRow struct {
+type adminRow struct {
 	characterID   int64
 	corporationID int64
 	characterName string
 	missingScopes set.Set[string]
 }
 
-// characterAdmin is a UI component for authorizing and removing EVE Online characters.
-type characterAdmin struct {
+// admin is a UI component for authorizing and removing EVE Online characters.
+type admin struct {
 	widget.BaseWidget
 
 	ab         *xwidget.AppBar
-	characters []characterAdminRow
-	list       *widget.List
 	cw         *characterWindow
+	characters *widget.List
+	rows       []adminRow
 }
 
-func newCharacterAdmin(cw *characterWindow) *characterAdmin {
-	a := &characterAdmin{
+func newAdmin(cw *characterWindow) *admin {
+	a := &admin{
 		cw: cw,
 	}
 	a.ExtendBaseWidget(a)
-	a.list = a.makeCharacterList()
+	a.characters = a.makeCharacterList()
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if a.cw.u.IsOfflineMode() {
+	if a.cw.u.IsOffline() {
 		add.Disable()
 	}
 	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
@@ -61,98 +61,52 @@ func newCharacterAdmin(cw *characterWindow) *characterAdmin {
 		container.NewVBox(add, xwidget.NewStandardSpacer()),
 		nil,
 		nil,
-		a.list,
+		a.characters,
 	))
 	a.ab.HideBackground = !a.cw.u.IsMobile()
 	return a
 }
 
-func (a *characterAdmin) CreateRenderer() fyne.WidgetRenderer {
+func (a *admin) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.ab)
 }
 
-func (a *characterAdmin) makeCharacterList() *widget.List {
-	p := theme.Padding()
+func (a *admin) makeCharacterList() *widget.List {
 	l := widget.NewList(
 		func() int {
-			return len(a.characters)
+			return len(a.rows)
 		},
 		func() fyne.CanvasObject {
-			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
-			delete.Importance = widget.DangerImportance
-			delete.SetToolTip("Delete character")
-			issueLabel := ttwidget.NewLabel("Missing scopes")
-			issueLabel.Importance = widget.WarningImportance
-			issueIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
-			issue := container.New(
-				layout.NewCustomPaddedHBoxLayout(-p),
-				issueIcon,
-				issueLabel,
-			)
-			issue.Hide()
-			row := container.NewBorder(
-				nil,
-				nil,
-				nil,
-				container.NewHBox(
-					issue,
-					layout.NewSpacer(),
-					delete,
-				),
-				awidget.NewEntityListItem(true, a.cw.u.EVEImage().CharacterPortraitAsync),
-			)
-			return row
+			return newAdminListItem(a.showDeleteDialog, awidget.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.characters) {
+			if id >= len(a.rows) {
 				return
 			}
-			r := a.characters[id]
-			border := co.(*fyne.Container).Objects
-
-			border[0].(*awidget.EntityListItem).Set(r.characterID, r.characterName)
-
-			hbox := border[1].(*fyne.Container).Objects
-			issueBox := hbox[0].(*fyne.Container)
-			issueIcon := issueBox.Objects[0].(*ttwidget.Icon)
-			issueLabel := issueBox.Objects[1].(*ttwidget.Label)
-			if r.missingScopes.Size() != 0 {
-				x := slices.Sorted(r.missingScopes.All())
-				s := "Please re-add to approve missing scopes: " + strings.Join(x, ", ")
-				issueIcon.SetToolTip(s)
-				issueLabel.SetToolTip(s)
-				issueBox.Show()
-			} else {
-				issueBox.Hide()
-			}
-
-			delete := hbox[2].(*ttwidget.Button)
-			delete.OnTapped = func() {
-				a.showDeleteDialog(r)
-			}
+			co.(*adminListItem).set(a.rows[id])
 		})
 
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		l.UnselectAll()
 	}
 	return l
 }
 
-func (a *characterAdmin) update(ctx context.Context) {
+func (a *admin) update(ctx context.Context) {
 	characters, err := a.fetchRows(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to update characters", err)
 		return
 	}
 	fyne.Do(func() {
-		a.characters = characters
-		a.list.Refresh()
+		a.rows = characters
+		a.characters.Refresh()
 		a.ab.SetTitle(fmt.Sprintf("Characters (%d)", len(characters)))
 	})
 }
 
-func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, error) {
-	var rows []characterAdminRow
+func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
+	var rows []adminRow
 	cc, err := a.cw.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return rows, err
@@ -162,7 +116,7 @@ func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, er
 		if err != nil {
 			return rows, err
 		}
-		r := characterAdminRow{
+		r := adminRow{
 			characterID:   c.ID,
 			corporationID: c.EveCharacter.Corporation.ID,
 			characterName: c.EveCharacter.Name,
@@ -173,7 +127,7 @@ func (a *characterAdmin) fetchRows(ctx context.Context) ([]characterAdminRow, er
 	return rows, nil
 }
 
-func (a *characterAdmin) showAddCharacterDialog() {
+func (a *admin) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	infoText := widget.NewLabel(
 		"Please follow instructions in your\nbrowser to add a new character.",
@@ -265,7 +219,7 @@ func (a *characterAdmin) showAddCharacterDialog() {
 	}()
 }
 
-func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
+func (a *admin) showDeleteDialog(r adminRow) {
 	xdialog.ShowConfirm(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
@@ -332,4 +286,75 @@ func (a *characterAdmin) showDeleteDialog(r characterAdminRow) {
 		},
 		a.cw.w,
 	)
+}
+
+type adminListItem struct {
+	widget.BaseWidget
+
+	delete           *ttwidget.Button
+	entityItem       *awidget.EveEntityListItem
+	issue            *fyne.Container
+	issueIcon        *ttwidget.Icon
+	issueLabel       *ttwidget.Label
+	showDeleteDialog func(adminRow)
+}
+
+func newAdminListItem(showDeleteDialog func(adminRow), loadIcon awidget.EveEntityIconLoader) *adminListItem {
+	p := theme.Padding()
+	del := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
+	del.Importance = widget.DangerImportance
+	del.SetToolTip("Delete character")
+	issueLabel := ttwidget.NewLabel("Missing scopes")
+	issueLabel.Importance = widget.WarningImportance
+	issueIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
+	issue := container.New(
+		layout.NewCustomPaddedHBoxLayout(-p),
+		issueIcon,
+		issueLabel,
+	)
+	issue.Hide()
+	character := awidget.NewEveEntityListItem(loadIcon)
+	character.IsAvatar = true
+	w := &adminListItem{
+		delete:           del,
+		entityItem:       character,
+		issue:            issue,
+		issueIcon:        issueIcon,
+		issueLabel:       issueLabel,
+		showDeleteDialog: showDeleteDialog,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *adminListItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewHBox(
+			w.issue,
+			layout.NewSpacer(),
+			w.delete,
+		),
+		w.entityItem,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *adminListItem) set(r adminRow) {
+	w.entityItem.Set2(r.characterID, r.characterName, app.EveEntityCharacter)
+	if r.missingScopes.Size() != 0 {
+		x := slices.Sorted(r.missingScopes.All())
+		s := "Please re-add to approve missing scopes: " + strings.Join(x, ", ")
+		w.issueIcon.SetToolTip(s)
+		w.issueLabel.SetToolTip(s)
+		w.issue.Show()
+	} else {
+		w.issue.Hide()
+	}
+
+	w.delete.OnTapped = func() {
+		w.showDeleteDialog(r)
+	}
 }

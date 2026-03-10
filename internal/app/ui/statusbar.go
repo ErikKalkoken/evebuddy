@@ -106,7 +106,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	a.eveClock.SetToolTip("Current EVE time - click to enlarge")
 	a.eveStatus = newStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	a.eveStatus.SetToolTip("EVE server status - click for details")
-	a.updateHint = newUpdateHint(u)
+	a.updateHint = newUpdateHint(u.IsDeveloperMode(), u.MainWindow())
 	a.updateHint.Hide()
 	return a
 }
@@ -197,14 +197,14 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOfflineMode() {
+	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
 		return
 	}
 
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		a.updateEveStatus(ctx)
 	})
 
@@ -236,26 +236,32 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 			a.setEveStatus(status, title, errorMessage)
 		})
 	}
+
 	if a.u.ess.IsDailyDowntime() {
 		s := fmt.Sprintf(
 			"Offline during planned daily downtime:\n%s",
 			a.u.ess.DailyDowntime(),
 		)
 		set(eveStatusOffline, "OFFLINE", s)
+		a.u.isOffline.Store(true)
 		return
 	}
-	x, err := a.u.ess.Fetch(ctx)
+
+	status, err := a.u.ess.Fetch(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
 		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
 		return
 	}
-	if !x.IsOK() {
-		set(eveStatusOffline, "OFFLINE", x.ErrorMessage)
+	if !status.IsOK() {
+		set(eveStatusOffline, "OFFLINE", status.ErrorMessage)
+		a.u.isOffline.Store(true)
 		return
 	}
+
 	p := message.NewPrinter(language.English)
-	set(eveStatusOnline, p.Sprintf("%d players", x.PlayerCount), "")
+	set(eveStatusOnline, p.Sprintf("%d players", status.PlayerCount), "")
+	a.u.isOffline.Store(false)
 }
 
 func (a *statusBar) updateCharacterCount(_ context.Context) {
@@ -455,16 +461,18 @@ func (w *statusBarItem) MouseOut() {
 type updateHint struct {
 	widget.BaseWidget
 
-	latest  *widget.Label
-	current *widget.Label
-	u       *DesktopUI
+	current         *widget.Label
+	isDeveloperMode bool
+	latest          *widget.Label
+	window          fyne.Window
 }
 
-func newUpdateHint(u *DesktopUI) *updateHint {
+func newUpdateHint(isDeveloperMode bool, window fyne.Window) *updateHint {
 	w := &updateHint{
-		latest:  widget.NewLabel(""),
-		current: widget.NewLabel(""),
-		u:       u,
+		current:         widget.NewLabel(""),
+		isDeveloperMode: isDeveloperMode,
+		latest:          widget.NewLabel(""),
+		window:          window,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -483,16 +491,18 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 		)
 		u := app.WebsiteRootURL().JoinPath("releases")
-		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
-			if !ok {
-				return
-			}
-			if err := fyne.CurrentApp().OpenURL(u); err != nil {
-				xdialog.ShowErrorAndLog("Failed to open download page", err, w.u.IsDeveloperMode(), w.u.MainWindow())
-			}
-		}, w.u.MainWindow(),
+		d := dialog.NewCustomConfirm(
+			"Update available", "Download", "Close", c, func(ok bool) {
+				if !ok {
+					return
+				}
+				if err := fyne.CurrentApp().OpenURL(u); err != nil {
+					xdialog.ShowErrorAndLog("Failed to open download page", err, w.isDeveloperMode, w.window)
+				}
+			},
+			w.window,
 		)
-		xdesktop.DisableShortcutsForDialog(d, w.u.MainWindow())
+		xdesktop.DisableShortcutsForDialog(d, w.window)
 		d.Show()
 	})
 	c := container.NewHBox(l, widget.NewSeparator())

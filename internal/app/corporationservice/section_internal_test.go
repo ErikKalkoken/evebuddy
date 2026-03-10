@@ -28,10 +28,10 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
+			func(_ context.Context, _ corporationSectionUpdateParams) (any, error) {
 				return "any", nil
 			},
-			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
+			func(_ context.Context, _ corporationSectionUpdateParams, _ any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})
@@ -94,10 +94,10 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg, false,
-			func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
+			func(_ context.Context, _ corporationSectionUpdateParams) (any, error) {
 				return "old", nil
 			},
-			func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
+			func(_ context.Context, _ corporationSectionUpdateParams, _ any) (bool, error) {
 				hasUpdated = true
 				return true, nil
 			})

@@ -62,10 +62,10 @@ func TestGeneralSectionStatus(t *testing.T) {
 			Section: app.SectionEveTypes,
 		})
 		// when
-		error := "error"
+		y := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
-			Error:   &error,
+			Error:   &y,
 		}
 		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then

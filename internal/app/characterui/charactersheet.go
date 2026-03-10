@@ -170,10 +170,10 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		slog.Error("Failed to fetch character for sheet", "err", err)
 		setName("ERROR: " + a.u.ErrorDisplay(err))
 		return
-	} else {
-		a.character.Store(c2)
-		c = c2
 	}
+	a.character.Store(c2)
+	c = c2
+
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
 		a.name.OnTapped = func() {

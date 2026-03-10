@@ -23,9 +23,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -34,15 +33,16 @@ type ui interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	Signals() *app.Signals
-	StatusCache() *statuscacheservice.StatusCacheService
+	StatusCache() *statuscache.StatusCache
 }
 
+// Show shows the status window.
 func Show(s ui) {
 	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
@@ -140,7 +140,7 @@ func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
-		a.onEntitySelected = func(id int) {
+		a.onEntitySelected = func(_ int) {
 			a.nav.Push(xwidget.NewAppBar("Sections", sections, menu))
 		}
 		a.onSectionSelected = func(id int) {
@@ -162,13 +162,13 @@ func newStatusWindow(s ui, w fyne.Window) *statusWindow {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
-	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
 	return a
@@ -230,7 +230,7 @@ func (a *statusWindow) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusWindow) makeEntityList() *widget.List {
-	isOfflineMode := a.u.IsOfflineMode()
+	isOfflineMode := a.u.IsOffline()
 	list := widget.NewList(
 		func() int {
 			return len(a.sectionEntities)
@@ -259,7 +259,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
 
-		if !a.u.IsOfflineMode() {
+		if !a.u.IsOffline() {
 			a.updateAllSections.OnTapped = a.makeUpdateAllAction()
 			a.updateAllSections.Enable()
 		}
@@ -344,12 +344,12 @@ func (a *statusWindow) updateEntityList(_ context.Context) ([]sectionEntity, int
 		ss:       ss,
 	}
 	entities = append(entities, o)
-	count += 1
+	count++
 	return entities, count
 }
 
 func (a *statusWindow) makeSectionList() *widget.List {
-	isOfflineMode := a.u.IsOfflineMode()
+	isOfflineMode := a.u.IsOffline()
 	l := widget.NewList(
 		func() int {
 			return len(a.sections)
@@ -410,7 +410,7 @@ func (a *statusWindow) refreshDetails() {
 	} else {
 		a.detailsTop.SetText("")
 	}
-	if !a.u.IsOfflineMode() {
+	if !a.u.IsOffline() {
 		a.updateSection.OnTapped = a.makeUpdateSectionAction(ss.EntityID, ss.SectionID)
 		a.updateSection.Enable()
 	}

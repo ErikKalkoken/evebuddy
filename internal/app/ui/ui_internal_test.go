@@ -21,11 +21,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
@@ -33,98 +33,98 @@ const (
 	SkipUIReason = "This test is skipped for CI as it is flaky"
 )
 
-// FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
-type FakeApp struct {
+// AppFake is an extension of the Fyne test app which also conforms to the desktop app interface.
+type AppFake struct {
 	app fyne.App
 }
 
-func NewFakeApp(t testing.TB) *FakeApp {
-	a := &FakeApp{app: test.NewTempApp(t)}
+func NewFakeApp(t testing.TB) *AppFake {
+	a := &AppFake{app: test.NewTempApp(t)}
 	return a
 }
 
-func (a *FakeApp) NewWindow(title string) fyne.Window {
+func (a *AppFake) NewWindow(title string) fyne.Window {
 	return a.app.NewWindow(title)
 }
 
-func (a *FakeApp) Clipboard() fyne.Clipboard {
+func (a *AppFake) Clipboard() fyne.Clipboard {
 	return a.app.Clipboard()
 }
 
-func (a *FakeApp) OpenURL(url *url.URL) error {
+func (a *AppFake) OpenURL(url *url.URL) error {
 	return a.app.OpenURL(url)
 }
 
-func (a *FakeApp) Icon() fyne.Resource {
+func (a *AppFake) Icon() fyne.Resource {
 	return a.app.Icon()
 }
 
-func (a *FakeApp) SetIcon(r fyne.Resource) {
+func (a *AppFake) SetIcon(r fyne.Resource) {
 	a.app.SetIcon(r)
 }
 
-func (a *FakeApp) Run() {
+func (a *AppFake) Run() {
 	a.app.Run()
 }
 
-func (a *FakeApp) Quit() {
+func (a *AppFake) Quit() {
 	a.app.Quit()
 }
 
-func (a *FakeApp) Driver() fyne.Driver {
+func (a *AppFake) Driver() fyne.Driver {
 	return a.app.Driver()
 }
 
-func (a *FakeApp) UniqueID() string {
+func (a *AppFake) UniqueID() string {
 	return a.app.UniqueID()
 }
 
-func (a *FakeApp) SendNotification(n *fyne.Notification) {
+func (a *AppFake) SendNotification(n *fyne.Notification) {
 	a.app.SendNotification(n)
 }
 
-func (a *FakeApp) Settings() fyne.Settings {
+func (a *AppFake) Settings() fyne.Settings {
 	return a.app.Settings()
 }
 
-func (a *FakeApp) Preferences() fyne.Preferences {
+func (a *AppFake) Preferences() fyne.Preferences {
 	return a.app.Preferences()
 }
 
-func (a *FakeApp) Storage() fyne.Storage {
+func (a *AppFake) Storage() fyne.Storage {
 	return a.app.Storage()
 }
 
-func (a *FakeApp) Lifecycle() fyne.Lifecycle {
+func (a *AppFake) Lifecycle() fyne.Lifecycle {
 	return a.app.Lifecycle()
 }
 
-func (a *FakeApp) Metadata() fyne.AppMetadata {
+func (a *AppFake) Metadata() fyne.AppMetadata {
 	return a.app.Metadata()
 }
 
-func (a *FakeApp) CloudProvider() fyne.CloudProvider {
+func (a *AppFake) CloudProvider() fyne.CloudProvider {
 	return a.app.CloudProvider()
 }
 
-func (a *FakeApp) SetCloudProvider(o fyne.CloudProvider) {
+func (a *AppFake) SetCloudProvider(o fyne.CloudProvider) {
 	a.app.SetCloudProvider(o)
 }
 
-func (a *FakeApp) SetSystemTrayMenu(_ *fyne.Menu) {
+func (a *AppFake) SetSystemTrayMenu(_ *fyne.Menu) {
 	// noop
 }
 
-func (a *FakeApp) SetSystemTrayIcon(_ fyne.Resource) {
+func (a *AppFake) SetSystemTrayIcon(_ fyne.Resource) {
 	// noop
 }
 
-func (a *FakeApp) SetSystemTrayWindow(fyne.Window) {
+func (a *AppFake) SetSystemTrayWindow(fyne.Window) {
 	// noop
 }
 
-var _ fyne.App = (*FakeApp)(nil)
-var _ desktop.App = (*FakeApp)(nil)
+var _ fyne.App = (*AppFake)(nil)
+var _ desktop.App = (*AppFake)(nil)
 
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
@@ -144,19 +144,19 @@ func (ts tokenSourceFake) Token() (*oauth2.Token, error) {
 	return ts.token.OauthToken(), nil
 }
 
-func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ int64, _ set.Set[app.Role], _ set.Set[string]) (oauth2.TokenSource, int64, error) {
 	if s.Error != nil {
 		return &tokenSourceFake{token: s.Token, err: s.Error}, 0, nil
 	}
 	return &tokenSourceFake{token: s.Token, err: nil}, s.Token.CharacterID, nil
 }
 
-func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
+func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})
-	scs := statuscacheservice.New(st)
-	if err := scs.InitCache(context.Background()); err != nil {
+	scs := new(statuscache.StatusCache)
+	if err := scs.Init(context.Background(), st); err != nil {
 		panic(err)
 	}
 	signals := app.NewSignals()
@@ -197,24 +197,24 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	// eisFake := &testutil.EveImageServiceFake{
-	// 	Character:   icons.Characterplaceholder64Jpeg,
-	// 	Alliance:    icons.Corporationplaceholder64Png,
-	// 	Corporation: icons.Corporationplaceholder64Png,
-	// 	Err:         nil,
-	// 	Faction:     icons.Factionplaceholder64Png,
-	// 	Type:        icons.Typeplaceholder64Png,
-	// }
+	eisFake := &testutil.EveImageServiceFake{
+		Character:   icons.Characterplaceholder64Jpeg,
+		Alliance:    icons.Corporationplaceholder64Png,
+		Corporation: icons.Corporationplaceholder64Png,
+		Err:         nil,
+		Faction:     icons.Factionplaceholder64Png,
+		Type:        icons.Typeplaceholder64Png,
+	}
 	bu := NewBaseUI(BaseUIParams{
-		App:                fyneApp,
+		App:         fyneApp,
 		Character:   cs,
 		Corporation: rs,
 		ESIStatus:   esistatusservice.New(esiClient),
-		EVEImage:    eveimageservice.New(testutil.NewCacheFake(), nil, true),
+		EVEImage:    eisFake,
 		EVEUniverse: eus,
 		Janice:      janiceservice.New(http.DefaultClient, ""),
-		Settings:           settings,
-		Signals:            signals,
+		Settings:    settings,
+		Signals:     signals,
 		StatusCache: scs,
 	})
 	return bu

@@ -29,7 +29,7 @@ var (
 )
 
 // Icon IDs to ignore, e.g. because we have no image file for it
-var blacklistedIds = map[int]bool{21934: true}
+var blacklistedIDs = map[int]bool{21934: true}
 
 func main() {
 	flag.Parse()
@@ -41,7 +41,7 @@ func main() {
 	var values []row
 	for _, v := range data {
 		id := int(v["id"].(float64))
-		if blacklistedIds[id] {
+		if blacklistedIDs[id] {
 			continue
 		}
 		s := v["file"].(string)

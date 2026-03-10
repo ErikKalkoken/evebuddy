@@ -1,3 +1,4 @@
+// genratelimit generates ESI rate limit information for the xgoesi package.
 package main
 
 import (

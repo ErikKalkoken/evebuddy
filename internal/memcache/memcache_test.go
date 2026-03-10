@@ -75,15 +75,15 @@ func TestMemcache2(t *testing.T) {
 		assert.False(t, c.Exists("dummy-1"))
 		assert.False(t, c.Exists("dummy-2"))
 	})
-	t.Run("can close cache", func(t *testing.T) {
+	t.Run("can close cache", func(_ *testing.T) {
 		c := memcache.New()
 		c.Close()
 	})
-	t.Run("can start cache without automatic clean-up", func(t *testing.T) {
+	t.Run("can start cache without automatic clean-up", func(_ *testing.T) {
 		c := memcache.NewWithTimeout(0)
 		c.Close()
 	})
-	t.Run("can run clean-up", func(t *testing.T) {
+	t.Run("can run clean-up", func(_ *testing.T) {
 		c := memcache.NewWithTimeout(0)
 		c.CleanUp()
 		c.Close()

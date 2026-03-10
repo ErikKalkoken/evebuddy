@@ -190,7 +190,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(a.u.EVEImage())
+				return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -215,7 +215,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(a.u.EVEImage())
+			return newCharacterContactItem(awidget.LoadEveEntityIconFunc(a.u.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -376,7 +376,7 @@ func (a *Contacts) filterRowsAsync() {
 }
 
 func (a *Contacts) update(ctx context.Context) {
-	clear := func() {
+	rest := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
@@ -391,18 +391,18 @@ func (a *Contacts) update(ctx context.Context) {
 	}
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		clear()
+		rest()
 		setFooter("No character", widget.LowImportance)
 		return
 	}
 	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterContacts) {
-		clear()
+		rest()
 		setFooter("Loading data...", widget.WarningImportance)
 		return
 	}
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
-		clear()
+		rest()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
@@ -462,17 +462,17 @@ type characterContactItem struct {
 	widget.BaseWidget
 
 	blocked  *ttwidget.Icon
-	eis      awidget.EveEntityEIS
-	icon     *canvas.Image
 	category *widget.Label
-	npc      *widget.Label
+	icon     *canvas.Image
 	labels   *widget.Label
+	loadIcon awidget.EveEntityIconLoader
 	name     *widget.Label
+	npc      *widget.Label
 	symbol   *standingSymbol
 	watched  *ttwidget.Icon
 }
 
-func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
+func newCharacterContactItem(loadIcon awidget.EveEntityIconLoader) *characterContactItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(32))
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateClip
@@ -491,9 +491,9 @@ func newCharacterContactItem(eis awidget.EveEntityEIS) *characterContactItem {
 	w := &characterContactItem{
 		blocked:  blocked,
 		category: category,
-		eis:      eis,
 		icon:     icon,
 		labels:   labels,
+		loadIcon: loadIcon,
 		name:     name,
 		npc:      npc,
 		symbol:   newStandingSymbol(),
@@ -529,7 +529,7 @@ func (w *characterContactItem) set(r contactRow) {
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
 	w.symbol.set(r.standing, r.standingCategory)
-	awidget.LoadEveEntityIconAsync(w.eis, r.contact, func(r fyne.Resource) {
+	w.loadIcon(r.contact, app.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})

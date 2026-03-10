@@ -52,10 +52,10 @@ func newToolbar(u *DesktopUI) *toolbar {
 		it.Shortcut = sc.Shortcut
 		return it
 	}
-	close := fyne.NewMenuItem("Close", func() {
+	it := fyne.NewMenuItem("Close", func() {
 		u.MainWindow().Hide()
 	})
-	close.Shortcut = &desktop.CustomShortcut{
+	it.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyF4,
 		Modifier: fyne.KeyModifierAlt,
 	}
@@ -73,7 +73,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.showAboutDialog),
 		fyne.NewMenuItemSeparator(),
-		close,
+		it,
 		makeMenuItem("Quit", quit),
 	)
 	hamburger := xwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)

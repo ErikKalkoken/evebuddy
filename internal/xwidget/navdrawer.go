@@ -378,11 +378,11 @@ func (w *HooverThief) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
-func (w *HooverThief) MouseIn(e *desktop.MouseEvent) {
+func (w *HooverThief) MouseIn(_ *desktop.MouseEvent) {
 	w.hovered = true
 }
 
-func (w *HooverThief) MouseMoved(e *desktop.MouseEvent) {}
+func (w *HooverThief) MouseMoved(_ *desktop.MouseEvent) {}
 
 func (w *HooverThief) MouseOut() {
 	w.hovered = false

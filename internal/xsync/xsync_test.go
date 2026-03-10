@@ -54,29 +54,25 @@ func TestMap_Range(t *testing.T) {
 	assert.Equal(t, input, captured)
 }
 
-func TestMap_Concurrency(t *testing.T) {
+func TestMap_Concurrency(_ *testing.T) {
 	// Ensure the wrapper handles concurrent access safely (as sync.Map does)
 	var myMap Map[int, int]
 	var wg sync.WaitGroup
 	iterations := 1000
 
-	wg.Add(2)
-
 	// Concurrent Writers
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for i := range iterations {
 			myMap.Store(i, i*2)
 		}
-	}()
+	})
 
 	// Concurrent Readers
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for i := range iterations {
 			myMap.Load(i)
 		}
-	}()
+	})
 
 	wg.Wait()
 }

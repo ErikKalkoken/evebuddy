@@ -88,7 +88,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterName: ec.Name,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			AuthClient: characterservice.AuthClientFake{Token: characterservice.AuthTokenFromAppToken(token)},
+			AuthClient: testutil.AuthClientFake{Token: testutil.AuthTokenFromAppToken(token)},
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -170,7 +170,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterName: c.EveCharacter.Name,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			AuthClient: characterservice.AuthClientFake{Token: characterservice.AuthTokenFromAppToken(token2)},
+			AuthClient: testutil.AuthClientFake{Token: testutil.AuthTokenFromAppToken(token2)},
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(

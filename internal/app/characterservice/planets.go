@@ -10,10 +10,10 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
@@ -115,7 +115,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 			}
 			// update or create planet
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanetsPlanetId")
-			g := new(testutil.ErrGroupDebug)
+			g := new(errgroup.Group)
 			for _, o := range planets {
 				g.Go(func() error {
 					_, err := s.eus.GetOrCreatePlanetESI(ctx, o.PlanetId)

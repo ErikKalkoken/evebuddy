@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// CorporationSheet renders a corporation sheet.
 type CorporationSheet struct {
 	widget.BaseWidget
 

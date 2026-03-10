@@ -31,7 +31,7 @@ func (n charAppAcceptMsg) unmarshal(text string) (goesi.CharAppAcceptMsg, set.Se
 	return data, ids, nil
 }
 
-func (n charAppAcceptMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n charAppAcceptMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -76,7 +76,7 @@ func (n corpAppNewMsg) unmarshal(text string) (goesi.CorpAppNewMsg, set.Set[int6
 	return data, ids, nil
 }
 
-func (n corpAppNewMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n corpAppNewMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -118,7 +118,7 @@ func (n corpAppInvitedMsg) unmarshal(text string) (goesi.CorpAppInvitedMsg, set.
 	return data, ids, nil
 }
 
-func (n corpAppInvitedMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n corpAppInvitedMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -161,7 +161,7 @@ func (n charAppRejectMsg) unmarshal(text string) (goesi.CharAppRejectMsg, set.Se
 	return data, ids, nil
 }
 
-func (n charAppRejectMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n charAppRejectMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -203,7 +203,7 @@ func (n corpAppRejectCustomMsg) unmarshal(text string) (goesi.CorpAppRejectCusto
 	return data, ids, nil
 }
 
-func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -248,7 +248,7 @@ func (n charAppWithdrawMsg) unmarshal(text string) (goesi.CharAppWithdrawMsg, se
 	return data, ids, nil
 }
 
-func (n charAppWithdrawMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n charAppWithdrawMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
@@ -290,7 +290,7 @@ func (n charLeftCorpMsg) unmarshal(text string) (goesi.CharLeftCorpMsg, set.Set[
 	return data, ids, nil
 }
 
-func (n charLeftCorpMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+func (n charLeftCorpMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {

@@ -258,7 +258,7 @@ func (s *EVEImageService) InventoryTypeBPCAsync(id int64, size int, setter func(
 }
 
 // InventoryTypeSKIN returns the icon for a SKIN type.
-func (s *EVEImageService) InventoryTypeSKIN(id int64, size int) (fyne.Resource, error) {
+func (s *EVEImageService) InventoryTypeSKIN(_ int64, size int) (fyne.Resource, error) {
 	if size != 64 {
 		return nil, ErrInvalid
 	}
@@ -266,7 +266,7 @@ func (s *EVEImageService) InventoryTypeSKIN(id int64, size int) (fyne.Resource, 
 }
 
 // InventoryTypeSKINAsync loads the icon for a SKIN type and calls setter with the result.
-func (s *EVEImageService) InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EVEImageService) InventoryTypeSKINAsync(_ int64, size int, setter func(r fyne.Resource)) {
 	if size != 64 {
 		slog.Error("eveimageservice: url", "error", ErrInvalid)
 		setter(resourceBrokenimage64Png)

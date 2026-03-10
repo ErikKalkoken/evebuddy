@@ -19,18 +19,19 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 )
 
-var ErrCancel = errors.New("user aborted")
+var errCancel = errors.New("user aborted")
 
-type UI struct {
+type ui struct {
 	DataDir string
 
 	app    fyne.App
 	window fyne.Window
 }
 
-func NewUI(fyneApp fyne.App) UI {
+// NewUI creates and returns a new ui.
+func NewUI(fyneApp fyne.App) ui {
 	w := fyneApp.NewWindow("Delete User Data - EVE Buddy")
-	x := UI{
+	x := ui{
 		app:    fyneApp,
 		window: w,
 	}
@@ -38,14 +39,14 @@ func NewUI(fyneApp fyne.App) UI {
 }
 
 // ShowAndRun runs the delete data app
-func (u *UI) ShowAndRun() {
+func (u *ui) ShowAndRun() {
 	c := u.makePage()
 	u.window.SetContent(c)
 	u.window.Resize(fyne.Size{Width: 400, Height: 200})
 	u.window.ShowAndRun()
 }
 
-func (u *UI) makePage() *fyne.Container {
+func (u *ui) makePage() *fyne.Container {
 	okBtn := widget.NewButtonWithIcon("Delete", theme.ConfirmIcon(), func() {
 		title := widget.NewLabel("Deleting user data...")
 		pb := widget.NewProgressBar()
@@ -74,7 +75,7 @@ func (u *UI) makePage() *fyne.Container {
 				fyne.Do(func() {
 					pb.SetValue(p)
 				})
-			}); err == ErrCancel {
+			}); err == errCancel {
 				fyne.Do(func() {
 					title.SetText("Data delete aborted")
 				})
@@ -113,7 +114,7 @@ func (u *UI) makePage() *fyne.Container {
 	return c
 }
 
-func (u *UI) closeWithDialog(message string) {
+func (u *ui) closeWithDialog(message string) {
 	d := dialog.NewInformation("Delete User Data", message, u.window)
 	d.SetOnClosed(u.window.Close)
 	d.Show()
@@ -124,7 +125,7 @@ func RemoveFolders(ctx context.Context, dir string, update func(p float64)) erro
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():
-			return ErrCancel
+			return errCancel
 		default:
 			if err := os.RemoveAll(p); err != nil {
 				return err

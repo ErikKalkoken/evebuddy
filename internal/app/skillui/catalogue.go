@@ -103,7 +103,7 @@ func NewCatalogue(u ui) *Catalogue {
 	a.ExtendBaseWidget(a)
 	a.skills = a.makeSkillsGrid()
 
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync()
 	}
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
@@ -300,7 +300,7 @@ func (a *Catalogue) update(ctx context.Context) {
 		})
 	}
 
-	clear := func() {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
@@ -308,20 +308,20 @@ func (a *Catalogue) update(ctx context.Context) {
 	}
 
 	if !a.u.StatusCache().HasEveUniverseSection(app.SectionEveTypes) {
-		clear()
+		reset()
 		setTop("No data yet", widget.WarningImportance)
 		return
 	}
 
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		clear()
+		reset()
 		setTop("No character", widget.LowImportance)
 		return
 	}
 
 	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterSkills) {
-		clear()
+		reset()
 		setTop("No data yet", widget.WarningImportance)
 		return
 	}
@@ -329,7 +329,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
-		clear()
+		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
@@ -338,7 +338,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	skills, err := a.u.Character().ListSkills(ctx, characterID)
 	if err != nil {
 		slog.Error("Updating skill catalogue UI", "err", err)
-		clear()
+		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
@@ -347,7 +347,7 @@ func (a *Catalogue) update(ctx context.Context) {
 	err = sq.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to update skill queue", "err", err)
-		clear()
+		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}

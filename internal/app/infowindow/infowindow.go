@@ -30,7 +30,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/xdialog"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -39,13 +38,13 @@ import (
 
 type ui interface {
 	Character() *characterservice.CharacterService
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	ErrorDisplay(err error) string
 	IsDeveloperMode() bool
 	IsMobile() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
@@ -136,7 +135,7 @@ type showParams struct {
 }
 
 func (iw *InfoWindow) showWithCharacterID(arg showParams) {
-	if iw.u.IsOfflineMode() {
+	if iw.u.IsOffline() {
 		xdialog.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",
@@ -757,7 +756,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 		},
 	)
 	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(_ widget.ListItemID) {
 		defer l.UnselectAll()
 	}
 	return widget.NewSimpleRenderer(l)

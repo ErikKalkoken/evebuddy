@@ -16,7 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -49,7 +49,7 @@ func (ts tokenSourceFake) Token() (*oauth2.Token, error) {
 	return ts.token.OauthToken(), nil
 }
 
-func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
+func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ int64, _ set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
 	if s.Error != nil {
 		return &tokenSourceFake{token: s.Token, err: s.Error}, 0, nil
 	}
@@ -57,7 +57,7 @@ func (s *CharacterServiceFake) TokenSourceForCorporation(ctx context.Context, co
 }
 
 func NewFake(st *storage.Storage, args ...Params) *CorporationService {
-	scs := statuscacheservice.New(st)
+	scs := new(statuscache.StatusCache)
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})

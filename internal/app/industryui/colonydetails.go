@@ -201,7 +201,7 @@ func newColonyDetails(u ui, characterID, planetID int64, w fyne.Window) *colonyD
 		a.search.SetText("")
 		a.filterRowsAsync()
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync()
 	}
 	a.search.PlaceHolder = "Search"
@@ -224,7 +224,7 @@ func newColonyDetails(u ui, characterID, planetID int64, w fyne.Window) *colonyD
 			}
 		}
 	}, a.signalKey)
-	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.setIssue("Character has been removed")

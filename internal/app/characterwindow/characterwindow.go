@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -30,11 +29,11 @@ type ui interface {
 	CurrentCharacter() *app.Character
 	CurrentCorporation() *app.Corporation
 	ErrorDisplay(err error) string
-	EVEImage() *eveimageservice.EVEImageService
+	EVEImage() app.EVEImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
 	IsDeveloperMode() bool
-	IsOfflineMode() bool
+	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	LoadCorporation(ctx context.Context, id int64) error
@@ -69,9 +68,9 @@ func Show(u ui) {
 type characterWindow struct {
 	widget.BaseWidget
 
-	characterAdmin    *characterAdmin
-	characterTags     *characterTags
-	characterTraining *characterTraining
+	characterAdmin    *admin
+	characterTags     *manageTags
+	characterTraining *training
 	sb                *xwidget.Snackbar
 	u                 ui
 	w                 fyne.Window
@@ -84,9 +83,9 @@ func newCharacterWindow(u ui, w fyne.Window) *characterWindow {
 		w:  w,
 	}
 	a.ExtendBaseWidget(a)
-	a.characterAdmin = newCharacterAdmin(a)
-	a.characterTags = newCharacterTags(a)
-	a.characterTraining = newCharacterTraining(a)
+	a.characterAdmin = newAdmin(a)
+	a.characterTags = newManageTags(a)
+	a.characterTraining = newTraining(a)
 	a.sb.Start()
 	return a
 }

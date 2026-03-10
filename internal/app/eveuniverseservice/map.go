@@ -23,6 +23,9 @@ import (
 // FetchRoute fetches a route between two solar systems from ESi and returns it.
 // When no route can be found it returns an empty slice.
 func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHeader) ([]*app.EveSolarSystem, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("FetchRoute: flag %s: %w", args.Preference, err)
+	}
 	m := map[app.EveRoutePreference]string{
 		app.RouteShorter:    "Shorter",
 		app.RouteSafer:      "Safer",
@@ -30,7 +33,7 @@ func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 	}
 	flag, ok := m[args.Preference]
 	if !ok {
-		return nil, fmt.Errorf("FetchRoute: flag %s: %w", args.Preference, app.ErrInvalid)
+		return nil, wrapErr(app.ErrInvalid)
 	}
 	if args.Destination == nil || args.Origin == nil {
 		return nil, app.ErrInvalid
@@ -39,7 +42,7 @@ func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 		return []*app.EveSolarSystem{args.Origin}, nil
 	}
 	if args.Destination.IsWormholeSpace() || args.Origin.IsWormholeSpace() {
-		return []*app.EveSolarSystem{}, nil // no route possible
+		return nil, wrapErr(app.ErrNotFound)
 	}
 	arg := esi.RouteRequestBody{
 		Preference: &flag,
@@ -47,9 +50,12 @@ func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 	route, r, err := s.esiClient.RoutesAPI.PostRoute(ctx, args.Origin.ID, args.Destination.ID).RouteRequestBody(arg).Execute()
 	if err != nil {
 		if r != nil && r.StatusCode == 404 {
-			return []*app.EveSolarSystem{}, nil // no route found
+			return nil, wrapErr(app.ErrNotFound)
 		}
 		return nil, err
+	}
+	if route == nil {
+		return nil, wrapErr(app.ErrInvalid)
 	}
 	systems := make([]*app.EveSolarSystem, len(route.Route))
 	g := new(errgroup.Group)
@@ -58,14 +64,14 @@ func (s *EVEUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 		g.Go(func() error {
 			system, err := s.GetOrCreateSolarSystemESI(ctx, id)
 			if err != nil {
-				return err
+				return wrapErr(err)
 			}
 			systems[i] = system
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, wrapErr(err)
 	}
 	return systems, nil
 }
@@ -78,6 +84,14 @@ func (s *EVEUniverseService) FetchRoutes(ctx context.Context, headers []app.EveR
 	for i, h := range headers {
 		g.Go(func() error {
 			route, err := s.FetchRoute(ctx, h)
+			if errors.Is(err, app.ErrNotFound) {
+				slog.Warn("Route not found", "route", h)
+				return nil
+			}
+			if errors.Is(err, app.ErrInvalid) {
+				slog.Warn("Route not valid", "route", h)
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -356,7 +370,7 @@ func (s *EVEUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 		if err != nil {
 			return nil, err
 		}
-		type_, err := s.GetOrCreateTypeESI(ctx, planet.TypeId)
+		et, err := s.GetOrCreateTypeESI(ctx, planet.TypeId)
 		if err != nil {
 			return nil, err
 		}
@@ -364,7 +378,7 @@ func (s *EVEUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int64)
 			ID:            planet.PlanetId,
 			Name:          planet.Name,
 			SolarSystemID: system.ID,
-			TypeID:        type_.ID,
+			TypeID:        et.ID,
 		}
 		if err := s.st.CreateEvePlanet(ctx, arg); err != nil {
 			return nil, err

@@ -40,7 +40,7 @@ func TestEntityIcon(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.category.String(), func(t *testing.T) {
 			ee := &app.EveEntity{ID: 1, Category: tc.category, Name: "Dummy"}
-			got, err := EntityIcon(eis, ee, 64, fallback)
+			got, err := EveEntityIcon(eis, ee, 64, fallback)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, tc.want, got)
 			}

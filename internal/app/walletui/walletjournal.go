@@ -289,13 +289,13 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 func (a *WalletJournal) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	type_ := a.selectType.Selected
+	et := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		if type_ != "" {
+		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
-				return r.refTypeDisplay != type_
+				return r.refTypeDisplay != et
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)

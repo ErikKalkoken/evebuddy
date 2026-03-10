@@ -24,13 +24,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/xwindow"
+
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -200,7 +199,7 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 	})
 }
 
-type AssetSearch struct {
+type Search struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
@@ -225,28 +224,28 @@ type AssetSearch struct {
 }
 
 const (
-	assetsColItem = iota + 1
-	assetsColGroup
-	assetsColLocation
-	assetsColState
-	assetsColQuantity
-	assetsColTotal
-	assetsColOwner
-	assetsColTags
+	searchColItem = iota + 1
+	searchColGroup
+	searchColLocation
+	searchColState
+	searchColQuantity
+	searchColTotal
+	searchColOwner
+	searchColTags
 )
 
-func NewSearchForAll(u ui) *AssetSearch {
+func NewSearchForAll(u ui) *Search {
 	return newAssetSearch(u, false)
 }
 
-func NewSearchForCorporation(u ui) *AssetSearch {
+func NewSearchForCorporation(u ui) *Search {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
+func newAssetSearch(u ui, forCorporation bool) *Search {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
-		ID:    assetsColItem,
+		ID:    searchColItem,
 		Label: "Item",
 		Width: 300,
 		Sort: func(a, b assetRow) int {
@@ -265,10 +264,13 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.typeName)
 			x := border[1].(*canvas.Image)
-			loadAssetIconAsync(u.EVEImage(), x, r.typeID, r.variant)
+			loadAssetIconAsync(u.EVEImage(), r.typeID, r.variant, func(r fyne.Resource) {
+				x.Resource = r
+				x.Refresh()
+			})
 		},
 	}, {
-		ID:    assetsColGroup,
+		ID:    searchColGroup,
 		Label: "Group",
 		Width: 200,
 		Sort: func(a, b assetRow) int {
@@ -278,7 +280,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).SetWithText(r.groupName)
 		},
 	}, {
-		ID:    assetsColLocation,
+		ID:    searchColLocation,
 		Label: "Location",
 		Width: app.ColumnWidthLocation,
 		Sort: func(a, b assetRow) int {
@@ -288,7 +290,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).Set(r.locationDisplay)
 		},
 	}, {
-		ID:    assetsColState,
+		ID:    searchColState,
 		Label: "State",
 		Width: 90,
 		Sort: func(a, b assetRow) int {
@@ -298,7 +300,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).SetWithText(r.state)
 		},
 	}, {
-		ID:    assetsColQuantity,
+		ID:    searchColQuantity,
 		Label: "Qty.",
 		Width: 100,
 		Sort: func(a, b assetRow) int {
@@ -310,7 +312,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			})
 		},
 	}, {
-		ID:    assetsColTotal,
+		ID:    searchColTotal,
 		Label: "Total",
 		Width: 150,
 		Sort: func(a, b assetRow) int {
@@ -324,7 +326,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 	}}
 	if !forCorporation {
 		cols = slices.Concat(cols, []xwidget.DataColumn[assetRow]{{
-			ID:    assetsColOwner,
+			ID:    searchColOwner,
 			Label: "Owner",
 			Width: 250,
 			Sort: func(a, b assetRow) int {
@@ -347,7 +349,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 				}
 			},
 		}, {
-			ID:    assetsColTags,
+			ID:    searchColTags,
 			Label: "Tags",
 			Width: app.ColumnWidthEntity,
 			Update: func(r assetRow, co fyne.CanvasObject) {
@@ -356,8 +358,8 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 		}})
 	}
 	columns := xwidget.NewDataColumns(cols)
-	a := &AssetSearch{
-		columnSorter:   xwidget.NewColumnSorter(columns, assetsColItem, xwidget.SortAsc),
+	a := &Search{
+		columnSorter:   xwidget.NewColumnSorter(columns, searchColItem, xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         awidget.NewLabelWithTruncation(""),
 		search:         widget.NewEntry(),
@@ -387,7 +389,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 		a.search.SetText("")
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(s string) {
+	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search items"
@@ -414,7 +416,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 			assetsTotalYes,
 			assetsTotalNo,
 		},
-		func(s string) {
+		func(_ string) {
 			a.filterRowsAsync(-1)
 		},
 	)
@@ -452,7 +454,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.Update(ctx)
 		})
-		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -469,7 +471,7 @@ func newAssetSearch(u ui, forCorporation bool) *AssetSearch {
 	return a
 }
 
-func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
+func (a *Search) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectCategory,
 		a.selectGroup,
@@ -494,7 +496,7 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *AssetSearch) makeDataList() *xwidget.StripedList {
+func (a *Search) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
@@ -544,11 +546,11 @@ func (a *AssetSearch) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *AssetSearch) Focus() {
+func (a *Search) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.search)
 }
 
-func (a *AssetSearch) filterRowsAsync(sortCol int) {
+func (a *Search) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -669,8 +671,8 @@ func (a *AssetSearch) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *AssetSearch) Update(ctx context.Context) {
-	clear := func() {
+func (a *Search) Update(ctx context.Context) {
+	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync(-1)
@@ -685,7 +687,7 @@ func (a *AssetSearch) Update(ctx context.Context) {
 		})
 	}
 	if !a.forCorporation && a.characterCount() == 0 {
-		clear()
+		reset()
 		setTop("No characters", widget.LowImportance)
 		return
 	}
@@ -698,7 +700,7 @@ func (a *AssetSearch) Update(ctx context.Context) {
 	}
 	if err != nil {
 		slog.Error("Failed to refresh asset data", "err", err)
-		clear()
+		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
@@ -709,7 +711,7 @@ func (a *AssetSearch) Update(ctx context.Context) {
 	})
 }
 
-func (a *AssetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
+func (a *Search) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 	r1, err := a.fetchRowsForCharacters(ctx)
 	if err != nil {
 		return nil, err
@@ -721,7 +723,7 @@ func (a *AssetSearch) fetchRowsForAll(ctx context.Context) ([]assetRow, error) {
 	return slices.Concat(r1, r2), nil
 }
 
-func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
+func (a *Search) fetchRowsForCharacters(ctx context.Context) ([]assetRow, error) {
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
@@ -759,7 +761,7 @@ func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	return rows, nil
 }
 
-func (a *AssetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
+func (a *Search) fetchRowsForCorporations(ctx context.Context) ([]assetRow, error) {
 	assets, err := a.u.Corporation().ListAllAssets(ctx)
 	if err != nil {
 		return nil, err
@@ -767,7 +769,7 @@ func (a *AssetSearch) fetchRowsForCorporations(ctx context.Context) ([]assetRow,
 	return a.fetchRowsForCorporations2(ctx, assets)
 }
 
-func (a *AssetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, error) {
+func (a *Search) fetchRowsForCorporation(ctx context.Context) ([]assetRow, error) {
 	c := a.corporation.Load()
 	if c == nil {
 		return []assetRow{}, nil
@@ -779,7 +781,7 @@ func (a *AssetSearch) fetchRowsForCorporation(ctx context.Context) ([]assetRow, 
 	return a.fetchRowsForCorporations2(ctx, assets)
 }
 
-func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
+func (a *Search) fetchRowsForCorporations2(ctx context.Context, assets []*app.CorporationAsset) ([]assetRow, error) {
 	cc, err := a.u.Corporation().ListCorporationsShort(ctx)
 	if err != nil {
 		return nil, err
@@ -810,7 +812,7 @@ func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 	return rows, nil
 }
 
-func (a *AssetSearch) characterCount() int {
+func (a *Search) characterCount() int {
 	cc := a.u.StatusCache().ListCharacters()
 	validCount := 0
 	for _, c := range cc {
@@ -819,140 +821,4 @@ func (a *AssetSearch) characterCount() int {
 		}
 	}
 	return validCount
-}
-
-type assetIconEIS interface {
-	InventoryTypeBPC(id int64, size int) (fyne.Resource, error)
-	InventoryTypeBPO(id int64, size int) (fyne.Resource, error)
-	InventoryTypeIcon(id int64, size int) (fyne.Resource, error)
-	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
-}
-
-// assetIconCache caches the images for asset icons.
-var assetIconCache xsync.Map[string, fyne.Resource]
-
-func loadAssetIconAsync(eis assetIconEIS, icon *canvas.Image, typeID int64, variant app.InventoryTypeVariant) {
-	key := fmt.Sprintf("%d-%d", typeID, variant)
-	xwidget.LoadResourceAsyncWithCache(
-		icons.BlankSvg,
-		func() (fyne.Resource, bool) {
-			return assetIconCache.Load(key)
-		},
-		func(r fyne.Resource) {
-			icon.Resource = r
-			icon.Refresh()
-		},
-		func() (fyne.Resource, error) {
-			switch variant {
-			case app.VariantBPO:
-				return eis.InventoryTypeBPO(typeID, app.IconPixelSize)
-			case app.VariantBPC:
-				return eis.InventoryTypeBPC(typeID, app.IconPixelSize)
-			case app.VariantSKIN:
-				return eis.InventoryTypeSKIN(typeID, app.IconPixelSize)
-			default:
-				return eis.InventoryTypeIcon(typeID, app.IconPixelSize)
-			}
-		},
-		func(r fyne.Resource) {
-			assetIconCache.Store(key, r)
-		},
-	)
-}
-
-// ShowAssetDetailWindow shows the details for an assets in a new window.
-func ShowAssetDetailWindow(u ui, r assetRow) {
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
-		"Asset: Information",
-		r.owner.Name,
-	)
-	if !created {
-		w.Show()
-		return
-	}
-	item := makeLinkLabelWithWrap(r.typeName, func() {
-		if r.owner.IsCharacter() {
-			u.InfoWindow().ShowTypeWithCharacter(r.typeID, r.owner.ID)
-		} else {
-			u.InfoWindow().ShowType(r.typeID)
-		}
-	})
-	var location, region fyne.CanvasObject
-	if r.location != nil {
-		location = makeLocationLabel(r.location, u.InfoWindow().ShowLocation)
-		region = makeLinkLabel(r.regionName, func() {
-			u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
-		})
-	} else {
-		location = widget.NewLabel("?")
-		region = widget.NewLabel("?")
-	}
-
-	var p string
-	if len(r.locationPath) > 0 {
-		p = strings.Join(r.locationPath, " / ")
-	} else {
-		p = "-"
-	}
-	path := widget.NewLabel(p)
-	path.Wrapping = fyne.TextWrapWord
-
-	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
-			r.owner.ID,
-			r.owner.Name,
-			u.InfoWindow().ShowEntity,
-		)),
-		widget.NewFormItem("Item", item),
-		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
-		widget.NewFormItem("Category", widget.NewLabel(r.categoryName)),
-		widget.NewFormItem("Location", location),
-		widget.NewFormItem("Path", path),
-		widget.NewFormItem("Region", region),
-		widget.NewFormItem(
-			"Price",
-			widget.NewLabel(r.price.StringFunc("?", func(v float64) string {
-				return formatISKAmount(v)
-			})),
-		),
-		widget.NewFormItem("Quantity", widget.NewLabel(r.quantityDisplay)),
-		widget.NewFormItem(
-			"Total",
-			widget.NewLabel(r.total.StringFunc("?", func(v float64) string {
-				return formatISKAmount(v)
-			})),
-		),
-	}
-	if u.IsDeveloperMode() {
-		items = slices.Concat(items, []*widget.FormItem{
-			widget.NewFormItem("Location Flag", widget.NewLabel(r.locationFlag.String())),
-			widget.NewFormItem("Item ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(r.itemID))),
-		})
-	}
-
-	f := widget.NewForm(items...)
-	f.Orientation = widget.Adaptive
-	xwindow.Set(xwindow.Params{
-		Content: f,
-		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID)
-		},
-		ImageLoader: func(setter func(r fyne.Resource)) {
-			switch r.variant {
-			case app.VariantSKIN:
-				u.EVEImage().InventoryTypeSKINAsync(r.typeID, app.IconPixelSize, setter)
-			case app.VariantBPO:
-				u.EVEImage().InventoryTypeBPOAsync(r.typeID, app.IconPixelSize, setter)
-			case app.VariantBPC:
-				u.EVEImage().InventoryTypeBPCAsync(r.typeID, app.IconPixelSize, setter)
-			default:
-				u.EVEImage().InventoryTypeIconAsync(r.typeID, app.IconPixelSize, setter)
-			}
-		},
-		MinSize: fyne.NewSize(500, 450),
-		Title:   r.name,
-		Window:  w,
-	})
-	w.Show()
 }

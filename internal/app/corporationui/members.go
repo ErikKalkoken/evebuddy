@@ -95,7 +95,7 @@ func (a *Members) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(a.s.EVEImage().CharacterPortraitAsync)
+			return newCorporationMemberItem(awidget.LoadEveEntityIconFunc(a.s.EVEImage()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -208,10 +208,10 @@ type corporationMemberItem struct {
 
 	ceo    *ttwidget.Icon
 	owned  *ttwidget.Icon
-	member *awidget.EntityListItem
+	member *awidget.EveEntityListItem
 }
 
-func newCorporationMemberItem(loadCharacterIcon loadFuncAsync) *corporationMemberItem {
+func newCorporationMemberItem(loadCharacterIcon awidget.EveEntityIconLoader) *corporationMemberItem {
 	ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
 	ceo.SetToolTip("CEO of this corporation")
 	owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
@@ -219,7 +219,7 @@ func newCorporationMemberItem(loadCharacterIcon loadFuncAsync) *corporationMembe
 	w := &corporationMemberItem{
 		ceo:    ceo,
 		owned:  owned,
-		member: awidget.NewEntityListItem(false, loadCharacterIcon),
+		member: awidget.NewEveEntityListItem(loadCharacterIcon),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -237,7 +237,7 @@ func (w *corporationMemberItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *corporationMemberItem) set(r memberRow) {
-	w.member.Set(r.id, r.name)
+	w.member.Set2(r.id, r.name, app.EveEntityCharacter)
 	if r.isOwned {
 		w.owned.Show()
 	} else {

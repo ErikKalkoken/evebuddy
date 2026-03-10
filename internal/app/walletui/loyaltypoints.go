@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -21,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -131,7 +129,7 @@ func NewLoyaltyPoints(u ui) *LoyaltyPoints {
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.Update(ctx)
 	})
-	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
 	})
 	return a
@@ -156,53 +154,29 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	t := xwidget.NewTree(
-		func(branch bool) fyne.CanvasObject {
-			icon1 := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			icon2 := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			name := widget.NewLabel("Template")
-			points := widget.NewLabel("99.999.999")
-			return container.NewBorder(
-				nil,
-				nil,
-				icon1,
-				container.NewHBox(points, icon2),
-				name,
+		func(_ bool) fyne.CanvasObject {
+			return newLoyaltyPointsListItem(
+				awidget.LoadEveEntityIconFunc(a.u.EVEImage()),
+				a.u.InfoWindow().ShowEntity,
 			)
 		},
-		func(n *loyaltyPointsNode, b bool, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			name := border[0].(*widget.Label)
-			name.Truncation = fyne.TextTruncateEllipsis
-			icon1 := border[1].(*canvas.Image)
-			hbox := border[2].(*fyne.Container).Objects
-			points := hbox[0].(*widget.Label)
-			icon2 := hbox[1].(*xwidget.TappableIcon)
+		func(n *loyaltyPointsNode, _ bool, co fyne.CanvasObject) {
+			x := co.(*loyaltyPointsListItem)
 			if n.IsTop() {
-				a.u.EVEImage().CorporationLogoAsync(n.corporationID, app.IconPixelSize, func(r fyne.Resource) {
-					icon1.Resource = r
-					icon1.CornerRadius = 0
-					icon1.Refresh()
-				})
-				name.SetText(n.corporationName)
-				points.Text = ihumanize.Comma(n.totalPoints)
-				points.TextStyle = fyne.TextStyle{Bold: true}
-				icon2.OnTapped = func() {
-					a.u.InfoWindow().Show(app.EveEntityCorporation, n.corporationID)
+				o := &app.EveEntity{
+					Category: app.EveEntityCorporation,
+					ID:       n.corporationID,
+					Name:     n.corporationName,
 				}
+				x.set(o, n.totalPoints, true)
 			} else {
-				a.u.EVEImage().CharacterPortraitAsync(n.characterID, app.IconPixelSize, func(r fyne.Resource) {
-					icon1.Resource = r
-					icon1.CornerRadius = app.IconUnitSize / 2
-					icon1.Refresh()
-				})
-				name.SetText(n.characterName)
-				points.Text = ihumanize.Comma(n.points)
-				points.TextStyle = fyne.TextStyle{}
-				icon2.OnTapped = func() {
-					a.u.InfoWindow().Show(app.EveEntityCharacter, n.characterID)
+				o := &app.EveEntity{
+					Category: app.EveEntityCharacter,
+					ID:       n.characterID,
+					Name:     n.characterName,
 				}
+				x.set(o, n.points, false)
 			}
-			points.Refresh()
 		},
 	)
 	t.OnSelectedNode = func(n *loyaltyPointsNode) {
