@@ -1,0 +1,167 @@
+package core_test
+
+// FIXME: Re-enable tests
+
+// func TestDesktopUI_StartEmpty(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip(core.SkipUIReason)
+// 	}
+// 	httpmock.Activate()
+// 	defer httpmock.DeactivateAndReset()
+// 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
+// 	db, st, _ := testutil.NewDBOnDisk(t)
+// 	defer db.Close()
+// 	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+// 	u := core.NewDesktopUI(bu)
+// 	go func() {
+// 		ticker := time.NewTicker(50 * time.Millisecond)
+// 		for {
+// 			<-ticker.C
+// 			if u.IsStartupCompleted() {
+// 				fyne.CurrentApp().Quit()
+// 			}
+// 		}
+// 	}()
+// 	u.ShowAndRun()
+// 	xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+// }
+
+// func TestDesktopUI_StartWithCharacter(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip(core.SkipUIReason)
+// 	}
+// 	httpmock.Activate()
+// 	defer httpmock.DeactivateAndReset()
+// 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
+// 	db, st, factory := testutil.NewDBOnDisk(t)
+// 	defer db.Close()
+
+// 	character := factory.CreateCharacterFull()
+// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
+// 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
+// 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
+// 	factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: character.ID})
+// 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{CharacterID: character.ID})
+// 	factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: character.ID})
+// 	factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
+// 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+// 	factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: character.ID})
+// 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: character.ID})
+// 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: character.ID})
+// 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
+// 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
+
+// 	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+// 	u := core.NewDesktopUI(bu)
+// 	go func() {
+// 		ticker := time.NewTicker(50 * time.Millisecond)
+// 		for {
+// 			<-ticker.C
+// 			if u.IsStartupCompleted() {
+// 				fyne.CurrentApp().Quit()
+// 			}
+// 		}
+// 	}()
+// 	u.ShowAndRun()
+// 	xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+// }
+
+// func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip(core.SkipUIReason)
+// 	}
+// 	db, st, _ := testutil.NewDBOnDisk(t)
+// 	defer db.Close()
+// 	test.ApplyTheme(t, test.Theme())
+// 	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+
+// 	du := core.NewDesktopUI(bu)
+// 	w := test.NewWindow(du.MainWindow().Content())
+// 	defer w.Close()
+// 	w.Resize(fyne.NewSize(1000, 600))
+// 	du.Start()
+// 	time.Sleep(1 * time.Second)
+// 	// test.AssertImageMatches(t, "ui/empty.png", w.Canvas().Capture())
+// 	test.RenderToMarkup(du.MainWindow().Canvas())
+// }
+
+// // TODO: Extend test to cover all tabs with data
+
+// func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip(core.SkipUIReason)
+// 	}
+// 	db, st, factory := testutil.NewDBOnDisk(t)
+// 	defer db.Close()
+// 	test.ApplyTheme(t, test.Theme())
+// 	bu := core.MakeFakeBaseUI(st, core.NewFakeApp(t), true)
+
+// 	er := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+// 		Name: "Wayne Technology",
+// 	})
+// 	factory.CreateEveEntityCorporation(*er.EveEntity())
+// 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+// 		Name:          "Bruce Wayne",
+// 		CorporationID: er.ID,
+// 	})
+// 	character := factory.CreateCharacter(storage.CreateCharacterParams{
+// 		ID: ec.ID,
+// 	})
+// 	factory.SetCharacterRoles(character.ID, set.Collect(app.RolesAll()))
+// 	corporation := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
+
+// 	et := factory.CreateEveType()
+// 	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+// 		TypeID:       et.ID,
+// 		AveragePrice: optional.New(120000.0),
+// 	})
+// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+// 		CharacterID: character.ID,
+// 		EveTypeID:   et.ID,
+// 		Quantity:    1,
+// 	})
+
+// 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
+// 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
+// 	factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: character.ID})
+// 	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{CharacterID: character.ID})
+// 	factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: character.ID})
+// 	factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
+// 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+// 	factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: character.ID})
+// 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: character.ID})
+// 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: character.ID})
+// 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
+// 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
+// 	for _, s := range app.CharacterSections {
+// 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+// 			CharacterID: character.ID,
+// 			Section:     s,
+// 		})
+// 	}
+// 	factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{CorporationID: corporation.ID})
+// 	factory.CreateCorporationMember(storage.CorporationMemberParams{CorporationID: corporation.ID})
+// 	factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: corporation.ID})
+// 	factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
+// 		CorporationID: corporation.ID,
+// 		DivisionID:    app.Division1.ID(),
+// 	})
+// 	factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+// 		CorporationID: corporation.ID,
+// 		DivisionID:    app.Division1.ID(),
+// 	})
+// 	for _, s := range app.CorporationSections {
+// 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+// 			CorporationID: corporation.ID,
+// 			Section:       s,
+// 		})
+// 	}
+// 	du := core.NewDesktopUI(bu)
+// 	w := test.NewWindow(du.MainWindow().Content())
+// 	defer w.Close()
+// 	w.Resize(fyne.NewSize(1000, 600))
+// 	du.Start()
+// 	time.Sleep(1 * time.Second)
+// 	// test.AssertImageMatches(t, "ui/full.png", w.Canvas().Capture())
+// 	test.RenderToMarkup(du.MainWindow().Canvas())
+// }

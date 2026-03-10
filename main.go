@@ -1,4 +1,4 @@
-// Evebuddy is a companion app for Eve Online players.
+// Evebuddy is a companion app for EVE Online players.
 package main
 
 import (
@@ -44,7 +44,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/core"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -402,7 +402,7 @@ func main() {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
 	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
-	bu := ui.NewBaseUI(ui.BaseUIParams{
+	params := core.UIParams{
 		App:              fyneApp,
 		Character:        cs,
 		ClearCacheFunc:   func() { pc.Clear() },
@@ -420,9 +420,9 @@ func main() {
 		Settings:         settings,
 		Signals:          signals,
 		StatusCache:      scs,
-	})
+	}
 	if isDesktop {
-		u := ui.NewDesktopUI(bu)
+		u := core.NewDesktopUI(params)
 		stop, err := remoteservice.Start(remotePort, func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()
@@ -434,7 +434,7 @@ func main() {
 		defer stop()
 		u.ShowAndRun()
 	} else {
-		u := ui.NewMobileUI(bu)
+		u := core.NewMobileUI(params)
 		u.ShowAndRun()
 	}
 }

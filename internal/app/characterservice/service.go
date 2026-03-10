@@ -51,7 +51,7 @@ type Cache interface {
 	Delete(string)
 }
 
-// CharacterService provides access to all managed Eve Online characters both online and from local storage.
+// CharacterService provides access to all managed EVE Online characters both online and from local storage.
 type CharacterService struct {
 	authClient              AuthClient
 	cache                   Cache

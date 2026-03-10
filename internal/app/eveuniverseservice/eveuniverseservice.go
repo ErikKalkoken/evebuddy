@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-// EVEUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
+// EVEUniverseService provides access to EVE Online models with on-demand loading from ESI and persistent local caching.
 type EVEUniverseService struct {
 	// Now returns the current time in UTC. Can be overwritten for tests.
 	Now func() time.Time

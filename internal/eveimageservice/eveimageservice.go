@@ -47,7 +47,7 @@ func (r HTTPError) Error() string {
 	return fmt.Sprintf("HTTP error: %s", r.Status)
 }
 
-// EVEImageService represents a service which provides access to images on the Eve Online image server.
+// EVEImageService represents a service which provides access to images on the EVE Online image server.
 // Images are cached.
 type EVEImageService struct {
 	cache      CacheService

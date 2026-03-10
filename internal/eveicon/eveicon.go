@@ -58,7 +58,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	Perception:      resource22325Png,
 	PICommandCenter: resource773229Png,
 	PIExtractor:     resource773226Png,
-	PIProcessor:       resource773230Png,
+	PIProcessor:     resource773230Png,
 	PILaunchpad:     resource773227Png,
 	PIStorage:       resource773225Png,
 	StarMap:         resource7644Png,
@@ -71,7 +71,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	Willpower:       resource22322Png,
 }
 
-// FromID returns an Eve Online icon by icon ID and reports if it was found.
+// FromID returns an EVE Online icon by icon ID and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
 func FromID(id int64) (*fyne.StaticResource, bool) {
 	r, ok := id2fileMap[id]
@@ -81,13 +81,13 @@ func FromID(id int64) (*fyne.StaticResource, bool) {
 	return r, true
 }
 
-// FromName returns an Eve Online icon by name and reports if it was found.
+// FromName returns an EVE Online icon by name and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
 func FromName(name Name) *fyne.StaticResource {
 	return namedIcons[name]
 }
 
-// FromSchematicID returns an Eve Online icon by icon ID and reports if it was found.
+// FromSchematicID returns an EVE Online icon by icon ID and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
 func FromSchematicID(id int64) (*fyne.StaticResource, bool) {
 	iconID, ok := schematicToIconIDs[id]

@@ -25,7 +25,7 @@ const (
 	EveCategoryStructure  = 65
 )
 
-// EveCategory is a category in Eve Online.
+// EveCategory is a category in EVE Online.
 type EveCategory struct {
 	ID          int64
 	IsPublished bool
@@ -54,7 +54,7 @@ const (
 	EveGroupTitan                   = 30
 )
 
-// EveGroup is a group in Eve Online.
+// EveGroup is a group in EVE Online.
 type EveGroup struct {
 	ID          int64
 	Category    *EveCategory
@@ -90,7 +90,7 @@ const (
 	EveTypeTCU                         = 32226
 )
 
-// EveType is a type in Eve Online.
+// EveType is a type in EVE Online.
 type EveType struct {
 	ID             int64
 	Group          *EveGroup

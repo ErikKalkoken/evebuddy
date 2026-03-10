@@ -30,7 +30,7 @@ type Cache interface {
 	SetInt64(string, int64, time.Duration)
 }
 
-// CorporationService provides access to all managed Eve Online corporations both online and from local storage.
+// CorporationService provides access to all managed EVE Online corporations both online and from local storage.
 type CorporationService struct {
 	cache            Cache
 	concurrencyLimit int

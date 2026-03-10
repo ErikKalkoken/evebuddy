@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// EveConstellation is a constellation in Eve Online.
+// EveConstellation is a constellation in EVE Online.
 type EveConstellation struct {
 	ID     int64
 	Name   string
@@ -25,7 +25,7 @@ func (ec EveConstellation) EveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityConstellation}
 }
 
-// EveRegion is a region in Eve Online.
+// EveRegion is a region in EVE Online.
 type EveRegion struct {
 	Description optional.Optional[string]
 	ID          int64
@@ -86,7 +86,7 @@ func NewSolarSystemSecurityTypeFromValue(v float32) SolarSystemSecurityType {
 	return NullSec
 }
 
-// EveSolarSystem is a solar system in Eve Online.
+// EveSolarSystem is a solar system in EVE Online.
 type EveSolarSystem struct {
 	Constellation  *EveConstellation
 	ID             int64
@@ -178,7 +178,7 @@ func EveRoutePreferences() []EveRoutePreference {
 	return []EveRoutePreference{RouteShorter, RouteSafer, RouteLessSecure}
 }
 
-// EveMoon is a moon in Eve Online.
+// EveMoon is a moon in EVE Online.
 type EveMoon struct {
 	ID          int64
 	Name        string
@@ -187,7 +187,7 @@ type EveMoon struct {
 
 var rePlanetType = regexp.MustCompile(`Planet \((\S*)\)`)
 
-// EvePlanet is a planet in Eve Online.
+// EvePlanet is a planet in EVE Online.
 type EvePlanet struct {
 	ID          int64
 	Name        string
