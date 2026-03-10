@@ -16,7 +16,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -286,7 +285,7 @@ func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ign
 	}
 	w.ExtendBaseWidget(w)
 	w.Text = "???"
-	w.Icon = icons.BlankSvg
+	w.Icon = iconBlankSvg
 	if cs.columns.size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.columns.size() {
 		panic("NewSortButton called with invalid parameters")
 	}
@@ -370,11 +369,11 @@ func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ign
 func (w *SortButton) set(idx int, dir SortDir) {
 	switch dir {
 	case SortAsc:
-		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
+		w.Icon = theme.NewThemedResource(iconSortAscendingSvg)
 	case SortDesc:
-		w.Icon = theme.NewThemedResource(icons.SortDescendingSvg)
+		w.Icon = theme.NewThemedResource(iconSortDescendingSvg)
 	default:
-		w.Icon = theme.NewThemedResource(icons.SortSvg)
+		w.Icon = theme.NewThemedResource(iconSortSvg)
 	}
 	if idx != -1 {
 		w.Text = w.sortColumns[idx]
@@ -466,8 +465,8 @@ func MakeDataTable[S ~[]E, E any](
 	}
 	t.ShowHeaderRow = true
 	t.StickyColumnCount = 1
-	iconNone := theme.NewThemedResource(icons.BlankSvg)
-	iconSortOff := theme.NewThemedResource(icons.SortSvg)
+	iconNone := theme.NewThemedResource(iconBlankSvg)
+	iconSortOff := theme.NewThemedResource(iconSortSvg)
 	t.CreateHeader = func() fyne.CanvasObject {
 		icon := widget.NewIcon(iconSortOff)
 		actionLabel := kxwidget.NewTappableLabel("Template", nil)
@@ -476,8 +475,8 @@ func MakeDataTable[S ~[]E, E any](
 	}
 	iconMap := map[SortDir]fyne.Resource{
 		SortOff:  iconSortOff,
-		SortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
-		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
+		SortAsc:  theme.NewPrimaryThemedResource(iconSortAscendingSvg),
+		SortDesc: theme.NewPrimaryThemedResource(iconSortDescendingSvg),
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		h, ok := columns.ColumnByIndex(tci.Col)

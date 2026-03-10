@@ -14,3 +14,24 @@ var iconBlankSvg = &fyne.StaticResource{
 	StaticName:    "resources/blank.svg",
 	StaticContent: iconBlankSvgData,
 }
+
+//go:embed resources/sort-ascending.svg
+var iconSortAscendingSvgData []byte
+var iconSortAscendingSvg = &fyne.StaticResource{
+	StaticName:    "resources/sort-ascending.svg",
+	StaticContent: iconSortAscendingSvgData,
+}
+
+//go:embed resources/sort-descending.svg
+var iconSortDescendingSvgData []byte
+var iconSortDescendingSvg = &fyne.StaticResource{
+	StaticName:    "resources/sort-descending.svg",
+	StaticContent: iconSortDescendingSvgData,
+}
+
+//go:embed resources/sort.svg
+var iconSortSvgData []byte
+var iconSortSvg = &fyne.StaticResource{
+	StaticName:    "resources/sort.svg",
+	StaticContent: iconSortSvgData,
+}
