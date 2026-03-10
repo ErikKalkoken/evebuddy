@@ -51,10 +51,10 @@ type Augmentations struct {
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[augmentationNode]
 	treeData         xwidget.TreeData[augmentationNode]
-	u                ui
+	u                baseUI
 }
 
-func NewAugmentations(u ui) *Augmentations {
+func NewAugmentations(u baseUI) *Augmentations {
 	a := &Augmentations{
 		footer: awidget.NewLabelWithTruncation(""),
 		u:      u,

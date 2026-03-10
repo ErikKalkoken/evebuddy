@@ -29,7 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type ui interface {
+type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
@@ -43,7 +43,7 @@ type ui interface {
 }
 
 // Show shows the status window.
-func Show(s ui) {
+func Show(s baseUI) {
 	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
 		w.Show()
@@ -100,10 +100,10 @@ type updateStatus struct {
 	top3              fyne.CanvasObject
 	updateAllSections *widget.Button
 	updateSection     *widget.Button
-	u                 ui
+	u                 baseUI
 }
 
-func newUpdateStatus(s ui, w fyne.Window) *updateStatus {
+func newUpdateStatus(s baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
 		charactersTop:     awidget.NewLabelWithWrapping(""),
 		details:           newSectionDetails(),

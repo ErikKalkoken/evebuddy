@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
-type ui interface {
+type baseUI interface {
 	Character() *characterservice.CharacterService
 	ErrorDisplay(err error) string
 	EVEImage() app.EVEImageService

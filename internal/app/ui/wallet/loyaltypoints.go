@@ -54,7 +54,7 @@ type LoyaltyPoints struct {
 	sortButton       *xwidget.SortButton
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
-	u                ui
+	u                baseUI
 }
 
 const (
@@ -62,7 +62,7 @@ const (
 	loyaltyPointsColPoints
 )
 
-func NewLoyaltyPoints(u ui) *LoyaltyPoints {
+func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{

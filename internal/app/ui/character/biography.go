@@ -17,10 +17,10 @@ type Biography struct {
 
 	body      *widget.Label
 	character atomic.Pointer[app.Character]
-	u         ui
+	u         baseUI
 }
 
-func NewBiography(u ui) *Biography {
+func NewBiography(u baseUI) *Biography {
 	body := widget.NewLabel("")
 	body.Wrapping = fyne.TextWrapWord
 	body.Selectable = true

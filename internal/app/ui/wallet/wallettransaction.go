@@ -80,10 +80,10 @@ type WalletTransactions struct {
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              ui
+	u              baseUI
 }
 
-func NewCharacterWalletTransaction(u ui) *WalletTransactions {
+func NewCharacterWalletTransaction(u baseUI) *WalletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
@@ -100,7 +100,7 @@ func NewCharacterWalletTransaction(u ui) *WalletTransactions {
 	return a
 }
 
-func NewCorporationWalletTransactions(u ui, d app.Division) *WalletTransactions {
+func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransactions {
 	a := newWalletTransaction(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
@@ -127,7 +127,7 @@ const (
 	walletTransactionColLocation
 )
 
-func newWalletTransaction(u ui, d app.Division) *WalletTransactions {
+func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
 		ID:    walletTransactionColDate,
 		Label: "Date",
@@ -598,7 +598,7 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 }
 
 // ShowCharacterWalletTransactionWindowAsync shows the detail of a character wallet transaction in a window.
-func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transactionID int64) {
+func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, transactionID int64) {
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID),
@@ -674,7 +674,7 @@ func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transact
 }
 
 // ShowCorporationWalletTransactionWindowAsync shows the detail of a corporation wallet transaction in a window.
-func ShowCorporationWalletTransactionWindowAsync(u ui, corporationID int64, division app.Division, transactionID int64) {
+func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, division app.Division, transactionID int64) {
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID),

@@ -70,11 +70,11 @@ type colonyDetails struct {
 	signalKey     string
 	sortButton    *xwidget.SortButton
 	status        *xwidget.RichText
-	u             ui
+	u             baseUI
 }
 
 // showColonyDetailsWindow shows the details of a colony in a window.
-func showColonyDetailsWindow(u ui, r colonyRow) {
+func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.ownerName)
@@ -112,7 +112,7 @@ func showColonyDetailsWindow(u ui, r colonyRow) {
 	w.Show()
 }
 
-func newColonyDetails(u ui, characterID, planetID int64, w fyne.Window) *colonyDetails {
+func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *colonyDetails {
 	if characterID == 0 || planetID == 0 {
 		panic(app.ErrInvalid)
 	}

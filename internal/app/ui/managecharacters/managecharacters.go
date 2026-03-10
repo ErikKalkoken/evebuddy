@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type ui interface {
+type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character
@@ -42,7 +42,7 @@ type ui interface {
 	Signals() *app.Signals
 }
 
-func Show(u ui) {
+func Show(u baseUI) {
 	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
 	if !created {
 		w.Show()
@@ -72,11 +72,11 @@ type manageCharacters struct {
 	characterTags     *manageTags
 	characterTraining *training
 	sb                *xwidget.Snackbar
-	u                 ui
+	u                 baseUI
 	w                 fyne.Window
 }
 
-func newManageCharacters(u ui, w fyne.Window) *manageCharacters {
+func newManageCharacters(u baseUI, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
 		sb: xwidget.NewSnackbar(w),
 		u:  u,

@@ -62,12 +62,12 @@ type Catalogue struct {
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
 	top            *widget.Label
-	u              ui
+	u              baseUI
 	sortButton     *xwidget.SortButton
 	columnSorter   *xwidget.ColumnSorter[skillRow]
 }
 
-func NewCatalogue(u ui) *Catalogue {
+func NewCatalogue(u baseUI) *Catalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
 		ID:    1,
 		Label: "Name",

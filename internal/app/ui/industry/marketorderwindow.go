@@ -16,7 +16,7 @@ import (
 )
 
 // ShowMarketOrderWindow shows the location of a character in a new window.
-func ShowMarketOrderWindow(u ui, r marketOrderRow) {
+func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),

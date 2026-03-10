@@ -126,7 +126,7 @@ type Training struct {
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            ui
+	u            baseUI
 }
 
 const (
@@ -141,7 +141,7 @@ const (
 	trainingColTotalSP
 )
 
-func NewTraining(u ui) *Training {
+func NewTraining(u baseUI) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[trainingRow]{
 			ColumnID: trainingColCharacter,

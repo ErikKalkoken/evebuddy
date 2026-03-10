@@ -18,7 +18,7 @@ import (
 )
 
 // ShowAssetDetailWindow shows the details for an assets in a new window.
-func ShowAssetDetailWindow(u ui, r assetRow) {
+func ShowAssetDetailWindow(u coreUI, r assetRow) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",

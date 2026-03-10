@@ -34,17 +34,17 @@ type Queue struct {
 	status               *ttwidget.Icon
 	statusResource       fyne.Resource
 	top                  *widget.Label
-	u                    ui
+	u                    baseUI
 }
 
 // NewQueue returns a new characterSkillQueue for the current character.
-func NewQueue(u ui) *Queue {
+func NewQueue(u baseUI) *Queue {
 	return NewQueueWithCharacter(u, nil)
 }
 
 // NewQueueWithCharacter returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
-func NewQueueWithCharacter(u ui, c *app.Character) *Queue {
+func NewQueueWithCharacter(u baseUI, c *app.Character) *Queue {
 	emptyInfo := widget.NewLabel("Queue is empty")
 	emptyInfo.Importance = widget.LowImportance
 	emptyInfo.Hide()
@@ -256,7 +256,7 @@ func (a *Queue) Update(ctx context.Context) {
 	})
 }
 
-func showSkillInTrainingWindow(u ui, r *app.CharacterSkillqueueItem) {
+func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
 	characterName := u.StatusCache().CharacterName(r.CharacterID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),

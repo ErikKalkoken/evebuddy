@@ -87,7 +87,7 @@ type Overview struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *xwidget.SortButton
-	u                 ui
+	u                 baseUI
 }
 
 const (
@@ -101,7 +101,7 @@ const (
 	overviewColWallet
 )
 
-func NewOverview(u ui) *Overview {
+func NewOverview(u baseUI) *Overview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		ID:    overviewColAlliance,
 		Label: "Alliance",

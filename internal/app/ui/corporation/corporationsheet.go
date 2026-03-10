@@ -38,10 +38,10 @@ type CorporationSheet struct {
 	roles       *widget.Label
 	taxRate     *widget.Label
 	ticker      *widget.Label
-	u           ui
+	u           baseUI
 }
 
-func NewCorporationSheet(u ui, isCorpMode bool) *CorporationSheet {
+func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))

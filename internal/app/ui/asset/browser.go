@@ -55,18 +55,18 @@ type Browser struct {
 	character      atomic.Pointer[app.Character]
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
-	u              ui
+	u              coreUI
 }
 
-func NewCharacterBrowser(u ui) *Browser {
+func NewCharacterBrowser(u coreUI) *Browser {
 	return newBrowser(u, false)
 }
 
-func NewCorporationBrowser(u ui) *Browser {
+func NewCorporationBrowser(u coreUI) *Browser {
 	return newBrowser(u, true)
 }
 
-func newBrowser(u ui, forCorporation bool) *Browser {
+func newBrowser(u coreUI, forCorporation bool) *Browser {
 	a := &Browser{
 		forCorporation: forCorporation,
 		u:              u,

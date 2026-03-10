@@ -70,10 +70,10 @@ type WalletJournal struct {
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	top          *widget.Label
-	u            ui
+	u            baseUI
 }
 
-func NewCharacterWalletJournal(u ui) *WalletJournal {
+func NewCharacterWalletJournal(u baseUI) *WalletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
@@ -90,7 +90,7 @@ func NewCharacterWalletJournal(u ui) *WalletJournal {
 	return a
 }
 
-func NewCorporationWalletJournal(u ui, d app.Division) *WalletJournal {
+func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 	a := newWalletJournal(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(
 		func(ctx context.Context, c *app.Corporation) {
@@ -117,7 +117,7 @@ const (
 	walletJournalColDescription
 )
 
-func newWalletJournal(u ui, division app.Division) *WalletJournal {
+func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		ID:    walletJournalColDate,
 		Label: "Date",
@@ -456,7 +456,7 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 }
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
-func ShowCharacterWalletJournalEntryWindowAsync(u ui, characterID int64, refID int64) {
+func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
@@ -609,7 +609,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u ui, characterID int64, refID i
 }
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
-func ShowCorporationWalletJournalEntryWindowAsync(u ui, corporationID int64, division app.Division, refID int64) {
+func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),

@@ -27,10 +27,10 @@ type CharacterAugmentations struct {
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
-	s         ui
+	s         baseUI
 }
 
-func NewCharacterAugmentations(s ui) *CharacterAugmentations {
+func NewCharacterAugmentations(s baseUI) *CharacterAugmentations {
 	a := &CharacterAugmentations{
 		top: awidget.NewLabelWithWrapping(""),
 		s:   s,

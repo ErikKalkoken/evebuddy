@@ -134,7 +134,7 @@ type MarketOrders struct {
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
-	u            ui
+	u            baseUI
 }
 
 const (
@@ -147,7 +147,7 @@ const (
 	marketOrdersColOwner
 )
 
-func NewMarketOrders(u ui, isBuyOrders bool) *MarketOrders {
+func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		awidget.MakeEveEntityColumn(awidget.MakeEveEntityColumnParams[marketOrderRow]{
 			ColumnID: marketOrdersColType,

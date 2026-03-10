@@ -32,10 +32,10 @@ type CorporationWallet struct {
 	journal      *WalletJournal
 	name         *widget.Label
 	transactions *WalletTransactions
-	u            ui
+	u            baseUI
 }
 
-func NewCorporationWallet(u ui, division app.Division) *CorporationWallet {
+func NewCorporationWallet(u baseUI, division app.Division) *CorporationWallet {
 	a := &CorporationWallet{
 		balance:      xwidget.NewLabelWithSelection(""),
 		division:     division,

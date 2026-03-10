@@ -36,11 +36,11 @@ type SendMail struct {
 	from      *eveEntityEntry
 	subject   *widget.Entry
 	to        *eveEntityEntry
-	u         ui
+	u         baseUI
 	w         fyne.Window
 }
 
-func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
+func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		u: u,
 		w: u.MainWindow(),
@@ -418,7 +418,7 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-func showAddDialog(u ui, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	var results []*app.EveEntity
 	list := widget.NewList(

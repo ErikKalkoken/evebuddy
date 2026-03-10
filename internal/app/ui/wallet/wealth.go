@@ -40,12 +40,12 @@ type Wealth struct {
 	characterSplit *prop.PieChart
 	top            *widget.Label
 	totalSplit     *prop.PieChart
-	u              ui
+	u              baseUI
 	walletDetail   *coord.CartesianCategoricalChart
 	walletSplit    *prop.PieChart
 }
 
-func NewWealth(u ui) *Wealth {
+func NewWealth(u baseUI) *Wealth {
 	a := &Wealth{
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),

@@ -39,10 +39,10 @@ type Members struct {
 	rows         []memberRow
 	rowsFiltered []memberRow
 	searchBox    *widget.Entry
-	s            ui
+	s            baseUI
 }
 
-func NewMembers(s ui) *Members {
+func NewMembers(s baseUI) *Members {
 	a := &Members{
 		footer: awidget.NewLabelWithTruncation(""),
 		s:      s,

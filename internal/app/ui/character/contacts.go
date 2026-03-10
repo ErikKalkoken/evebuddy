@@ -63,10 +63,10 @@ type Contacts struct {
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              ui
+	u              baseUI
 }
 
-func NewContacts(u ui) *Contacts {
+func NewContacts(u baseUI) *Contacts {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[contactRow]{{
 		ID:    1,
 		Label: "Name",

@@ -32,7 +32,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type ui interface {
+type baseUI interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
 	ErrorDisplay(err error) string
@@ -48,7 +48,7 @@ type ui interface {
 	Signals() *app.Signals
 }
 
-func Show(s ui) {
+func Show(s baseUI) {
 	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("settingsWindow", "Settings")
 	if !ok {
 		w.Show()
@@ -79,11 +79,11 @@ type settings struct {
 	widget.BaseWidget
 
 	sb *xwidget.Snackbar
-	u  ui
+	u  baseUI
 	w  fyne.Window
 }
 
-func newSettings(u ui, w fyne.Window) *settings {
+func newSettings(u baseUI, w fyne.Window) *settings {
 	a := &settings{
 		sb: xwidget.NewSnackbar(w),
 		u:  u,

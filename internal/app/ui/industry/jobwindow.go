@@ -15,7 +15,7 @@ import (
 )
 
 // showIndustryJobWindow shows the details of a industry job in a window.
-func showIndustryJobWindow(u ui, r industryJobRow) {
+func showIndustryJobWindow(u baseUI, r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
 	key := fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID)
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.owner.Name)

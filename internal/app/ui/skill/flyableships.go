@@ -60,11 +60,11 @@ type FlyableShips struct {
 	selectGroup   *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	top           *widget.Label
-	u             ui
+	u             baseUI
 	imageCache    xsync.Map[string, *image.RGBA]
 }
 
-func NewFlyableShips(u ui) *FlyableShips {
+func NewFlyableShips(u baseUI) *FlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
 		ID:    flyableColType,
 		Label: "Type",
