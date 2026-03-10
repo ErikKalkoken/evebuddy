@@ -1,4 +1,4 @@
-package skill
+package skills
 
 import (
 	"context"
@@ -116,7 +116,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
-			level := awidget.NewSkillLevel()
+			level := NewSkillLevel()
 			if a.u.IsMobile() {
 				level.Hide()
 			}
@@ -130,7 +130,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*awidget.SkillLevel)
+			level := c[1].(*SkillLevel)
 			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel

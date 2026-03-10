@@ -1,5 +1,5 @@
-// Package skill provides widgets for building skill UIs.
-package skill
+// Package skills provides widgets for building skill UIs.
+package skills
 
 import (
 	"fyne.io/fyne/v2"

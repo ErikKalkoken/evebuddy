@@ -1,4 +1,4 @@
-package skill
+package skills
 
 import (
 	"cmp"

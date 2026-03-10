@@ -1,4 +1,4 @@
-package awidget
+package skills
 
 import (
 	"fyne.io/fyne/v2"

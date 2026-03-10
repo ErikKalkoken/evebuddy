@@ -38,7 +38,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/industry"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/skill"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/skills"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/wallet"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -112,7 +112,7 @@ type baseUI struct {
 	assetSearchAll          *asset.Search
 	augmentations           *clones.Augmentations
 	characterAssetBrowser   *asset.Browser
-	characterAttributes     *skill.Attributes
+	characterAttributes     *skills.Attributes
 	characterAugmentations  *clones.CharacterAugmentations
 	characterBiography      *character.Biography
 	characterContacts       *character.Contacts
@@ -122,9 +122,9 @@ type baseUI struct {
 	characterMails          *character.Mails
 	characterOverview       *character.Overview
 	characterSheet          *character.CharacterSheet
-	characterShips          *skill.FlyableShips
-	characterSkillCatalogue *skill.Catalogue
-	characterSkillQueue     *skill.Queue
+	characterShips          *skills.FlyableShips
+	characterSkillCatalogue *skills.Catalogue
+	characterSkillQueue     *skills.Queue
 	characterWallet         *wallet.CharacterWallet
 	clones                  *clones.Clones
 	colonies                *industry.Colonies
@@ -147,7 +147,7 @@ type baseUI struct {
 	slotsResearch           *industry.Slots
 	snackbar                *xwidget.Snackbar
 	statusText              *statusText
-	training                *skill.Training
+	training                *skills.Training
 	wealth                  *wallet.Wealth
 	iw                      *infowindow.InfoWindow
 
@@ -382,7 +382,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.assetSearchAll = asset.NewSearchForAll(u)
 	u.augmentations = clones.NewAugmentations(u)
 	u.characterAssetBrowser = asset.NewCharacterBrowser(u)
-	u.characterAttributes = skill.NewAttributes(u)
+	u.characterAttributes = skills.NewAttributes(u)
 	u.characterAugmentations = clones.NewCharacterAugmentations(u)
 	u.characterBiography = character.NewBiography(u)
 	u.characterContacts = character.NewContacts(u)
@@ -392,9 +392,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterMails = character.NewMails(u)
 	u.characterOverview = character.NewOverview(u)
 	u.characterSheet = character.NewCharacterSheet(u)
-	u.characterShips = skill.NewFlyableShips(u)
-	u.characterSkillCatalogue = skill.NewCatalogue(u)
-	u.characterSkillQueue = skill.NewQueue(u)
+	u.characterShips = skills.NewFlyableShips(u)
+	u.characterSkillCatalogue = skills.NewCatalogue(u)
+	u.characterSkillQueue = skills.NewQueue(u)
 	u.characterWallet = wallet.NewCharacterWallet(u)
 	u.clones = clones.NewClones(u)
 	u.colonies = industry.NewColonies(u)
@@ -419,7 +419,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.slotsReactions = industry.NewSlots(u, app.ReactionJob)
 	u.slotsResearch = industry.NewSlots(u, app.ScienceJob)
 	u.snackbar = xwidget.NewSnackbar(u.window)
-	u.training = skill.NewTraining(u)
+	u.training = skills.NewTraining(u)
 	u.wealth = wallet.NewWealth(u)
 
 	u.iw = infowindow.New(u)

@@ -1,4 +1,4 @@
-package skill
+package skills
 
 // func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 // 	if testing.Short() {
