@@ -9,7 +9,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// CharacterToken is a SSO token belonging to a character in Eve Online.
+// CharacterToken is a SSO token belonging to a character in EVE Online.
 type CharacterToken struct {
 	AccessToken  string
 	CharacterID  int64

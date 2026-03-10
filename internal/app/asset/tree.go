@@ -16,7 +16,7 @@ type Item interface {
 	Unwrap() app.Asset
 }
 
-// Tree represents an asset tree in Eve Online.
+// Tree represents an asset tree in EVE Online.
 // It can contain both character and corporation assets from one or multiple owners.
 //
 // Assets are organized by EVE locations (e.g. station) which form the main branches of the tree.

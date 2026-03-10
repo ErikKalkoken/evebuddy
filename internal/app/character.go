@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// Character is an Eve Online character owned by the user.
+// Character is an EVE Online character owned by the user.
 type Character struct {
 	AssetValue        optional.Optional[float64]
 	EveCharacter      *EveCharacter

@@ -33,7 +33,7 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 
 // TODO: Add Bloodline (e.g. to show in character description)
 
-// EveCharacter is a character in Eve Online.
+// EveCharacter is a character in EVE Online.
 type EveCharacter struct {
 	Alliance       optional.Optional[*EveEntity]
 	Birthday       time.Time
@@ -105,7 +105,7 @@ func (ec EveCharacter) EveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
-// EveCorporation is a corporation in Eve Online.
+// EveCorporation is a corporation in EVE Online.
 type EveCorporation struct {
 	Alliance    optional.Optional[*EveEntity]
 	Ceo         optional.Optional[*EveEntity]
@@ -183,7 +183,7 @@ func (ec EveCorporation) Hash() string {
 
 // TODO: Add race alliance
 
-// EveRace is a race in Eve Online.
+// EveRace is a race in EVE Online.
 type EveRace struct {
 	Description string
 	Name        string
@@ -204,7 +204,7 @@ func (er EveRace) FactionID() (int64, bool) {
 	return factionID, ok
 }
 
-// EveSchematic is a schematic for planetary industry in Eve Online.
+// EveSchematic is a schematic for planetary industry in EVE Online.
 type EveSchematic struct {
 	ID        int64
 	CycleTime int

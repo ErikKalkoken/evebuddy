@@ -165,7 +165,7 @@ const (
 	VariantSKIN
 )
 
-// Asset represents a generic asset in Eve Online.
+// Asset represents a generic asset in EVE Online.
 type Asset struct {
 	IsBlueprintCopy optional.Optional[bool]
 	IsSingleton     bool

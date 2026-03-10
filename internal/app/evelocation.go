@@ -23,7 +23,7 @@ const (
 	EveLocationSolarSystem
 )
 
-// EveLocation is a location in Eve Online.
+// EveLocation is a location in EVE Online.
 type EveLocation struct {
 	ID          int64
 	SolarSystem optional.Optional[*EveSolarSystem]

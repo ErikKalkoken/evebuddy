@@ -29,7 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// inventoryTypeInfo displays information about Eve Online inventory types.
+// inventoryTypeInfo displays information about EVE Online inventory types.
 type inventoryTypeInfo struct {
 	widget.BaseWidget
 	baseInfo

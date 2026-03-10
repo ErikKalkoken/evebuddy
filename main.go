@@ -1,4 +1,4 @@
-// Evebuddy is a companion app for Eve Online players.
+// Evebuddy is a companion app for EVE Online players.
 package main
 
 import (

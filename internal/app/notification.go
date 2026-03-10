@@ -17,7 +17,7 @@ import (
 
 //go:generate go tool stringer -type=EveNotificationType
 
-// EveNotificationType represents a notification type in Eve Online.
+// EveNotificationType represents a notification type in EVE Online.
 type EveNotificationType uint
 
 const (
