@@ -29,7 +29,7 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().ShowEntity,
+			u.InfoWindow().ShowEveEntity,
 		)),
 		widget.NewFormItem("Blueprint", makeLinkLabelWithWrap(r.blueprintType.Name, func() {
 			u.InfoWindow().Show(app.EveEntityInventoryType, r.blueprintType.ID)
@@ -88,13 +88,13 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 	items = slices.Concat(items, []*widget.FormItem{
 		widget.NewFormItem("Location", makeLocationLabel(r.location, u.InfoWindow().ShowLocation)),
 		widget.NewFormItem("Installer", makeLinkLabelWithWrap(r.installer.Name, func() {
-			u.InfoWindow().ShowEntity(r.installer)
+			u.InfoWindow().ShowEveEntity(r.installer)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if v, ok := r.completedCharacter.Value(); ok {
 		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(v.Name, func() {
-			u.InfoWindow().ShowEntity(v)
+			u.InfoWindow().ShowEveEntity(v)
 		})))
 	}
 	if u.IsDeveloperMode() {
@@ -119,7 +119,7 @@ func showIndustryJobWindow(u ui, r industryJobRow) {
 	xwindow.Set(xwindow.Params{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.blueprintType.ID)
+			u.InfoWindow().ShowType(r.blueprintType.ID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.EVEImage().InventoryTypeBPOAsync(r.blueprintType.ID, 256, setter)

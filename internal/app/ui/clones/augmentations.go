@@ -117,7 +117,7 @@ func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 				func(id int64) {
 					a.u.InfoWindow().Show(app.EveEntityCharacter, id)
 				},
-				a.u.InfoWindow().ShowTypeWithCharacter,
+				a.u.InfoWindow().ShowType,
 			)
 		},
 		func(n *augmentationNode, _ bool, co fyne.CanvasObject) {

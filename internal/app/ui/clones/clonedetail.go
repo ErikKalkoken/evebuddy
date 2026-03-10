@@ -151,7 +151,7 @@ type implantsCS interface {
 	GetJumpClone(ctx context.Context, characterID int64, cloneID int64) (*app.CharacterJumpClone, error)
 }
 
-func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func(int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
+func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func(int64, int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
 	var implants []*app.CharacterJumpCloneImplant
 	list := widget.NewList(
 		func() int {
@@ -176,7 +176,8 @@ func makeImplantsList(cs implantsCS, eis awidget.EveEntityEIS, showTypeInfo func
 		if id >= len(implants) {
 			return
 		}
-		showTypeInfo(implants[id].EveType.ID)
+		r := implants[id]
+		showTypeInfo(r.EveType.ID, characterID)
 	}
 
 	go func() {

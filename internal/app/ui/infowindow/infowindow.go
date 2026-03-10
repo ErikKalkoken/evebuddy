@@ -84,8 +84,7 @@ func (iw *InfoWindow) Show(c app.EveEntityCategory, id int64) {
 	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), id)
 }
 
-// ShowEntity shows a new info window for an EveEntity.
-func (iw *InfoWindow) ShowEntity(ee *app.EveEntity) {
+func (iw *InfoWindow) ShowEveEntity(ee *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(ee), ee.ID)
 }
 
@@ -97,15 +96,7 @@ func (iw *InfoWindow) ShowRace(id int64) {
 	iw.show(infoRace, id)
 }
 
-func (iw *InfoWindow) ShowType(typeID int64) {
-	iw.showWithCharacterID(showParams{
-		variant:     infoInventoryType,
-		entityID:    typeID,
-		characterID: 0,
-	})
-}
-
-func (iw *InfoWindow) ShowTypeWithCharacter(typeID, characterID int64) {
+func (iw *InfoWindow) ShowType(typeID, characterID int64) {
 	iw.showWithCharacterID(showParams{
 		variant:     infoInventoryType,
 		entityID:    typeID,
@@ -577,7 +568,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			case *app.EveEntity:
 				if x != nil && supportedCategories.Contains(x.Category) {
 					f = func() {
-						w.iw.ShowEntity(x)
+						w.iw.ShowEveEntity(x)
 					}
 				}
 			case *app.EveLocation:

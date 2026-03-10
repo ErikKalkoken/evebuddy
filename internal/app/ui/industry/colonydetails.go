@@ -186,7 +186,7 @@ func newColonyDetails(u ui, characterID, planetID int64, w fyne.Window) *colonyD
 		if id >= len(a.rowsFiltered) {
 			return
 		}
-		a.u.InfoWindow().ShowType(a.rowsFiltered[id].typeID)
+		a.u.InfoWindow().ShowType(a.rowsFiltered[id].typeID, 0)
 	}
 	a.installations = list
 
@@ -349,7 +349,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.region.SetText(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name))
 		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
 		a.planetType.OnTapped = func() {
-			a.u.InfoWindow().ShowEntity(cp.EvePlanet.Type.EveEntity())
+			a.u.InfoWindow().ShowEveEntity(cp.EvePlanet.Type.EveEntity())
 		}
 		a.owner.SetText(ownerName)
 		a.owner.OnTapped = func() {

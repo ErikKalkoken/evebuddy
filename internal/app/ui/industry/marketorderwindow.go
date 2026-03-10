@@ -28,7 +28,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 		return
 	}
 	item := makeLinkLabelWithWrap(r.typeName, func() {
-		u.InfoWindow().ShowTypeWithCharacter(r.typeID, r.characterID)
+		u.InfoWindow().ShowType(r.typeID, r.characterID)
 	})
 	region := makeLinkLabel(r.regionName, func() {
 		u.InfoWindow().Show(app.EveEntityRegion, r.regionID)
@@ -52,7 +52,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeEveEntityActionLabel(
 			r.owner,
-			u.InfoWindow().ShowEntity,
+			u.InfoWindow().ShowEveEntity,
 		)),
 		widget.NewFormItem("Type", item),
 		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
@@ -84,7 +84,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
 		r.characterID,
 		r.characterName,
-		u.InfoWindow().ShowEntity,
+		u.InfoWindow().ShowEveEntity,
 	)))
 
 	if u.IsDeveloperMode() {
@@ -95,7 +95,7 @@ func ShowMarketOrderWindow(u ui, r marketOrderRow) {
 	xwindow.Set(xwindow.Params{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID)
+			u.InfoWindow().ShowType(r.typeID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			u.EVEImage().InventoryTypeIconAsync(r.typeID, 256, setter)

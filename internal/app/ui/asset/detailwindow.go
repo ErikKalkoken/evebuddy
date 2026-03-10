@@ -30,9 +30,9 @@ func ShowAssetDetailWindow(u ui, r assetRow) {
 	}
 	item := makeLinkLabelWithWrap(r.typeName, func() {
 		if r.owner.IsCharacter() {
-			u.InfoWindow().ShowTypeWithCharacter(r.typeID, r.owner.ID)
+			u.InfoWindow().ShowType(r.typeID, r.owner.ID)
 		} else {
-			u.InfoWindow().ShowType(r.typeID)
+			u.InfoWindow().ShowType(r.typeID, 0)
 		}
 	})
 	var location, region fyne.CanvasObject
@@ -59,7 +59,7 @@ func ShowAssetDetailWindow(u ui, r assetRow) {
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
-			u.InfoWindow().ShowEntity,
+			u.InfoWindow().ShowEveEntity,
 		)),
 		widget.NewFormItem("Item", item),
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
@@ -93,7 +93,7 @@ func ShowAssetDetailWindow(u ui, r assetRow) {
 	xwindow.Set(xwindow.Params{
 		Content: f,
 		ImageAction: func() {
-			u.InfoWindow().ShowType(r.typeID)
+			u.InfoWindow().ShowType(r.typeID, 0)
 		},
 		ImageLoader: func(setter func(r fyne.Resource)) {
 			switch r.variant {

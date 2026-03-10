@@ -495,13 +495,13 @@ func showCorporationStructureWindowAsync(ctx context.Context, u ui, corporationI
 				widget.NewFormItem("Owner", makeCorporationActionLabel(
 					corporationID,
 					corporationName,
-					u.InfoWindow().ShowEntity,
+					u.InfoWindow().ShowEveEntity,
 				)),
 				widget.NewFormItem("Name", widget.NewLabel(structure.NameShort())),
 				widget.NewFormItem("Type", makeLinkLabelWithWrap(structure.Type.Name, func() {
-					u.InfoWindow().ShowType(structure.Type.ID)
+					u.InfoWindow().ShowType(structure.Type.ID, 0)
 				})),
-				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().ShowEntity)),
+				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoWindow().ShowEveEntity)),
 				widget.NewFormItem("Region", makeLinkLabel(structure.System.Constellation.Region.Name, func() {
 					u.InfoWindow().Show(app.EveEntityRegion, structure.System.Constellation.Region.ID)
 				})),
@@ -540,7 +540,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u ui, corporationI
 			xwindow.Set(xwindow.Params{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(structure.Type.ID)
+					u.InfoWindow().ShowType(structure.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(structure.Type.ID, 512, setter)

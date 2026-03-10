@@ -786,7 +786,7 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: Missing ship for current character.")
 					return
 				}
-				u.InfoWindow().ShowType(ship.ID)
+				u.InfoWindow().ShowType(ship.ID, 0)
 			}},
 		"search": {
 			&desktop.CustomShortcut{

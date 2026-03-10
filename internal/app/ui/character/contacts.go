@@ -206,7 +206,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return
 			}
 			r := a.rowsFiltered[id]
-			a.u.InfoWindow().ShowEntity(r.contact)
+			a.u.InfoWindow().ShowEveEntity(r.contact)
 		}
 		return l
 	}
@@ -231,7 +231,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.u.InfoWindow().ShowEntity(r.contact)
+		a.u.InfoWindow().ShowEveEntity(r.contact)
 	}
 	return l
 }

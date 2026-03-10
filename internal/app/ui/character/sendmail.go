@@ -49,7 +49,7 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 	a.ExtendBaseWidget(a)
 
 	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
-	a.from.ShowInfoWindow = u.InfoWindow().ShowEntity
+	a.from.ShowInfoWindow = u.InfoWindow().ShowEveEntity
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
 		Name:     c.EveCharacter.Name,
@@ -67,7 +67,7 @@ func NewSendMail(u ui, c *app.Character, mode app.SendMailMode, m *app.Character
 		}, a.w)
 	})
 	a.to = newEveEntityEntry(toButton, labelWith, awidget.LoadEveEntityIconFunc(u.EVEImage()))
-	a.to.ShowInfoWindow = u.InfoWindow().ShowEntity
+	a.to.ShowInfoWindow = u.InfoWindow().ShowEveEntity
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
 	a.subject = widget.NewEntry()

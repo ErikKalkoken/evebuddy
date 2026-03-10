@@ -630,7 +630,7 @@ func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transact
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					characterID,
 					u.StatusCache().CharacterName(characterID),
-					u.InfoWindow().ShowEntity,
+					u.InfoWindow().ShowEveEntity,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Activity", widget.NewLabel(activity)),
@@ -640,7 +640,7 @@ func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transact
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", total),
-				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEntity)),
+				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEveEntity)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
 				// widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 				// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
@@ -660,7 +660,7 @@ func ShowCharacterWalletTransactionWindowAsync(u ui, characterID int64, transact
 			xwindow.Set(xwindow.Params{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(o.Type.ID)
+					u.InfoWindow().ShowType(o.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)
@@ -698,7 +698,7 @@ func ShowCorporationWalletTransactionWindowAsync(u ui, corporationID int64, divi
 				widget.NewFormItem("Owner", makeCharacterActionLabel(
 					corporationID,
 					u.StatusCache().CorporationName(corporationID),
-					u.InfoWindow().ShowEntity,
+					u.InfoWindow().ShowEveEntity,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
@@ -707,7 +707,7 @@ func ShowCorporationWalletTransactionWindowAsync(u ui, corporationID int64, divi
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
-				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEntity)),
+				widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.InfoWindow().ShowEveEntity)),
 				widget.NewFormItem("Location", makeLocationLabel(o.Location, u.InfoWindow().ShowLocation)),
 				widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 					fmt.Sprintf("#%d", o.JournalRefID), func() {
@@ -727,7 +727,7 @@ func ShowCorporationWalletTransactionWindowAsync(u ui, corporationID int64, divi
 			xwindow.Set(xwindow.Params{
 				Content: f,
 				ImageAction: func() {
-					u.InfoWindow().ShowType(o.Type.ID)
+					u.InfoWindow().ShowType(o.Type.ID, 0)
 				},
 				ImageLoader: func(setter func(r fyne.Resource)) {
 					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)
