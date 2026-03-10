@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 
@@ -36,9 +37,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type ui interface {
+type coreUI interface {
 	Character() *characterservice.CharacterService
-	EVEImage() app.EVEImageService
+	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	ErrorDisplay(err error) string
@@ -58,7 +59,7 @@ type InfoWindow struct {
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
 	sb            *xwidget.Snackbar
-	u             ui
+	u             coreUI
 	w             fyne.Window
 }
 
@@ -72,7 +73,7 @@ const (
 )
 
 // New returns a new InfoWindow.
-func New(u ui) *InfoWindow {
+func New(u coreUI) *InfoWindow {
 	iw := &InfoWindow{
 		u: u,
 		w: u.MainWindow(),

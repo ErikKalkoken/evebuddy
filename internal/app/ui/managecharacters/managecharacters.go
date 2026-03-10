@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -29,7 +30,7 @@ type baseUI interface {
 	CurrentCharacter() *app.Character
 	CurrentCorporation() *app.Corporation
 	ErrorDisplay(err error) string
-	EVEImage() app.EVEImageService
+	EVEImage() ui.EVEImageService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsMobile() bool
 	IsDeveloperMode() bool

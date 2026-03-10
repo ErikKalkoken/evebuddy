@@ -21,7 +21,7 @@ type baseUI interface {
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character
 	ErrorDisplay(err error) string
-	EVEImage() app.EVEImageService
+	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	InfoWindow() ui.InfoWindow

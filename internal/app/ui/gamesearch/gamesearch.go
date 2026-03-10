@@ -35,7 +35,7 @@ const (
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
-	EVEImage() app.EVEImageService
+	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoWindow() ui.InfoWindow
 	IsDeveloperMode() bool

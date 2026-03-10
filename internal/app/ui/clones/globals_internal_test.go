@@ -21,7 +21,7 @@ import (
 type UIFake struct {
 	a        fyne.App
 	cs       *characterservice.CharacterService
-	eis      app.EVEImageService
+	eis      ui.EVEImageService
 	eus      *eveuniverseservice.EVEUniverseService
 	iw       *infowindow.InfoWindow
 	scs      *statuscache.StatusCache
@@ -79,7 +79,7 @@ func (u *UIFake) ErrorDisplay(err error) string {
 	return err.Error()
 }
 
-func (u *UIFake) EVEImage() app.EVEImageService {
+func (u *UIFake) EVEImage() ui.EVEImageService {
 	return u.eis
 }
 

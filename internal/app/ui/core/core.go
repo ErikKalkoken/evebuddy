@@ -74,7 +74,7 @@ type BaseUIParams struct {
 	Character   *characterservice.CharacterService
 	Corporation *corporationservice.CorporationService
 	ESIStatus   *esistatusservice.ESIStatusService
-	EVEImage    app.EVEImageService
+	EVEImage    ui.EVEImageService
 	EVEUniverse *eveuniverseservice.EVEUniverseService
 	Janice      *janiceservice.JaniceService
 	StatusCache *statuscache.StatusCache
@@ -153,7 +153,7 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      app.EVEImageService
+	eis      ui.EVEImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EVEUniverseService
 	js       *janiceservice.JaniceService
@@ -615,7 +615,7 @@ func (u *baseUI) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }
 
-func (u *baseUI) EVEImage() app.EVEImageService {
+func (u *baseUI) EVEImage() ui.EVEImageService {
 	return u.eis
 }
 
