@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
@@ -89,7 +90,7 @@ func (u *UIFake) EVEUniverse() *eveuniverseservice.EVEUniverseService {
 func (u *UIFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
 	return u.a.NewWindow("Dummy"), true
 }
-func (u *UIFake) InfoWindow() *infowindow.InfoWindow {
+func (u *UIFake) InfoWindow() ui.InfoWindow {
 	return u.iw
 }
 

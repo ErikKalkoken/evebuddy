@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 type baseUI interface {
@@ -18,7 +18,7 @@ type baseUI interface {
 	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
-	InfoWindow() *infowindow.InfoWindow
+	InfoWindow() ui.InfoWindow
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window

@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
@@ -36,7 +37,7 @@ type baseUI interface {
 	Character() *characterservice.CharacterService
 	EVEImage() app.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
-	InfoWindow() *infowindow.InfoWindow
+	InfoWindow() ui.InfoWindow
 	IsDeveloperMode() bool
 	IsOffline() bool
 	MainWindow() fyne.Window

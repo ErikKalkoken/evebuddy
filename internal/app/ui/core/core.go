@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/clones"
@@ -567,7 +568,7 @@ func (u *baseUI) MainWindow() fyne.Window {
 }
 
 // InfoWindow returns the info window.
-func (u *baseUI) InfoWindow() *infowindow.InfoWindow {
+func (u *baseUI) InfoWindow() ui.InfoWindow {
 	return u.iw
 }
 
