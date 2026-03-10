@@ -21,6 +21,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -85,7 +86,7 @@ func NewContacts(u baseUI) *Contacts {
 	)
 	a := &Contacts{
 		columnSorter: columnSorter,
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.list = a.makeList()

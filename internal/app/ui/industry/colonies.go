@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -210,7 +210,7 @@ func NewColonies(u baseUI) *Colonies {
 		},
 	}})
 	a := &Colonies{
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
 		search:       widget.NewEntry(),
 		u:            u,

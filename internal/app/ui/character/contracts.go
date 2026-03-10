@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -193,7 +192,7 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 	a := &Contracts{
 		forCorporation: forCorporation,
 		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
-		footer:         awidget.NewLabelWithTruncation(""),
+		footer:         ui.NewLabelWithTruncation(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

@@ -15,7 +15,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -56,7 +56,7 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *Queue {
 		skillqueue:           app.NewCharacterSkillqueue(),
 		statusResource:       statusResources,
 		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
-		top:                  awidget.NewLabelWithWrapping(""),
+		top:                  ui.NewLabelWithWrapping(""),
 		u:                    u,
 	}
 	a.ExtendBaseWidget(a)

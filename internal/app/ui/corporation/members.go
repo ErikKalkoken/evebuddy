@@ -16,6 +16,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -44,7 +45,7 @@ type Members struct {
 
 func NewMembers(s baseUI) *Members {
 	a := &Members{
-		footer: awidget.NewLabelWithTruncation(""),
+		footer: ui.NewLabelWithTruncation(""),
 		s:      s,
 	}
 	a.list = a.makeList()

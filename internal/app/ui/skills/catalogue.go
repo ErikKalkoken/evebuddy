@@ -17,7 +17,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -92,12 +92,12 @@ func NewCatalogue(u baseUI) *Catalogue {
 	)
 	a := &Catalogue{
 		columnSorter:   columnSorter,
-		footer:         awidget.NewLabelWithTruncation(""),
+		footer:         ui.NewLabelWithTruncation(""),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		search:         widget.NewEntry(),
-		top:            awidget.NewLabelWithWrapping(""),
+		top:            ui.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

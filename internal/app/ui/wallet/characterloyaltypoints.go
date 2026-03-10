@@ -15,6 +15,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -71,7 +72,7 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	)
 	a := &CharacterLoyaltyPoints{
 		columnSorter: columnSorter,
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.list = a.makeList()

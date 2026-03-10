@@ -17,7 +17,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -56,7 +56,7 @@ type Augmentations struct {
 
 func NewAugmentations(u baseUI) *Augmentations {
 	a := &Augmentations{
-		footer: awidget.NewLabelWithTruncation(""),
+		footer: ui.NewLabelWithTruncation(""),
 		u:      u,
 	}
 	a.ExtendBaseWidget(a)

@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -106,11 +105,11 @@ type updateStatus struct {
 
 func newUpdateStatus(s baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
-		charactersTop:     awidget.NewLabelWithWrapping(""),
+		charactersTop:     ui.NewLabelWithWrapping(""),
 		details:           newSectionDetails(),
-		detailsTop:        awidget.NewLabelWithWrapping(""),
+		detailsTop:        ui.NewLabelWithWrapping(""),
 		sb:                xwidget.NewSnackbar(w),
-		sectionsTop:       awidget.NewLabelWithWrapping(""),
+		sectionsTop:       ui.NewLabelWithWrapping(""),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		signalKey:         s.Signals().UniqueKey(),
@@ -602,12 +601,12 @@ type sectionDetails struct {
 
 func newSectionDetails() *sectionDetails {
 	w := &sectionDetails{
-		completedAt: awidget.NewLabelWithWrapping(""),
-		issue:       awidget.NewLabelWithWrapping(""),
-		nextUpdate:  awidget.NewLabelWithWrapping(""),
-		startedAt:   awidget.NewLabelWithWrapping(""),
-		status:      awidget.NewLabelWithWrapping(""),
-		timeout:     awidget.NewLabelWithWrapping(""),
+		completedAt: ui.NewLabelWithWrapping(""),
+		issue:       ui.NewLabelWithWrapping(""),
+		nextUpdate:  ui.NewLabelWithWrapping(""),
+		startedAt:   ui.NewLabelWithWrapping(""),
+		status:      ui.NewLabelWithWrapping(""),
+		timeout:     ui.NewLabelWithWrapping(""),
 	}
 	w.ExtendBaseWidget(w)
 	return w

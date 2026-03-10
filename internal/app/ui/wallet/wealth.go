@@ -18,7 +18,7 @@ import (
 	"github.com/s-daehling/fyne-charts/pkg/style"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -50,7 +50,7 @@ func NewWealth(u baseUI) *Wealth {
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
 		assetSplit:     prop.NewPieChart(""),
 		characterSplit: prop.NewPieChart(""),
-		top:            awidget.NewLabelWithWrapping(""),
+		top:            ui.NewLabelWithWrapping(""),
 		totalSplit:     prop.NewPieChart(""),
 		u:              u,
 		walletDetail:   coord.NewCartesianCategoricalChart(""),

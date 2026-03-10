@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
@@ -151,7 +152,7 @@ func NewStructures(u baseUI) *Structures {
 	}})
 	a := &Structures{
 		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
-		footer:       awidget.NewLabelWithWrapping(""),
+		footer:       ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

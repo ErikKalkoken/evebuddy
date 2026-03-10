@@ -21,7 +21,7 @@ import (
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -156,7 +156,7 @@ func NewOverview(u baseUI) *Overview {
 	info.Importance = widget.LowImportance
 
 	a := &Overview{
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		loadInfo:     info,
 		search:       widget.NewEntry(),

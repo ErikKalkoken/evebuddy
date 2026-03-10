@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -230,7 +231,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		}})
 	a := &MarketOrders{
 		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		isBuyOrders:  isBuyOrders,
 		u:            u,
 	}

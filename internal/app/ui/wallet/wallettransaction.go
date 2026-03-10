@@ -20,7 +20,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xwindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -206,7 +206,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		},
 	}})
 	a := &WalletTransactions{
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		columnSorter: xwidget.NewColumnSorter(columns, walletTransactionColDate, xwidget.SortDesc),
 		division:     d,
 		u:            u,

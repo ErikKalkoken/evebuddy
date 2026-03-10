@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/awidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xdialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
@@ -142,7 +143,7 @@ func NewClones(u baseUI) *Clones {
 	a := &Clones{
 		columnSorter: xwidget.NewColumnSorter(columns, clonesColLocation, xwidget.SortAsc),
 		originLabel:  xwidget.NewRichTextWithText("(not set)"),
-		footer:       awidget.NewLabelWithTruncation(""),
+		footer:       ui.NewLabelWithTruncation(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
