@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -447,10 +446,10 @@ func newColorWheel() colorWheel {
 			theme.ColorNameWarning,
 			theme.ColorNameSuccess,
 			theme.ColorNameError,
-			xtheme.ColorNameInfo,
-			xtheme.ColorNameAttention,
-			xtheme.ColorNameCreative,
-			xtheme.ColorNameSystem,
+			ui.ColorNameInfo,
+			ui.ColorNameAttention,
+			ui.ColorNameCreative,
+			ui.ColorNameSystem,
 			theme.ColorNamePlaceHolder,
 		},
 	}

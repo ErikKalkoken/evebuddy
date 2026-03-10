@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -410,10 +409,10 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 		switch pinType {
 		case pinTypeCommandCenter:
 			iconName = eveicon.PICommandCenter
-			iconColor = xtheme.ColorNameInfo
+			iconColor = ui.ColorNameInfo
 		case pinTypeExtractor:
 			iconName = eveicon.PIExtractor
-			iconColor = xtheme.ColorNameSystem
+			iconColor = ui.ColorNameSystem
 			if v, ok := p.ExpiryTime.Value(); ok {
 				if time.Now().Before(v) {
 					statusColor = theme.ColorNameSuccess
@@ -426,10 +425,10 @@ func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []
 			iconColor = theme.ColorNameWarning
 		case pinTypeAdvancedProcessor:
 			iconName = eveicon.PIProcessor
-			iconColor = xtheme.ColorNameAttention
+			iconColor = ui.ColorNameAttention
 		case pinTypeHighTechProcessor:
 			iconName = eveicon.PIProcessor
-			iconColor = xtheme.ColorNameCreative
+			iconColor = ui.ColorNameCreative
 		case pinTypeSpacePort:
 			iconName = eveicon.PILaunchpad
 			iconColor = theme.ColorNamePrimary

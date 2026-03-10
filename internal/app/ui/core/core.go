@@ -39,7 +39,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/skills"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/wallet"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/xtheme"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -841,7 +840,7 @@ func (u *baseUI) initHome(ctx context.Context) {
 }
 
 func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
-	u.app.Settings().SetTheme(xtheme.New(u.defaultTheme, s))
+	u.app.Settings().SetTheme(ui.New(u.defaultTheme, s))
 }
 
 func (u *baseUI) UpdateMailIndicator(ctx context.Context) {

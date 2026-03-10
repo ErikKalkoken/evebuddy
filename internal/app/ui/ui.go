@@ -7,13 +7,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type InfoWindow interface {
-	Show(o *app.EveEntity)
-	ShowLocation(id int64)
-	ShowRace(id int64)
-	ShowType(typeID, characterID int64)
-}
-
 type EVEImageService interface {
 	AllianceLogo(id int64, size int) (fyne.Resource, error)
 	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
@@ -33,4 +26,11 @@ type EVEImageService interface {
 	InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource))
 	InventoryTypeSKIN(id int64, size int) (fyne.Resource, error)
 	InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource))
+}
+
+type InfoWindow interface {
+	Show(o *app.EveEntity)
+	ShowLocation(id int64)
+	ShowRace(id int64)
+	ShowType(typeID, characterID int64)
 }

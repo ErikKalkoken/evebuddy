@@ -1,5 +1,4 @@
-// Package xtheme provides a custom Fyne theme for the app.
-package xtheme
+package ui
 
 import (
 	"image/color"
