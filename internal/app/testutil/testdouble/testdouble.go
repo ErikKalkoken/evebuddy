@@ -37,22 +37,6 @@ func (s *EVENotificationServiceStub) RenderESI(ctx context.Context, nt app.EveNo
 	return s.title, s.body, s.err
 }
 
-type StatusCacheStub struct{}
-
-func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {
-}
-
-func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
-}
-
-func (c *StatusCacheStub) UpdateCharacters(ctx context.Context, st statuscache.Storage) error {
-	return nil
-}
-
-func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
-	return nil
-}
-
 // NewCharacterServiceFake returns a fake for a CharacterService.
 func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.CharacterService {
 	var arg characterservice.Params
@@ -99,7 +83,7 @@ func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.
 		arg.EveUniverseService = eveuniverseservice.New(eveuniverseservice.Params{
 			ESIClient:          arg.ESIClient,
 			Signals:            arg.Signals,
-			StatusCacheService: new(statuscache.StatusCache),
+			StatusCacheService: new(StatusCacheStub),
 			Storage:            arg.Storage,
 		})
 	}
@@ -164,7 +148,7 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 		arg.EveUniverseService = eveuniverseservice.New(eveuniverseservice.Params{
 			ESIClient:          arg.ESIClient,
 			Signals:            arg.Signals,
-			StatusCacheService: new(statuscache.StatusCache),
+			StatusCacheService: new(StatusCacheStub),
 			Storage:            arg.Storage,
 		})
 	}
@@ -176,4 +160,20 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 	}
 	s := corporationservice.New(arg)
 	return s
+}
+
+type StatusCacheStub struct{}
+
+func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {}
+
+func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {}
+
+func (c *StatusCacheStub) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {}
+
+func (c *StatusCacheStub) UpdateCharacters(ctx context.Context, st statuscache.Storage) error {
+	return nil
+}
+
+func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
+	return nil
 }

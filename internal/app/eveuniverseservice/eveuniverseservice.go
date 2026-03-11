@@ -19,6 +19,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
+type StatusCache interface {
+	SetEveUniverseSection(o *app.EveUniverseSectionStatus)
+	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
+}
+
 // EVEUniverseService provides access to EVE Online models with on-demand loading from ESI and persistent local caching.
 type EVEUniverseService struct {
 	// Now returns the current time in UTC. Can be overwritten for tests.
@@ -26,7 +31,7 @@ type EVEUniverseService struct {
 
 	concurrencyLimit int
 	esiClient        *esi.APIClient
-	scs              *statuscache.StatusCache
+	scs              StatusCache
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
@@ -36,7 +41,7 @@ type Params struct {
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *esi.APIClient
 	Signals            *app.Signals
-	StatusCacheService *statuscache.StatusCache
+	StatusCacheService StatusCache
 	Storage            *storage.Storage
 }
 

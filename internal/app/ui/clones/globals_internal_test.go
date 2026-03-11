@@ -40,17 +40,6 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	// cs := characterservice.New(characterservice.Params{
-	// 	AuthClient:             testutil.AuthClientFake{},
-	// 	Cache:                  testutil.NewCacheFake2(),
-	// 	ESIClient:              client,
-	// 	EveNotificationService: evenotification.New(eus),
-	// 	EveUniverseService:     eus,
-	// 	Settings:               &testutil.SettingsFake{},
-	// 	Signals:                signals,
-	// 	StatusCacheService:     scs,
-	// 	Storage:                st,
-	// })
 	u := &UIFake{
 		a:   a,
 		cs:  testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
