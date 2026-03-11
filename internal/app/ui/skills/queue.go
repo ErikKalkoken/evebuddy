@@ -153,7 +153,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 		if q == nil {
 			return
 		}
-		showSkillInTrainingWindow(a.u, q)
+		showSkillInTrainingWindow(a.u, q, a.character.Load().NameOrZero())
 	}
 	return list
 }
@@ -261,8 +261,7 @@ func (a *Queue) Update(ctx context.Context) {
 	})
 }
 
-func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
-	characterName := u.StatusCache().CharacterName(r.CharacterID)
+func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, characterName string) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),
 		"Skill: Information",

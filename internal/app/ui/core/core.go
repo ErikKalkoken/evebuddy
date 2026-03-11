@@ -33,6 +33,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/assets"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/clones"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/contracts"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/corporations"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/gamesearch"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/industry"
@@ -127,10 +128,10 @@ type baseUI struct {
 	characterWallet         *wallets.CharacterWallet
 	clones                  *clones.Clones
 	colonies                *industry.Colonies
-	contracts               *characters.Contracts
+	contracts               *contracts.Contracts
 	corporationAssetBrowser *assets.Browser
 	corporationAssetSearch  *assets.Search
-	corporationContracts    *characters.Contracts
+	corporationContracts    *contracts.Contracts
 	corporationIndyJobs     *industry.Jobs
 	corporationMember       *corporations.Members
 	corporationSheet        *corporations.CorporationSheet
@@ -397,10 +398,10 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.characterWallet = wallets.NewCharacterWallet(u)
 	u.clones = clones.NewClones(u)
 	u.colonies = industry.NewColonies(u)
-	u.contracts = characters.NewContractsForCharacters(u)
+	u.contracts = contracts.NewContractsForCharacters(u)
 	u.corporationAssetBrowser = assets.NewCorporationBrowser(u)
 	u.corporationAssetSearch = assets.NewSearchForCorporation(u)
-	u.corporationContracts = characters.NewContractsForCorporation(u)
+	u.corporationContracts = contracts.NewContractsForCorporation(u)
 	u.corporationIndyJobs = industry.NewJobsForCorporation(u)
 
 	u.corporationMember = corporations.NewMembers(u)

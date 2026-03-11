@@ -1,4 +1,5 @@
-package characters
+// Package contracts provides widgets for building the contracts UI.
+package contracts
 
 import (
 	"context"
@@ -22,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -39,7 +39,7 @@ const (
 	contractStatusHistory     = "History"
 )
 
-type contractUIServices interface {
+type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	ErrorDisplay(err error) string
@@ -51,13 +51,13 @@ type contractUIServices interface {
 	IsMobile() bool
 	MainWindow() fyne.Window
 	Signals() *app.Signals
-	StatusCache() *statuscache.StatusCache
 }
 
 type contractRow struct {
 	assigneeName       string
-	characterID        int64
-	corporationID      int64
+	ownerID            int64
+	ownerName          string
+	isCorporation      bool
 	contractID         int64
 	dateExpired        time.Time
 	dateExpiredDisplay []widget.RichTextSegment
@@ -94,7 +94,7 @@ type Contracts struct {
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
-	u              contractUIServices
+	u              baseUI
 }
 
 const (
@@ -107,15 +107,15 @@ const (
 	contractsColExpiresAt
 )
 
-func NewContractsForCorporation(u contractUIServices) *Contracts {
+func NewContractsForCorporation(u baseUI) *Contracts {
 	return newContracts(u, true)
 }
 
-func NewContractsForCharacters(u contractUIServices) *Contracts {
+func NewContractsForCharacters(u baseUI) *Contracts {
 	return newContracts(u, false)
 }
 
-func newContracts(u contractUIServices, forCorporation bool) *Contracts {
+func newContracts(u baseUI, forCorporation bool) *Contracts {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
 		ID:    contractsColName,
 		Label: "Contract",
@@ -210,9 +210,9 @@ func newContracts(u contractUIServices, forCorporation bool) *Contracts {
 			a.filterRowsAsync,
 			func(_ int, r contractRow) {
 				if a.forCorporation {
-					ShowCorporationContractWindow(a.u, r.corporationID, r.contractID)
+					ShowCorporationContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
 				} else {
-					ShowCharacterContractWindow(a.u, r.characterID, r.contractID)
+					ShowCharacterContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
 				}
 			},
 		)
@@ -357,9 +357,9 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.forCorporation {
-			ShowCorporationContractWindow(a.u, r.corporationID, r.contractID)
+			ShowCorporationContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
 		} else {
-			ShowCharacterContractWindow(a.u, r.characterID, r.contractID)
+			ShowCharacterContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
 		}
 	}
 	return l
@@ -470,11 +470,11 @@ func (a *Contracts) Update(ctx context.Context) {
 }
 
 func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
-	corporationID := a.corporation.Load().IDOrZero()
-	if corporationID == 0 {
+	corporation := a.corporation.Load()
+	if corporation == nil {
 		return nil, 0, nil
 	}
-	oo, err := a.u.Corporation().ListCorporationContracts(ctx, corporationID)
+	oo, err := a.u.Corporation().ListCorporationContracts(ctx, corporation.ID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -493,7 +493,9 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 			dateIssued:    c.DateIssued,
 			dateExpired:   c.DateExpired,
 			isExpired:     c.IsExpired(),
-			corporationID: c.CorporationID,
+			ownerID:       corporation.ID,
+			ownerName:     corporation.NameOrZero(),
+			isCorporation: true,
 			contractID:    c.ContractID,
 			isActive:      c.Status.IsActive(),
 			isHistory:     c.Status.IsHistory(),
@@ -532,6 +534,10 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
 			a.DateIssued.Equal(b.DateIssued)
 	})
+	characters, err := a.u.Character().CharacterNames(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
 	var rows []contractRow
 	var activeCount int
 	for _, c := range oo2 {
@@ -547,7 +553,8 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 			dateIssued:  c.DateIssued,
 			dateExpired: c.DateExpired,
 			isExpired:   c.IsExpired(),
-			characterID: c.CharacterID,
+			ownerID:     c.CharacterID,
+			ownerName:   characters[c.CharacterID],
 			contractID:  c.ContractID,
 			isActive:    c.Status.IsActive(),
 			isHistory:   c.Status.IsHistory(),
@@ -581,7 +588,7 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 // FIXME: Remove DB access from main go routine
 
 // ShowCharacterContractWindow shows the details of a character contract in a window.
-func ShowCharacterContractWindow(u contractUIServices, characterID, contractID int64) {
+func ShowCharacterContractWindow(u baseUI, characterID int64, characterName string, contractID int64) {
 	ctx := context.Background()
 	o, err := u.Character().GetContract(ctx, characterID, contractID)
 	if err != nil {
@@ -589,7 +596,6 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
-	characterName := u.StatusCache().CharacterName(characterID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("character-contract-%d-%d", characterID, contractID),
 		title,
@@ -762,7 +768,7 @@ func ShowCharacterContractWindow(u contractUIServices, characterID, contractID i
 // FIXME: Remove DB access from main go routine
 
 // ShowCorporationContractWindow shows the details of a corporation contract in a window.
-func ShowCorporationContractWindow(u contractUIServices, corporationID, contractID int64) {
+func ShowCorporationContractWindow(u baseUI, corporationID int64, corporationName string, contractID int64) {
 	ctx := context.Background()
 	o, err := u.Corporation().GetContract(ctx, corporationID, contractID)
 	if err != nil {
@@ -770,7 +776,6 @@ func ShowCorporationContractWindow(u contractUIServices, corporationID, contract
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
-	corporationName := u.StatusCache().CorporationName(corporationID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("corporation-contract-%d-%d", corporationID, contractID),
 		title,
