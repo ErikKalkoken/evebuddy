@@ -264,8 +264,13 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	a.u.isOffline.Store(false)
 }
 
-func (a *statusBar) updateCharacterCount(_ context.Context) {
-	s := strconv.Itoa(len(a.u.StatusCache().ListCharacters()))
+func (a *statusBar) updateCharacterCount(ctx context.Context) {
+	ids, err := a.u.cs.ListCharacterIDs(ctx)
+	if err != nil {
+		slog.Error("updating character count", "error", err)
+		return
+	}
+	s := strconv.Itoa(ids.Size())
 	fyne.Do(func() {
 		a.characterCount.SetText(s)
 	})

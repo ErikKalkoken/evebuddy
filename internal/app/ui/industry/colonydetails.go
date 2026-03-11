@@ -325,12 +325,37 @@ func (a *colonyDetails) filterRowsAsync() {
 }
 
 func (a *colonyDetails) Update(ctx context.Context) error {
-	cp, rows, err := a.fetchData(ctx)
+	reset := func() {
+		fyne.Do(func() {
+			xslices.Reset(a.rows)
+			a.filterRowsAsync()
+		})
+	}
+	setInfo := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = s, i
+			a.footer.Refresh()
+		})
+	}
+	characterID := a.characterID.Load()
+	if characterID == 0 {
+		reset()
+		setInfo("No character", widget.WarningImportance)
+		return nil
+	}
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return err
+	}
+	cp, rows, err := a.fetchData(ctx, c.ID)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 
-	ownerName := a.u.StatusCache().CharacterName(a.characterID.Load())
 	expiryTimes := cp.ExtractionsExpiryTimes()
 
 	fyne.Do(func() {
@@ -348,7 +373,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.planetType.OnTapped = func() {
 			a.u.InfoViewer().Show(cp.EvePlanet.Type.EveEntity())
 		}
-		a.owner.SetText(ownerName)
+		a.owner.SetText(c.NameOrZero())
 		a.owner.OnTapped = func() {
 			a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
@@ -385,8 +410,8 @@ var installationShortNames = map[string]colonyPinType{
 	"Storage Facility":           pinTypeStorage,
 }
 
-func (a *colonyDetails) fetchData(ctx context.Context) (*app.CharacterPlanet, []colonyDetailsRow, error) {
-	cp, err := a.u.Character().GetPlanet(ctx, a.characterID.Load(), a.planetID.Load())
+func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.CharacterPlanet, []colonyDetailsRow, error) {
+	cp, err := a.u.Character().GetPlanet(ctx, characterID, a.planetID.Load())
 	if err != nil {
 		return nil, nil, err
 	}

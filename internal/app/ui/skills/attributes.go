@@ -94,7 +94,7 @@ func (a *Attributes) update(ctx context.Context) {
 	var total int64
 	var attributes []characterAttributeRow
 	characterID := a.character.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAttributes)
+	hasData ,err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(ctx, characterID)
 		if err2 != nil {

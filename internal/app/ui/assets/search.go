@@ -686,10 +686,19 @@ func (a *Search) Update(ctx context.Context) {
 			a.top.Show()
 		})
 	}
-	if !a.forCorporation && a.characterCount() == 0 {
-		reset()
-		setTop("No characters", widget.LowImportance)
-		return
+	if !a.forCorporation {
+		n, err := a.characterCount(ctx)
+		if err != nil {
+			slog.Error("Failed to refresh asset data", "err", err)
+			reset()
+			setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			return
+		}
+		if n == 0 {
+			reset()
+			setTop("No characters", widget.LowImportance)
+			return
+		}
 	}
 	var rows []assetRow
 	var err error
@@ -812,13 +821,20 @@ func (a *Search) fetchRowsForCorporations2(ctx context.Context, assets []*app.Co
 	return rows, nil
 }
 
-func (a *Search) characterCount() int {
-	cc := a.u.StatusCache().ListCharacters()
+func (a *Search) characterCount(ctx context.Context) (int, error) {
+	cc, err := a.u.Character().ListCharacterIDs(ctx)
+	if err != nil {
+		return 0, err
+	}
 	validCount := 0
-	for _, c := range cc {
-		if a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterAssets) {
+	for id := range cc.All() {
+		hasSection, err := a.u.Character().HasSection(ctx, id, app.SectionCharacterAssets)
+		if err != nil {
+			return 0, err
+		}
+		if hasSection {
 			validCount++
 		}
 	}
-	return validCount
+	return validCount, nil
 }

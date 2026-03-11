@@ -81,10 +81,10 @@ func NewCharacterClones(u baseUI) *CharacterClones {
 			a.update(ctx)
 		}
 	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		fyne.Do(func() {
 			n := a.tree.Data().ChildrenCount(nil)
-			a.refreshTop(n)
+			go a.refreshTop(ctx, n)
 		})
 	})
 	return a
@@ -143,7 +143,7 @@ func (a *CharacterClones) update(ctx context.Context) {
 
 	fyne.Do(func() {
 		n := td.ChildrenCount(nil)
-		a.refreshTop(n)
+		go a.refreshTop(ctx, n)
 		a.tree.Set(td)
 	})
 }
@@ -195,7 +195,7 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (xwi
 	return td, err
 }
 
-func (a *CharacterClones) refreshTop(cloneCount int) {
+func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 	setTop := func(segs []widget.RichTextSegment) {
 		a.top.Set(segs)
 
@@ -215,8 +215,13 @@ func (a *CharacterClones) refreshTop(cloneCount int) {
 		setTop([]widget.RichTextSegment{ts})
 		return
 	}
-
-	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterJumpClones)
+	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterJumpClones)
+	if err != nil {
+		ts.Text = "Error: " + a.u.ErrorDisplay(err)
+		ts.Style.ColorName = theme.ColorNameError
+		setTop([]widget.RichTextSegment{ts})
+		return
+	}
 	if !hasData {
 		ts.Text = "Waiting for character data to be loaded..."
 		ts.Style.ColorName = theme.ColorNameWarning

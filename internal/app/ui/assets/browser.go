@@ -49,10 +49,11 @@ type Browser struct {
 	widget.BaseWidget
 
 	Navigation *browserNavigation
-	Selected   *assetBrowserContainer
+	Selected   *browserContainer
 
 	at             asset.Tree
 	character      atomic.Pointer[app.Character]
+	characterNames map[int64]string
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
 	u              coreUI
@@ -69,6 +70,7 @@ func NewCorporationBrowser(u coreUI) *Browser {
 func newBrowser(u coreUI, forCorporation bool) *Browser {
 	a := &Browser{
 		forCorporation: forCorporation,
+		characterNames: make(map[int64]string),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -135,13 +137,18 @@ func (a *Browser) Update(ctx context.Context) {
 		return
 	}
 	var at asset.Tree
+	names := make(map[int64]string)
 	if a.forCorporation {
 		corporationID := a.corporation.Load().IDOrZero()
 		if corporationID == 0 {
 			reset()
 			return
 		}
-		hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationAssets)
+		hasData, err := a.u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationAssets)
+		if err != nil {
+			reportError(err)
+			return
+		}
 		if !hasData {
 			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
@@ -159,7 +166,11 @@ func (a *Browser) Update(ctx context.Context) {
 			reset()
 			return
 		}
-		hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAssets)
+		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterAssets)
+		if err != nil {
+			reportError(err)
+			return
+		}
 		if !hasData {
 			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
@@ -170,9 +181,16 @@ func (a *Browser) Update(ctx context.Context) {
 			reportError(err)
 			return
 		}
+		n, err := a.u.Character().CharacterNames(ctx)
+		if err != nil {
+			reportError(err)
+			return
+		}
+		names = n
 		at = asset.NewFromCharacterAssets(assets, el)
 	}
 	fyne.DoAndWait(func() {
+		a.characterNames = names
 		a.at = at
 	})
 	a.Navigation.update(ctx, at.Locations())
@@ -581,7 +599,7 @@ type containerItem struct {
 	searchText string
 }
 
-type assetBrowserContainer struct {
+type browserContainer struct {
 	widget.BaseWidget
 
 	ab            *Browser
@@ -589,19 +607,19 @@ type assetBrowserContainer struct {
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
-	location      *assetBrowserLocation
+	location      *browserLocation
 	search        *widget.Entry
 }
 
-func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
-	a := &assetBrowserContainer{
+func newAssetBrowserContainer(ab *Browser) *browserContainer {
+	a := &browserContainer{
 		ab:     ab,
 		footer: ui.NewLabelWithTruncation(""),
 		search: widget.NewEntry(),
 	}
 	a.ExtendBaseWidget(a)
 	a.grid = a.makeAssetGrid()
-	a.location = newAssetBrowserLocation(a)
+	a.location = newBrowserLocation(a)
 
 	a.search.OnChanged = func(_ string) {
 		a.filterItemsAsync()
@@ -615,7 +633,7 @@ func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
 	return a
 }
 
-func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
+func (a *browserContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
 		container.NewBorder(
 			a.location,
@@ -631,7 +649,7 @@ func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
 	))
 }
 
-func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
+func (a *browserContainer) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.itemsFiltered)
@@ -671,7 +689,7 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *assetBrowserContainer) set(cn *assetContainerNode) {
+func (a *browserContainer) set(cn *assetContainerNode) {
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
@@ -707,7 +725,7 @@ func (a *assetBrowserContainer) set(cn *assetContainerNode) {
 	}()
 }
 
-func (a *assetBrowserContainer) clear() {
+func (a *browserContainer) clear() {
 	a.location.clear()
 	a.search.Hide()
 	a.footer.SetText("")
@@ -716,7 +734,7 @@ func (a *assetBrowserContainer) clear() {
 	a.grid.Refresh()
 }
 
-func (a *assetBrowserContainer) filterItemsAsync() {
+func (a *browserContainer) filterItemsAsync() {
 	totalItems := len(a.items)
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.search.Text)
@@ -772,7 +790,7 @@ func (a *assetBrowserContainer) filterItemsAsync() {
 	}()
 }
 
-func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
+func (a *browserContainer) showNodeInfo(n *asset.Node) {
 	if a.ab.forCorporation {
 		ca, ok := n.CorporationAsset()
 		if !ok {
@@ -786,19 +804,22 @@ func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
 	if !ok {
 		return
 	}
-	ShowAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, a.ab.u.StatusCache().CharacterName))
+	ShowAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, func(id int64) string {
+		return a.ab.characterNames[id]
+	}))
+
 }
 
-type assetBrowserLocation struct {
+type browserLocation struct {
 	widget.BaseWidget
 
 	breadcrumbs *fyne.Container
 	info        *xwidget.TappableIcon
-	selected    *assetBrowserContainer
+	selected    *browserContainer
 }
 
-func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocation {
-	a := &assetBrowserLocation{
+func newBrowserLocation(selected *browserContainer) *browserLocation {
+	a := &browserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
 		info:        xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
@@ -807,17 +828,17 @@ func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocat
 	return a
 }
 
-func (a *assetBrowserLocation) CreateRenderer() fyne.WidgetRenderer {
+func (a *browserLocation) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, nil, a.info, a.breadcrumbs)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetBrowserLocation) clear() {
+func (a *browserLocation) clear() {
 	a.breadcrumbs.RemoveAll()
 	a.info.Hide()
 }
 
-func (a *assetBrowserLocation) set(cn *assetContainerNode) {
+func (a *browserLocation) set(cn *assetContainerNode) {
 	nodeName := func(n *asset.Node) string {
 		if an, ok := n.Asset(); ok {
 			return an.DisplayName3()

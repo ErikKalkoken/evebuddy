@@ -479,11 +479,15 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 	if err != nil {
 		return nil, err
 	}
+	characters, err := a.u.Character().CharacterNames(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []marketOrderRow
 	for _, o := range orders {
 		r := marketOrderRow{
 			characterID:   o.CharacterID,
-			characterName: a.u.StatusCache().CharacterName(o.CharacterID),
+			characterName: characters[o.CharacterID],
 			escrow:        o.Escrow,
 			expires:       o.Issued.Add(time.Duration(o.Duration) * time.Hour * 24),
 			IsBuyOrder:    o.IsBuyOrder,

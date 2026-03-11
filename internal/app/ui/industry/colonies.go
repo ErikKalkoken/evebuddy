@@ -584,7 +584,10 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	characters, err := a.u.Character().CharacterNames(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []colonyRow
 	for _, p := range planets {
 		extracting := set.Collect(xiter.MapSlice(p.ExtractedTypes(), func(x *app.EveType) string {
@@ -605,7 +608,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			extracting:        extracting,
 			name:              name,
 			nameDisplay:       p.NameRichText(),
-			ownerName:         a.u.StatusCache().CharacterName(p.CharacterID),
+			ownerName:         characters[p.CharacterID],
 			planetID:          p.EvePlanet.ID,
 			planetName:        p.EvePlanet.Name,
 			producing:         producing,

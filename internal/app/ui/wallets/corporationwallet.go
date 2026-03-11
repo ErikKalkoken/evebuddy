@@ -119,7 +119,13 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 		setBalance("", widget.MediumImportance)
 		return
 	}
-	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
+	hasData, err := a.u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		slog.Error("Failed to update corp wallet ballance UI", "corporationID", corporationID, "err", err)
+		reset()
+		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	if !hasData {
 		reset()
 		setBalance("No data", widget.WarningImportance)
@@ -156,7 +162,7 @@ func (a *CorporationWallet) updateName(ctx context.Context) {
 	var err error
 	var name string
 	corporationID := a.corporation.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationDivisions)
+	hasData, err := a.u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.Corporation().GetWalletName(ctx, corporationID, a.division)
 		if errors.Is(err2, app.ErrNotFound) {

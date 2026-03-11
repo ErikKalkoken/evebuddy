@@ -8,7 +8,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -25,5 +24,4 @@ type coreUI interface {
 	IsMobile() bool
 	MainWindow() fyne.Window
 	Signals() *app.Signals
-	StatusCache() *statuscache.StatusCache
 }

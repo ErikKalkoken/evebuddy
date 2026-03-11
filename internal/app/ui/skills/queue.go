@@ -189,13 +189,19 @@ func (a *Queue) Update(ctx context.Context) {
 		reset()
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
+	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterSkillqueue)
+	if err != nil {
+		slog.Error("Failed to refresh skill queue UI", "err", err)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset()
+		return
+	}
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
 		reset()
 		return
 	}
-	err := a.skillqueue.Update(ctx, a.u.Character(), c.ID)
+	err = a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)

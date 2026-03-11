@@ -257,7 +257,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 func (a *Communications) update(ctx context.Context) {
 	var err error
 	characterID := a.character.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
 	var groups []notificationFolder
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
@@ -327,7 +327,7 @@ func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotific
 	var err error
 	characterID := a.character.Load().IDOrZero()
 	var notifications []*app.CharacterNotification
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterNotifications)
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification

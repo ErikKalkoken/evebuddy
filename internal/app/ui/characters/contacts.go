@@ -395,7 +395,13 @@ func (a *Contacts) update(ctx context.Context) {
 		setFooter("No character", widget.LowImportance)
 		return
 	}
-	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterContacts) {
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterContacts)
+	if err != nil {
+		rest()
+		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
 		rest()
 		setFooter("Loading data...", widget.WarningImportance)
 		return

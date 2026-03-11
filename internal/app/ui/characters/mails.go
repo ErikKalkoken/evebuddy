@@ -246,7 +246,12 @@ func (a *Mails) update(ctx context.Context) {
 		setStatus("No character", widget.LowImportance)
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterMailHeaders)
+	if err != nil {
+		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
+		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	if !hasData {
 		clearAll()
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
@@ -598,7 +603,13 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 		reset()
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
+	hasData, err := a.u.Character().HasSection(ctx, folder.CharacterID, app.SectionCharacterMailHeaders)
+	if err != nil {
+		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
+		setStatus("Failed to load: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset()
+		return
+	}
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
 		reset()
