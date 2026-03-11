@@ -16,6 +16,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+// Cache defines a cache.
+type Cache interface {
+	GetInt64(string) (int64, bool)
+	SetInt64(string, int64, time.Duration)
+}
+
 type CharacterService interface {
 	TokenSourceForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error)
 }
@@ -24,10 +30,9 @@ type Settings interface {
 	MaxWalletTransactions() int
 }
 
-// Cache defines a cache.
-type Cache interface {
-	GetInt64(string) (int64, bool)
-	SetInt64(string, int64, time.Duration)
+type StatusCache interface {
+	SetCorporationSection(o *app.CorporationSectionStatus)
+	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
 }
 
 // CorporationService provides access to all managed EVE Online corporations both online and from local storage.
@@ -38,7 +43,7 @@ type CorporationService struct {
 	esiClient        *esi.APIClient
 	eus              *eveuniverseservice.EVEUniverseService
 	httpClient       *http.Client
-	scs              *statuscache.StatusCache
+	scs              StatusCache
 	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
@@ -53,7 +58,7 @@ type Params struct {
 	EveUniverseService *eveuniverseservice.EVEUniverseService
 	Settings           Settings
 	Signals            *app.Signals
-	StatusCacheService *statuscache.StatusCache
+	StatusCacheService StatusCache
 	Storage            *storage.Storage
 	// optional
 	HTTPClient *http.Client

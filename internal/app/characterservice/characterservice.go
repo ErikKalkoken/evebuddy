@@ -20,22 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
-type Settings interface {
-	MarketOrderRetentionDays() int
-	MaxMails() int
-	MaxWalletTransactions() int
-	NotificationTypesEnabled() set.Set[string]
-	NotifyCommunicationsEarliest() time.Time
-	NotifyCommunicationsEnabled() bool
-	NotifyContractsEarliest() time.Time
-	NotifyContractsEnabled() bool
-	NotifyMailsEarliest() time.Time
-	NotifyMailsEnabled() bool
-	NotifyPIEarliest() time.Time
-	NotifyPIEnabled() bool
-	NotifyTrainingEnabled() bool
-}
-
 type AuthClient interface {
 	Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error)
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
@@ -53,6 +37,22 @@ type Cache interface {
 type EVENotificationService interface {
 	EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error)
 	RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error)
+}
+
+type Settings interface {
+	MarketOrderRetentionDays() int
+	MaxMails() int
+	MaxWalletTransactions() int
+	NotificationTypesEnabled() set.Set[string]
+	NotifyCommunicationsEarliest() time.Time
+	NotifyCommunicationsEnabled() bool
+	NotifyContractsEarliest() time.Time
+	NotifyContractsEnabled() bool
+	NotifyMailsEarliest() time.Time
+	NotifyMailsEnabled() bool
+	NotifyPIEarliest() time.Time
+	NotifyPIEnabled() bool
+	NotifyTrainingEnabled() bool
 }
 
 type StatusCache interface {

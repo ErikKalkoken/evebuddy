@@ -14,6 +14,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
+type StatusCacheStub struct{}
+
+func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
+}
+
+func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
+	return nil
+}
+
 type SettingsFake struct {
 	MaxTransactions int
 }
@@ -50,7 +59,7 @@ func NewFake(args ...Params) *CorporationService {
 		arg.Signals = app.NewSignals()
 	}
 	if arg.StatusCacheService == nil {
-		arg.StatusCacheService = new(statuscache.StatusCache)
+		arg.StatusCacheService = new(StatusCacheStub)
 	}
 	if arg.ESIClient == nil {
 		var c *http.Client

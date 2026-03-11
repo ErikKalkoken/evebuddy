@@ -16,17 +16,30 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type EVENotificationServiceFake struct {
+type StatusCacheStub struct{}
+
+func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {
+}
+
+func (c *StatusCacheStub) UpdateCharacters(ctx context.Context, st statuscache.Storage) error {
+	return nil
+}
+
+func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
+	return nil
+}
+
+type EVENotificationServiceStub struct {
 	entityIDs set.Set[int64]
 	title     string
 	body      string
 	err       error
 }
 
-func (s *EVENotificationServiceFake) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
+func (s *EVENotificationServiceStub) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
 	return s.entityIDs, s.err
 }
-func (s *EVENotificationServiceFake) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
+func (s *EVENotificationServiceStub) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
 	return s.title, s.body, s.err
 }
 
@@ -63,13 +76,13 @@ func NewFake(args ...Params) *CharacterService {
 		})
 	}
 	if arg.EveNotificationService == nil {
-		arg.EveNotificationService = &EVENotificationServiceFake{}
+		arg.EveNotificationService = &EVENotificationServiceStub{}
 	}
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
 	}
 	if arg.StatusCacheService == nil {
-		arg.StatusCacheService = new(statuscache.StatusCache)
+		arg.StatusCacheService = new(StatusCacheStub)
 	}
 	if arg.EveUniverseService == nil {
 		arg.EveUniverseService = eveuniverseservice.New(eveuniverseservice.Params{
