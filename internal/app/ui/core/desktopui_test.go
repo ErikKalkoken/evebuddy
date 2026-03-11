@@ -4,7 +4,7 @@ package core_test
 
 // func TestDesktopUI_StartEmpty(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(core.SkipUIReason)
+// 		t.Skip(core.ui.SkipUIReason)
 // 	}
 // 	httpmock.Activate()
 // 	defer httpmock.DeactivateAndReset()
@@ -28,7 +28,7 @@ package core_test
 
 // func TestDesktopUI_StartWithCharacter(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(core.SkipUIReason)
+// 		t.Skip(core.ui.SkipUIReason)
 // 	}
 // 	httpmock.Activate()
 // 	defer httpmock.DeactivateAndReset()
@@ -68,7 +68,7 @@ package core_test
 
 // func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(core.SkipUIReason)
+// 		t.Skip(core.ui.SkipUIReason)
 // 	}
 // 	db, st, _ := testutil.NewDBOnDisk(t)
 // 	defer db.Close()
@@ -89,7 +89,7 @@ package core_test
 
 // func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(core.SkipUIReason)
+// 		t.Skip(core.ui.SkipUIReason)
 // 	}
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()

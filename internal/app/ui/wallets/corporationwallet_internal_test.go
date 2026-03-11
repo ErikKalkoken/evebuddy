@@ -2,7 +2,7 @@ package wallets
 
 // func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	ctx := context.Background()
 // 	db, st, factory := testutil.NewDBOnDisk(t)

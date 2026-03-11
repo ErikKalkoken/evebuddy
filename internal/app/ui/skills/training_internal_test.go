@@ -2,7 +2,7 @@ package skills
 
 // func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	test.ApplyTheme(t, test.Theme())
 // 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -49,7 +49,7 @@ package skills
 
 // func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	test.ApplyTheme(t, test.Theme())
 // 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -88,7 +88,7 @@ package skills
 
 // func TestTraining_CanRenderWithoutData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	test.ApplyTheme(t, test.Theme())
 // 	db, st, factory := testutil.NewDBOnDisk(t)

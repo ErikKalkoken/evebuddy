@@ -28,10 +28,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
-const (
-	SkipUIReason = "This test is skipped for CI as it is flaky"
-)
-
 // AppFake is an extension of the Fyne test app which also conforms to the desktop app interface.
 type AppFake struct {
 	app fyne.App

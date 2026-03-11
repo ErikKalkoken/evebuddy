@@ -4,7 +4,7 @@ package characters
 
 // func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()

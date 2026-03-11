@@ -1,58 +1,75 @@
 package assets
 
-// func TestAssets_CanRenderWithData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Bruce Wayne",
-// 	})
-// 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-// 		AssetValue: optional.New(1000000000.0),
-// 		ID:         ec.ID,
-// 	})
-// 	eg := factory.CreateEveGroup(storage.CreateEveGroupParams{
-// 		Name: "Frigate",
-// 	})
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 		ID:      42,
-// 		Name:    "Merlin",
-// 		GroupID: eg.ID,
-// 	})
-// 	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-// 		TypeID:       et.ID,
-// 		AveragePrice: optional.New(120000.0),
-// 	})
-// 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 		ID:             1001,
-// 		SecurityStatus: 0.2,
-// 	})
-// 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 		Name:          "Abune - My castle",
-// 		SolarSystemID: optional.New(system.ID),
-// 	})
-// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-// 		CharacterID:  character.ID,
-// 		EveTypeID:    et.ID,
-// 		Quantity:     10,
-// 		LocationID:   loc.ID,
-// 		LocationType: app.TypeOther,
-// 		LocationFlag: app.FlagHangar,
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.SetCharacter(character)
-// 	w := test.NewWindow(ui.assetSearchAll)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1400, 300))
+import (
+	"context"
+	"testing"
 
-// 	ui.assetSearchAll.Update(context.Background())
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 
-// 	test.AssertImageMatches(t, "assets/master.png", w.Canvas().Capture())
-// }
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+)
+
+func TestAssets_CanRenderWithData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Bruce Wayne",
+	})
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
+		AssetValue: optional.New(1000000000.0),
+		ID:         ec.ID,
+	})
+	eg := factory.CreateEveGroup(storage.CreateEveGroupParams{
+		Name: "Frigate",
+	})
+	et := factory.CreateEveType(storage.CreateEveTypeParams{
+		ID:      42,
+		Name:    "Merlin",
+		GroupID: eg.ID,
+	})
+	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+		TypeID:       et.ID,
+		AveragePrice: optional.New(120000.0),
+	})
+	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		ID:             1001,
+		SecurityStatus: 0.2,
+	})
+	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+		Name:          "Abune - My castle",
+		SolarSystemID: optional.New(system.ID),
+	})
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		CharacterID:  character.ID,
+		EveTypeID:    et.ID,
+		Quantity:     10,
+		LocationID:   loc.ID,
+		LocationType: app.TypeOther,
+		LocationFlag: app.FlagHangar,
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	a := NewSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1400, 300))
+
+	a.Update(context.Background())
+
+	test.AssertImageMatches(t, "search/master.png", w.Canvas().Capture())
+}

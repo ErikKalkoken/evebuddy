@@ -10,11 +10,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -104,7 +105,7 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 
 func TestIndustrySlot_CanRenderEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()

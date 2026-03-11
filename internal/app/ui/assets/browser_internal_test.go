@@ -4,10 +4,17 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -40,58 +47,60 @@ func TestSplitLines(t *testing.T) {
 	}
 }
 
-// func TestAssetBrowser_CanRenderWithData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-// 		AssetValue: optional.New(1000000000.0),
-// 	})
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 		ID:   42,
-// 		Name: "Merlin",
-// 	})
-// 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 		ID:             1001,
-// 		SecurityStatus: 0.2,
-// 	})
-// 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 		Name:          "Abune - My castle",
-// 		SolarSystemID: optional.New(system.ID),
-// 	})
-// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-// 		CharacterID:  character.ID,
-// 		EveTypeID:    et.ID,
-// 		Quantity:     10,
-// 		LocationID:   loc.ID,
-// 		LocationType: app.TypeOther,
-// 		LocationFlag: app.FlagHangar,
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.setCharacter(character)
-// 	a := ui.characterAssetBrowser
-// 	w := test.NewWindow(a)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+func TestAssetBrowser_CanRenderWithData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
+		AssetValue: optional.New(1000000000.0),
+	})
+	et := factory.CreateEveType(storage.CreateEveTypeParams{
+		ID:   42,
+		Name: "Merlin",
+	})
+	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		ID:             1001,
+		SecurityStatus: 0.2,
+	})
+	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+		Name:          "Abune - My castle",
+		SolarSystemID: optional.New(system.ID),
+	})
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		CharacterID:  character.ID,
+		EveTypeID:    et.ID,
+		Quantity:     10,
+		LocationID:   loc.ID,
+		LocationType: app.TypeOther,
+		LocationFlag: app.FlagHangar,
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	a := newBrowser(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}), false)
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	a.update()
-// 	a.Navigation.navigation.OpenAllBranches()
-// 	// n, ok := a.Navigation.ac.LocationTree(loc.ID)
-// 	// require.True(t, ok)
-// 	// a.Navigation.navigation.SelectNode(n) // FIXME
-// 	test.AssertImageMatches(t, "characterassetbrowser/full.png", w.Canvas().Capture())
-// }
+	a.character.Store(character)
+	a.Update(t.Context())
+	// a.Navigation.at.OpenAllBranches()
+	// n, ok := a.Navigation.ac.LocationTree(loc.ID)
+	// require.True(t, ok)
+	// a.Navigation.navigation.SelectNode(n) // FIXME
+	test.AssertImageMatches(t, "browser/full.png", w.Canvas().Capture())
+}
 
 // func TestAssetBrowser_CanRenderWithoutData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()

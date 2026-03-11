@@ -9,12 +9,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -49,7 +50,7 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 
 func TestClones_CanRenderEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -82,7 +83,7 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 
 func TestClones_CanRenderFull(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUIReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

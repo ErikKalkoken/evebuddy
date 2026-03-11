@@ -2,7 +2,7 @@ package characters
 
 // func TestCharacters_CanRenderWithData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	test.ApplyTheme(t, test.Theme())
 // 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -71,7 +71,7 @@ package characters
 
 // func TestCharacters_CanRenderWitoutData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	test.ApplyTheme(t, test.Theme())
 // 	db, st, factory := testutil.NewDBOnDisk(t)
