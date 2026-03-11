@@ -297,6 +297,11 @@ func (u *UIFake) EVEUniverse() *eveuniverseservice.EVEUniverseService {
 func (u *UIFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
 	return u.app.NewWindow("Dummy"), true
 }
+
+func (u *UIFake) GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
+	return u.app.NewWindow("Dummy"), true, func() {}
+}
+
 func (u *UIFake) InfoViewer() ui.InfoViewer {
 	return u.iw
 }
