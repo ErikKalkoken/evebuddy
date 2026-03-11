@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
 func TestEveuniverseservice_HasSection(t *testing.T) {
@@ -20,7 +21,7 @@ func TestEveuniverseservice_HasSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewFake(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	section := app.SectionEveTypes
 	ctx := context.Background()
 	t.Run("should report true when exists", func(t *testing.T) {

@@ -34,7 +34,7 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 		UserAgent: "MyApp/1.0 (contact@example.com)",
 	})
 	signals := app.NewSignals()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
+	eus := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{
 		ESIClient:          client,
 		Signals:            signals,
 		StatusCacheService: scs,

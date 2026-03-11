@@ -99,9 +99,9 @@ func (c CacheFake2) SetString(k string, v string, d time.Duration) {
 	c[k] = v
 }
 
-type EveUniverseServiceFake struct{}
+type EUSEveNotificationServiceFake struct{}
 
-func (s *EveUniverseServiceFake) GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreateEntityESI(ctx context.Context, id int64) (*app.EveEntity, error) {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     fmt.Sprintf("Entity%d", id),
@@ -110,7 +110,7 @@ func (s *EveUniverseServiceFake) GetOrCreateEntityESI(ctx context.Context, id in
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	ss, _ := s.GetOrCreateSolarSystemESI(ctx, 30002537)
 	owner, _ := s.GetOrCreateEntityESI(ctx, 42)
 	o := &app.EveLocation{
@@ -135,7 +135,7 @@ func (s *EveUniverseServiceFake) GetOrCreateLocationESI(ctx context.Context, id 
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreateMoonESI(ctx context.Context, id int64) (*app.EveMoon, error) {
 	ss, err := s.GetOrCreateSolarSystemESI(ctx, 30002537)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func (s *EveUniverseServiceFake) GetOrCreateMoonESI(ctx context.Context, id int6
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreatePlanetESI(ctx context.Context, id int64) (*app.EvePlanet, error) {
 	ss, _ := s.GetOrCreateSolarSystemESI(ctx, 30002537)
 	et, _ := s.GetOrCreateTypeESI(ctx, 5)
 	o := &app.EvePlanet{
@@ -160,7 +160,7 @@ func (s *EveUniverseServiceFake) GetOrCreatePlanetESI(ctx context.Context, id in
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, id int64) (*app.EveSolarSystem, error) {
 	o := &app.EveSolarSystem{
 		ID:   id,
 		Name: fmt.Sprintf("System%d", id),
@@ -176,7 +176,7 @@ func (s *EveUniverseServiceFake) GetOrCreateSolarSystemESI(ctx context.Context, 
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
+func (s *EUSEveNotificationServiceFake) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
 	o := &app.EveType{
 		ID:   id,
 		Name: fmt.Sprintf("Type%d", id),
@@ -192,7 +192,7 @@ func (s *EveUniverseServiceFake) GetOrCreateTypeESI(ctx context.Context, id int6
 	return o, nil
 }
 
-func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error) {
+func (s *EUSEveNotificationServiceFake) ToEntities(ctx context.Context, ids set.Set[int64]) (map[int64]*app.EveEntity, error) {
 	m := make(map[int64]*app.EveEntity)
 	for id := range ids.All() {
 		o, _ := s.GetOrCreateEntityESI(ctx, id)

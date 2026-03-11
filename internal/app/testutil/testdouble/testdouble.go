@@ -23,6 +23,29 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+func NewEVEUniverseServiceFake(args ...eveuniverseservice.Params) *eveuniverseservice.EVEUniverseService {
+	var arg eveuniverseservice.Params
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Storage == nil {
+		panic("must define storage")
+	}
+	if arg.ESIClient == nil {
+		arg.ESIClient = goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+			UserAgent: "MyApp/1.0 (contact@example.com)",
+		})
+	}
+	if arg.Signals == nil {
+		arg.Signals = app.NewSignals()
+	}
+	if arg.StatusCacheService == nil {
+		arg.StatusCacheService = new(StatusCacheStub)
+	}
+	s := eveuniverseservice.New(arg)
+	return s
+}
+
 type EVENotificationServiceStub struct {
 	entityIDs set.Set[int64]
 	title     string
@@ -80,7 +103,7 @@ func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.
 		arg.StatusCacheService = new(StatusCacheStub)
 	}
 	if arg.EveUniverseService == nil {
-		arg.EveUniverseService = eveuniverseservice.New(eveuniverseservice.Params{
+		arg.EveUniverseService = NewEVEUniverseServiceFake(eveuniverseservice.Params{
 			ESIClient:          arg.ESIClient,
 			Signals:            arg.Signals,
 			StatusCacheService: new(StatusCacheStub),
@@ -145,7 +168,7 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 		})
 	}
 	if arg.EveUniverseService == nil {
-		arg.EveUniverseService = eveuniverseservice.New(eveuniverseservice.Params{
+		arg.EveUniverseService = NewEVEUniverseServiceFake(eveuniverseservice.Params{
 			ESIClient:          arg.ESIClient,
 			Signals:            arg.Signals,
 			StatusCacheService: new(StatusCacheStub),

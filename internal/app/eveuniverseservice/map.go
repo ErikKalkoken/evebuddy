@@ -193,7 +193,10 @@ func (s *EVEUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 		return z, nil, nil, nil, nil, err
 	}
 	for _, id := range system.Stations {
-		st, err := s.getValidEntity(ctx, id)
+		if id == 0 || id == 1 {
+			continue
+		}
+		st, err := s.GetEntity(ctx, id)
 		if err != nil {
 			return z, nil, nil, nil, nil, err
 		}
