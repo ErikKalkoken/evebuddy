@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
@@ -19,7 +20,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -199,4 +203,100 @@ func (c *StatusCacheStub) UpdateCharacters(ctx context.Context, st statuscache.S
 
 func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
 	return nil
+}
+
+type UIFake struct {
+	app      fyne.App
+	cs       *characterservice.CharacterService
+	eis      ui.EVEImageService
+	eus      *eveuniverseservice.EVEUniverseService
+	isMobile bool
+	iw       *infoviewer.InfoViewer
+	signals  *app.Signals
+}
+
+type UIParams struct {
+	App      fyne.App
+	Storage  *storage.Storage
+	Signals  *app.Signals
+	IsMobile bool
+}
+
+func NewUIFake(args ...UIParams) *UIFake {
+	var arg UIParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Storage == nil {
+		panic("must define storage")
+	}
+	if arg.App == nil {
+		panic("must define app")
+	}
+	if arg.Signals == nil {
+		arg.Signals = app.NewSignals()
+	}
+	eus := NewEVEUniverseServiceFake(eveuniverseservice.Params{
+		Storage: arg.Storage,
+		Signals: arg.Signals,
+	})
+	u := &UIFake{
+		app: arg.App,
+		cs: NewCharacterServiceFake(characterservice.Params{
+			Storage:            arg.Storage,
+			EveUniverseService: eus,
+			Signals:            arg.Signals,
+		}),
+		eis:      testutil.NewEveImageServiceStub(),
+		eus:      eus,
+		signals:  arg.Signals,
+		isMobile: arg.IsMobile,
+	}
+	return u
+}
+
+func (u *UIFake) Character() *characterservice.CharacterService {
+	return u.cs
+}
+
+func (u *UIFake) ErrorDisplay(err error) string {
+	return err.Error()
+}
+
+func (u *UIFake) EVEImage() ui.EVEImageService {
+	return u.eis
+}
+
+func (u *UIFake) EVEUniverse() *eveuniverseservice.EVEUniverseService {
+	return u.eus
+}
+
+func (u *UIFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
+	return u.app.NewWindow("Dummy"), true
+}
+func (u *UIFake) InfoViewer() ui.InfoViewer {
+	return u.iw
+}
+
+func (u *UIFake) IsDeveloperMode() bool {
+	return false
+}
+
+func (u *UIFake) IsMobile() bool {
+	return u.isMobile
+}
+
+func (u *UIFake) IsOffline() bool {
+	return true
+}
+
+func (u *UIFake) MainWindow() fyne.Window {
+	return u.app.NewWindow("Dummy")
+}
+func (u *UIFake) ShowSnackbar(text string) {
+
+}
+
+func (u *UIFake) Signals() *app.Signals {
+	return u.signals
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -33,7 +34,10 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 		LocationID:  location.ID,
 	})
 	test.ApplyTheme(t, test.Theme())
-	a := NewClones(NewUIFake(st, test.NewTempApp(t)))
+	a := NewClones(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -61,7 +65,10 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			a := NewClones(NewUIFake(st, test.NewTempApp(t)))
+			a := NewClones(testdouble.NewUIFake(testdouble.UIParams{
+				App:     test.NewTempApp(t),
+				Storage: st,
+			}))
 			w := test.NewWindow(a)
 			defer w.Close()
 			w.Resize(tc.size)
@@ -128,8 +135,11 @@ func TestClones_CanRenderFull(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			u := NewUIFake(st, test.NewTempApp(t))
-			u.isMobile = tc.isMobile
+			u := testdouble.NewUIFake(testdouble.UIParams{
+				App:      test.NewTempApp(t),
+				Storage:  st,
+				IsMobile: tc.isMobile,
+			})
 			a := NewClones(u)
 			w := test.NewWindow(a)
 			defer w.Close()
