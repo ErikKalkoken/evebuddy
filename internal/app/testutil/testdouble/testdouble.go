@@ -208,6 +208,7 @@ func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache
 type UIFake struct {
 	app      fyne.App
 	cs       *characterservice.CharacterService
+	rs       *corporationservice.CorporationService
 	eis      ui.EVEImageService
 	eus      *eveuniverseservice.EVEUniverseService
 	isMobile bool
@@ -217,9 +218,9 @@ type UIFake struct {
 
 type UIParams struct {
 	App      fyne.App
-	Storage  *storage.Storage
-	Signals  *app.Signals
 	IsMobile bool
+	Signals  *app.Signals
+	Storage  *storage.Storage
 }
 
 func NewUIFake(args ...UIParams) *UIFake {
@@ -236,27 +237,49 @@ func NewUIFake(args ...UIParams) *UIFake {
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
 	}
+	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "MyApp/1.0 (contact@example.com)",
+	})
+	scs := new(StatusCacheStub)
 	eus := NewEVEUniverseServiceFake(eveuniverseservice.Params{
-		Storage: arg.Storage,
-		Signals: arg.Signals,
+		Storage:            arg.Storage,
+		Signals:            arg.Signals,
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+	})
+	cs := NewCharacterServiceFake(characterservice.Params{
+		Storage:            arg.Storage,
+		EveUniverseService: eus,
+		Signals:            arg.Signals,
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+	})
+	rs := NewCorporationServiceFake(corporationservice.Params{
+		CharacterService:   cs,
+		ESIClient:          esiClient,
+		EveUniverseService: eus,
+		Signals:            arg.Signals,
+		StatusCacheService: scs,
+		Storage:            arg.Storage,
 	})
 	u := &UIFake{
-		app: arg.App,
-		cs: NewCharacterServiceFake(characterservice.Params{
-			Storage:            arg.Storage,
-			EveUniverseService: eus,
-			Signals:            arg.Signals,
-		}),
+		app:      arg.App,
+		cs:       cs,
 		eis:      testutil.NewEveImageServiceStub(),
 		eus:      eus,
-		signals:  arg.Signals,
 		isMobile: arg.IsMobile,
+		rs:       rs,
+		signals:  arg.Signals,
 	}
 	return u
 }
 
 func (u *UIFake) Character() *characterservice.CharacterService {
 	return u.cs
+}
+
+func (u *UIFake) Corporation() *corporationservice.CorporationService {
+	return u.rs
 }
 
 func (u *UIFake) ErrorDisplay(err error) string {
