@@ -17,7 +17,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -54,24 +53,41 @@ type baseUI interface {
 }
 
 type contractRow struct {
+	acceptor           optional.Optional[*app.EveEntity]
+	assignee           optional.Optional[*app.EveEntity]
 	assigneeName       string
-	ownerID            int64
-	ownerName          string
-	isCorporation      bool
+	availability       app.ContractAvailability
+	buyout             optional.Optional[float64]
+	collateral         optional.Optional[float64]
 	contractID         int64
+	contractType       app.ContractType
+	dateAccepted       optional.Optional[time.Time]
+	dateCompleted      optional.Optional[time.Time]
 	dateExpired        time.Time
 	dateExpiredDisplay []widget.RichTextSegment
 	dateIssued         time.Time
+	daysToComplete     optional.Optional[int64]
+	endLocation        optional.Optional[*app.EveLocationShort]
 	hasIssue           bool
 	isActive           bool
-	isExpired          bool
+	isCorporation      bool
+	isExpired          bool // TODO: make dynamic
 	isHistory          bool
+	issuer             *app.EveEntity
 	issuerName         string
 	name               string
+	objectID           int64
+	ownerID            int64
+	ownerName          string
+	price              optional.Optional[float64]
+	reward             optional.Optional[float64]
+	startLocation      optional.Optional[*app.EveLocationShort]
 	status             app.ContractStatus
 	statusText         string
 	tags               set.Set[string]
+	title              string
 	typeName           string
+	volume             optional.Optional[float64]
 }
 
 // Contracts is a UI element for showing Contracts.
@@ -210,9 +226,9 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.filterRowsAsync,
 			func(_ int, r contractRow) {
 				if a.forCorporation {
-					ShowCorporationContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
+					showCorporationContractWindow(a.u, r)
 				} else {
-					ShowCharacterContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
+					showCharacterContractWindow(a.u, r)
 				}
 			},
 		)
@@ -357,9 +373,9 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.forCorporation {
-			ShowCorporationContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
+			showCorporationContractWindow(a.u, r)
 		} else {
-			ShowCharacterContractWindow(a.u, r.ownerID, r.ownerName, r.contractID)
+			showCharacterContractWindow(a.u, r)
 		}
 	}
 	return l
@@ -481,25 +497,43 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 	var rows []contractRow
 	var activeCount int
 	for _, c := range oo {
+		assigneeName := c.Assignee.StringFunc("", func(v *app.EveEntity) string {
+			return v.Name
+		})
 		r := contractRow{
-			name:       c.NameDisplay(),
-			typeName:   c.Type.Display(),
-			issuerName: c.IssuerEffective().Name,
-			assigneeName: c.Assignee.StringFunc("", func(v *app.EveEntity) string {
-				return v.Name
-			}),
-			statusText:    c.Status.Display(),
-			status:        c.Status,
-			dateIssued:    c.DateIssued,
-			dateExpired:   c.DateExpired,
-			isExpired:     c.IsExpired(),
-			ownerID:       corporation.ID,
-			ownerName:     corporation.NameOrZero(),
-			isCorporation: true,
-			contractID:    c.ContractID,
-			isActive:      c.Status.IsActive(),
-			isHistory:     c.Status.IsHistory(),
-			hasIssue:      c.HasIssue(),
+			acceptor:       c.Acceptor,
+			assignee:       c.Assignee,
+			assigneeName:   assigneeName,
+			availability:   c.Availability,
+			buyout:         c.Buyout,
+			collateral:     c.Collateral,
+			contractID:     c.ContractID,
+			contractType:   c.Type,
+			dateAccepted:   c.DateAccepted,
+			dateCompleted:  c.DateCompleted,
+			dateExpired:    c.DateExpired,
+			dateIssued:     c.DateIssued,
+			daysToComplete: c.DaysToComplete,
+			endLocation:    c.EndLocation,
+			hasIssue:       c.HasIssue(),
+			isActive:       c.Status.IsActive(),
+			isCorporation:  true,
+			isExpired:      c.IsExpired(),
+			isHistory:      c.Status.IsHistory(),
+			issuer:         c.IssuerEffective(),
+			issuerName:     c.IssuerEffective().Name,
+			name:           c.NameDisplay(),
+			objectID:       c.ID,
+			ownerID:        corporation.ID,
+			ownerName:      corporation.NameOrZero(),
+			price:          c.Price,
+			reward:         c.Reward,
+			startLocation:  c.StartLocation,
+			status:         c.Status,
+			statusText:     c.Status.Display(),
+			title:          c.Title.ValueOrFallback("-"),
+			typeName:       c.Type.Display(),
+			volume:         c.Volume,
 		}
 		var text string
 		var color fyne.ThemeColorName
@@ -541,24 +575,43 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	var rows []contractRow
 	var activeCount int
 	for _, c := range oo2 {
+		assigneeName := c.Assignee.StringFunc("", func(v *app.EveEntity) string {
+			return v.Name
+		})
 		r := contractRow{
-			name:       c.NameDisplay(),
-			typeName:   c.Type.Display(),
-			issuerName: c.IssuerEffective().Name,
-			assigneeName: c.Assignee.StringFunc("", func(v *app.EveEntity) string {
-				return v.Name
-			}),
-			statusText:  c.Status.Display(),
-			status:      c.Status,
-			dateIssued:  c.DateIssued,
-			dateExpired: c.DateExpired,
-			isExpired:   c.IsExpired(),
-			ownerID:     c.CharacterID,
-			ownerName:   characters[c.CharacterID],
-			contractID:  c.ContractID,
-			isActive:    c.Status.IsActive(),
-			isHistory:   c.Status.IsHistory(),
-			hasIssue:    c.HasIssue(),
+			acceptor:       c.Acceptor,
+			assignee:       c.Assignee,
+			assigneeName:   assigneeName,
+			availability:   c.Availability,
+			buyout:         c.Buyout,
+			collateral:     c.Collateral,
+			contractID:     c.ContractID,
+			contractType:   c.Type,
+			dateAccepted:   c.DateAccepted,
+			dateCompleted:  c.DateCompleted,
+			dateExpired:    c.DateExpired,
+			dateIssued:     c.DateIssued,
+			daysToComplete: c.DaysToComplete,
+			endLocation:    c.EndLocation,
+			hasIssue:       c.HasIssue(),
+			isActive:       c.Status.IsActive(),
+			isCorporation:  false,
+			isExpired:      c.IsExpired(),
+			isHistory:      c.Status.IsHistory(),
+			issuer:         c.IssuerEffective(),
+			issuerName:     c.IssuerEffective().Name,
+			name:           c.NameDisplay(),
+			objectID:       c.ID,
+			ownerID:        c.CharacterID,
+			ownerName:      characters[c.CharacterID],
+			price:          c.Price,
+			reward:         c.Reward,
+			startLocation:  c.StartLocation,
+			status:         c.Status,
+			statusText:     c.Status.Display(),
+			title:          c.Title.ValueOrFallback("-"),
+			typeName:       c.Type.Display(),
+			volume:         c.Volume,
 		}
 		var text string
 		var color fyne.ThemeColorName
@@ -585,412 +638,82 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	return rows, activeCount, nil
 }
 
-// FIXME: Remove DB access from main go routine
-
-// ShowCharacterContractWindow shows the details of a character contract in a window.
-func ShowCharacterContractWindow(u baseUI, characterID int64, characterName string, contractID int64) {
-	title := fmt.Sprintf("Contract #%d", contractID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("character-contract-%d-%d", characterID, contractID),
-		title,
-		characterName,
-	)
-	if !created {
-		w.Show()
-		return
-	}
-	go func() {
-		reportError := func(err error) {
-			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
-		}
-		ctx := context.Background()
-		o, err := u.Character().GetContract(ctx, characterID, contractID)
-		if err != nil {
-			reportError(err)
-			return
-		}
-		var totalBids int
-		var topBidAmount float64
-		if o.Type == app.ContractTypeAuction {
-			x, err := u.Character().CountContractBids(ctx, o.ID)
+func showCharacterContractWindow(u baseUI, r contractRow) {
+	ShowContractDetails(u, r,
+		func(ctx context.Context) (int, float64, error) {
+			if r.contractType != app.ContractTypeAuction {
+				return 0, 0, nil
+			}
+			count, err := u.Character().CountContractBids(ctx, r.objectID)
 			if err != nil {
-				reportError(err)
-				return
+				return 0, 0, err
 			}
-			totalBids = x
-			top, err := u.Character().GetContractTopBid(ctx, o.ID)
+			topBid, err := u.Character().GetContractTopBid(ctx, r.objectID)
 			if err != nil {
-				reportError(err)
-				return
+				return 0, 0, err
 			}
-			topBidAmount = top.Amount
-		}
-		var items []*app.CharacterContractItem
-		if o.Type == app.ContractTypeAuction || o.Type == app.ContractTypeItemExchange {
-			oo, err := u.Character().ListContractItems(ctx, o.ID)
+			return count, topBid.Amount, nil
+		},
+		func(ctx context.Context) ([]contractItem, error) {
+			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+				return nil, nil
+			}
+			oo, err := u.Character().ListContractItems(ctx, r.objectID)
 			if err != nil {
-				reportError(err)
+				return nil, err
 			}
-			items = oo
-		}
-
-		fyne.Do(func() {
-			var availability fyne.CanvasObject
-			availabilityLabel := widget.NewLabel(o.Availability.Display())
-			if v, ok := o.Assignee.Value(); ok {
-				availability = container.NewBorder(
-					nil,
-					nil,
-					availabilityLabel,
-					nil,
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-				)
-			} else {
-				availability = availabilityLabel
-			}
-			fi := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					characterID,
-					characterName,
-					u.InfoViewer().Show,
-				)),
-				widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
-				widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-				widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoViewer().Show)),
-				widget.NewFormItem("Availability", availability),
-			}
-			if u.IsDeveloperMode() {
-				fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
-			}
-			if o.Type == app.ContractTypeCourier {
-				fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoViewer().Show)))
-			}
-			fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
-			fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoViewer().ShowLocation)))
-
-			if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
-				fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
-				fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(o.DateAccepted.StringFunc("", func(v time.Time) string {
-					return v.Format(app.DateTimeFormat)
-				}))))
-				fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))))
-				fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(o.DateCompleted.StringFunc("", func(v time.Time) string {
-					return v.Format(app.DateTimeFormat)
-				}))))
-			}
-
-			switch o.Type {
-			case app.ContractTypeCourier:
-				fi = slices.Concat(fi, []*widget.FormItem{
-					{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%s days", o.DaysToComplete.StringFunc("?", func(v int64) string {
-						return fmt.Sprint(v)
-					})))},
-					{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%s m3", o.Volume.StringFunc("?", func(v float64) string {
-						return fmt.Sprint(v)
-					})))},
-					{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
-					{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
-					{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoViewer().ShowLocation)},
-				})
-			case app.ContractTypeItemExchange:
-				if o.Price.ValueOrZero() > 0 {
-					x := widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))
-					x.Importance = widget.DangerImportance
-					fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
-				} else {
-					x := widget.NewLabel(o.Reward.StringFunc("?", ui.FormatISKAmount))
-					x.Importance = widget.SuccessImportance
-					fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
+			items := xslices.Map(oo, func(x *app.CharacterContractItem) contractItem {
+				return contractItem{
+					ContractID:  x.ContractID,
+					IsIncluded:  x.IsIncluded,
+					IsSingleton: x.IsIncluded,
+					Quantity:    x.Quantity,
+					RawQuantity: x.RawQuantity,
+					RecordID:    x.RecordID,
+					Type:        x.Type,
 				}
-			case app.ContractTypeAuction:
-				var currentBid string
-				if totalBids == 0 {
-					currentBid = "(None)"
-				} else {
-					currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(topBidAmount), totalBids)
-				}
-				fi = slices.Concat(fi, []*widget.FormItem{
-					{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-					{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
-				})
-			}
-
-			makeItemsInfo := func() (fyne.CanvasObject, error) {
-				vb := container.NewVBox()
-				var itemsIncluded, itemsRequested []*app.CharacterContractItem
-				for _, it := range items {
-					if it.IsIncluded {
-						itemsIncluded = append(itemsIncluded, it)
-					} else {
-						itemsRequested = append(itemsRequested, it)
-					}
-				}
-				makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-					c := container.NewHBox(
-						ui.MakeLinkLabel(it.Type.Name, func() {
-							u.InfoViewer().ShowType(it.Type.ID, characterID)
-						}),
-						widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
-						widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
-					)
-					return c
-				}
-				// included items
-				if len(itemsIncluded) > 0 {
-					t := widget.NewLabel("Buyer Will Get")
-					t.Importance = widget.SuccessImportance
-					vb.Add(t)
-					for _, it := range itemsIncluded {
-						vb.Add(makeItem(it))
-					}
-				}
-				// requested items
-				if len(itemsRequested) > 0 {
-					t := widget.NewLabel("Buyer Will Provide")
-					t.Importance = widget.DangerImportance
-					vb.Add(t)
-					for _, it := range itemsRequested {
-						vb.Add(makeItem(it))
-					}
-				}
-				return vb, nil
-			}
-
-			subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.Type.Display())
-			f := widget.NewForm(fi...)
-			f.Orientation = widget.Adaptive
-			main := container.NewVBox(f)
-			if o.Type == app.ContractTypeItemExchange || o.Type == app.ContractTypeAuction {
-				main.Add(widget.NewSeparator())
-				x, err := makeItemsInfo()
-				if err != nil {
-					ui.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
-					return
-				}
-				main.Add(x)
-			}
-			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-				Title:   subTitle,
-				Content: main,
-				Window:  w,
 			})
-			w.Show()
-		})
-	}()
-}
-
-// FIXME: Remove DB access from main go routine
-
-// ShowCorporationContractWindow shows the details of a corporation contract in a window.
-func ShowCorporationContractWindow(u baseUI, corporationID int64, corporationName string, contractID int64) {
-	ctx := context.Background()
-	o, err := u.Corporation().GetContract(ctx, corporationID, contractID)
-	if err != nil {
-		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
-		return
-	}
-	title := fmt.Sprintf("Contract #%d", contractID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("corporation-contract-%d-%d", corporationID, contractID),
-		title,
-		corporationName,
+			return items, nil
+		},
 	)
-	if !created {
-		w.Show()
-		return
-	}
+}
 
-	var availability fyne.CanvasObject
-	availabilityLabel := widget.NewLabel(o.Availability.Display())
-	if v, ok := o.Assignee.Value(); ok {
-		availability = container.NewBorder(
-			nil,
-			nil,
-			availabilityLabel,
-			nil,
-			ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-		)
-	} else {
-		availability = availabilityLabel
-	}
-	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-			corporationID,
-			corporationName,
-			u.InfoViewer().Show,
-		)),
-		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title.ValueOrFallback("-"))),
-		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
-		widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(o.IssuerEffective(), u.InfoViewer().Show)),
-		widget.NewFormItem("Availability", availability),
-	}
-	if u.IsDeveloperMode() {
-		fi = append(fi, widget.NewFormItem("Contract ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(o.ContractID))))
-	}
-	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(o.Acceptor, u.InfoViewer().Show)))
-	}
-	fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(o.Status.DisplayRichText()...)))
-	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(o.StartLocation, u.InfoViewer().ShowLocation)))
-
-	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
-		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
-		fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(o.DateAccepted.StringFunc("", func(v time.Time) string {
-			return v.Format(app.DateTimeFormat)
-		}))))
-		fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))))
-		fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(o.DateCompleted.StringFunc("", func(v time.Time) string {
-			return v.Format(app.DateTimeFormat)
-		}))))
-	}
-
-	switch o.Type {
-	case app.ContractTypeCourier:
-		fi = slices.Concat(fi, []*widget.FormItem{
-			{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%s days", o.DaysToComplete.StringFunc("?", func(v int64) string {
-				return fmt.Sprint(v)
-			})))},
-			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%s m3", o.Volume.StringFunc("?", func(v float64) string {
-				return fmt.Sprint(v)
-			})))},
-			{Text: "Reward", Widget: widget.NewLabel(o.Reward.StringFunc("-", ui.FormatISKAmount))},
-			{Text: "Collateral", Widget: widget.NewLabel(o.Collateral.StringFunc("-", ui.FormatISKAmount))},
-			{Text: "Destination", Widget: makeLocationLabel2(o.EndLocation, u.InfoViewer().ShowLocation)},
-		})
-	case app.ContractTypeItemExchange:
-		if o.Price.ValueOrZero() > 0 {
-			x := widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))
-			x.Importance = widget.DangerImportance
-			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
-		} else {
-			x := widget.NewLabel(o.Reward.StringFunc("?", ui.FormatISKAmount))
-			x.Importance = widget.SuccessImportance
-			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
-		}
-	case app.ContractTypeAuction:
-		total, err := u.Character().CountContractBids(ctx, o.ID)
-		if err != nil {
-			ui.ShowErrorAndLog("Failed to show contract bids", err, u.IsDeveloperMode(), u.MainWindow())
-			return
-		}
-		var currentBid string
-		if total == 0 {
-			currentBid = "(None)"
-		} else {
-			top, err := u.Character().GetContractTopBid(ctx, o.ID)
+func showCorporationContractWindow(u baseUI, r contractRow) {
+	ShowContractDetails(u, r,
+		func(ctx context.Context) (int, float64, error) {
+			if r.contractType != app.ContractTypeAuction {
+				return 0, 0, nil
+			}
+			count, err := u.Corporation().CountContractBids(ctx, r.objectID)
 			if err != nil {
-				ui.ShowErrorAndLog("Failed to show contract top bid", err, u.IsDeveloperMode(), u.MainWindow())
-				return
+				return 0, 0, err
 			}
-			currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(float64(top.Amount)), total)
-		}
-		fi = slices.Concat(fi, []*widget.FormItem{
-			{Text: "Starting Bid", Widget: widget.NewLabel(o.Price.StringFunc("?", ui.FormatISKAmount))},
-			{Text: "Buyout Price", Widget: widget.NewLabel(o.Buyout.StringFunc("?", ui.FormatISKAmount))},
-			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-			{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
-		})
-	}
-
-	makeItemsInfo := func(c *app.CorporationContract) (fyne.CanvasObject, error) {
-		vb := container.NewVBox()
-		items, err := u.Corporation().ListContractItems(ctx, c.ID)
-		if err != nil {
-			return nil, err
-
-		}
-		var itemsIncluded, itemsRequested []*app.CorporationContractItem
-		for _, it := range items {
-			if it.IsIncluded {
-				itemsIncluded = append(itemsIncluded, it)
-			} else {
-				itemsRequested = append(itemsRequested, it)
+			topBid, err := u.Corporation().GetContractTopBid(ctx, r.objectID)
+			if err != nil {
+				return 0, 0, err
 			}
-		}
-		makeItem := func(it *app.CorporationContractItem) fyne.CanvasObject {
-			c := container.NewHBox(
-				ui.MakeLinkLabel(it.Type.Name, func() {
-					u.InfoViewer().ShowType(it.Type.ID, 0)
-				}),
-				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
-				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
-			)
-			return c
-		}
-		// included items
-		if len(itemsIncluded) > 0 {
-			t := widget.NewLabel("Buyer Will Get")
-			t.Importance = widget.SuccessImportance
-			vb.Add(t)
-			for _, it := range itemsIncluded {
-				vb.Add(makeItem(it))
+			return count, topBid.Amount, nil
+		},
+		func(ctx context.Context) ([]contractItem, error) {
+			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+				return nil, nil
 			}
-		}
-		// requested items
-		if len(itemsRequested) > 0 {
-			t := widget.NewLabel("Buyer Will Provide")
-			t.Importance = widget.DangerImportance
-			vb.Add(t)
-			for _, it := range itemsRequested {
-				vb.Add(makeItem(it))
+			oo, err := u.Corporation().ListContractItems(ctx, r.objectID)
+			if err != nil {
+				return nil, err
 			}
-		}
-		return vb, nil
-	}
-
-	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.Type.Display())
-	f := widget.NewForm(fi...)
-	f.Orientation = widget.Adaptive
-	main := container.NewVBox(f)
-	if o.Type == app.ContractTypeItemExchange || o.Type == app.ContractTypeAuction {
-		main.Add(widget.NewSeparator())
-		x, err := makeItemsInfo(o)
-		if err != nil {
-			ui.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
-			return
-		}
-		main.Add(x)
-	}
-	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-		Title:   subTitle,
-		Content: main,
-		Window:  w,
-	})
-	w.Show()
-}
-
-func makeContractExpiresString(dateExpired time.Time, isExpired bool) string {
-	ts := dateExpired.Format(app.DateTimeFormat)
-	var ds string
-	if isExpired {
-		ds = "EXPIRED"
-	} else {
-		ds = ihumanize.RelTime(dateExpired)
-	}
-	return fmt.Sprintf("%s (%s)", ts, ds)
-}
-
-// ui.MakeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
-func makeEveEntityActionLabel2(o optional.Optional[*app.EveEntity], action func(o *app.EveEntity)) fyne.CanvasObject {
-	v, ok := o.Value()
-	if !ok {
-		return widget.NewLabel("-")
-	}
-	return ui.MakeLinkLabelWithWrap(v.Name, func() {
-		action(v)
-	})
-}
-
-func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(int64)) fyne.CanvasObject {
-	el, ok := o.Value()
-	if !ok {
-		return widget.NewLabel("?")
-	}
-	x := ui.MakeLinkLabelWithWrap(el.DisplayName(), func() {
-		show(el.ID)
-	})
-	x.Wrapping = fyne.TextWrapWord
-	return x
+			items := xslices.Map(oo, func(x *app.CorporationContractItem) contractItem {
+				return contractItem{
+					ContractID:  x.ContractID,
+					IsIncluded:  x.IsIncluded,
+					IsSingleton: x.IsIncluded,
+					Quantity:    x.Quantity,
+					RawQuantity: x.RawQuantity,
+					RecordID:    x.RecordID,
+					Type:        x.Type,
+				}
+			})
+			return items, nil
+		},
+	)
 }
