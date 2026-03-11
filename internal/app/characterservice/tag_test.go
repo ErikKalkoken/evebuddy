@@ -12,14 +12,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestExportTags(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := fake.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	// given
@@ -50,7 +50,7 @@ func TestExportTags(t *testing.T) {
 func TestImportTags(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := fake.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	t.Run("can create tags for matching characters and version", func(t *testing.T) {

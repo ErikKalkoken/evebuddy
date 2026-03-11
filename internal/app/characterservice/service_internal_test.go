@@ -51,11 +51,14 @@ func NewFake(args ...Params) *CharacterService {
 	if arg.Cache == nil {
 		arg.Cache = testutil.NewCacheFake2()
 	}
-	if arg.HTTPClient == nil {
-		arg.HTTPClient = http.DefaultClient
-	}
 	if arg.ESIClient == nil {
-		arg.ESIClient = goesi.NewESIClientWithOptions(arg.HTTPClient, goesi.ClientOptions{
+		var c *http.Client
+		if arg.HTTPClient != nil {
+			c = arg.HTTPClient
+		} else {
+			c = http.DefaultClient
+		}
+		arg.ESIClient = goesi.NewESIClientWithOptions(c, goesi.ClientOptions{
 			UserAgent: "MyApp/1.0 (contact@example.com)",
 		})
 	}
@@ -76,13 +79,8 @@ func NewFake(args ...Params) *CharacterService {
 			Storage:            arg.Storage,
 		})
 	}
-	if arg.SendDesktopNotification == nil {
-		arg.SendDesktopNotification = func(title, content string) {
-			panic("SendDesktopNotification not configured")
-		}
-	}
 	if arg.Settings == nil {
-		arg.Settings = new(testutil.SettingsFake)
+		arg.Settings = new(testutil.SettingsStub)
 	}
 	s := New(arg)
 	return s

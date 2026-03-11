@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -17,7 +18,7 @@ func TestGetWalletBalance(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
-	s := corporationservice.NewFake(st)
+	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
 	t.Run("return existing balance", func(t *testing.T) {
 		// when
 		testutil.MustTruncateTables(db)
@@ -51,7 +52,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	s := corporationservice.NewFake(st)
+	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
 	t.Run("return existing balance", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

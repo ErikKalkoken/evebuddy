@@ -9,21 +9,23 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
+	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type AuthClientFake struct {
+type AuthClientStub struct {
 	Token *eveauth.Token
 	Err   error
 }
 
-func (s AuthClientFake) Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error) {
+func (s AuthClientStub) Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error) {
 	return s.Token, s.Err
 }
 
-func (s AuthClientFake) RefreshToken(ctx context.Context, token *eveauth.Token) error {
+func (s AuthClientStub) RefreshToken(ctx context.Context, token *eveauth.Token) error {
 	token.AccessToken = s.Token.AccessToken
 	token.RefreshToken = s.Token.RefreshToken
 	token.ExpiresAt = s.Token.ExpiresAt
@@ -199,7 +201,7 @@ func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int
 	return m, nil
 }
 
-type EveImageServiceFake struct {
+type EveImageServiceStub struct {
 	Alliance    fyne.Resource
 	Character   fyne.Resource
 	Corporation fyne.Resource
@@ -208,133 +210,153 @@ type EveImageServiceFake struct {
 	Type        fyne.Resource
 }
 
-func (s *EveImageServiceFake) AllianceLogo(id int64, size int) (fyne.Resource, error) {
+func NewEveImageServiceStub() *EveImageServiceStub {
+	s := &EveImageServiceStub{
+		Character:   icons.Characterplaceholder64Jpeg,
+		Alliance:    icons.Corporationplaceholder64Png,
+		Corporation: icons.Corporationplaceholder64Png,
+		Err:         nil,
+		Faction:     icons.Factionplaceholder64Png,
+		Type:        icons.Typeplaceholder64Png,
+	}
+	return s
+}
+
+func (s *EveImageServiceStub) AllianceLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Alliance, s.Err
 }
 
-func (s *EveImageServiceFake) AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Alliance)
 }
 
-func (s *EveImageServiceFake) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
 	return s.Character, s.Err
 }
 
-func (s *EveImageServiceFake) CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Character)
 }
 
-func (s *EveImageServiceFake) CorporationLogo(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) CorporationLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Corporation, s.Err
 }
 
-func (s *EveImageServiceFake) CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Corporation)
 }
-func (s *EveImageServiceFake) FactionLogo(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) FactionLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Faction, s.Err
 }
 
-func (s *EveImageServiceFake) FactionLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) FactionLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Faction)
 }
 
-func (s *EveImageServiceFake) InventoryTypeRender(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) InventoryTypeRender(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) InventoryTypeRenderAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeIcon(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) InventoryTypeIcon(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) InventoryTypeIconAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPO(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) InventoryTypeBPO(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) InventoryTypeBPOAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPC(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) InventoryTypeBPC(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) InventoryTypeBPCAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
-func (s *EveImageServiceFake) InventoryTypeSKIN(id int64, size int) (fyne.Resource, error) {
+func (s *EveImageServiceStub) InventoryTypeSKIN(id int64, size int) (fyne.Resource, error) {
 	return s.Type, s.Err
 }
 
-func (s *EveImageServiceFake) InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource)) {
+func (s *EveImageServiceStub) InventoryTypeSKINAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Type)
 }
 
-type SettingsFake struct {
+type SettingsStub struct {
 	MaxWalletTransactionsDefault    int
 	MaxMailsDefault                 int
 	MarketOrderRetentionDaysDefault int
 }
 
-func (s *SettingsFake) MaxMails() int {
+func (s *SettingsStub) MaxMails() int {
 	return s.MaxMailsDefault
 }
 
-func (s *SettingsFake) MaxWalletTransactions() int {
+func (s *SettingsStub) MaxWalletTransactions() int {
 	return s.MaxWalletTransactionsDefault
 }
 
-func (s *SettingsFake) MarketOrderRetentionDays() int {
+func (s *SettingsStub) MarketOrderRetentionDays() int {
 	return s.MarketOrderRetentionDaysDefault
 }
 
-func (s *SettingsFake) NotificationTypesEnabled() set.Set[string] {
+func (s *SettingsStub) NotificationTypesEnabled() set.Set[string] {
 	return set.Set[string]{}
 }
 
-func (s *SettingsFake) NotifyCommunicationsEarliest() time.Time {
+func (s *SettingsStub) NotifyCommunicationsEarliest() time.Time {
 	return time.Now()
 }
 
-func (s *SettingsFake) NotifyCommunicationsEnabled() bool {
+func (s *SettingsStub) NotifyCommunicationsEnabled() bool {
 	return true
 }
 
-func (s *SettingsFake) NotifyContractsEarliest() time.Time {
+func (s *SettingsStub) NotifyContractsEarliest() time.Time {
 	return time.Now()
 }
 
-func (s *SettingsFake) NotifyContractsEnabled() bool {
+func (s *SettingsStub) NotifyContractsEnabled() bool {
 	return true
 }
 
-func (s *SettingsFake) NotifyMailsEarliest() time.Time {
+func (s *SettingsStub) NotifyMailsEarliest() time.Time {
 	return time.Now()
 }
-func (s *SettingsFake) NotifyMailsEnabled() bool {
+func (s *SettingsStub) NotifyMailsEnabled() bool {
 	return true
 }
 
-func (s *SettingsFake) NotifyPIEnabled() bool {
+func (s *SettingsStub) NotifyPIEnabled() bool {
 	return true
 }
 
-func (s *SettingsFake) NotifyTrainingEnabled() bool {
+func (s *SettingsStub) NotifyTrainingEnabled() bool {
 	return true
 }
 
-func (s *SettingsFake) NotifyPIEarliest() time.Time {
+func (s *SettingsStub) NotifyPIEarliest() time.Time {
 	return time.Now()
 }
 
-// func NewX() *characterservice.CharacterService {
+type TokenSourceStub struct {
+	CharacterToken *app.CharacterToken
+	Error          error
+}
 
-// }
+func (ts TokenSourceStub) Token() (*oauth2.Token, error) {
+	if ts.Error != nil {
+		return nil, ts.Error
+	}
+	return ts.CharacterToken.OauthToken(), nil
+}

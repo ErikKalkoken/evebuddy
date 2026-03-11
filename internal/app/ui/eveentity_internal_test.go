@@ -19,7 +19,7 @@ func TestEntityIcon(t *testing.T) {
 	faction := fyne.NewStaticResource("faction", []byte("faction"))
 	inventoryType := fyne.NewStaticResource("inventoryType", []byte("inventoryType"))
 	fallback := icons.BlankSvg
-	eis := &testutil.EveImageServiceFake{
+	eis := &testutil.EveImageServiceStub{
 		Alliance:    alliance,
 		Character:   character,
 		Corporation: corporation,

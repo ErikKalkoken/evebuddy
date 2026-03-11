@@ -1,5 +1,4 @@
-// Package fake provides fake implementations for services to use in tests.
-package fake
+package testdouble
 
 import (
 	"context"
@@ -18,20 +17,21 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type EVENotificationServiceFake struct {
+type EVENotificationServiceStub struct {
 	entityIDs set.Set[int64]
 	title     string
 	body      string
 	err       error
 }
 
-func (s *EVENotificationServiceFake) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
+func (s *EVENotificationServiceStub) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
 	return s.entityIDs, s.err
 }
-func (s *EVENotificationServiceFake) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
+func (s *EVENotificationServiceStub) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
 	return s.title, s.body, s.err
 }
 
+// NewCharacterService returns a fake for a CharacterService.
 func NewCharacterService(args ...characterservice.Params) *characterservice.CharacterService {
 	var arg characterservice.Params
 	if len(args) > 0 {
@@ -53,16 +53,19 @@ func NewCharacterService(args ...characterservice.Params) *characterservice.Char
 	if arg.Cache == nil {
 		arg.Cache = testutil.NewCacheFake2()
 	}
-	if arg.HTTPClient == nil {
-		arg.HTTPClient = http.DefaultClient
-	}
 	if arg.ESIClient == nil {
-		arg.ESIClient = goesi.NewESIClientWithOptions(arg.HTTPClient, goesi.ClientOptions{
+		var c *http.Client
+		if arg.HTTPClient != nil {
+			c = arg.HTTPClient
+		} else {
+			c = http.DefaultClient
+		}
+		arg.ESIClient = goesi.NewESIClientWithOptions(c, goesi.ClientOptions{
 			UserAgent: "MyApp/1.0 (contact@example.com)",
 		})
 	}
 	if arg.EveNotificationService == nil {
-		arg.EveNotificationService = &EVENotificationServiceFake{}
+		arg.EveNotificationService = &EVENotificationServiceStub{}
 	}
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
@@ -78,13 +81,8 @@ func NewCharacterService(args ...characterservice.Params) *characterservice.Char
 			Storage:            arg.Storage,
 		})
 	}
-	if arg.SendDesktopNotification == nil {
-		arg.SendDesktopNotification = func(title, content string) {
-			panic("SendDesktopNotification not configured")
-		}
-	}
 	if arg.Settings == nil {
-		arg.Settings = new(testutil.SettingsFake)
+		arg.Settings = new(testutil.SettingsStub)
 	}
 	s := characterservice.New(arg)
 	return s

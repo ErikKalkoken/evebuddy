@@ -12,10 +12,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
 type UIFake struct {
@@ -52,18 +51,10 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 	// 	StatusCacheService:     scs,
 	// 	Storage:                st,
 	// })
-	eisFake := &testutil.EveImageServiceFake{
-		Character:   icons.Characterplaceholder64Jpeg,
-		Alliance:    icons.Corporationplaceholder64Png,
-		Corporation: icons.Corporationplaceholder64Png,
-		Err:         nil,
-		Faction:     icons.Factionplaceholder64Png,
-		Type:        icons.Typeplaceholder64Png,
-	}
 	u := &UIFake{
 		a:   a,
-		cs:  fake.NewCharacterService(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
-		eis: eisFake,
+		cs:  testdouble.NewCharacterService(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
+		eis: testutil.NewEveImageServiceStub(),
 		eus: eus,
 		scs: scs,
 		sig: signals,

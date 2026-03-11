@@ -12,14 +12,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestHasTokenWithScopes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := fake.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return true when token has same scopes", func(t *testing.T) {
 		// given
@@ -71,7 +71,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 func TestMissingScopes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := fake.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return empty when token has all scopes", func(t *testing.T) {
 		// given
@@ -121,7 +121,7 @@ func TestMissingScopes(t *testing.T) {
 func TestCharacterTokenForCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := fake.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return matching token when exists", func(t *testing.T) {
 		// given

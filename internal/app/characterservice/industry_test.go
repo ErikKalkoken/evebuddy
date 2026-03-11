@@ -10,13 +10,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
 func TestListAllCharactersIndustrySlots(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	t.Run("empty when no data", func(t *testing.T) {

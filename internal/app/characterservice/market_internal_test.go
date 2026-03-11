@@ -221,7 +221,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("should delete stale orders", func(t *testing.T) {
 		// given
-		settings := &testutil.SettingsFake{MarketOrderRetentionDaysDefault: 90}
+		settings := &testutil.SettingsStub{MarketOrderRetentionDaysDefault: 90}
 		s2 := NewFake(Params{Settings: settings, Storage: st})
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()

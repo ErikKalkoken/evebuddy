@@ -1,4 +1,4 @@
-package corporationservice
+package testdouble
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -35,8 +36,9 @@ func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ in
 	return &testutil.TokenSourceStub{CharacterToken: s.Token, Error: nil}, s.Token.CharacterID, nil
 }
 
-func NewFake(args ...Params) *CorporationService {
-	var arg Params
+// NewCorporationService returns a fake for a CorporationService.
+func NewCorporationService(args ...corporationservice.Params) *corporationservice.CorporationService {
+	var arg corporationservice.Params
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -77,6 +79,6 @@ func NewFake(args ...Params) *CorporationService {
 	if arg.CharacterService == nil {
 		arg.CharacterService = new(CharacterServiceFake)
 	}
-	s := New(arg)
+	s := corporationservice.New(arg)
 	return s
 }

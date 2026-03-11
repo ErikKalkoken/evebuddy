@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -68,7 +68,7 @@ func TestCountNotifications(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	// given
-	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	c := factory.CreateCharacterFull()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{

@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -18,7 +19,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
-	s := corporationservice.NewFake(st)
+	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
 	t.Run("can delete corporations with no member character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()

@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -24,7 +24,7 @@ import (
 func TestIsTrainingActive(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return true when training is active", func(t *testing.T) {
 		// given
@@ -61,7 +61,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+		cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		// when
@@ -75,7 +75,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+		cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 		c := factory.CreateCharacterFull()
 		var sendCount int
 		// when
@@ -89,7 +89,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+		cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		var sendCount int
@@ -104,7 +104,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("should only send one notification", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+		cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		err := cs.NotifyExpiredTrainingForWatched(ctx, c.ID, func(title, content string) {
@@ -124,7 +124,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 func TestCharacterService_ListSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
 	t.Run("should return character skill for all existing eve skill", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

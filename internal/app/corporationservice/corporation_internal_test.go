@@ -1,0 +1,146 @@
+package corporationservice
+
+import (
+	"context"
+	"fmt"
+	"maps"
+	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+)
+
+func TestUpdateDivisionsESI(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	ctx := context.Background()
+	t.Run("should create new entries from scratch", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{
+			Token: &app.CharacterToken{AccessToken: "accessToken"},
+		}})
+		c := factory.CreateCorporation()
+
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/divisions", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"hangar": []map[string]any{
+					{
+						"division": 1,
+						"name":     "Awesome Hangar 1",
+					},
+				},
+				"wallet": []map[string]any{
+					{
+						"division": 1,
+						"name":     "Rich Wallet 1",
+					},
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateDivisionsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationDivisions,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		// wallets
+		wallets, err := st.ListCorporationWalletNames(ctx, c.ID)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(wallets, func(x *app.CorporationWalletName) (int64, string) {
+			return x.DivisionID, x.Name
+		}))
+		want := map[int64]string{
+			1: "Rich Wallet 1",
+		}
+		xassert.Equal(t, want, got)
+		// hangar
+		hangars, err := st.ListCorporationHangarNames(ctx, c.ID)
+		require.NoError(t, err)
+		got2 := maps.Collect(xiter.MapSlice2(hangars, func(x *app.CorporationHangarName) (int64, string) {
+			return x.DivisionID, x.Name
+		}))
+		want2 := map[int64]string{
+			1: "Awesome Hangar 1",
+		}
+		xassert.Equal(t, want2, got2)
+	})
+	t.Run("should update existing balances", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		for id := range 7 {
+			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
+				CorporationID: c.ID,
+				DivisionID:    int64(id + 1),
+			})
+			assert.NoError(t, err)
+		}
+
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"balance":  123.45,
+				"division": 1,
+			}, {
+				"balance":  223.45,
+				"division": 2,
+			}, {
+				"balance":  323.45,
+				"division": 3,
+			}, {
+				"balance":  423.45,
+				"division": 4,
+			}, {
+				"balance":  523.45,
+				"division": 5,
+			}, {
+				"balance":  623.45,
+				"division": 6,
+			}, {
+				"balance":  723.45,
+				"division": 7,
+			}}),
+		)
+		// when
+		changed, err := s.updateWalletBalancesESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationWalletBalances,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
+			return x.DivisionID, x.Balance
+		}))
+		want := map[int64]float64{
+			1: 123.45,
+			2: 223.45,
+			3: 323.45,
+			4: 423.45,
+			5: 523.45,
+			6: 623.45,
+			7: 723.45,
+		}
+		xassert.Equal(t, want, got)
+	})
+}
