@@ -1,15 +1,11 @@
 package clones
 
 import (
-	"net/http"
-
 	"fyne.io/fyne/v2"
-	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
@@ -22,31 +18,24 @@ type UIFake struct {
 	cs       *characterservice.CharacterService
 	eis      ui.EVEImageService
 	eus      *eveuniverseservice.EVEUniverseService
-	iw       *infoviewer.InfoViewer
-	scs      *statuscache.StatusCache
-	sig      *app.Signals
 	isMobile bool
+	iw       *infoviewer.InfoViewer
+	signals  *app.Signals
 }
 
 func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
-	scs := new(statuscache.StatusCache)
-	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
-		UserAgent: "MyApp/1.0 (contact@example.com)",
-	})
-	signals := app.NewSignals()
 	eus := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{
-		ESIClient:          client,
-		Signals:            signals,
-		StatusCacheService: scs,
-		Storage:            st,
+		Storage: st,
 	})
 	u := &UIFake{
-		a:   a,
-		cs:  testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
-		eis: testutil.NewEveImageServiceStub(),
-		eus: eus,
-		scs: scs,
-		sig: signals,
+		a: a,
+		cs: testdouble.NewCharacterServiceFake(characterservice.Params{
+			Storage:            st,
+			EveUniverseService: eus,
+		}),
+		eis:     testutil.NewEveImageServiceStub(),
+		eus:     eus,
+		signals: app.NewSignals(),
 	}
 	return u
 }
@@ -94,9 +83,5 @@ func (u *UIFake) ShowSnackbar(text string) {
 }
 
 func (u *UIFake) Signals() *app.Signals {
-	return u.sig
-}
-
-func (u *UIFake) StatusCache() *statuscache.StatusCache {
-	return u.scs
+	return u.signals
 }

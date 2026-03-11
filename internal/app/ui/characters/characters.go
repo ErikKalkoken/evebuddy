@@ -11,7 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
@@ -36,7 +35,6 @@ type baseUI interface {
 	ShowSnackbar(text string)
 	Signals() *app.Signals
 	SingleInstance() *singleinstance.Group
-	StatusCache() *statuscache.StatusCache
 	UpdateMailIndicator(ctx context.Context)
 }
 

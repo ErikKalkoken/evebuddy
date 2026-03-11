@@ -182,10 +182,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 }
 
 func (a *Communications) setDetail(n *app.CharacterNotification) {
-	if a.character.Load() == nil {
-		return
-	}
-	err := a.Detail.set(n, notificationRecipient(a.u.StatusCache(), n))
+	err := a.Detail.set(n, notificationRecipient(n, a.character.Load().NameOrZero()))
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
 		fyne.Do(func() {
@@ -218,7 +215,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 				)
 			}
 			cn := a.current
-			recipient := notificationRecipient(a.u.StatusCache(), cn)
+			recipient := notificationRecipient(cn, a.character.Load().NameOrZero())
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
@@ -420,15 +417,11 @@ func (w *folderItem) set(r notificationFolder) {
 	w.name.Refresh()
 }
 
-type notifStatusCache interface {
-	CharacterName(int64) string
-}
-
 // NotificationRecipient returns a valid recipient for a notification.
-func notificationRecipient(scs notifStatusCache, cn *app.CharacterNotification) *app.EveEntity {
+func notificationRecipient(cn *app.CharacterNotification, characterName string) *app.EveEntity {
 	return cn.Recipient.ValueOrFallback(&app.EveEntity{
 		ID:       cn.CharacterID,
-		Name:     scs.CharacterName(cn.CharacterID),
+		Name:     characterName,
 		Category: app.EveEntityCharacter,
 	})
 }

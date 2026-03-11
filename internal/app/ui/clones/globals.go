@@ -7,7 +7,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -23,7 +22,6 @@ type baseUI interface {
 	MainWindow() fyne.Window
 	ShowSnackbar(text string)
 	Signals() *app.Signals
-	StatusCache() *statuscache.StatusCache
 }
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
