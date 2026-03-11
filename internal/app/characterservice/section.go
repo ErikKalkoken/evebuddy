@@ -98,13 +98,7 @@ func (s *CharacterService) notifyNewCommunications(ctx context.Context, characte
 		}
 		typesEnabled.Add(nt)
 	}
-	err := s.NotifyCommunications(
-		ctx,
-		characterID,
-		earliest,
-		typesEnabled,
-		s.sendDesktopNotification,
-	)
+	err := s.NotifyCommunications(ctx, characterID, earliest, typesEnabled)
 	if err != nil {
 		slog.Error("Notify communications", "characterID", characterID, "error", err)
 	}

@@ -19,8 +19,6 @@ import (
 func TestNotifyCommunications(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := characterservice.NewFake(st)
-	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
 	typesEnabled := set.Of(app.StructureUnderAttack)
@@ -49,13 +47,16 @@ func TestNotifyCommunications(t *testing.T) {
 				Timestamp:   tc.timestamp,
 			})
 			var sendCount int
-			// when
-			err := cs.NotifyCommunications(ctx, n.CharacterID, earliest, typesEnabled, func(title string, content string) {
-				sendCount++
+			cs := characterservice.NewFake(st, characterservice.Params{
+				SendDesktopNotification: func(title string, content string) {
+					sendCount++
+				},
 			})
+			// when
+			err := cs.NotifyCommunications(t.Context(), n.CharacterID, earliest, typesEnabled)
 			// then
 			if assert.NoError(t, err) {
-				 xassert.Equal(t, tc.shouldNotify, sendCount == 1)
+				xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
 	}
@@ -89,6 +90,6 @@ func TestCountNotifications(t *testing.T) {
 			app.GroupStructure:  {1, 1},
 			app.GroupMoonMining: {2, 1},
 		}
-		 xassert.Equal(t, want, got)
+		xassert.Equal(t, want, got)
 	}
 }

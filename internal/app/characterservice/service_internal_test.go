@@ -43,6 +43,9 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		if a.Settings != nil {
 			arg.Settings = a.Settings
 		}
+		if a.SendDesktopNotification != nil {
+			arg.SendDesktopNotification = a.SendDesktopNotification
+		}
 	}
 	if arg.AuthClient == nil {
 		ac, err := eveauth.NewClient(eveauth.Config{

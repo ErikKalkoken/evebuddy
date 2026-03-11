@@ -216,7 +216,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			slog.Info("Terminating secondary instance")
+			slog.Warn("Another EVE Buddy instance is already running")
 			os.Exit(0)
 		}
 		if err != nil {

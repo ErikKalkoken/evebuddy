@@ -39,15 +39,16 @@ type Communications struct {
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
-	character        atomic.Pointer[app.Character]
-	current          *app.CharacterNotification
-	folderList       *widget.List
-	folders          []notificationFolder
-	foldersTop       *widget.Label
-	notificationList *widget.List
-	notifications    []*app.CharacterNotification
-	notificationsTop *widget.Label
-	u                baseUI
+	character              atomic.Pointer[app.Character]
+	current                *app.CharacterNotification
+	folderList             *widget.List
+	folders                []notificationFolder
+	foldersTop             *widget.Label
+	notificationList       *widget.List
+	notifications          []*app.CharacterNotification
+	notificationsTop       *widget.Label
+	sendNotificationAction *widget.ToolbarAction
+	u                      baseUI
 }
 
 func NewCommunications(u baseUI) *Communications {
@@ -184,13 +185,18 @@ func (a *Communications) setDetail(n *app.CharacterNotification) {
 	if a.character.Load() == nil {
 		return
 	}
-	err := a.Detail.set(n, a.u.Character().NotificationRecipient(n))
+	err := a.Detail.set(n, notificationRecipient(a.u.StatusCache(), n))
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
 		fyne.Do(func() {
 			a.Detail.setError(a.u.ErrorDisplay(err))
 		})
 		return
+	}
+	if a.u.IsDeveloperMode() {
+		a.sendNotificationAction.ToolbarObject().Show()
+	} else {
+		a.sendNotificationAction.ToolbarObject().Hide()
 	}
 	a.current = n
 	a.Toolbar.Show()
@@ -212,7 +218,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 				)
 			}
 			cn := a.current
-			recipient := a.u.Character().NotificationRecipient(cn)
+			recipient := notificationRecipient(a.u.StatusCache(), cn)
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
@@ -234,18 +240,17 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			fyne.CurrentApp().Clipboard().SetContent(s)
 		}),
 	)
-	if a.u.IsDeveloperMode() {
-		toolbar.Append(widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
-			if a.current == nil {
-				return
-			}
-			if a.character.Load() == nil {
-				return
-			}
-			title, content := a.u.Character().RenderNotificationSummary(a.current)
-			fyne.CurrentApp().SendNotification(fyne.NewNotification(title, content))
-		}))
-	}
+	a.sendNotificationAction = widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
+		if a.current == nil {
+			return
+		}
+		if a.character.Load() == nil {
+			return
+		}
+		go a.u.Character().SendDesktopNotification(context.Background(), a.current)
+	})
+	a.sendNotificationAction.ToolbarObject().Hide()
+	toolbar.Append(a.sendNotificationAction)
 	return toolbar
 }
 
@@ -413,6 +418,19 @@ func (w *folderItem) set(r notificationFolder) {
 	}
 	w.name.Text = text
 	w.name.Refresh()
+}
+
+type notifStatusCache interface {
+	CharacterName(int64) string
+}
+
+// NotificationRecipient returns a valid recipient for a notification.
+func notificationRecipient(scs notifStatusCache, cn *app.CharacterNotification) *app.EveEntity {
+	return cn.Recipient.ValueOrFallback(&app.EveEntity{
+		ID:       cn.CharacterID,
+		Name:     scs.CharacterName(cn.CharacterID),
+		Category: app.EveEntityCharacter,
+	})
 }
 
 // communicationDetail shows the complete communication for a character.

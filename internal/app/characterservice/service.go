@@ -24,7 +24,6 @@ type Settings interface {
 	MarketOrderRetentionDays() int
 	MaxMails() int
 	MaxWalletTransactions() int
-
 	NotificationTypesEnabled() set.Set[string]
 	NotifyCommunicationsEarliest() time.Time
 	NotifyCommunicationsEnabled() bool
@@ -51,6 +50,12 @@ type Cache interface {
 	Delete(string)
 }
 
+type StatusCache interface {
+	SetCharacterSection(o *app.CharacterSectionStatus)
+	UpdateCharacters(ctx context.Context, st statuscache.Storage) error
+	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
+}
+
 // CharacterService provides access to all managed EVE Online characters both online and from local storage.
 type CharacterService struct {
 	authClient              AuthClient
@@ -60,7 +65,7 @@ type CharacterService struct {
 	esiClient               *esi.APIClient
 	eus                     *eveuniverseservice.EVEUniverseService
 	httpClient              *http.Client
-	scs                     *statuscache.StatusCache
+	scs                     StatusCache
 	sendDesktopNotification func(title, content string) // Callback for sending a desktop notification via Fyne API
 	settings                Settings
 	sfg                     singleflight.Group
@@ -78,7 +83,7 @@ type Params struct {
 	EveUniverseService     *eveuniverseservice.EVEUniverseService
 	Settings               Settings
 	Signals                *app.Signals
-	StatusCacheService     *statuscache.StatusCache
+	StatusCacheService     StatusCache
 	Storage                *storage.Storage
 	// optional
 	HTTPClient              *http.Client
