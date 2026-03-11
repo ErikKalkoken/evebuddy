@@ -22,7 +22,7 @@ import (
 
 func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
@@ -162,7 +162,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 
 func TestHasSectionChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("report true when section has changed", func(t *testing.T) {
 		// given
@@ -227,7 +227,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	const section = app.SectionCharacterAssets
 	t.Run("should report true when changed", func(t *testing.T) {

@@ -18,7 +18,7 @@ import (
 func TestGetAttributes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := NewFake(st)
+	cs := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -46,7 +46,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create attributes from ESI response", func(t *testing.T) {
 		// given
@@ -91,7 +91,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should update skills from scratch", func(t *testing.T) {
 		// given
@@ -223,7 +223,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given

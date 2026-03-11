@@ -22,7 +22,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create roles from scratch", func(t *testing.T) {
 		// given

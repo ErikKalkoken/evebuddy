@@ -13,13 +13,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -45,7 +46,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -87,8 +88,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterID:   ec.ID,
 			CharacterName: ec.Name,
 		})
-		cs := characterservice.NewFake(st, characterservice.Params{
+		cs := characterservice.NewFake(characterservice.Params{
 			AuthClient: testutil.AuthClientFake{Token: testutil.AuthTokenFromAppToken(token)},
+			Storage:    st,
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -169,8 +171,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterID:   c.ID,
 			CharacterName: c.EveCharacter.Name,
 		})
-		cs := characterservice.NewFake(st, characterservice.Params{
+		cs := characterservice.NewFake(characterservice.Params{
 			AuthClient: testutil.AuthClientFake{Token: testutil.AuthTokenFromAppToken(token2)},
+			Storage:    st,
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -231,7 +234,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 func TestDeleteCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
 		// given

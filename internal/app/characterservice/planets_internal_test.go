@@ -20,7 +20,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	// t.Run("should update planets from scratch (minimal)", func(t *testing.T) {
 	// 	// given

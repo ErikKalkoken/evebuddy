@@ -24,7 +24,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("can create new order from scratch", func(t *testing.T) {
 		// given
@@ -222,7 +222,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	t.Run("should delete stale orders", func(t *testing.T) {
 		// given
 		settings := &testutil.SettingsFake{MarketOrderRetentionDaysDefault: 90}
-		s2 := NewFake(st, Params{Settings: settings})
+		s2 := NewFake(Params{Settings: settings, Storage: st})
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()

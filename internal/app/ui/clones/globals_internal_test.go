@@ -8,11 +8,11 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -41,17 +41,17 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	cs := characterservice.New(characterservice.Params{
-		AuthClient:             testutil.AuthClientFake{},
-		Cache:                  testutil.NewCacheFake2(),
-		ESIClient:              client,
-		EveNotificationService: evenotification.New(eus),
-		EveUniverseService:     eus,
-		Settings:               &testutil.SettingsFake{},
-		Signals:                signals,
-		StatusCacheService:     scs,
-		Storage:                st,
-	})
+	// cs := characterservice.New(characterservice.Params{
+	// 	AuthClient:             testutil.AuthClientFake{},
+	// 	Cache:                  testutil.NewCacheFake2(),
+	// 	ESIClient:              client,
+	// 	EveNotificationService: evenotification.New(eus),
+	// 	EveUniverseService:     eus,
+	// 	Settings:               &testutil.SettingsFake{},
+	// 	Signals:                signals,
+	// 	StatusCacheService:     scs,
+	// 	Storage:                st,
+	// })
 	eisFake := &testutil.EveImageServiceFake{
 		Character:   icons.Characterplaceholder64Jpeg,
 		Alliance:    icons.Corporationplaceholder64Png,
@@ -62,7 +62,7 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 	}
 	u := &UIFake{
 		a:   a,
-		cs:  cs,
+		cs:  fake.NewCharacterService(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
 		eis: eisFake,
 		eus: eus,
 		scs: scs,

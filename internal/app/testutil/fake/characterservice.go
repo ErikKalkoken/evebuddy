@@ -1,4 +1,5 @@
-package characterservice
+// Package fake provides fake implementations for services to use in tests.
+package fake
 
 import (
 	"context"
@@ -10,6 +11,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -30,8 +32,8 @@ func (s *EVENotificationServiceFake) RenderESI(ctx context.Context, nt app.EveNo
 	return s.title, s.body, s.err
 }
 
-func NewFake(args ...Params) *CharacterService {
-	var arg Params
+func NewCharacterService(args ...characterservice.Params) *characterservice.CharacterService {
+	var arg characterservice.Params
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -84,6 +86,6 @@ func NewFake(args ...Params) *CharacterService {
 	if arg.Settings == nil {
 		arg.Settings = new(testutil.SettingsFake)
 	}
-	s := New(arg)
+	s := characterservice.New(arg)
 	return s
 }

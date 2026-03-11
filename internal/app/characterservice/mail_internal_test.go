@@ -25,7 +25,7 @@ func TestUpdateMail(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
@@ -261,7 +261,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	var objs []esi.CharactersCharacterIdMailGetInner
 	var mailIDs []int64
 	for i := range 55 {
@@ -313,7 +313,7 @@ func TestUpdateMailLabel(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	t.Run("should create new mail labels", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

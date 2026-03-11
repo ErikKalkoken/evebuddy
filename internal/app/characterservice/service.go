@@ -13,10 +13,10 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
@@ -43,11 +43,16 @@ type AuthClient interface {
 
 // Cache defines a cache.
 type Cache interface {
-	GetInt64(string) (int64, bool)
-	SetInt64(string, int64, time.Duration)
-	GetString(string) (string, bool)
-	SetString(string, string, time.Duration)
 	Delete(string)
+	GetInt64(string) (int64, bool)
+	GetString(string) (string, bool)
+	SetInt64(string, int64, time.Duration)
+	SetString(string, string, time.Duration)
+}
+
+type EVENotificationService interface {
+	EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error)
+	RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error)
 }
 
 type StatusCache interface {
@@ -61,7 +66,7 @@ type CharacterService struct {
 	authClient              AuthClient
 	cache                   Cache
 	concurrencyLimit        int
-	ens                     *evenotification.EVENotificationService
+	ens                     EVENotificationService
 	esiClient               *esi.APIClient
 	eus                     *eveuniverseservice.EVEUniverseService
 	httpClient              *http.Client
@@ -79,7 +84,7 @@ type Params struct {
 	Cache                  Cache
 	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
 	ESIClient              *esi.APIClient
-	EveNotificationService *evenotification.EVENotificationService
+	EveNotificationService EVENotificationService
 	EveUniverseService     *eveuniverseservice.EVEUniverseService
 	Settings               Settings
 	Signals                *app.Signals

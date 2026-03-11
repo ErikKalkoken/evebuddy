@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -17,7 +18,7 @@ import (
 func TestNotifyExpiredExtractions(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)
@@ -72,7 +73,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	// given
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)

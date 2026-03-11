@@ -13,12 +13,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
 )
 
 func TestCharacterService_HasSection(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := characterservice.NewFake(st)
+	s := fake.NewCharacterService(characterservice.Params{Storage: st})
 	section := app.SectionCharacterImplants
 	ctx := context.Background()
 	t.Run("should report true when exists", func(t *testing.T) {

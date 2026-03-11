@@ -22,7 +22,7 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new entries from scratch", func(t *testing.T) {
 		// given
@@ -140,7 +140,7 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new entries from scratch", func(t *testing.T) {
 		// given

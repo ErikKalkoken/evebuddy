@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/fake"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -47,10 +48,11 @@ func TestNotifyCommunications(t *testing.T) {
 				Timestamp:   tc.timestamp,
 			})
 			var sendCount int
-			cs := characterservice.NewFake(st, characterservice.Params{
+			cs := characterservice.NewFake(characterservice.Params{
 				SendDesktopNotification: func(title string, content string) {
 					sendCount++
 				},
+				Storage: st,
 			})
 			// when
 			err := cs.NotifyCommunications(t.Context(), n.CharacterID, earliest, typesEnabled)
@@ -66,7 +68,7 @@ func TestCountNotifications(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	// given
-	cs := characterservice.NewFake(st)
+	cs := fake.NewCharacterService(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	c := factory.CreateCharacterFull()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
