@@ -22,7 +22,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing region", func(t *testing.T) {
 		// given
@@ -69,7 +69,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing constellation", func(t *testing.T) {
 		// given
@@ -123,7 +123,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing solar system", func(t *testing.T) {
 		// given
@@ -286,7 +286,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing planet", func(t *testing.T) {
 		// given
@@ -338,7 +338,7 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing moon", func(t *testing.T) {
 		// given
@@ -387,7 +387,7 @@ func TestFetchRoute(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return route when valid", func(t *testing.T) {
 		// given
@@ -499,7 +499,7 @@ func TestFetchRoutes(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return routes", func(t *testing.T) {
 		// given
@@ -550,7 +550,7 @@ func TestMembershipHistory(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return corporation membership history", func(t *testing.T) {
 		// given
@@ -646,7 +646,7 @@ func TestGetStarTypeID(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	// given
 	testutil.MustTruncateTables(db)
@@ -679,7 +679,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	system := factory.CreateEveSolarSystem()
 	constellation := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityConstellation})
@@ -746,7 +746,7 @@ func TestGetRegionConstellationsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	c1 := factory.CreateEveEntity(app.EveEntity{
 		ID:       20000302,
@@ -781,7 +781,7 @@ func TestGetConstellationSolarSystemsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	s1 := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 20000302})
 	s2 := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 20000303})
@@ -815,7 +815,7 @@ func TestGetStargateSolarSystemsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000001})
 	httpmock.RegisterResponder(
@@ -850,7 +850,7 @@ func TestGetSolarSystemPlanets(t *testing.T) {
 	// given
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	p1 := factory.CreateEvePlanet()
 	p2 := factory.CreateEvePlanet()

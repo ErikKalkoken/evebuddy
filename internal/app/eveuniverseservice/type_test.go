@@ -21,7 +21,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -69,7 +69,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -120,7 +120,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
@@ -253,7 +253,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("do nothing when all types already exist", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -285,7 +285,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing race", func(t *testing.T) {
 		// given
@@ -355,7 +355,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing object", func(t *testing.T) {
 		// given
@@ -412,7 +412,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 func TestMarketPrice(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("return price when it exists", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

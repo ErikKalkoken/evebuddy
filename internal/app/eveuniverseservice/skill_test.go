@@ -15,7 +15,7 @@ import (
 func TestEveUniverseService_ListSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("should return list of skills", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

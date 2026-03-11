@@ -16,7 +16,7 @@ func TestGetValidEntity(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewTestService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	entity := factory.CreateEveEntity()
 	t.Run("should return entity when id is valid", func(t *testing.T) {

@@ -17,7 +17,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return existing schematic", func(t *testing.T) {
 		// given

@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func NewTestService(st *storage.Storage) *EVEUniverseService {
+func NewFake(st *storage.Storage) *EVEUniverseService {
 	client := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})

@@ -24,7 +24,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	const invalidID = 666
 	t.Run("should return existing character", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	const invalidID = 666
 	t.Run("should fetch character from ESI and create it", func(t *testing.T) {
@@ -389,7 +389,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given

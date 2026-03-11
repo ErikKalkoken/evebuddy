@@ -29,7 +29,7 @@ func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -141,7 +141,7 @@ func TestGetOrCreateLocationESI_Structures(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -246,7 +246,7 @@ func TestUpdatetOrCreateLocationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should update existing station", func(t *testing.T) {
 		// given
@@ -351,7 +351,7 @@ func TestGetStationServicesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	httpmock.RegisterResponder(
 		"GET",
 		`=~^https://esi.evetech.net/universe/stations/\d+`,
@@ -396,7 +396,7 @@ func TestAddMissingLocations(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("does nothing when given no ids", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -448,7 +448,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("can return owner from station", func(t *testing.T) {
 		// given

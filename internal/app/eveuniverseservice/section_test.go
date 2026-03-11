@@ -20,7 +20,7 @@ func TestEveuniverseservice_HasSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	section := app.SectionEveTypes
 	ctx := context.Background()
 	t.Run("should report true when exists", func(t *testing.T) {

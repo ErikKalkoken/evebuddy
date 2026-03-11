@@ -20,7 +20,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewTestService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	const (
 		knownTypeID = 32772

@@ -24,7 +24,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	responder := func(req *http.Request) (*http.Response, error) {
 		var ids []int64
 		if err := json.NewDecoder(req.Body).Decode(&ids); err != nil {
@@ -293,7 +293,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("return existing entity", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -334,7 +334,7 @@ func TestToEveEntities(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("should resolve normal IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -366,7 +366,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	t.Run("should update existing entity", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})

@@ -25,7 +25,7 @@ func TestFetchAlliance(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	const allianceID = 434243723
 	factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
 	creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
@@ -90,7 +90,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return corporations", func(t *testing.T) {
 		// given
@@ -139,7 +139,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new corporation", func(t *testing.T) {
 		// given
@@ -228,7 +228,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new minimal corporation", func(t *testing.T) {
 		// given
@@ -398,7 +398,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := eveuniverseservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("can update from ESI and report changed IDs", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
