@@ -20,7 +20,7 @@ import (
 func TestGetCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -46,7 +46,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -234,7 +234,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 func TestDeleteCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
 		// given

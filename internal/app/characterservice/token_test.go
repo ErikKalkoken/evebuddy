@@ -19,7 +19,7 @@ import (
 func TestHasTokenWithScopes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return true when token has same scopes", func(t *testing.T) {
 		// given
@@ -71,7 +71,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 func TestMissingScopes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return empty when token has all scopes", func(t *testing.T) {
 		// given
@@ -121,7 +121,7 @@ func TestMissingScopes(t *testing.T) {
 func TestCharacterTokenForCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return matching token when exists", func(t *testing.T) {
 		// given

@@ -18,7 +18,7 @@ func TestGetWalletBalance(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
-	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	t.Run("return existing balance", func(t *testing.T) {
 		// when
 		testutil.MustTruncateTables(db)
@@ -52,7 +52,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	t.Run("return existing balance", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

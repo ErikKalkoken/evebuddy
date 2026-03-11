@@ -19,7 +19,7 @@ import (
 func TestExportTags(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	// given
@@ -50,7 +50,7 @@ func TestExportTags(t *testing.T) {
 func TestImportTags(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	t.Run("can create tags for matching characters and version", func(t *testing.T) {

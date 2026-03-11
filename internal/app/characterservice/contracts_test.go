@@ -18,7 +18,7 @@ import (
 func TestNotifyUpdatedContracts(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	const characterID = 7
 	earliest := time.Now().UTC().Add(-6 * time.Hour)

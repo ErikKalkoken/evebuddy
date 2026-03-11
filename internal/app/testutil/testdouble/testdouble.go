@@ -53,8 +53,8 @@ func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache
 	return nil
 }
 
-// NewCharacterService returns a fake for a CharacterService.
-func NewCharacterService(args ...characterservice.Params) *characterservice.CharacterService {
+// NewCharacterServiceFake returns a fake for a CharacterService.
+func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.CharacterService {
 	var arg characterservice.Params
 	if len(args) > 0 {
 		arg = args[0]
@@ -131,8 +131,8 @@ func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ in
 	return &testutil.TokenSourceStub{CharacterToken: s.Token, Error: nil}, s.Token.CharacterID, nil
 }
 
-// NewCorporationService returns a fake for a CorporationService.
-func NewCorporationService(args ...corporationservice.Params) *corporationservice.CorporationService {
+// NewCorporationServiceFake returns a fake for a CorporationService.
+func NewCorporationServiceFake(args ...corporationservice.Params) *corporationservice.CorporationService {
 	var arg corporationservice.Params
 	if len(args) > 0 {
 		arg = args[0]

@@ -20,7 +20,7 @@ import (
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should do nothing when permission exists", func(t *testing.T) {
 		// given
@@ -85,7 +85,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 func TestCorporationService_PermittedSections(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return section when matching token exists", func(t *testing.T) {
 		// given

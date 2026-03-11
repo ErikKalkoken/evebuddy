@@ -21,7 +21,7 @@ func TestSearchESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return search results", func(t *testing.T) {
 		// given

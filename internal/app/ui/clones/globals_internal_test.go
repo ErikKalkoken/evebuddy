@@ -53,7 +53,7 @@ func NewUIFake(st *storage.Storage, a fyne.App) *UIFake {
 	// })
 	u := &UIFake{
 		a:   a,
-		cs:  testdouble.NewCharacterService(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
+		cs:  testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, EveUniverseService: eus, StatusCacheService: scs, Signals: signals}),
 		eis: testutil.NewEveImageServiceStub(),
 		eus: eus,
 		scs: scs,

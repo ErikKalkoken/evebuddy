@@ -68,7 +68,7 @@ func TestCountNotifications(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	// given
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	c := factory.CreateCharacterFull()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{

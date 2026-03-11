@@ -19,7 +19,7 @@ import (
 func TestCharacterService_HasSection(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	section := app.SectionCharacterImplants
 	ctx := context.Background()
 	t.Run("should report true when exists", func(t *testing.T) {

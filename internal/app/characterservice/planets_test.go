@@ -18,7 +18,7 @@ import (
 func TestNotifyExpiredExtractions(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)
@@ -73,7 +73,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	// given
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)

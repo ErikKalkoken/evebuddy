@@ -19,7 +19,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
-	s := testdouble.NewCorporationService(corporationservice.Params{Storage: st})
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	t.Run("can delete corporations with no member character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()

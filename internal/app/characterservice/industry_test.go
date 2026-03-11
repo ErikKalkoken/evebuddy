@@ -16,7 +16,7 @@ import (
 func TestListAllCharactersIndustrySlots(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	cs := testdouble.NewCharacterService(characterservice.Params{Storage: st})
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 
 	t.Run("empty when no data", func(t *testing.T) {
