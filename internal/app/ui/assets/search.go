@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	assetsTotalYes = "Has total"
-	assetsTotalNo  = "Has no total"
+	totalYes = "Has total"
+	totalNo  = "Has no total"
 )
 
 type assetRow struct {
@@ -380,7 +380,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 				return x
 			},
 			a.columnSorter, a.filterRowsAsync, func(_ int, r assetRow) {
-				ShowAssetDetailWindow(u, r)
+				ShowDetails(u, r)
 			})
 	}
 
@@ -413,8 +413,8 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 	})
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
-			assetsTotalYes,
-			assetsTotalNo,
+			totalYes,
+			totalNo,
 		},
 		func(_ string) {
 			a.filterRowsAsync(-1)
@@ -541,7 +541,7 @@ func (a *Search) makeDataList() *xwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		ShowAssetDetailWindow(a.u, r)
+		ShowDetails(a.u, r)
 	}
 	return l
 }
@@ -598,9 +598,9 @@ func (a *Search) filterRowsAsync(sortCol int) {
 		if total != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				switch total {
-				case assetsTotalYes:
+				case totalYes:
 					return r.total.IsEmpty()
-				case assetsTotalNo:
+				case totalNo:
 					return !r.total.IsEmpty()
 				}
 				return true

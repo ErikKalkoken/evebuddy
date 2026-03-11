@@ -81,10 +81,10 @@ func TestAssetBrowser_CanRenderWithData(t *testing.T) {
 		Section:     app.SectionCharacterAssets,
 	})
 	test.ApplyTheme(t, test.Theme())
-	a := newBrowser(testdouble.NewUIFake(testdouble.UIParams{
+	a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
 		Storage: st,
-	}), false)
+	}))
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -464,7 +464,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetNoFilter, true)
 
-		got1 := xslices.Map(td.Children(nil), func(x *assetContainerNode) string {
+		got1 := xslices.Map(td.Children(nil), func(x *containerNode) string {
 			return x.String()
 		})
 		want1 := []string{"Alpha", "Bravo", "Charlie", "Delta", "Echo"}
@@ -611,7 +611,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeCountsPath(ac asset.Tree, td iwidget.TreeData[assetContainerNode], it asset.Item) []int {
+func makeCountsPath(ac asset.Tree, td iwidget.TreeData[containerNode], it asset.Item) []int {
 	n, ok := ac.Node(it.ID())
 	if !ok {
 		return nil
@@ -620,14 +620,14 @@ func makeCountsPath(ac asset.Tree, td iwidget.TreeData[assetContainerNode], it a
 	if !ok {
 		return nil
 	}
-	return xslices.Map(td.Path(nil, x), func(x *assetContainerNode) int {
+	return xslices.Map(td.Path(nil, x), func(x *containerNode) int {
 		return x.itemCount.ValueOrZero()
 	})
 }
 
-func findContainer(td iwidget.TreeData[assetContainerNode], node *asset.Node) (*assetContainerNode, bool) {
-	var found *assetContainerNode
-	td.Walk(nil, func(n *assetContainerNode) bool {
+func findContainer(td iwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
+	var found *containerNode
+	td.Walk(nil, func(n *containerNode) bool {
 		if n.node == node {
 			found = n
 			return false
@@ -755,8 +755,8 @@ func createAsset(arg assetParams) app.Asset {
 // 	})
 // }
 
-func allPaths(td iwidget.TreeData[assetContainerNode]) [][]string {
-	return td.AllPaths(nil, func(n *assetContainerNode) string {
+func allPaths(td iwidget.TreeData[containerNode]) [][]string {
+	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
 	})
 }
