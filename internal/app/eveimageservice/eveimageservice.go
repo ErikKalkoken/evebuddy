@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
@@ -28,7 +30,6 @@ const (
 var (
 	ErrHTTPError = errors.New("http error")
 	ErrNoImage   = errors.New("no image from API")
-	ErrInvalid   = errors.New("invalid")
 )
 
 // CacheService defines a cache service
@@ -77,9 +78,7 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EVEImageS
 func (s *EVEImageService) AllianceLogo(id int64, size int) (fyne.Resource, error) {
 	url, err := AllianceLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
+
 		return nil, err
 	}
 	return s.image(url, timeoutAlliance)
@@ -100,9 +99,6 @@ func (s *EVEImageService) AllianceLogoAsync(id int64, size int, setter func(r fy
 func (s *EVEImageService) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
 	url, err := CharacterPortraitURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutCharacter)
@@ -123,9 +119,7 @@ func (s *EVEImageService) CharacterPortraitAsync(id int64, size int, setter func
 func (s *EVEImageService) CorporationLogo(id int64, size int) (fyne.Resource, error) {
 	url, err := CorporationLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
+
 		return nil, err
 	}
 	return s.image(url, timeoutCorporation)
@@ -142,13 +136,64 @@ func (s *EVEImageService) CorporationLogoAsync(id int64, size int, setter func(r
 	})
 }
 
+func (s *EVEImageService) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resource, error) {
+	if o.Category == app.EveEntityMailList {
+		return theme.MailComposeIcon(), nil
+	}
+	makeURL, timeout, ok := loadEntityParams(o.Category)
+	if !ok {
+		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
+		return theme.BrokenImageIcon(), nil
+
+	}
+	url, err := makeURL(o.ID, size)
+	if err != nil {
+		return nil, err
+	}
+	return s.image(url, timeout)
+}
+
+func (s *EVEImageService) EveEntityLogoAsync(o *app.EveEntity, size int, setter func(r fyne.Resource)) {
+	if o.Category == app.EveEntityMailList {
+		setter(theme.MailComposeIcon())
+		return
+	}
+	makeURL, timeout, ok := loadEntityParams(o.Category)
+	if !ok {
+		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
+		setter(theme.BrokenImageIcon())
+		return
+
+	}
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      o.ID,
+		makeURL: makeURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeout,
+	})
+}
+
+func loadEntityParams(c app.EveEntityCategory) (func(id int64, size int) (string, error), time.Duration, bool) {
+	switch c {
+	case app.EveEntityAlliance:
+		return AllianceLogoURL, timeoutAlliance, true
+	case app.EveEntityCharacter:
+		return CharacterPortraitURL, timeoutCharacter, true
+	case app.EveEntityCorporation:
+		return CorporationLogoURL, timeoutCorporation, true
+	case app.EveEntityFaction:
+		return FactionLogoURL, timeoutNeverExpire, true
+	case app.EveEntityInventoryType:
+		return InventoryTypeIconURL, timeoutNeverExpire, true
+	}
+	return nil, 0, false
+}
+
 // FactionLogo returns the logo for a faction.
 func (s *EVEImageService) FactionLogo(id int64, size int) (fyne.Resource, error) {
 	url, err := FactionLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
@@ -169,9 +214,6 @@ func (s *EVEImageService) FactionLogoAsync(id int64, size int, setter func(r fyn
 func (s *EVEImageService) InventoryTypeRender(id int64, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
@@ -192,9 +234,6 @@ func (s *EVEImageService) InventoryTypeRenderAsync(id int64, size int, setter fu
 func (s *EVEImageService) InventoryTypeIcon(id int64, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeIconURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
@@ -215,9 +254,6 @@ func (s *EVEImageService) InventoryTypeIconAsync(id int64, size int, setter func
 func (s *EVEImageService) InventoryTypeBPO(id int64, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPOURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
@@ -238,9 +274,6 @@ func (s *EVEImageService) InventoryTypeBPOAsync(id int64, size int, setter func(
 func (s *EVEImageService) InventoryTypeBPC(id int64, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPCURL(id, size)
 	if err != nil {
-		if errors.Is(err, ErrInvalid) {
-			err = ErrInvalid
-		}
 		return nil, err
 	}
 	return s.image(url, timeoutNeverExpire)
@@ -260,7 +293,7 @@ func (s *EVEImageService) InventoryTypeBPCAsync(id int64, size int, setter func(
 // InventoryTypeSKIN returns the icon for a SKIN type.
 func (s *EVEImageService) InventoryTypeSKIN(_ int64, size int) (fyne.Resource, error) {
 	if size != 64 {
-		return nil, ErrInvalid
+		return nil, app.ErrInvalid
 	}
 	return resourceSkinicon64pxPng, nil
 }
@@ -268,7 +301,7 @@ func (s *EVEImageService) InventoryTypeSKIN(_ int64, size int) (fyne.Resource, e
 // InventoryTypeSKINAsync loads the icon for a SKIN type and calls setter with the result.
 func (s *EVEImageService) InventoryTypeSKINAsync(_ int64, size int, setter func(r fyne.Resource)) {
 	if size != 64 {
-		slog.Error("eveimageservice: url", "error", ErrInvalid)
+		slog.Error("eveimageservice: url", "error", app.ErrInvalid)
 		setter(resourceBrokenimage64Png)
 		return
 	}

@@ -16,10 +16,12 @@ type searchResultEIS interface {
 	AllianceLogo(int64, int) (fyne.Resource, error)
 	CharacterPortrait(int64, int) (fyne.Resource, error)
 	CorporationLogo(int64, int) (fyne.Resource, error)
+	EveEntityLogo(o *app.EveEntity, size int) (fyne.Resource, error)
+	EveEntityLogoAsync(o *app.EveEntity, size int, setter func(r fyne.Resource))
 	FactionLogo(int64, int) (fyne.Resource, error)
+	InventoryTypeBPO(int64, int) (fyne.Resource, error)
 	InventoryTypeIcon(int64, int) (fyne.Resource, error)
 	InventoryTypeSKIN(int64, int) (fyne.Resource, error)
-	InventoryTypeBPO(int64, int) (fyne.Resource, error)
 }
 
 type searchResultEUS interface {
@@ -52,7 +54,7 @@ func loadIconFunc(eis searchResultEIS, eus searchResultEUS) func(o *app.EveEntit
 						return eis.InventoryTypeIcon(et.ID, ui.IconPixelSize)
 					}
 				default:
-					return ui.EveEntityIcon(eis, o, ui.IconPixelSize, icons.BlankSvg)
+					return eis.EveEntityLogo(o, ui.IconPixelSize)
 				}
 			},
 			func(r fyne.Resource) {

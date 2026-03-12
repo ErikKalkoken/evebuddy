@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"fmt"
-	"log/slog"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -14,87 +11,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// EveEntityEIS defines the methods needed from the EVE image service
-// to render EveEntity widgets.
-type EveEntityEIS interface {
-	AllianceLogo(int64, int) (fyne.Resource, error)
-	CharacterPortrait(int64, int) (fyne.Resource, error)
-	CorporationLogo(int64, int) (fyne.Resource, error)
-	FactionLogo(int64, int) (fyne.Resource, error)
-	InventoryTypeIcon(int64, int) (fyne.Resource, error)
-}
-
-var eveEntityResourceCache xsync.Map[int64, fyne.Resource] // FIXME: cache key must include size
-
-// LoadEveEntityIconAsync loads a cached item asynchronous for an EveEntity object.
-func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
-	if ee == nil {
-		setIcon(theme.BrokenImageIcon())
-		return
-	}
-	if ee.Category == app.EveEntityMailList {
-		setIcon(theme.MailComposeIcon())
-		return
-	}
-	xwidget.LoadResourceAsyncWithCache(
-		icons.BlankSvg,
-		func() (fyne.Resource, bool) {
-			return eveEntityResourceCache.Load(ee.ID)
-		},
-		func(r fyne.Resource) {
-			setIcon(r)
-		},
-		func() (fyne.Resource, error) {
-			return EveEntityIcon(eis, ee, size, theme.BrokenImageIcon())
-		},
-		func(r fyne.Resource) {
-			eveEntityResourceCache.Store(ee.ID, r)
-		},
-	)
-}
-
 // EveEntityIconLoader is defines the function signature for a EveEntity icon loader
 type EveEntityIconLoader func(*app.EveEntity, int, func(r fyne.Resource))
-
-// LoadEveEntityIconFunc is an adapter that returns an icon loader for LoadEveEntityIconAsync.
-func LoadEveEntityIconFunc(eis EveEntityEIS) EveEntityIconLoader {
-	return func(o *app.EveEntity, size int, setIcon func(r fyne.Resource)) {
-		LoadEveEntityIconAsync(eis, o, size, setIcon)
-	}
-}
-
-// EveEntityIcon returns an icon from EveImageService for supported categories.
-// Or the fallback for unsupported categories.
-func EveEntityIcon(eis EveEntityEIS, ee *app.EveEntity, size int, fallback fyne.Resource) (fyne.Resource, error) {
-	var r fyne.Resource
-	var err error
-	switch ee.Category {
-	case app.EveEntityAlliance:
-		r, err = eis.AllianceLogo(ee.ID, size)
-	case app.EveEntityCharacter:
-		r, err = eis.CharacterPortrait(ee.ID, size)
-	case app.EveEntityCorporation:
-		r, err = eis.CorporationLogo(ee.ID, size)
-	case app.EveEntityFaction:
-		r, err = eis.FactionLogo(ee.ID, size)
-	case app.EveEntityInventoryType:
-		r, err = eis.InventoryTypeIcon(ee.ID, size)
-	default:
-		if fallback != nil {
-			return fallback, nil
-		}
-		slog.Warn("unsupported category. Falling back to default", "entity", ee)
-		return theme.BrokenImageIcon(), nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("entity icon %v %d: %w", ee, size, err)
-	}
-	return r, nil
-}
 
 // EveEntityListItem is a list item widget that renders an EveEntity with icon and name.
 type EveEntityListItem struct {
@@ -176,7 +97,7 @@ func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCa
 // MakeEveEntityColumnParams represents the parameters for MakeEveEntityColumn()
 type MakeEveEntityColumnParams[T any] struct {
 	ColumnID  int
-	EIS       EveEntityEIS
+	EIS       EVEImageService
 	GetEntity func(r T) *app.EveEntity
 	IsAvatar  bool
 	Label     string
@@ -200,7 +121,7 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 		Label: arg.Label,
 		Width: float32(arg.Width),
 		Create: func() fyne.CanvasObject {
-			x := NewEveEntityListItem(LoadEveEntityIconFunc(arg.EIS))
+			x := NewEveEntityListItem(arg.EIS.EveEntityLogoAsync)
 			x.IsAvatar = arg.IsAvatar
 			return x
 		},

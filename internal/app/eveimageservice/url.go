@@ -2,6 +2,8 @@ package eveimageservice
 
 import (
 	"fmt"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type category string
@@ -87,7 +89,7 @@ func imageURL(c category, v imageVariant, id int64, size int) (string, error) {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size
 	default:
-		return "", fmt.Errorf("eveimageservice: size %d: %w", size, ErrInvalid)
+		return "", fmt.Errorf("eveimageservice: size %d: %w", size, app.ErrInvalid)
 	}
 	if c == inventoryType {
 		switch id {
@@ -102,7 +104,7 @@ func imageURL(c category, v imageVariant, id int64, size int) (string, error) {
 		}
 	}
 	if c == inventoryType && id < 6 {
-		return "", fmt.Errorf("eveimageservice: id %d: %w", id, ErrInvalid)
+		return "", fmt.Errorf("eveimageservice: id %d: %w", id, app.ErrInvalid)
 	}
 	url := fmt.Sprintf("%s/%s/%d/%s?size=%d", baseURL, c, id, v, size)
 	return url, nil

@@ -95,7 +95,7 @@ func (a *Members) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return newCorporationMemberItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {

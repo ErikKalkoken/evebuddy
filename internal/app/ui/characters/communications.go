@@ -61,7 +61,7 @@ func NewCommunications(u baseUI) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(ui.LoadEveEntityIconFunc(u.EVEImage()), u.InfoViewer().Show)
+	a.Detail = newCommunicationDetail(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -150,7 +150,7 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {

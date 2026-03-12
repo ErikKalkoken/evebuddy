@@ -190,7 +190,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 				return len(a.rowsFiltered)
 			},
 			func() fyne.CanvasObject {
-				return newCharacterContactItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+				return newCharacterContactItem(a.u.EVEImage().EveEntityLogoAsync)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
 				if id >= len(a.rowsFiltered) {
@@ -215,7 +215,7 @@ func (a *Contacts) makeList() fyne.CanvasObject {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterContactItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return newCharacterContactItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {

@@ -538,7 +538,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -866,7 +866,7 @@ type mailDetail struct {
 func newMailDetail(u baseUI) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  NewMailHeader(ui.LoadEveEntityIconFunc(u.EVEImage()), u.InfoViewer().Show),
+		header:  NewMailHeader(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

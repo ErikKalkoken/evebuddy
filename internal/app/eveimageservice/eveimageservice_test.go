@@ -10,6 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
@@ -261,7 +262,7 @@ func TestImageFetching(t *testing.T) {
 		// when
 		_, err = m.CharacterPortrait(93330670, 0)
 		// then
-		assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
+		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 	t.Run("should return placeholder and not access network in offline mode", func(t *testing.T) {
 		// given

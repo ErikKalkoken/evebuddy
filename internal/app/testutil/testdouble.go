@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"golang.org/x/oauth2"
@@ -245,6 +246,29 @@ func (s *EveImageServiceStub) CorporationLogo(id int64, size int) (fyne.Resource
 func (s *EveImageServiceStub) CorporationLogoAsync(id int64, size int, setter func(r fyne.Resource)) {
 	setter(s.Corporation)
 }
+
+func (s *EveImageServiceStub) EveEntityLogoAsync(o *app.EveEntity, size int, setter func(r fyne.Resource)) {
+	setter(s.eveEntityResource(o.Category))
+}
+
+func (s *EveImageServiceStub) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resource, error) {
+	return s.eveEntityResource(o.Category), nil
+}
+
+func (s *EveImageServiceStub) eveEntityResource(c app.EveEntityCategory) fyne.Resource {
+	switch c {
+	case app.EveEntityAlliance:
+		return s.Alliance
+	case app.EveEntityCharacter:
+		return s.Character
+	case app.EveEntityCorporation:
+		return s.Corporation
+	case app.EveEntityFaction:
+		return s.Faction
+	}
+	return theme.BrokenImageIcon()
+}
+
 func (s *EveImageServiceStub) FactionLogo(id int64, size int) (fyne.Resource, error) {
 	return s.Faction, s.Err
 }

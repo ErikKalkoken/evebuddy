@@ -156,7 +156,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
-				ui.LoadEveEntityIconFunc(a.u.EVEImage()),
+				a.u.EVEImage().EveEntityLogoAsync,
 				a.u.InfoViewer().Show,
 			)
 		},

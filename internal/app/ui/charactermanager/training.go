@@ -84,7 +84,7 @@ func (a *training) makeList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character := ui.NewEveEntityListItem(a.cw.u.EVEImage().EveEntityLogoAsync)
 			character.IsAvatar = true
 			return container.NewBorder(
 				nil,

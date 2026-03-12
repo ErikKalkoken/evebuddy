@@ -47,7 +47,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
+	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.from.showInfo = u.InfoViewer().Show
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
@@ -65,7 +65,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
+	a.to = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.to.showInfo = u.InfoViewer().Show
 	a.to.placeholderText = "Tap To-Button to add recipients..."
 
@@ -425,7 +425,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 			return len(results)
 		},
 		func() fyne.CanvasObject {
-			return newEntityItem(ui.LoadEveEntityIconFunc(u.EVEImage()))
+			return newEntityItem(u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(results) {
