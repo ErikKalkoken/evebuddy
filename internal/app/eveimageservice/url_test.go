@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveimageservice"
 )
 
 var testCases = []struct {

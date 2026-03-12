@@ -10,8 +10,8 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
 
 func TestImageFetchingAsync(t *testing.T) {

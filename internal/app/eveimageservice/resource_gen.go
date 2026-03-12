@@ -5,6 +5,7 @@ package eveimageservice
 
 import (
 	_ "embed"
+
 	"fyne.io/fyne/v2"
 )
 
