@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -28,8 +29,110 @@ type contractItem struct {
 	Type        *app.EveType
 }
 
-// ShowContractDetails shows the details of a character contract in a window.
-func ShowContractDetails(u baseUI, r contractRow, fetchBids func(context.Context) (int, float64, error), fetchItems func(context.Context) ([]contractItem, error)) {
+// ShowCharacterContract2 shows the details of a character contract in a window.
+func ShowCharacterContract2(ctx context.Context, u baseUI, characterID, contractID int64) {
+	reportError := func(err error) {
+		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+	}
+
+	o, err := u.Character().GetContract(ctx, characterID, contractID)
+	if err != nil {
+		reportError(err)
+		return
+	}
+	c, err := u.Character().GetCharacter(ctx, characterID)
+	if err != nil {
+		reportError(err)
+		return
+	}
+	ShowCharacterContract(u, newContractRowForCharacter(o, func(id int64) string {
+		return c.NameOrZero()
+	}))
+}
+
+// ShowCharacterContract shows the details of a character contract in a window.
+func ShowCharacterContract(u baseUI, r contractRow) {
+	showContractDetails(u, r,
+		func(ctx context.Context) (int, float64, error) {
+			if r.contractType != app.ContractTypeAuction {
+				return 0, 0, nil
+			}
+			count, err := u.Character().CountContractBids(ctx, r.objectID)
+			if err != nil {
+				return 0, 0, err
+			}
+			topBid, err := u.Character().GetContractTopBid(ctx, r.objectID)
+			if err != nil {
+				return 0, 0, err
+			}
+			return count, topBid.Amount, nil
+		},
+		func(ctx context.Context) ([]contractItem, error) {
+			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+				return nil, nil
+			}
+			oo, err := u.Character().ListContractItems(ctx, r.objectID)
+			if err != nil {
+				return nil, err
+			}
+			items := xslices.Map(oo, func(x *app.CharacterContractItem) contractItem {
+				return contractItem{
+					ContractID:  x.ContractID,
+					IsIncluded:  x.IsIncluded,
+					IsSingleton: x.IsIncluded,
+					Quantity:    x.Quantity,
+					RawQuantity: x.RawQuantity,
+					RecordID:    x.RecordID,
+					Type:        x.Type,
+				}
+			})
+			return items, nil
+		},
+	)
+}
+
+// ShowCorporationContract shows the details of a corporation contract in a window.
+func ShowCorporationContract(u baseUI, r contractRow) {
+	showContractDetails(u, r,
+		func(ctx context.Context) (int, float64, error) {
+			if r.contractType != app.ContractTypeAuction {
+				return 0, 0, nil
+			}
+			count, err := u.Corporation().CountContractBids(ctx, r.objectID)
+			if err != nil {
+				return 0, 0, err
+			}
+			topBid, err := u.Corporation().GetContractTopBid(ctx, r.objectID)
+			if err != nil {
+				return 0, 0, err
+			}
+			return count, topBid.Amount, nil
+		},
+		func(ctx context.Context) ([]contractItem, error) {
+			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+				return nil, nil
+			}
+			oo, err := u.Corporation().ListContractItems(ctx, r.objectID)
+			if err != nil {
+				return nil, err
+			}
+			items := xslices.Map(oo, func(x *app.CorporationContractItem) contractItem {
+				return contractItem{
+					ContractID:  x.ContractID,
+					IsIncluded:  x.IsIncluded,
+					IsSingleton: x.IsIncluded,
+					Quantity:    x.Quantity,
+					RawQuantity: x.RawQuantity,
+					RecordID:    x.RecordID,
+					Type:        x.Type,
+				}
+			})
+			return items, nil
+		},
+	)
+}
+
+func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context) (int, float64, error), fetchItems func(context.Context) ([]contractItem, error)) {
 	title := fmt.Sprintf("Contract #%d", r.contractID)
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("contract-%d-%d", r.ownerID, r.contractID),

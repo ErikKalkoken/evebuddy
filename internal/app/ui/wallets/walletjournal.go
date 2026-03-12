@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/contracts"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -543,7 +544,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 						fyne.Do(func() {
 							contextItem.Text = "Related contract"
 							contextItem.Widget = ui.MakeLinkLabelWithWrap(c.NameDisplay(), func() {
-								// characterui.ShowCharacterContractWindow(u, c.CharacterID, c.ContractID) FIXME
+								go contracts.ShowCharacterContract2(context.Background(), u, c.CharacterID, c.ContractID)
 							})
 							f.Refresh()
 						})

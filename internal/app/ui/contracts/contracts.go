@@ -90,6 +90,114 @@ type contractRow struct {
 	volume             optional.Optional[float64]
 }
 
+func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string) contractRow {
+	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
+		return v.Name
+	})
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		hasIssue:       o.HasIssue(),
+		isActive:       o.Status.IsActive(),
+		isCorporation:  false,
+		isExpired:      o.IsExpired(),
+		isHistory:      o.Status.IsHistory(),
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        o.CharacterID,
+		ownerName:      characterName(o.CharacterID),
+		price:          o.Price,
+		reward:         o.Reward,
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		statusText:     o.Status.Display(),
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
+	}
+	var text string
+	var color fyne.ThemeColorName
+	if r.isExpired {
+		text = "EXPIRED"
+		color = theme.ColorNameError
+	} else {
+		text = ihumanize.RelTime(r.dateExpired)
+		color = theme.ColorNameForeground
+	}
+	r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		ColorName: color,
+	})
+	return r
+}
+
+func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation) contractRow {
+	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
+		return v.Name
+	})
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		hasIssue:       o.HasIssue(),
+		isActive:       o.Status.IsActive(),
+		isCorporation:  true,
+		isExpired:      o.IsExpired(),
+		isHistory:      o.Status.IsHistory(),
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        corporation.ID,
+		ownerName:      corporation.NameOrZero(),
+		price:          o.Price,
+		reward:         o.Reward,
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		statusText:     o.Status.Display(),
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
+	}
+	var text string
+	var color fyne.ThemeColorName
+	if r.isExpired {
+		text = "EXPIRED"
+		color = theme.ColorNameError
+	} else {
+		text = ihumanize.RelTime(r.dateExpired)
+		color = theme.ColorNameForeground
+	}
+	r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		ColorName: color,
+	})
+	return r
+}
+
 // Contracts is a UI element for showing Contracts.
 // It either shows all character Contracts or the Contracts for a corporation.
 type Contracts struct {
@@ -226,9 +334,9 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.filterRowsAsync,
 			func(_ int, r contractRow) {
 				if a.forCorporation {
-					showCorporationContractWindow(a.u, r)
+					ShowCorporationContract(a.u, r)
 				} else {
-					showCharacterContractWindow(a.u, r)
+					ShowCharacterContract(a.u, r)
 				}
 			},
 		)
@@ -373,9 +481,9 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.forCorporation {
-			showCorporationContractWindow(a.u, r)
+			ShowCorporationContract(a.u, r)
 		} else {
-			showCharacterContractWindow(a.u, r)
+			ShowCharacterContract(a.u, r)
 		}
 	}
 	return l
@@ -497,56 +605,7 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, in
 	var rows []contractRow
 	var activeCount int
 	for _, c := range oo {
-		assigneeName := c.Assignee.StringFunc("", func(v *app.EveEntity) string {
-			return v.Name
-		})
-		r := contractRow{
-			acceptor:       c.Acceptor,
-			assignee:       c.Assignee,
-			assigneeName:   assigneeName,
-			availability:   c.Availability,
-			buyout:         c.Buyout,
-			collateral:     c.Collateral,
-			contractID:     c.ContractID,
-			contractType:   c.Type,
-			dateAccepted:   c.DateAccepted,
-			dateCompleted:  c.DateCompleted,
-			dateExpired:    c.DateExpired,
-			dateIssued:     c.DateIssued,
-			daysToComplete: c.DaysToComplete,
-			endLocation:    c.EndLocation,
-			hasIssue:       c.HasIssue(),
-			isActive:       c.Status.IsActive(),
-			isCorporation:  true,
-			isExpired:      c.IsExpired(),
-			isHistory:      c.Status.IsHistory(),
-			issuer:         c.IssuerEffective(),
-			issuerName:     c.IssuerEffective().Name,
-			name:           c.NameDisplay(),
-			objectID:       c.ID,
-			ownerID:        corporation.ID,
-			ownerName:      corporation.NameOrZero(),
-			price:          c.Price,
-			reward:         c.Reward,
-			startLocation:  c.StartLocation,
-			status:         c.Status,
-			statusText:     c.Status.Display(),
-			title:          c.Title.ValueOrFallback("-"),
-			typeName:       c.Type.Display(),
-			volume:         c.Volume,
-		}
-		var text string
-		var color fyne.ThemeColorName
-		if r.isExpired {
-			text = "EXPIRED"
-			color = theme.ColorNameError
-		} else {
-			text = ihumanize.RelTime(r.dateExpired)
-			color = theme.ColorNameForeground
-		}
-		r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-			ColorName: color,
-		})
+		r := newContractRowForCorporation(c, corporation)
 		rows = append(rows, r)
 		if c.Status.IsActive() {
 			activeCount++
@@ -575,55 +634,8 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	var rows []contractRow
 	var activeCount int
 	for _, c := range oo2 {
-		assigneeName := c.Assignee.StringFunc("", func(v *app.EveEntity) string {
-			return v.Name
-		})
-		r := contractRow{
-			acceptor:       c.Acceptor,
-			assignee:       c.Assignee,
-			assigneeName:   assigneeName,
-			availability:   c.Availability,
-			buyout:         c.Buyout,
-			collateral:     c.Collateral,
-			contractID:     c.ContractID,
-			contractType:   c.Type,
-			dateAccepted:   c.DateAccepted,
-			dateCompleted:  c.DateCompleted,
-			dateExpired:    c.DateExpired,
-			dateIssued:     c.DateIssued,
-			daysToComplete: c.DaysToComplete,
-			endLocation:    c.EndLocation,
-			hasIssue:       c.HasIssue(),
-			isActive:       c.Status.IsActive(),
-			isCorporation:  false,
-			isExpired:      c.IsExpired(),
-			isHistory:      c.Status.IsHistory(),
-			issuer:         c.IssuerEffective(),
-			issuerName:     c.IssuerEffective().Name,
-			name:           c.NameDisplay(),
-			objectID:       c.ID,
-			ownerID:        c.CharacterID,
-			ownerName:      characters[c.CharacterID],
-			price:          c.Price,
-			reward:         c.Reward,
-			startLocation:  c.StartLocation,
-			status:         c.Status,
-			statusText:     c.Status.Display(),
-			title:          c.Title.ValueOrFallback("-"),
-			typeName:       c.Type.Display(),
-			volume:         c.Volume,
-		}
-		var text string
-		var color fyne.ThemeColorName
-		if r.isExpired {
-			text = "EXPIRED"
-			color = theme.ColorNameError
-		} else {
-			text = ihumanize.RelTime(r.dateExpired)
-			color = theme.ColorNameForeground
-		}
-		r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-			ColorName: color,
+		r := newContractRowForCharacter(c, func(id int64) string {
+			return characters[id]
 		})
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
 		if err != nil {
@@ -636,84 +648,4 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 		}
 	}
 	return rows, activeCount, nil
-}
-
-func showCharacterContractWindow(u baseUI, r contractRow) {
-	ShowContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Character().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Character().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Character().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.CharacterContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
-}
-
-func showCorporationContractWindow(u baseUI, r contractRow) {
-	ShowContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Corporation().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Corporation().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Corporation().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.CorporationContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
 }
