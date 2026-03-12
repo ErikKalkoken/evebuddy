@@ -44,7 +44,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -179,7 +178,6 @@ type baseUI struct {
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
-	sig                            *singleinstance.Group
 	signals                        *app.Signals
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
@@ -234,7 +232,6 @@ func newBaseUI(arg UIParams) *baseUI {
 		rs:                             arg.Corporation,
 		scs:                            arg.StatusCache,
 		settings:                       arg.Settings,
-		sig:                            singleinstance.NewGroup(),
 		signals:                        arg.Signals,
 		statusText:                     newStatusText(),
 		windows:                        make(map[string]fyne.Window),
@@ -555,27 +552,32 @@ func (u *baseUI) ShowAndRun() {
 //////////////////
 // Services
 
-func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
-	character := u.character.Load()
-	if u.onShowCharacter != nil {
-		u.onShowCharacter()
-	}
-	if character.IDOrZero() != characterID {
-		err := u.LoadCharacter(ctx, characterID)
-		if err != nil {
-			slog.Error("Failed to load character", "characterID", characterID, "error", err)
-			u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
-			return
-		}
-	}
-}
-
 func (u *baseUI) ClearAllCaches() {
 	u.clearCache()
 }
 
-func (u *baseUI) MainWindow() fyne.Window {
-	return u.window
+func (u *baseUI) Character() *characterservice.CharacterService {
+	return u.cs
+}
+
+func (u *baseUI) Corporation() *corporationservice.CorporationService {
+	return u.rs
+}
+
+func (u *baseUI) DataPaths() xmaps.OrderedMap[string, string] {
+	return u.dataPaths
+}
+
+func (u *baseUI) EVEImage() ui.EVEImageService {
+	return u.eis
+}
+
+func (u *baseUI) ESIStatus() *esistatusservice.ESIStatusService {
+	return u.ess
+}
+
+func (u *baseUI) EVEUniverse() *eveuniverseservice.EVEUniverseService {
+	return u.eus
 }
 
 // InfoViewer returns the info window.
@@ -583,18 +585,25 @@ func (u *baseUI) InfoViewer() ui.InfoViewer {
 	return u.iw
 }
 
-func (u *baseUI) SingleInstance() *singleinstance.Group {
-	return u.sig
-}
-
-func (u *baseUI) ShowSnackbar(text string) {
-	u.snackbar.Show(text)
-}
-
 func (u *baseUI) IsMobile() bool {
 	return u.isMobile
 }
 
+func (u *baseUI) MainWindow() fyne.Window {
+	return u.window
+}
+
+// MakeWindowTitle creates a standardized title for a window.
+func (u *baseUI) MakeWindowTitle(parts ...string) string {
+	if len(parts) == 0 {
+		parts = append(parts, "PLACEHOLDER")
+	}
+	if u.isMobile {
+		return parts[0]
+	}
+	parts = append(parts, ui.Name())
+	return strings.Join(parts, " - ")
+}
 func (u *baseUI) SetDeveloperMode(b bool) {
 	u.isDeveloperMode.Store(b)
 }
@@ -614,36 +623,31 @@ func (u *baseUI) IsUpdateDisabled() bool {
 	return u.isUpdateDisabled.Load()
 }
 
-func (u *baseUI) DataPaths() xmaps.OrderedMap[string, string] {
-	return u.dataPaths
-}
-
-func (u *baseUI) Character() *characterservice.CharacterService {
-	return u.cs
-}
-
-func (u *baseUI) Corporation() *corporationservice.CorporationService {
-	return u.rs
-}
-
-func (u *baseUI) EVEImage() ui.EVEImageService {
-	return u.eis
-}
-
-func (u *baseUI) ESIStatus() *esistatusservice.ESIStatusService {
-	return u.ess
-}
-
-func (u *baseUI) EVEUniverse() *eveuniverseservice.EVEUniverseService {
-	return u.eus
-}
-
 func (u *baseUI) Janice() *janiceservice.JaniceService {
 	return u.js
 }
 
 func (u *baseUI) Settings() *settings.Settings {
 	return u.settings
+}
+
+func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
+	character := u.character.Load()
+	if u.onShowCharacter != nil {
+		u.onShowCharacter()
+	}
+	if character.IDOrZero() != characterID {
+		err := u.LoadCharacter(ctx, characterID)
+		if err != nil {
+			slog.Error("Failed to load character", "characterID", characterID, "error", err)
+			u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
+			return
+		}
+	}
+}
+
+func (u *baseUI) ShowSnackbar(text string) {
+	u.snackbar.Show(text)
 }
 
 func (u *baseUI) Signals() *app.Signals {
@@ -1073,18 +1077,6 @@ func (u *baseUI) ErrorDisplay(err error) string {
 }
 
 // Windows
-
-// MakeWindowTitle creates a standardized title for a window.
-func (u *baseUI) MakeWindowTitle(parts ...string) string {
-	if len(parts) == 0 {
-		parts = append(parts, "PLACEHOLDER")
-	}
-	if u.isMobile {
-		return parts[0]
-	}
-	parts = append(parts, ui.Name())
-	return strings.Join(parts, " - ")
-}
 
 // GetOrCreateWindow returns a unique window as defined by the given id string
 // and reports whether a new window was created or the window already exists.

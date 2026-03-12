@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -108,6 +109,7 @@ type Mails struct {
 	toolbar     *widget.Toolbar
 	u           baseUI
 	unreadCount atomic.Int64
+	sig         *singleinstance.Group
 }
 
 func NewMails(u baseUI) *Mails {
@@ -119,6 +121,7 @@ func NewMails(u baseUI) *Mails {
 		headerStatus:     widget.NewLabel(""),
 		headerTop:        widget.NewLabel(""),
 		u:                u,
+		sig:              singleinstance.NewGroup(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -766,7 +769,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	// try to fetch mail body if missing
 	if mail.Body.IsEmpty() {
 		go func() {
-			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
+			a.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
 				body, err := a.u.Character().UpdateMailBodyESI(ctx, characterID, mail.MailID)
 				if err != nil {
 					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
@@ -793,7 +796,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	// try to update mail as read if unread
 	if !mail.IsRead.ValueOrZero() {
 		go func() {
-			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
+			a.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
 				err := a.u.Character().UpdateMailRead(ctx, characterID, mail.MailID, true)
 				if err != nil {
 					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)

@@ -39,6 +39,33 @@ type SendMail struct {
 	w         fyne.Window
 }
 
+func ShowSendMailWindow(u baseUI, c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
+	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
+	page := NewSendMail(u, c, mode, mail)
+	page.SetWindow(w)
+	var send *widget.Button
+	send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
+		send.Disable()
+		defer send.Enable()
+		if page.SendAction() {
+			w.Hide()
+		}
+	})
+	send.Importance = widget.HighImportance
+	p := theme.Padding()
+	x := container.NewBorder(
+		nil,
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), send)),
+		nil,
+		nil,
+		page,
+	)
+	w.SetContent(x)
+	w.Resize(fyne.NewSize(600, 500))
+	w.Show()
+}
+
 func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		u: u,
