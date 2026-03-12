@@ -555,8 +555,19 @@ func (u *baseUI) ShowAndRun() {
 //////////////////
 // Services
 
-func (u *baseUI) OnShowCharacterFunc() func() {
-	return u.onShowCharacter
+func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
+	character := u.character.Load()
+	if u.onShowCharacter != nil {
+		u.onShowCharacter()
+	}
+	if character.IDOrZero() != characterID {
+		err := u.LoadCharacter(ctx, characterID)
+		if err != nil {
+			slog.Error("Failed to load character", "characterID", characterID, "error", err)
+			u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
+			return
+		}
+	}
 }
 
 func (u *baseUI) ClearAllCaches() {

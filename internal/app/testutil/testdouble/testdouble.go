@@ -206,21 +206,25 @@ func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache
 }
 
 type UIFake struct {
-	app      fyne.App
-	cs       *characterservice.CharacterService
-	rs       *corporationservice.CorporationService
-	eis      ui.EVEImageService
-	eus      *eveuniverseservice.EVEUniverseService
-	isMobile bool
-	iw       *infoviewer.InfoViewer
-	signals  *app.Signals
+	app               fyne.App
+	cs                *characterservice.CharacterService
+	rs                *corporationservice.CorporationService
+	eis               ui.EVEImageService
+	eus               *eveuniverseservice.EVEUniverseService
+	isMobile          bool
+	iw                *infoviewer.InfoViewer
+	signals           *app.Signals
+	showCharacterFunc func(ctx context.Context, characterID int64)
+	showSnackbarFunc  func(text string)
 }
 
 type UIParams struct {
-	App      fyne.App
-	IsMobile bool
-	Signals  *app.Signals
-	Storage  *storage.Storage
+	App               fyne.App
+	IsMobile          bool
+	Signals           *app.Signals
+	Storage           *storage.Storage
+	ShowCharacterFunc func(ctx context.Context, characterID int64)
+	ShowSnackbarFunc  func(text string)
 }
 
 func NewUIFake(args ...UIParams) *UIFake {
@@ -263,13 +267,15 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Storage:            arg.Storage,
 	})
 	u := &UIFake{
-		app:      arg.App,
-		cs:       cs,
-		eis:      testutil.NewEveImageServiceStub(),
-		eus:      eus,
-		isMobile: arg.IsMobile,
-		rs:       rs,
-		signals:  arg.Signals,
+		app:               arg.App,
+		cs:                cs,
+		eis:               testutil.NewEveImageServiceStub(),
+		eus:               eus,
+		isMobile:          arg.IsMobile,
+		rs:                rs,
+		showCharacterFunc: arg.ShowCharacterFunc,
+		showSnackbarFunc:  arg.ShowSnackbarFunc,
+		signals:           arg.Signals,
 	}
 	return u
 }
@@ -277,10 +283,6 @@ func NewUIFake(args ...UIParams) *UIFake {
 func (u *UIFake) Character() *characterservice.CharacterService {
 	return u.cs
 }
-
-// func (u *UIFake) CurrentCharacter() *app.Character {
-// 	return nil
-// }
 
 func (u *UIFake) Corporation() *corporationservice.CorporationService {
 	return u.rs
@@ -325,8 +327,17 @@ func (u *UIFake) IsOffline() bool {
 func (u *UIFake) MainWindow() fyne.Window {
 	return u.app.NewWindow("Dummy")
 }
-func (u *UIFake) ShowSnackbar(text string) {
 
+func (u *UIFake) ShowCharacter(ctx context.Context, characterID int64) {
+	if f := u.showCharacterFunc; f != nil {
+		f(ctx, characterID)
+	}
+}
+
+func (u *UIFake) ShowSnackbar(text string) {
+	if f := u.showSnackbarFunc; f != nil {
+		f(text)
+	}
 }
 
 func (u *UIFake) Signals() *app.Signals {

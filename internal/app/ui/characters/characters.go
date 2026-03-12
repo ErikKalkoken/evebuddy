@@ -29,7 +29,7 @@ type baseUI interface {
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	MainWindow() fyne.Window
-	OnShowCharacterFunc() func()
+	ShowCharacter(ctx context.Context, characterID int64)
 	Settings() *settings.Settings
 	ShowSnackbar(text string)
 	Signals() *app.Signals
