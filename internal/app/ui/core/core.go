@@ -282,7 +282,7 @@ func newBaseUI(arg UIParams) *baseUI {
 		logErr := func(err error) {
 			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
-		isShown := arg.CharacterID == u.CurrentCharacter().IDOrZero()
+		isShown := arg.CharacterID == u.character.Load().IDOrZero()
 		switch arg.Section {
 		case app.SectionCharacterAssets:
 			if isShown {
@@ -351,7 +351,7 @@ func newBaseUI(arg UIParams) *baseUI {
 		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
 		switch arg.Section {
 		case app.SectionEveCharacters:
-			if arg.Changed.Contains(u.CurrentCharacter().IDOrZero()) {
+			if arg.Changed.Contains(u.character.Load().IDOrZero()) {
 				u.ReloadCurrentCharacter(ctx)
 			}
 			characters := u.scs.ListCharacterIDs()
@@ -688,7 +688,7 @@ func (u *baseUI) LoadCharacter(ctx context.Context, id int64) error {
 
 // ReloadCurrentCharacter reloads the current character from storage.
 func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
-	id := u.CurrentCharacter().IDOrZero()
+	id := u.character.Load().IDOrZero()
 	if id == 0 {
 		return
 	}
@@ -963,7 +963,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items := []*fyne.MenuItem{it}
-	currentID := u.CurrentCharacter().IDOrZero()
+	currentID := u.character.Load().IDOrZero()
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {

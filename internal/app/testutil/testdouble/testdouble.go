@@ -278,6 +278,10 @@ func (u *UIFake) Character() *characterservice.CharacterService {
 	return u.cs
 }
 
+// func (u *UIFake) CurrentCharacter() *app.Character {
+// 	return nil
+// }
+
 func (u *UIFake) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }

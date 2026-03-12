@@ -703,14 +703,7 @@ func (u *DesktopUI) showAdvancedSearch(s string) {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	c := u.CurrentCharacter()
-	var n string
-	if c != nil {
-		n = c.EveCharacter.Name
-	} else {
-		n = "No Character"
-	}
-	w, created := u.GetOrCreateWindow(fmt.Sprintf("search-%s", n), fmt.Sprintf("Search New Eden [%s]", n))
+	w, created := u.GetOrCreateWindow("new-eden-search", "Search New Eden")
 	if !created {
 		w.Show()
 		return
@@ -746,7 +739,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -759,7 +752,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -777,7 +770,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return

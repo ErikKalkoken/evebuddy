@@ -18,7 +18,6 @@ import (
 type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
-	CurrentCharacter() *app.Character
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
