@@ -656,7 +656,7 @@ func (a *browserContainer) makeAssetGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return newAssetIem(func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource)) {
-				loadAssetIconAsync(a.ab.u.EVEImage(), typeID, variant, setIcon)
+				a.ab.u.EVEImage().AssetIconAsync(typeID, variant, ui.IconPixelSize, setIcon)
 			})
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {

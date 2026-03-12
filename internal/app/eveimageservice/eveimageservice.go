@@ -95,6 +95,29 @@ func (s *EVEImageService) AllianceLogoAsync(id int64, size int, setter func(r fy
 	})
 }
 
+func (s *EVEImageService) AssetIconAsync(id int64, variant app.InventoryTypeVariant, size int, setter func(r fyne.Resource)) {
+	if variant == app.VariantSKIN {
+		setter(resourceSkinicon64pxPng)
+		return
+	}
+	var makeURL func(id int64, size int) (string, error)
+	switch variant {
+	case app.VariantBPO:
+		makeURL = InventoryTypeBPOURL
+	case app.VariantBPC:
+		makeURL = InventoryTypeBPCURL
+	default:
+		makeURL = InventoryTypeIconURL
+	}
+	s.loadImageAsync(loadImageAsyncParams{
+		id:      id,
+		makeURL: makeURL,
+		setter:  setter,
+		size:    size,
+		timeout: timeoutNeverExpire,
+	})
+}
+
 // CharacterPortrait returns the portrait for a character.
 func (s *EVEImageService) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
 	url, err := CharacterPortraitURL(id, size)

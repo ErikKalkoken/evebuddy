@@ -231,6 +231,10 @@ func (s *EveImageServiceStub) AllianceLogoAsync(id int64, size int, setter func(
 	setter(s.Alliance)
 }
 
+func (s *EveImageServiceStub) AssetIconAsync(id int64, variant app.InventoryTypeVariant, size int, setter func(r fyne.Resource)) {
+	setter(s.Type)
+}
+
 func (s *EveImageServiceStub) CharacterPortrait(id int64, size int) (fyne.Resource, error) {
 	return s.Character, s.Err
 }

@@ -34,6 +34,7 @@ const (
 type EVEImageService interface {
 	AllianceLogo(id int64, size int) (fyne.Resource, error)
 	AllianceLogoAsync(id int64, size int, setter func(r fyne.Resource))
+	AssetIconAsync(id int64, variant app.InventoryTypeVariant, size int, setter func(r fyne.Resource))
 	CharacterPortrait(id int64, size int) (fyne.Resource, error)
 	CharacterPortraitAsync(id int64, size int, setter func(r fyne.Resource))
 	CorporationLogo(id int64, size int) (fyne.Resource, error)

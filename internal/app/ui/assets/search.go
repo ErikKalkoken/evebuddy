@@ -264,7 +264,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.typeName)
 			x := border[1].(*canvas.Image)
-			loadAssetIconAsync(u.EVEImage(), r.typeID, r.variant, func(r fyne.Resource) {
+			u.EVEImage().AssetIconAsync(r.typeID, r.variant, ui.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
