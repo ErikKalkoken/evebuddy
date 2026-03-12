@@ -28,7 +28,7 @@ type EveEntityEIS interface {
 	InventoryTypeIcon(int64, int) (fyne.Resource, error)
 }
 
-var eveEntityResourceCache xsync.Map[int64, fyne.Resource]
+var eveEntityResourceCache xsync.Map[int64, fyne.Resource] // FIXME: cache key must include size
 
 // LoadEveEntityIconAsync loads a cached item asynchronous for an EveEntity object.
 func LoadEveEntityIconAsync(eis EveEntityEIS, ee *app.EveEntity, size int, setIcon func(r fyne.Resource)) {

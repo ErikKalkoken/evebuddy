@@ -185,7 +185,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				NewSkillLevel(),
+				xwidget.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -218,7 +218,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 		)
 		label.SetToolTip(tt)
 
-		level := row[1].(*SkillLevel)
+		level := row[1].(*xwidget.SkillLevel)
 		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {

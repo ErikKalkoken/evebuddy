@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type Queue struct {
@@ -115,7 +116,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
-			level := NewSkillLevel()
+			level := xwidget.NewSkillLevel()
 			if a.u.IsMobile() {
 				level.Hide()
 			}
@@ -129,7 +130,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*SkillLevel)
+			level := c[1].(*xwidget.SkillLevel)
 			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel

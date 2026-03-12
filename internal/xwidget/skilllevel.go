@@ -1,4 +1,4 @@
-package skills
+package xwidget
 
 import (
 	"fyne.io/fyne/v2"
@@ -6,8 +6,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // SkillLevel shows the skill level status for a character.
@@ -30,7 +28,7 @@ func NewSkillLevel() *SkillLevel {
 	untrainedIcon := theme.NewDisabledResource(theme.MediaStopIcon())
 	dots := make([]*canvas.Image, 5)
 	for i := range 5 {
-		dot := iwidgets.NewImageFromResource(untrainedIcon, size)
+		dot := NewImageFromResource(untrainedIcon, size)
 		dots[i] = dot
 	}
 	w := &SkillLevel{

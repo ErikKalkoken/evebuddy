@@ -1,194 +1,225 @@
 package skills
 
-// func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(ui.SkipUIReason)
-// 	}
-// 	test.ApplyTheme(t, test.Theme())
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Bruce Wayne",
-// 	})
-// 	character := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		ID:            ec.ID,
-// 		TotalSP:       optional.New(10_000_000),
-// 		UnallocatedSP: optional.New(1_000_000),
-// 	})
-// 	tag := factory.CreateCharacterTag("Alpha")
-// 	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
-// 		CharacterID: character.ID,
-// 		TagID:       tag.ID,
-// 	})
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	now := time.Now().UTC()
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
-// 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-// 		CharacterID:   character.ID,
-// 		StartDate:     optional.New(now.Add(-1 * time.Hour)),
-// 		FinishDate:    optional.New(now.Add(3 * time.Hour)),
-// 		EveTypeID:     et.ID,
-// 		FinishedLevel: 3,
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterSkillqueue,
-// 		CompletedAt: now,
-// 	})
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	w := test.NewWindow(ui.training)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+import (
+	"context"
+	"testing"
+	"time"
 
-// 	ui.training.Update(t.Context())
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 
-// 	test.AssertImageMatches(t, "training/active.png", w.Canvas().Capture())
-// }
+	"github.com/stretchr/testify/assert"
 
-// func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(ui.SkipUIReason)
-// 	}
-// 	test.ApplyTheme(t, test.Theme())
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Bruce Wayne",
-// 	})
-// 	character := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		ID:            ec.ID,
-// 		TotalSP:       optional.New(10_000_000),
-// 		UnallocatedSP: optional.New(1_000_000),
-// 	})
-// 	now := time.Now().UTC()
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterSkillqueue,
-// 		CompletedAt: now,
-// 	})
-// 	tag := factory.CreateCharacterTag("Alpha")
-// 	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
-// 		CharacterID: character.ID,
-// 		TagID:       tag.ID,
-// 	})
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	w := test.NewWindow(ui.training)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+)
 
-// 	ui.training.Update(t.Context())
+func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
+	}
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Bruce Wayne",
+	})
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
+		ID:            ec.ID,
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
+	})
+	tag := factory.CreateCharacterTag("Alpha")
+	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
+	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+		CharacterID:   character.ID,
+		StartDate:     optional.New(now.Add(-1 * time.Hour)),
+		FinishDate:    optional.New(now.Add(3 * time.Hour)),
+		EveTypeID:     et.ID,
+		FinishedLevel: 3,
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterSkillqueue,
+		CompletedAt: now,
+	})
+	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	test.AssertImageMatches(t, "training/inactive.png", w.Canvas().Capture())
-// }
+	a.Update(t.Context())
 
-// func TestTraining_CanRenderWithoutData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(ui.SkipUIReason)
-// 	}
-// 	test.ApplyTheme(t, test.Theme())
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Bruce Wayne",
-// 	})
-// 	factory.CreateCharacter(storage.CreateCharacterParams{
-// 		ID: ec.ID,
-// 	})
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	w := test.NewWindow(ui.training)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+	test.AssertImageMatches(t, "training/active.png", w.Canvas().Capture())
+}
 
-// 	ui.training.Update(t.Context())
+func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
+	}
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Bruce Wayne",
+	})
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
+		ID:            ec.ID,
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
+	})
+	now := time.Now().UTC()
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterSkillqueue,
+		CompletedAt: now,
+	})
+	tag := factory.CreateCharacterTag("Alpha")
+	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	test.AssertImageMatches(t, "training/minimal.png", w.Canvas().Capture())
-// }
+	a.Update(t.Context())
 
-// func TestTraining_Filter(t *testing.T) {
-// 	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
-// 	now := time.Now().UTC()
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Alpha",
-// 	})
-// 	character1 := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		ID:            ec1.ID,
-// 		TotalSP:       optional.New(10_000_000),
-// 		UnallocatedSP: optional.New(1_000_000),
-// 	})
-// 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-// 		CharacterID: character1.ID,
-// 		StartDate:   optional.New(now.Add(-1 * time.Hour)),
-// 		FinishDate:  optional.New(now.Add(3 * time.Hour)),
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character1.ID,
-// 		Section:     app.SectionCharacterSkillqueue,
-// 		CompletedAt: now,
-// 	})
+	test.AssertImageMatches(t, "training/inactive.png", w.Canvas().Capture())
+}
 
-// 	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-// 		Name: "Bravo",
-// 	})
-// 	character2 := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		ID:            ec2.ID,
-// 		TotalSP:       optional.New(10_000_000),
-// 		UnallocatedSP: optional.New(1_000_000),
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character2.ID,
-// 		Section:     app.SectionCharacterSkillqueue,
-// 		CompletedAt: now,
-// 	})
-// 	tag := factory.CreateCharacterTag()
-// 	factory.AddCharacterToTag(tag, character2)
-// 	factory.CreateCharacterTag()
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.training.Update(t.Context())
+func TestTraining_CanRenderWithoutData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUIReason)
+	}
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Bruce Wayne",
+	})
+	factory.CreateCharacter(storage.CreateCharacterParams{
+		ID: ec.ID,
+	})
+	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	t.Run("no filter", func(t *testing.T) {
-// 		ui.training.selectStatus.SetSelected("")
-// 		ui.training.selectTag.SetSelected("")
-// 		got := xslices.Map(ui.training.rowsFiltered, func(r trainingRow) string {
-// 			return r.characterName
-// 		})
-// 		want := []string{"Alpha", "Bravo"}
-// 		assert.ElementsMatch(t, want, got)
-// 	})
-// 	t.Run("filter active", func(t *testing.T) {
-// 		ui.training.selectStatus.SetSelected(trainingStatusActive)
-// 		ui.training.selectTag.SetSelected("")
+	a.Update(t.Context())
 
-// 		got := xslices.Map(ui.training.rowsFiltered, func(r trainingRow) string {
-// 			return r.characterName
-// 		})
-// 		want := []string{"Alpha"}
-// 		assert.ElementsMatch(t, want, got)
-// 	})
-// 	t.Run("filter inactive", func(t *testing.T) {
-// 		ui.training.selectStatus.SetSelected(trainingStatusInActive)
-// 		ui.training.selectTag.SetSelected("")
+	test.AssertImageMatches(t, "training/minimal.png", w.Canvas().Capture())
+}
 
-// 		got := xslices.Map(ui.training.rowsFiltered, func(r trainingRow) string {
-// 			return r.characterName
-// 		})
-// 		want := []string{"Bravo"}
-// 		assert.ElementsMatch(t, want, got)
-// 	})
-// 	t.Run("filter tag", func(t *testing.T) {
-// 		ui.training.selectStatus.SetSelected("")
-// 		ui.training.selectTag.SetSelected(tag.Name)
+func TestTraining_Filter(t *testing.T) {
+	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
+	now := time.Now().UTC()
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Alpha",
+	})
+	character1 := factory.CreateCharacter(storage.CreateCharacterParams{
+		ID:            ec1.ID,
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
+	})
+	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+		CharacterID: character1.ID,
+		StartDate:   optional.New(now.Add(-1 * time.Hour)),
+		FinishDate:  optional.New(now.Add(3 * time.Hour)),
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character1.ID,
+		Section:     app.SectionCharacterSkillqueue,
+		CompletedAt: now,
+	})
 
-// 		got := xslices.Map(ui.training.rowsFiltered, func(r trainingRow) string {
-// 			return r.characterName
-// 		})
-// 		want := []string{"Bravo"}
-// 		assert.ElementsMatch(t, want, got)
-// 	})
-// }
+	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Name: "Bravo",
+	})
+	character2 := factory.CreateCharacter(storage.CreateCharacterParams{
+		ID:            ec2.ID,
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character2.ID,
+		Section:     app.SectionCharacterSkillqueue,
+		CompletedAt: now,
+	})
+	tag := factory.CreateCharacterTag()
+	factory.AddCharacterToTag(tag, character2)
+	factory.CreateCharacterTag()
+	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.Update(t.Context())
+
+	t.Run("no filter", func(t *testing.T) {
+		a.selectStatus.SetSelected("")
+		a.selectTag.SetSelected("")
+		got := xslices.Map(a.rowsFiltered, func(r trainingRow) string {
+			return r.characterName
+		})
+		want := []string{"Alpha", "Bravo"}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("filter active", func(t *testing.T) {
+		a.selectStatus.SetSelected(trainingStatusActive)
+		a.selectTag.SetSelected("")
+
+		got := xslices.Map(a.rowsFiltered, func(r trainingRow) string {
+			return r.characterName
+		})
+		want := []string{"Alpha"}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("filter inactive", func(t *testing.T) {
+		a.selectStatus.SetSelected(trainingStatusInActive)
+		a.selectTag.SetSelected("")
+
+		got := xslices.Map(a.rowsFiltered, func(r trainingRow) string {
+			return r.characterName
+		})
+		want := []string{"Bravo"}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("filter tag", func(t *testing.T) {
+		a.selectStatus.SetSelected("")
+		a.selectTag.SetSelected(tag.Name)
+
+		got := xslices.Map(a.rowsFiltered, func(r trainingRow) string {
+			return r.characterName
+		})
+		want := []string{"Bravo"}
+		assert.ElementsMatch(t, want, got)
+	})
+}
