@@ -16,6 +16,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
@@ -160,10 +161,10 @@ func (s *EVEImageService) CorporationLogoAsync(id int64, size int, setter func(r
 }
 
 func (s *EVEImageService) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resource, error) {
-	if o.Category == app.EveEntityMailList {
-		return theme.MailComposeIcon(), nil
+	if r, ok := eveEntitySimpleIcon(o.Category); ok {
+		return r, nil
 	}
-	makeURL, timeout, ok := loadEntityParams(o.Category)
+	makeURL, timeout, ok := eveEntityLoadParams(o.Category)
 	if !ok {
 		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
 		return theme.BrokenImageIcon(), nil
@@ -177,11 +178,11 @@ func (s *EVEImageService) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resour
 }
 
 func (s *EVEImageService) EveEntityLogoAsync(o *app.EveEntity, size int, setter func(r fyne.Resource)) {
-	if o.Category == app.EveEntityMailList {
-		setter(theme.MailComposeIcon())
+	if r, ok := eveEntitySimpleIcon(o.Category); ok {
+		setter(r)
 		return
 	}
-	makeURL, timeout, ok := loadEntityParams(o.Category)
+	makeURL, timeout, ok := eveEntityLoadParams(o.Category)
 	if !ok {
 		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
 		setter(theme.BrokenImageIcon())
@@ -197,7 +198,25 @@ func (s *EVEImageService) EveEntityLogoAsync(o *app.EveEntity, size int, setter 
 	})
 }
 
-func loadEntityParams(c app.EveEntityCategory) (func(id int64, size int) (string, error), time.Duration, bool) {
+func eveEntitySimpleIcon(c app.EveEntityCategory) (fyne.Resource, bool) {
+	switch c {
+	case app.EveEntityConstellation:
+		return icons.Constellation64Png, true
+	case app.EveEntityMailList:
+		return theme.MailComposeIcon(), true
+	case app.EveEntityRegion:
+		return icons.Region64Png, true
+	case app.EveEntitySolarSystem:
+		return theme.NewThemedResource(icons.SolarSystemSvg), true
+	case app.EveEntityStation:
+		return theme.NewThemedResource(icons.SpaceStationSvg), true
+	case app.EveEntityUnknown:
+		return theme.QuestionIcon(), true
+	}
+	return nil, false
+}
+
+func eveEntityLoadParams(c app.EveEntityCategory) (func(id int64, size int) (string, error), time.Duration, bool) {
 	switch c {
 	case app.EveEntityAlliance:
 		return AllianceLogoURL, timeoutAlliance, true
