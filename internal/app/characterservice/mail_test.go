@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -21,7 +22,7 @@ func TestUpdateMailBodies(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := characterservice.NewFake(st)
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	makeMailData := func(m *app.CharacterMail) map[string]any {
 		recipients := make([]map[string]any, 0)
@@ -105,7 +106,7 @@ func TestUpdateMailBodies(t *testing.T) {
 func TestNotifyMails(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := characterservice.NewFake(st)
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
@@ -145,7 +146,7 @@ func TestSendMail(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := characterservice.NewFake(st)
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

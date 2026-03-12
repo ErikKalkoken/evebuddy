@@ -10,12 +10,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
 func TestEveUniverseService_ListSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	t.Run("should return list of skills", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

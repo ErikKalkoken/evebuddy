@@ -656,10 +656,14 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 	}
 
-	updateCharacterCount := func(_ context.Context) {
-		s := fmt.Sprintf("%d characters", u.StatusCache().ListCharacterIDs().Size())
+	updateCharacterCount := func(ctx context.Context) {
+		ids, err := u.cs.ListCharacterIDs(ctx)
+		if err != nil {
+			slog.Error("updating character count", "error", err)
+			return
+		}
 		fyne.Do(func() {
-			navItemManageCharacters.Supporting = s
+			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", ids.Size())
 			navItemManageCharacters.Refresh()
 		})
 	}
@@ -683,7 +687,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			return
 		}
 		u.isOffline.Store(false)
-		status := u.StatusCache().Summary()
+		status := u.scs.Summary()
 		var icon fyne.Resource
 		if status.Errors > 0 {
 			icon = theme.NewErrorThemedResource(theme.WarningIcon())

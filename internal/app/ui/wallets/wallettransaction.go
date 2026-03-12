@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -35,12 +34,13 @@ const (
 
 type walletTransactionRow struct {
 	categoryName     string
-	characterID      int64
+	ownerID          int64
+	ownerName        string
+	forCorporation   bool
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
 	dateFormatted    string
-	corporationID    int64
 	division         app.Division
 	isBuy            bool
 	locationDisplay  []widget.RichTextSegment
@@ -224,9 +224,9 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			a.filterRowsAsync,
 			func(_ int, r walletTransactionRow) {
 				if a.isCorporation() {
-					ShowCorporationWalletTransactionWindowAsync(a.u, r.corporationID, r.division, r.transactionID)
+					ShowCorporationWalletTransactionWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.transactionID)
 				} else {
-					ShowCharacterWalletTransactionWindowAsync(a.u, r.characterID, r.transactionID)
+					ShowCharacterWalletTransactionWindowAsync(a.u, r.ownerID, r.ownerName, r.transactionID)
 				}
 			})
 	} else {
@@ -348,9 +348,9 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.isCorporation() {
-			ShowCorporationWalletTransactionWindowAsync(a.u, r.corporationID, r.division, r.transactionID)
+			ShowCorporationWalletTransactionWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.transactionID)
 		} else {
-			ShowCharacterWalletTransactionWindowAsync(a.u, r.characterID, r.transactionID)
+			ShowCharacterWalletTransactionWindowAsync(a.u, r.ownerID, r.ownerName, r.transactionID)
 		}
 	}
 	l.HideSeparators = true
@@ -448,35 +448,47 @@ func (a *WalletTransactions) Update(ctx context.Context) {
 }
 
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
-	var err error
-	var rows []walletTransactionRow
-	characterID := a.character.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
-	if hasData {
-		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
-			err = err2
-		} else {
-			rows = rows2
-		}
-	}
-	t, i := ui.MakeTopText(characterID, hasData, err, nil)
-	fyne.Do(func() {
-		if t != "" {
-			a.footer.Text = t
-			a.footer.Importance = i
+	setInfo := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = s, i
 			a.footer.Refresh()
-		}
-	})
+		})
+	}
+	reset := func() {
+		xslices.Reset(a.rows)
+		a.filterRowsAsync(-1)
+	}
+	character := a.character.Load()
+	if character == nil {
+		reset()
+		setInfo("No character", widget.LowImportance)
+		return
+	}
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletTransactions)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setInfo("No data", widget.WarningImportance)
+		return
+	}
+	rows, err := a.fetchCharacterRows(ctx, character)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync(-1)
 	})
 }
 
-func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID int64) ([]walletTransactionRow, error) {
-	entries, err := a.u.Character().ListWalletTransactions(ctx, characterID)
+func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *app.Character) ([]walletTransactionRow, error) {
+	entries, err := a.u.Character().ListWalletTransactions(ctx, character.IDOrZero())
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +497,8 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID
 		total := o.Total()
 		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
-			characterID:      characterID,
+			ownerID:          character.ID,
+			ownerName:        character.NameOrZero(),
 			client:           o.Client,
 			clientName:       o.Client.Name,
 			date:             o.Date,
@@ -520,38 +533,47 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, characterID
 }
 
 func (a *WalletTransactions) updateCorporation(ctx context.Context) {
-	var err error
-	var rows []walletTransactionRow
-	corporationID := a.corporation.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
-	if hasData {
-		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
-		if err2 != nil {
-			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
-			err = err2
-		} else {
-			rows = rows2
-		}
-	}
-	t, i := ui.MakeTopText(corporationID, hasData, err, nil)
-	fyne.Do(func() {
-		if t != "" {
-			a.footer.Text = t
-			a.footer.Importance = i
+	setInfo := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = s, i
 			a.footer.Refresh()
-			a.footer.Show()
-		} else {
-			a.footer.Hide()
-		}
-	})
+		})
+	}
+	reset := func() {
+		xslices.Reset(a.rows)
+		a.filterRowsAsync(-1)
+	}
+	corporation := a.corporation.Load()
+	if corporation == nil {
+		reset()
+		setInfo("No corporation", widget.LowImportance)
+		return
+	}
+	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletTransactions(a.division))
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setInfo("No data", widget.WarningImportance)
+		return
+	}
+	rows, err := a.fetchCorporationRows(ctx, corporation, a.division)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync(-1)
 	})
 }
 
-func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporationID int64, division app.Division) ([]walletTransactionRow, error) {
-	entries, err := a.u.Corporation().ListWalletTransactions(ctx, corporationID, division)
+func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletTransactionRow, error) {
+	entries, err := a.u.Corporation().ListWalletTransactions(ctx, corporation.IDOrZero(), division)
 	if err != nil {
 		return nil, err
 	}
@@ -562,7 +584,8 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			categoryName:     o.Type.Group.Category.Name,
 			client:           o.Client,
 			clientName:       o.Client.Name,
-			corporationID:    corporationID,
+			ownerID:          corporation.ID,
+			ownerName:        corporation.NameOrZero(),
 			date:             o.Date,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
 			division:         division,
@@ -596,13 +619,10 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 }
 
 // ShowCharacterWalletTransactionWindowAsync shows the detail of a character wallet transaction in a window.
-func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, transactionID int64) {
+func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, characterName string, transactionID int64) {
+	key := fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID)
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID),
-		title,
-		u.StatusCache().CharacterName(characterID),
-	)
+	w, created := u.GetOrCreateWindow(key, title, characterName)
 	if !created {
 		w.Show()
 		return
@@ -627,7 +647,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					characterID,
-					u.StatusCache().CharacterName(characterID),
+					characterName,
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
@@ -672,13 +692,10 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, tran
 }
 
 // ShowCorporationWalletTransactionWindowAsync shows the detail of a corporation wallet transaction in a window.
-func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, division app.Division, transactionID int64) {
+func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, transactionID int64) {
+	key := fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID)
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID),
-		title,
-		u.StatusCache().CorporationName(corporationID),
-	)
+	w, created := u.GetOrCreateWindow(key, title, corporationName)
 	if !created {
 		w.Show()
 		return
@@ -695,7 +712,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					corporationID,
-					u.StatusCache().CorporationName(corporationID),
+					corporationName,
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
@@ -709,7 +726,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoViewer().ShowLocation)),
 				widget.NewFormItem("Related Journal Entry", ui.MakeLinkLabelWithWrap(
 					fmt.Sprintf("#%d", o.JournalRefID), func() {
-						go ShowCorporationWalletJournalEntryWindowAsync(u, corporationID, division, o.JournalRefID)
+						ShowCorporationWalletJournalEntryWindowAsync(u, corporationID, "PLACEHOLDER", division, o.JournalRefID)
 					},
 				)),
 			}

@@ -211,7 +211,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.characterMails.OnUpdate = func(unread, _ int) {
 		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 	}
-	u.characterMails.OnSendMessage = u.showSendMailWindow
+	u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+		characters.ShowSendMailWindow(u, character, mode, mail)
+	}
 
 	characterCommunicationsNav := xwidget.NewNavPage(
 		"Communications",
@@ -657,37 +659,6 @@ func (u *DesktopUI) saveAppState() {
 	slog.Debug("Saved app state")
 }
 
-func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.app.NewWindow(u.MakeWindowTitle(title))
-	page := characters.NewSendMail(u, c, mode, mail)
-	page.SetWindow(w)
-	var send *widget.Button
-	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())
-	send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
-		u.sig.Do(key, func() (any, error) {
-			send.Disable()
-			defer send.Enable()
-			if page.SendAction() {
-				w.Hide()
-			}
-			return nil, nil
-		})
-	})
-	send.Importance = widget.HighImportance
-	p := theme.Padding()
-	x := container.NewBorder(
-		nil,
-		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), send)),
-		nil,
-		nil,
-		page,
-	)
-	w.SetContent(x)
-	w.Resize(fyne.NewSize(600, 500))
-	w.Show()
-}
-
 func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.ResetOptions()
 	u.gameSearch.ToogleOptions(false)
@@ -703,14 +674,7 @@ func (u *DesktopUI) showAdvancedSearch(s string) {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	c := u.CurrentCharacter()
-	var n string
-	if c != nil {
-		n = c.EveCharacter.Name
-	} else {
-		n = "No Character"
-	}
-	w, created := u.GetOrCreateWindow(fmt.Sprintf("search-%s", n), fmt.Sprintf("Search New Eden [%s]", n))
+	w, created := u.GetOrCreateWindow("new-eden-search", "Search New Eden")
 	if !created {
 		w.Show()
 		return
@@ -746,7 +710,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -759,7 +723,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -777,7 +741,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.character.Load()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return

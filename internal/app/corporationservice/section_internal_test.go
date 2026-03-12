@@ -15,7 +15,7 @@ import (
 
 func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
-	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{
 		Token: &app.CharacterToken{AccessToken: "accessToken"},
 	}})
 	ctx := context.Background()
@@ -148,7 +148,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 
 func TestHasSectionChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("report true when section has changed", func(t *testing.T) {
 		// given
@@ -212,7 +212,7 @@ func TestHasSectionChanged(t *testing.T) {
 
 func TestCorporationService_HasValidToken(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should report true when matching token was found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

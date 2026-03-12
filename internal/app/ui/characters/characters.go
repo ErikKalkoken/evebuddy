@@ -11,15 +11,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
-	CurrentCharacter() *app.Character
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
@@ -29,14 +26,12 @@ type baseUI interface {
 	IsMobile() bool
 	IsOffline() bool
 	IsUpdateDisabled() bool
-	LoadCharacter(ctx context.Context, id int64) error
 	MainWindow() fyne.Window
-	OnShowCharacterFunc() func()
+	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
+	ShowCharacter(ctx context.Context, characterID int64)
 	ShowSnackbar(text string)
 	Signals() *app.Signals
-	SingleInstance() *singleinstance.Group
-	StatusCache() *statuscache.StatusCache
 	UpdateMailIndicator(ctx context.Context)
 }
 

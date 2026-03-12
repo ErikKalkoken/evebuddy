@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -25,7 +26,7 @@ func TestFetchAlliance(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	const allianceID = 434243723
 	factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
 	creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
@@ -90,7 +91,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return corporations", func(t *testing.T) {
 		// given
@@ -139,7 +140,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new corporation", func(t *testing.T) {
 		// given
@@ -228,7 +229,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new minimal corporation", func(t *testing.T) {
 		// given
@@ -398,7 +399,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("can update from ESI and report changed IDs", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

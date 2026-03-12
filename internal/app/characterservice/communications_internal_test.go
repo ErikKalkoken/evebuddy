@@ -23,7 +23,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should create new notification from scratch 1", func(t *testing.T) {
 		// given
@@ -335,7 +335,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 func TestListCharacterNotifications(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given

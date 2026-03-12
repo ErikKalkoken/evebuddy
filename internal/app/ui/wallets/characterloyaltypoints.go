@@ -147,7 +147,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return newLoyaltyPointsListItem(
-				ui.LoadEveEntityIconFunc(a.u.EVEImage()),
+				a.u.EVEImage().EveEntityLogoAsync,
 				func(o *app.EveEntity) {
 					a.u.InfoViewer().Show(o)
 				})
@@ -229,7 +229,13 @@ func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 		return
 	}
 
-	if !a.u.StatusCache().HasCharacterSection(character.ID, app.SectionCharacterLoyaltyPoints) {
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterLoyaltyPoints)
+	if err != nil {
+		reset()
+		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
 		reset()
 		setFooter("Loading data...", widget.WarningImportance)
 		return

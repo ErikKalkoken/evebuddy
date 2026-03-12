@@ -25,12 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-)
-
-const (
-	SkipUIReason = "This test is skipped for CI as it is flaky"
 )
 
 // AppFake is an extension of the Fyne test app which also conforms to the desktop app interface.
@@ -197,20 +192,12 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	eisFake := &testutil.EveImageServiceFake{
-		Character:   icons.Characterplaceholder64Jpeg,
-		Alliance:    icons.Corporationplaceholder64Png,
-		Corporation: icons.Corporationplaceholder64Png,
-		Err:         nil,
-		Faction:     icons.Factionplaceholder64Png,
-		Type:        icons.Typeplaceholder64Png,
-	}
 	bu := newBaseUI(UIParams{
 		App:         fyneApp,
 		Character:   cs,
 		Corporation: rs,
 		ESIStatus:   esistatusservice.New(esiClient),
-		EVEImage:    eisFake,
+		EVEImage:    testutil.NewEveImageServiceStub(),
 		EVEUniverse: eus,
 		Janice:      janiceservice.New(http.DefaultClient, ""),
 		Settings:    settings,

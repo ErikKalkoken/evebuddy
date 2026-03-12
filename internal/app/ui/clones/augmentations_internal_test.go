@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
 func TestAugmentations_CanRenderWithData(t *testing.T) {
@@ -43,7 +44,10 @@ func TestAugmentations_CanRenderWithData(t *testing.T) {
 	})
 	test.ApplyTheme(t, test.Theme())
 
-	a := NewAugmentations(NewUIFake(st, test.NewTempApp(t)))
+	a := NewAugmentations(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))

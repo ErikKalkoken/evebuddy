@@ -185,7 +185,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				NewSkillLevel(),
+				xwidget.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -218,7 +218,7 @@ func (a *Catalogue) makeSkillsGrid() fyne.CanvasObject {
 		)
 		label.SetToolTip(tt)
 
-		level := row[1].(*SkillLevel)
+		level := row[1].(*xwidget.SkillLevel)
 		level.Set(r.levelActive, r.levelTrained, r.levelQueued)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
@@ -307,7 +307,14 @@ func (a *Catalogue) update(ctx context.Context) {
 		})
 	}
 
-	if !a.u.StatusCache().HasEveUniverseSection(app.SectionEveTypes) {
+	hasData, err := a.u.EVEUniverse().HasSection(ctx, app.SectionEveTypes)
+	if err != nil {
+		slog.Error("Updating skill catalogue UI", "err", err)
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
 		reset()
 		setTop("No data yet", widget.WarningImportance)
 		return
@@ -320,7 +327,14 @@ func (a *Catalogue) update(ctx context.Context) {
 		return
 	}
 
-	if !a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterSkills) {
+	hasData2, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterSkills)
+	if err != nil {
+		slog.Error("Updating skill catalogue UI", "err", err)
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData2 {
 		reset()
 		setTop("No data yet", widget.WarningImportance)
 		return

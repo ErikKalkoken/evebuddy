@@ -13,13 +13,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := corporationservice.NewFake(st)
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should do nothing when permission exists", func(t *testing.T) {
 		// given
@@ -84,7 +85,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 func TestCorporationService_PermittedSections(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := corporationservice.NewFake(st)
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return section when matching token exists", func(t *testing.T) {
 		// given

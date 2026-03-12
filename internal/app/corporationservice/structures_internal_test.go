@@ -26,7 +26,7 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,

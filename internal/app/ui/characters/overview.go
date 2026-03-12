@@ -294,20 +294,8 @@ func (a *Overview) makeGrid() *widget.GridWrap {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if f := a.u.OnShowCharacterFunc(); f != nil {
-			go f()
-		}
-		if a.u.CurrentCharacter().IDOrZero() == r.characterID {
-			return
-		}
-		go func() {
-			err := a.u.LoadCharacter(context.Background(), r.characterID)
-			if err != nil {
-				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
-				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.ErrorDisplay(err)))
-				return
-			}
-		}()
+		go a.u.ShowCharacter(context.Background(), r.characterID)
+
 	}
 	return g
 }
@@ -341,20 +329,7 @@ func (a *Overview) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if f := a.u.OnShowCharacterFunc(); f != nil {
-			go f()
-		}
-		if a.u.CurrentCharacter().IDOrZero() == r.characterID {
-			return
-		}
-		go func() {
-			err := a.u.LoadCharacter(context.Background(), r.characterID)
-			if err != nil {
-				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
-				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.ErrorDisplay(err)))
-				return
-			}
-		}()
+		go a.u.ShowCharacter(context.Background(), r.characterID)
 	}
 	return l
 }

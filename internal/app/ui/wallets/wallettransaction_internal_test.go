@@ -1,122 +1,145 @@
 package wallets
 
-// func TestWalletTransactions_CanRenderWithData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	test.ApplyTheme(t, test.Theme())
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	t.Run("can show transactions for characters", func(t *testing.T) {
-// 		testutil.MustTruncateTables(db)
-// 		character := factory.CreateCharacter()
-// 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 			CharacterID: character.ID,
-// 			Section:     app.SectionCharacterWalletTransactions,
-// 		})
-// 		et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 			Name: "Merlin",
-// 		})
-// 		client := factory.CreateEveEntityCharacter(app.EveEntity{
-// 			Name: "Peter Paker",
-// 		})
-// 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 			Name:           "Abune",
-// 			SecurityStatus: 0.4,
-// 		})
-// 		location := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 			Name:          "My Home",
-// 			SolarSystemID: optional.New(system.ID),
-// 		})
-// 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
-// 			CharacterID: character.ID,
-// 			EveTypeID:   et.ID,
-// 			Quantity:    42,
-// 			Date:        time.Date(2025, 7, 19, 12, 0, 0, 0, time.UTC),
-// 			UnitPrice:   1234.56,
-// 			ClientID:    client.ID,
-// 			LocationID:  location.ID,
-// 		})
-// 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
-// 			CharacterID: character.ID,
-// 			EveTypeID:   et.ID,
-// 			Quantity:    3,
-// 			Date:        time.Date(2025, 7, 19, 13, 0, 0, 0, time.UTC),
-// 			UnitPrice:   2345.67,
-// 			ClientID:    client.ID,
-// 			LocationID:  location.ID,
-// 			IsBuy:       true,
-// 		})
-// 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 		a := NewCharacterWalletTransaction(ui)
-// 		w := test.NewWindow(a)
-// 		defer w.Close()
-// 		w.Resize(fyne.NewSize(1700, 300))
+import (
+	"testing"
+	"time"
 
-// 		a.character.Store(character)
-// 		a.Update(t.Context())
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 
-// 		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
-// 	})
-// 	t.Run("can show transactions for corporations", func(t *testing.T) {
-// 		testutil.MustTruncateTables(db)
-// 		character := factory.CreateCharacter()
-// 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
-// 			CharacterID: character.ID,
-// 			Scopes:      app.Scopes(),
-// 		})
-// 		factory.SetCharacterRoles(character.ID, app.SectionCorporationWalletTransactions1.Roles())
-// 		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
-// 			ID: character.EveCharacter.Corporation.ID,
-// 		})
-// 		corporation := factory.CreateCorporation(ec.ID)
-// 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
-// 			CorporationID: corporation.ID,
-// 			Section:       app.SectionCorporationWalletTransactions1,
-// 		})
-// 		et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 			Name: "Merlin",
-// 		})
-// 		client := factory.CreateEveEntityCharacter(app.EveEntity{
-// 			Name: "Peter Paker",
-// 		})
-// 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 			Name:           "Abune",
-// 			SecurityStatus: 0.4,
-// 		})
-// 		location := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 			Name:          "My Home",
-// 			SolarSystemID: optional.New(system.ID),
-// 		})
-// 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
-// 			CorporationID: corporation.ID,
-// 			EveTypeID:     et.ID,
-// 			Quantity:      42,
-// 			Date:          time.Date(2025, 7, 19, 12, 0, 0, 0, time.UTC),
-// 			UnitPrice:     1234.56,
-// 			ClientID:      client.ID,
-// 			LocationID:    location.ID,
-// 		})
-// 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
-// 			CorporationID: corporation.ID,
-// 			EveTypeID:     et.ID,
-// 			Quantity:      3,
-// 			Date:          time.Date(2025, 7, 19, 13, 0, 0, 0, time.UTC),
-// 			UnitPrice:     2345.67,
-// 			ClientID:      client.ID,
-// 			LocationID:    location.ID,
-// 			IsBuy:         true,
-// 		})
-// 		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 		x := NewCorporationWalletTransactions(ui, app.Division1)
-// 		w := test.NewWindow(x)
-// 		defer w.Close()
-// 		w.Resize(fyne.NewSize(1700, 300))
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+)
 
-// 		ui.SetCorporation(corporation)
-// 		x.Update(t.Context())
+func TestWalletTransactions_CanRenderWithData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
 
-// 		// fmt.Println(testutil.DumpTables(db))
-// 		test.AssertImageMatches(t, "wallettransactions/corporation.png", w.Canvas().Capture())
-// 	})
-// }
+	t.Run("can show transactions for characters", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{
+			Name: "Merlin",
+		})
+		client := factory.CreateEveEntityCharacter(app.EveEntity{
+			Name: "Peter Paker",
+		})
+		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+			Name:           "Abune",
+			SecurityStatus: 0.4,
+		})
+		location := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+			Name:          "My Home",
+			SolarSystemID: optional.New(system.ID),
+		})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+			CharacterID: character.ID,
+			EveTypeID:   et.ID,
+			Quantity:    42,
+			Date:        time.Date(2025, 7, 19, 12, 0, 0, 0, time.UTC),
+			UnitPrice:   1234.56,
+			ClientID:    client.ID,
+			LocationID:  location.ID,
+		})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+			CharacterID: character.ID,
+			EveTypeID:   et.ID,
+			Quantity:    3,
+			Date:        time.Date(2025, 7, 19, 13, 0, 0, 0, time.UTC),
+			UnitPrice:   2345.67,
+			ClientID:    client.ID,
+			LocationID:  location.ID,
+			IsBuy:       true,
+		})
+		signals := app.NewSignals()
+		a := NewCharacterWalletTransaction(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+			Signals: signals,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		w.Resize(fyne.NewSize(1700, 300))
+
+		signals.CurrentCharacterExchanged.Emit(t.Context(), character)
+
+		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
+	})
+
+	t.Run("can show transactions for corporations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: character.ID,
+			Scopes:      app.Scopes(),
+		})
+		factory.SetCharacterRoles(character.ID, app.SectionCorporationWalletTransactions1.Roles())
+		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+			ID: character.EveCharacter.Corporation.ID,
+		})
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		et := factory.CreateEveType(storage.CreateEveTypeParams{
+			Name: "Merlin",
+		})
+		client := factory.CreateEveEntityCharacter(app.EveEntity{
+			Name: "Peter Paker",
+		})
+		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+			Name:           "Abune",
+			SecurityStatus: 0.4,
+		})
+		location := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+			Name:          "My Home",
+			SolarSystemID: optional.New(system.ID),
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: corporation.ID,
+			EveTypeID:     et.ID,
+			Quantity:      42,
+			Date:          time.Date(2025, 7, 19, 12, 0, 0, 0, time.UTC),
+			UnitPrice:     1234.56,
+			ClientID:      client.ID,
+			LocationID:    location.ID,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: corporation.ID,
+			EveTypeID:     et.ID,
+			Quantity:      3,
+			Date:          time.Date(2025, 7, 19, 13, 0, 0, 0, time.UTC),
+			UnitPrice:     2345.67,
+			ClientID:      client.ID,
+			LocationID:    location.ID,
+			IsBuy:         true,
+		})
+		signals := app.NewSignals()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+			Signals: signals,
+		}), app.Division1)
+		w := test.NewWindow(a)
+		defer w.Close()
+		w.Resize(fyne.NewSize(1700, 300))
+
+		signals.CurrentCorporationExchanged.Emit(t.Context(), corporation)
+
+		// fmt.Println(testutil.DumpTables(db))
+		test.AssertImageMatches(t, "wallettransactions/corporation.png", w.Canvas().Capture())
+	})
+}

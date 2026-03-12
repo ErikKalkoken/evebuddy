@@ -31,7 +31,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
@@ -95,7 +95,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
@@ -176,7 +176,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
@@ -232,7 +232,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2112625428})
@@ -280,7 +280,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
@@ -332,7 +332,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
@@ -358,7 +358,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
@@ -432,7 +432,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
@@ -491,7 +491,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
@@ -552,7 +552,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -594,7 +594,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		client := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -647,7 +647,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID})
 		client := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
@@ -701,7 +701,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
@@ -742,7 +742,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		httpmock.RegisterResponder(
 			"GET",
@@ -768,7 +768,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -827,7 +827,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -887,7 +887,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -949,7 +949,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 func TestListWalletTransactions(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given

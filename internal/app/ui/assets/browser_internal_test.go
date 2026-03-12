@@ -4,10 +4,17 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -40,58 +47,60 @@ func TestSplitLines(t *testing.T) {
 	}
 }
 
-// func TestAssetBrowser_CanRenderWithData(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
-// 	}
-// 	db, st, factory := testutil.NewDBOnDisk(t)
-// 	defer db.Close()
-// 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-// 		AssetValue: optional.New(1000000000.0),
-// 	})
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 		ID:   42,
-// 		Name: "Merlin",
-// 	})
-// 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 		ID:             1001,
-// 		SecurityStatus: 0.2,
-// 	})
-// 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 		Name:          "Abune - My castle",
-// 		SolarSystemID: optional.New(system.ID),
-// 	})
-// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-// 		CharacterID:  character.ID,
-// 		EveTypeID:    et.ID,
-// 		Quantity:     10,
-// 		LocationID:   loc.ID,
-// 		LocationType: app.TypeOther,
-// 		LocationFlag: app.FlagHangar,
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionCharacterAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
-// 	ui.setCharacter(character)
-// 	a := ui.characterAssetBrowser
-// 	w := test.NewWindow(a)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(1700, 300))
+func TestAssetBrowser_CanRenderWithData(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
+		AssetValue: optional.New(1000000000.0),
+	})
+	et := factory.CreateEveType(storage.CreateEveTypeParams{
+		ID:   42,
+		Name: "Merlin",
+	})
+	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		ID:             1001,
+		SecurityStatus: 0.2,
+	})
+	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+		Name:          "Abune - My castle",
+		SolarSystemID: optional.New(system.ID),
+	})
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		CharacterID:  character.ID,
+		EveTypeID:    et.ID,
+		Quantity:     10,
+		LocationID:   loc.ID,
+		LocationType: app.TypeOther,
+		LocationFlag: app.FlagHangar,
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
 
-// 	a.update()
-// 	a.Navigation.navigation.OpenAllBranches()
-// 	// n, ok := a.Navigation.ac.LocationTree(loc.ID)
-// 	// require.True(t, ok)
-// 	// a.Navigation.navigation.SelectNode(n) // FIXME
-// 	test.AssertImageMatches(t, "characterassetbrowser/full.png", w.Canvas().Capture())
-// }
+	a.character.Store(character)
+	a.Update(t.Context())
+	// a.Navigation.at.OpenAllBranches()
+	// n, ok := a.Navigation.ac.LocationTree(loc.ID)
+	// require.True(t, ok)
+	// a.Navigation.navigation.SelectNode(n) // FIXME
+	test.AssertImageMatches(t, "browser/full.png", w.Canvas().Capture())
+}
 
 // func TestAssetBrowser_CanRenderWithoutData(t *testing.T) {
 // 	if testing.Short() {
-// 		t.Skip(SkipUIReason)
+// 		t.Skip(ui.SkipUIReason)
 // 	}
 // 	db, st, factory := testutil.NewDBOnDisk(t)
 // 	defer db.Close()
@@ -455,7 +464,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 		ac := asset.NewFromCorporationAssets(assets, locations)
 		td := generateTreeData(ac.Locations(), assetNoFilter, true)
 
-		got1 := xslices.Map(td.Children(nil), func(x *assetContainerNode) string {
+		got1 := xslices.Map(td.Children(nil), func(x *containerNode) string {
 			return x.String()
 		})
 		want1 := []string{"Alpha", "Bravo", "Charlie", "Delta", "Echo"}
@@ -602,7 +611,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeCountsPath(ac asset.Tree, td iwidget.TreeData[assetContainerNode], it asset.Item) []int {
+func makeCountsPath(ac asset.Tree, td iwidget.TreeData[containerNode], it asset.Item) []int {
 	n, ok := ac.Node(it.ID())
 	if !ok {
 		return nil
@@ -611,14 +620,14 @@ func makeCountsPath(ac asset.Tree, td iwidget.TreeData[assetContainerNode], it a
 	if !ok {
 		return nil
 	}
-	return xslices.Map(td.Path(nil, x), func(x *assetContainerNode) int {
+	return xslices.Map(td.Path(nil, x), func(x *containerNode) int {
 		return x.itemCount.ValueOrZero()
 	})
 }
 
-func findContainer(td iwidget.TreeData[assetContainerNode], node *asset.Node) (*assetContainerNode, bool) {
-	var found *assetContainerNode
-	td.Walk(nil, func(n *assetContainerNode) bool {
+func findContainer(td iwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
+	var found *containerNode
+	td.Walk(nil, func(n *containerNode) bool {
 		if n.node == node {
 			found = n
 			return false
@@ -746,8 +755,8 @@ func createAsset(arg assetParams) app.Asset {
 // 	})
 // }
 
-func allPaths(td iwidget.TreeData[assetContainerNode]) [][]string {
-	return td.AllPaths(nil, func(n *assetContainerNode) string {
+func allPaths(td iwidget.TreeData[containerNode]) [][]string {
+	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
 	})
 }

@@ -244,7 +244,7 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 			},
 			func() fyne.CanvasObject {
 				check := widget.NewIcon(theme.CheckButtonIcon())
-				character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+				character := ui.NewEveEntityListItem(a.cw.u.EVEImage().EveEntityLogoAsync)
 				character.IsAvatar = true
 				return container.NewBorder(
 					nil,
@@ -402,7 +402,7 @@ func (a *manageTags) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			remove := ttwidget.NewButtonWithIcon("", theme.CancelIcon(), nil)
 			remove.SetToolTip("Remove character from tag")
-			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			character := ui.NewEveEntityListItem(a.cw.u.EVEImage().EveEntityLogoAsync)
 			character.IsAvatar = true
 			return container.NewBorder(
 				nil,

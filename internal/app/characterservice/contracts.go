@@ -41,7 +41,7 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 	if len(bids) == 0 {
 		return nil, app.ErrNotFound
 	}
-	var maximum float32
+	var maximum float64
 	var top *app.CharacterContractBid
 	for _, b := range bids {
 		if top == nil || b.Amount > maximum {

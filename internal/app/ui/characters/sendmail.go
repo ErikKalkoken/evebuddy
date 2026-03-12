@@ -39,6 +39,33 @@ type SendMail struct {
 	w         fyne.Window
 }
 
+func ShowSendMailWindow(u baseUI, c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
+	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
+	page := NewSendMail(u, c, mode, mail)
+	page.SetWindow(w)
+	var send *widget.Button
+	send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
+		send.Disable()
+		defer send.Enable()
+		if page.SendAction() {
+			w.Hide()
+		}
+	})
+	send.Importance = widget.HighImportance
+	p := theme.Padding()
+	x := container.NewBorder(
+		nil,
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), send)),
+		nil,
+		nil,
+		page,
+	)
+	w.SetContent(x)
+	w.Resize(fyne.NewSize(600, 500))
+	w.Show()
+}
+
 func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		u: u,
@@ -47,7 +74,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
+	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.from.showInfo = u.InfoViewer().Show
 	a.from.Set([]*app.EveEntity{{
 		ID:       c.ID,
@@ -65,7 +92,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, ui.LoadEveEntityIconFunc(u.EVEImage()))
+	a.to = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.to.showInfo = u.InfoViewer().Show
 	a.to.placeholderText = "Tap To-Button to add recipients..."
 
@@ -425,7 +452,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 			return len(results)
 		},
 		func() fyne.CanvasObject {
-			return newEntityItem(ui.LoadEveEntityIconFunc(u.EVEImage()))
+			return newEntityItem(u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(results) {

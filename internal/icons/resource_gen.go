@@ -5,7 +5,6 @@ package icons
 
 import (
 	_ "embed"
-
 	"fyne.io/fyne/v2"
 )
 
@@ -567,6 +566,13 @@ var ShipWheelSvgData []byte
 var ShipWheelSvg = &fyne.StaticResource{
 	StaticName:    "ship-wheel.svg",
 	StaticContent: ShipWheelSvgData,
+}
+
+//go:embed solar-system.svg
+var SolarSystemSvgData []byte
+var SolarSystemSvg = &fyne.StaticResource{
+	StaticName:    "solar-system.svg",
+	StaticContent: SolarSystemSvgData,
 }
 
 //go:embed space-station.svg

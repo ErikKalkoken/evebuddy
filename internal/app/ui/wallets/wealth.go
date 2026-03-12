@@ -402,8 +402,14 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
 	}
 	var selected []*app.Character
 	for _, c := range cc {
-		hasAssets := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterAssets)
-		hasWallet := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
+		hasAssets, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterAssets)
+		if err != nil {
+			return nil, 0, err
+		}
+		hasWallet, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterWalletBalance)
+		if err != nil {
+			return nil, 0, err
+		}
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}

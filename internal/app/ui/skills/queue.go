@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type Queue struct {
@@ -115,7 +116,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			return a.skillqueue.Size()
 		},
 		func() fyne.CanvasObject {
-			level := NewSkillLevel()
+			level := xwidget.NewSkillLevel()
 			if a.u.IsMobile() {
 				level.Hide()
 			}
@@ -129,7 +130,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*SkillLevel)
+			level := c[1].(*xwidget.SkillLevel)
 			var active, trained, queued int64
 			if qi.IsCompleted() {
 				active = qi.FinishedLevel
@@ -153,7 +154,7 @@ func (a *Queue) makeSkillQueue() *widget.List {
 		if q == nil {
 			return
 		}
-		showSkillInTrainingWindow(a.u, q)
+		showSkillInTrainingWindow(a.u, q, a.character.Load().NameOrZero())
 	}
 	return list
 }
@@ -189,13 +190,19 @@ func (a *Queue) Update(ctx context.Context) {
 		reset()
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterSkillqueue)
+	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterSkillqueue)
+	if err != nil {
+		slog.Error("Failed to refresh skill queue UI", "err", err)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset()
+		return
+	}
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
 		reset()
 		return
 	}
-	err := a.skillqueue.Update(ctx, a.u.Character(), c.ID)
+	err = a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -255,8 +262,7 @@ func (a *Queue) Update(ctx context.Context) {
 	})
 }
 
-func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem) {
-	characterName := u.StatusCache().CharacterName(r.CharacterID)
+func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, characterName string) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),
 		"Skill: Information",

@@ -21,7 +21,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 
 	t.Run("should create new location for a station", func(t *testing.T) {

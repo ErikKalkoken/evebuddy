@@ -21,6 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/contracts"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -34,12 +35,13 @@ type walletJournalRow struct {
 	amountFormatted  string
 	balance          optional.Optional[float64]
 	balanceFormatted string
-	characterID      int64
-	corporationID    int64
 	date             time.Time
 	dateFormatted    string
 	description      string
 	division         app.Division
+	forCorporation   bool
+	ownerID          int64
+	ownerName        string
 	reason           optional.Optional[string]
 	refID            int64
 	refType          string
@@ -190,9 +192,9 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			a.filterRowsAsync,
 			func(_ int, r walletJournalRow) {
 				if a.isCorporation() {
-					ShowCorporationWalletJournalEntryWindowAsync(a.u, r.corporationID, r.division, r.refID)
+					ShowCorporationWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.refID)
 				} else {
-					ShowCharacterWalletJournalEntryWindowAsync(a.u, r.characterID, r.refID)
+					ShowCharacterWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.refID)
 				}
 			},
 		)
@@ -275,9 +277,9 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.isCorporation() {
-			ShowCorporationWalletJournalEntryWindowAsync(a.u, r.corporationID, r.division, r.refID)
+			ShowCorporationWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.refID)
 		} else {
-			ShowCharacterWalletJournalEntryWindowAsync(a.u, r.characterID, r.refID)
+			ShowCharacterWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.refID)
 		}
 	}
 	l.HideSeparators = true
@@ -322,68 +324,52 @@ func (a *WalletJournal) Update(ctx context.Context) {
 }
 
 func (a *WalletJournal) updateCharacter(ctx context.Context) {
-	var err error
-	var rows []walletJournalRow
-	characterID := a.character.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
-	if hasData {
-		rows2, err2 := a.fetchCharacterRows(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh wallet journal UI", "err", err2)
-			err = err2
-		} else {
-			rows = rows2
-		}
+	setInfo := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = s, i
+			a.footer.Refresh()
+		})
 	}
-	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return "", widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
+	reset := func() {
+		xslices.Reset(a.rows)
+		a.filterRowsAsync(-1)
+	}
+	character := a.character.Load()
+	if character == nil {
+		reset()
+		setInfo("No character", widget.LowImportance)
+		return
+	}
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletJournal)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setInfo("No data", widget.WarningImportance)
+		return
+	}
+	rows, err := a.fetchCharacterRows(ctx, character)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync(-1)
 	})
 }
 
-func (a *WalletJournal) updateCorporation(ctx context.Context) {
-	var err error
-	var rows []walletJournalRow
-	corporationID := a.corporation.Load().IDOrZero()
-	hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
-	if hasData {
-		rows2, err2 := a.fetchCorporationRows(ctx, corporationID, a.division)
-		if err2 != nil {
-			slog.Error("Failed to refresh wallet journal UI", "err", err2)
-			err = err2
-		} else {
-			rows = rows2
-		}
-	}
-	t, i := ui.MakeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
-		return "", widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
-	fyne.Do(func() {
-		a.rows = rows
-		a.filterRowsAsync(-1)
-	})
-}
-
-func (a *WalletJournal) fetchCharacterRows(ctx context.Context, characterID int64) ([]walletJournalRow, error) {
-	entries, err := a.u.Character().ListWalletJournalEntries(ctx, characterID)
+func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.Character) ([]walletJournalRow, error) {
+	oo, err := a.u.Character().ListWalletJournalEntries(ctx, character.ID)
 	if err != nil {
 		return nil, err
 	}
 	var rows []walletJournalRow
-	for _, o := range entries {
+	for _, o := range oo {
 		r := walletJournalRow{
 			amount: o.Amount,
 			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
@@ -393,7 +379,8 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, characterID int6
 			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
 				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
-			characterID:    characterID,
+			ownerID:        character.ID,
+			ownerName:      character.NameOrZero(),
 			date:           o.Date,
 			dateFormatted:  o.Date.Format(app.DateTimeFormat),
 			description:    o.Description,
@@ -414,8 +401,48 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, characterID int6
 	return rows, nil
 }
 
-func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID int64, division app.Division) ([]walletJournalRow, error) {
-	entries, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporationID, division)
+func (a *WalletJournal) updateCorporation(ctx context.Context) {
+	setInfo := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.footer.Text, a.footer.Importance = s, i
+			a.footer.Refresh()
+		})
+	}
+	reset := func() {
+		xslices.Reset(a.rows)
+		a.filterRowsAsync(-1)
+	}
+	corporation := a.corporation.Load()
+	if corporation == nil {
+		reset()
+		setInfo("No corporation", widget.LowImportance)
+		return
+	}
+	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletJournal(a.division))
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setInfo("No data", widget.WarningImportance)
+		return
+	}
+	rows, err := a.fetchCorporationRows(ctx, corporation, a.division)
+	if err != nil {
+		reset()
+		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	fyne.Do(func() {
+		a.rows = rows
+		a.filterRowsAsync(-1)
+	})
+}
+
+func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletJournalRow, error) {
+	entries, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporation.ID, division)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +457,9 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
 				return humanize.FormatFloat(ui.FloatFormat, v)
 			}),
-			corporationID:  corporationID,
+			ownerID:        corporation.ID,
+			ownerName:      corporation.NameOrZero(),
+			forCorporation: true,
 			division:       division,
 			date:           o.Date,
 			dateFormatted:  o.Date.Format(app.DateTimeFormat),
@@ -454,13 +483,10 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporationID 
 }
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
-func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, refID int64) {
+func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, characterName string, refID int64) {
+	key := fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID)
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
-		title,
-		u.StatusCache().CharacterName(characterID),
-	)
+	w, created := u.GetOrCreateWindow(key, title, characterName)
 	if !created {
 		w.Show()
 		return
@@ -518,7 +544,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 						fyne.Do(func() {
 							contextItem.Text = "Related contract"
 							contextItem.Widget = ui.MakeLinkLabelWithWrap(c.NameDisplay(), func() {
-								// characterui.ShowCharacterContractWindow(u, c.CharacterID, c.ContractID) FIXME
+								go contracts.ShowCharacterContract2(context.Background(), u, c.CharacterID, c.ContractID)
 							})
 							f.Refresh()
 						})
@@ -526,7 +552,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 				case "market_transaction_id":
 					contextItem.Text = "Related market transaction"
 					contextItem.Widget = ui.MakeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID.ValueOrZero()), func() {
-						ShowCharacterWalletTransactionWindowAsync(u, o.CharacterID, o.ContextID.ValueOrZero())
+						ShowCharacterWalletTransactionWindowAsync(u, characterID, characterName, o.ContextID.ValueOrZero())
 					})
 					f.Refresh()
 				case "station_id", "structure_id":
@@ -554,7 +580,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					characterID,
-					u.StatusCache().CharacterName(characterID),
+					characterName,
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
@@ -607,13 +633,10 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, ref
 }
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
-func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, division app.Division, refID int64) {
+func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, refID int64) {
+	key := fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID)
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),
-		title,
-		u.StatusCache().CorporationName(corporationID),
-	)
+	w, created := u.GetOrCreateWindow(key, title, corporationName)
 	if !created {
 		w.Show()
 		return
@@ -690,7 +713,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
 					corporationID,
-					u.StatusCache().CorporationName(corporationID),
+					corporationName,
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),

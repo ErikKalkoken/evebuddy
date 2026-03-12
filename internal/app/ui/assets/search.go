@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	assetsTotalYes = "Has total"
-	assetsTotalNo  = "Has no total"
+	totalYes = "Has total"
+	totalNo  = "Has no total"
 )
 
 type assetRow struct {
@@ -264,7 +264,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(r.typeName)
 			x := border[1].(*canvas.Image)
-			loadAssetIconAsync(u.EVEImage(), r.typeID, r.variant, func(r fyne.Resource) {
+			u.EVEImage().AssetIconAsync(r.typeID, r.variant, ui.IconPixelSize, func(r fyne.Resource) {
 				x.Resource = r
 				x.Refresh()
 			})
@@ -380,7 +380,7 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 				return x
 			},
 			a.columnSorter, a.filterRowsAsync, func(_ int, r assetRow) {
-				ShowAssetDetailWindow(u, r)
+				ShowDetails(u, r)
 			})
 	}
 
@@ -413,8 +413,8 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 	})
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
-			assetsTotalYes,
-			assetsTotalNo,
+			totalYes,
+			totalNo,
 		},
 		func(_ string) {
 			a.filterRowsAsync(-1)
@@ -541,7 +541,7 @@ func (a *Search) makeDataList() *xwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		ShowAssetDetailWindow(a.u, r)
+		ShowDetails(a.u, r)
 	}
 	return l
 }
@@ -598,9 +598,9 @@ func (a *Search) filterRowsAsync(sortCol int) {
 		if total != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				switch total {
-				case assetsTotalYes:
+				case totalYes:
 					return r.total.IsEmpty()
-				case assetsTotalNo:
+				case totalNo:
 					return !r.total.IsEmpty()
 				}
 				return true
@@ -686,10 +686,19 @@ func (a *Search) Update(ctx context.Context) {
 			a.top.Show()
 		})
 	}
-	if !a.forCorporation && a.characterCount() == 0 {
-		reset()
-		setTop("No characters", widget.LowImportance)
-		return
+	if !a.forCorporation {
+		n, err := a.characterCount(ctx)
+		if err != nil {
+			slog.Error("Failed to refresh asset data", "err", err)
+			reset()
+			setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			return
+		}
+		if n == 0 {
+			reset()
+			setTop("No characters", widget.LowImportance)
+			return
+		}
 	}
 	var rows []assetRow
 	var err error
@@ -812,13 +821,20 @@ func (a *Search) fetchRowsForCorporations2(ctx context.Context, assets []*app.Co
 	return rows, nil
 }
 
-func (a *Search) characterCount() int {
-	cc := a.u.StatusCache().ListCharacters()
+func (a *Search) characterCount(ctx context.Context) (int, error) {
+	cc, err := a.u.Character().ListCharacterIDs(ctx)
+	if err != nil {
+		return 0, err
+	}
 	validCount := 0
-	for _, c := range cc {
-		if a.u.StatusCache().HasCharacterSection(c.ID, app.SectionCharacterAssets) {
+	for id := range cc.All() {
+		hasSection, err := a.u.Character().HasSection(ctx, id, app.SectionCharacterAssets)
+		if err != nil {
+			return 0, err
+		}
+		if hasSection {
 			validCount++
 		}
 	}
-	return validCount
+	return validCount, nil
 }

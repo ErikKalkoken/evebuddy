@@ -76,7 +76,7 @@ func (a *admin) makeCharacterList() *widget.List {
 			return len(a.rows)
 		},
 		func() fyne.CanvasObject {
-			return newAdminListItem(a.showDeleteDialog, ui.LoadEveEntityIconFunc(a.cw.u.EVEImage()))
+			return newAdminListItem(a.showDeleteDialog, a.cw.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rows) {

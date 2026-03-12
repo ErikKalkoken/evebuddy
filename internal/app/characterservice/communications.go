@@ -34,11 +34,11 @@ func (s *CharacterService) CountNotifications(ctx context.Context, characterID i
 	return values, nil
 }
 
-func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType], notify func(title, content string)) error {
+func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType]) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("notify communications: %w", err)
 		}
 		if len(nn) == 0 {
 			return nil, nil
@@ -47,10 +47,11 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 			if !typesEnabled.Contains(n.Type) {
 				continue
 			}
-			title, content := s.RenderNotificationSummary(n)
-			notify(title, content)
+			if err := s.SendDesktopNotification(ctx, n); err != nil {
+				return nil, fmt.Errorf("notify communications: %w", err)
+			}
 			if err := s.st.UpdateCharacterNotificationsSetProcessed(ctx, n.NotificationID); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("notify communications: %w", err)
 			}
 		}
 		return nil, nil
@@ -61,27 +62,22 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 	return nil
 }
 
-// NotificationRecipient returns a valid recipient for a notification.
-func (s *CharacterService) NotificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
-	return cn.Recipient.ValueOrFallback(&app.EveEntity{
-		ID:       cn.CharacterID,
-		Name:     s.scs.CharacterName(cn.CharacterID),
-		Category: app.EveEntityCharacter,
-	})
-}
-
-// RenderNotificationSummary renders a summary from a character notification.
-func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotification) (title string, content string) {
+func (s *CharacterService) SendDesktopNotification(ctx context.Context, n *app.CharacterNotification) error {
 	var recipient string
 	v, ok := n.Recipient.Value()
 	if ok {
 		recipient = v.Name
 	} else {
-		recipient = s.scs.CharacterName(n.CharacterID)
+		n, err := s.getCharacterName(ctx, n.CharacterID)
+		if err != nil {
+			return fmt.Errorf("SendDesktopNotification: %w", err)
+		}
+		recipient = n
 	}
-	title = fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
-	content = n.Title.ValueOrZero()
-	return
+	title := fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
+	content := n.Title.ValueOrZero()
+	s.sendDesktopNotification(title, content)
+	return nil
 }
 
 func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int64, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {

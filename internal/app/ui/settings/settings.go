@@ -1020,7 +1020,7 @@ type settingListItem struct {
 	hint       *widget.Label
 	label      *widget.Label
 	header     *widget.Label
-	switch_    *kxwidget.Switch
+	sw         *kxwidget.Switch
 	value      *widget.Label
 	thief      *xwidget.HooverThief
 }
@@ -1041,7 +1041,7 @@ func newSettingListItem() *settingListItem {
 		header:     header,
 		hint:       hint,
 		label:      label,
-		switch_:    kxwidget.NewSwitch(nil),
+		sw:         kxwidget.NewSwitch(nil),
 		thief:      xwidget.NewHooverThief(),
 		value:      widget.NewLabel(""),
 	}
@@ -1062,7 +1062,7 @@ func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.NewVBox(
 			layout.NewSpacer(),
-			container.NewStack(w.switch_, w.value),
+			container.NewStack(w.sw, w.value),
 			layout.NewSpacer(),
 		),
 		container.New(layout.NewCustomPaddedVBoxLayout(0),
@@ -1092,7 +1092,7 @@ func (w *settingListItem) set(r SettingItem) {
 		w.header.Show()
 		w.label.Hide()
 		w.value.Hide()
-		w.switch_.Hide()
+		w.sw.Hide()
 		w.background.Hide()
 		w.thief.Show()
 	case settingSwitch:
@@ -1100,12 +1100,12 @@ func (w *settingListItem) set(r SettingItem) {
 		w.header.Hide()
 		w.label.Show()
 		w.value.Hide()
-		w.switch_.OnChanged = func(v bool) {
+		w.sw.OnChanged = func(v bool) {
 			r.Setter(v)
 		}
-		w.switch_.On = r.Getter().(bool)
-		w.switch_.Show()
-		w.switch_.Refresh()
+		w.sw.On = r.Getter().(bool)
+		w.sw.Show()
+		w.sw.Refresh()
 		w.background.Show()
 		w.thief.Hide()
 	case settingCustom:
@@ -1120,7 +1120,7 @@ func (w *settingListItem) set(r SettingItem) {
 		}
 		w.value.SetText(formatter(r.Getter()))
 		w.value.Show()
-		w.switch_.Hide()
+		w.sw.Hide()
 		w.background.Show()
 		w.thief.Hide()
 	}

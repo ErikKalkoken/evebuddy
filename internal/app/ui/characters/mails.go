@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -108,6 +109,7 @@ type Mails struct {
 	toolbar     *widget.Toolbar
 	u           baseUI
 	unreadCount atomic.Int64
+	sig         *singleinstance.Group
 }
 
 func NewMails(u baseUI) *Mails {
@@ -119,6 +121,7 @@ func NewMails(u baseUI) *Mails {
 		headerStatus:     widget.NewLabel(""),
 		headerTop:        widget.NewLabel(""),
 		u:                u,
+		sig:              singleinstance.NewGroup(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -246,7 +249,12 @@ func (a *Mails) update(ctx context.Context) {
 		setStatus("No character", widget.LowImportance)
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterMailHeaders)
+	if err != nil {
+		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
+		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
 	if !hasData {
 		clearAll()
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
@@ -533,7 +541,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(ui.LoadEveEntityIconFunc(a.u.EVEImage()))
+			return NewMailHeaderItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -598,7 +606,13 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 		reset()
 		return
 	}
-	hasData := a.u.StatusCache().HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
+	hasData, err := a.u.Character().HasSection(ctx, folder.CharacterID, app.SectionCharacterMailHeaders)
+	if err != nil {
+		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
+		setStatus("Failed to load: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset()
+		return
+	}
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
 		reset()
@@ -755,7 +769,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	// try to fetch mail body if missing
 	if mail.Body.IsEmpty() {
 		go func() {
-			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
+			a.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
 				body, err := a.u.Character().UpdateMailBodyESI(ctx, characterID, mail.MailID)
 				if err != nil {
 					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
@@ -782,7 +796,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	// try to update mail as read if unread
 	if !mail.IsRead.ValueOrZero() {
 		go func() {
-			a.u.SingleInstance().Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
+			a.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
 				err := a.u.Character().UpdateMailRead(ctx, characterID, mail.MailID, true)
 				if err != nil {
 					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
@@ -855,7 +869,7 @@ type mailDetail struct {
 func newMailDetail(u baseUI) *mailDetail {
 	w := &mailDetail{
 		body:    widget.NewLabel(""),
-		header:  NewMailHeader(ui.LoadEveEntityIconFunc(u.EVEImage()), u.InfoViewer().Show),
+		header:  NewMailHeader(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText

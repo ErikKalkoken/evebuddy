@@ -21,7 +21,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewFake(st)
+	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	data := map[string]any{
 		"home_location": map[string]any{
@@ -119,7 +119,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	cs := NewFake(st)
+	cs := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return time of next available jump with skill", func(t *testing.T) {
 		// given

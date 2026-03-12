@@ -71,7 +71,7 @@ func printNotification(nt notification) error {
 	if !found {
 		return app.ErrNotFound
 	}
-	en := evenotification.New(&testutil.EveUniverseServiceFake{})
+	en := evenotification.New(&testutil.EUSEveNotificationServiceFake{})
 	title, body, err := en.RenderESI(context.Background(), nt2, optional.New(nt.Text), time.Now())
 	if err != nil {
 		return err

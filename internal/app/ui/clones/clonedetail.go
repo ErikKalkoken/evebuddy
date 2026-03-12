@@ -89,9 +89,7 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 	var implants fyne.CanvasObject
 	if r.jc.ImplantsCount > 0 {
 		implants = makeImplantsList(
-			u.Character(),
-			u.EVEImage(),
-			u.InfoViewer().ShowType,
+			u,
 			r.jc.Character.ID,
 			r.jc.CloneID,
 			u.IsDeveloperMode(),
@@ -138,18 +136,14 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 	w.Show()
 }
 
-type implantsCS interface {
-	GetJumpClone(ctx context.Context, characterID int64, cloneID int64) (*app.CharacterJumpClone, error)
-}
-
-func makeImplantsList(cs implantsCS, eis ui.EveEntityEIS, showTypeInfo func(int64, int64), characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
+func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
 	var implants []*app.CharacterJumpCloneImplant
 	list := widget.NewList(
 		func() int {
 			return len(implants)
 		},
 		func() fyne.CanvasObject {
-			character := ui.NewEveEntityListItem(ui.LoadEveEntityIconFunc(eis))
+			character := ui.NewEveEntityListItem(u.EVEImage().EveEntityLogoAsync)
 			character.IsAvatar = true
 			return character
 		},
@@ -168,11 +162,11 @@ func makeImplantsList(cs implantsCS, eis ui.EveEntityEIS, showTypeInfo func(int6
 			return
 		}
 		r := implants[id]
-		showTypeInfo(r.EveType.ID, characterID)
+		u.InfoViewer().ShowType(r.EveType.ID, characterID)
 	}
 
 	go func() {
-		clone, err := cs.GetJumpClone(context.Background(), characterID, cloneID)
+		clone, err := u.Character().GetJumpClone(context.Background(), characterID, cloneID)
 		if err != nil {
 			slog.Error("show clone", "error", err)
 			ui.ShowErrorAndLog("failed to load clone", err, IsDeveloperMode, w)

@@ -470,7 +470,7 @@ func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID i
 func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.CharacterContractBid {
 	o2 := &app.CharacterContractBid{
 		ContractID: o.ContractID,
-		Amount:     float32(o.Amount),
+		Amount:     o.Amount,
 		BidID:      o.BidID,
 		Bidder:     eveEntityFromDBModel(e),
 		DateBid:    o.DateBid,

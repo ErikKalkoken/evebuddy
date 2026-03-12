@@ -49,10 +49,11 @@ type Browser struct {
 	widget.BaseWidget
 
 	Navigation *browserNavigation
-	Selected   *assetBrowserContainer
+	Selected   *browserContainer
 
 	at             asset.Tree
 	character      atomic.Pointer[app.Character]
+	characterNames map[int64]string
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
 	u              coreUI
@@ -69,12 +70,13 @@ func NewCorporationBrowser(u coreUI) *Browser {
 func newBrowser(u coreUI, forCorporation bool) *Browser {
 	a := &Browser{
 		forCorporation: forCorporation,
+		characterNames: make(map[int64]string),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 
 	a.Navigation = newBrowserNavigation(a)
-	a.Selected = newAssetBrowserContainer(a)
+	a.Selected = newBrowserContainer(a)
 
 	// Signals
 	if a.forCorporation {
@@ -135,13 +137,18 @@ func (a *Browser) Update(ctx context.Context) {
 		return
 	}
 	var at asset.Tree
+	names := make(map[int64]string)
 	if a.forCorporation {
 		corporationID := a.corporation.Load().IDOrZero()
 		if corporationID == 0 {
 			reset()
 			return
 		}
-		hasData := a.u.StatusCache().HasCorporationSection(corporationID, app.SectionCorporationAssets)
+		hasData, err := a.u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationAssets)
+		if err != nil {
+			reportError(err)
+			return
+		}
 		if !hasData {
 			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
@@ -159,7 +166,11 @@ func (a *Browser) Update(ctx context.Context) {
 			reset()
 			return
 		}
-		hasData := a.u.StatusCache().HasCharacterSection(characterID, app.SectionCharacterAssets)
+		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterAssets)
+		if err != nil {
+			reportError(err)
+			return
+		}
 		if !hasData {
 			reset()
 			setFooter("Waiting for data to be loaded...", widget.WarningImportance)
@@ -170,32 +181,39 @@ func (a *Browser) Update(ctx context.Context) {
 			reportError(err)
 			return
 		}
+		n, err := a.u.Character().CharacterNames(ctx)
+		if err != nil {
+			reportError(err)
+			return
+		}
+		names = n
 		at = asset.NewFromCharacterAssets(assets, el)
 	}
 	fyne.DoAndWait(func() {
+		a.characterNames = names
 		a.at = at
 	})
 	a.Navigation.update(ctx, at.Locations())
 }
 
 const (
-	assetCategoryAll        = "All"
-	assetCategoryDeliveries = "Deliveries"
-	assetCategoryImpounded  = "Impounded"
-	assetCategoryInSpace    = "In Space"
-	assetCategoryOffice     = "Office"
-	assetCategoryPersonal   = "Personal"
-	assetCategorySafety     = "Safety"
-	assetCategoryOther      = "Other"
+	categoryAll        = "All"
+	categoryDeliveries = "Deliveries"
+	categoryImpounded  = "Impounded"
+	categoryInSpace    = "In Space"
+	categoryOffice     = "Office"
+	categoryPersonal   = "Personal"
+	categorySafety     = "Safety"
+	categoryOther      = "Other"
 )
 
-type assetContainerNode struct {
+type containerNode struct {
 	node       *asset.Node
 	itemCount  optional.Optional[int]
 	searchText string
 }
 
-func (n assetContainerNode) String() string {
+func (n containerNode) String() string {
 	if n.node == nil {
 		return "?"
 	}
@@ -203,8 +221,8 @@ func (n assetContainerNode) String() string {
 }
 
 type filteredTree struct {
-	td         xwidget.TreeData[assetContainerNode]
-	nodeLookup map[*asset.Node]*assetContainerNode
+	td         xwidget.TreeData[containerNode]
+	nodeLookup map[*asset.Node]*containerNode
 }
 
 type browserNavigation struct {
@@ -216,7 +234,7 @@ type browserNavigation struct {
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
-	locations      *xwidget.Tree[assetContainerNode]
+	locations      *xwidget.Tree[containerNode]
 	search         *widget.Entry
 	selectCategory *kxwidget.FilterChipSelect
 	footer         *widget.Label
@@ -235,11 +253,11 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 		func(_ bool) fyne.CanvasObject {
 			return newNavItem()
 		},
-		func(cn *assetContainerNode, _ bool, co fyne.CanvasObject) {
+		func(cn *containerNode, _ bool, co fyne.CanvasObject) {
 			co.(*navItem).set(cn.node.String(), cn.itemCount)
 		},
 	)
-	a.locations.OnSelectedNode = func(cn *assetContainerNode) {
+	a.locations.OnSelectedNode = func(cn *containerNode) {
 		a.b.Selected.set(cn)
 		if a.OnSelected != nil {
 			a.OnSelected()
@@ -259,17 +277,17 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			assetNoFilter,
 		}
 		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
-			assetCategoryOffice,
-			assetCategoryImpounded,
-			assetCategoryDeliveries,
-			assetCategoryInSpace,
-			assetCategorySafety,
-			assetCategoryOther,
-			assetCategoryAll,
+			categoryOffice,
+			categoryImpounded,
+			categoryDeliveries,
+			categoryInSpace,
+			categorySafety,
+			categoryOther,
+			categoryAll,
 		}, func(string) {
 			a.filterLocationsAsync()
 		})
-		a.selectCategory.Selected = assetCategoryOffice
+		a.selectCategory.Selected = categoryOffice
 		a.selectCategory.SortDisabled = true
 	} else {
 		a.filters = []assetFilter{
@@ -280,15 +298,15 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			assetNoFilter,
 		}
 		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
-			assetCategoryPersonal,
-			assetCategoryDeliveries,
-			assetCategoryInSpace,
-			assetCategorySafety,
-			assetCategoryAll,
+			categoryPersonal,
+			categoryDeliveries,
+			categoryInSpace,
+			categorySafety,
+			categoryAll,
 		}, func(string) {
 			a.filterLocationsAsync()
 		})
-		a.selectCategory.Selected = assetCategoryPersonal
+		a.selectCategory.Selected = categoryPersonal
 		a.selectCategory.SortDisabled = true
 	}
 	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
@@ -333,8 +351,8 @@ func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.b.forCorporation)
-		lookup := make(map[*asset.Node]*assetContainerNode)
-		td.Walk(nil, func(n *assetContainerNode) bool {
+		lookup := make(map[*asset.Node]*containerNode)
+		td.Walk(nil, func(n *containerNode) bool {
 			lookup[n.node] = n
 			return true
 		})
@@ -380,15 +398,15 @@ func (w *navItem) set(name string, count optional.Optional[int]) {
 	w.count.SetText(s)
 }
 
-func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) xwidget.TreeData[assetContainerNode] {
-	var td xwidget.TreeData[assetContainerNode]
+func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) xwidget.TreeData[containerNode] {
+	var td xwidget.TreeData[containerNode]
 
 	addNodes(&td, nil, trees, filter, isCorporation)
 	updateItemCounts(td)
 	return td
 }
 
-func addNodes(td *xwidget.TreeData[assetContainerNode], parent *assetContainerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
+func addNodes(td *xwidget.TreeData[containerNode], parent *containerNode, nodes []*asset.Node, filter assetFilter, isCorporation bool) {
 	slices.SortFunc(nodes, func(a, b *asset.Node) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -460,7 +478,7 @@ func addNodes(td *xwidget.TreeData[assetContainerNode], parent *assetContainerNo
 			}
 		}
 
-		cn := &assetContainerNode{
+		cn := &containerNode{
 			node:       n,
 			searchText: strings.ToLower(n.String()),
 		}
@@ -475,8 +493,8 @@ func addNodes(td *xwidget.TreeData[assetContainerNode], parent *assetContainerNo
 	}
 }
 
-func updateItemCounts(td xwidget.TreeData[assetContainerNode]) {
-	td.Walk(nil, func(n *assetContainerNode) bool {
+func updateItemCounts(td xwidget.TreeData[containerNode]) {
+	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
 			n.itemCount.Set(k)
 		}
@@ -510,14 +528,14 @@ func updateItemCounts(td xwidget.TreeData[assetContainerNode]) {
 }
 
 var assetFilterLookup = map[string]assetFilter{
-	assetCategoryAll:        assetNoFilter,
-	assetCategoryDeliveries: assetDeliveries,
-	assetCategoryImpounded:  assetImpounded,
-	assetCategoryInSpace:    assetInSpace,
-	assetCategoryOffice:     assetOffice,
-	assetCategoryOther:      assetCorpOther,
-	assetCategoryPersonal:   assetPersonalAssets,
-	assetCategorySafety:     assetSafety,
+	categoryAll:        assetNoFilter,
+	categoryDeliveries: assetDeliveries,
+	categoryImpounded:  assetImpounded,
+	categoryInSpace:    assetInSpace,
+	categoryOffice:     assetOffice,
+	categoryOther:      assetCorpOther,
+	categoryPersonal:   assetPersonalAssets,
+	categorySafety:     assetSafety,
 }
 
 func (a *browserNavigation) filterLocationsAsync() {
@@ -527,10 +545,10 @@ func (a *browserNavigation) filterLocationsAsync() {
 	search := strings.ToLower(a.search.Text)
 
 	go func() {
-		var td xwidget.TreeData[assetContainerNode]
+		var td xwidget.TreeData[containerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
-			td.DeleteChildrenFunc(nil, func(n *assetContainerNode) bool {
+			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
 				return !strings.Contains(n.searchText, search)
 			})
 		} else {
@@ -546,7 +564,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	}()
 }
 
-func (a *browserNavigation) nodeLookup(n *asset.Node) (*assetContainerNode, bool) {
+func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft, ok := a.filteredTrees[filter]
 	if !ok {
@@ -565,7 +583,7 @@ func (a *browserNavigation) setFooter(s string, i widget.Importance) {
 	a.footer.Refresh()
 }
 
-func (a *browserNavigation) selectContainer(cn *assetContainerNode) {
+func (a *browserNavigation) selectContainer(cn *containerNode) {
 	a.locations.UnselectAll()
 	if !a.b.u.IsMobile() {
 		a.locations.SelectNode(cn)
@@ -581,7 +599,7 @@ type containerItem struct {
 	searchText string
 }
 
-type assetBrowserContainer struct {
+type browserContainer struct {
 	widget.BaseWidget
 
 	ab            *Browser
@@ -589,19 +607,19 @@ type assetBrowserContainer struct {
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
-	location      *assetBrowserLocation
+	location      *browserLocation
 	search        *widget.Entry
 }
 
-func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
-	a := &assetBrowserContainer{
+func newBrowserContainer(ab *Browser) *browserContainer {
+	a := &browserContainer{
 		ab:     ab,
 		footer: ui.NewLabelWithTruncation(""),
 		search: widget.NewEntry(),
 	}
 	a.ExtendBaseWidget(a)
 	a.grid = a.makeAssetGrid()
-	a.location = newAssetBrowserLocation(a)
+	a.location = newBrowserLocation(a)
 
 	a.search.OnChanged = func(_ string) {
 		a.filterItemsAsync()
@@ -615,7 +633,7 @@ func newAssetBrowserContainer(ab *Browser) *assetBrowserContainer {
 	return a
 }
 
-func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
+func (a *browserContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
 		container.NewBorder(
 			a.location,
@@ -631,14 +649,14 @@ func (a *assetBrowserContainer) CreateRenderer() fyne.WidgetRenderer {
 	))
 }
 
-func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
+func (a *browserContainer) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.itemsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newAssetIcon(func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource)) {
-				loadAssetIconAsync(a.ab.u.EVEImage(), typeID, variant, setIcon)
+			return newAssetIem(func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource)) {
+				a.ab.u.EVEImage().AssetIconAsync(typeID, variant, ui.IconPixelSize, setIcon)
 			})
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
@@ -671,7 +689,7 @@ func (a *assetBrowserContainer) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *assetBrowserContainer) set(cn *assetContainerNode) {
+func (a *browserContainer) set(cn *containerNode) {
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
@@ -707,7 +725,7 @@ func (a *assetBrowserContainer) set(cn *assetContainerNode) {
 	}()
 }
 
-func (a *assetBrowserContainer) clear() {
+func (a *browserContainer) clear() {
 	a.location.clear()
 	a.search.Hide()
 	a.footer.SetText("")
@@ -716,7 +734,7 @@ func (a *assetBrowserContainer) clear() {
 	a.grid.Refresh()
 }
 
-func (a *assetBrowserContainer) filterItemsAsync() {
+func (a *browserContainer) filterItemsAsync() {
 	totalItems := len(a.items)
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.search.Text)
@@ -772,33 +790,36 @@ func (a *assetBrowserContainer) filterItemsAsync() {
 	}()
 }
 
-func (a *assetBrowserContainer) showNodeInfo(n *asset.Node) {
+func (a *browserContainer) showNodeInfo(n *asset.Node) {
 	if a.ab.forCorporation {
 		ca, ok := n.CorporationAsset()
 		if !ok {
 			return
 		}
 		name := a.ab.corporation.Load().NameOrZero()
-		ShowAssetDetailWindow(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
+		ShowDetails(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
 		return
 	}
 	ca, ok := n.CharacterAsset()
 	if !ok {
 		return
 	}
-	ShowAssetDetailWindow(a.ab.u, newCharacterAssetRow(ca, a.ab.at, a.ab.u.StatusCache().CharacterName))
+	ShowDetails(a.ab.u, newCharacterAssetRow(ca, a.ab.at, func(id int64) string {
+		return a.ab.characterNames[id]
+	}))
+
 }
 
-type assetBrowserLocation struct {
+type browserLocation struct {
 	widget.BaseWidget
 
 	breadcrumbs *fyne.Container
 	info        *xwidget.TappableIcon
-	selected    *assetBrowserContainer
+	selected    *browserContainer
 }
 
-func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocation {
-	a := &assetBrowserLocation{
+func newBrowserLocation(selected *browserContainer) *browserLocation {
+	a := &browserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
 		info:        xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
@@ -807,17 +828,17 @@ func newAssetBrowserLocation(selected *assetBrowserContainer) *assetBrowserLocat
 	return a
 }
 
-func (a *assetBrowserLocation) CreateRenderer() fyne.WidgetRenderer {
+func (a *browserLocation) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, nil, a.info, a.breadcrumbs)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assetBrowserLocation) clear() {
+func (a *browserLocation) clear() {
 	a.breadcrumbs.RemoveAll()
 	a.info.Hide()
 }
 
-func (a *assetBrowserLocation) set(cn *assetContainerNode) {
+func (a *browserLocation) set(cn *containerNode) {
 	nodeName := func(n *asset.Node) string {
 		if an, ok := n.Asset(); ok {
 			return an.DisplayName3()
@@ -881,18 +902,18 @@ const (
 type assetItem struct {
 	widget.BaseWidget
 
-	badge    *assetQuantityBadge
+	badge    *itemQuantityBadge
 	loadIcon func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource))
 	icon     *canvas.Image
-	label    *assetLabel
+	label    *itemLabel
 }
 
-func newAssetIcon(loadIcon func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource))) *assetItem {
+func newAssetIem(loadIcon func(typeID int64, variant app.InventoryTypeVariant, setIcon func(r fyne.Resource))) *assetItem {
 	icon := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
 	w := &assetItem{
-		badge:    newAssetQuantityBadge(),
+		badge:    newItemQuantityBadge(),
 		icon:     icon,
-		label:    newAssetLabel(),
+		label:    newItemLabel(),
 		loadIcon: loadIcon,
 	}
 	w.badge.Hide()
@@ -954,24 +975,24 @@ func (w *assetItem) Set(n *asset.Node) {
 	})
 }
 
-type assetLabel struct {
+type itemLabel struct {
 	widget.BaseWidget
 
 	label1 *canvas.Text
 	label2 *canvas.Text
 }
 
-func newAssetLabel() *assetLabel {
+func newItemLabel() *itemLabel {
 	l1 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	l1.TextSize = theme.CaptionTextSize()
 	l2 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	l2.TextSize = l1.TextSize
-	w := &assetLabel{label1: l1, label2: l2}
+	w := &itemLabel{label1: l1, label2: l2}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *assetLabel) SetText(s string) {
+func (w *itemLabel) SetText(s string) {
 	l1, l2 := splitLines(s, labelMaxCharacters)
 	w.label1.Text = l1
 	w.label2.Text = l2
@@ -979,7 +1000,7 @@ func (w *assetLabel) SetText(s string) {
 	w.label2.Refresh()
 }
 
-func (w *assetLabel) Refresh() {
+func (w *itemLabel) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.label1.Color = th.Color(theme.ColorNameForeground, v)
@@ -989,7 +1010,7 @@ func (w *assetLabel) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *assetLabel) CreateRenderer() fyne.WidgetRenderer {
+func (w *itemLabel) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	customHBox := layout.NewCustomPaddedHBoxLayout(0)
 	c := container.New(
@@ -1040,17 +1061,17 @@ func splitLines(s string, maxLine int) (string, string) {
 	return ll[0], ll[1]
 }
 
-type assetQuantityBadge struct {
+type itemQuantityBadge struct {
 	widget.BaseWidget
 
 	quantity *canvas.Text
 	bg       *canvas.Rectangle
 }
 
-func newAssetQuantityBadge() *assetQuantityBadge {
+func newItemQuantityBadge() *itemQuantityBadge {
 	q := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	q.TextSize = sizeLabelText
-	w := &assetQuantityBadge{
+	w := &itemQuantityBadge{
 		quantity: q,
 		bg:       canvas.NewRectangle(theme.Color(colorAssetQuantityBadgeBackground)),
 	}
@@ -1058,12 +1079,12 @@ func newAssetQuantityBadge() *assetQuantityBadge {
 	return w
 }
 
-func (w *assetQuantityBadge) SetQuantity(q int) {
+func (w *itemQuantityBadge) SetQuantity(q int) {
 	w.quantity.Text = humanize.Comma(int64(q))
 	w.quantity.Refresh()
 }
 
-func (w *assetQuantityBadge) Refresh() {
+func (w *itemQuantityBadge) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.quantity.Color = th.Color(theme.ColorNameForeground, v)
@@ -1073,7 +1094,7 @@ func (w *assetQuantityBadge) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *assetQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
+func (w *itemQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	bgPadding := layout.NewCustomPaddedLayout(0, 0, p, p)
 	customPadding := layout.NewCustomPaddedLayout(p/2, p/2, p/2, p/2)

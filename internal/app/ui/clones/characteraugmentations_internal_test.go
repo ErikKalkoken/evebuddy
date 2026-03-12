@@ -9,11 +9,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 	if testing.Short() {
-		t.Skip("UI tests are flaky")
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -36,7 +38,10 @@ func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 		Section:     app.SectionCharacterImplants,
 	})
 	test.ApplyTheme(t, test.Theme())
-	a := NewCharacterAugmentations(NewUIFake(st, test.NewTempApp(t)))
+	a := NewCharacterAugmentations(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))

@@ -13,8 +13,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// ShowAssetDetailWindow shows the details for an assets in a new window.
-func ShowAssetDetailWindow(u coreUI, r assetRow) {
+// ShowDetails shows the details for an assets in a new window.
+func ShowDetails(u coreUI, r assetRow) {
 	w, created := u.GetOrCreateWindow(
 		fmt.Sprintf("asset-%d-%d", r.owner.ID, r.itemID),
 		"Asset: Information",

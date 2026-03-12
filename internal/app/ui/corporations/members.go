@@ -39,13 +39,13 @@ type Members struct {
 	rows         []memberRow
 	rowsFiltered []memberRow
 	searchBox    *widget.Entry
-	s            baseUI
+	u            baseUI
 }
 
 func NewMembers(s baseUI) *Members {
 	a := &Members{
 		footer: ui.NewLabelWithTruncation(""),
-		s:      s,
+		u:      s,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
@@ -62,11 +62,11 @@ func NewMembers(s baseUI) *Members {
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
 	}
-	a.s.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.update(ctx)
 	})
-	a.s.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if a.corporation.Load().IDOrZero() != arg.CorporationID {
 			return
 		}
@@ -95,7 +95,7 @@ func (a *Members) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCorporationMemberItem(ui.LoadEveEntityIconFunc(a.s.EVEImage()))
+			return newCorporationMemberItem(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -110,7 +110,7 @@ func (a *Members) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.s.InfoViewer().Show(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+		a.u.InfoViewer().Show(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
 }
@@ -143,31 +143,41 @@ func (a *Members) filterRowsAsync() {
 }
 
 func (a *Members) update(ctx context.Context) {
-	var corporationID, ceoID int64
-	if c := a.corporation.Load(); c != nil {
-		corporationID = c.ID
-		ceoID = optional.Map(c.EveCorporation.Ceo, 0, func(x *app.EveEntity) int64 {
-			return x.ID
-		})
+	reset := func() {
+
 	}
-	var rows []memberRow
-	var err error
-	hasData, err := a.s.Corporation().HasSection(ctx, corporationID, app.SectionCorporationMembers)
-	if hasData {
-		rows2, err2 := a.fetchRows(ctx, corporationID, ceoID)
-		if err2 != nil {
-			err = err2
-		} else {
-			rows = rows2
-			hasData = len(rows2) > 0
-		}
-	}
-	t, i := ui.MakeTopText(corporationID, hasData, err, nil)
-	if t != "" {
+	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.footer.Text, a.footer.Importance = t, i
+			a.footer.Text, a.footer.Importance = s, i
 			a.footer.Refresh()
 		})
+
+	}
+	corporation := a.corporation.Load()
+	if corporation == nil {
+		reset()
+		a.filterRowsAsync()
+		return
+	}
+	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.SectionCorporationMembers)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		a.filterRowsAsync()
+		return
+	}
+	ceoID := optional.Map(corporation.EveCorporation.Ceo, 0, func(x *app.EveEntity) int64 {
+		return x.ID
+	})
+	rows, err := a.fetchRows(ctx, corporation.ID, ceoID)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
 	}
 	fyne.Do(func() {
 		a.rows = rows
@@ -176,7 +186,7 @@ func (a *Members) update(ctx context.Context) {
 }
 
 func (a *Members) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]memberRow, error) {
-	cc, err := a.s.Character().ListCharacters(ctx)
+	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +196,7 @@ func (a *Members) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]
 			owned.Add(c.ID)
 		}
 	}
-	oo, err := a.s.Corporation().ListMembers(ctx, corporationID)
+	oo, err := a.u.Corporation().ListMembers(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}

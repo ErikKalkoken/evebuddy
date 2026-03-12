@@ -7,11 +7,13 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -21,7 +23,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -69,7 +71,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -120,7 +122,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
@@ -253,7 +255,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	t.Run("do nothing when all types already exist", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -285,7 +287,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return existing race", func(t *testing.T) {
 		// given
@@ -355,7 +357,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("should return existing object", func(t *testing.T) {
 		// given
@@ -412,7 +414,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 func TestMarketPrice(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	s := eveuniverseservice.NewTestService(st)
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	t.Run("return price when it exists", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -433,5 +435,154 @@ func TestMarketPrice(t *testing.T) {
 		if assert.NoError(t, err) {
 			xassert.Empty(t, x)
 		}
+	})
+}
+
+func TestUpdateEveMarketPricesESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	ctx := context.Background()
+	const (
+		knownTypeID = 32772
+		otherTypeID = 10001
+	)
+	t.Run("should create new objects from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}, {
+				"adjusted_price": 123.45,
+				"average_price":  456.78,
+				"type_id":        otherTypeID,
+			}}),
+		)
+		// when
+		got, err := s.UpdateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal(t, want, got)
+		prices, err := st.ListEveMarketPrices(ctx)
+		require.NoError(t, err)
+		require.Len(t, prices, 2)
+		for _, o := range prices {
+			switch o.TypeID {
+			case knownTypeID:
+				xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+			case o.TypeID:
+				xassert.Equal(t, 123.45, o.AdjustedPrice.MustValue())
+				xassert.Equal(t, 456.78, o.AveragePrice.MustValue())
+			}
+		}
+	})
+	t.Run("should update existing objects from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        knownTypeID,
+			AdjustedPrice: optional.New(2.0),
+			AveragePrice:  optional.New(3.0),
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}}),
+		)
+		// when
+		got, err := s.UpdateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal(t, want, got)
+		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
+		require.NoError(t, err)
+		xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
+		xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
+	})
+	t.Run("should only report changes for known types", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: knownTypeID,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        knownTypeID,
+			AdjustedPrice: optional.New(306988.09),
+			AveragePrice:  optional.New(306292.67),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        otherTypeID,
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}, {
+				"adjusted_price": 123.45,
+				"average_price":  456.78,
+				"type_id":        otherTypeID,
+			}}),
+		)
+		// when
+		got, err := s.UpdateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		want := set.Of[int64]()
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should remove obsolete prices", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			AdjustedPrice: optional.New(111.09),
+			AveragePrice:  optional.New(222.67),
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"adjusted_price": 306988.09,
+				"average_price":  306292.67,
+				"type_id":        knownTypeID,
+			}}),
+		)
+		// when
+		_, err := s.UpdateMarketPricesESI(ctx)
+		// then
+		require.NoError(t, err)
+		got, err := st.ListEveMarketPriceIDs(ctx)
+		require.NoError(t, err)
+		want := set.Of[int64](knownTypeID)
+		xassert.Equal(t, want, got)
 	})
 }
