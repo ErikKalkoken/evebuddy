@@ -45,7 +45,7 @@ func ShowCharacterContract2(ctx context.Context, u baseUI, characterID, contract
 		reportError(err)
 		return
 	}
-	ShowCharacterContract(u, newContractRowForCharacter(o, func(id int64) string {
+	ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
 		return c.NameOrZero()
 	}))
 }

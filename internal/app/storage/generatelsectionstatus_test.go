@@ -36,10 +36,10 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		error := "error"
+		x := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
-			Error:   &error,
+			Error:   &x,
 		}
 		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then

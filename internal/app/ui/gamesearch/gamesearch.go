@@ -25,8 +25,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
+
+// TODO: Make component permanent, e.g. to ensure cache is persistent between searches
 
 const (
 	maxSearchResults = 500 // max results returned from the server
@@ -67,6 +70,7 @@ type GameSearch struct {
 	categories          *kxwidget.FilterChipGroup
 	defaultCategories   []string
 	entry               *widget.Entry
+	iconCache           xsync.Map[int64, fyne.Resource]
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
 	recentItems         []*app.EveEntity
@@ -252,13 +256,47 @@ func (a *GameSearch) SetWindow(w fyne.Window) {
 	a.w = w
 }
 
+func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
+	return func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
+		xwidget.LoadResourceAsyncWithCache(
+			icons.BlankSvg,
+			func() (fyne.Resource, bool) {
+				return a.iconCache.Load(o.ID)
+			},
+			setIcon,
+			func() (fyne.Resource, error) {
+				switch o.Category {
+				case app.EveEntityInventoryType:
+					et, err := a.u.EVEUniverse().GetOrCreateTypeESI(context.Background(), o.ID)
+					if err != nil {
+						return nil, err
+					}
+					switch et.Group.Category.ID {
+					case app.EveCategorySKINs:
+						return a.u.EVEImage().InventoryTypeSKIN(et.ID, ui.IconPixelSize)
+					case app.EveCategoryBlueprint:
+						return a.u.EVEImage().InventoryTypeBPO(et.ID, ui.IconPixelSize)
+					default:
+						return a.u.EVEImage().InventoryTypeIcon(et.ID, ui.IconPixelSize)
+					}
+				default:
+					return a.u.EVEImage().EveEntityLogo(o, ui.IconPixelSize)
+				}
+			},
+			func(r fyne.Resource) {
+				a.iconCache.Store(o.ID, r)
+			},
+		)
+	}
+}
+
 func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
 	t := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), a.supportedCategories)
+			return newSearchResult(a.loadIconFunc(), a.supportedCategories)
 		},
 		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -298,7 +336,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(loadIconFunc(a.u.EVEImage(), a.u.EVEUniverse()), infoviewer.SupportedCategories())
+			return newSearchResult(a.loadIconFunc(), infoviewer.SupportedCategories())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {

@@ -575,13 +575,6 @@ var SolarSystemSvg = &fyne.StaticResource{
 	StaticContent: SolarSystemSvgData,
 }
 
-//go:embed solar-system.svg.old
-var SolarSystemSvgOldData []byte
-var SolarSystemSvgOld = &fyne.StaticResource{
-	StaticName:    "solar-system.svg.old",
-	StaticContent: SolarSystemSvgOldData,
-}
-
 //go:embed space-station.svg
 var SpaceStationSvgData []byte
 var SpaceStationSvg = &fyne.StaticResource{
