@@ -17,7 +17,7 @@ import (
 
 func TestColonies_CanRenderEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -51,7 +51,7 @@ func TestColonies_CanRenderEmpty(t *testing.T) {
 
 func TestColonies_CanRenderFull(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

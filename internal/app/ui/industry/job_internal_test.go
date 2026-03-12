@@ -24,7 +24,7 @@ import (
 
 func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -100,7 +100,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 
 func TestIndustryJob_CanRenderEmpty(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -133,7 +133,9 @@ func TestIndustryJob_CanRenderEmpty(t *testing.T) {
 }
 
 func TestIndustryJob_Filter(t *testing.T) {
-	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
@@ -188,6 +190,9 @@ func TestIndustryJob_Filter(t *testing.T) {
 }
 
 func TestIndustryJob_FetchJobs(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter()

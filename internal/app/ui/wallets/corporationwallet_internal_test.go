@@ -17,7 +17,7 @@ import (
 
 func TestCorporationWallet_CanRenderWithData(t *testing.T) {
 	if testing.Short() {
-		t.Skip(ui.SkipUIReason)
+		t.Skip(ui.SkipUITestReason)
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

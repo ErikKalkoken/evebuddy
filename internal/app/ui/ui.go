@@ -26,8 +26,9 @@ const (
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+// See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847
 const (
-	SkipUIReason = "UI tests are flaky"
+	SkipUITestReason = "UI tests are flaky"
 )
 
 // EVEImageService defines which methods from the EVE image service is used in the UI.

@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -213,6 +214,7 @@ type UIFake struct {
 	eus               *eveuniverseservice.EVEUniverseService
 	isMobile          bool
 	iw                *infoviewer.InfoViewer
+	settings          *settings.Settings
 	signals           *app.Signals
 	showCharacterFunc func(ctx context.Context, characterID int64)
 	showSnackbarFunc  func(text string)
@@ -225,6 +227,7 @@ type UIParams struct {
 	Storage           *storage.Storage
 	ShowCharacterFunc func(ctx context.Context, characterID int64)
 	ShowSnackbarFunc  func(text string)
+	Settings          *settings.Settings
 }
 
 func NewUIFake(args ...UIParams) *UIFake {
@@ -240,6 +243,9 @@ func NewUIFake(args ...UIParams) *UIFake {
 	}
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
+	}
+	if arg.Settings == nil {
+		arg.Settings = settings.New(fyne.CurrentApp().Preferences())
 	}
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",
@@ -257,6 +263,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Signals:            arg.Signals,
 		ESIClient:          esiClient,
 		StatusCacheService: scs,
+		Settings:           arg.Settings,
 	})
 	rs := NewCorporationServiceFake(corporationservice.Params{
 		CharacterService:   cs,
@@ -265,6 +272,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Signals:            arg.Signals,
 		StatusCacheService: scs,
 		Storage:            arg.Storage,
+		Settings:           arg.Settings,
 	})
 	u := &UIFake{
 		app:               arg.App,
@@ -276,6 +284,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		showCharacterFunc: arg.ShowCharacterFunc,
 		showSnackbarFunc:  arg.ShowSnackbarFunc,
 		signals:           arg.Signals,
+		settings:          arg.Settings,
 	}
 	return u
 }
@@ -324,8 +333,20 @@ func (u *UIFake) IsOffline() bool {
 	return true
 }
 
+func (u *UIFake) IsUpdateDisabled() bool {
+	return false
+}
+
 func (u *UIFake) MainWindow() fyne.Window {
 	return u.app.NewWindow("Dummy")
+}
+
+func (u *UIFake) MakeWindowTitle(parts ...string) string {
+	return "Dummy title"
+}
+
+func (u *UIFake) Settings() *settings.Settings {
+	return u.settings
 }
 
 func (u *UIFake) ShowCharacter(ctx context.Context, characterID int64) {
@@ -343,3 +364,5 @@ func (u *UIFake) ShowSnackbar(text string) {
 func (u *UIFake) Signals() *app.Signals {
 	return u.signals
 }
+
+func (u *UIFake) UpdateMailIndicator(ctx context.Context) {}
