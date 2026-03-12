@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -16,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -36,14 +36,14 @@ type Attributes struct {
 	rows      []characterAttributeRow
 	character atomic.Pointer[app.Character]
 	list      *widget.List
-	footer    *widget.Label
+	top       *widget.Label
 	u         baseUI
 }
 
 func NewAttributes(s baseUI) *Attributes {
 	a := &Attributes{
-		footer: ui.NewLabelWithTruncation(""),
-		u:      s,
+		top: ui.NewLabelWithTruncation(""),
+		u:   s,
 	}
 	a.list = a.makeAttributeList()
 	a.ExtendBaseWidget(a)
@@ -63,7 +63,7 @@ func NewAttributes(s baseUI) *Attributes {
 }
 
 func (a *Attributes) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.footer, nil, nil, nil, a.list)
+	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -90,28 +90,44 @@ func (a *Attributes) makeAttributeList() *widget.List {
 }
 
 func (a *Attributes) update(ctx context.Context) {
-	var err error
-	var total int64
-	var attributes []characterAttributeRow
-	characterID := a.character.Load().IDOrZero()
-	hasData ,err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterAttributes)
-	if hasData {
-		total2, attributes2, err2 := a.fetchData(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh attributes UI", "err", err)
-			err = err2
-		} else {
-			attributes = attributes2
-			total = total2
-		}
+	reset := func() {
+		fyne.Do(func() {
+			xslices.Reset(a.rows)
+			a.list.Refresh()
+		})
 	}
-	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.footer.Text, a.footer.Importance = t, i
-		a.footer.Refresh()
-	})
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text, a.top.Importance = s, i
+			a.top.Refresh()
+		})
+	}
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		reset()
+		setTop("No character", widget.LowImportance)
+		return
+	}
+
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterAttributes)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setTop("No data", widget.WarningImportance)
+		return
+	}
+
+	total, attributes, err := a.fetchData(ctx, characterID)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	setTop(fmt.Sprintf("Total points: %d", total), widget.MediumImportance)
 	fyne.Do(func() {
 		a.rows = attributes
 		a.list.Refresh()

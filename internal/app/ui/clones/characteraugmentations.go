@@ -3,7 +3,6 @@ package clones
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -17,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -27,21 +27,21 @@ type CharacterAugmentations struct {
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
-	s         baseUI
+	u         baseUI
 }
 
 func NewCharacterAugmentations(s baseUI) *CharacterAugmentations {
 	a := &CharacterAugmentations{
 		top: ui.NewLabelWithWrapping(""),
-		s:   s,
+		u:   s,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	a.s.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
 	})
-	a.s.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
@@ -64,8 +64,8 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return newCharacterAugmentationItem(
-				a.s.EVEImage().InventoryTypeIconAsync,
-				a.s.InfoViewer().ShowType,
+				a.u.EVEImage().InventoryTypeIconAsync,
+				a.u.InfoViewer().ShowType,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -83,30 +83,46 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 }
 
 func (a *CharacterAugmentations) update(ctx context.Context) {
-	var err error
-	var implants []*app.CharacterImplant
+	reset := func() {
+		fyne.Do(func() {
+			xslices.Reset(a.implants)
+			a.list.Refresh()
+		})
+	}
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.top.Text = s
+			a.top.Importance = i
+			a.top.Refresh()
+		})
+	}
 	characterID := a.character.Load().IDOrZero()
-	hasData, err := a.s.Character().HasSection(ctx, characterID, app.SectionCharacterImplants)
+	if characterID == 0 {
+		reset()
+		setTop("No character", widget.LowImportance)
+		return
+	}
+
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterImplants)
 	if err != nil {
-		panic(err)
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
 	}
-	if hasData {
-		implants2, err2 := a.s.Character().ListImplants(ctx, characterID)
-		if err2 != nil {
-			slog.Error("Failed to refresh implants UI", "err", err)
-			err = err2
-		} else {
-			implants = implants2
-		}
+	if !hasData {
+		reset()
+		setTop("No data", widget.WarningImportance)
+		return
 	}
-	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-	})
+
+	implants, err := a.u.Character().ListImplants(ctx, characterID)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+
+	setTop(fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance)
 	fyne.Do(func() {
 		a.implants = implants
 		a.list.Refresh()

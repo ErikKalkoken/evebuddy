@@ -14,13 +14,13 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type notificationFolder struct {
@@ -252,65 +252,106 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 }
 
 func (a *Communications) update(ctx context.Context) {
-	var err error
-	characterID := a.character.Load().IDOrZero()
-	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
-	var groups []notificationFolder
-	var unreadCount, totalCount optional.Optional[int]
-	if characterID != 0 && hasData {
-		groupCounts, err2 := a.u.Character().CountNotifications(ctx, characterID)
-		if err2 != nil {
-			slog.Error("communications update", "error", err)
-			err = err2
-		}
-
-		for _, g := range app.NotificationGroups() {
-			nf := notificationFolder{
-				group: g,
-				Name:  g.String(),
+	reset := func() {
+		a.ResetCurrentFolder(ctx)
+		fyne.Do(func() {
+			a.clearDetail()
+			xslices.Reset(a.folders)
+			a.folderList.Refresh()
+			a.folderList.UnselectAll()
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[int]{})
 			}
-			gc, ok := groupCounts[g]
-			if ok {
-				nf.Total.Set(gc[0])
-				nf.Unread.Set(gc[1])
-				totalCount.Set(totalCount.ValueOrZero() + gc[0])
-				unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
-			}
-			if nf.Total.ValueOrZero() > 0 {
-				groups = append(groups, nf)
-			}
-		}
-		slices.SortFunc(groups, func(a, b notificationFolder) int {
-			return cmp.Compare(a.Name, b.Name)
-		})
-		if unreadCount.ValueOrZero() > 0 {
-			groups = slices.Insert(groups, 0, notificationFolder{
-				group:  app.GroupUnread,
-				Name:   "Unread",
-				Unread: unreadCount,
-			})
-		}
-		groups = append(groups, notificationFolder{
-			group:  app.GroupAll,
-			Name:   "All",
-			Unread: unreadCount,
 		})
 	}
-	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?")), widget.MediumImportance
-	})
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.foldersTop.Text, a.foldersTop.Importance = s, i
+			a.foldersTop.Refresh()
+		})
+	}
+
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		reset()
+		setTop("No character", widget.LowImportance)
+		return
+	}
+
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	if !hasData {
+		reset()
+		setTop("No data", widget.WarningImportance)
+		return
+	}
+
+	folders, unreadCount, totalCount, err := a.fetchFolders(ctx, characterID)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+
+	top := fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?"))
+	setTop(top, widget.MediumImportance)
 	a.ResetCurrentFolder(ctx)
+
 	fyne.Do(func() {
 		a.clearDetail()
-		a.folders = groups
-		a.foldersTop.Text, a.foldersTop.Importance = t, i
-		a.foldersTop.Refresh()
+		a.folders = folders
 		a.folderList.Refresh()
 		a.folderList.UnselectAll()
 		if a.OnUpdate != nil {
 			a.OnUpdate(unreadCount)
 		}
 	})
+}
+
+func (a *Communications) fetchFolders(ctx context.Context, characterID int64) ([]notificationFolder, optional.Optional[int], optional.Optional[int], error) {
+	groupCounts, err := a.u.Character().CountNotifications(ctx, characterID)
+	if err != nil {
+		return nil, optional.Optional[int]{}, optional.Optional[int]{}, err
+	}
+
+	var folders []notificationFolder
+	var unreadCount, totalCount optional.Optional[int]
+	for _, g := range app.NotificationGroups() {
+		nf := notificationFolder{
+			group: g,
+			Name:  g.String(),
+		}
+		gc, ok := groupCounts[g]
+		if ok {
+			nf.Total.Set(gc[0])
+			nf.Unread.Set(gc[1])
+			totalCount.Set(totalCount.ValueOrZero() + gc[0])
+			unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
+		}
+		if nf.Total.ValueOrZero() > 0 {
+			folders = append(folders, nf)
+		}
+	}
+	slices.SortFunc(folders, func(a, b notificationFolder) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	if unreadCount.ValueOrZero() > 0 {
+		folders = slices.Insert(folders, 0, notificationFolder{
+			group:  app.GroupUnread,
+			Name:   "Unread",
+			Unread: unreadCount,
+		})
+	}
+	folders = append(folders, notificationFolder{
+		group:  app.GroupAll,
+		Name:   "All",
+		Unread: unreadCount,
+	})
+	return folders, unreadCount, totalCount, err
 }
 
 func (a *Communications) ResetCurrentFolder(ctx context.Context) {
@@ -321,59 +362,89 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 }
 
 func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
-	var err error
-	characterID := a.character.Load().IDOrZero()
-	var notifications []*app.CharacterNotification
-	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
-	if hasData {
-		var err2 error
-		var n []*app.CharacterNotification
-		switch nc {
-		case app.GroupAll:
-			n, err2 = a.u.Character().ListNotificationsAll(ctx, characterID)
-		case app.GroupUnread:
-			n, err2 = a.u.Character().ListNotificationsUnread(ctx, characterID)
-		default:
-			n, err2 = a.u.Character().ListNotificationsForGroup(ctx, characterID, nc)
-		}
-		if err2 != nil {
-			slog.Error("communications set group", "characterID", characterID, "error", err2)
-		} else {
-			notifications = n
-			err = err2
-		}
+	reset := func() {
+		fyne.Do(func() {
+			xslices.Reset(a.notifications)
+			a.notificationList.Refresh()
+			a.notificationList.ScrollToTop()
+		})
+
 	}
-	t, i := ui.MakeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		s := humanize.Comma(int64(len(notifications)))
-		return fmt.Sprintf("%s • %s messages", nc.String(), s), widget.MediumImportance
-	})
-	fyne.Do(func() {
-		a.notificationsTop.Text, a.notificationsTop.Importance = t, i
-		a.notificationsTop.Refresh()
-	})
-	// Replace generic corporations && alliances in notifications
-	if c := a.character.Load(); c != nil {
-		for _, n := range notifications {
-			if n.Sender == nil {
-				continue
-			}
-			switch n.Sender.ID {
-			case app.EveTypeAlliance:
-				n.Sender = c.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
-					ID:       1,
-					Name:     "Unknown",
-					Category: app.EveEntityCorporation,
-				})
-			case app.EveTypeCorporation:
-				n.Sender = c.EveCharacter.Corporation
-			}
-		}
+	setTop := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.notificationsTop.Text, a.notificationsTop.Importance = s, i
+			a.notificationsTop.Refresh()
+		})
 	}
+	character := a.character.Load()
+	if character == nil {
+		reset()
+		setTop("No character", widget.LowImportance)
+		return
+	}
+
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterNotifications)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+
+	if !hasData {
+		reset()
+		setTop("No character", widget.WarningImportance)
+	}
+
+	notifications, err := a.fetchNotifications(ctx, nc, character)
+	if err != nil {
+		reset()
+		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+
+	top := fmt.Sprintf("%s • %s messages", nc.String(), ihumanize.Comma(len(notifications)))
+	setTop(top, widget.MediumImportance)
+
 	fyne.Do(func() {
 		a.notifications = notifications
 		a.notificationList.Refresh()
 		a.notificationList.ScrollToTop()
 	})
+}
+
+func (a *Communications) fetchNotifications(ctx context.Context, nc app.EveNotificationGroup, character *app.Character) ([]*app.CharacterNotification, error) {
+	var err error
+	var oo []*app.CharacterNotification
+	switch nc {
+	case app.GroupAll:
+		oo, err = a.u.Character().ListNotificationsAll(ctx, character.ID)
+	case app.GroupUnread:
+		oo, err = a.u.Character().ListNotificationsUnread(ctx, character.ID)
+	default:
+		oo, err = a.u.Character().ListNotificationsForGroup(ctx, character.ID, nc)
+	}
+	if err != nil {
+		slog.Error("Fetch notifications for UI", "characterID", character.ID, "error", err)
+		return nil, err
+	}
+
+	// Replace generic corporations && alliances in notifications
+	for _, n := range oo {
+		if n.Sender == nil {
+			continue
+		}
+		switch n.Sender.ID {
+		case app.EveTypeAlliance:
+			n.Sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+				ID:       1,
+				Name:     "Unknown",
+				Category: app.EveEntityCorporation,
+			})
+		case app.EveTypeCorporation:
+			n.Sender = character.EveCharacter.Corporation
+		}
+	}
+	return oo, nil
 }
 
 func (a *Communications) clearDetail() {
