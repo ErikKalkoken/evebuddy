@@ -720,6 +720,7 @@ func (a *browserContainer) set(cn *containerNode) {
 			a.items = items
 			a.location.set(cn)
 			a.search.Show()
+			a.Refresh()
 			a.filterItemsAsync()
 		})
 	}()
