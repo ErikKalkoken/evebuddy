@@ -20,6 +20,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type memberRow struct {
@@ -144,7 +145,10 @@ func (a *Members) filterRowsAsync() {
 
 func (a *Members) update(ctx context.Context) {
 	reset := func() {
-
+		a.rows = xslices.Reset(a.rows)
+		a.rowsFiltered = xslices.Reset(a.rowsFiltered)
+		a.searchBox.SetText("")
+		a.list.Refresh()
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
@@ -156,7 +160,6 @@ func (a *Members) update(ctx context.Context) {
 	corporation := a.corporation.Load()
 	if corporation == nil {
 		reset()
-		a.filterRowsAsync()
 		return
 	}
 	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.SectionCorporationMembers)
@@ -167,7 +170,6 @@ func (a *Members) update(ctx context.Context) {
 	}
 	if !hasData {
 		reset()
-		a.filterRowsAsync()
 		return
 	}
 	ceoID := optional.Map(corporation.EveCorporation.Ceo, 0, func(x *app.EveEntity) int64 {

@@ -331,7 +331,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 		})
 	}
 	reset := func() {
-		xslices.Reset(a.rows)
+		a.rows = xslices.Reset(a.rows)
 		a.filterRowsAsync(-1)
 	}
 	character := a.character.Load()
@@ -409,7 +409,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 		})
 	}
 	reset := func() {
-		xslices.Reset(a.rows)
+		a.rows = xslices.Reset(a.rows)
 		a.filterRowsAsync(-1)
 	}
 	corporation := a.corporation.Load()

@@ -327,7 +327,7 @@ func (a *colonyDetails) filterRowsAsync() {
 func (a *colonyDetails) Update(ctx context.Context) error {
 	reset := func() {
 		fyne.Do(func() {
-			xslices.Reset(a.rows)
+			a.rows = xslices.Reset(a.rows)
 			a.filterRowsAsync()
 		})
 	}

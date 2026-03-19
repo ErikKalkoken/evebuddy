@@ -92,7 +92,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 func (a *Attributes) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			xslices.Reset(a.rows)
+			a.rows = xslices.Reset(a.rows)
 			a.list.Refresh()
 		})
 	}
