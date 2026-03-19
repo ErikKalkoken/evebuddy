@@ -196,36 +196,30 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (xwi
 }
 
 func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
-	setTop := func(segs []widget.RichTextSegment) {
-		a.top.Set(segs)
-
-	}
-	defaultStyle := widget.RichTextStyle{
-		ColorName: theme.ColorNameForeground,
-	}
-	ts := &widget.TextSegment{
-		Text:  "",
-		Style: defaultStyle,
+	setTop := func(text string, color fyne.ThemeColorName) {
+		fyne.Do(func() {
+			ts := &widget.TextSegment{
+				Text: text,
+				Style: widget.RichTextStyle{
+					ColorName: color,
+				},
+			}
+			a.top.Set([]widget.RichTextSegment{ts})
+		})
 	}
 
 	c := a.character.Load()
 	if c == nil {
-		ts.Text = "No character"
-		ts.Style.ColorName = theme.ColorNameDisabled
-		setTop([]widget.RichTextSegment{ts})
+		setTop("No character", theme.ColorNameDisabled)
 		return
 	}
 	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterJumpClones)
 	if err != nil {
-		ts.Text = "Error: " + a.u.ErrorDisplay(err)
-		ts.Style.ColorName = theme.ColorNameError
-		setTop([]widget.RichTextSegment{ts})
+		setTop("Error: "+a.u.ErrorDisplay(err), theme.ColorNameError)
 		return
 	}
 	if !hasData {
-		ts.Text = "Waiting for character data to be loaded..."
-		ts.Style.ColorName = theme.ColorNameWarning
-		setTop([]widget.RichTextSegment{ts})
+		setTop("Waiting for character data to be loaded...", theme.ColorNameWarning)
 		return
 	}
 
@@ -250,26 +244,31 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 		lastJump = humanize.Time(v)
 	}
 
-	defaultStyleInline := defaultStyle
-	defaultStyleInline.Inline = true
-	segs := []widget.RichTextSegment{
-		&widget.TextSegment{
-			Text:  fmt.Sprintf("%d clones • Next available jump: ", cloneCount),
-			Style: defaultStyleInline,
-		},
-		&widget.TextSegment{
-			Text: nextJump,
-			Style: widget.RichTextStyle{
-				ColorName: nextJumpColor,
-				Inline:    true,
+	fyne.Do(func() {
+		style := widget.RichTextStyle{
+			ColorName: theme.ColorNameForeground,
+		}
+		styleInline := style
+		styleInline.Inline = true
+		segs := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text:  fmt.Sprintf("%d clones • Next available jump: ", cloneCount),
+				Style: styleInline,
 			},
-		},
-		&widget.TextSegment{
-			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
-			Style: defaultStyle,
-		},
-	}
-	setTop(segs)
+			&widget.TextSegment{
+				Text: nextJump,
+				Style: widget.RichTextStyle{
+					ColorName: nextJumpColor,
+					Inline:    true,
+				},
+			},
+			&widget.TextSegment{
+				Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
+				Style: style,
+			},
+		}
+		a.top.Set(segs)
+	})
 }
 
 type characterJumpCloneItem struct {
