@@ -256,7 +256,7 @@ func (a *Communications) update(ctx context.Context) {
 		a.ResetCurrentFolder(ctx)
 		fyne.Do(func() {
 			a.clearDetail()
-			xslices.Reset(a.folders)
+			a.folders = xslices.Reset(a.folders)
 			a.folderList.Refresh()
 			a.folderList.UnselectAll()
 			if a.OnUpdate != nil {
@@ -364,7 +364,7 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
 	reset := func() {
 		fyne.Do(func() {
-			xslices.Reset(a.notifications)
+			a.notifications = xslices.Reset(a.notifications)
 			a.notificationList.Refresh()
 			a.notificationList.ScrollToTop()
 		})

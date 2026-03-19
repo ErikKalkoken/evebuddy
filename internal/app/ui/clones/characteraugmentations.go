@@ -85,7 +85,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 func (a *CharacterAugmentations) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			xslices.Reset(a.implants)
+			a.implants = xslices.Reset(a.implants)
 			a.list.Refresh()
 		})
 	}
