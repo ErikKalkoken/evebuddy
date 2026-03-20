@@ -842,7 +842,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			w := u.app.NewWindow("Wealth")
+			w, _ := u.GetOrCreateWindow("overview-wealth", "Wealth")
 			w.SetContent(u.wealth)
 			w.Show()
 		},
