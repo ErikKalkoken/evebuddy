@@ -222,6 +222,7 @@ func (iw *InfoViewer) showWithCharacterID(arg showParams) {
 				f()
 			}
 			iw.nav = nil
+			iw.w = nil
 		})
 		if fyne.CurrentDevice().IsMobile() {
 			w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
