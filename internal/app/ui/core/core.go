@@ -604,6 +604,7 @@ func (u *baseUI) MakeWindowTitle(parts ...string) string {
 	parts = append(parts, ui.Name())
 	return strings.Join(parts, " - ")
 }
+
 func (u *baseUI) SetDeveloperMode(b bool) {
 	u.isDeveloperMode.Store(b)
 }
@@ -1103,7 +1104,7 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 			if ev.Name != mobile.KeyBack {
 				return
 			}
-			// Back gesture does nothing
+			w.Close() // Back gesture closes window
 		})
 	}
 	f := func() {
