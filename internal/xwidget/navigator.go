@@ -67,16 +67,18 @@ func (n *Navigator) push(ab *AppBar, hideNavBar bool) {
 	previous.Hide()
 }
 
-// Pop removes the current page and shows the previous page.
-// Does nothing when the root page is shown.
-func (n *Navigator) Pop() {
+// Pop tries remove the current page and show the previous page.
+// And it reports whether it was successful.
+// Does not pop the root page.
+func (n *Navigator) Pop() bool {
 	if len(n.pages.Objects) < 2 {
-		return
+		return false
 	}
 	n.pages.Remove(n.topPage())
 	n.hideNavBar.Pop()
 	n.topPage().Show()
 	n.showNavBarWhenRequired()
+	return true
 }
 
 // PopAll removes all additional pages and shows the root page.

@@ -1081,6 +1081,7 @@ func (u *baseUI) ErrorDisplay(err error) string {
 
 // GetOrCreateWindow returns a unique window as defined by the given id string
 // and reports whether a new window was created or the window already exists.
+// When id is zero it will always create a new window.
 func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
 	w, ok, f := u.GetOrCreateWindowWithOnClosed(id, titles...)
 	if f != nil {
@@ -1093,12 +1094,14 @@ func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Win
 // but returns an additional onClosed function which must be called when the window is closed.
 // This allows constructing a custom onClosed callback for the window.
 func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
-	w, ok := u.windows[id]
-	if ok {
-		return w, false, nil
+	if id != "" {
+		if w, ok := u.windows[id]; ok {
+			return w, false, nil
+		}
 	}
-	w = u.app.NewWindow(u.MakeWindowTitle(titles...))
-	u.windows[id] = w
+
+	w := u.app.NewWindow(u.MakeWindowTitle(titles...))
+
 	if fyne.CurrentDevice().IsMobile() {
 		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 			if ev.Name != mobile.KeyBack {
@@ -1107,9 +1110,17 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 			w.Close() // Back gesture closes window
 		})
 	}
-	f := func() {
-		delete(u.windows, id)
+
+	var f func()
+	if id != "" {
+		u.windows[id] = w
+		f = func() {
+			delete(u.windows, id)
+		}
+	} else {
+		f = func() {}
 	}
+
 	return w, true, f
 }
 

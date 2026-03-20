@@ -54,7 +54,9 @@ func Show(s baseUI) {
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.SetOnClosed(func() {
 		a.stop()
-		onClosed()
+		if onClosed != nil {
+			onClosed()
+		}
 	})
 	w.Show()
 	go a.update(context.Background())

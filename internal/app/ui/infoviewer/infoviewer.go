@@ -41,13 +41,13 @@ type coreUI interface {
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	ErrorDisplay(err error) string
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool
 	Janice() *janiceservice.JaniceService
 	MainWindow() fyne.Window
-	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
 }
 
@@ -93,7 +93,7 @@ func (iw *InfoViewer) ShowRace(id int64) {
 }
 
 func (iw *InfoViewer) ShowType(typeID, characterID int64) {
-	iw.showWithCharacterID(showParams{
+	iw.show2(showParams{
 		variant:     infoInventoryType,
 		entityID:    typeID,
 		characterID: characterID,
@@ -101,7 +101,7 @@ func (iw *InfoViewer) ShowType(typeID, characterID int64) {
 }
 
 func (iw *InfoViewer) show(v infoVariant, id int64) {
-	iw.showWithCharacterID(showParams{
+	iw.show2(showParams{
 		variant:     v,
 		entityID:    id,
 		characterID: id,
@@ -121,7 +121,7 @@ type showParams struct {
 	characterID int64
 }
 
-func (iw *InfoViewer) showWithCharacterID(arg showParams) {
+func (iw *InfoViewer) show2(arg showParams) {
 	if iw.u.IsOffline() {
 		ui.ShowInformation(
 			"Offline",
@@ -206,31 +206,36 @@ func (iw *InfoViewer) showWithCharacterID(arg showParams) {
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !iw.u.IsMobile()
 	if iw.nav == nil {
-		w := fyne.CurrentApp().NewWindow(iw.u.MakeWindowTitle("Information"))
+		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
 		iw.sb = xwidget.NewSnackbar(w)
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
-		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
-		w.Resize(fyne.NewSize(windowWidth, windowHeight))
-		w.SetCloseIntercept(func() {
-			w.Close()
-			fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
-		})
 		w.SetOnClosed(func() {
 			for _, f := range iw.onClosedFuncs {
 				f()
 			}
 			iw.nav = nil
 			iw.w = nil
+			if onClosed != nil {
+				onClosed()
+			}
+		})
+		w.SetCloseIntercept(func() {
+			w.Close()
+			fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 		})
 		if fyne.CurrentDevice().IsMobile() {
 			w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 				if ev.Name == mobile.KeyBack {
-					iw.nav.Pop()
+					if !iw.nav.Pop() {
+						w.Close()
+					}
 				}
 			})
 		}
+		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
+		w.Resize(fyne.NewSize(windowWidth, windowHeight))
 		w.Show()
 	} else {
 		iw.nav.Push(ab)
@@ -250,7 +255,7 @@ func (iw *InfoViewer) showWithCharacterID(arg showParams) {
 }
 
 func (iw *InfoViewer) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
-	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
+	w2, created := iw.u.GetOrCreateWindow(fmt.Sprintf("infowindow-zoom-%s-%d", title, id), title)
 	if !created {
 		w2.Show()
 		return
