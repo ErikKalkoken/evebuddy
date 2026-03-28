@@ -114,8 +114,3 @@ func (g *ErrGroupDebug) Wait() error {
 	}
 	return nil
 }
-
-// Ptr returns a pointer to any value including literals.
-func Ptr[T any](v T) *T {
-	return &v
-}

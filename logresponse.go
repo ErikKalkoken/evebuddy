@@ -70,7 +70,7 @@ func logResponse(_ retryablehttp.Logger, r *http.Response) {
 func extractBodyForLog(r *http.Response) (any, error) {
 	x := r.Header.Get(headerContentTypeKey)
 	var parts []string
-	for _, s := range strings.Split(x, ";") {
+	for s := range strings.SplitSeq(x, ";") {
 		parts = append(parts, strings.Trim(s, " "))
 	}
 	isJSON := slices.Contains(parts, headerContentTypeJSON)
