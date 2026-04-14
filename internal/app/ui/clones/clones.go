@@ -524,7 +524,3 @@ func (a *Clones) setOrigin(w fyne.Window) {
 	d.Show()
 	w.Canvas().Focus(entry)
 }
-
-const (
-	firstColumnWidth = 60
-)

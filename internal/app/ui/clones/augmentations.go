@@ -45,8 +45,8 @@ const (
 type Augmentations struct {
 	widget.BaseWidget
 
-	footer           *widget.Label
 	collapseBranches *ttwidget.Button
+	footer           *widget.Label
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[augmentationNode]
@@ -210,7 +210,14 @@ func (a *Augmentations) Update(ctx context.Context) {
 
 func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augmentationNode], error) {
 	var td xwidget.TreeData[augmentationNode]
+	characters, err := a.u.Character().CharacterNames(ctx)
+	if err != nil {
+		return td, err
+	}
 	characterImplants := make(map[int64][]*app.CharacterImplant)
+	for id := range characters {
+		characterImplants[id] = make([]*app.CharacterImplant, 0)
+	}
 	implants, err := a.u.Character().ListAllImplants(ctx)
 	if err != nil {
 		return td, err
@@ -224,10 +231,6 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augment
 		})
 	}
 
-	characters, err := a.u.Character().CharacterNames(ctx)
-	if err != nil {
-		return td, err
-	}
 	for characterID, implants := range characterImplants {
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, characterID)
 		if err != nil {

@@ -207,6 +207,10 @@ func makeRoute(u baseUI, r cloneRow) *widget.List {
 	return list
 }
 
+const (
+	firstColumnWidth = 60
+)
+
 type routeListItem struct {
 	widget.BaseWidget
 
