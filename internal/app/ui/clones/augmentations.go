@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -260,6 +261,9 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augment
 			}
 		}
 	}
+	td.SortChildrenFunc(nil, func(a, b *augmentationNode) int {
+		return strings.Compare(a.characterName, b.characterName)
+	})
 	return td, nil
 }
 
