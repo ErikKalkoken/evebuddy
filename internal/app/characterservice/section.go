@@ -456,15 +456,13 @@ func (s *CharacterService) recordUpdateStarted(ctx context.Context, arg characte
 
 func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg characterSectionUpdateParams, hash string) error {
 	completedAt := storage.NewNullTimeFromTime(time.Now())
-	errorMessage := ""
-	startedAt2 := optional.Optional[time.Time]{}
 	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.characterID,
 		CompletedAt:  &completedAt,
 		ContentHash:  &hash,
-		ErrorMessage: &errorMessage,
+		ErrorMessage: new(""),
 		Section:      arg.section,
-		StartedAt:    &startedAt2,
+		StartedAt:    new(optional.Optional[time.Time]),
 	})
 	if err != nil {
 		return err
@@ -476,18 +474,17 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
 	slog.Error("Character section update failed", "characterID", arg.characterID, "section", arg.section, "error", err)
 	errorMessage := err.Error()
-	startedAt := optional.Optional[time.Time]{}
 	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.characterID,
 		Section:      arg.section,
 		ErrorMessage: &errorMessage,
-		StartedAt:    &startedAt,
+		StartedAt:    new(optional.Optional[time.Time]),
 	})
 	if err2 != nil {
 		slog.Error("record error for failed section update", "characterID", arg.characterID, "error", err2)
-	} else {
-		s.scs.SetCharacterSection(o)
+		return
 	}
+	s.scs.SetCharacterSection(o)
 }
 
 func (s *CharacterService) hasSectionChanged(ctx context.Context, arg characterSectionUpdateParams, hash string) (bool, error) {
