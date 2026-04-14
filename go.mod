@@ -29,7 +29,7 @@ require (
 	github.com/maniartech/signals v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/s-daehling/fyne-charts v0.1.0
+	github.com/s-daehling/fyne-charts v0.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.16
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa

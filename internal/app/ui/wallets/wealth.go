@@ -34,14 +34,16 @@ type Wealth struct {
 
 	OnUpdate func(wallet, assets float64)
 
-	assetDetail    *coord.CartesianCategoricalChart
-	assetSplit     *prop.PieChart
-	characterSplit *prop.PieChart
-	top            *widget.Label
-	totalSplit     *prop.PieChart
-	u              baseUI
-	walletDetail   *coord.CartesianCategoricalChart
-	walletSplit    *prop.PieChart
+	assetDetail          *coord.CartesianCategoricalChart
+	assetSplit           *prop.PieChart
+	characterSplit       *prop.PieChart
+	top                  *widget.Label
+	totalSplit           *prop.PieChart
+	u                    baseUI
+	walletDetail         *coord.CartesianCategoricalChart
+	walletSplit          *prop.PieChart
+	defaultPieLabelStyle style.ValueLabelStyle
+	defaultBarLabelStyle style.ValueLabelStyle
 }
 
 func NewWealth(u baseUI) *Wealth {
@@ -77,6 +79,12 @@ func NewWealth(u baseUI) *Wealth {
 	a.totalSplit.SetTitleStyle(ts)
 	a.characterSplit.SetTitleStyle(ts)
 
+	a.defaultPieLabelStyle = style.DefaultValueLabelStyle()
+	ls := style.DefaultValueLabelStyle()
+	ls.StrokeWidth = 0
+	a.defaultBarLabelStyle = ls
+
+	// Signals
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
@@ -93,34 +101,16 @@ func NewWealth(u baseUI) *Wealth {
 
 func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Total", container.NewBorder(
-			container.NewPadded(),
-			nil,
-			nil,
-			nil,
+		container.NewTabItem(
+			"Total",
 			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
-		)),
-		container.NewTabItem("Breakdown", container.NewBorder(
-			container.NewPadded(),
-			nil,
-			nil,
-			nil,
+		),
+		container.NewTabItem(
+			"Breakdown",
 			container.NewAdaptiveGrid(2, a.assetSplit, a.walletSplit),
-		)),
-		container.NewTabItem("Assets", container.NewBorder(
-			container.NewPadded(),
-			nil,
-			nil,
-			nil,
-			a.assetDetail,
-		)),
-		container.NewTabItem("Wallets", container.NewBorder(
-			container.NewPadded(),
-			nil,
-			nil,
-			nil,
-			a.walletDetail,
-		)),
+		),
+		container.NewTabItem("Assets", a.assetDetail),
+		container.NewTabItem("Wallets", a.walletDetail),
 	)
 	var c fyne.CanvasObject
 	if !a.u.IsMobile() {
@@ -199,6 +189,7 @@ func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAss
 			slog.Error("wealth: asset details", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultBarLabelStyle)
 		err = a.assetDetail.AddBarSeries(s)
 		if err != nil {
 			slog.Error("wealth: asset details", "error", err)
@@ -225,6 +216,7 @@ func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAsse
 			slog.Error("wealth: asset split", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
 		err = a.assetSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: asset split", "error", err)
@@ -251,6 +243,7 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, total
 			slog.Error("wealth: character split", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
 		err = a.characterSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: character split", "error", err)
@@ -277,12 +270,14 @@ func (a *Wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalW
 			slog.Error("wealth: total split", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
 		err = a.totalSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: total split", "error", err)
 			return
 		}
-		a.totalSplit.SetTitle(fmt.Sprintf("Wealth By Source - Total: %.1f B ISK", totalWallet+totalAssets))
+		title := fmt.Sprintf("Wealth By Source - Total: %.1f B ISK", totalWallet+totalAssets)
+		a.totalSplit.SetTitle(title)
 	})
 }
 
@@ -302,6 +297,7 @@ func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWa
 			slog.Error("wealth: wallet details", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultBarLabelStyle)
 		err = a.walletDetail.AddBarSeries(s)
 		if err != nil {
 			slog.Error("wealth: wallet details", "error", err)
@@ -328,6 +324,7 @@ func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWal
 			slog.Error("wealth: wallet split", "error", err)
 			return
 		}
+		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
 		err = a.walletSplit.AddSeries(s)
 		if err != nil {
 			slog.Error("wealth: wallet split", "error", err)
