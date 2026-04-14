@@ -268,16 +268,16 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 		id := int64(1000 - i)
 		mailIDs = append(mailIDs, id)
 		objs = append(objs, esi.CharactersCharacterIdMailGetInner{
-			From:   testutil.Ptr(int64(90000001)),
-			IsRead: testutil.Ptr(true),
+			From:   new(int64(90000001)),
+			IsRead: new(true),
 			Labels: []int64{3},
-			MailId: testutil.Ptr(id),
+			MailId: new(id),
 			Recipients: []esi.PostCharactersCharacterIdMailRequestRecipientsInner{{
 				RecipientId:   90000002,
 				RecipientType: "character",
 			}},
-			Subject:   testutil.Ptr(fmt.Sprintf("Test Mail %d", id)),
-			Timestamp: testutil.Ptr(time.Now()),
+			Subject:   new(fmt.Sprintf("Test Mail %d", id)),
+			Timestamp: new(time.Now()),
 		})
 	}
 	httpmock.RegisterResponder(

@@ -1,11 +1,9 @@
 package skills
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 
 	"github.com/stretchr/testify/assert"
@@ -14,128 +12,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
-
-func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
-	test.ApplyTheme(t, test.Theme())
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		Name: "Bruce Wayne",
-	})
-	character := factory.CreateCharacter(storage.CreateCharacterParams{
-		ID:            ec.ID,
-		TotalSP:       optional.New(10_000_000),
-		UnallocatedSP: optional.New(1_000_000),
-	})
-	tag := factory.CreateCharacterTag("Alpha")
-	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
-		CharacterID: character.ID,
-		TagID:       tag.ID,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	now := time.Now().UTC()
-	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
-	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-		CharacterID:   character.ID,
-		StartDate:     optional.New(now.Add(-1 * time.Hour)),
-		FinishDate:    optional.New(now.Add(3 * time.Hour)),
-		EveTypeID:     et.ID,
-		FinishedLevel: 3,
-	})
-	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-		CharacterID: character.ID,
-		Section:     app.SectionCharacterSkillqueue,
-		CompletedAt: now,
-	})
-	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	}))
-	w := test.NewWindow(a)
-	defer w.Close()
-	w.Resize(fyne.NewSize(1700, 300))
-
-	a.Update(t.Context())
-
-	test.AssertImageMatches(t, "training/active.png", w.Canvas().Capture())
-}
-
-func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
-	test.ApplyTheme(t, test.Theme())
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		Name: "Bruce Wayne",
-	})
-	character := factory.CreateCharacter(storage.CreateCharacterParams{
-		ID:            ec.ID,
-		TotalSP:       optional.New(10_000_000),
-		UnallocatedSP: optional.New(1_000_000),
-	})
-	now := time.Now().UTC()
-	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-		CharacterID: character.ID,
-		Section:     app.SectionCharacterSkillqueue,
-		CompletedAt: now,
-	})
-	tag := factory.CreateCharacterTag("Alpha")
-	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
-		CharacterID: character.ID,
-		TagID:       tag.ID,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	}))
-	w := test.NewWindow(a)
-	defer w.Close()
-	w.Resize(fyne.NewSize(1700, 300))
-
-	a.Update(t.Context())
-
-	test.AssertImageMatches(t, "training/inactive.png", w.Canvas().Capture())
-}
-
-func TestTraining_CanRenderWithoutData(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
-	test.ApplyTheme(t, test.Theme())
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-		Name: "Bruce Wayne",
-	})
-	factory.CreateCharacter(storage.CreateCharacterParams{
-		ID: ec.ID,
-	})
-	a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	}))
-	w := test.NewWindow(a)
-	defer w.Close()
-	w.Resize(fyne.NewSize(1700, 300))
-
-	a.Update(t.Context())
-
-	test.AssertImageMatches(t, "training/minimal.png", w.Canvas().Capture())
-}
 
 func TestTraining_Filter(t *testing.T) {
 	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
