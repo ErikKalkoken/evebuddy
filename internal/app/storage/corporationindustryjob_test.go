@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -316,13 +317,9 @@ func TestCorporationIndustryJob(t *testing.T) {
 			Status:        app.JobUnknown,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, app.JobUnknown, j2.Status)
 	})
 }

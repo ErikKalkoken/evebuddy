@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -38,9 +39,7 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := st.CreateCharacterNotification(ctx, arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 		if assert.NoError(t, err) {
 			xassert.Equal(t, c.ID, o.CharacterID)
@@ -109,9 +108,7 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := st.CreateCharacterNotification(ctx, arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 		if assert.NoError(t, err) {
 			xassert.Equal(t, app.UnknownNotification, o.Type)
@@ -127,9 +124,7 @@ func TestCharacterNotification(t *testing.T) {
 			IsRead: optional.New(true),
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
 			assert.True(t, o.IsRead.ValueOrZero())
@@ -146,9 +141,7 @@ func TestCharacterNotification(t *testing.T) {
 			ID: n.ID,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
 			assert.False(t, o.IsRead.ValueOrZero())
@@ -164,9 +157,7 @@ func TestCharacterNotification(t *testing.T) {
 			Title: optional.New("title"),
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
 			xassert.Equal(t, "title", o.Title.ValueOrZero())
@@ -182,9 +173,7 @@ func TestCharacterNotification(t *testing.T) {
 			Body: optional.New("body"),
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
 			xassert.Equal(t, "body", o.Body.ValueOrZero())
@@ -209,13 +198,9 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := st.UpdateCharacterNotificationsSetProcessed(ctx, 42)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c1.ID, time.Now().Add(-24*time.Hour))
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))
@@ -243,14 +228,29 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		x, err := st.CountCharacterNotifications(ctx, c.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		want := map[app.EveNotificationType][]int{
 			app.StructureUnderAttack: {2, 1},
 			app.StructureDestroyed:   {1, 1},
 		}
 		xassert.Equal(t, want, x)
+	})
+
+	t.Run("can delete notifications", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		e1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		// when
+		err := st.DeleteCharacterNotifications(ctx, c.ID, set.Of(e1.NotificationID, e2.NotificationID))
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e3.NotificationID)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -268,9 +268,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		// when
 		got, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
 		xassert.Equal(t, want, got)
 	})
@@ -293,9 +291,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		want := set.Of(n1.NotificationID, n2.NotificationID)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.NotificationID
@@ -322,9 +318,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsUnread(ctx, c.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))
@@ -360,9 +354,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))
@@ -391,9 +383,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))
@@ -427,9 +417,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))
@@ -467,9 +455,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.ID
 		}))

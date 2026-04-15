@@ -348,6 +348,13 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 	return nil
 }
 
+func (st *Storage) DeleteCharacterNotifications(ctx context.Context, characterID int64, notificationIDs set.Set[int64]) error {
+	return st.qRW.DeleteCharacterNotifications(ctx, queries.DeleteCharacterNotificationsParams{
+		CharacterID:     characterID,
+		NotificationIds: slices.Collect(notificationIDs.All()),
+	})
+}
+
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int64, notificationID int64) (*app.CharacterNotification, error) {
 	arg := queries.GetCharacterNotificationParams{
 		CharacterID:    characterID,
