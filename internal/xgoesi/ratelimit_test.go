@@ -36,9 +36,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 	t.Run("should limit subsequent requests to the same bucket", func(t *testing.T) {
