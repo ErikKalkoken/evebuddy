@@ -32,40 +32,45 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
+		const notificationID = 42
+		sender := factory.CreateEveEntityCorporation()
+		timestamp := time.Now().Round(time.Second)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"is_read":         true,
-				"notification_id": 42,
+				"notification_id": notificationID,
 				"sender_id":       sender.ID,
 				"sender_type":     "corporation",
 				"text":            "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n",
-				"timestamp":       "2017-08-16T10:08:00Z",
+				"timestamp":       timestamp.Format(time.RFC3339),
 				"type":            "InsurancePayoutMsg",
 			}}),
 		)
+
 		// when
 		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
+
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
+		o, err := st.GetCharacterNotification(ctx, c.ID, notificationID)
 		require.NoError(t, err)
 		assert.True(t, o.IsRead.ValueOrZero())
-		xassert.Equal(t, int64(42), o.NotificationID)
+		xassert.Equal(t, notificationID, o.NotificationID)
 		xassert.Equal(t, sender, o.Sender)
 		xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
 		xassert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text.ValueOrZero())
-		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+		xassert.Equal(t, timestamp, o.Timestamp)
 		xassert.Equal(t, c.ID, o.Recipient.ValueOrZero().ID)
+
 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, set.Of[int64](42), ids)
+		xassert.Equal(t, set.Of[int64](notificationID), ids)
 	})
 	// t.Run("should create new notification from scratch 2", func(t *testing.T) {
 	// 	// given
@@ -112,51 +117,57 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 		}
 	// 	}
 	// })
-	t.Run("should add new notification", func(t *testing.T) {
+
+	t.Run("should add new and remove deleted notification", func(t *testing.T) {
 		// given
-		const (
-			notificationID = 42
-			text           = "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n"
-		)
+		const newNotificationID = 9942
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
+		// factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
+		sender := factory.CreateEveEntityCorporation()
+		timestamp := time.Now().Round(time.Second)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
-				"is_read":         true,
-				"notification_id": notificationID,
+				"notification_id": newNotificationID,
 				"sender_id":       sender.ID,
 				"sender_type":     "corporation",
-				"text":            text,
-				"timestamp":       "2017-08-16T10:08:00Z",
-				"type":            "InsurancePayoutMsg",
-			}}))
+				"text":            "",
+				"timestamp":       timestamp.Format(time.RFC3339),
+				"type":            "CorpNoLongerWarEligible",
+			}}),
+		)
+
 		// when
 		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
+
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
-		require.NoError(t, err)
-		assert.True(t, o.IsRead.ValueOrZero())
-		xassert.Equal(t, 42, o.NotificationID)
-		xassert.Equal(t, sender, o.Sender)
-		xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
-		xassert.Equal(t, text, o.Text.ValueOrZero())
-		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
+
 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, set.Of(42, n1.NotificationID), ids)
+		xassert.Equal(t, set.Of(newNotificationID, n1.NotificationID), ids)
+
+		o, err := st.GetCharacterNotification(ctx, c.ID, newNotificationID)
+		require.NoError(t, err)
+		xassert.Equal(t, newNotificationID, o.NotificationID)
+		assert.False(t, o.IsRead.ValueOrZero())
+		xassert.Equal(t, sender, o.Sender)
+		xassert.Equal(t, app.CorpNoLongerWarEligible, o.Type)
+		xassert.Empty(t, o.Text)
+		xassert.Equal(t, timestamp, o.Timestamp)
+		xassert.Equal(t, c.EveCharacter.Corporation.ID, o.Recipient.ValueOrZero().ID) // this is a corp notification
 	})
+
 	t.Run("should update isRead for existing notification", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
