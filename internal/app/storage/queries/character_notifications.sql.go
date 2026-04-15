@@ -129,6 +129,34 @@ func (q *Queries) CreateNotificationType(ctx context.Context, name string) (int6
 	return id, err
 }
 
+const deleteCharacterNotifications = `-- name: DeleteCharacterNotifications :exec
+DELETE FROM character_notifications
+WHERE
+    character_id = ?
+    AND notification_id IN (/*SLICE:notification_ids*/?)
+`
+
+type DeleteCharacterNotificationsParams struct {
+	CharacterID     int64
+	NotificationIds []int64
+}
+
+func (q *Queries) DeleteCharacterNotifications(ctx context.Context, arg DeleteCharacterNotificationsParams) error {
+	query := deleteCharacterNotifications
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.NotificationIds) > 0 {
+		for _, v := range arg.NotificationIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:notification_ids*/?", strings.Repeat(",?", len(arg.NotificationIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:notification_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const getCharacterNotification = `-- name: GetCharacterNotification :one
 SELECT
     cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,

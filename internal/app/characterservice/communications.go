@@ -113,9 +113,11 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 			if err != nil {
 				return false, err
 			}
+			var incomingIDs set.Set[int64]
 			var newNotifs []esi.CharactersCharacterIdNotificationsGetInner
 			var existingNotifs []esi.CharactersCharacterIdNotificationsGetInner
 			for _, n := range notifications {
+				incomingIDs.Add(n.NotificationId)
 				if existingIDs.Contains(n.NotificationId) {
 					existingNotifs = append(existingNotifs, n)
 				} else {
@@ -125,6 +127,15 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 			if err := s.loadEntitiesForNotifications(ctx, characterID, existingNotifs); err != nil {
 				return false, err
 			}
+
+			// Remove deleted notifications
+			if ids := set.Difference(existingIDs, incomingIDs); ids.Size() > 0 {
+				if err := s.st.DeleteCharacterNotifications(ctx, characterID, ids); err != nil {
+					return false, err
+				}
+				slog.Info("Removed deleted notifications", "characterID", characterID, "count", ids.Size())
+			}
+
 			var updatedCount int
 			for _, n := range existingNotifs {
 				o, err := s.st.GetCharacterNotification(ctx, characterID, n.NotificationId)
@@ -241,6 +252,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 				}
 			}
 			slog.Info("Stored new notifications", "characterID", characterID, "entries", len(newNotifs))
+
 			return true, nil
 		})
 }

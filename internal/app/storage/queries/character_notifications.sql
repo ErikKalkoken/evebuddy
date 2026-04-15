@@ -31,6 +31,12 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- name: DeleteCharacterNotifications :exec
+DELETE FROM character_notifications
+WHERE
+    character_id = ?
+    AND notification_id IN (sqlc.slice('notification_ids'));
+
 -- name: GetCharacterNotification :one
 SELECT
     sqlc.embed(cn),

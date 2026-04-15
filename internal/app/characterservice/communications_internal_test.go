@@ -127,13 +127,20 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		// factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
 		sender := factory.CreateEveEntityCorporation()
 		timestamp := time.Now().Round(time.Second)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}, {
 				"notification_id": newNotificationID,
 				"sender_id":       sender.ID,
 				"sender_type":     "corporation",
