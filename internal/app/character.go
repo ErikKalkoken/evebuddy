@@ -416,3 +416,10 @@ func SearchCategories() []SearchCategory {
 		SearchType,
 	}
 }
+
+type CharacterWealth struct {
+	Assets      optional.Optional[float64]
+	CharacterID int64
+	Total       optional.Optional[float64]
+	Wallet      optional.Optional[float64]
+}

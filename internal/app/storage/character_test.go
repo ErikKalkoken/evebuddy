@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -547,5 +548,54 @@ func TestCharacterAssetValue(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, got.IsEmpty())
 		}
+	})
+}
+
+func TestCharacterWealth(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	// given
+	cases := []struct {
+		name      string
+		assets    optional.Optional[float64]
+		wallet    optional.Optional[float64]
+		totalWant optional.Optional[float64]
+	}{
+		{"all values exist", optional.New(1.0), optional.New(2.0), optional.New(3.0)},
+		{"missing wallet", optional.New(1.0), optional.Optional[float64]{}, optional.Optional[float64]{}},
+		{"missing assets", optional.Optional[float64]{}, optional.New(1.0), optional.Optional[float64]{}},
+		{"no values", optional.Optional[float64]{}, optional.Optional[float64]{}, optional.Optional[float64]{}},
+	}
+
+	for _, tc := range cases {
+		t.Run("can list when all value exist", func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			c := factory.CreateCharacter(storage.CreateCharacterParams{
+				AssetValue:    tc.assets,
+				WalletBalance: tc.wallet,
+			})
+			// when
+			oo, err := st.ListCharacterWealthValues(t.Context())
+			// then
+			require.NoError(t, err)
+			require.Len(t, oo, 1)
+			o := oo[0]
+			assert.Equal(t, c.ID, o.CharacterID)
+			assert.Equal(t, tc.assets, o.Assets)
+			assert.Equal(t, tc.wallet, o.Wallet)
+			assert.Equal(t, tc.totalWant, o.Total)
+		})
+	}
+
+	t.Run("can list characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterFull()
+		factory.CreateCharacterFull()
+		// when
+		oo, err := st.ListCharacterWealthValues(t.Context())
+		// then
+		require.NoError(t, err)
+		require.Len(t, oo, 2)
 	})
 }

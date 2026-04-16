@@ -35,12 +35,12 @@ type industrySlotRow struct {
 	ready         int
 	free          int
 	total         int
-	isSummary     bool
+	isTotal       bool
 	tags          set.Set[string]
 }
 
 func (r industrySlotRow) characterDisplay() []widget.RichTextSegment {
-	if r.isSummary {
+	if r.isTotal {
 		return xwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
 			TextStyle: fyne.TextStyle{Bold: true},
 		})
@@ -133,7 +133,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 			border := co.(*fyne.Container).Objects
 			label := border[0].(*widget.Label)
 			icon := border[1].(*canvas.Image)
-			if r.isSummary {
+			if r.isTotal {
 				label.Text = "Total"
 				label.TextStyle = fyne.TextStyle{Bold: true}
 				label.Refresh()
@@ -160,7 +160,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.busy), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: r.busyColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+				TextStyle: fyne.TextStyle{Bold: r.isTotal},
 			})
 		},
 	}, {
@@ -174,7 +174,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.ready), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: r.readyColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+				TextStyle: fyne.TextStyle{Bold: r.isTotal},
 			})
 		},
 	}, {
@@ -188,7 +188,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.free), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: r.freeColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+				TextStyle: fyne.TextStyle{Bold: r.isTotal},
 			})
 		},
 	}, {
@@ -201,7 +201,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 		Update: func(r industrySlotRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.total), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
+				TextStyle: fyne.TextStyle{Bold: r.isTotal},
 			})
 		},
 	}})
@@ -236,24 +236,24 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.busyColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColReady:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.readyColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColFree:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.freeColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColTotal:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				}
 				return xwidget.RichTextSegmentsFromText("?")
@@ -385,11 +385,11 @@ func (a *Slots) filterRowsAsync(sortCol int) {
 			total += r.total
 		}
 		rows = append(rows, industrySlotRow{
-			busy:      active,
-			ready:     ready,
-			free:      free,
-			total:     total,
-			isSummary: true,
+			busy:    active,
+			ready:   ready,
+			free:    free,
+			total:   total,
+			isTotal: true,
 		})
 
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {

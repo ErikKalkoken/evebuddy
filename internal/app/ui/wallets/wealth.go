@@ -29,6 +29,13 @@ const (
 	wealthNameTruncationSuffix = 2
 )
 
+type wealthRow struct {
+	character string
+	wallet    float64
+	assets    float64
+	total     float64
+}
+
 type Wealth struct {
 	widget.BaseWidget
 
@@ -44,6 +51,7 @@ type Wealth struct {
 	walletSplit          *prop.PieChart
 	defaultPieLabelStyle style.ValueLabelStyle
 	defaultBarLabelStyle style.ValueLabelStyle
+	overview             *Overview
 }
 
 func NewWealth(u baseUI) *Wealth {
@@ -56,6 +64,7 @@ func NewWealth(u baseUI) *Wealth {
 		u:              u,
 		walletDetail:   coord.NewCartesianCategoricalChart(""),
 		walletSplit:    prop.NewPieChart(""),
+		overview:       NewOverview(u),
 	}
 	a.ExtendBaseWidget(a)
 	a.top.Hide()
@@ -96,13 +105,20 @@ func NewWealth(u baseUI) *Wealth {
 			a.Update(ctx)
 		}
 	})
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.Update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.Update(ctx)
+	})
 	return a
 }
 
 func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
+		container.NewTabItem("Characters", a.overview),
 		container.NewTabItem(
-			"Total",
+			"Overview",
 			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
 		),
 		container.NewTabItem(
@@ -128,6 +144,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Wealth) Update(ctx context.Context) {
+	go a.overview.Update(ctx)
 	rows, characters, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
@@ -383,13 +400,6 @@ func reduceCategoricalPoints(rows []data.CategoricalPoint, m int) []data.Categor
 			Val: others,
 		})
 	return rows
-}
-
-type wealthRow struct {
-	character string
-	wallet    float64
-	assets    float64
-	total     float64
 }
 
 func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {

@@ -114,6 +114,14 @@ FROM
     JOIN eve_characters ec ON ec.id = ch.id
     JOIN eve_entities ee ON ee.id = ec.corporation_id;
 
+-- name: ListCharacterWealthValues :many
+SELECT
+    id,
+    asset_value,
+    wallet_balance
+FROM
+    characters;
+
 -- name: UpdateCharacterLastCloneJump :exec
 UPDATE characters
 SET

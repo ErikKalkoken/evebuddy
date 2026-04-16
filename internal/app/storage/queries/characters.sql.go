@@ -280,6 +280,44 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const listCharacterWealthValues = `-- name: ListCharacterWealthValues :many
+SELECT
+    id,
+    asset_value,
+    wallet_balance
+FROM
+    characters
+`
+
+type ListCharacterWealthValuesRow struct {
+	ID            int64
+	AssetValue    sql.NullFloat64
+	WalletBalance sql.NullFloat64
+}
+
+func (q *Queries) ListCharacterWealthValues(ctx context.Context) ([]ListCharacterWealthValuesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterWealthValues)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterWealthValuesRow
+	for rows.Next() {
+		var i ListCharacterWealthValuesRow
+		if err := rows.Scan(&i.ID, &i.AssetValue, &i.WalletBalance); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,

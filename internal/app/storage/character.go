@@ -335,7 +335,7 @@ func (st *Storage) characterFromDBModel(
 		IsTrainingWatched: character.IsTrainingWatched,
 		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
-		TrainedSP:           optional.FromNullInt64(character.TotalSp),
+		TrainedSP:         optional.FromNullInt64(character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
 	}
@@ -369,4 +369,30 @@ func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (option
 		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, convertGetError(err))
 	}
 	return optional.FromNullFloat64(v), nil
+}
+
+func (st *Storage) ListCharacterWealthValues(ctx context.Context) ([]*app.CharacterWealth, error) {
+	rows, err := st.qRO.ListCharacterWealthValues(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListCharacterWealthValues: %w", err)
+
+	}
+	var oo []*app.CharacterWealth
+	for _, r := range rows {
+		assets := optional.FromNullFloat64(r.AssetValue)
+		wallets := optional.FromNullFloat64(r.WalletBalance)
+		var total optional.Optional[float64]
+		if v1, ok := assets.Value(); ok {
+			if v2, ok := wallets.Value(); ok {
+				total.Set(v1 + v2)
+			}
+		}
+		oo = append(oo, &app.CharacterWealth{
+			Assets:      assets,
+			CharacterID: r.ID,
+			Total:       total,
+			Wallet:      wallets,
+		})
+	}
+	return oo, nil
 }
