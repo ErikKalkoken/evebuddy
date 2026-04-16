@@ -29,6 +29,8 @@ type Character struct {
 	WalletBalance     sql.NullFloat64
 	IsTrainingWatched bool
 	LastCloneJumpAt   sql.NullTime
+	ContractEscrow    sql.NullFloat64
+	MarketEscrow      sql.NullFloat64
 }
 
 type CharacterAsset struct {

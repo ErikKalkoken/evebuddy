@@ -174,7 +174,3 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	}
 	return c, nil
 }
-
-func (s *CharacterService) ListWealthValues(ctx context.Context) ([]*app.CharacterWealth, error) {
-	return s.st.ListCharacterWealthValues(ctx)
-}

@@ -35,20 +35,19 @@ func TestCharacter(t *testing.T) {
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c1.ID, c2.ID)
-			xassert.Equal(t, c1.AssetValue, c2.AssetValue)
-			xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
-			xassert.Equal(t, c1.Home, c2.Home)
-			xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
-			xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
-			xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
-			xassert.Equal(t, c1.Location, c2.Location)
-			xassert.Equal(t, c1.Ship, c2.Ship)
-			xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
-			xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
-			xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c1.ID, c2.ID)
+		xassert.Equal(t, c1.AssetValue, c2.AssetValue)
+		xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
+		xassert.Equal(t, c1.Home, c2.Home)
+		xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
+		xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
+		xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
+		xassert.Equal(t, c1.Location, c2.Location)
+		xassert.Equal(t, c1.Ship, c2.Ship)
+		xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
+		xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
+		xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
@@ -57,10 +56,9 @@ func TestCharacter(t *testing.T) {
 		// when
 		err := st.DeleteCharacter(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetCharacter(ctx, c.ID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-		}
+		require.NoError(t, err)
+		_, err = st.GetCharacter(ctx, c.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
@@ -77,10 +75,9 @@ func TestCharacter(t *testing.T) {
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c1.ID, c2.ID)
-			xassert.Equal(t, c1.Location, c2.Location)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c1.ID, c2.ID)
+		xassert.Equal(t, c1.Location, c2.Location)
 	})
 }
 
@@ -96,9 +93,8 @@ func TestGetAnyCharacter(t *testing.T) {
 		// when
 		c, err := st.GetAnyCharacter(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Contains(t, []int64{c1.ID, c2.ID}, c.ID)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, []int64{c1.ID, c2.ID}, c.ID)
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
@@ -124,12 +120,10 @@ func TestCharacterCreate(t *testing.T) {
 		// when
 		err := st.CreateCharacter(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			r, err := st.GetCharacter(ctx, arg.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, character.ID, r.ID)
-			}
-		}
+		require.NoError(t, err)
+		r, err := st.GetCharacter(ctx, arg.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, character.ID, r.ID)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -154,19 +148,17 @@ func TestCharacterCreate(t *testing.T) {
 		// when
 		err := st.CreateCharacter(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			r, err := st.GetCharacter(ctx, arg.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, home, r.Home.MustValue())
-				xassert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
-				xassert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
-				xassert.Equal(t, location, r.Location.MustValue())
-				xassert.Equal(t, ship, r.Ship.MustValue())
-				xassert.Equal(t, 123, r.TrainedSP.ValueOrZero())
-				xassert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
-				xassert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
-			}
-		}
+		require.NoError(t, err)
+		r, err := st.GetCharacter(ctx, arg.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, home, r.Home.MustValue())
+		xassert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
+		xassert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
+		xassert.Equal(t, location, r.Location.MustValue())
+		xassert.Equal(t, ship, r.Ship.MustValue())
+		xassert.Equal(t, 123, r.TrainedSP.ValueOrZero())
+		xassert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
+		xassert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
 	})
 	t.Run("report error when character already exists", func(t *testing.T) {
 		// given
@@ -191,11 +183,10 @@ func TestListCharactersShort(t *testing.T) {
 		// when
 		cc, err := st.ListCharactersShort(ctx)
 		// then
-		if assert.NoError(t, err) {
-			c2 := cc[0]
-			assert.Len(t, cc, 1)
-			xassert.Equal(t, c1.ID, c2.ID)
-		}
+		require.NoError(t, err)
+		c2 := cc[0]
+		assert.Len(t, cc, 1)
+		xassert.Equal(t, c1.ID, c2.ID)
 	})
 	t.Run("can list characters", func(t *testing.T) {
 		// given
@@ -205,11 +196,9 @@ func TestListCharactersShort(t *testing.T) {
 		// when
 		cc, err := st.ListCharactersShort(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, cc, 2)
-		}
+		require.NoError(t, err)
+		assert.Len(t, cc, 2)
 	})
-
 }
 
 func TestListCharacters(t *testing.T) {
@@ -223,20 +212,19 @@ func TestListCharacters(t *testing.T) {
 		// when
 		cc, err := st.ListCharacters(ctx)
 		// then
-		if assert.NoError(t, err) {
-			c2 := cc[0]
-			if assert.NotNil(t, c2) {
-				assert.Len(t, cc, 1)
-				xassert.Equal(t, c1.ID, c2.ID)
-				xassert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
-				xassert.Equal(t, c1.Ship, c2.Ship)
-				xassert.Equal(t, c1.Location, c2.Location)
-				xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
-				xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
-				xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
-				xassert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
-				xassert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
-			}
+		require.NoError(t, err)
+		c2 := cc[0]
+		if assert.NotNil(t, c2) {
+			assert.Len(t, cc, 1)
+			xassert.Equal(t, c1.ID, c2.ID)
+			xassert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
+			xassert.Equal(t, c1.Ship, c2.Ship)
+			xassert.Equal(t, c1.Location, c2.Location)
+			xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
+			xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
+			xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
+			xassert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
+			xassert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
 		}
 	})
 	t.Run("can list character IDs", func(t *testing.T) {
@@ -247,10 +235,9 @@ func TestListCharacters(t *testing.T) {
 		// when
 		got, err := st.ListCharacterIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(c1.ID, c2.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list character corporations", func(t *testing.T) {
 		// given
@@ -264,13 +251,12 @@ func TestListCharacters(t *testing.T) {
 		// when
 		cc, err := st.ListCharacterCorporations(ctx)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
-				return x.ID
-			}))
-			want := set.Of(ec1.Corporation.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
+			return x.ID
+		}))
+		want := set.Of(ec1.Corporation.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list character corporation IDs", func(t *testing.T) {
 		// given
@@ -283,10 +269,9 @@ func TestListCharacters(t *testing.T) {
 		// when
 		got, err := st.ListCharacterCorporationIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -302,13 +287,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, home, c2.Home.MustValue())
-			}
-		}
-
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, home, c2.Home.MustValue())
 	})
 	t.Run("can update last clone jump with a time", func(t *testing.T) {
 		// given
@@ -318,12 +300,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
 	})
 	t.Run("can update last clone jump with zero time", func(t *testing.T) {
 		// given
@@ -333,12 +313,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
 	})
 	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
 		// given
@@ -346,9 +324,8 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			assert.True(t, c2.LastCloneJumpAt.IsEmpty())
-		}
+		require.NoError(t, err)
+		assert.True(t, c2.LastCloneJumpAt.IsEmpty())
 	})
 	t.Run("can update last login", func(t *testing.T) {
 		// given
@@ -358,12 +335,11 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
+
 	})
 	t.Run("can update location", func(t *testing.T) {
 		// given
@@ -373,12 +349,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, location, c2.Location.MustValue())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, location, c2.Location.MustValue())
 	})
 	t.Run("can update ship", func(t *testing.T) {
 		// given
@@ -388,12 +362,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterShip(ctx, c1.ID, optional.New(x.ID))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x, c2.Ship.MustValue())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.Ship.MustValue())
 	})
 	t.Run("can update is training watched", func(t *testing.T) {
 		// given
@@ -402,30 +374,25 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterIsTrainingWatched(ctx, c1.ID, true)
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, c2.IsTrainingWatched)
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		assert.True(t, c2.IsTrainingWatched)
 	})
 	t.Run("can update is training watched 2", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		c2, err := st.GetCharacter(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			assert.True(t, c2.IsTrainingWatched)
-		}
+		require.NoError(t, err)
+		assert.True(t, c2.IsTrainingWatched)
 		// when
 		err = st.UpdateCharacterIsTrainingWatched(ctx, c1.ID, false)
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.False(t, c2.IsTrainingWatched)
-			}
-		}
+		require.NoError(t, err)
+		c2, err = st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		assert.False(t, c2.IsTrainingWatched)
 	})
 	t.Run("can update skill points", func(t *testing.T) {
 		// given
@@ -436,13 +403,11 @@ func TestUpdateCharacterFields(t *testing.T) {
 		unallocatedSP := optional.New(rand.Int64N(10_000_000))
 		err := st.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, totalSP, c2.TrainedSP)
-				xassert.Equal(t, unallocatedSP, c2.UnallocatedSP)
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, totalSP, c2.TrainedSP)
+		xassert.Equal(t, unallocatedSP, c2.UnallocatedSP)
 	})
 	t.Run("can update wallet balance", func(t *testing.T) {
 		// given
@@ -452,12 +417,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.UpdateCharacterWalletBalance(ctx, c1.ID, optional.New(x))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x, c2.WalletBalance.ValueOrZero())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.WalletBalance.ValueOrZero())
 	})
 	t.Run("can disable all training watchers", func(t *testing.T) {
 		// given
@@ -471,16 +434,39 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		err := st.DisableAllTrainingWatchers(ctx)
 		// then
-		if assert.NoError(t, err) {
-			c1, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.False(t, c1.IsTrainingWatched)
-			}
-			c2, err := st.GetCharacter(ctx, c2.ID)
-			if assert.NoError(t, err) {
-				assert.False(t, c2.IsTrainingWatched)
-			}
-		}
+		require.NoError(t, err)
+		c1, err = st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		assert.False(t, c1.IsTrainingWatched)
+		c2, err = st.GetCharacter(ctx, c2.ID)
+		require.NoError(t, err)
+		assert.False(t, c2.IsTrainingWatched)
+	})
+	t.Run("can update contract escrow", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := st.UpdateCharacterContractEscrow(ctx, c1.ID, optional.New(x))
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.ContractEscrow.ValueOrZero())
+	})
+	t.Run("can update market escrow", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := st.UpdateCharacterMarketEscrow(ctx, c1.ID, optional.New(x))
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.MarketEscrow.ValueOrZero())
 	})
 }
 
@@ -498,12 +484,10 @@ func TestCharacterAssetValue(t *testing.T) {
 		// when
 		err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.New(v))
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, v, c2.AssetValue.ValueOrZero())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, v, c2.AssetValue.ValueOrZero())
 	})
 	t.Run("can reset", func(t *testing.T) {
 		// given
@@ -514,12 +498,10 @@ func TestCharacterAssetValue(t *testing.T) {
 		// when
 		err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{})
 		// then
-		if assert.NoError(t, err) {
-			c2, err := st.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, c2.AssetValue.IsEmpty())
-			}
-		}
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		assert.True(t, c2.AssetValue.IsEmpty())
 	})
 	t.Run("can get set value", func(t *testing.T) {
 		// given
@@ -531,9 +513,8 @@ func TestCharacterAssetValue(t *testing.T) {
 		// when
 		got, err := st.GetCharacterAssetValue(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, v, got.ValueOrZero())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, v, got.ValueOrZero())
 	})
 	t.Run("can get empty value", func(t *testing.T) {
 		// given
@@ -545,57 +526,7 @@ func TestCharacterAssetValue(t *testing.T) {
 		// when
 		got, err := st.GetCharacterAssetValue(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, got.IsEmpty())
-		}
-	})
-}
-
-func TestCharacterWealth(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	// given
-	cases := []struct {
-		name      string
-		assets    optional.Optional[float64]
-		wallet    optional.Optional[float64]
-		totalWant optional.Optional[float64]
-	}{
-		{"all values exist", optional.New(1.0), optional.New(2.0), optional.New(3.0)},
-		{"missing wallet", optional.New(1.0), optional.Optional[float64]{}, optional.Optional[float64]{}},
-		{"missing assets", optional.Optional[float64]{}, optional.New(1.0), optional.Optional[float64]{}},
-		{"no values", optional.Optional[float64]{}, optional.Optional[float64]{}, optional.Optional[float64]{}},
-	}
-
-	for _, tc := range cases {
-		t.Run("can list when all value exist", func(t *testing.T) {
-			testutil.MustTruncateTables(db)
-			c := factory.CreateCharacter(storage.CreateCharacterParams{
-				AssetValue:    tc.assets,
-				WalletBalance: tc.wallet,
-			})
-			// when
-			oo, err := st.ListCharacterWealthValues(t.Context())
-			// then
-			require.NoError(t, err)
-			require.Len(t, oo, 1)
-			o := oo[0]
-			assert.Equal(t, c.ID, o.CharacterID)
-			assert.Equal(t, tc.assets, o.Assets)
-			assert.Equal(t, tc.wallet, o.Wallet)
-			assert.Equal(t, tc.totalWant, o.Total)
-		})
-	}
-
-	t.Run("can list characters", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		factory.CreateCharacterFull()
-		factory.CreateCharacterFull()
-		// when
-		oo, err := st.ListCharacterWealthValues(t.Context())
-		// then
 		require.NoError(t, err)
-		require.Len(t, oo, 2)
+		assert.True(t, got.IsEmpty())
 	})
 }

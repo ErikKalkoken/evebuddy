@@ -18,6 +18,7 @@ import (
 // Character is an EVE Online character owned by the user.
 type Character struct {
 	AssetValue        optional.Optional[float64]
+	ContractEscrow    optional.Optional[float64]
 	EveCharacter      *EveCharacter
 	Home              optional.Optional[*EveLocation]
 	ID                int64
@@ -25,6 +26,7 @@ type Character struct {
 	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	Location          optional.Optional[*EveLocation]
+	MarketEscrow      optional.Optional[float64]
 	Ship              optional.Optional[*EveType]
 	TrainedSP         optional.Optional[int64]
 	UnallocatedSP     optional.Optional[int64]
@@ -415,11 +417,4 @@ func SearchCategories() []SearchCategory {
 		SearchStation,
 		SearchType,
 	}
-}
-
-type CharacterWealth struct {
-	Assets      optional.Optional[float64]
-	CharacterID int64
-	Total       optional.Optional[float64]
-	Wallet      optional.Optional[float64]
 }

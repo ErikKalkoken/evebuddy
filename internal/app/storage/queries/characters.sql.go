@@ -14,48 +14,54 @@ const createCharacter = `-- name: CreateCharacter :exec
 INSERT INTO
     characters (
         id,
+        asset_value,
+        contract_escrow,
         home_id,
+        is_training_watched,
+        last_clone_jump_at,
         last_login_at,
         location_id,
+        market_escrow,
         ship_id,
         total_sp,
         unallocated_sp,
-        wallet_balance,
-        asset_value,
-        is_training_watched,
-        last_clone_jump_at
+        wallet_balance
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCharacterParams struct {
 	ID                int64
+	AssetValue        sql.NullFloat64
+	ContractEscrow    sql.NullFloat64
 	HomeID            sql.NullInt64
+	IsTrainingWatched bool
+	LastCloneJumpAt   sql.NullTime
 	LastLoginAt       sql.NullTime
 	LocationID        sql.NullInt64
+	MarketEscrow      sql.NullFloat64
 	ShipID            sql.NullInt64
 	TotalSp           sql.NullInt64
 	UnallocatedSp     sql.NullInt64
 	WalletBalance     sql.NullFloat64
-	AssetValue        sql.NullFloat64
-	IsTrainingWatched bool
-	LastCloneJumpAt   sql.NullTime
 }
 
 func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
 	_, err := q.db.ExecContext(ctx, createCharacter,
 		arg.ID,
+		arg.AssetValue,
+		arg.ContractEscrow,
 		arg.HomeID,
+		arg.IsTrainingWatched,
+		arg.LastCloneJumpAt,
 		arg.LastLoginAt,
 		arg.LocationID,
+		arg.MarketEscrow,
 		arg.ShipID,
 		arg.TotalSp,
 		arg.UnallocatedSp,
 		arg.WalletBalance,
-		arg.AssetValue,
-		arg.IsTrainingWatched,
-		arg.LastCloneJumpAt,
 	)
 	return err
 }
@@ -84,7 +90,7 @@ func (q *Queries) DisableAllTrainingWatchers(ctx context.Context) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contract_escrow, cc.market_escrow,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -135,6 +141,8 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Character.WalletBalance,
 		&i.Character.IsTrainingWatched,
 		&i.Character.LastCloneJumpAt,
+		&i.Character.ContractEscrow,
+		&i.Character.MarketEscrow,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -320,7 +328,7 @@ func (q *Queries) ListCharacterWealthValues(ctx context.Context) ([]ListCharacte
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
-    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contract_escrow, cc.market_escrow,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -377,6 +385,8 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Character.WalletBalance,
 			&i.Character.IsTrainingWatched,
 			&i.Character.LastCloneJumpAt,
+			&i.Character.ContractEscrow,
+			&i.Character.MarketEscrow,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
@@ -472,6 +482,24 @@ func (q *Queries) UpdateCharacterAssetValue(ctx context.Context, arg UpdateChara
 	return err
 }
 
+const updateCharacterContractEscrow = `-- name: UpdateCharacterContractEscrow :exec
+UPDATE characters
+SET
+    contract_escrow = ?
+WHERE
+    id = ?
+`
+
+type UpdateCharacterContractEscrowParams struct {
+	ContractEscrow sql.NullFloat64
+	ID             int64
+}
+
+func (q *Queries) UpdateCharacterContractEscrow(ctx context.Context, arg UpdateCharacterContractEscrowParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterContractEscrow, arg.ContractEscrow, arg.ID)
+	return err
+}
+
 const updateCharacterHomeId = `-- name: UpdateCharacterHomeId :exec
 UPDATE characters
 SET
@@ -559,6 +587,24 @@ type UpdateCharacterLocationIDParams struct {
 
 func (q *Queries) UpdateCharacterLocationID(ctx context.Context, arg UpdateCharacterLocationIDParams) error {
 	_, err := q.db.ExecContext(ctx, updateCharacterLocationID, arg.LocationID, arg.ID)
+	return err
+}
+
+const updateCharacterMarketEscrow = `-- name: UpdateCharacterMarketEscrow :exec
+UPDATE characters
+SET
+    market_escrow = ?
+WHERE
+    id = ?
+`
+
+type UpdateCharacterMarketEscrowParams struct {
+	MarketEscrow sql.NullFloat64
+	ID           int64
+}
+
+func (q *Queries) UpdateCharacterMarketEscrow(ctx context.Context, arg UpdateCharacterMarketEscrowParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterMarketEscrow, arg.MarketEscrow, arg.ID)
 	return err
 }
 

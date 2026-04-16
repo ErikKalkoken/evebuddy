@@ -18,12 +18,14 @@ import (
 
 type CreateCharacterParams struct {
 	AssetValue        optional.Optional[float64]
+	ContractEscrow    optional.Optional[float64]
+	HomeID            optional.Optional[int64]
 	ID                int64
 	IsTrainingWatched bool
-	HomeID            optional.Optional[int64]
 	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	LocationID        optional.Optional[int64]
+	MarketEscrow      optional.Optional[float64]
 	ShipID            optional.Optional[int64]
 	TotalSP           optional.Optional[int]
 	UnallocatedSP     optional.Optional[int]
@@ -34,6 +36,8 @@ func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParam
 	err := st.qRW.CreateCharacter(ctx, queries.CreateCharacterParams{
 		ID:                arg.ID,
 		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
+		ContractEscrow:    optional.ToNullFloat64(arg.ContractEscrow),
+		MarketEscrow:      optional.ToNullFloat64(arg.MarketEscrow),
 		IsTrainingWatched: arg.IsTrainingWatched,
 		HomeID:            optional.ToNullInt64(arg.HomeID),
 		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
@@ -132,6 +136,14 @@ func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) 
 	return o, nil
 }
 
+func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (optional.Optional[float64], error) {
+	v, err := st.qRO.GetCharacterAssetValue(ctx, id)
+	if err != nil {
+		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, convertGetError(err))
+	}
+	return optional.FromNullFloat64(v), nil
+}
+
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.qRO.ListCharacters(ctx)
 	if err != nil {
@@ -216,6 +228,17 @@ func (st *Storage) listCharacterIDs(ctx context.Context, q *queries.Queries) (se
 	return ids2, nil
 }
 
+func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
+	arg := queries.UpdateCharacterAssetValueParams{
+		ID:         characterID,
+		AssetValue: optional.ToNullFloat64(v),
+	}
+	if err := st.qRW.UpdateCharacterAssetValue(ctx, arg); err != nil {
+		return fmt.Errorf("update asset value for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int64, homeID optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterHomeIdParams{
 		ID:     characterID,
@@ -271,6 +294,27 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int6
 	return nil
 }
 
+func (st *Storage) UpdateCharacterContractEscrow(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
+	arg := queries.UpdateCharacterContractEscrowParams{
+		ID:             characterID,
+		ContractEscrow: optional.ToNullFloat64(v),
+	}
+	if err := st.qRW.UpdateCharacterContractEscrow(ctx, arg); err != nil {
+		return fmt.Errorf("UpdateCharacterMarketEscrow for character %d: %w", characterID, err)
+	}
+	return nil
+}
+func (st *Storage) UpdateCharacterMarketEscrow(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
+	arg := queries.UpdateCharacterMarketEscrowParams{
+		ID:           characterID,
+		MarketEscrow: optional.ToNullFloat64(v),
+	}
+	if err := st.qRW.UpdateCharacterMarketEscrow(ctx, arg); err != nil {
+		return fmt.Errorf("UpdateCharacterMarketEscrow for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int64, shipID optional.Optional[int64]) error {
 	arg := queries.UpdateCharacterShipIDParams{
 		ID:     characterID,
@@ -305,16 +349,7 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
-	arg := queries.UpdateCharacterAssetValueParams{
-		ID:         characterID,
-		AssetValue: optional.ToNullFloat64(v),
-	}
-	if err := st.qRW.UpdateCharacterAssetValue(ctx, arg); err != nil {
-		return fmt.Errorf("update asset value for character %d: %w", characterID, err)
-	}
-	return nil
-}
+// TODO: Optimize so additional queries are not needed
 
 func (st *Storage) characterFromDBModel(
 	ctx context.Context,
@@ -330,11 +365,13 @@ func (st *Storage) characterFromDBModel(
 ) (*app.Character, error) {
 	o := app.Character{
 		AssetValue:        optional.FromNullFloat64(character.AssetValue),
+		ContractEscrow:    optional.FromNullFloat64(character.ContractEscrow),
 		EveCharacter:      eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:                character.ID,
 		IsTrainingWatched: character.IsTrainingWatched,
 		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
+		MarketEscrow:      optional.FromNullFloat64(character.MarketEscrow),
 		TrainedSP:         optional.FromNullInt64(character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
@@ -361,38 +398,4 @@ func (st *Storage) characterFromDBModel(
 		o.Ship = optional.New(x)
 	}
 	return &o, nil
-}
-
-func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (optional.Optional[float64], error) {
-	v, err := st.qRO.GetCharacterAssetValue(ctx, id)
-	if err != nil {
-		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, convertGetError(err))
-	}
-	return optional.FromNullFloat64(v), nil
-}
-
-func (st *Storage) ListCharacterWealthValues(ctx context.Context) ([]*app.CharacterWealth, error) {
-	rows, err := st.qRO.ListCharacterWealthValues(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("ListCharacterWealthValues: %w", err)
-
-	}
-	var oo []*app.CharacterWealth
-	for _, r := range rows {
-		assets := optional.FromNullFloat64(r.AssetValue)
-		wallets := optional.FromNullFloat64(r.WalletBalance)
-		var total optional.Optional[float64]
-		if v1, ok := assets.Value(); ok {
-			if v2, ok := wallets.Value(); ok {
-				total.Set(v1 + v2)
-			}
-		}
-		oo = append(oo, &app.CharacterWealth{
-			Assets:      assets,
-			CharacterID: r.ID,
-			Total:       total,
-			Wallet:      wallets,
-		})
-	}
-	return oo, nil
 }
