@@ -36,6 +36,14 @@ type overviewRow struct {
 	isTotal       bool
 }
 
+func (r overviewRow) eveEntity() *app.EveEntity {
+	return &app.EveEntity{
+		Category: app.EveEntityCharacter,
+		ID:       r.characterID,
+		Name:     r.characterName,
+	}
+}
+
 type Overview struct {
 	widget.BaseWidget
 
@@ -172,7 +180,9 @@ func NewOverview(u baseUI) *Overview {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			nil,
+			func(_ int, r overviewRow) {
+				u.InfoViewer().Show(r.eveEntity())
+			},
 		)
 	}
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
@@ -183,23 +193,26 @@ func NewOverview(u baseUI) *Overview {
 	}, a.u.MainWindow())
 
 	// Signals
-	// a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-	// 	switch arg.Section {
-	// 	case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
-	// 		a.Update(ctx)
-	// 	}
-	// })
-	// a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-	// 	a.Update(ctx)
-	// })
-	// a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-	// 	a.Update(ctx)
-	// })
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		switch arg.Section {
+		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
+			a.update(ctx)
+		}
+	})
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
+	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -285,7 +298,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Overview) Update(ctx context.Context) {
+func (a *Overview) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh wealth overview UI", "err", err)
@@ -313,13 +326,17 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 	}
 	var rows []overviewRow
 	for _, o := range oo {
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.CharacterID)
+		if err != nil {
+			return rows, err
+		}
 		rows = append(rows, overviewRow{
 			assets:        o.Assets,
 			assetsDisplay: formatISKValue(o.Assets),
 			characterID:   o.CharacterID,
 			characterName: characters[o.CharacterID],
 			searchTarget:  strings.ToLower(characters[o.CharacterID]),
-			tags:          set.Set[string]{},
+			tags:          tags,
 			total:         o.Total,
 			totalDisplay:  formatISKValue(o.Total),
 			wallet:        o.Wallet,

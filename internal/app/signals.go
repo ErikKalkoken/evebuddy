@@ -32,6 +32,9 @@ type EveUniverseSectionUpdated struct {
 // Signals represents the app's event signals.
 // It is safe for concurrent use.
 type Signals struct {
+	// The app is initialized
+	AppInit signals.Signal[struct{}]
+
 	// A character was added.
 	CharacterAdded signals.Signal[*Character]
 
@@ -85,6 +88,7 @@ type Signals struct {
 
 func NewSignals() *Signals {
 	s := &Signals{
+		AppInit:                     signals.New[struct{}](),
 		CharacterAdded:              signals.New[*Character](),
 		CharacterChanged:            signals.New[int64](),
 		CharacterRemoved:            signals.New[*EntityShort](),

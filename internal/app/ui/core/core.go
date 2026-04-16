@@ -18,7 +18,6 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -482,16 +481,13 @@ func (u *baseUI) Start() bool {
 	go func() {
 		var wg sync.WaitGroup
 		wg.Go(func() {
-			u.initHome(ctx)
+			u.signals.AppInit.Emit(ctx, struct{}{})
 		})
 		wg.Go(func() {
 			u.initCharacter(ctx)
 		})
 		wg.Go(func() {
 			u.initCorporation(ctx)
-		})
-		wg.Go(func() {
-			u.gameSearch.Init(ctx)
 		})
 		wg.Wait()
 
@@ -821,40 +817,6 @@ func (u *baseUI) SetAnyCorporation(ctx context.Context) error {
 
 //////////////////
 // Home
-
-// initHome performs an initial load of all pages under the home tab.
-func (u *baseUI) initHome(ctx context.Context) {
-	ff := map[string]func(context.Context){
-		"characterOverview":  u.characterOverview.Update,
-		"assetSearchAll":     u.assetSearchAll.Update,
-		"augmentations":      u.augmentations.Update,
-		"contracts":          u.contracts.Update,
-		"clones":             u.clones.Update,
-		"colonies":           u.colonies.Update,
-		"industryJobs":       u.industryJobs.Update,
-		"loyaltyPoints":      u.loyaltyPoints.Update,
-		"marketOrdersSell":   u.marketOrdersSell.Update,
-		"marketOrdersBuy":    u.marketOrdersBuy.Update,
-		"slotsManufacturing": u.slotsManufacturing.Update,
-		"slotsReactions":     u.slotsReactions.Update,
-		"slotsResearch":      u.slotsResearch.Update,
-		"training":           u.training.Update,
-		"wealth":             u.wealth.Update,
-	}
-	myLog := slog.With("title", "startup")
-	myLog.Debug("started")
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
-	for name, f := range ff {
-		g.Go(func() error {
-			start2 := time.Now()
-			f(ctx)
-			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-			return nil
-		})
-	}
-	g.Wait()
-}
 
 func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(ui.New(u.defaultTheme, s))

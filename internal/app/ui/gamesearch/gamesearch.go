@@ -161,10 +161,15 @@ func NewGameSearch(u baseUI) *GameSearch {
 		nil,
 		a.recent,
 	)
+
+	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.init(ctx)
+	})
 	return a
 }
 
-func (a *GameSearch) Init(ctx context.Context) {
+func (a *GameSearch) init(ctx context.Context) {
 	ids := a.u.Settings().RecentSearches()
 	if len(ids) == 0 {
 		return

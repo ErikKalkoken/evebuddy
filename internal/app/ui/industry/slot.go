@@ -247,25 +247,29 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
 
+	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterIndustryJobs, app.SectionCharacterSkills:
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if arg.Section == app.SectionCorporationIndustryJobs {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -381,7 +385,7 @@ func (a *Slots) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Slots) Update(ctx context.Context) {
+func (a *Slots) update(ctx context.Context) {
 	rows, err := a.fetchData(ctx, a.slotType)
 	if err != nil {
 		slog.Error("Failed to refresh industrySlots UI", "err", err)

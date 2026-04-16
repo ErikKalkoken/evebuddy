@@ -335,39 +335,44 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow(), 6, 7)
 
+	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+
 	if forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
 			if arg.Section == app.SectionCorporationIndustryJobs {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 	} else {
 		a.selectInstaller.Selected = industryInstallerMe
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterIndustryJobs {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if arg.Section == app.SectionCorporationIndustryJobs {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 	}
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -615,7 +620,7 @@ func (a *Jobs) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Jobs) Update(ctx context.Context) {
+func (a *Jobs) update(ctx context.Context) {
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {

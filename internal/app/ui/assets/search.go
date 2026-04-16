@@ -428,10 +428,14 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 	}, a.u.MainWindow())
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
@@ -440,32 +444,32 @@ func newAssetSearch(u coreUI, forCorporation bool) *Search {
 			if arg.Section != app.SectionCorporationAssets {
 				return
 			}
-			a.Update(ctx)
+			a.update(ctx)
 		})
 	} else {
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterAssets {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if arg.Section == app.SectionCorporationAssets {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 	}
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		if arg.Section == app.SectionEveMarketPrices {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	return a
@@ -671,7 +675,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Search) Update(ctx context.Context) {
+func (a *Search) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)

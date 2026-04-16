@@ -278,20 +278,23 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	}, a.u.MainWindow())
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterMarketOrders:
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
@@ -457,7 +460,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *MarketOrders) Update(ctx context.Context) {
+func (a *MarketOrders) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)

@@ -43,7 +43,7 @@ func TestIndustryJob_Filter(t *testing.T) {
 		App:     test.NewTempApp(t),
 		Storage: st,
 	}))
-	a.Update(t.Context())
+	a.update(t.Context())
 
 	t.Run("no filter", func(t *testing.T) {
 		a.selectActivity.SetSelected("")
@@ -110,7 +110,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 			App:     test.NewTempApp(t),
 			Storage: st,
 		}))
-		a.Update(t.Context())
+		a.update(t.Context())
 		a.corporation.Store(corporation)
 		xx, err := a.fetchCombinedJobs(t.Context())
 		if !assert.NoError(t, err) {
@@ -129,7 +129,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 			Storage: st,
 		}))
 		a.corporation.Store(corporation)
-		a.Update(t.Context())
+		a.update(t.Context())
 
 		xx, err := a.fetchCorporationJobs(t.Context())
 		if !assert.NoError(t, err) {

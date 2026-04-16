@@ -60,7 +60,7 @@ func TestTraining_Filter(t *testing.T) {
 		App:     test.NewTempApp(t),
 		Storage: st,
 	}))
-	a.Update(t.Context())
+	a.update(t.Context())
 
 	t.Run("no filter", func(t *testing.T) {
 		a.selectStatus.SetSelected("")

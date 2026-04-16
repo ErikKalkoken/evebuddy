@@ -94,22 +94,25 @@ func NewWealth(u baseUI) *Wealth {
 	a.defaultBarLabelStyle = ls
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		if arg.Section == app.SectionEveMarketPrices {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -143,8 +146,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Wealth) Update(ctx context.Context) {
-	go a.overview.Update(ctx)
+func (a *Wealth) update(ctx context.Context) {
 	rows, characters, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)

@@ -302,6 +302,9 @@ func NewTraining(u baseUI) *Training {
 	}, a.u.MainWindow())
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
@@ -309,13 +312,13 @@ func NewTraining(u baseUI) *Training {
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
 		a.updateItem(ctx, characterID)
@@ -489,7 +492,7 @@ func (a *Training) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Training) Update(ctx context.Context) {
+func (a *Training) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
