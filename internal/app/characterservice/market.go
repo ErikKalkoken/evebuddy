@@ -228,20 +228,11 @@ func (s *CharacterService) updateOrdersEscrow(ctx context.Context, characterID i
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateOrdersEscrow: %d: %w", characterID, err)
 	}
-	oo, err := s.st.ListCharacterMarketOrders(ctx, characterID)
+	v, err := s.st.CalculateCharacterOrdersEscrow(ctx, characterID)
 	if err != nil {
-		return wrapErr(err)
+		wrapErr(err)
 	}
-	var escrow float64
-	for _, o := range oo {
-		if v, ok := o.IsBuyOrder.Value(); !ok || !v {
-			continue
-		}
-		if v, ok := o.Escrow.Value(); ok {
-			escrow += v
-		}
-	}
-	err = s.st.UpdateCharacterOrdersEscrow(ctx, characterID, optional.New(escrow))
+	err = s.st.UpdateCharacterOrdersEscrow(ctx, characterID, optional.New(v))
 	if err != nil {
 		wrapErr(err)
 	}

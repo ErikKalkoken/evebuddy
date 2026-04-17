@@ -12,6 +12,16 @@ WHERE
     AND state IN (sqlc.slice('states'))
     AND eg.eve_category_id <> ?;
 
+-- name: CalculateCharacterOrdersEscrow :one
+SELECT
+    SUM(escrow)
+FROM
+    character_market_orders cmo
+WHERE
+    character_id = ?
+    AND is_buy_order IS TRUE
+    AND state IN (sqlc.slice('states'));
+
 -- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE

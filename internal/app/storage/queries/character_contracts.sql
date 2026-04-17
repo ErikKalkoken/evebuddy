@@ -14,6 +14,17 @@ WHERE
     AND cci.is_included IS TRUE
     AND eg.eve_category_id <> ?;
 
+-- name: CalculateCharacterContractsCourierEscrow :one
+SELECT
+    SUM(collateral)
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+    AND acceptor_id == character_id
+    AND type = ?
+    AND status IN (sqlc.slice('status'));
+
 -- name: CreateCharacterContract :one
 INSERT INTO
     character_contracts (

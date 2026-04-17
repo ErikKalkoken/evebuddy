@@ -63,6 +63,43 @@ func (q *Queries) CalculateCharacterContractItemsValue(ctx context.Context, arg 
 	return sum, err
 }
 
+const calculateCharacterContractsCourierEscrow = `-- name: CalculateCharacterContractsCourierEscrow :one
+SELECT
+    SUM(collateral)
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+    AND acceptor_id == character_id
+    AND type = ?
+    AND status IN (/*SLICE:status*/?)
+`
+
+type CalculateCharacterContractsCourierEscrowParams struct {
+	CharacterID int64
+	Type        string
+	Status      []string
+}
+
+func (q *Queries) CalculateCharacterContractsCourierEscrow(ctx context.Context, arg CalculateCharacterContractsCourierEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractsCourierEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	queryParams = append(queryParams, arg.Type)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const createCharacterContract = `-- name: CreateCharacterContract :one
 INSERT INTO
     character_contracts (

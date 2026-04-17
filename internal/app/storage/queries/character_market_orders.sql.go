@@ -52,6 +52,40 @@ func (q *Queries) CalculateCharacterOrderItemsValue(ctx context.Context, arg Cal
 	return sum, err
 }
 
+const calculateCharacterOrdersEscrow = `-- name: CalculateCharacterOrdersEscrow :one
+SELECT
+    SUM(escrow)
+FROM
+    character_market_orders cmo
+WHERE
+    character_id = ?
+    AND is_buy_order IS TRUE
+    AND state IN (/*SLICE:states*/?)
+`
+
+type CalculateCharacterOrdersEscrowParams struct {
+	CharacterID int64
+	States      []string
+}
+
+func (q *Queries) CalculateCharacterOrdersEscrow(ctx context.Context, arg CalculateCharacterOrdersEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterOrdersEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.States) > 0 {
+		for _, v := range arg.States {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:states*/?", strings.Repeat(",?", len(arg.States))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:states*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const deleteCharacterMarketOrders = `-- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE

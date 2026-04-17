@@ -381,3 +381,62 @@ func TestCalculateCharacterOrderItemsValue(t *testing.T) {
 		assert.Equal(t, 0.0, got)
 	})
 }
+
+func TestCalcOrdersEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	cases := []struct {
+		name       string
+		isBuyOrder optional.Optional[bool]
+		escrow     optional.Optional[float64]
+		want       float64
+	}{
+		{"should include open buy order with escrow", optional.New(true), optional.New(12.3), 12.3},
+		{"should not include buy order without escrow", optional.New(true), optional.Optional[float64]{}, 0.0},
+		{"should not include sell order", optional.New(false), optional.New(12.3), 0.0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := factory.CreateCharacter()
+			factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+				CharacterID: c.ID,
+				IsBuyOrder:  tc.isBuyOrder,
+				Escrow:      tc.escrow,
+			})
+
+			// when
+			got, err := st.CalculateCharacterOrdersEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should sum buy orders owner by character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			IsBuyOrder:  optional.New(true),
+			Escrow:      optional.New(12.3),
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			IsBuyOrder:  optional.New(true),
+			Escrow:      optional.New(10.1),
+		})
+		factory.CreateCharacterMarketOrder() // should be ignored
+
+		// when
+		got, err := st.CalculateCharacterOrdersEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 22.4, got)
+	})
+}

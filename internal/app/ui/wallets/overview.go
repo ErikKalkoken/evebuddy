@@ -24,7 +24,6 @@ import (
 
 // TODOs
 // - add all variants for calculating contract escrow
-// - add values for contracts items and market orders to assets value
 
 type overviewRow struct {
 	characterID            int64

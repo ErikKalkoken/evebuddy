@@ -465,3 +465,76 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 		assert.Equal(t, 0.0, got)
 	})
 }
+
+func TestCalculateCharacterContractsCourierEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	characterID := int64(42)
+
+	cases := []struct {
+		name string
+
+		acceptorID   int64
+		contractType app.ContractType
+		collateral   optional.Optional[float64]
+		want         float64
+	}{
+		{"should include courier contract accepted by character", characterID, app.ContractTypeCourier, optional.New(123.0), 123.0},
+		{"should not include courier contract accepted by other", 0, app.ContractTypeCourier, optional.New(123.0), 0.0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+				ID: characterID,
+			})
+			c := factory.CreateCharacter(storage.CreateCharacterParams{
+				ID: ec.ID,
+			})
+			factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+				CharacterID: c.ID,
+				AcceptorID:  tc.acceptorID,
+				Collateral:  tc.collateral,
+				Type:        tc.contractType,
+			})
+			factory.CreateCharacterContract() // should be ignored
+
+			// when
+			got, err := st.CalculateCharacterContractsCourierEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should sum over multiple courier contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(100.0),
+			Type:        app.ContractTypeCourier,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(200.0),
+			Type:        app.ContractTypeCourier,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContract() // should be ignored
+
+		// when
+		got, err := st.CalculateCharacterContractsCourierEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 300.0, got)
+	})
+}

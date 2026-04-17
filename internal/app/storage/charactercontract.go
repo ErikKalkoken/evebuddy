@@ -88,6 +88,27 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 	return v.Float64, nil
 }
 
+func (st *Storage) CalculateCharacterContractsCourierEscrow(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterContractsCourierEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterContractsCourierEscrow(ctx, queries.CalculateCharacterContractsCourierEscrowParams{
+		CharacterID: characterID,
+		Type:        characterContractTypeToDBValue[app.ContractTypeCourier],
+		Status: []string{
+			characterContractStatusToDBValue[app.ContractStatusOutstanding],
+			characterContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
 type CreateCharacterContractParams struct {
 	AcceptorID          int64
 	AssigneeID          int64

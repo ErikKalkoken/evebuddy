@@ -448,28 +448,11 @@ func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterI
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)
 	}
-	if characterID == 0 {
-		wrapErr(app.ErrInvalid)
-	}
-	oo, err := s.st.ListCharacterContracts(ctx, characterID)
+	v1, err := s.st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
 	if err != nil {
 		wrapErr(err)
 	}
-	var escrow float64
-	for _, o := range oo {
-		switch o.Type {
-		case app.ContractTypeCourier:
-			if !o.Status.IsActive() {
-				break
-			}
-			if v, ok := o.Acceptor.Value(); ok && v.ID == characterID {
-				if v, ok := o.Collateral.Value(); ok {
-					escrow += v
-				}
-			}
-		}
-	}
-	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(escrow))
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1))
 	if err != nil {
 		wrapErr(err)
 	}
