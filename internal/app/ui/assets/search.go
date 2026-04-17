@@ -648,7 +648,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 		footer := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 		var value optional.Optional[float64]
 		for _, r := range rows {
-			value = optional.Sum(value, r.total)
+			value = optional.SumNonEmpty(value, r.total)
 		}
 		if v, ok := value.Value(); ok {
 			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))

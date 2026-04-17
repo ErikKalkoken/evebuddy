@@ -60,7 +60,7 @@ func (c *Character) NameOrZero() string {
 // Blueprints do not count towards a character‘s Total Net Worth.
 // Source: Total Net Worth of a character as defined by CCP.
 func (c *Character) CombinedAssetsValue() optional.Optional[float64] {
-	return optional.Sum(c.AssetValue, c.ContractItemsValue, c.OrderItemsValue)
+	return optional.SumNonEmpty(c.AssetValue, c.ContractItemsValue, c.OrderItemsValue)
 }
 
 type CharacterAttributes struct {

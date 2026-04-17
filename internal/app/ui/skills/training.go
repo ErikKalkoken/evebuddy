@@ -591,7 +591,7 @@ func (a *Training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 		unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int64) string {
 			return humanize.Comma(v)
 		}),
-		totalSP: optional.Sum(c.TrainedSP, c.UnallocatedSP),
+		totalSP: optional.SumNonEmpty(c.TrainedSP, c.UnallocatedSP),
 	}
 	r.totalSPDisplay = r.totalSP.StringFunc("?", func(v int64) string {
 		return humanize.Comma(v)

@@ -389,7 +389,7 @@ func (a *Catalogue) update(ctx context.Context) {
 		})
 	}
 
-	totalSP := optional.Sum(c.TrainedSP, c.UnallocatedSP)
+	totalSP := optional.SumNonEmpty(c.TrainedSP, c.UnallocatedSP)
 	top := fmt.Sprintf("%s Total SP (%s Unallocated)",
 		totalSP.StringFunc("?", func(v int64) string {
 			return ihumanize.Comma(v)

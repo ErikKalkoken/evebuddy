@@ -125,7 +125,7 @@ func (s *CorporationService) GetWalletBalancesTotal(ctx context.Context, corpora
 		return b, nil
 	}
 	for _, o := range oo {
-		b = optional.Sum(b, optional.New(o.Balance))
+		b = optional.SumNonEmpty(b, optional.New(o.Balance))
 	}
 	return b, nil
 }

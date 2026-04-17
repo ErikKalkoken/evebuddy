@@ -311,11 +311,11 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 		// add totals
 		var assetsValue, walletBalance, totals, contractEscrow, marketEscrow optional.Optional[float64]
 		for _, r := range rows {
-			assetsValue = optional.Sum(assetsValue, r.combinedAssetsValue)
-			walletBalance = optional.Sum(walletBalance, r.walletBalance)
-			contractEscrow = optional.Sum(contractEscrow, r.contractsEscrow)
-			marketEscrow = optional.Sum(marketEscrow, r.ordersEscrow)
-			totals = optional.Sum(totals, r.total)
+			assetsValue = optional.SumNonEmpty(assetsValue, r.combinedAssetsValue)
+			walletBalance = optional.SumNonEmpty(walletBalance, r.walletBalance)
+			contractEscrow = optional.SumNonEmpty(contractEscrow, r.contractsEscrow)
+			marketEscrow = optional.SumNonEmpty(marketEscrow, r.ordersEscrow)
+			totals = optional.SumNonEmpty(totals, r.total)
 		}
 		rows = append(rows, overviewRow{
 			combinedAssetsValue:    assetsValue,

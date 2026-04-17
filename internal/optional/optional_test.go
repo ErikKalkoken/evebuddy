@@ -225,12 +225,27 @@ func TestSum(t *testing.T) {
 		a, b, want optional.Optional[int]
 	}{
 		{optional.New(5), optional.New(3), optional.New(8)},
+		{optional.New(5), optional.Optional[int]{}, optional.Optional[int]{}},
+		{optional.Optional[int]{}, optional.New(5), optional.Optional[int]{}},
+		{optional.Optional[int]{}, optional.Optional[int]{}, optional.Optional[int]{}},
+	}
+	for _, tc := range cases {
+		got := optional.Sum(tc.a, tc.b)
+		xassert.Equal(t, tc.want, got)
+	}
+}
+
+func TestSumNonEmpty(t *testing.T) {
+	cases := []struct {
+		a, b, want optional.Optional[int]
+	}{
+		{optional.New(5), optional.New(3), optional.New(8)},
 		{optional.New(5), optional.Optional[int]{}, optional.New(5)},
 		{optional.Optional[int]{}, optional.New(5), optional.New(5)},
 		{optional.Optional[int]{}, optional.Optional[int]{}, optional.Optional[int]{}},
 	}
 	for _, tc := range cases {
-		got := optional.Sum(tc.a, tc.b)
+		got := optional.SumNonEmpty(tc.a, tc.b)
 		xassert.Equal(t, tc.want, got)
 	}
 }
