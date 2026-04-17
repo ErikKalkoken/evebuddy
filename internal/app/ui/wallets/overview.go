@@ -22,9 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// TODOs
-// - add all variants for calculating contract escrow
-
 type overviewRow struct {
 	characterID            int64
 	characterName          string
@@ -252,8 +249,10 @@ func NewOverview(u baseUI) *Overview {
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.update(ctx)
 	})
-	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
-		a.update(ctx)
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
+			a.update(ctx)
+		}
 	})
 	return a
 }
@@ -308,30 +307,35 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 
 		// add totals
-		var assetsValue, walletBalance, totals, contractEscrow, marketEscrow optional.Optional[float64]
+		var assets, wallets, totals, contracts, orders []optional.Optional[float64]
 		for _, r := range rows {
-			assetsValue = optional.SumNonEmpty(assetsValue, r.combinedAssetsValue)
-			walletBalance = optional.SumNonEmpty(walletBalance, r.walletBalance)
-			contractEscrow = optional.SumNonEmpty(contractEscrow, r.contractsEscrow)
-			marketEscrow = optional.SumNonEmpty(marketEscrow, r.ordersEscrow)
-			totals = optional.SumNonEmpty(totals, r.total)
+			assets = append(assets, r.combinedAssetsValue)
+			contracts = append(contracts, r.contractsEscrow)
+			orders = append(orders, r.ordersEscrow)
+			totals = append(totals, r.total)
+			wallets = append(wallets, r.walletBalance)
 		}
+		assetsTotal := optional.Sum(assets...)
+		contractsTotal := optional.Sum(contracts...)
+		grandTotal := optional.Sum(totals...)
+		ordersTotal := optional.Sum(orders...)
+		walletsTotal := optional.Sum(wallets...)
 		rows = append(rows, overviewRow{
-			combinedAssetsValue:    assetsValue,
-			combinedAssetsDisplay:  formatISKValue(assetsValue),
 			characterID:            0,
 			characterName:          "Total",
-			tags:                   set.Set[string]{},
-			total:                  totals,
-			totalDisplay:           formatISKValue(totals),
-			walletBalance:          walletBalance,
-			walletDisplay:          formatISKValue(walletBalance),
-			ordersEscrow:           marketEscrow,
-			ordersEscrowDisplay:    formatISKValue(marketEscrow),
-			contractsEscrow:        contractEscrow,
-			contractsEscrowDisplay: formatISKValue(contractEscrow),
-			searchTarget:           "",
+			combinedAssetsDisplay:  formatISKValue(assetsTotal),
+			combinedAssetsValue:    assetsTotal,
+			contractsEscrow:        contractsTotal,
+			contractsEscrowDisplay: formatISKValue(contractsTotal),
 			isTotal:                true,
+			ordersEscrow:           ordersTotal,
+			ordersEscrowDisplay:    formatISKValue(ordersTotal),
+			searchTarget:           "",
+			tags:                   set.Set[string]{},
+			total:                  grandTotal,
+			totalDisplay:           formatISKValue(grandTotal),
+			walletBalance:          walletsTotal,
+			walletDisplay:          formatISKValue(walletsTotal),
 		})
 
 		fyne.Do(func() {

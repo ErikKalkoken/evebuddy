@@ -19,7 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 const (
@@ -30,10 +30,13 @@ const (
 )
 
 type wealthRow struct {
-	character string
-	wallet    float64
-	assets    float64
-	total     float64
+	characterID     int64
+	characterName   string
+	walletBalance   float64
+	combinedAssets  float64
+	contractsEscrow float64
+	ordersEscrow    float64
+	total           float64
 }
 
 type Wealth struct {
@@ -99,7 +102,11 @@ func NewWealth(u baseUI) *Wealth {
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
-		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
+		case
+			app.SectionCharacterAssets,
+			app.SectionCharacterContracts,
+			app.SectionCharacterMarketOrders,
+			app.SectionCharacterWalletBalance:
 			a.update(ctx)
 		}
 	})
@@ -121,7 +128,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Characters", a.overview),
 		container.NewTabItem(
-			"Overview",
+			"Total",
 			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
 		),
 		container.NewTabItem(
@@ -147,7 +154,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Wealth) update(ctx context.Context) {
-	rows, characters, err := a.fetchData(ctx)
+	rows, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -158,7 +165,7 @@ func (a *Wealth) update(ctx context.Context) {
 		})
 		return
 	}
-	if characters == 0 {
+	if len(rows) == 0 {
 		fyne.Do(func() {
 			a.top.Text = "No characters"
 			a.top.Importance = widget.LowImportance
@@ -172,33 +179,31 @@ func (a *Wealth) update(ctx context.Context) {
 		a.top.Hide()
 	})
 
-	var totalWallet, totalAssets float64
-	for _, r := range rows {
-		totalAssets += r.assets
-		totalWallet += r.wallet
-	}
-	a.updateAssetDetail(ctx, rows, totalAssets)
-	a.updateAssetSplit(ctx, rows, totalAssets)
-	a.updateCharacterSplit(ctx, rows, totalAssets, totalWallet)
-	a.updateTotalSplit(ctx, totalAssets, totalWallet)
-	a.updateWalletDetail(ctx, rows, totalWallet)
-	a.updateWalletSplit(ctx, rows, totalWallet)
+	a.updateAssetDetail(ctx, rows)
+	a.updateAssetSplit(ctx, rows)
+	a.updateCharacterSplit(ctx, rows)
+	a.updateTotalSplit(ctx, rows)
+	a.updateWalletDetail(ctx, rows)
+	a.updateWalletSplit(ctx, rows)
 
 	fyne.Do(func() {
 		if a.OnUpdate != nil {
-			a.OnUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
+			a.OnUpdate(0, 0)
 		}
 	})
 }
 
-func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAssets float64) {
+func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
-	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
-		return data.CategoricalPoint{
-			C:   r.character,
-			Val: r.assets,
-		}
-	})
+	var total float64
+	var d []data.CategoricalPoint
+	for _, r := range rows {
+		d = append(d, data.CategoricalPoint{
+			C:   r.characterName,
+			Val: r.combinedAssets,
+		})
+		total += r.combinedAssets
+	}
 	d = reduceCategoricalPoints(d, wealthMaxCharacters)
 
 	fyne.Do(func() {
@@ -214,19 +219,23 @@ func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow, totalAss
 			slog.Error("wealth: asset details", "error", err)
 			return
 		}
-		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
+		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", total))
 	})
 }
 
-func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAssets float64) {
+func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
-	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
-		return data.ProportionalPoint{
-			C:       r.character,
-			Val:     r.assets,
+	var total float64
+	var d []data.ProportionalPoint
+	for _, r := range rows {
+		d = append(d, data.ProportionalPoint{
+			C:       r.characterName,
+			Val:     r.combinedAssets,
 			ColName: colors.next(),
-		}
-	})
+		})
+		total += r.combinedAssets
+	}
+
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
 	fyne.Do(func() {
 		a.assetSplit.RemoveSeries("Characters")
@@ -241,19 +250,22 @@ func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow, totalAsse
 			slog.Error("wealth: asset split", "error", err)
 			return
 		}
-		a.assetSplit.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
+		a.assetSplit.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", total))
 	})
 }
 
-func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, totalAssets float64, totalWallet float64) {
+func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
-	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
-		return data.ProportionalPoint{
-			C:       r.character,
-			Val:     r.assets,
+	var total float64
+	var d []data.ProportionalPoint
+	for _, r := range rows {
+		d = append(d, data.ProportionalPoint{
+			C:       r.characterName,
+			Val:     r.total,
 			ColName: colors.next(),
-		}
-	})
+		})
+		total += r.total
+	}
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
 	fyne.Do(func() {
 		a.characterSplit.RemoveSeries("Characters")
@@ -268,21 +280,37 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow, total
 			slog.Error("wealth: character split", "error", err)
 			return
 		}
-		a.characterSplit.SetTitle(fmt.Sprintf("Wealth By Character - Total: %.1f B ISK", totalAssets+totalWallet))
+		a.characterSplit.SetTitle(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B ISK", total))
 	})
 }
 
-func (a *Wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalWallet float64) {
+func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
+	var assets, wallets, contracts, orders, total float64
+	for _, r := range rows {
+		assets += r.combinedAssets
+		contracts += r.contractsEscrow
+		orders += r.ordersEscrow
+		total += r.total
+		wallets += r.walletBalance
+	}
 	fyne.Do(func() {
 		a.totalSplit.RemoveSeries("")
 		s, err := prop.NewSeries("", []data.ProportionalPoint{{
-			C:       "Assets combined",
-			Val:     totalAssets,
+			C:       "Wallet Balances",
+			Val:     wallets,
 			ColName: colors.next(),
 		}, {
-			C:       "Wallets combined",
-			Val:     totalWallet,
+			C:       "Combined Assets",
+			Val:     assets,
+			ColName: colors.next(),
+		}, {
+			C:       "Contracts Escrow",
+			Val:     contracts,
+			ColName: colors.next(),
+		}, {
+			C:       "Orders Escrow",
+			Val:     orders,
 			ColName: colors.next(),
 		}})
 		if err != nil {
@@ -295,19 +323,22 @@ func (a *Wealth) updateTotalSplit(_ context.Context, totalAssets float64, totalW
 			slog.Error("wealth: total split", "error", err)
 			return
 		}
-		title := fmt.Sprintf("Wealth By Source - Total: %.1f B ISK", totalWallet+totalAssets)
+		title := fmt.Sprintf("Total Net Worth By Category - Total: %.1f B ISK", total)
 		a.totalSplit.SetTitle(title)
 	})
 }
 
-func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWallet float64) {
+func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
-	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
-		return data.CategoricalPoint{
-			C:   r.character,
-			Val: r.wallet,
-		}
-	})
+	var total float64
+	var d []data.CategoricalPoint
+	for _, r := range rows {
+		d = append(d, data.CategoricalPoint{
+			C:   r.characterName,
+			Val: r.walletBalance,
+		})
+		total += r.walletBalance
+	}
 	d = reduceCategoricalPoints(d, wealthMaxCharacters)
 	fyne.Do(func() {
 		a.walletDetail.RemoveSeries("Characters")
@@ -322,19 +353,22 @@ func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow, totalWa
 			slog.Error("wealth: wallet details", "error", err)
 			return
 		}
-		a.walletDetail.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", totalWallet))
+		a.walletDetail.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", total))
 	})
 }
 
-func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWallet float64) {
+func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow) {
 	colors := newColorWheel()
-	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
-		return data.ProportionalPoint{
-			C:       r.character,
-			Val:     r.wallet,
+	var total float64
+	var d []data.ProportionalPoint
+	for _, r := range rows {
+		d = append(d, data.ProportionalPoint{
+			C:       r.characterName,
+			Val:     r.walletBalance,
 			ColName: colors.next(),
-		}
-	})
+		})
+		total += r.total
+	}
 	d = reduceProportionalPoints(d, wealthMaxCharacters)
 	fyne.Do(func() {
 		a.walletSplit.RemoveSeries("Characters")
@@ -349,7 +383,7 @@ func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow, totalWal
 			slog.Error("wealth: wallet split", "error", err)
 			return
 		}
-		a.walletSplit.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", totalWallet))
+		a.walletSplit.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", total))
 	})
 }
 
@@ -404,49 +438,34 @@ func reduceCategoricalPoints(rows []data.CategoricalPoint, m int) []data.Categor
 	return rows
 }
 
-func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, int, error) {
+func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, error) {
 	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
-		return nil, 0, err
-	}
-	var selected []*app.Character
-	for _, c := range cc {
-		hasAssets, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterAssets)
-		if err != nil {
-			return nil, 0, err
-		}
-		hasWallet, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterWalletBalance)
-		if err != nil {
-			return nil, 0, err
-		}
-		if hasAssets && hasWallet {
-			selected = append(selected, c)
-		}
+		return nil, err
 	}
 	var rows []wealthRow
-	for _, c := range selected {
-		assetTotal, err := a.u.Character().AssetTotalValue(ctx, c.ID)
-		if err != nil {
-			return nil, 0, err
-		}
-		if c.WalletBalance.IsEmpty() && assetTotal.IsEmpty() {
+	for _, c := range cc {
+		combinedAssets := c.CombinedAssetsValue()
+		total := optional.Sum(c.WalletBalance, combinedAssets, c.ContractsEscrow, c.OrdersEscrow)
+		if total.IsEmpty() {
 			continue
 		}
-		character := TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
-		wallet := c.WalletBalance.ValueOrZero() / wealthMultiplier
-		assets := assetTotal.ValueOrZero() / wealthMultiplier
+		name := TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
 		r := wealthRow{
-			character: character,
-			assets:    assets,
-			wallet:    wallet,
-			total:     assets + wallet,
+			characterID:     c.ID,
+			characterName:   name,
+			combinedAssets:  combinedAssets.ValueOrZero() / wealthMultiplier,
+			contractsEscrow: c.ContractsEscrow.ValueOrZero() / wealthMultiplier,
+			ordersEscrow:    c.OrdersEscrow.ValueOrZero() / wealthMultiplier,
+			total:           total.ValueOrZero() / wealthMultiplier,
+			walletBalance:   c.WalletBalance.ValueOrZero() / wealthMultiplier,
 		}
 		rows = append(rows, r)
 	}
 	slices.SortFunc(rows, func(a, b wealthRow) int {
-		return strings.Compare(a.character, b.character)
+		return strings.Compare(a.characterName, b.characterName)
 	})
-	return rows, len(selected), nil
+	return rows, nil
 }
 
 type colorWheel struct {

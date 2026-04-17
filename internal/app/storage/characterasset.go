@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -139,6 +140,9 @@ func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, charac
 		EveCategoryID: app.EveCategoryBlueprint,
 		CharacterID:   characterID,
 	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}

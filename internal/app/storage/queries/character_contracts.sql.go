@@ -63,6 +63,51 @@ func (q *Queries) CalculateCharacterContractItemsValue(ctx context.Context, arg 
 	return sum, err
 }
 
+const calculateCharacterContractsAuctionEscrow = `-- name: CalculateCharacterContractsAuctionEscrow :one
+SELECT
+    bidder_id,
+    SUM(amount) AS total_winning_bids
+FROM character_contract_bids AS main_bids
+JOIN character_contracts cc ON cc.id = main_bids.contract_id
+WHERE amount = (
+    SELECT MAX(amount)
+    FROM character_contract_bids
+    WHERE contract_id = main_bids.contract_id
+)
+AND main_bids.bidder_id = cc.character_id
+AND cc.character_id = ?
+AND cc.status IN (/*SLICE:status*/?)
+GROUP BY main_bids.bidder_id
+`
+
+type CalculateCharacterContractsAuctionEscrowParams struct {
+	CharacterID int64
+	Status      []string
+}
+
+type CalculateCharacterContractsAuctionEscrowRow struct {
+	BidderID         int64
+	TotalWinningBids sql.NullFloat64
+}
+
+func (q *Queries) CalculateCharacterContractsAuctionEscrow(ctx context.Context, arg CalculateCharacterContractsAuctionEscrowParams) (CalculateCharacterContractsAuctionEscrowRow, error) {
+	query := calculateCharacterContractsAuctionEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var i CalculateCharacterContractsAuctionEscrowRow
+	err := row.Scan(&i.BidderID, &i.TotalWinningBids)
+	return i, err
+}
+
 const calculateCharacterContractsCourierEscrow = `-- name: CalculateCharacterContractsCourierEscrow :one
 SELECT
     SUM(collateral)

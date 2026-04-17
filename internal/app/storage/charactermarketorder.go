@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -46,6 +47,9 @@ func (st *Storage) CalculateCharacterOrderItemsValue(ctx context.Context, charac
 			orderStatusToDBValue[app.OrderExpired],
 		},
 	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
@@ -66,6 +70,9 @@ func (st *Storage) CalculateCharacterOrdersEscrow(ctx context.Context, character
 		},
 		CharacterID: characterID,
 	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}

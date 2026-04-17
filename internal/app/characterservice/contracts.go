@@ -452,7 +452,11 @@ func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterI
 	if err != nil {
 		wrapErr(err)
 	}
-	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1))
+	v2, err := s.st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
+	if err != nil {
+		wrapErr(err)
+	}
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1+v2))
 	if err != nil {
 		wrapErr(err)
 	}
