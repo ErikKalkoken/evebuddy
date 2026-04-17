@@ -265,3 +265,119 @@ func TestCharacterMarketOrder(t *testing.T) {
 		xassert.Equal(t, app.OrderUnknown, o2.State)
 	})
 }
+
+func TestCalculateCharacterOrderItemsValue(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	const characterID = 42
+
+	cases := []struct {
+		name       string
+		isBuyOrder bool
+		state      app.MarketOrderState
+		price      float64
+		want       float64
+	}{
+		{"should include open sell order", false, app.OrderOpen, 10.0, 10.0},
+		{"should include expired sell order", false, app.OrderExpired, 10.0, 10.0},
+		{"should ignore buy orders", true, app.OrderOpen, 0, 0},
+		{"should ignore cancelled orders", false, app.OrderCancelled, 0, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+				ID: characterID,
+			})
+			c := factory.CreateCharacter(storage.CreateCharacterParams{
+				ID: ec.ID,
+			})
+			o := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+				CharacterID:   c.ID,
+				IsBuyOrder:    optional.New(tc.isBuyOrder),
+				State:         tc.state,
+				VolumeRemains: 1,
+			})
+			factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+				TypeID:       o.Type.ID,
+				AveragePrice: optional.New(tc.price),
+			})
+
+			// when
+			got, err := st.CalculateCharacterOrderItemsValue(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("can calculate items value for multiple orders", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID:   c.ID,
+			IsBuyOrder:    optional.New(false),
+			State:         app.OrderOpen,
+			VolumeRemains: 1,
+		})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID:   c.ID,
+			IsBuyOrder:    optional.New(false),
+			State:         app.OrderOpen,
+			VolumeRemains: 2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       o1.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       o2.Type.ID,
+			AveragePrice: optional.New(200.2),
+		})
+
+		// when
+		got, err := st.CalculateCharacterOrderItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 500.5, got)
+	})
+
+	t.Run("should ignore blueprints", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		blueprintCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryBlueprint,
+			Name: "Blueprint",
+		})
+		blueprintGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: blueprintCategory.ID,
+		})
+		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID: blueprintGroup.ID,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID:   c.ID,
+			IsBuyOrder:    optional.New(false),
+			State:         app.OrderOpen,
+			TypeID:        blueprintType.ID,
+			VolumeRemains: 1,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       blueprintType.ID,
+			AveragePrice: optional.New(66.6),
+		})
+
+		// when
+		got, err := st.CalculateCharacterOrderItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}

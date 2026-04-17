@@ -12,6 +12,46 @@ import (
 	"time"
 )
 
+const calculateCharacterOrderItemsValue = `-- name: CalculateCharacterOrderItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * volume_remains)
+FROM
+    character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cmo.type_id
+WHERE
+    character_id = ?
+    AND is_buy_order IS FALSE
+    AND state IN (/*SLICE:states*/?)
+    AND eg.eve_category_id <> ?
+`
+
+type CalculateCharacterOrderItemsValueParams struct {
+	CharacterID   int64
+	States        []string
+	EveCategoryID int64
+}
+
+func (q *Queries) CalculateCharacterOrderItemsValue(ctx context.Context, arg CalculateCharacterOrderItemsValueParams) (sql.NullFloat64, error) {
+	query := calculateCharacterOrderItemsValue
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.States) > 0 {
+		for _, v := range arg.States {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:states*/?", strings.Repeat(",?", len(arg.States))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:states*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.EveCategoryID)
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const deleteCharacterMarketOrders = `-- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE

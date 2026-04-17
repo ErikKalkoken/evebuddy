@@ -200,16 +200,32 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 			if err := s.updateOrdersEscrow(ctx, characterID); err != nil {
 				return false, err
 			}
+			if err := s.updateOrderItemValue(ctx, characterID); err != nil {
+				return false, err
+			}
+
 			return true, nil
 		})
 }
 
+func (s *CharacterService) updateOrderItemValue(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateOrderItemValue: %d: %w", characterID, err)
+	}
+	v, err := s.st.CalculateCharacterOrderItemsValue(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	err = s.st.UpdateCharacterOrderItemsValue(ctx, characterID, optional.New(v))
+	if err != nil {
+		wrapErr(err)
+	}
+	return nil
+}
+
 func (s *CharacterService) updateOrdersEscrow(ctx context.Context, characterID int64) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("calculateMarketEscrow: %d: %w", characterID, err)
-	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
+		return fmt.Errorf("updateOrdersEscrow: %d: %w", characterID, err)
 	}
 	oo, err := s.st.ListCharacterMarketOrders(ctx, characterID)
 	if err != nil {

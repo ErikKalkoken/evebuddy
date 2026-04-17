@@ -1,3 +1,17 @@
+-- name: CalculateCharacterOrderItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * volume_remains)
+FROM
+    character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cmo.type_id
+WHERE
+    character_id = ?
+    AND is_buy_order IS FALSE
+    AND state IN (sqlc.slice('states'))
+    AND eg.eve_category_id <> ?;
+
 -- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE

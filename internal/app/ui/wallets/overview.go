@@ -374,17 +374,8 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 		if err != nil {
 			return rows, err
 		}
-		var total optional.Optional[float64]
 		combinedAssets := o.CombinedAssetsValue()
-		if v1, ok := combinedAssets.Value(); ok {
-			if v2, ok := o.WalletBalance.Value(); ok {
-				if v3, ok := o.ContractsEscrow.Value(); ok {
-					if v4, ok := o.OrdersEscrow.Value(); ok {
-						total.Set(v1 + v2 + v3 + v4)
-					}
-				}
-			}
-		}
+		total := optional.Sum(combinedAssets, o.WalletBalance, o.ContractsEscrow, o.OrdersEscrow)
 		rows = append(rows, overviewRow{
 			characterID:            o.ID,
 			characterName:          o.EveCharacter.Name,
