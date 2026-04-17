@@ -12,6 +12,57 @@ import (
 	"time"
 )
 
+const calculateCharacterContractItemsValue = `-- name: CalculateCharacterContractItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * cci.quantity)
+FROM
+    character_contract_items cci
+    JOIN character_contracts cc ON cc.id = cci.contract_id
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
+WHERE
+    character_id = ?
+    AND cc.status IN (/*SLICE:status*/?)
+    AND cc.type IN (/*SLICE:types*/?)
+    AND cci.is_included IS TRUE
+    AND eg.eve_category_id <> ?
+`
+
+type CalculateCharacterContractItemsValueParams struct {
+	CharacterID   int64
+	Status        []string
+	Types         []string
+	EveCategoryID int64
+}
+
+func (q *Queries) CalculateCharacterContractItemsValue(ctx context.Context, arg CalculateCharacterContractItemsValueParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractItemsValue
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	if len(arg.Types) > 0 {
+		for _, v := range arg.Types {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:types*/?", strings.Repeat(",?", len(arg.Types))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:types*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.EveCategoryID)
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const createCharacterContract = `-- name: CreateCharacterContract :one
 INSERT INTO
     character_contracts (
@@ -200,8 +251,9 @@ func (q *Queries) CreateCharacterContractItem(ctx context.Context, arg CreateCha
 
 const deleteCharacterContracts = `-- name: DeleteCharacterContracts :exec
 DELETE FROM character_contracts
-WHERE character_id = ?
-AND contract_id IN (/*SLICE:contract_ids*/?)
+WHERE
+    character_id = ?
+    AND contract_id IN (/*SLICE:contract_ids*/?)
 `
 
 type DeleteCharacterContractsParams struct {

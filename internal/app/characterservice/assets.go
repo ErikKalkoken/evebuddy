@@ -264,6 +264,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 				}
 			}
 
+			// update calculated values
 			if err := s.updateAssetValue(ctx, characterID); err != nil {
 				return false, err
 			}

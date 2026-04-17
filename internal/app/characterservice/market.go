@@ -197,6 +197,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
 			}
 
+			// update calculated values
 			if err := s.updateOrdersEscrow(ctx, characterID); err != nil {
 				return false, err
 			}

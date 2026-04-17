@@ -253,10 +253,14 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 				return false, err
 			}
 
-			// update escrow
+			// update calculated values
+			if err := s.updateContractItemsValue(ctx, characterID); err != nil {
+				return false, err
+			}
 			if err := s.updateContractsEscrow(ctx, characterID); err != nil {
 				return false, err
 			}
+
 			return true, nil
 		})
 }
@@ -419,6 +423,24 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
+	return nil
+}
+
+func (s *CharacterService) updateContractItemsValue(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateContractItemsValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		wrapErr(app.ErrInvalid)
+	}
+	v, err := s.st.CalculateCharacterContractItemsValue(ctx, characterID)
+	if err != nil {
+		wrapErr(err)
+	}
+	err = s.st.UpdateCharacterContractItemsValue(ctx, characterID, optional.New(v))
+	if err != nil {
+		wrapErr(err)
+	}
 	return nil
 }
 

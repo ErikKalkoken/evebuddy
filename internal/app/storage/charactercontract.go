@@ -63,6 +63,31 @@ func init() {
 	}
 }
 
+func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterContractItemsValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterContractItemsValue(ctx, queries.CalculateCharacterContractItemsValueParams{
+		CharacterID:   characterID,
+		EveCategoryID: app.EveCategoryBlueprint,
+		Status: []string{
+			characterContractStatusToDBValue[app.ContractStatusOutstanding],
+			characterContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+		Types: []string{
+			characterContractTypeToDBValue[app.ContractTypeAuction],
+			characterContractTypeToDBValue[app.ContractTypeCourier],
+		},
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
 type CreateCharacterContractParams struct {
 	AcceptorID          int64
 	AssigneeID          int64
