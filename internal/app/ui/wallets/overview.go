@@ -22,22 +22,26 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// TODOs
+// - add all variants for calculating contract escrow
+// - add values for contracts items and market orders to assets value
+
 type overviewRow struct {
-	assetsValue           optional.Optional[float64]
-	assetsDisplay         string
-	characterID           int64
-	characterName         string
-	contractEscrow        optional.Optional[float64]
-	contractEscrowDisplay string
-	isTotal               bool
-	marketEscrow          optional.Optional[float64]
-	marketEscrowDisplay   string
-	searchTarget          string
-	tags                  set.Set[string]
-	total                 optional.Optional[float64]
-	totalDisplay          string
-	walletBalance         optional.Optional[float64]
-	walletDisplay         string
+	characterID            int64
+	characterName          string
+	combinedAssetsDisplay  string
+	combinedAssetsValue    optional.Optional[float64]
+	contractsEscrow        optional.Optional[float64]
+	contractsEscrowDisplay string
+	isTotal                bool
+	ordersEscrow           optional.Optional[float64]
+	ordersEscrowDisplay    string
+	searchTarget           string
+	tags                   set.Set[string]
+	total                  optional.Optional[float64]
+	totalDisplay           string
+	walletBalance          optional.Optional[float64]
+	walletDisplay          string
 }
 
 func (r overviewRow) eveEntity() *app.EveEntity {
@@ -68,9 +72,9 @@ const (
 	overviewColCharacter = iota + 1
 	overviewColTags
 	overviewColWalletBalance
-	overviewColAssetsValue
-	overviewColContractEscrow
-	overviewColMarketEscrow
+	overviewColCombinedAssetsValue
+	overviewColContractsEscrow
+	overviewColOrdersEscrow
 	overviewColTotal
 )
 
@@ -112,49 +116,49 @@ func NewOverview(u baseUI) *Overview {
 				return optional.Compare(a.walletBalance, b.walletBalance)
 			},
 		}, {
-			ID:    overviewColAssetsValue,
-			Label: "Assets Value",
+			ID:    overviewColCombinedAssetsValue,
+			Label: "Combined Assets",
 			Width: valueWidth,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.assetsDisplay, widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.combinedAssetsDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
 			Sort: func(a, b overviewRow) int {
-				return optional.Compare(a.assetsValue, b.assetsValue)
+				return optional.Compare(a.combinedAssetsValue, b.combinedAssetsValue)
 			},
 		},
 		{
-			ID:    overviewColContractEscrow,
-			Label: "Contract Escrow",
+			ID:    overviewColContractsEscrow,
+			Label: "Contracts Escrow",
 			Width: valueWidth,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.contractEscrowDisplay, widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.contractsEscrowDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
 			Sort: func(a, b overviewRow) int {
-				return optional.Compare(a.contractEscrow, b.contractEscrow)
+				return optional.Compare(a.contractsEscrow, b.contractsEscrow)
 			},
 		},
 		{
-			ID:    overviewColMarketEscrow,
-			Label: "Market Escrow",
+			ID:    overviewColOrdersEscrow,
+			Label: "Orders Escrow",
 			Width: valueWidth,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.marketEscrowDisplay, widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.ordersEscrowDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
 			Sort: func(a, b overviewRow) int {
-				return optional.Compare(a.marketEscrow, b.marketEscrow)
+				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
 			},
 		}, {
 			ID:    overviewColTotal,
-			Label: "Total",
+			Label: "Total Net Worth",
 			Width: valueWidth,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
@@ -232,7 +236,11 @@ func NewOverview(u baseUI) *Overview {
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
-		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
+		case
+			app.SectionCharacterAssets,
+			app.SectionCharacterContracts,
+			app.SectionCharacterMarketOrders,
+			app.SectionCharacterWalletBalance:
 			a.update(ctx)
 		}
 	})
@@ -303,28 +311,28 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 		// add totals
 		var assetsValue, walletBalance, totals, contractEscrow, marketEscrow optional.Optional[float64]
 		for _, r := range rows {
-			assetsValue = optional.Sum(assetsValue, r.assetsValue)
+			assetsValue = optional.Sum(assetsValue, r.combinedAssetsValue)
 			walletBalance = optional.Sum(walletBalance, r.walletBalance)
-			contractEscrow = optional.Sum(contractEscrow, r.contractEscrow)
-			marketEscrow = optional.Sum(marketEscrow, r.marketEscrow)
+			contractEscrow = optional.Sum(contractEscrow, r.contractsEscrow)
+			marketEscrow = optional.Sum(marketEscrow, r.ordersEscrow)
 			totals = optional.Sum(totals, r.total)
 		}
 		rows = append(rows, overviewRow{
-			assetsValue:           assetsValue,
-			assetsDisplay:         formatISKValue(assetsValue),
-			characterID:           0,
-			characterName:         "Total",
-			tags:                  set.Set[string]{},
-			total:                 totals,
-			totalDisplay:          formatISKValue(totals),
-			walletBalance:         walletBalance,
-			walletDisplay:         formatISKValue(walletBalance),
-			marketEscrow:          marketEscrow,
-			marketEscrowDisplay:   formatISKValue(marketEscrow),
-			contractEscrow:        contractEscrow,
-			contractEscrowDisplay: formatISKValue(contractEscrow),
-			searchTarget:          "",
-			isTotal:               true,
+			combinedAssetsValue:    assetsValue,
+			combinedAssetsDisplay:  formatISKValue(assetsValue),
+			characterID:            0,
+			characterName:          "Total",
+			tags:                   set.Set[string]{},
+			total:                  totals,
+			totalDisplay:           formatISKValue(totals),
+			walletBalance:          walletBalance,
+			walletDisplay:          formatISKValue(walletBalance),
+			ordersEscrow:           marketEscrow,
+			ordersEscrowDisplay:    formatISKValue(marketEscrow),
+			contractsEscrow:        contractEscrow,
+			contractsEscrowDisplay: formatISKValue(contractEscrow),
+			searchTarget:           "",
+			isTotal:                true,
 		})
 
 		fyne.Do(func() {
@@ -367,30 +375,31 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 			return rows, err
 		}
 		var total optional.Optional[float64]
-		if v1, ok := o.AssetValue.Value(); ok {
+		combinedAssets := o.CombinedAssetsValue()
+		if v1, ok := combinedAssets.Value(); ok {
 			if v2, ok := o.WalletBalance.Value(); ok {
-				if v3, ok := o.ContractEscrow.Value(); ok {
-					if v4, ok := o.MarketEscrow.Value(); ok {
+				if v3, ok := o.ContractsEscrow.Value(); ok {
+					if v4, ok := o.OrdersEscrow.Value(); ok {
 						total.Set(v1 + v2 + v3 + v4)
 					}
 				}
 			}
 		}
 		rows = append(rows, overviewRow{
-			assetsValue:           o.AssetValue,
-			assetsDisplay:         formatISKValue(o.AssetValue),
-			characterID:           o.ID,
-			characterName:         o.EveCharacter.Name,
-			searchTarget:          strings.ToLower(o.EveCharacter.Name),
-			tags:                  tags,
-			total:                 total,
-			totalDisplay:          formatISKValue(total),
-			walletBalance:         o.WalletBalance,
-			walletDisplay:         formatISKValue(o.WalletBalance),
-			marketEscrow:          o.MarketEscrow,
-			marketEscrowDisplay:   formatISKValue(o.MarketEscrow),
-			contractEscrow:        o.ContractEscrow,
-			contractEscrowDisplay: formatISKValue(o.ContractEscrow),
+			characterID:            o.ID,
+			characterName:          o.EveCharacter.Name,
+			combinedAssetsDisplay:  formatISKValue(combinedAssets),
+			combinedAssetsValue:    combinedAssets,
+			contractsEscrow:        o.ContractsEscrow,
+			contractsEscrowDisplay: formatISKValue(o.ContractsEscrow),
+			ordersEscrow:           o.OrdersEscrow,
+			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
+			searchTarget:           strings.ToLower(o.EveCharacter.Name),
+			tags:                   tags,
+			total:                  total,
+			totalDisplay:           formatISKValue(total),
+			walletBalance:          o.WalletBalance,
+			walletDisplay:          formatISKValue(o.WalletBalance),
 		})
 	}
 	return rows, nil

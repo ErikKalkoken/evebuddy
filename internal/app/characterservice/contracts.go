@@ -252,6 +252,11 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
 				return false, err
 			}
+
+			// update escrow
+			if err := s.updateContractsEscrow(ctx, characterID); err != nil {
+				return false, err
+			}
 			return true, nil
 		})
 }
@@ -414,5 +419,37 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
+	return nil
+}
+
+func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		wrapErr(app.ErrInvalid)
+	}
+	oo, err := s.st.ListCharacterContracts(ctx, characterID)
+	if err != nil {
+		wrapErr(err)
+	}
+	var escrow float64
+	for _, o := range oo {
+		switch o.Type {
+		case app.ContractTypeCourier:
+			if !o.Status.IsActive() {
+				break
+			}
+			if v, ok := o.Acceptor.Value(); ok && v.ID == characterID {
+				if v, ok := o.Collateral.Value(); ok {
+					escrow += v
+				}
+			}
+		}
+	}
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(escrow))
+	if err != nil {
+		wrapErr(err)
+	}
 	return nil
 }

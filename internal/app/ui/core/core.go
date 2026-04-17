@@ -363,15 +363,6 @@ func newBaseUI(arg UIParams) *baseUI {
 			if arg.Changed.ContainsAny(corporationIDs.All()) {
 				updateStatus(ctx)
 			}
-		case app.SectionEveMarketPrices:
-			for _, c := range u.scs.ListCharacters() {
-				_, err := u.cs.UpdateAssetTotalValue(ctx, c.ID)
-				if err != nil {
-					slog.Error("Failed to update asset value", "characterID", c.ID)
-					continue
-				}
-			}
-			u.ReloadCurrentCharacter(ctx)
 		}
 	})
 

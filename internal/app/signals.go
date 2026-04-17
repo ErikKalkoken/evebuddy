@@ -38,6 +38,9 @@ type Signals struct {
 	// A character was added.
 	CharacterAdded signals.Signal[*Character]
 
+	// A Character field has changed (e.g. number of unread messages).
+	CharacterChanged signals.Signal[int64]
+
 	// A character was removed.
 	CharacterRemoved signals.Signal[*EntityShort]
 
@@ -73,9 +76,6 @@ type Signals struct {
 
 	// A tag as been added, removed or renamed.
 	TagsChanged signals.Signal[struct{}]
-
-	// A Character has changed [only: trainingWatcher].
-	CharacterChanged signals.Signal[int64]
 
 	// A section update has started.
 	UpdateStarted signals.Signal[string]

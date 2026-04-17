@@ -9,6 +9,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -339,4 +340,52 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestUpdateOrdersEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+
+	cases := []struct {
+		name             string
+		firstIsBuyOrder  optional.Optional[bool]
+		firstEscrow      optional.Optional[float64]
+		secondIsBuyOrder optional.Optional[bool]
+		secondEscrow     optional.Optional[float64]
+		want             optional.Optional[float64]
+	}{
+		{"normal", optional.New(true), optional.New(12.3), optional.New(true), optional.New(10.0), optional.New(22.3)},
+		{"buy order without escrow", optional.New(true), optional.Optional[float64]{}, optional.New(true), optional.New(10.0), optional.New(10.0)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := factory.CreateCharacter()
+			factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+				CharacterID: c.ID,
+				IsBuyOrder:  tc.firstIsBuyOrder,
+				Escrow:      tc.firstEscrow,
+			})
+			factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+				CharacterID: c.ID,
+				IsBuyOrder:  tc.secondIsBuyOrder,
+				Escrow:      tc.secondEscrow,
+			})
+			factory.CreateCharacterMarketOrder() // should be ignored
+
+			// when
+			err := s.updateOrdersEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			c2, err := st.GetCharacter(t.Context(), c.ID)
+			require.NoError(t, err)
+			got := c2.OrdersEscrow
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

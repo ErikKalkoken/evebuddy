@@ -257,7 +257,7 @@ func (b *CharacterBuilder) createAssets() {
 			b.f.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 				CharacterID: b.character.ID,
 				LocationID:  locationID,
-				EveTypeID:   b.randomType().ID,
+				TypeID:   b.randomType().ID,
 			})
 		}
 		printProgress("assets", len(b.locations), i)

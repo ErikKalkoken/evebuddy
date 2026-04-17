@@ -279,6 +279,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
+
 	t.Run("can update home", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -292,6 +293,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, home, c2.Home.MustValue())
 	})
+
 	t.Run("can update last clone jump with a time", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -305,6 +307,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
 	})
+
 	t.Run("can update last clone jump with zero time", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -318,6 +321,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
 	})
+
 	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -327,6 +331,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, c2.LastCloneJumpAt.IsEmpty())
 	})
+
 	t.Run("can update last login", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -339,8 +344,8 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
-
 	})
+
 	t.Run("can update location", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -354,6 +359,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, location, c2.Location.MustValue())
 	})
+
 	t.Run("can update ship", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -367,6 +373,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x, c2.Ship.MustValue())
 	})
+
 	t.Run("can update is training watched", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -379,6 +386,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, c2.IsTrainingWatched)
 	})
+
 	t.Run("can update is training watched 2", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -394,6 +402,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, c2.IsTrainingWatched)
 	})
+
 	t.Run("can update skill points", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -409,6 +418,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		xassert.Equal(t, totalSP, c2.TrainedSP)
 		xassert.Equal(t, unallocatedSP, c2.UnallocatedSP)
 	})
+
 	t.Run("can update wallet balance", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -422,6 +432,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x, c2.WalletBalance.ValueOrZero())
 	})
+
 	t.Run("can disable all training watchers", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -442,31 +453,61 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, c2.IsTrainingWatched)
 	})
+
 	t.Run("can update contract escrow", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := st.UpdateCharacterContractEscrow(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterContractsEscrow(ctx, c1.ID, optional.New(x))
 		// then
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.ContractEscrow.ValueOrZero())
+		xassert.Equal(t, x, c2.ContractsEscrow.ValueOrZero())
 	})
+
 	t.Run("can update market escrow", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := st.UpdateCharacterMarketEscrow(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterOrdersEscrow(ctx, c1.ID, optional.New(x))
 		// then
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.MarketEscrow.ValueOrZero())
+		xassert.Equal(t, x, c2.OrdersEscrow.ValueOrZero())
+	})
+
+	t.Run("can update contract items value", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := st.UpdateCharacterContractItemsValue(ctx, c1.ID, optional.New(x))
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.ContractItemsValue.ValueOrZero())
+	})
+
+	t.Run("can update order items value", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := st.UpdateCharacterOrderItemsValue(ctx, c1.ID, optional.New(x))
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.OrderItemsValue.ValueOrZero())
 	})
 }
 

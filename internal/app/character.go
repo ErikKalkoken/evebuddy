@@ -17,20 +17,22 @@ import (
 
 // Character is an EVE Online character owned by the user.
 type Character struct {
-	AssetValue        optional.Optional[float64]
-	ContractEscrow    optional.Optional[float64]
-	EveCharacter      *EveCharacter
-	Home              optional.Optional[*EveLocation]
-	ID                int64
-	IsTrainingWatched bool
-	LastCloneJumpAt   optional.Optional[time.Time]
-	LastLoginAt       optional.Optional[time.Time]
-	Location          optional.Optional[*EveLocation]
-	MarketEscrow      optional.Optional[float64]
-	Ship              optional.Optional[*EveType]
-	TrainedSP         optional.Optional[int64]
-	UnallocatedSP     optional.Optional[int64]
-	WalletBalance     optional.Optional[float64]
+	AssetValue         optional.Optional[float64] // value of character assets
+	ContractItemsValue optional.Optional[float64]
+	ContractsEscrow    optional.Optional[float64]
+	EveCharacter       *EveCharacter
+	Home               optional.Optional[*EveLocation]
+	ID                 int64
+	IsTrainingWatched  bool
+	LastCloneJumpAt    optional.Optional[time.Time]
+	LastLoginAt        optional.Optional[time.Time]
+	Location           optional.Optional[*EveLocation]
+	OrderItemsValue    optional.Optional[float64]
+	OrdersEscrow       optional.Optional[float64]
+	Ship               optional.Optional[*EveType]
+	TrainedSP          optional.Optional[int64]
+	UnallocatedSP      optional.Optional[int64]
+	WalletBalance      optional.Optional[float64]
 	// Calculated fields
 	NextCloneJump optional.Optional[time.Time] // zero time == now
 }
@@ -47,6 +49,18 @@ func (c *Character) NameOrZero() string {
 		return ""
 	}
 	return c.EveCharacter.Name
+}
+
+// CombinedAssetsValue returns the combined assets estimated value.
+//
+// This is the total sum of the estimated market price of a character's assets.
+// This includes any items that the player owns in Stations or Upwell Structures,
+// items located in outstanding sell orders on the market or contracts,
+// and those in a character's Asset Safety.
+// Blueprints do not count towards a character‘s Total Net Worth.
+// Source: Total Net Worth of a character as defined by CCP.
+func (c *Character) CombinedAssetsValue() optional.Optional[float64] {
+	return optional.Sum(c.AssetValue, c.ContractItemsValue, c.OrderItemsValue)
 }
 
 type CharacterAttributes struct {

@@ -31,7 +31,7 @@ func TestCharacterAsset(t *testing.T) {
 		// when
 		err := st.CreateCharacterAsset(ctx, storage.CreateCharacterAssetParams{
 			CharacterID:  c.ID,
-			EveTypeID:    eveType.ID,
+			TypeID:       eveType.ID,
 			IsSingleton:  true,
 			ItemID:       42,
 			LocationFlag: app.FlagHangar,
@@ -137,10 +137,11 @@ func TestCharacterAsset(t *testing.T) {
 		want := []*app.CharacterAsset{ca1, ca2}
 		assert.ElementsMatch(t, want, got)
 	})
+
 	t.Run("can calculate total asset value for character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID: c.ID,
 			Quantity:    1,
@@ -157,12 +158,34 @@ func TestCharacterAsset(t *testing.T) {
 			TypeID:       ca2.Type.ID,
 			AveragePrice: optional.New(200.2),
 		})
+		blueprintCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryBlueprint,
+			Name: "Blueprint",
+		})
+		blueprintGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: blueprintCategory.ID,
+		})
+		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID: blueprintGroup.ID,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    1,
+			TypeID:      blueprintType.ID,
+		}) // blueprints must be excluded
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       blueprintType.ID,
+			AveragePrice: optional.New(66.6),
+		})
+
 		// when
 		got, err := st.CalculateCharacterAssetTotalValue(ctx, c.ID)
+
 		// then
 		require.NoError(t, err)
 		assert.InDelta(t, 500.5, got, 0.1)
 	})
+
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

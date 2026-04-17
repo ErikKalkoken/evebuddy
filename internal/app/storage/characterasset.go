@@ -128,9 +128,25 @@ func init() {
 	}
 }
 
+func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterAssetTotalValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterAssetTotalValue(ctx, queries.CalculateCharacterAssetTotalValueParams{
+		EveCategoryID: app.EveCategoryBlueprint,
+		CharacterID:   characterID,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
 type CreateCharacterAssetParams struct {
 	CharacterID     int64
-	EveTypeID       int64
 	IsBlueprintCopy optional.Optional[bool]
 	IsSingleton     bool
 	ItemID          int64
@@ -139,6 +155,7 @@ type CreateCharacterAssetParams struct {
 	LocationType    app.LocationType
 	Name            string
 	Quantity        int64
+	TypeID          int64
 }
 
 func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterAssetParams) error {
@@ -146,12 +163,12 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		return fmt.Errorf("CreateCharacterAsset: %+v: %w", arg, err)
 
 	}
-	if arg.CharacterID == 0 || arg.EveTypeID == 0 || arg.ItemID == 0 {
+	if arg.CharacterID == 0 || arg.TypeID == 0 || arg.ItemID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.CreateCharacterAsset(ctx, queries.CreateCharacterAssetParams{
 		CharacterID:     arg.CharacterID,
-		EveTypeID:       arg.EveTypeID,
+		EveTypeID:       arg.TypeID,
 		IsBlueprintCopy: arg.IsBlueprintCopy.ValueOrZero(),
 		IsSingleton:     arg.IsSingleton,
 		ItemID:          arg.ItemID,
@@ -183,14 +200,6 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int64, ite
 	}
 	o := characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	return o, nil
-}
-
-func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
-	v, err := st.qRO.CalculateCharacterAssetTotalValue(ctx, characterID)
-	if err != nil {
-		return 0, fmt.Errorf("calculate character asset for character %d: %w", characterID, err)
-	}
-	return v.Float64, nil
 }
 
 func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {

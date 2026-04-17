@@ -3,20 +3,22 @@ INSERT INTO
     characters (
         id,
         asset_value,
-        contract_escrow,
+        contracts_escrow,
+        contract_items_value,
         home_id,
         is_training_watched,
         last_clone_jump_at,
         last_login_at,
         location_id,
-        market_escrow,
+        orders_escrow,
+        order_items_value,
         ship_id,
         total_sp,
         unallocated_sp,
         wallet_balance
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: DeleteCharacter :exec
 DELETE FROM characters
@@ -124,7 +126,6 @@ SELECT
 FROM
     characters;
 
-
 -- name: UpdateCharacterAssetValue :exec
 UPDATE characters
 SET
@@ -132,10 +133,17 @@ SET
 WHERE
     id = ?;
 
--- name: UpdateCharacterContractEscrow :exec
+-- name: UpdateCharacterContractsEscrow :exec
 UPDATE characters
 SET
-    contract_escrow = ?
+    contracts_escrow = ?
+WHERE
+    id = ?;
+
+-- name: UpdateCharacterContractItemsValue :exec
+UPDATE characters
+SET
+    contract_items_value = ?
 WHERE
     id = ?;
 
@@ -174,13 +182,19 @@ SET
 WHERE
     id = ?;
 
--- name: UpdateCharacterMarketEscrow :exec
+-- name: UpdateCharacterOrdersEscrow :exec
 UPDATE characters
 SET
-    market_escrow = ?
+    orders_escrow = ?
 WHERE
     id = ?;
 
+-- name: UpdateCharacterOrderItemsValue :exec
+UPDATE characters
+SET
+    order_items_value = ?
+WHERE
+    id = ?;
 
 -- name: UpdateCharacterShipID :exec
 UPDATE characters

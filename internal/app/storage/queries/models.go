@@ -18,19 +18,21 @@ type Cache struct {
 }
 
 type Character struct {
-	ID                int64
-	AssetValue        sql.NullFloat64
-	HomeID            sql.NullInt64
-	LastLoginAt       sql.NullTime
-	LocationID        sql.NullInt64
-	ShipID            sql.NullInt64
-	TotalSp           sql.NullInt64
-	UnallocatedSp     sql.NullInt64
-	WalletBalance     sql.NullFloat64
-	IsTrainingWatched bool
-	LastCloneJumpAt   sql.NullTime
-	ContractEscrow    sql.NullFloat64
-	MarketEscrow      sql.NullFloat64
+	ID                 int64
+	AssetValue         sql.NullFloat64
+	HomeID             sql.NullInt64
+	LastLoginAt        sql.NullTime
+	LocationID         sql.NullInt64
+	ShipID             sql.NullInt64
+	TotalSp            sql.NullInt64
+	UnallocatedSp      sql.NullInt64
+	WalletBalance      sql.NullFloat64
+	IsTrainingWatched  bool
+	LastCloneJumpAt    sql.NullTime
+	ContractsEscrow    sql.NullFloat64
+	ContractItemsValue sql.NullFloat64
+	OrdersEscrow       sql.NullFloat64
+	OrderItemsValue    sql.NullFloat64
 }
 
 type CharacterAsset struct {

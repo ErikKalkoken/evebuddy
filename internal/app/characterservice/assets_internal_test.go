@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -251,4 +252,42 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, "", x.Name)
 	})
+}
+
+func TestUpdateAssetValue(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can calculate total asset value for character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    1,
+		})
+		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca1.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca2.Type.ID,
+			AveragePrice: optional.New(200.2),
+		})
+
+		// when
+		err := s.updateAssetValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(t.Context(), c.ID)
+		require.NoError(t, err)
+		got := c2.AssetValue
+		assert.Equal(t, optional.New(500.5), got)
+	})
+
 }

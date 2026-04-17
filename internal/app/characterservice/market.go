@@ -121,7 +121,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				} else {
 					ownerID = characterID
 				}
-				arg := storage.UpdateOrCreateCharacterMarketOrderParams{
+				err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, storage.UpdateOrCreateCharacterMarketOrderParams{
 					CharacterID:   characterID,
 					Duration:      o.Duration,
 					IsBuyOrder:    optional.FromPtr(o.IsBuyOrder),
@@ -139,8 +139,8 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 					VolumeTotal:   o.VolumeTotal,
 					Escrow:        optional.FromPtr(o.Escrow),
 					MinVolume:     optional.FromPtr(o.MinVolume),
-				}
-				if err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, arg); err != nil {
+				})
+				if err != nil {
 					return false, err
 				}
 			}
@@ -196,6 +196,37 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				}
 				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
 			}
+
+			if err := s.updateOrdersEscrow(ctx, characterID); err != nil {
+				return false, err
+			}
 			return true, nil
 		})
+}
+
+func (s *CharacterService) updateOrdersEscrow(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("calculateMarketEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	oo, err := s.st.ListCharacterMarketOrders(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	var escrow float64
+	for _, o := range oo {
+		if v, ok := o.IsBuyOrder.Value(); !ok || !v {
+			continue
+		}
+		if v, ok := o.Escrow.Value(); ok {
+			escrow += v
+		}
+	}
+	err = s.st.UpdateCharacterOrdersEscrow(ctx, characterID, optional.New(escrow))
+	if err != nil {
+		wrapErr(err)
+	}
+	return nil
 }
