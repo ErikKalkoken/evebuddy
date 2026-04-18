@@ -209,7 +209,7 @@ func NewOverview(u baseUI) *Overview {
 		var spacerSize fyne.Size
 		if a.u.IsMobile() {
 			_, s := canvas.InteractiveArea()
-			spacerSize = fyne.NewSize(s.Width-4*p, s.Height/2)
+			spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
 		} else {
 			spacerSize = fyne.NewSize(300, 400)
 		}
@@ -224,14 +224,14 @@ func NewOverview(u baseUI) *Overview {
 		pu = widget.NewPopUp(c, canvas)
 
 		if a.u.IsMobile() {
-			x := a.showHelp.MinSize().Width - pu.MinSize().Width
-			y := a.showHelp.MinSize().Height - pu.MinSize().Height
-			pu.ShowAtRelativePosition(fyne.NewPos(x, y), a.showHelp)
-		} else {
 			pos, s := canvas.InteractiveArea()
 			x := pos.X
 			y := pos.Y + s.Height/2
 			pu.ShowAtPosition(fyne.NewPos(x, y))
+		} else {
+			x := a.showHelp.MinSize().Width - pu.MinSize().Width
+			y := a.showHelp.MinSize().Height - pu.MinSize().Height + 2*p
+			pu.ShowAtRelativePosition(fyne.NewPos(x, y), a.showHelp)
 		}
 	})
 	a.showHelp.SetToolTip("Shows help for this screen")

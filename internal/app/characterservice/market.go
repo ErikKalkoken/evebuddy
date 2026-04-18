@@ -27,7 +27,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	const openState = "open"
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
@@ -197,16 +197,29 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
 			}
 
-			// update calculated values
-			if err := s.updateOrdersEscrow(ctx, characterID); err != nil {
-				return false, err
-			}
-			if err := s.updateOrderItemValue(ctx, characterID); err != nil {
-				return false, err
-			}
-
 			return true, nil
-		})
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.OrdersEscrow.IsEmpty() {
+		if err := s.updateOrdersEscrow(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	if arg.forceUpdate || changed || c.OrderItemsValue.IsEmpty() {
+		if err := s.updateOrderItemValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	return changed, nil
 }
 
 func (s *CharacterService) updateOrderItemValue(ctx context.Context, characterID int64) error {

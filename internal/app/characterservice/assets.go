@@ -135,7 +135,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 	if arg.section != app.SectionCharacterAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
@@ -264,14 +264,24 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 				}
 			}
 
-			// update calculated values
-			if err := s.updateAssetValue(ctx, characterID); err != nil {
-				return false, err
-			}
-
 			return true, nil
 		},
 	)
+	if err != nil {
+		return false, err
+	}
+
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.AssetValue.IsEmpty() {
+		if err := s.updateAssetValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	return changed, nil
 }
 
 func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, bool) {

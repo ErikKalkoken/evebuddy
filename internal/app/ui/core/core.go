@@ -350,8 +350,12 @@ func newBaseUI(arg UIParams) *baseUI {
 			if arg.Changed.Contains(u.character.Load().IDOrZero()) {
 				u.ReloadCurrentCharacter(ctx)
 			}
-			characters := u.scs.ListCharacterIDs()
-			if characters.ContainsAny(arg.Changed.All()) {
+			characterIDs, err := u.cs.ListCharacterIDs(ctx)
+			if err != nil {
+				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+				return
+			}
+			if characterIDs.ContainsAny(arg.Changed.All()) {
 				updateStatus(ctx)
 			}
 		case app.SectionEveCorporations:
@@ -362,6 +366,18 @@ func newBaseUI(arg UIParams) *baseUI {
 			}
 			if arg.Changed.ContainsAny(corporationIDs.All()) {
 				updateStatus(ctx)
+			}
+		case app.SectionEveMarketPrices:
+			characterIDs, err := u.cs.ListCharacterIDs(ctx)
+			if err != nil {
+				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+				return
+			}
+			for id := range characterIDs.All() {
+				if err := u.cs.UpdateTotalNetWorth(ctx, id); err != nil {
+					slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+					return
+				}
 			}
 		}
 	})
