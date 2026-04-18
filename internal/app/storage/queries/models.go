@@ -33,6 +33,7 @@ type Character struct {
 	ContractItemsValue sql.NullFloat64
 	OrdersEscrow       sql.NullFloat64
 	OrderItemsValue    sql.NullFloat64
+	SkillPointsValue   sql.NullFloat64
 }
 
 type CharacterAsset struct {

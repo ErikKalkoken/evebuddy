@@ -30,6 +30,7 @@ type Character struct {
 	OrderItemsValue    optional.Optional[float64]
 	OrdersEscrow       optional.Optional[float64]
 	Ship               optional.Optional[*EveType]
+	SkillPointsValue   optional.Optional[float64]
 	TrainedSP          optional.Optional[int64]
 	UnallocatedSP      optional.Optional[int64]
 	WalletBalance      optional.Optional[float64]

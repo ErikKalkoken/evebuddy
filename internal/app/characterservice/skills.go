@@ -357,7 +357,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 	if arg.section != app.SectionCharacterSkillqueue {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
@@ -395,6 +395,64 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 			}
 			slog.Info("Stored updated skillqueue items", "characterID", characterID, "count", len(items))
 			return true, nil
-		})
+		},
+	)
+	if err != nil {
+		return false, err
+	}
 
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.SkillPointsValue.IsEmpty() {
+		if err := s.updateSkillPointValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+
+	return changed, nil
+}
+
+func (s *CharacterService) updateSkillPointValue(ctx context.Context, characterID int64) error {
+	const (
+		spLowerThreshold         = 5_500_000
+		spPerLargeSkillExtractor = 500_000
+	)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateSkillPointValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	o, err := s.st.GetCharacter(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	extractorPrice, err := s.eus.MarketPrice(ctx, app.EveTypeSkillExtractor)
+	if err != nil {
+		return wrapErr(err)
+	}
+	injectorPrice, err := s.eus.MarketPrice(ctx, app.EveTypeLargeSkillInjector)
+	if err != nil {
+		return wrapErr(err)
+	}
+	var value optional.Optional[float64]
+	if extractor, ok := extractorPrice.Value(); ok {
+		if injector, ok := injectorPrice.Value(); ok {
+			if trainedSP, ok := o.TrainedSP.Value(); ok {
+				if unallocatedSP, ok := o.UnallocatedSP.Value(); ok {
+					totalSP := float64(trainedSP + unallocatedSP)
+					v := (injector - extractor) * (max(0, totalSP-spLowerThreshold) / spPerLargeSkillExtractor)
+					value.Set(v)
+				}
+			}
+		}
+	}
+	err = s.st.UpdateCharacterSkillPointsValue(ctx, characterID, value)
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }

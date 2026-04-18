@@ -29,6 +29,7 @@ type CreateCharacterParams struct {
 	OrderItemsValue    optional.Optional[float64]
 	OrdersEscrow       optional.Optional[float64]
 	ShipID             optional.Optional[int64]
+	SkillPointsValue   optional.Optional[float64]
 	TotalSP            optional.Optional[int]
 	UnallocatedSP      optional.Optional[int]
 	WalletBalance      optional.Optional[float64]
@@ -36,19 +37,22 @@ type CreateCharacterParams struct {
 
 func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
 	err := st.qRW.CreateCharacter(ctx, queries.CreateCharacterParams{
-		ID:                arg.ID,
-		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
-		ContractsEscrow:   optional.ToNullFloat64(arg.ContractsEscrow),
-		HomeID:            optional.ToNullInt64(arg.HomeID),
-		IsTrainingWatched: arg.IsTrainingWatched,
-		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
-		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
-		LocationID:        optional.ToNullInt64(arg.LocationID),
-		OrdersEscrow:      optional.ToNullFloat64(arg.OrdersEscrow),
-		ShipID:            optional.ToNullInt64(arg.ShipID),
-		TotalSp:           optional.ToNullInt64(arg.TotalSP),
-		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
-		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
+		AssetValue:         optional.ToNullFloat64(arg.AssetValue),
+		ContractItemsValue: optional.ToNullFloat64(arg.ContractItemsValue),
+		ContractsEscrow:    optional.ToNullFloat64(arg.ContractsEscrow),
+		HomeID:             optional.ToNullInt64(arg.HomeID),
+		ID:                 arg.ID,
+		IsTrainingWatched:  arg.IsTrainingWatched,
+		LastCloneJumpAt:    optional.ToNullTime(arg.LastCloneJumpAt),
+		LastLoginAt:        optional.ToNullTime(arg.LastLoginAt),
+		LocationID:         optional.ToNullInt64(arg.LocationID),
+		OrderItemsValue:    optional.ToNullFloat64(arg.OrderItemsValue),
+		OrdersEscrow:       optional.ToNullFloat64(arg.OrdersEscrow),
+		ShipID:             optional.ToNullInt64(arg.ShipID),
+		SkillPointsValue:   optional.ToNullFloat64(arg.SkillPointsValue),
+		TotalSp:            optional.ToNullInt64(arg.TotalSP),
+		UnallocatedSp:      optional.ToNullInt64(arg.UnallocatedSP),
+		WalletBalance:      optional.ToNullFloat64(arg.WalletBalance),
 	})
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
@@ -363,6 +367,17 @@ func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID i
 	return nil
 }
 
+func (st *Storage) UpdateCharacterSkillPointsValue(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
+	err := st.qRW.UpdateCharacterSkillPointsValue(ctx, queries.UpdateCharacterSkillPointsValueParams{
+		ID:               characterID,
+		SkillPointsValue: optional.ToNullFloat64(v),
+	})
+	if err != nil {
+		return fmt.Errorf("UpdateCharacterSkillPointsValue for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID int64, v optional.Optional[float64]) error {
 	err := st.qRW.UpdateCharacterWalletBalance(ctx, queries.UpdateCharacterWalletBalanceParams{
 		ID:            characterID,
@@ -399,6 +414,7 @@ func (st *Storage) characterFromDBModel(
 		LastLoginAt:        optional.FromNullTime(character.LastLoginAt),
 		OrderItemsValue:    optional.FromNullFloat64(character.OrderItemsValue),
 		OrdersEscrow:       optional.FromNullFloat64(character.OrdersEscrow),
+		SkillPointsValue:   optional.FromNullFloat64(character.SkillPointsValue),
 		TrainedSP:          optional.FromNullInt64(character.TotalSp),
 		UnallocatedSP:      optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:      optional.FromNullFloat64(character.WalletBalance),

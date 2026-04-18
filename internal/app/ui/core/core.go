@@ -374,7 +374,7 @@ func newBaseUI(arg UIParams) *baseUI {
 				return
 			}
 			for id := range characterIDs.All() {
-				if err := u.cs.UpdateTotalNetWorth(ctx, id); err != nil {
+				if err := u.cs.UpdateCalculatedValues(ctx, id); err != nil {
 					slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 					return
 				}

@@ -8,10 +8,12 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -159,11 +161,11 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			TypeID:   41,
+			TypeID:      41,
 		})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			TypeID:   42,
+			TypeID:      42,
 		})
 		data := map[string]any{
 			"skills": []map[string]any{
@@ -273,5 +275,42 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 				assert.Len(t, ii, 3)
 			}
 		}
+	})
+}
+
+func TestUpdateSkllPointsValue(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("should create new queue", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			TotalSP:       optional.New(9_000_000),
+			UnallocatedSP: optional.New(1_500_000),
+		})
+		injectorType := factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: app.EveTypeLargeSkillInjector,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       injectorType.ID,
+			AveragePrice: optional.New(110_000.0),
+		})
+		extractorType := factory.CreateEveType(storage.CreateEveTypeParams{
+			ID: app.EveTypeSkillExtractor,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       extractorType.ID,
+			AveragePrice: optional.New(10_000.0),
+		})
+
+		// when
+		err := s.updateSkillPointValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 1_000_000, c2.SkillPointsValue.ValueOrZero())
 	})
 }

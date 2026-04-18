@@ -444,15 +444,15 @@ func (s *CharacterService) updateContractItemsValue(ctx context.Context, charact
 		return fmt.Errorf("updateContractItemsValue: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
-		wrapErr(app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	v, err := s.st.CalculateCharacterContractItemsValue(ctx, characterID)
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	err = s.st.UpdateCharacterContractItemsValue(ctx, characterID, optional.New(v))
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -463,15 +463,15 @@ func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterI
 	}
 	v1, err := s.st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	v2, err := s.st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1+v2))
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	return nil
 }

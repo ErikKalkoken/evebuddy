@@ -82,10 +82,12 @@ const (
 	EveTypeInfomorphSynchronizing      = 33399
 	EveTypeInterplanetaryConsolidation = 2495
 	EveTypeLaboratoryOperation         = 3406
+	EveTypeLargeSkillInjector          = 40520
 	EveTypeMassProduction              = 3387
 	EveTypeMassReactions               = 45748
 	EveTypeOffice                      = 27
 	EveTypePlanetTemperate             = 11
+	EveTypeSkillExtractor              = 40519
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
 )

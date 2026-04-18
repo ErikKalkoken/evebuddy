@@ -108,6 +108,9 @@ func (f Factory) CreateCharacterFull(args ...storage.CreateCharacterParams) *app
 	if arg.OrderItemsValue.IsEmpty() {
 		arg.OrderItemsValue = optional.New(rand.Float64() * 10_000_000_000)
 	}
+	if arg.SkillPointsValue.IsEmpty() {
+		arg.SkillPointsValue = optional.New(rand.Float64() * 100_000_000_000)
+	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
 		arg.HomeID = optional.New(x.ID)

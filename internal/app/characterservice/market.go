@@ -232,7 +232,7 @@ func (s *CharacterService) updateOrderItemValue(ctx context.Context, characterID
 	}
 	err = s.st.UpdateCharacterOrderItemsValue(ctx, characterID, optional.New(v))
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -243,11 +243,11 @@ func (s *CharacterService) updateOrdersEscrow(ctx context.Context, characterID i
 	}
 	v, err := s.st.CalculateCharacterOrdersEscrow(ctx, characterID)
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	err = s.st.UpdateCharacterOrdersEscrow(ctx, characterID, optional.New(v))
 	if err != nil {
-		wrapErr(err)
+		return wrapErr(err)
 	}
 	return nil
 }

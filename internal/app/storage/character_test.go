@@ -22,7 +22,7 @@ func TestCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can get with all dependencies", func(t *testing.T) {
+	t.Run("can get", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
@@ -38,13 +38,18 @@ func TestCharacter(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, c1.ID, c2.ID)
 		xassert.Equal(t, c1.AssetValue, c2.AssetValue)
+		xassert.Equal(t, c1.ContractItemsValue, c2.ContractItemsValue)
+		xassert.Equal(t, c1.ContractsEscrow, c2.ContractsEscrow)
 		xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
 		xassert.Equal(t, c1.Home, c2.Home)
 		xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
 		xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
 		xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
 		xassert.Equal(t, c1.Location, c2.Location)
+		xassert.Equal(t, c1.OrderItemsValue, c2.OrderItemsValue)
+		xassert.Equal(t, c1.OrdersEscrow, c2.OrdersEscrow)
 		xassert.Equal(t, c1.Ship, c2.Ship)
+		xassert.Equal(t, c1.SkillPointsValue, c2.SkillPointsValue)
 		xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
 		xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
 		xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
@@ -81,7 +86,7 @@ func TestCharacter(t *testing.T) {
 	})
 }
 
-func TestGetAnyCharacter(t *testing.T) {
+func TestCharacter_GetAny(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -106,7 +111,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 }
 
-func TestCharacterCreate(t *testing.T) {
+func TestCharacter_Create(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -135,15 +140,22 @@ func TestCharacterCreate(t *testing.T) {
 		login := time.Now()
 		cloneJump := time.Now()
 		arg := storage.CreateCharacterParams{
-			ID:              character.ID,
-			AssetValue:      optional.New(3.4),
-			HomeID:          optional.New(home.ID),
-			LastCloneJumpAt: optional.New(cloneJump),
-			LastLoginAt:     optional.New(login),
-			LocationID:      optional.New(location.ID),
-			ShipID:          optional.New(ship.ID),
-			TotalSP:         optional.New(123),
-			WalletBalance:   optional.New(1.2),
+			AssetValue:         optional.New(3.4),
+			ContractItemsValue: optional.New(2.0),
+			ContractsEscrow:    optional.New(3.0),
+			HomeID:             optional.New(home.ID),
+			ID:                 character.ID,
+			IsTrainingWatched:  true,
+			LastCloneJumpAt:    optional.New(cloneJump),
+			LastLoginAt:        optional.New(login),
+			LocationID:         optional.New(location.ID),
+			OrderItemsValue:    optional.New(4.0),
+			OrdersEscrow:       optional.New(5.0),
+			ShipID:             optional.New(ship.ID),
+			SkillPointsValue:   optional.New(6.0),
+			TotalSP:            optional.New(123),
+			UnallocatedSP:      optional.New(42),
+			WalletBalance:      optional.New(1.2),
 		}
 		// when
 		err := st.CreateCharacter(ctx, arg)
@@ -151,14 +163,21 @@ func TestCharacterCreate(t *testing.T) {
 		require.NoError(t, err)
 		r, err := st.GetCharacter(ctx, arg.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, home, r.Home.MustValue())
-		xassert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
-		xassert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
-		xassert.Equal(t, location, r.Location.MustValue())
-		xassert.Equal(t, ship, r.Ship.MustValue())
-		xassert.Equal(t, 123, r.TrainedSP.ValueOrZero())
 		xassert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
+		xassert.Equal(t, 123, r.TrainedSP.ValueOrZero())
+		xassert.Equal(t, 2.0, r.ContractItemsValue.ValueOrZero())
+		xassert.Equal(t, 3.0, r.ContractsEscrow.ValueOrZero())
 		xassert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
+		xassert.Equal(t, 4.0, r.OrderItemsValue.ValueOrZero())
+		xassert.Equal(t, 42, r.UnallocatedSP.ValueOrZero())
+		xassert.Equal(t, 5.0, r.OrdersEscrow.ValueOrZero())
+		xassert.Equal(t, 6.0, r.SkillPointsValue.ValueOrZero())
+		xassert.Equal(t, cloneJump, r.LastCloneJumpAt.ValueOrZero())
+		xassert.Equal(t, home, r.Home.MustValue())
+		xassert.Equal(t, location, r.Location.MustValue())
+		xassert.Equal(t, login, r.LastLoginAt.ValueOrZero())
+		xassert.Equal(t, ship, r.Ship.MustValue())
+		xassert.Equal(t, true, r.IsTrainingWatched)
 	})
 	t.Run("report error when character already exists", func(t *testing.T) {
 		// given
@@ -508,6 +527,20 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, x, c2.OrderItemsValue.ValueOrZero())
+	})
+
+	t.Run("can update skill points value", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := st.UpdateCharacterSkillPointsValue(ctx, c1.ID, optional.New(x))
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetCharacter(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x, c2.SkillPointsValue.ValueOrZero())
 	})
 }
 

@@ -175,7 +175,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	return c, nil
 }
 
-func (s *CharacterService) UpdateTotalNetWorth(ctx context.Context, characterID int64) error {
+func (s *CharacterService) UpdateCalculatedValues(ctx context.Context, characterID int64) error {
 	if err := s.updateAssetValue(ctx, characterID); err != nil {
 		return err
 	}
@@ -189,6 +189,9 @@ func (s *CharacterService) UpdateTotalNetWorth(ctx context.Context, characterID 
 		return err
 	}
 	if err := s.updateOrderItemValue(ctx, characterID); err != nil {
+		return err
+	}
+	if err := s.updateSkillPointValue(ctx, characterID); err != nil {
 		return err
 	}
 	return nil

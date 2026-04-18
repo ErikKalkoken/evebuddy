@@ -30,14 +30,18 @@ type overviewRow struct {
 	combinedAssetsValue    optional.Optional[float64]
 	contractsEscrow        optional.Optional[float64]
 	contractsEscrowDisplay string
+	grandTotal             optional.Optional[float64]
+	grandTotalDisplay      string
 	isTotal                bool
 	ordersEscrow           optional.Optional[float64]
 	ordersEscrowDisplay    string
 	searchTarget           string
+	skillPoints            optional.Optional[float64]
+	skillPointsDisplay     string
 	tags                   set.Set[string]
 	tagsDisplay            string
-	total                  optional.Optional[float64]
-	totalDisplay           string
+	totalNetWorth          optional.Optional[float64]
+	totalNetWorthDisplay   string
 	walletBalance          optional.Optional[float64]
 	walletDisplay          string
 }
@@ -74,7 +78,9 @@ const (
 	overviewColCombinedAssetsValue
 	overviewColContractsEscrow
 	overviewColOrdersEscrow
-	overviewColTotal
+	overviewColTotalNetWorth
+	overviewColSkillPoints
+	overviewColGrandTotal
 )
 
 const valueWidth = 125
@@ -87,7 +93,13 @@ Contract Escrow: The total sum of all escrows in a character's currently outstan
 
 Orders Escrow: The total sum of all escrows in a character's currently outstanding buy orders on the market.
 
-Not included: Blueprints, PLEX in the account wallet`
+Total Net Worth: Sum of Wallet Balance, Combined Assets, Contract Escrow and Orders Escrow.
+
+Skill Points: Value of extracted skill points (trained + unallocated) calculated with: (MarketPriceOfLargeSkillInjector − MarketPriceOfSkillExtractor) x ((TotalSP − 5,000,000) / 500,000)
+
+Grand total: Sum of Total Net Worth and Skill Points
+
+NOTE: Blueprints, PLEX in the account wallet are not included.`
 
 func NewOverview(u baseUI) *Overview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[overviewRow]{
@@ -165,19 +177,46 @@ func NewOverview(u baseUI) *Overview {
 				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
 			},
 		}, {
-			ID:    overviewColTotal,
+			ID:    overviewColTotalNetWorth,
 			Label: "Total Net Worth",
 			Width: valueWidth,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(r.totalNetWorthDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
 			Sort: func(a, b overviewRow) int {
-				return optional.Compare(a.total, b.total)
+				return optional.Compare(a.totalNetWorth, b.totalNetWorth)
 			},
-		}})
+		}, {
+			ID:    overviewColSkillPoints,
+			Label: "Skill Points",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.skillPointsDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.skillPoints, b.skillPoints)
+			},
+		}, {
+			ID:    overviewColGrandTotal,
+			Label: "Grand Total",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.grandTotalDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.grandTotal, b.grandTotal)
+			},
+		},
+	})
 	a := &Overview{
 		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
@@ -255,8 +294,12 @@ func NewOverview(u baseUI) *Overview {
 					s = xwidget.RichTextSegmentsFromText(r.contractsEscrowDisplay)
 				case overviewColOrdersEscrow:
 					s = xwidget.RichTextSegmentsFromText(r.ordersEscrowDisplay)
-				case overviewColTotal:
-					s = xwidget.RichTextSegmentsFromText(r.totalDisplay)
+				case overviewColTotalNetWorth:
+					s = xwidget.RichTextSegmentsFromText(r.totalNetWorthDisplay)
+				case overviewColSkillPoints:
+					s = xwidget.RichTextSegmentsFromText(r.skillPointsDisplay)
+				case overviewColGrandTotal:
+					s = xwidget.RichTextSegmentsFromText(r.grandTotalDisplay)
 				}
 				return s
 			},
@@ -365,20 +408,24 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 
-		// add totals
-		var assets, wallets, totals, contracts, orders []optional.Optional[float64]
+		// add totals1
+		var assets, wallets, totals1, contracts, orders, skillpoints, totals2 []optional.Optional[float64]
 		for _, r := range rows {
 			assets = append(assets, r.combinedAssetsValue)
 			contracts = append(contracts, r.contractsEscrow)
 			orders = append(orders, r.ordersEscrow)
-			totals = append(totals, r.total)
+			skillpoints = append(skillpoints, r.skillPoints)
+			totals1 = append(totals1, r.totalNetWorth)
+			totals2 = append(totals2, r.grandTotal)
 			wallets = append(wallets, r.walletBalance)
 		}
 		assetsTotal := optional.Sum(assets...)
 		contractsTotal := optional.Sum(contracts...)
-		grandTotal := optional.Sum(totals...)
+		grandTotal1 := optional.Sum(totals1...)
 		ordersTotal := optional.Sum(orders...)
 		walletsTotal := optional.Sum(wallets...)
+		skillpointsTotal := optional.Sum(skillpoints...)
+		grandTotal2 := optional.Sum(totals2...)
 		rows = append(rows, overviewRow{
 			characterID:            0,
 			characterName:          "Total",
@@ -386,13 +433,17 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 			combinedAssetsValue:    assetsTotal,
 			contractsEscrow:        contractsTotal,
 			contractsEscrowDisplay: formatISKValue(contractsTotal),
+			grandTotal:             grandTotal2,
+			grandTotalDisplay:      formatISKValue(grandTotal2),
 			isTotal:                true,
 			ordersEscrow:           ordersTotal,
 			ordersEscrowDisplay:    formatISKValue(ordersTotal),
 			searchTarget:           "",
+			skillPoints:            skillpointsTotal,
+			skillPointsDisplay:     formatISKValue(skillpointsTotal),
 			tags:                   set.Set[string]{},
-			total:                  grandTotal,
-			totalDisplay:           formatISKValue(grandTotal),
+			totalNetWorth:          grandTotal1,
+			totalNetWorthDisplay:   formatISKValue(grandTotal1),
 			walletBalance:          walletsTotal,
 			walletDisplay:          formatISKValue(walletsTotal),
 		})
@@ -436,8 +487,10 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 		if err != nil {
 			return rows, err
 		}
+
 		combinedAssets := o.CombinedAssetsValue()
 		total := optional.Sum(combinedAssets, o.WalletBalance, o.ContractsEscrow, o.OrdersEscrow)
+		grandTotal := optional.Sum(total, o.SkillPointsValue)
 		rows = append(rows, overviewRow{
 			characterID:            o.ID,
 			characterName:          o.EveCharacter.Name,
@@ -445,13 +498,17 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 			combinedAssetsValue:    combinedAssets,
 			contractsEscrow:        o.ContractsEscrow,
 			contractsEscrowDisplay: formatISKValue(o.ContractsEscrow),
+			grandTotal:             grandTotal,
+			grandTotalDisplay:      formatISKValue(grandTotal),
 			ordersEscrow:           o.OrdersEscrow,
 			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
 			searchTarget:           strings.ToLower(o.EveCharacter.Name),
+			skillPoints:            o.SkillPointsValue,
+			skillPointsDisplay:     formatISKValue(o.SkillPointsValue),
 			tags:                   tags,
 			tagsDisplay:            strings.Join(slices.Sorted(tags.All()), ", "),
-			total:                  total,
-			totalDisplay:           formatISKValue(total),
+			totalNetWorth:          total,
+			totalNetWorthDisplay:   formatISKValue(total),
 			walletBalance:          o.WalletBalance,
 			walletDisplay:          formatISKValue(o.WalletBalance),
 		})
