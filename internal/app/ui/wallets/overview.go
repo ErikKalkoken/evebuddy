@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -34,6 +35,7 @@ type overviewRow struct {
 	ordersEscrowDisplay    string
 	searchTarget           string
 	tags                   set.Set[string]
+	tagsDisplay            string
 	total                  optional.Optional[float64]
 	totalDisplay           string
 	walletBalance          optional.Optional[float64]
@@ -62,6 +64,7 @@ type Overview struct {
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	u            baseUI
+	showHelp     *xwidget.TappableIcon
 }
 
 const (
@@ -75,6 +78,16 @@ const (
 )
 
 const valueWidth = 125
+
+const helpText = `Wallet Balance: The balance of the wallet.
+
+Combined Assets: The estimated value of all personal assets, items in outstanding sell orders on the market and items in outstanding contracts.
+
+Contract Escrow: The total sum of all escrows in a character's currently outstanding contracts.
+
+Orders Escrow: The total sum of all escrows in a character's currently outstanding buy orders on the market.
+
+Not included: Blueprints, PLEX in the account wallet`
 
 func NewOverview(u baseUI) *Overview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[overviewRow]{
@@ -95,8 +108,7 @@ func NewOverview(u baseUI) *Overview {
 			Label: "Tags",
 			Width: 150,
 			Update: func(r overviewRow, co fyne.CanvasObject) {
-				s := strings.Join(slices.Sorted(r.tags.All()), ", ")
-				co.(*xwidget.RichText).SetWithText(s)
+				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
 			},
 		}, {
 			ID:    overviewColWalletBalance,
@@ -181,24 +193,71 @@ func NewOverview(u baseUI) *Overview {
 		a.filterRowsAsync(-1)
 	}
 	a.search.PlaceHolder = "Search characters"
+
+	a.showHelp = xwidget.NewTappableIcon(theme.QuestionIcon(), func() {
+		var pu *widget.PopUp
+		closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+			pu.Hide()
+		})
+		title := widget.NewLabel("Help")
+		title.TextStyle.Bold = true
+		text := widget.NewLabel(helpText)
+		text.Wrapping = fyne.TextWrapWord
+
+		p := theme.Padding()
+		canvas := fyne.CurrentApp().Driver().CanvasForObject(a.showHelp)
+		var spacerSize fyne.Size
+		if a.u.IsMobile() {
+			_, s := canvas.InteractiveArea()
+			spacerSize = fyne.NewSize(s.Width-4*p, s.Height/2)
+		} else {
+			spacerSize = fyne.NewSize(300, 400)
+		}
+		spacer := xwidget.NewSpacer(spacerSize)
+		c := container.NewStack(spacer, container.NewBorder(
+			container.NewHBox(title, layout.NewSpacer(), closePopUp),
+			nil,
+			nil,
+			nil,
+			container.NewVScroll(container.NewPadded(text)),
+		))
+		pu = widget.NewPopUp(c, canvas)
+
+		if a.u.IsMobile() {
+			x := a.showHelp.MinSize().Width - pu.MinSize().Width
+			y := a.showHelp.MinSize().Height - pu.MinSize().Height
+			pu.ShowAtRelativePosition(fyne.NewPos(x, y), a.showHelp)
+		} else {
+			pos, s := canvas.InteractiveArea()
+			x := pos.X
+			y := pos.Y + s.Height/2
+			pu.ShowAtPosition(fyne.NewPos(x, y))
+		}
+	})
+	a.showHelp.SetToolTip("Shows help for this screen")
+
 	if a.u.IsMobile() {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
 			func(col int, r overviewRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
-				// switch col {
-				// case overviewColCharacter:
-				// 	s = r.jc.Location.DisplayRichText()
-				// case clonesColT:
-				// 	s = xwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-				// case clonesColImplants:
-				// 	s = xwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-				// case clonesColCharacter:
-				// 	s = xwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-				// case clonesColJumps:
-				// 	s = xwidget.RichTextSegmentsFromText(r.jumps())
-				// }
+				switch col {
+				case overviewColCharacter:
+					s = xwidget.RichTextSegmentsFromText(r.characterName)
+				case overviewColTags:
+					s = xwidget.RichTextSegmentsFromText(r.tagsDisplay)
+				case overviewColWalletBalance:
+					s = xwidget.RichTextSegmentsFromText(r.walletDisplay)
+				case overviewColCombinedAssetsValue:
+					s = xwidget.RichTextSegmentsFromText(r.combinedAssetsDisplay)
+				case overviewColContractsEscrow:
+					s = xwidget.RichTextSegmentsFromText(r.contractsEscrowDisplay)
+				case overviewColOrdersEscrow:
+					s = xwidget.RichTextSegmentsFromText(r.ordersEscrowDisplay)
+				case overviewColTotal:
+					s = xwidget.RichTextSegmentsFromText(r.totalDisplay)
+				}
 				return s
 			},
 			nil,
@@ -273,7 +332,7 @@ func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewHBox(a.footer, layout.NewSpacer(), a.showHelp),
 		nil,
 		nil,
 		a.main,
@@ -390,6 +449,7 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
 			searchTarget:           strings.ToLower(o.EveCharacter.Name),
 			tags:                   tags,
+			tagsDisplay:            strings.Join(slices.Sorted(tags.All()), ", "),
 			total:                  total,
 			totalDisplay:           formatISKValue(total),
 			walletBalance:          o.WalletBalance,
