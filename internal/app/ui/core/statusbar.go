@@ -208,26 +208,28 @@ func (a *statusBar) start() {
 		a.updateEveStatus(ctx)
 	})
 
-	tickerNewVersion := time.NewTicker(versionTicker)
-	go func() {
-		for {
-			func() {
-				v, err := a.u.availableUpdate(ctx)
-				if err != nil {
-					slog.Error("fetch latest github version for download hint", "err", err)
-					return
-				}
-				if !v.IsRemoteNewer {
-					return
-				}
-				fyne.Do(func() {
-					a.updateHint.set(v)
-					a.updateHint.Show()
-				})
-			}()
-			<-tickerNewVersion.C
-		}
-	}()
+	if !a.u.IsOffline() {
+		tickerNewVersion := time.NewTicker(versionTicker)
+		go func() {
+			for {
+				func() {
+					v, err := a.u.availableUpdate(ctx)
+					if err != nil {
+						slog.Error("fetch latest github version for download hint", "err", err)
+						return
+					}
+					if !v.IsRemoteNewer {
+						return
+					}
+					fyne.Do(func() {
+						a.updateHint.set(v)
+						a.updateHint.Show()
+					})
+				}()
+				<-tickerNewVersion.C
+			}
+		}()
+	}
 }
 
 func (a *statusBar) updateEveStatus(ctx context.Context) {
@@ -235,6 +237,10 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 		fyne.Do(func() {
 			a.setEveStatus(status, title, errorMessage)
 		})
+	}
+
+	if a.u.IsOffline() {
+		return
 	}
 
 	if a.u.ess.IsDailyDowntime() {
