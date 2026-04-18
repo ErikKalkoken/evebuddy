@@ -45,13 +45,11 @@ type Wealth struct {
 	OnUpdate func(wallet, assets float64)
 
 	assetDetail          *coord.CartesianCategoricalChart
-	assetSplit           *prop.PieChart
 	characterSplit       *prop.PieChart
 	top                  *widget.Label
 	totalSplit           *prop.PieChart
 	u                    baseUI
 	walletDetail         *coord.CartesianCategoricalChart
-	walletSplit          *prop.PieChart
 	defaultPieLabelStyle style.ValueLabelStyle
 	defaultBarLabelStyle style.ValueLabelStyle
 	overview             *Overview
@@ -60,13 +58,11 @@ type Wealth struct {
 func NewWealth(u baseUI) *Wealth {
 	a := &Wealth{
 		assetDetail:    coord.NewCartesianCategoricalChart(""),
-		assetSplit:     prop.NewPieChart(""),
 		characterSplit: prop.NewPieChart(""),
 		top:            ui.NewLabelWithWrapping(""),
 		totalSplit:     prop.NewPieChart(""),
 		u:              u,
 		walletDetail:   coord.NewCartesianCategoricalChart(""),
-		walletSplit:    prop.NewPieChart(""),
 		overview:       NewOverview(u),
 	}
 	a.ExtendBaseWidget(a)
@@ -82,8 +78,6 @@ func NewWealth(u baseUI) *Wealth {
 	a.assetDetail.HideLegend()
 	a.assetDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
 	a.assetDetail.SetYAxisLabel("B ISK")
-	a.assetSplit.SetTitleStyle(ts)
-	a.walletSplit.SetTitleStyle(ts)
 	a.walletDetail.SetTitleStyle(ts)
 	a.walletDetail.HideLegend()
 	a.walletDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
@@ -131,10 +125,6 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 			"Total",
 			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
 		),
-		container.NewTabItem(
-			"Breakdown",
-			container.NewAdaptiveGrid(2, a.assetSplit, a.walletSplit),
-		),
 		container.NewTabItem("Assets", a.assetDetail),
 		container.NewTabItem("Wallets", a.walletDetail),
 	)
@@ -180,11 +170,9 @@ func (a *Wealth) update(ctx context.Context) {
 	})
 
 	a.updateAssetDetail(ctx, rows)
-	a.updateAssetSplit(ctx, rows)
 	a.updateCharacterSplit(ctx, rows)
 	a.updateTotalSplit(ctx, rows)
 	a.updateWalletDetail(ctx, rows)
-	a.updateWalletSplit(ctx, rows)
 
 	fyne.Do(func() {
 		if a.OnUpdate != nil {
@@ -220,37 +208,6 @@ func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow) {
 			return
 		}
 		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", total))
-	})
-}
-
-func (a *Wealth) updateAssetSplit(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
-	var total float64
-	var d []data.ProportionalPoint
-	for _, r := range rows {
-		d = append(d, data.ProportionalPoint{
-			C:       r.characterName,
-			Val:     r.combinedAssets,
-			ColName: colors.next(),
-		})
-		total += r.combinedAssets
-	}
-
-	d = reduceProportionalPoints(d, wealthMaxCharacters)
-	fyne.Do(func() {
-		a.assetSplit.RemoveSeries("Characters")
-		s, err := prop.NewSeries("Characters", d)
-		if err != nil {
-			slog.Error("wealth: asset split", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
-		err = a.assetSplit.AddSeries(s)
-		if err != nil {
-			slog.Error("wealth: asset split", "error", err)
-			return
-		}
-		a.assetSplit.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", total))
 	})
 }
 
@@ -354,36 +311,6 @@ func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow) {
 			return
 		}
 		a.walletDetail.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", total))
-	})
-}
-
-func (a *Wealth) updateWalletSplit(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
-	var total float64
-	var d []data.ProportionalPoint
-	for _, r := range rows {
-		d = append(d, data.ProportionalPoint{
-			C:       r.characterName,
-			Val:     r.walletBalance,
-			ColName: colors.next(),
-		})
-		total += r.total
-	}
-	d = reduceProportionalPoints(d, wealthMaxCharacters)
-	fyne.Do(func() {
-		a.walletSplit.RemoveSeries("Characters")
-		s, err := prop.NewSeries("Characters", d)
-		if err != nil {
-			slog.Error("wealth: wallet split", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
-		err = a.walletSplit.AddSeries(s)
-		if err != nil {
-			slog.Error("wealth: wallet split", "error", err)
-			return
-		}
-		a.walletSplit.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", total))
 	})
 }
 

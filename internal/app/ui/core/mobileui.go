@@ -844,9 +844,7 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			w, _ := u.GetOrCreateWindow("overview-wealth", "Wealth")
-			w.SetContent(u.wealth)
-			w.Show()
+			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Wealth", u.wealth))
 		},
 	)
 	u.wealth.OnUpdate = func(wallet, assets float64) {
