@@ -381,17 +381,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpStructuresNav.Supporting = badge
 		corpStructuresNav.Refresh()
 	}
-	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
-		var s string
-		if !ok {
-			s = ""
-		} else {
-			s = fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormat, balance))
-			if balance > 1000 {
-				s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
-			}
-		}
-		corpWalletNav.Supporting = s
+	u.onUpdateCorporationWalletTotals = func(balance optional.Optional[float64]) {
+		corpWalletNav.Supporting = formatISKValueLong(balance, ui.FloatFormatISKRounded)
 		corpWalletNav.Refresh()
 	}
 
@@ -847,9 +838,8 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Wealth", u.wealth))
 		},
 	)
-	u.wealth.OnUpdate = func(wallet, assets float64) {
-		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.NumberF(wallet, 1), ihumanize.NumberF(assets, 1))
-		navItemWealth.Supporting = s
+	u.wealth.OnUpdate = func(total optional.Optional[float64]) {
+		navItemWealth.Supporting = formatISKValueLong(total, ui.FloatFormatISKRounded)
 		navItemWealth.Refresh()
 	}
 
@@ -927,4 +917,16 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 
 	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList))
 	return homeNav
+}
+
+func formatISKValueLong(value optional.Optional[float64], format string) string {
+	v, ok := value.Value()
+	if !ok {
+		return "? ISK"
+	}
+	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(format, v))
+	if v > 1000 {
+		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 1))
+	}
+	return s
 }

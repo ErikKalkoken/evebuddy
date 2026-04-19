@@ -146,7 +146,7 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 		return
 	}
 
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormat, balance))
+	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormatISK, balance))
 	if balance > 1000 {
 		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
 	}

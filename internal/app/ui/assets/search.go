@@ -195,7 +195,7 @@ func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBP
 		r.total.Set(v * float64(quantity))
 	}
 	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
-		return humanize.FormatFloat(ui.FloatFormat, v)
+		return humanize.FormatFloat(ui.FloatFormatISK, v)
 	})
 }
 

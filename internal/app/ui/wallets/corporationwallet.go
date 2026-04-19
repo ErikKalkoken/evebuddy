@@ -143,7 +143,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormat, balance))
+	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormatISK, balance))
 	if balance > 1000 {
 		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
 	}

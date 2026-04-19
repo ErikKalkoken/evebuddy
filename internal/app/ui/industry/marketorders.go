@@ -181,7 +181,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				return cmp.Compare(a.price, b.price)
 			},
 			Update: func(r marketOrderRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(humanize.FormatFloat(ui.FloatFormat, r.price), widget.RichTextStyle{
+				co.(*xwidget.RichText).SetWithText(humanize.FormatFloat(ui.FloatFormatISK, r.price), widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 			},

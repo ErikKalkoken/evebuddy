@@ -30,8 +30,6 @@ type overviewRow struct {
 	combinedAssetsValue    optional.Optional[float64]
 	contractsEscrow        optional.Optional[float64]
 	contractsEscrowDisplay string
-	grandTotal             optional.Optional[float64]
-	grandTotalDisplay      string
 	isTotal                bool
 	ordersEscrow           optional.Optional[float64]
 	ordersEscrowDisplay    string
@@ -80,12 +78,11 @@ const (
 	overviewColOrdersEscrow
 	overviewColTotalNetWorth
 	overviewColSkillPoints
-	overviewColGrandTotal
 )
 
 const valueWidth = 125
 
-const helpText = `Wallet Balance: The balance of the wallet.
+const overviewHelpText = `Wallet Balance: The balance of the wallet.
 
 Combined Assets: The estimated value of all personal assets, items in outstanding sell orders on the market and items in outstanding contracts.
 
@@ -96,8 +93,6 @@ Orders Escrow: The total sum of all escrows in a character's currently outstandi
 Total Net Worth: Sum of Wallet Balance, Combined Assets, Contract Escrow and Orders Escrow.
 
 Skill Points: Value of extracted skill points (trained + unallocated) calculated with: (MarketPriceOfLargeSkillInjector − MarketPriceOfSkillExtractor) x ((TotalSP − 5,000,000) / 500,000)
-
-Grand total: Sum of Total Net Worth and Skill Points
 
 NOTE: Blueprints, PLEX in the account wallet are not included.`
 
@@ -202,19 +197,6 @@ func NewOverview(u baseUI) *Overview {
 			Sort: func(a, b overviewRow) int {
 				return optional.Compare(a.skillPoints, b.skillPoints)
 			},
-		}, {
-			ID:    overviewColGrandTotal,
-			Label: "Grand Total",
-			Width: valueWidth,
-			Update: func(r overviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.grandTotalDisplay, widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-					TextStyle: fyne.TextStyle{Bold: r.isTotal},
-				})
-			},
-			Sort: func(a, b overviewRow) int {
-				return optional.Compare(a.grandTotal, b.grandTotal)
-			},
 		},
 	})
 	a := &Overview{
@@ -234,46 +216,9 @@ func NewOverview(u baseUI) *Overview {
 	a.search.PlaceHolder = "Search characters"
 
 	a.showHelp = xwidget.NewTappableIcon(theme.QuestionIcon(), func() {
-		var pu *widget.PopUp
-		closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
-			pu.Hide()
-		})
-		title := widget.NewLabel("Help")
-		title.TextStyle.Bold = true
-		text := widget.NewLabel(helpText)
-		text.Wrapping = fyne.TextWrapWord
-
-		p := theme.Padding()
-		canvas := fyne.CurrentApp().Driver().CanvasForObject(a.showHelp)
-		var spacerSize fyne.Size
-		if a.u.IsMobile() {
-			_, s := canvas.InteractiveArea()
-			spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
-		} else {
-			spacerSize = fyne.NewSize(300, 400)
-		}
-		spacer := xwidget.NewSpacer(spacerSize)
-		c := container.NewStack(spacer, container.NewBorder(
-			container.NewHBox(title, layout.NewSpacer(), closePopUp),
-			nil,
-			nil,
-			nil,
-			container.NewVScroll(container.NewPadded(text)),
-		))
-		pu = widget.NewPopUp(c, canvas)
-
-		if a.u.IsMobile() {
-			pos, s := canvas.InteractiveArea()
-			x := pos.X
-			y := pos.Y + s.Height/2
-			pu.ShowAtPosition(fyne.NewPos(x, y))
-		} else {
-			x := a.showHelp.MinSize().Width - pu.MinSize().Width
-			y := a.showHelp.MinSize().Height - pu.MinSize().Height + 2*p
-			pu.ShowAtRelativePosition(fyne.NewPos(x, y), a.showHelp)
-		}
+		showHelpPopUp(overviewHelpText, a.u.IsMobile(), a.showHelp)
 	})
-	a.showHelp.SetToolTip("Shows help for this screen")
+	a.showHelp.SetToolTip("Show explanation for columns")
 
 	if a.u.IsMobile() {
 		a.main = xwidget.MakeDataList(
@@ -298,8 +243,6 @@ func NewOverview(u baseUI) *Overview {
 					s = xwidget.RichTextSegmentsFromText(r.totalNetWorthDisplay)
 				case overviewColSkillPoints:
 					s = xwidget.RichTextSegmentsFromText(r.skillPointsDisplay)
-				case overviewColGrandTotal:
-					s = xwidget.RichTextSegmentsFromText(r.grandTotalDisplay)
 				}
 				return s
 			},
@@ -338,6 +281,7 @@ func NewOverview(u baseUI) *Overview {
 			app.SectionCharacterAssets,
 			app.SectionCharacterContracts,
 			app.SectionCharacterMarketOrders,
+			app.SectionCharacterSkills,
 			app.SectionCharacterWalletBalance:
 			a.update(ctx)
 		}
@@ -408,24 +352,22 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 
-		// add totals1
-		var assets, wallets, totals1, contracts, orders, skillpoints, totals2 []optional.Optional[float64]
+		// add totals
+		var assets, wallets, totals, contracts, orders, skillpoints []optional.Optional[float64]
 		for _, r := range rows {
 			assets = append(assets, r.combinedAssetsValue)
 			contracts = append(contracts, r.contractsEscrow)
 			orders = append(orders, r.ordersEscrow)
 			skillpoints = append(skillpoints, r.skillPoints)
-			totals1 = append(totals1, r.totalNetWorth)
-			totals2 = append(totals2, r.grandTotal)
+			totals = append(totals, r.totalNetWorth)
 			wallets = append(wallets, r.walletBalance)
 		}
 		assetsTotal := optional.Sum(assets...)
 		contractsTotal := optional.Sum(contracts...)
-		grandTotal1 := optional.Sum(totals1...)
+		grandTotal1 := optional.Sum(totals...)
 		ordersTotal := optional.Sum(orders...)
 		walletsTotal := optional.Sum(wallets...)
 		skillpointsTotal := optional.Sum(skillpoints...)
-		grandTotal2 := optional.Sum(totals2...)
 		rows = append(rows, overviewRow{
 			characterID:            0,
 			characterName:          "Total",
@@ -433,8 +375,6 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 			combinedAssetsValue:    assetsTotal,
 			contractsEscrow:        contractsTotal,
 			contractsEscrowDisplay: formatISKValue(contractsTotal),
-			grandTotal:             grandTotal2,
-			grandTotalDisplay:      formatISKValue(grandTotal2),
 			isTotal:                true,
 			ordersEscrow:           ordersTotal,
 			ordersEscrowDisplay:    formatISKValue(ordersTotal),
@@ -490,7 +430,6 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 
 		combinedAssets := o.CombinedAssetsValue()
 		total := optional.Sum(combinedAssets, o.WalletBalance, o.ContractsEscrow, o.OrdersEscrow)
-		grandTotal := optional.Sum(total, o.SkillPointsValue)
 		rows = append(rows, overviewRow{
 			characterID:            o.ID,
 			characterName:          o.EveCharacter.Name,
@@ -498,8 +437,6 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 			combinedAssetsValue:    combinedAssets,
 			contractsEscrow:        o.ContractsEscrow,
 			contractsEscrowDisplay: formatISKValue(o.ContractsEscrow),
-			grandTotal:             grandTotal,
-			grandTotalDisplay:      formatISKValue(grandTotal),
 			ordersEscrow:           o.OrdersEscrow,
 			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
 			searchTarget:           strings.ToLower(o.EveCharacter.Name),
@@ -520,4 +457,47 @@ func formatISKValue(v optional.Optional[float64]) string {
 	return v.StringFunc("?", func(v float64) string {
 		return humanize.FormatFloat("#,###.", v)
 	})
+}
+
+// showHelpPopUp shows a popUp with text as content
+// and it's position aligned to widget obj.
+func showHelpPopUp(text string, isMobile bool, obj fyne.CanvasObject) {
+	var pu *widget.PopUp
+	closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		pu.Hide()
+	})
+	title := widget.NewLabel("Help")
+	title.TextStyle.Bold = true
+	body := widget.NewLabel(text)
+	body.Wrapping = fyne.TextWrapWord
+
+	p := theme.Padding()
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(obj)
+	var spacerSize fyne.Size
+	if isMobile {
+		_, s := canvas.InteractiveArea()
+		spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
+	} else {
+		spacerSize = fyne.NewSize(300, 400)
+	}
+	spacer := xwidget.NewSpacer(spacerSize)
+	c := container.NewStack(spacer, container.NewBorder(
+		container.NewHBox(title, layout.NewSpacer(), closePopUp),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(container.NewPadded(body)),
+	))
+	pu = widget.NewPopUp(c, canvas)
+
+	if isMobile {
+		pos, s := canvas.InteractiveArea()
+		x := pos.X
+		y := pos.Y + s.Height/2
+		pu.ShowAtPosition(fyne.NewPos(x, y))
+	} else {
+		x := obj.MinSize().Width - pu.MinSize().Width
+		y := obj.MinSize().Height - pu.MinSize().Height + 2*p
+		pu.ShowAtRelativePosition(fyne.NewPos(x, y), obj)
+	}
 }

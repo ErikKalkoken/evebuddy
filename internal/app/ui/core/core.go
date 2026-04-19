@@ -43,6 +43,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -100,7 +101,7 @@ type baseUI struct {
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
-	onUpdateCorporationWalletTotals func(balance float64, ok bool)
+	onUpdateCorporationWalletTotals func(balance optional.Optional[float64])
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func(ctx context.Context)
 	showMailIndicator               func()
@@ -858,28 +859,29 @@ func (u *baseUI) ListCorporationsForSelection(ctx context.Context) ([]*app.Entit
 }
 
 func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
-	v, ok := func() (float64, bool) {
+	var v optional.Optional[float64]
+	func() {
 		corporationID := u.CurrentCorporation().IDOrZero()
 		if corporationID == 0 {
-			return 0, false
+			return
 		}
 		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
-			return 0, false
+			return
 		}
 		if !hasRole {
-			return 0, false
+			return
 		}
 		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
 		if err != nil {
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-			return 0, false
+			return
 		}
-		return b.Value()
+		v = b
 	}()
 	fyne.Do(func() {
-		u.onUpdateCorporationWalletTotals(v, ok)
+		u.onUpdateCorporationWalletTotals(v)
 	})
 }
 

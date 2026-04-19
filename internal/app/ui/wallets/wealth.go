@@ -42,7 +42,7 @@ type wealthRow struct {
 type Wealth struct {
 	widget.BaseWidget
 
-	OnUpdate func(wallet, assets float64)
+	OnUpdate func(totalNetWorth optional.Optional[float64])
 
 	assetDetail          *coord.CartesianCategoricalChart
 	characterSplit       *prop.PieChart
@@ -144,7 +144,7 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Wealth) update(ctx context.Context) {
-	rows, err := a.fetchData(ctx)
+	rows, total, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -176,7 +176,7 @@ func (a *Wealth) update(ctx context.Context) {
 
 	fyne.Do(func() {
 		if a.OnUpdate != nil {
-			a.OnUpdate(0, 0)
+			a.OnUpdate(total)
 		}
 	})
 }
@@ -365,15 +365,17 @@ func reduceCategoricalPoints(rows []data.CategoricalPoint, m int) []data.Categor
 	return rows
 }
 
-func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, error) {
+func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[float64], error) {
 	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
-		return nil, err
+		return nil, optional.Optional[float64]{}, err
 	}
 	var rows []wealthRow
+	var totals []optional.Optional[float64]
 	for _, c := range cc {
 		combinedAssets := c.CombinedAssetsValue()
 		total := optional.Sum(c.WalletBalance, combinedAssets, c.ContractsEscrow, c.OrdersEscrow)
+		totals = append(totals, total)
 		if total.IsEmpty() {
 			continue
 		}
@@ -392,7 +394,8 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, error) {
 	slices.SortFunc(rows, func(a, b wealthRow) int {
 		return strings.Compare(a.characterName, b.characterName)
 	})
-	return rows, nil
+	grantTotal := optional.Sum(totals...)
+	return rows, grantTotal, nil
 }
 
 type colorWheel struct {

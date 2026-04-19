@@ -510,12 +510,12 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalFormatted:   humanize.FormatFloat(ui.FloatFormat, total),
+			totalFormatted:   humanize.FormatFloat(ui.FloatFormatISK, total),
 			transactionID:    o.TransactionID,
 			typeID:           o.Type.ID,
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormat, o.UnitPrice),
+			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormatISK, o.UnitPrice),
 		}
 		if o.IsBuy {
 			r.totalColor = theme.ColorNameError
@@ -596,12 +596,12 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalFormatted:   humanize.FormatFloat(ui.FloatFormat, total),
+			totalFormatted:   humanize.FormatFloat(ui.FloatFormatISK, total),
 			transactionID:    o.TransactionID,
 			typeID:           o.Type.ID,
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormat, o.UnitPrice),
+			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormatISK, o.UnitPrice),
 		}
 		if o.IsBuy {
 			r.totalColor = theme.ColorNameError
