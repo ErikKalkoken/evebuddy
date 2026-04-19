@@ -63,11 +63,11 @@ func (w *StatusBarItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	c := container.NewStack(
 		w.bg,
-		container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
+		container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, p),
 			container.New(layout.NewCustomPaddedHBoxLayout(0),
-				container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.leading),
-				w.label,
-				w.trailing,
+				container.NewVBox(layout.NewSpacer(), w.leading, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.trailing, layout.NewSpacer()),
 			)),
 	)
 	return widget.NewSimpleRenderer(c)

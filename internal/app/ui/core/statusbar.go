@@ -95,6 +95,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		},
 	)
 	a.updateStatus.SetToolTip("Current update status - click for details")
+
 	a.eveClock = NewStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
 		"?",

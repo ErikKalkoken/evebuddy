@@ -391,7 +391,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	// other
 
-	homeNav := makeHomeNav(u)
+	homeNav, updateStatus := makeHomeNav(u)
 
 	searchNav := makeSearchNav(newCharacterAppBar, u)
 
@@ -660,12 +660,13 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	updateUpdateStatus := func(_ context.Context) {
-		set := func(s string, icon fyne.Resource) {
+		set := func(full, short string, i widget.Importance, icon fyne.Resource) {
 			fyne.Do(func() {
 				refreshMoreBadge()
-				navItemUpdateStatus.Supporting = s
+				navItemUpdateStatus.Supporting = full
 				navItemUpdateStatus.Trailing = icon
 				navItemUpdateStatus.Refresh()
+				updateStatus.SetTextAndImportance(short, i)
 			})
 		}
 
@@ -673,6 +674,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			u.isOffline.Store(true)
 			set(
 				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
+				"OFF",
+				widget.MediumImportance,
 				theme.NewWarningThemedResource(theme.WarningIcon()),
 			)
 			return
@@ -686,7 +689,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		} else {
 			hasUpdateError.Store(false)
 		}
-		set(status.Display(), icon)
+		set(status.Display(), status.DisplayShort(), status.Status().ToImportance(), icon)
 	}
 
 	u.onAppFirstStarted = func() {
@@ -774,7 +777,7 @@ func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject,
 	return searchNav
 }
 
-func makeHomeNav(u *MobileUI) *xwidget.Navigator {
+func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	var homeNav *xwidget.Navigator
 	var homeList *xwidget.NavList
 
@@ -914,9 +917,11 @@ func makeHomeNav(u *MobileUI) *xwidget.Navigator {
 		navItemTraining,
 		navItemWealth,
 	)
-
-	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList))
-	return homeNav
+	status := NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
+		updatestatus.Show(u)
+	})
+	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList, status))
+	return homeNav, status
 }
 
 func formatISKValueLong(value optional.Optional[float64], format string) string {
