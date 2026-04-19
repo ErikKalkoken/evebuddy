@@ -310,3 +310,290 @@ func TestCharacterContractItem(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestCalculateCharacterContractItemsValue(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	const characterID = 42
+
+	cases := []struct {
+		name         string
+		contractType app.ContractType
+		status       app.ContractStatus
+		price        float64
+		want         float64
+	}{
+		{
+			name:         "should include courier outstanding contract",
+			contractType: app.ContractTypeCourier,
+			status:       app.ContractStatusOutstanding,
+			price:        10.0,
+			want:         10.0,
+		},
+		{
+			name:         "should include in progress courier contract",
+			contractType: app.ContractTypeCourier,
+			status:       app.ContractStatusInProgress,
+			price:        10.0,
+			want:         10.0,
+		},
+		{
+			name:         "should include outstanding auction contract",
+			contractType: app.ContractTypeAuction,
+			status:       app.ContractStatusOutstanding,
+			price:        10.0,
+			want:         10.0,
+		},
+		{
+			name:         "should exclude finished courier contract",
+			contractType: app.ContractTypeCourier,
+			status:       app.ContractStatusFinished,
+			price:        10.0,
+			want:         0,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+				ID: characterID,
+			})
+			c := factory.CreateCharacter(storage.CreateCharacterParams{
+				ID: ec.ID,
+			})
+			o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+				CharacterID: c.ID,
+				Status:      tc.status,
+				Type:        tc.contractType,
+			})
+			u := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+				ContractID: o.ID,
+				IsIncluded: true,
+				Quantity:   1,
+			})
+			factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+				TypeID:       u.Type.ID,
+				AveragePrice: optional.New(tc.price),
+			})
+
+			// when
+			got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("can calculate items value for multiple contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeAuction,
+		})
+		u1 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			ContractID: o1.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u1.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		o2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeAuction,
+		})
+		u2 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			ContractID: o2.ID,
+			IsIncluded: true,
+			Quantity:   2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u2.Type.ID,
+			AveragePrice: optional.New(200.2),
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 500.5, got)
+	})
+
+	t.Run("should ignore blueprints", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		blueprintCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryBlueprint,
+			Name: "Blueprint",
+		})
+		blueprintGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: blueprintCategory.ID,
+		})
+		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID: blueprintGroup.ID,
+		})
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeAuction,
+		})
+		factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			ContractID: o1.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       blueprintType.ID,
+			AveragePrice: optional.New(66.6),
+		})
+
+		// when
+		got, err := st.CalculateCharacterOrderItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}
+
+func TestCalculateCharacterContractsCourierEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	characterID := int64(42)
+
+	cases := []struct {
+		name string
+
+		acceptorID   int64
+		contractType app.ContractType
+		collateral   optional.Optional[float64]
+		want         float64
+	}{
+		{"should include courier contract accepted by character", characterID, app.ContractTypeCourier, optional.New(123.0), 123.0},
+		{"should not include courier contract accepted by other", 0, app.ContractTypeCourier, optional.New(123.0), 0.0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+				ID: characterID,
+			})
+			c := factory.CreateCharacter(storage.CreateCharacterParams{
+				ID: ec.ID,
+			})
+			factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+				CharacterID: c.ID,
+				AcceptorID:  tc.acceptorID,
+				Collateral:  tc.collateral,
+				Type:        tc.contractType,
+			})
+			factory.CreateCharacterContract() // should be ignored
+
+			// when
+			got, err := st.CalculateCharacterContractsCourierEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should sum over multiple courier contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(100.0),
+			Type:        app.ContractTypeCourier,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(200.0),
+			Type:        app.ContractTypeCourier,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContract() // should be ignored
+
+		// when
+		got, err := st.CalculateCharacterContractsCourierEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 300.0, got)
+	})
+}
+
+func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	t.Run("should include when own bid is highest", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Type:        app.ContractTypeAuction,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+			Amount:     12.3,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+			Amount:     3,
+			ContractID: o.ID,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsAuctionEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 12.3, got)
+	})
+
+	t.Run("should not include when own bid is not highest", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Type:        app.ContractTypeAuction,
+			Status:      app.ContractStatusInProgress,
+		})
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+			Amount:     12.3,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+			Amount:     15,
+			ContractID: o.ID,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsAuctionEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}

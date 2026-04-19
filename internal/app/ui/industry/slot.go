@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -17,9 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -35,12 +32,12 @@ type industrySlotRow struct {
 	ready         int
 	free          int
 	total         int
-	isSummary     bool
+	isTotal       bool
 	tags          set.Set[string]
 }
 
 func (r industrySlotRow) characterDisplay() []widget.RichTextSegment {
-	if r.isSummary {
+	if r.isTotal {
 		return xwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
 			TextStyle: fyne.TextStyle{Bold: true},
 		})
@@ -112,99 +109,75 @@ const (
 
 func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 	const columnWidthNumber = 75
-	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{{
-		ID:    industrySlotsColCharacter,
-		Label: "Character",
-		Width: ui.ColumnWidthEntity,
-		Sort: func(a, b industrySlotRow) int {
-			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
-		},
-		Create: func() fyne.CanvasObject {
-			icon := xwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(ui.IconUnitSize),
-			)
-			icon.CornerRadius = ui.IconUnitSize / 2
-			name := widget.NewLabel("Template")
-			name.Truncation = fyne.TextTruncateClip
-			return container.NewBorder(nil, nil, icon, nil, name)
-		},
-		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			label := border[0].(*widget.Label)
-			icon := border[1].(*canvas.Image)
-			if r.isSummary {
-				label.Text = "Total"
-				label.TextStyle = fyne.TextStyle{Bold: true}
-				label.Refresh()
-				icon.Resource = icons.BlankSvg
-				icon.Refresh()
-			} else {
-				label.Text = r.characterName
-				label.TextStyle = fyne.TextStyle{}
-				label.Refresh()
-				u.EVEImage().CharacterPortraitAsync(r.characterID, ui.IconPixelSize, func(r fyne.Resource) {
-					icon.Resource = r
-					icon.Refresh()
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{
+		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[industrySlotRow]{
+			ColumnID: industrySlotsColCharacter,
+			EIS:      u.EVEImage(),
+			GetEntity: func(r industrySlotRow) *app.EveEntity {
+				return &app.EveEntity{
+					ID:       r.characterID,
+					Name:     r.characterName,
+					Category: app.EveEntityCharacter,
+				}
+			},
+			IsAvatar: true,
+			Label:    "Character",
+		}), {
+			ID:    industrySlotsColBusy,
+			Label: "Busy",
+			Width: columnWidthNumber,
+			Sort: func(a, b industrySlotRow) int {
+				return cmp.Compare(a.busy, b.busy)
+			},
+			Update: func(r industrySlotRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.busy), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					ColorName: r.busyColor(),
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
-			}
-		},
-	}, {
-		ID:    industrySlotsColBusy,
-		Label: "Busy",
-		Width: columnWidthNumber,
-		Sort: func(a, b industrySlotRow) int {
-			return cmp.Compare(a.busy, b.busy)
-		},
-		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.busy), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: r.busyColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		},
-	}, {
-		ID:    industrySlotsColReady,
-		Label: "Ready",
-		Width: columnWidthNumber,
-		Sort: func(a, b industrySlotRow) int {
-			return cmp.Compare(a.ready, b.ready)
-		},
-		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.ready), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: r.readyColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		},
-	}, {
-		ID:    industrySlotsColFree,
-		Label: "Free",
-		Width: columnWidthNumber,
-		Sort: func(a, b industrySlotRow) int {
-			return cmp.Compare(a.free, b.free)
-		},
-		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.free), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: r.freeColor(),
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		},
-	}, {
-		ID:    industrySlotsColTotal,
-		Label: "Total",
-		Width: columnWidthNumber,
-		Sort: func(a, b industrySlotRow) int {
-			return cmp.Compare(a.total, b.total)
-		},
-		Update: func(r industrySlotRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.total), widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				TextStyle: fyne.TextStyle{Bold: r.isSummary},
-			})
-		},
-	}})
+			},
+		}, {
+			ID:    industrySlotsColReady,
+			Label: "Ready",
+			Width: columnWidthNumber,
+			Sort: func(a, b industrySlotRow) int {
+				return cmp.Compare(a.ready, b.ready)
+			},
+			Update: func(r industrySlotRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.ready), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					ColorName: r.readyColor(),
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+		}, {
+			ID:    industrySlotsColFree,
+			Label: "Free",
+			Width: columnWidthNumber,
+			Sort: func(a, b industrySlotRow) int {
+				return cmp.Compare(a.free, b.free)
+			},
+			Update: func(r industrySlotRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.free), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					ColorName: r.freeColor(),
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+		}, {
+			ID:    industrySlotsColTotal,
+			Label: "Total",
+			Width: columnWidthNumber,
+			Sort: func(a, b industrySlotRow) int {
+				return cmp.Compare(a.total, b.total)
+			},
+			Update: func(r industrySlotRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.total), widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+		}})
 	a := &Slots{
 		footer:       ui.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, industrySlotsColCharacter, xwidget.SortAsc),
@@ -236,24 +209,24 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.busyColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColReady:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.readyColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColFree:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
 						ColorName: r.freeColor(),
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				case industrySlotsColTotal:
 					return xwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
 						Alignment: fyne.TextAlignTrailing,
-						TextStyle: fyne.TextStyle{Bold: r.isSummary},
+						TextStyle: fyne.TextStyle{Bold: r.isTotal},
 					})
 				}
 				return xwidget.RichTextSegmentsFromText("?")
@@ -274,25 +247,29 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
 
+	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
 		case app.SectionCharacterIndustryJobs, app.SectionCharacterSkills:
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		if arg.Section == app.SectionCorporationIndustryJobs {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -377,19 +354,20 @@ func (a *Slots) filterRowsAsync(sortCol int) {
 
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 		// add totals
-		var active, ready, free, total int
+		var busy, ready, free, total int
 		for _, r := range rows {
-			active += r.busy
+			busy += r.busy
 			ready += r.ready
 			free += r.free
 			total += r.total
 		}
 		rows = append(rows, industrySlotRow{
-			busy:      active,
-			ready:     ready,
-			free:      free,
-			total:     total,
-			isSummary: true,
+			busy:          busy,
+			characterName: "Total",
+			free:          free,
+			isTotal:       true,
+			ready:         ready,
+			total:         total,
 		})
 
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {
@@ -407,7 +385,7 @@ func (a *Slots) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Slots) Update(ctx context.Context) {
+func (a *Slots) update(ctx context.Context) {
 	rows, err := a.fetchData(ctx, a.slotType)
 	if err != nil {
 		slog.Error("Failed to refresh industrySlots UI", "err", err)

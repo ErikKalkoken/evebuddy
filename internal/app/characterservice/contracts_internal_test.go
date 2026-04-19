@@ -15,6 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -491,4 +493,47 @@ func TestUpdateContractESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(o1.ContractID, o2.ContractID, o3.ContractID), ids)
 	})
+}
+
+func TestUpdateContractsEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	c := factory.CreateCharacter()
+	factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		CharacterID: c.ID,
+		AcceptorID:  c.ID,
+		Collateral:  optional.New(100.0),
+		Type:        app.ContractTypeCourier,
+		Status:      app.ContractStatusInProgress,
+	})
+	factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		CharacterID: c.ID,
+		AcceptorID:  c.ID,
+		Collateral:  optional.New(200.0),
+		Type:        app.ContractTypeCourier,
+		Status:      app.ContractStatusInProgress,
+	})
+	o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		CharacterID: c.ID,
+		Type:        app.ContractTypeAuction,
+		Status:      app.ContractStatusInProgress,
+	})
+	factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		Amount:     12.3,
+		BidderID:   c.ID,
+		ContractID: o.ID,
+	})
+
+	// when
+	err := s.updateContractsEscrow(t.Context(), c.ID)
+
+	// then
+	require.NoError(t, err)
+	c2, err := st.GetCharacter(t.Context(), c.ID)
+	require.NoError(t, err)
+	got := c2.ContractsEscrow
+	assert.Equal(t, optional.New(312.3), got)
 }

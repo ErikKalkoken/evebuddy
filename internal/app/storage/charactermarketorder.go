@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -31,6 +32,52 @@ func init() {
 	}
 }
 
+func (st *Storage) CalculateCharacterOrderItemsValue(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterOrderItemsValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterOrderItemsValue(ctx, queries.CalculateCharacterOrderItemsValueParams{
+		CharacterID:   characterID,
+		EveCategoryID: app.EveCategoryBlueprint,
+		States: []string{
+			orderStatusToDBValue[app.OrderOpen],
+			orderStatusToDBValue[app.OrderExpired],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
+func (st *Storage) CalculateCharacterOrdersEscrow(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterOrdersEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterOrdersEscrow(ctx, queries.CalculateCharacterOrdersEscrowParams{
+		States: []string{
+			orderStatusToDBValue[app.OrderOpen],
+			orderStatusToDBValue[app.OrderExpired],
+		},
+		CharacterID: characterID,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
 func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID int64, orderIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterMarketOrdersByID for character %d and job IDs: %v: %w", characterID, orderIDs, err)

@@ -18,7 +18,6 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -44,6 +43,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -101,7 +101,7 @@ type baseUI struct {
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
-	onUpdateCorporationWalletTotals func(balance float64, ok bool)
+	onUpdateCorporationWalletTotals func(balance optional.Optional[float64])
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func(ctx context.Context)
 	showMailIndicator               func()
@@ -351,8 +351,12 @@ func newBaseUI(arg UIParams) *baseUI {
 			if arg.Changed.Contains(u.character.Load().IDOrZero()) {
 				u.ReloadCurrentCharacter(ctx)
 			}
-			characters := u.scs.ListCharacterIDs()
-			if characters.ContainsAny(arg.Changed.All()) {
+			characterIDs, err := u.cs.ListCharacterIDs(ctx)
+			if err != nil {
+				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+				return
+			}
+			if characterIDs.ContainsAny(arg.Changed.All()) {
 				updateStatus(ctx)
 			}
 		case app.SectionEveCorporations:
@@ -365,14 +369,17 @@ func newBaseUI(arg UIParams) *baseUI {
 				updateStatus(ctx)
 			}
 		case app.SectionEveMarketPrices:
-			for _, c := range u.scs.ListCharacters() {
-				_, err := u.cs.UpdateAssetTotalValue(ctx, c.ID)
-				if err != nil {
-					slog.Error("Failed to update asset value", "characterID", c.ID)
-					continue
+			characterIDs, err := u.cs.ListCharacterIDs(ctx)
+			if err != nil {
+				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+				return
+			}
+			for id := range characterIDs.All() {
+				if err := u.cs.UpdateCalculatedValues(ctx, id); err != nil {
+					slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+					return
 				}
 			}
-			u.ReloadCurrentCharacter(ctx)
 		}
 	})
 
@@ -482,16 +489,13 @@ func (u *baseUI) Start() bool {
 	go func() {
 		var wg sync.WaitGroup
 		wg.Go(func() {
-			u.initHome(ctx)
+			u.signals.AppInit.Emit(ctx, struct{}{})
 		})
 		wg.Go(func() {
 			u.initCharacter(ctx)
 		})
 		wg.Go(func() {
 			u.initCorporation(ctx)
-		})
-		wg.Go(func() {
-			u.gameSearch.Init(ctx)
 		})
 		wg.Wait()
 
@@ -822,40 +826,6 @@ func (u *baseUI) SetAnyCorporation(ctx context.Context) error {
 //////////////////
 // Home
 
-// initHome performs an initial load of all pages under the home tab.
-func (u *baseUI) initHome(ctx context.Context) {
-	ff := map[string]func(context.Context){
-		"characterOverview":  u.characterOverview.Update,
-		"assetSearchAll":     u.assetSearchAll.Update,
-		"augmentations":      u.augmentations.Update,
-		"contracts":          u.contracts.Update,
-		"clones":             u.clones.Update,
-		"colonies":           u.colonies.Update,
-		"industryJobs":       u.industryJobs.Update,
-		"loyaltyPoints":      u.loyaltyPoints.Update,
-		"marketOrdersSell":   u.marketOrdersSell.Update,
-		"marketOrdersBuy":    u.marketOrdersBuy.Update,
-		"slotsManufacturing": u.slotsManufacturing.Update,
-		"slotsReactions":     u.slotsReactions.Update,
-		"slotsResearch":      u.slotsResearch.Update,
-		"training":           u.training.Update,
-		"wealth":             u.wealth.Update,
-	}
-	myLog := slog.With("title", "startup")
-	myLog.Debug("started")
-	g := new(errgroup.Group)
-	g.SetLimit(u.concurrencyLimit)
-	for name, f := range ff {
-		g.Go(func() error {
-			start2 := time.Now()
-			f(ctx)
-			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-			return nil
-		})
-	}
-	g.Wait()
-}
-
 func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
 	u.app.Settings().SetTheme(ui.New(u.defaultTheme, s))
 }
@@ -889,28 +859,29 @@ func (u *baseUI) ListCorporationsForSelection(ctx context.Context) ([]*app.Entit
 }
 
 func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
-	v, ok := func() (float64, bool) {
+	var v optional.Optional[float64]
+	func() {
 		corporationID := u.CurrentCorporation().IDOrZero()
 		if corporationID == 0 {
-			return 0, false
+			return
 		}
 		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
-			return 0, false
+			return
 		}
 		if !hasRole {
-			return 0, false
+			return
 		}
 		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
 		if err != nil {
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-			return 0, false
+			return
 		}
-		return b.Value()
+		v = b
 	}()
 	fyne.Do(func() {
-		u.onUpdateCorporationWalletTotals(v, ok)
+		u.onUpdateCorporationWalletTotals(v)
 	})
 }
 

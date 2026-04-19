@@ -95,6 +95,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Wealth", u.wealth),
 	)
 
+	u.wealth.OnUpdate = func(balance optional.Optional[float64]) {
+		homeNav.SetItemBadge(wealth, formatISKValueShort(balance))
+		homeNav.Refresh()
+	}
+
 	const assetsTitle = "Assets"
 	allAssets := xwidget.NewNavPage(
 		assetsTitle,
@@ -282,10 +287,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 	characterNav.MinWidth = navDrawerMinWidth
 	u.characterWallet.OnBalanceUpdate = func(balance optional.Optional[float64]) {
-		s := balance.StringFunc("?", func(v float64) string {
-			return ihumanize.NumberF(v, 1)
-		})
-		characterNav.SetItemBadge(characterWalletNav, s)
+		characterNav.SetItemBadge(characterWalletNav, formatISKValueShort(balance))
 	}
 
 	// Corporation
@@ -376,24 +378,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	for _, d := range app.Divisions {
 		u.corporationWallets[d].OnBalanceUpdate = func(balance optional.Optional[float64]) {
-			s := balance.StringFunc("?", func(v float64) string {
-				return ihumanize.NumberF(v, 1)
-			})
-			corporationNav.SetItemBadge(corporationWalletNavs[d], s)
+			corporationNav.SetItemBadge(corporationWalletNavs[d], formatISKValueShort(balance))
 		}
 		u.corporationWallets[d].NnNameUpdate = func(name string) {
 			corporationNav.SetItemText(corporationWalletNavs[d], name)
 			corporationWalletPages[d].SetTitle(name)
 		}
 	}
-	u.onUpdateCorporationWalletTotals = func(balance float64, ok bool) {
-		var s string
-		if !ok {
-			s = ""
-		} else {
-			s = ihumanize.NumberF(balance, 1)
-		}
-		corporationNav.SetItemBadge(walletsNav, s)
+	u.onUpdateCorporationWalletTotals = func(balance optional.Optional[float64]) {
+		corporationNav.SetItemBadge(walletsNav, formatISKValueShort(balance))
 		corporationNav.Refresh()
 	}
 
@@ -649,6 +642,14 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		}()
 	}
 	return u
+}
+
+func formatISKValueShort(value optional.Optional[float64]) string {
+	v, ok := value.Value()
+	if !ok {
+		return "?"
+	}
+	return ihumanize.NumberF(v, 1)
 }
 
 func (u *DesktopUI) saveAppState() {

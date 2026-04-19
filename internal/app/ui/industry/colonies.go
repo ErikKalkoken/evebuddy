@@ -274,6 +274,10 @@ func NewColonies(u baseUI) *Colonies {
 	a.search.PlaceHolder = "Search systems & output"
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.Update(ctx)
+	})
+
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.body.Refresh()

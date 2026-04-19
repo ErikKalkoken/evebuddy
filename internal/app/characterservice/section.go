@@ -181,6 +181,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 	}
 	slog.Debug("Started updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 	wg.Wait()
+
 	slog.Debug("Finished updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 }
 

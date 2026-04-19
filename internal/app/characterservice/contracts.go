@@ -150,7 +150,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 	if arg.section != app.SectionCharacterContracts {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
@@ -252,8 +252,30 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
 				return false, err
 			}
+
 			return true, nil
-		})
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.ContractItemsValue.IsEmpty() {
+		if err := s.updateContractItemsValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	if arg.forceUpdate || changed || c.ContractsEscrow.IsEmpty() {
+		if err := s.updateContractsEscrow(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	return changed, nil
 }
 
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int64, c esi.CharactersCharacterIdContractsGetInner) error {
@@ -414,5 +436,42 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
+	return nil
+}
+
+func (s *CharacterService) updateContractItemsValue(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateContractItemsValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	v, err := s.st.CalculateCharacterContractItemsValue(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	err = s.st.UpdateCharacterContractItemsValue(ctx, characterID, optional.New(v))
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)
+	}
+	v1, err := s.st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	v2, err := s.st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1+v2))
+	if err != nil {
+		return wrapErr(err)
+	}
 	return nil
 }

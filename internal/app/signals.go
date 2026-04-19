@@ -32,8 +32,14 @@ type EveUniverseSectionUpdated struct {
 // Signals represents the app's event signals.
 // It is safe for concurrent use.
 type Signals struct {
+	// The app is initialized
+	AppInit signals.Signal[struct{}]
+
 	// A character was added.
 	CharacterAdded signals.Signal[*Character]
+
+	// A Character field has changed (e.g. number of unread messages).
+	CharacterChanged signals.Signal[int64]
 
 	// A character was removed.
 	CharacterRemoved signals.Signal[*EntityShort]
@@ -71,9 +77,6 @@ type Signals struct {
 	// A tag as been added, removed or renamed.
 	TagsChanged signals.Signal[struct{}]
 
-	// A Character has changed [only: trainingWatcher].
-	CharacterChanged signals.Signal[int64]
-
 	// A section update has started.
 	UpdateStarted signals.Signal[string]
 
@@ -85,6 +88,7 @@ type Signals struct {
 
 func NewSignals() *Signals {
 	s := &Signals{
+		AppInit:                     signals.New[struct{}](),
 		CharacterAdded:              signals.New[*Character](),
 		CharacterChanged:            signals.New[int64](),
 		CharacterRemoved:            signals.New[*EntityShort](),

@@ -20,10 +20,11 @@ const (
 
 // Global UI constants
 const (
-	IconPixelSize      = 64
-	IconUnitSize       = 28
-	FloatFormat        = "#,###.##"
-	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+	IconPixelSize         = 64
+	IconUnitSize          = 28
+	FloatFormatISK        = "#,###.##"
+	FloatFormatISKRounded = "#,###."
+	fallbackWebsiteURL    = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 // See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847

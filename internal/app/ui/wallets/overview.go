@@ -1,0 +1,503 @@
+package wallets
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"slices"
+	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/go-set"
+	"github.com/dustin/go-humanize"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
+)
+
+type overviewRow struct {
+	characterID            int64
+	characterName          string
+	combinedAssetsDisplay  string
+	combinedAssetsValue    optional.Optional[float64]
+	contractsEscrow        optional.Optional[float64]
+	contractsEscrowDisplay string
+	isTotal                bool
+	ordersEscrow           optional.Optional[float64]
+	ordersEscrowDisplay    string
+	searchTarget           string
+	skillPoints            optional.Optional[float64]
+	skillPointsDisplay     string
+	tags                   set.Set[string]
+	tagsDisplay            string
+	totalNetWorth          optional.Optional[float64]
+	totalNetWorthDisplay   string
+	walletBalance          optional.Optional[float64]
+	walletDisplay          string
+}
+
+func (r overviewRow) eveEntity() *app.EveEntity {
+	return &app.EveEntity{
+		Category: app.EveEntityCharacter,
+		ID:       r.characterID,
+		Name:     r.characterName,
+	}
+}
+
+type Overview struct {
+	widget.BaseWidget
+
+	OnUpdate func(expired int)
+
+	footer       *widget.Label
+	columnSorter *xwidget.ColumnSorter[overviewRow]
+	main         fyne.CanvasObject
+	rows         []overviewRow
+	rowsFiltered []overviewRow
+	search       *widget.Entry
+	selectTag    *kxwidget.FilterChipSelect
+	sortButton   *xwidget.SortButton
+	u            baseUI
+	showHelp     *xwidget.TappableIcon
+}
+
+const (
+	overviewColCharacter = iota + 1
+	overviewColTags
+	overviewColWalletBalance
+	overviewColCombinedAssetsValue
+	overviewColContractsEscrow
+	overviewColOrdersEscrow
+	overviewColTotalNetWorth
+	overviewColSkillPoints
+)
+
+const valueWidth = 125
+
+const overviewHelpText = `Wallet Balance: The balance of the wallet.
+
+Combined Assets: The estimated value of all personal assets, items in outstanding sell orders on the market and items in outstanding contracts.
+
+Contract Escrow: The total sum of all escrows in a character's currently outstanding contracts.
+
+Orders Escrow: The total sum of all escrows in a character's currently outstanding buy orders on the market.
+
+Total Net Worth: Sum of Wallet Balance, Combined Assets, Contract Escrow and Orders Escrow.
+
+Skill Points: Value of extracted skill points (trained + unallocated) calculated with: (MarketPriceOfLargeSkillInjector − MarketPriceOfSkillExtractor) x ((TotalSP − 5,000,000) / 500,000)
+
+NOTE: Blueprints, PLEX in the account wallet are not included.`
+
+func NewOverview(u baseUI) *Overview {
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[overviewRow]{
+		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[overviewRow]{
+			ColumnID: overviewColCharacter,
+			EIS:      u.EVEImage(),
+			GetEntity: func(r overviewRow) *app.EveEntity {
+				return &app.EveEntity{
+					ID:       r.characterID,
+					Name:     r.characterName,
+					Category: app.EveEntityCharacter,
+				}
+			},
+			IsAvatar: true,
+			Label:    "Character",
+		}), {
+			ID:    overviewColTags,
+			Label: "Tags",
+			Width: 150,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
+			},
+		}, {
+			ID:    overviewColWalletBalance,
+			Label: "Wallet Balance",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.walletDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.walletBalance, b.walletBalance)
+			},
+		}, {
+			ID:    overviewColCombinedAssetsValue,
+			Label: "Combined Assets",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.combinedAssetsDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.combinedAssetsValue, b.combinedAssetsValue)
+			},
+		},
+		{
+			ID:    overviewColContractsEscrow,
+			Label: "Contracts Escrow",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.contractsEscrowDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.contractsEscrow, b.contractsEscrow)
+			},
+		},
+		{
+			ID:    overviewColOrdersEscrow,
+			Label: "Orders Escrow",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.ordersEscrowDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
+			},
+		}, {
+			ID:    overviewColTotalNetWorth,
+			Label: "Total Net Worth",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.totalNetWorthDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.totalNetWorth, b.totalNetWorth)
+			},
+		}, {
+			ID:    overviewColSkillPoints,
+			Label: "Skill Points",
+			Width: valueWidth,
+			Update: func(r overviewRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.skillPointsDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b overviewRow) int {
+				return optional.Compare(a.skillPoints, b.skillPoints)
+			},
+		},
+	})
+	a := &Overview{
+		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
+		footer:       widget.NewLabel(""),
+		search:       widget.NewEntry(),
+		u:            u,
+	}
+	a.ExtendBaseWidget(a)
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRowsAsync(-1)
+	})
+	a.search.OnChanged = func(_ string) {
+		a.filterRowsAsync(-1)
+	}
+	a.search.PlaceHolder = "Search characters"
+
+	a.showHelp = xwidget.NewTappableIcon(theme.QuestionIcon(), func() {
+		showHelpPopUp(overviewHelpText, a.u.IsMobile(), a.showHelp)
+	})
+	a.showHelp.SetToolTip("Show explanation for columns")
+
+	if a.u.IsMobile() {
+		a.main = xwidget.MakeDataList(
+			columns,
+			&a.rowsFiltered,
+			func(col int, r overviewRow) []widget.RichTextSegment {
+				var s []widget.RichTextSegment
+				switch col {
+				case overviewColCharacter:
+					s = xwidget.RichTextSegmentsFromText(r.characterName)
+				case overviewColTags:
+					s = xwidget.RichTextSegmentsFromText(r.tagsDisplay)
+				case overviewColWalletBalance:
+					s = xwidget.RichTextSegmentsFromText(r.walletDisplay)
+				case overviewColCombinedAssetsValue:
+					s = xwidget.RichTextSegmentsFromText(r.combinedAssetsDisplay)
+				case overviewColContractsEscrow:
+					s = xwidget.RichTextSegmentsFromText(r.contractsEscrowDisplay)
+				case overviewColOrdersEscrow:
+					s = xwidget.RichTextSegmentsFromText(r.ordersEscrowDisplay)
+				case overviewColTotalNetWorth:
+					s = xwidget.RichTextSegmentsFromText(r.totalNetWorthDisplay)
+				case overviewColSkillPoints:
+					s = xwidget.RichTextSegmentsFromText(r.skillPointsDisplay)
+				}
+				return s
+			},
+			nil,
+		)
+	} else {
+		a.main = xwidget.MakeDataTable(
+			columns,
+			&a.rowsFiltered,
+			func() fyne.CanvasObject {
+				x := xwidget.NewRichText()
+				x.Truncation = fyne.TextTruncateClip
+				return x
+			},
+			a.columnSorter,
+			a.filterRowsAsync,
+			func(_ int, r overviewRow) {
+				u.InfoViewer().Show(r.eveEntity())
+			},
+		)
+	}
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRowsAsync(-1)
+	})
+	a.sortButton = a.columnSorter.NewSortButton(func() {
+		a.filterRowsAsync(-1)
+	}, a.u.MainWindow())
+
+	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		switch arg.Section {
+		case
+			app.SectionCharacterAssets,
+			app.SectionCharacterContracts,
+			app.SectionCharacterMarketOrders,
+			app.SectionCharacterSkills,
+			app.SectionCharacterWalletBalance:
+			a.update(ctx)
+		}
+	})
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
+	})
+	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
+			a.update(ctx)
+		}
+	})
+	return a
+}
+
+func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(a.selectTag)
+	if a.u.IsMobile() {
+		filter.Add(a.sortButton)
+	}
+	var topBox *fyne.Container
+	if a.u.IsMobile() {
+		topBox = container.NewVBox(
+			a.search,
+			container.NewHScroll(filter),
+		)
+	} else {
+		topBox = container.NewBorder(nil, nil, filter, nil, a.search)
+	}
+	c := container.NewBorder(
+		topBox,
+		container.NewHBox(a.footer, layout.NewSpacer(), a.showHelp),
+		nil,
+		nil,
+		a.main,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *Overview) filterRowsAsync(sortCol int) {
+	totalRows := len(a.rows)
+	rows := slices.Clone(a.rows)
+	selectTag := a.selectTag.Selected
+	search := strings.ToLower(a.search.Text)
+	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		if selectTag != "" {
+			rows = slices.DeleteFunc(rows, func(r overviewRow) bool {
+				return !r.tags.Contains(selectTag)
+			})
+		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r overviewRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r overviewRow) set.Set[string] {
+			return r.tags
+		})...).All())
+
+		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
+
+		// add totals
+		var assets, wallets, totals, contracts, orders, skillpoints []optional.Optional[float64]
+		for _, r := range rows {
+			assets = append(assets, r.combinedAssetsValue)
+			contracts = append(contracts, r.contractsEscrow)
+			orders = append(orders, r.ordersEscrow)
+			skillpoints = append(skillpoints, r.skillPoints)
+			totals = append(totals, r.totalNetWorth)
+			wallets = append(wallets, r.walletBalance)
+		}
+		assetsTotal := optional.Sum(assets...)
+		contractsTotal := optional.Sum(contracts...)
+		grandTotal1 := optional.Sum(totals...)
+		ordersTotal := optional.Sum(orders...)
+		walletsTotal := optional.Sum(wallets...)
+		skillpointsTotal := optional.Sum(skillpoints...)
+		rows = append(rows, overviewRow{
+			characterID:            0,
+			characterName:          "Total",
+			combinedAssetsDisplay:  formatISKValue(assetsTotal),
+			combinedAssetsValue:    assetsTotal,
+			contractsEscrow:        contractsTotal,
+			contractsEscrowDisplay: formatISKValue(contractsTotal),
+			isTotal:                true,
+			ordersEscrow:           ordersTotal,
+			ordersEscrowDisplay:    formatISKValue(ordersTotal),
+			searchTarget:           "",
+			skillPoints:            skillpointsTotal,
+			skillPointsDisplay:     formatISKValue(skillpointsTotal),
+			tags:                   set.Set[string]{},
+			totalNetWorth:          grandTotal1,
+			totalNetWorthDisplay:   formatISKValue(grandTotal1),
+			walletBalance:          walletsTotal,
+			walletDisplay:          formatISKValue(walletsTotal),
+		})
+
+		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
+			a.selectTag.SetOptions(tagOptions)
+			a.rowsFiltered = rows
+			a.main.Refresh()
+		})
+	}()
+}
+
+func (a *Overview) update(ctx context.Context) {
+	rows, err := a.fetchRows(ctx)
+	if err != nil {
+		slog.Error("Failed to refresh wealth overview UI", "err", err)
+		fyne.Do(func() {
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
+		})
+		return
+	}
+	fyne.Do(func() {
+		a.rows = rows
+		a.filterRowsAsync(-1)
+	})
+}
+
+func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
+	cc, err := a.u.Character().ListCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var rows []overviewRow
+	for _, o := range cc {
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.ID)
+		if err != nil {
+			return rows, err
+		}
+
+		combinedAssets := o.CombinedAssetsValue()
+		total := optional.Sum(combinedAssets, o.WalletBalance, o.ContractsEscrow, o.OrdersEscrow)
+		rows = append(rows, overviewRow{
+			characterID:            o.ID,
+			characterName:          o.EveCharacter.Name,
+			combinedAssetsDisplay:  formatISKValue(combinedAssets),
+			combinedAssetsValue:    combinedAssets,
+			contractsEscrow:        o.ContractsEscrow,
+			contractsEscrowDisplay: formatISKValue(o.ContractsEscrow),
+			ordersEscrow:           o.OrdersEscrow,
+			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
+			searchTarget:           strings.ToLower(o.EveCharacter.Name),
+			skillPoints:            o.SkillPointsValue,
+			skillPointsDisplay:     formatISKValue(o.SkillPointsValue),
+			tags:                   tags,
+			tagsDisplay:            strings.Join(slices.Sorted(tags.All()), ", "),
+			totalNetWorth:          total,
+			totalNetWorthDisplay:   formatISKValue(total),
+			walletBalance:          o.WalletBalance,
+			walletDisplay:          formatISKValue(o.WalletBalance),
+		})
+	}
+	return rows, nil
+}
+
+func formatISKValue(v optional.Optional[float64]) string {
+	return v.StringFunc("?", func(v float64) string {
+		return humanize.FormatFloat("#,###.", v)
+	})
+}
+
+// showHelpPopUp shows a popUp with text as content
+// and it's position aligned to widget obj.
+func showHelpPopUp(text string, isMobile bool, obj fyne.CanvasObject) {
+	var pu *widget.PopUp
+	closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		pu.Hide()
+	})
+	title := widget.NewLabel("Help")
+	title.TextStyle.Bold = true
+	body := widget.NewLabel(text)
+	body.Wrapping = fyne.TextWrapWord
+
+	p := theme.Padding()
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(obj)
+	var spacerSize fyne.Size
+	if isMobile {
+		_, s := canvas.InteractiveArea()
+		spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
+	} else {
+		spacerSize = fyne.NewSize(300, 400)
+	}
+	spacer := xwidget.NewSpacer(spacerSize)
+	c := container.NewStack(spacer, container.NewBorder(
+		container.NewHBox(title, layout.NewSpacer(), closePopUp),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(container.NewPadded(body)),
+	))
+	pu = widget.NewPopUp(c, canvas)
+
+	if isMobile {
+		pos, s := canvas.InteractiveArea()
+		x := pos.X
+		y := pos.Y + s.Height/2
+		pu.ShowAtPosition(fyne.NewPos(x, y))
+	} else {
+		x := obj.MinSize().Width - pu.MinSize().Width
+		y := obj.MinSize().Height - pu.MinSize().Height + 2*p
+		pu.ShowAtRelativePosition(fyne.NewPos(x, y), obj)
+	}
+}

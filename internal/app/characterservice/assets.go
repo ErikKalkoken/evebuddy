@@ -135,7 +135,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 	if arg.section != app.SectionCharacterAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
@@ -208,7 +208,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 				} else {
 					err := s.st.CreateCharacterAsset(ctx, storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,
-						EveTypeID:       a.TypeId,
+						TypeID:          a.TypeId,
 						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
 						IsSingleton:     a.IsSingleton,
 						ItemID:          a.ItemId,
@@ -231,9 +231,6 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 					return false, err
 				}
 				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
-			}
-			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
-				return false, err
 			}
 
 			// update names
@@ -270,6 +267,21 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 			return true, nil
 		},
 	)
+	if err != nil {
+		return false, err
+	}
+
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.AssetValue.IsEmpty() {
+		if err := s.updateAssetValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	return changed, nil
 }
 
 func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, bool) {
@@ -300,13 +312,13 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 	return m, !hasError
 }
 
-func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
+func (s *CharacterService) updateAssetValue(ctx context.Context, characterID int64) error {
 	v, err := s.st.CalculateCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.New(v)); err != nil {
-		return 0, err
+		return err
 	}
-	return v, nil
+	return nil
 }

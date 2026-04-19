@@ -118,19 +118,23 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	})
 
 	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterLoyaltyPoints {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -275,7 +279,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	}()
 }
 
-func (a *LoyaltyPoints) Update(ctx context.Context) {
+func (a *LoyaltyPoints) update(ctx context.Context) {
 	data, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh loyaltyPoints UI", "err", err)

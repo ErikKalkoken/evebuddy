@@ -508,21 +508,21 @@ func updateItemCounts(td xwidget.TreeData[containerNode]) {
 			case asset.NodeOfficeFolder, asset.NodeAssetSafetyCharacter:
 				for _, n1 := range td.Children(top) {
 					n1.itemCount = optional.FromZeroValue(len(n1.node.Children()))
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+					top.itemCount = optional.SumNonEmpty(top.itemCount, n1.itemCount)
 				}
 			case asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
 				for _, n1 := range td.Children(top) {
 					n1.itemCount.Clear()
 					for _, n2 := range td.Children(n1) {
 						n2.itemCount = optional.FromZeroValue(len(n2.node.Children()))
-						n1.itemCount = optional.Sum(n1.itemCount, n2.itemCount)
+						n1.itemCount = optional.SumNonEmpty(n1.itemCount, n2.itemCount)
 					}
-					top.itemCount = optional.Sum(top.itemCount, n1.itemCount)
+					top.itemCount = optional.SumNonEmpty(top.itemCount, n1.itemCount)
 				}
 			default:
 				top.itemCount = optional.FromZeroValue(len(top.node.Children()))
 			}
-			location.itemCount = optional.Sum(location.itemCount, top.itemCount)
+			location.itemCount = optional.SumNonEmpty(location.itemCount, top.itemCount)
 		}
 	}
 }
@@ -773,7 +773,7 @@ func (a *browserContainer) filterItemsAsync() {
 		for _, it := range items {
 			itemCount++
 			if as, ok := it.node.Asset(); ok {
-				value = optional.Sum(value, optional.New(as.Price.ValueOrZero()*float64(as.Quantity)))
+				value = optional.SumNonEmpty(value, optional.New(as.Price.ValueOrZero()*float64(as.Quantity)))
 			}
 		}
 		footer := fmt.Sprintf("%s / %s items", ihumanize.Comma(itemCount), ihumanize.Comma(totalItems))

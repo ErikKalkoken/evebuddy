@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -61,6 +62,83 @@ func init() {
 	for k, v := range characterContractTypeFromDBValue {
 		characterContractTypeToDBValue[v] = k
 	}
+}
+
+func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterContractItemsValue: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterContractItemsValue(ctx, queries.CalculateCharacterContractItemsValueParams{
+		CharacterID:   characterID,
+		EveCategoryID: app.EveCategoryBlueprint,
+		Status: []string{
+			characterContractStatusToDBValue[app.ContractStatusOutstanding],
+			characterContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+		Types: []string{
+			characterContractTypeToDBValue[app.ContractTypeAuction],
+			characterContractTypeToDBValue[app.ContractTypeCourier],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	v2 := optional.FromNullFloat64(v)
+	return v2.ValueOrZero(), nil
+}
+
+func (st *Storage) CalculateCharacterContractsCourierEscrow(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterContractsCourierEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterContractsCourierEscrow(ctx, queries.CalculateCharacterContractsCourierEscrowParams{
+		CharacterID: characterID,
+		Type:        characterContractTypeToDBValue[app.ContractTypeCourier],
+		Status: []string{
+			characterContractStatusToDBValue[app.ContractStatusOutstanding],
+			characterContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	v2 := optional.FromNullFloat64(v)
+	return v2.ValueOrZero(), nil
+}
+
+func (st *Storage) CalculateCharacterContractsAuctionEscrow(ctx context.Context, characterID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCharacterContractsAuctionEscrow: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCharacterContractsAuctionEscrow(ctx, queries.CalculateCharacterContractsAuctionEscrowParams{
+		CharacterID: characterID,
+		Status: []string{
+			characterContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	v2 := optional.FromNullFloat64(v.TotalWinningBids)
+	return v2.ValueOrZero(), nil
 }
 
 type CreateCharacterContractParams struct {

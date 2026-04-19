@@ -76,19 +76,23 @@ func NewAugmentations(u baseUI) *Augmentations {
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
 
+	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterImplants {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -192,7 +196,7 @@ func (a *Augmentations) filterTreeAsync() {
 	}()
 }
 
-func (a *Augmentations) Update(ctx context.Context) {
+func (a *Augmentations) update(ctx context.Context) {
 	td, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh augmentations UI", "err", err)

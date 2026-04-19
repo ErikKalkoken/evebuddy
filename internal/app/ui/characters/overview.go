@@ -198,6 +198,9 @@ func NewOverview(u baseUI) *Overview {
 	}, a.u.MainWindow())
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		switch arg.Section {
 		case app.SectionEveCharacters:
@@ -210,13 +213,13 @@ func NewOverview(u baseUI) *Overview {
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		switch arg.Section {
@@ -412,7 +415,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Overview) Update(ctx context.Context) {
+func (a *Overview) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)

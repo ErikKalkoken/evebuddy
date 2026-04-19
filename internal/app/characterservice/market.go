@@ -27,7 +27,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	const openState = "open"
-	return s.updateSectionIfChanged(
+	changed, err := s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
@@ -121,7 +121,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				} else {
 					ownerID = characterID
 				}
-				arg := storage.UpdateOrCreateCharacterMarketOrderParams{
+				err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, storage.UpdateOrCreateCharacterMarketOrderParams{
 					CharacterID:   characterID,
 					Duration:      o.Duration,
 					IsBuyOrder:    optional.FromPtr(o.IsBuyOrder),
@@ -139,8 +139,8 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 					VolumeTotal:   o.VolumeTotal,
 					Escrow:        optional.FromPtr(o.Escrow),
 					MinVolume:     optional.FromPtr(o.MinVolume),
-				}
-				if err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, arg); err != nil {
+				})
+				if err != nil {
 					return false, err
 				}
 			}
@@ -196,6 +196,58 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				}
 				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
 			}
+
 			return true, nil
-		})
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	// update calculated values
+	c, err := s.st.GetCharacter(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
+	if arg.forceUpdate || changed || c.OrdersEscrow.IsEmpty() {
+		if err := s.updateOrdersEscrow(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	if arg.forceUpdate || changed || c.OrderItemsValue.IsEmpty() {
+		if err := s.updateOrderItemValue(ctx, arg.characterID); err != nil {
+			return false, err
+		}
+	}
+	return changed, nil
+}
+
+func (s *CharacterService) updateOrderItemValue(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateOrderItemValue: %d: %w", characterID, err)
+	}
+	v, err := s.st.CalculateCharacterOrderItemsValue(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	err = s.st.UpdateCharacterOrderItemsValue(ctx, characterID, optional.New(v))
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func (s *CharacterService) updateOrdersEscrow(ctx context.Context, characterID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateOrdersEscrow: %d: %w", characterID, err)
+	}
+	v, err := s.st.CalculateCharacterOrdersEscrow(ctx, characterID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	err = s.st.UpdateCharacterOrdersEscrow(ctx, characterID, optional.New(v))
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }

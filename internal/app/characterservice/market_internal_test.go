@@ -9,6 +9,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -339,4 +340,71 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestUpdateOrderItemValue(t *testing.T) {
+	// given
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	c := factory.CreateCharacter()
+	o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		CharacterID:   c.ID,
+		IsBuyOrder:    optional.New(false),
+		State:         app.OrderOpen,
+		VolumeRemains: 1,
+	})
+	o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		CharacterID:   c.ID,
+		IsBuyOrder:    optional.New(false),
+		State:         app.OrderOpen,
+		VolumeRemains: 2,
+	})
+	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+		TypeID:       o1.Type.ID,
+		AveragePrice: optional.New(100.1),
+	})
+	factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+		TypeID:       o2.Type.ID,
+		AveragePrice: optional.New(200.2),
+	})
+
+	// when
+	err := s.updateOrderItemValue(t.Context(), c.ID)
+
+	// then
+	require.NoError(t, err)
+	c2, err := st.GetCharacter(t.Context(), c.ID)
+	require.NoError(t, err)
+	got := c2.OrderItemsValue
+	assert.Equal(t, optional.New(500.5), got)
+}
+
+func TestUpdateOrdersEscrow(t *testing.T) {
+	// given
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	c := factory.CreateCharacter()
+	factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		CharacterID: c.ID,
+		IsBuyOrder:  optional.New(true),
+		Escrow:      optional.New(10.2),
+	})
+	factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		CharacterID: c.ID,
+		IsBuyOrder:  optional.New(true),
+		Escrow:      optional.New(5.0),
+	})
+	factory.CreateCharacterMarketOrder() // should be ignored
+
+	// when
+	err := s.updateOrdersEscrow(t.Context(), c.ID)
+
+	// then
+	require.NoError(t, err)
+	c2, err := st.GetCharacter(t.Context(), c.ID)
+	require.NoError(t, err)
+	got := c2.OrdersEscrow
+	assert.Equal(t, optional.New(15.2), got)
 }

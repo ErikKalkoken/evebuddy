@@ -96,6 +96,21 @@ func (f Factory) CreateCharacterFull(args ...storage.CreateCharacterParams) *app
 	if arg.AssetValue.IsEmpty() {
 		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
 	}
+	if arg.ContractsEscrow.IsEmpty() {
+		arg.ContractsEscrow = optional.New(rand.Float64() * 10_000_000_000)
+	}
+	if arg.ContractItemsValue.IsEmpty() {
+		arg.ContractItemsValue = optional.New(rand.Float64() * 10_000_000_000)
+	}
+	if arg.OrdersEscrow.IsEmpty() {
+		arg.OrdersEscrow = optional.New(rand.Float64() * 10_000_000_000)
+	}
+	if arg.OrderItemsValue.IsEmpty() {
+		arg.OrderItemsValue = optional.New(rand.Float64() * 10_000_000_000)
+	}
+	if arg.SkillPointsValue.IsEmpty() {
+		arg.SkillPointsValue = optional.New(rand.Float64() * 100_000_000_000)
+	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
 		arg.HomeID = optional.New(x.ID)
@@ -183,9 +198,9 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
-	if arg.EveTypeID == 0 {
+	if arg.TypeID == 0 {
 		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
+		arg.TypeID = x.ID
 	}
 	if arg.ItemID == 0 {
 		arg.ItemID = f.calcNewIDWithCharacter("character_assets", "item_id", arg.CharacterID)

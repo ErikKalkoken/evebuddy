@@ -1,3 +1,46 @@
+-- name: CalculateCharacterContractItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * cci.quantity)
+FROM
+    character_contract_items cci
+    JOIN character_contracts cc ON cc.id = cci.contract_id
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
+WHERE
+    character_id = ?
+    AND cc.status IN (sqlc.slice('status'))
+    AND cc.type IN (sqlc.slice('types'))
+    AND cci.is_included IS TRUE
+    AND eg.eve_category_id <> ?;
+
+-- name: CalculateCharacterContractsCourierEscrow :one
+SELECT
+    SUM(collateral)
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+    AND acceptor_id == character_id
+    AND type = ?
+    AND status IN (sqlc.slice('status'));
+
+-- name: CalculateCharacterContractsAuctionEscrow :one
+SELECT
+    bidder_id,
+    SUM(amount) AS total_winning_bids
+FROM character_contract_bids AS main_bids
+JOIN character_contracts cc ON cc.id = main_bids.contract_id
+WHERE amount = (
+    SELECT MAX(amount)
+    FROM character_contract_bids
+    WHERE contract_id = main_bids.contract_id
+)
+AND main_bids.bidder_id = cc.character_id
+AND cc.character_id = ?
+AND cc.status IN (sqlc.slice('status'))
+GROUP BY main_bids.bidder_id;
+
 -- name: CreateCharacterContract :one
 INSERT INTO
     character_contracts (
@@ -60,8 +103,9 @@ RETURNING
 
 -- name: DeleteCharacterContracts :exec
 DELETE FROM character_contracts
-WHERE character_id = ?
-AND contract_id IN (sqlc.slice('contract_ids'));
+WHERE
+    character_id = ?
+    AND contract_id IN (sqlc.slice('contract_ids'));
 
 -- name: GetCharacterContract :one
 SELECT

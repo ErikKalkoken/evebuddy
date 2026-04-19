@@ -74,18 +74,34 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // Set updates the widget.
+//
+// If o.ID is zero it will render no icon and the name in bold style.
+// This can be used to show totals in tables.
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
 	if w.IsAvatar {
 		w.icon.CornerRadius = w.IconUnitSize / 2
+	}
+	if o.ID == 0 {
+		w.icon.Resource = icons.BlankSvg
+		w.icon.Refresh()
+		w.name.Text = o.Name
+		w.name.TextStyle.Bold = true
+		w.name.Refresh()
+		return
 	}
 	w.loadIcon(o, w.IconPixelSize, func(r fyne.Resource) {
 		w.icon.Resource = r
 		w.icon.Refresh()
 	})
-	w.name.SetText(o.Name)
+	w.name.Text = o.Name
+	w.name.TextStyle.Bold = false
+	w.name.Refresh()
 }
 
 // Set2 updates the widget.
+//
+// If id is zero it will render no icon and the name in bold style.
+// This can be used to show totals in tables.
 func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCategory) {
 	w.Set(&app.EveEntity{
 		Category: category,

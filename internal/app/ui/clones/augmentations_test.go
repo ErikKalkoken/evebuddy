@@ -32,7 +32,7 @@ func TestAugmentations_Update(t *testing.T) {
 		}))
 
 		// when
-		a.Update(t.Context())
+		a.update(t.Context())
 
 		// then
 		got := set.Collect(xiter.MapSlice(a.treeData.Children(nil), func(x *augmentationNode) int64 {
@@ -58,7 +58,7 @@ func TestAugmentations_Update(t *testing.T) {
 		}))
 
 		// when
-		a.Update(t.Context())
+		a.update(t.Context())
 
 		// then
 		got := xslices.Map(a.treeData.Children(nil), func(x *augmentationNode) int64 {

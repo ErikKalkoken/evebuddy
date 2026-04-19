@@ -371,10 +371,14 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	}, a.u.MainWindow())
 
 	// Signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
@@ -383,22 +387,22 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			if arg.Section != app.SectionCorporationContracts {
 				return
 			}
-			a.Update(ctx)
+			a.update(ctx)
 		})
 	} else {
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterContracts {
-				a.Update(ctx)
+				a.update(ctx)
 			}
 		})
 		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 		a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-			a.Update(ctx)
+			a.update(ctx)
 		})
 	}
 	return a
@@ -566,7 +570,7 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Contracts) Update(ctx context.Context) {
+func (a *Contracts) update(ctx context.Context) {
 	var activeCount int
 	var err error
 	var rows []contractRow

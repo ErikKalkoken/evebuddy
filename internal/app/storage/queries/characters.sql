@@ -2,19 +2,24 @@
 INSERT INTO
     characters (
         id,
+        asset_value,
+        contract_items_value,
+        contracts_escrow,
         home_id,
+        is_training_watched,
+        last_clone_jump_at,
         last_login_at,
         location_id,
+        order_items_value,
+        orders_escrow,
         ship_id,
+        skill_points_value,
         total_sp,
         unallocated_sp,
-        wallet_balance,
-        asset_value,
-        is_training_watched,
-        last_clone_jump_at
+        wallet_balance
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: DeleteCharacter :exec
 DELETE FROM characters
@@ -114,6 +119,35 @@ FROM
     JOIN eve_characters ec ON ec.id = ch.id
     JOIN eve_entities ee ON ee.id = ec.corporation_id;
 
+-- name: ListCharacterWealthValues :many
+SELECT
+    id,
+    asset_value,
+    wallet_balance
+FROM
+    characters;
+
+-- name: UpdateCharacterAssetValue :exec
+UPDATE characters
+SET
+    asset_value = ?
+WHERE
+    id = ?;
+
+-- name: UpdateCharacterContractsEscrow :exec
+UPDATE characters
+SET
+    contracts_escrow = ?
+WHERE
+    id = ?;
+
+-- name: UpdateCharacterContractItemsValue :exec
+UPDATE characters
+SET
+    contract_items_value = ?
+WHERE
+    id = ?;
+
 -- name: UpdateCharacterLastCloneJump :exec
 UPDATE characters
 SET
@@ -149,10 +183,31 @@ SET
 WHERE
     id = ?;
 
+-- name: UpdateCharacterOrdersEscrow :exec
+UPDATE characters
+SET
+    orders_escrow = ?
+WHERE
+    id = ?;
+
+-- name: UpdateCharacterOrderItemsValue :exec
+UPDATE characters
+SET
+    order_items_value = ?
+WHERE
+    id = ?;
+
 -- name: UpdateCharacterShipID :exec
 UPDATE characters
 SET
     ship_id = ?
+WHERE
+    id = ?;
+
+-- name: UpdateCharacterSkillPointsValue :exec
+UPDATE characters
+SET
+    skill_points_value = ?
 WHERE
     id = ?;
 
@@ -168,12 +223,5 @@ WHERE
 UPDATE characters
 SET
     wallet_balance = ?
-WHERE
-    id = ?;
-
--- name: UpdateCharacterAssetValue :exec
-UPDATE characters
-SET
-    asset_value = ?
 WHERE
     id = ?;

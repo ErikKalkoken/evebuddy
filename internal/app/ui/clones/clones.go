@@ -209,19 +209,23 @@ func NewClones(u baseUI) *Clones {
 	}, a.u.MainWindow())
 
 	// signals
+	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterJumpClones {
-			a.Update(ctx)
+			a.update(ctx)
 		}
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+		a.update(ctx)
 	})
 	return a
 }
@@ -321,7 +325,7 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Clones) Update(ctx context.Context) {
+func (a *Clones) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
