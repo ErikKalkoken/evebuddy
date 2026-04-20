@@ -8,6 +8,8 @@ github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/ErikKalkoken/eveauth v0.1.1 h1:VR8LfEHwR0y0CW1j3jEzepbbkrvmJ5AoStqRSJHfU9c=
 github.com/ErikKalkoken/eveauth v0.1.1/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
+github.com/ErikKalkoken/eveauth v0.2.0 h1:2S2x7/OencDR+d1d4J68ex/K2o4yq5+mMXBpD1G9Y5k=
+github.com/ErikKalkoken/eveauth v0.2.0/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
 github.com/ErikKalkoken/fyne-kx v0.7.2 h1:KD2F4FBFcAUpHlGQ1bpfvw2NRYTVIBVDo9DjdwYmaes=
 github.com/ErikKalkoken/fyne-kx v0.7.2/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
 github.com/ErikKalkoken/go-set v0.3.0 h1:yJxMD/7UfVB4+wEJ9PD0A+pODy0vreyo72szy1UcgZQ=
