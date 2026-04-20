@@ -57,6 +57,7 @@ import (
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
 	appName             = "evebuddy"
+	appNameVerbose      = "EVE Buddy"
 	authClientID        = "11ae857fe4d149b2be60d875649c05f1"
 	authPort            = 30123
 	remotePort          = 30125
@@ -197,9 +198,10 @@ func main() {
 
 	if *ssoDemoFlag {
 		client, err := eveauth.NewClient(eveauth.Config{
-			ClientID:   authClientID,
-			IsDemoMode: true,
-			Port:       authPort,
+			ApplicationName: appNameVerbose,
+			ClientID:        authClientID,
+			IsDemoMode:      true,
+			Port:            authPort,
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -329,9 +331,10 @@ func main() {
 
 	// Init Character service
 	authClient, err := eveauth.NewClient(eveauth.Config{
-		ClientID:   authClientID,
-		HTTPClient: rhc2.StandardClient(),
-		Port:       authPort,
+		ApplicationName: appNameVerbose,
+		ClientID:        authClientID,
+		HTTPClient:      rhc2.StandardClient(),
+		Port:            authPort,
 		OpenURL: func(u string) error {
 			u2, err := url.ParseRequestURI(u)
 			if err != nil {
