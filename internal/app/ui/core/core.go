@@ -269,9 +269,24 @@ func newBaseUI(arg UIParams) *baseUI {
 		u.onUpdateStatus(ctx)
 	}
 
-	// Signal logging and base listeners
-	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDOrZero())
+	// Core signal listeners and signal logging
+	u.signals.AppInit.AddListener(func(ctx context.Context, s struct{}) {
+		slog.Debug("Signal: AppInit")
+		err := u.cs.UpdateAllCalculatedValues(ctx)
+		if err != nil {
+			slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+			return
+		}
+	})
+	u.signals.CharacterAdded.AddListener(func(ctx context.Context, c *app.Character) {
+		slog.Debug("Signal: CharacterAdded", "characterID", c.IDOrZero())
+		updateStatus(ctx)
+	})
+	u.signals.CharacterChanged.AddListener(func(ctx context.Context, id int64) {
+		slog.Debug("Signal: CharacterChanged", "characterID", id)
+	})
+	u.signals.CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
+		slog.Debug("Signal: CharacterRemoved", "characterID", c.IDOrZero())
 		updateStatus(ctx)
 	})
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -319,20 +334,12 @@ func newBaseUI(arg UIParams) *baseUI {
 			u.rs.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
-	u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		updateStatus(ctx)
+	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		slog.Debug("Signal: CharacterSectionUpdated", "arg", arg)
 	})
-	u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		updateStatus(ctx)
-	})
-
 	u.signals.CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		slog.Debug("Signal: CorporationsChanged")
 		updateStatus(ctx)
-	})
-	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
-		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDOrZero())
-		updateStatus(ctx)
-		u.updateCorporationWalletTotal(ctx)
 	})
 	u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		slog.Debug("Signal: CorporationSectionChanged", "arg", arg)
@@ -343,7 +350,15 @@ func newBaseUI(arg UIParams) *baseUI {
 			u.updateCorporationWalletTotal(ctx)
 		}
 	})
-
+	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDOrZero())
+		updateStatus(ctx)
+	})
+	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDOrZero())
+		updateStatus(ctx)
+		u.updateCorporationWalletTotal(ctx)
+	})
 	u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
 		switch arg.Section {
@@ -369,18 +384,24 @@ func newBaseUI(arg UIParams) *baseUI {
 				updateStatus(ctx)
 			}
 		case app.SectionEveMarketPrices:
-			characterIDs, err := u.cs.ListCharacterIDs(ctx)
+			err := u.cs.UpdateAllCalculatedValues(ctx)
 			if err != nil {
 				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 				return
 			}
-			for id := range characterIDs.All() {
-				if err := u.cs.UpdateCalculatedValues(ctx, id); err != nil {
-					slog.Error("Failed to update total net worth", "arg", arg, "err", err)
-					return
-				}
-			}
 		}
+	})
+	u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		slog.Debug("Signal: EveUniverseSectionUpdated", "arg", arg)
+	})
+	u.signals.RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+		slog.Debug("Signal: RefreshTickerExpired")
+	})
+	u.signals.TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		slog.Debug("Signal: TagsChanged")
+	})
+	u.signals.UpdateStarted.AddListener(func(ctx context.Context, s string) {
+		slog.Debug("Signal: UpdateStarted", "section", s)
 	})
 
 	u.assetSearchAll = assets.NewSearchForAll(u)

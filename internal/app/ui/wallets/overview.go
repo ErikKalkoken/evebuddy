@@ -303,10 +303,8 @@ func NewOverview(u baseUI) *Overview {
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.update(ctx)
 	})
-	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		if arg.Section == app.SectionEveMarketPrices {
-			a.update(ctx)
-		}
+	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, _ int64) {
+		a.update(ctx)
 	})
 	return a
 }

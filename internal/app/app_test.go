@@ -8,11 +8,25 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestEntityShort_IDOrZero(t *testing.T) {
+	x1 := &app.EntityShort{ID: 42, Name: "Alpha"}
+	xassert.Equal(t, 42, x1.IDOrZero())
+	var x2 *app.EntityShort
+	xassert.Equal(t, 0, x2.IDOrZero())
+}
+
+func TestEntityShort_NameOrZero(t *testing.T) {
+	x1 := &app.EntityShort{ID: 42, Name: "Alpha"}
+	xassert.Equal(t, "Alpha", x1.NameOrZero())
+	var x2 *app.EntityShort
+	xassert.Equal(t, "", x2.NameOrZero())
+}
+
 func TestError(t *testing.T) {
 	t.Run("should return general error", func(t *testing.T) {
 		err := errors.New("new error")
 		got := app.ErrorDisplay(err)
-	xassert.Equal(t, "general error", got)
+		xassert.Equal(t, "general error", got)
 	})
 	// t.Run("should resolve goesi errors", func(t *testing.T) {
 	// 	// given

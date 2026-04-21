@@ -28,6 +28,20 @@ type EntityShort struct {
 	Name string
 }
 
+func (c *EntityShort) IDOrZero() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
+func (c *EntityShort) NameOrZero() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
 // Position is a position in 3D space.
 type Position struct {
 	X float64

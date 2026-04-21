@@ -104,10 +104,8 @@ func NewWealth(u baseUI) *Wealth {
 			a.update(ctx)
 		}
 	})
-	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		if arg.Section == app.SectionEveMarketPrices {
-			a.update(ctx)
-		}
+	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, _ int64) {
+		a.update(ctx)
 	})
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)

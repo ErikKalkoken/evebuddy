@@ -50,12 +50,6 @@ type Signals struct {
 	// A character section has been updated from ESI.
 	CharacterSectionUpdated signals.Signal[CharacterSectionUpdated]
 
-	// The current character was exchanged with another character or reset.
-	CurrentCharacterExchanged signals.Signal[*Character]
-
-	// The current corporation was exchanged with another corporation or reset.
-	CurrentCorporationExchanged signals.Signal[*Corporation]
-
 	// A corporation has been added or removed.
 	CorporationsChanged signals.Signal[struct{}]
 
@@ -64,6 +58,12 @@ type Signals struct {
 
 	// A corporation section has been updated from ESI.
 	CorporationSectionUpdated signals.Signal[CorporationSectionUpdated]
+
+	// The current character was exchanged with another character or reset.
+	CurrentCharacterExchanged signals.Signal[*Character]
+
+	// The current corporation was exchanged with another corporation or reset.
+	CurrentCorporationExchanged signals.Signal[*Corporation]
 
 	// An EveUniverse section has changed after an update from ESI.
 	EveUniverseSectionChanged signals.Signal[EveUniverseSectionUpdated]
