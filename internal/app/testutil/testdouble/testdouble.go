@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -335,6 +336,10 @@ func (u *UIFake) IsOffline() bool {
 
 func (u *UIFake) IsUpdateDisabled() bool {
 	return false
+}
+
+func (u *UIFake) Janice() *janiceservice.JaniceService {
+	panic("NOT IMPLEMENTED")
 }
 
 func (u *UIFake) MainWindow() fyne.Window {

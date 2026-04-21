@@ -148,6 +148,15 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+	t.Run("should return error when called with invalid ID", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// when
+		_, _, err := s.GetOrCreateCharacterESI(ctx, 0)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
@@ -382,6 +391,15 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		// then
 		assert.Error(t, err)
 		assert.False(t, changed)
+	})
+	t.Run("should return error when called with invalid ID", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// when
+		_, _, err := s.UpdateOrCreateCharacterESI(ctx, 0)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 }
 

@@ -122,6 +122,11 @@ type showParams struct {
 }
 
 func (iw *InfoViewer) show2(arg showParams) {
+	if arg.entityID == 0 || arg.variant == infoNotSupported {
+		ui.ShowErrorAndLog("Can't show info window", app.ErrInvalid, iw.u.IsDeveloperMode(), iw.w)
+		return
+	}
+
 	if iw.u.IsOffline() {
 		ui.ShowInformation(
 			"Offline",

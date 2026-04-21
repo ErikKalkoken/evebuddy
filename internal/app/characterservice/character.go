@@ -3,6 +3,7 @@ package characterservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 
@@ -175,24 +176,49 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	return c, nil
 }
 
-func (s *CharacterService) UpdateCalculatedValues(ctx context.Context, characterID int64) error {
-	if err := s.updateAssetValue(ctx, characterID); err != nil {
-		return err
+// UpdateAllCalculatedValues updates the calculated values of all characters.
+func (s *CharacterService) UpdateAllCalculatedValues(ctx context.Context) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCalculatedValues: %w", err)
 	}
-	if err := s.updateContractItemsValue(ctx, characterID); err != nil {
-		return err
+	characterIDs, err := s.ListCharacterIDs(ctx)
+	if err != nil {
+		return wrapErr(err)
 	}
-	if err := s.updateContractsEscrow(ctx, characterID); err != nil {
-		return err
-	}
-	if err := s.updateOrdersEscrow(ctx, characterID); err != nil {
-		return err
-	}
-	if err := s.updateOrderItemValue(ctx, characterID); err != nil {
-		return err
-	}
-	if err := s.updateSkillPointValue(ctx, characterID); err != nil {
-		return err
+	for id := range characterIDs.All() {
+		c1, err := s.GetCharacter(ctx, id)
+		if err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateAssetValue(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateContractItemsValue(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateContractsEscrow(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateOrdersEscrow(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateOrderItemValue(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		if err := s.updateSkillPointValue(ctx, id); err != nil {
+			return wrapErr(err)
+		}
+		c2, err := s.GetCharacter(ctx, id)
+		if err != nil {
+			return wrapErr(err)
+		}
+		changed := c1.CombinedAssetsValue() != c2.CombinedAssetsValue() ||
+			c1.ContractsEscrow != c2.ContractsEscrow ||
+			c1.OrdersEscrow != c2.OrdersEscrow ||
+			c1.SkillPointsValue != c2.SkillPointsValue
+		if changed {
+			go s.signals.CharacterChanged.Emit(ctx, id)
+		}
 	}
 	return nil
 }
