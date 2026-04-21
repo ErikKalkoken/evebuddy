@@ -220,6 +220,14 @@ func NewOverview(u baseUI) *Overview {
 	})
 	a.showHelp.SetToolTip("Show explanation for columns")
 
+	showRow := func(r overviewRow) {
+		o := r.eveEntity()
+		if o.ID == 0 {
+			return
+		}
+		u.InfoViewer().Show(o)
+	}
+
 	if a.u.IsMobile() {
 		a.main = xwidget.MakeDataList(
 			columns,
@@ -246,7 +254,7 @@ func NewOverview(u baseUI) *Overview {
 				}
 				return s
 			},
-			nil,
+			showRow,
 		)
 	} else {
 		a.main = xwidget.MakeDataTable(
@@ -260,7 +268,7 @@ func NewOverview(u baseUI) *Overview {
 			a.columnSorter,
 			a.filterRowsAsync,
 			func(_ int, r overviewRow) {
-				u.InfoViewer().Show(r.eveEntity())
+				showRow(r)
 			},
 		)
 	}
