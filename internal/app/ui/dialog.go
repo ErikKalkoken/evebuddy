@@ -32,17 +32,23 @@ func ShowConfirm(title, message, confirm string, callback func(bool), parent fyn
 // ShowErrorAndLog shows a error dialog and logs the error.
 func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyne.Window) {
 	slog.Error(message, "error", err)
-	title := widget.NewLabel(message)
 	var s string
 	if IsDeveloperMode {
 		s = err.Error()
 	} else {
 		s = app.ErrorDisplay(err)
 	}
-	l := widget.NewLabel(s)
-	l.TextStyle.Monospace = true
-	l.Wrapping = fyne.TextWrapBreak
-	c := container.NewVScroll(container.NewBorder(title, nil, nil, nil, l))
+	errMessage := widget.NewLabel(s)
+	errMessage.TextStyle.Monospace = true
+	errMessage.Wrapping = fyne.TextWrapBreak
+	errMessage.Importance = widget.DangerImportance
+	c := container.NewVScroll(container.NewBorder(
+		widget.NewLabel(message),
+		nil,
+		nil,
+		nil,
+		errMessage,
+	))
 	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", c, parent)
 	xdesktop.DisableShortcutsForDialog(d, parent)
