@@ -22,12 +22,18 @@ func (s *EVEUniverseService) GetCharacterESI(ctx context.Context, characterID in
 }
 
 func (s *EVEUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetOrCreateCharacterESI %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, false, wrapErr(app.ErrInvalid)
+	}
 	o, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCharacterESI(ctx, characterID)
 	}
 	if err != nil {
-		return nil, false, err
+		return nil, false, wrapErr(err)
 	}
 	return o, false, nil
 }
@@ -35,11 +41,17 @@ func (s *EVEUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 // UpdateOrCreateCharacterESI updates or create a character from ESI.
 // Returns [app.ErrNotFound] when the character does not exist.
 func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCharacterESI %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, false, wrapErr(app.ErrInvalid)
+	}
 	c1, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		c1 = nil
 	} else if err != nil {
-		return nil, false, err
+		return nil, false, wrapErr(err)
 	}
 	c2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (*app.EveCharacter, error) {
 		ec, r, err := s.esiClient.CharacterAPI.GetCharactersCharacterId(ctx, characterID).Execute()
@@ -99,7 +111,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return c2, nil
 	})
 	if err != nil {
-		return nil, false, fmt.Errorf("UpdateOrCreateCharacterESI %d: %w", characterID, err)
+		return nil, false, wrapErr(err)
 	}
 	if c2 == nil {
 		return nil, false, nil
@@ -113,7 +125,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 			Category: app.EveEntityCharacter,
 		})
 		if err != nil {
-			return nil, false, err
+			return nil, false, wrapErr(err)
 		}
 	}
 	return c2, changed, nil
