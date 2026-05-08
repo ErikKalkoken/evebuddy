@@ -1982,7 +1982,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	})
 	arg.CorporationID = x.ID
 	if arg.Birthday.IsZero() {
-		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24)
+		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24).Truncate(time.Second)
 	}
 	if arg.Description.IsEmpty() {
 		arg.Description.Set(fake.Paragraphs())
@@ -2172,6 +2172,11 @@ func (f Factory) CreateEveEntityCharacter(args ...app.EveEntity) *app.EveEntity 
 
 func (f Factory) CreateEveEntityCorporation(args ...app.EveEntity) *app.EveEntity {
 	args2 := eveEntityWithCategory(args, app.EveEntityCorporation)
+	return f.CreateEveEntity(args2...)
+}
+
+func (f Factory) CreateEveEntityFaction(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityFaction)
 	return f.CreateEveEntity(args2...)
 }
 
