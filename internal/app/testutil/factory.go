@@ -1982,7 +1982,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	})
 	arg.CorporationID = x.ID
 	if arg.Birthday.IsZero() {
-		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24)
+		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24).Truncate(time.Second)
 	}
 	if arg.Description.IsEmpty() {
 		arg.Description.Set(fake.Paragraphs())

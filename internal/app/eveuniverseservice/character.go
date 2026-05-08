@@ -39,6 +39,7 @@ func (s *EVEUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 }
 
 // UpdateOrCreateCharacterESI updates or create a character from ESI.
+// Returns the changed character when it was changed and reports whether it was changed.
 // Returns [app.ErrNotFound] when the character does not exist.
 func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	wrapErr := func(err error) error {
@@ -65,24 +66,12 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
-		if err != nil {
-			return nil, err
-		}
-		if len(affiliations) != 1 {
-			return nil, fmt.Errorf("affiliations mismatch")
-		}
-		af := affiliations[0]
-		if af.CharacterId != characterID {
-			slog.Warn("affiliations mismatch", "characterID", characterID, "affiliations", affiliations)
-			return nil, nil // FIXME: Temporary workaround
-		}
 		arg := storage.CreateEveCharacterParams{
-			AllianceID:     optional.FromPtr(af.AllianceId),
+			AllianceID:     optional.FromPtr(ec.AllianceId),
 			Birthday:       ec.Birthday,
-			CorporationID:  af.CorporationId,
+			CorporationID:  ec.CorporationId,
 			Description:    optional.FromPtr(ec.Description),
-			FactionID:      optional.FromPtr(af.FactionId),
+			FactionID:      optional.FromPtr(ec.FactionId),
 			Gender:         ec.Gender,
 			ID:             characterID,
 			Name:           ec.Name,
@@ -90,19 +79,76 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 			SecurityStatus: optional.FromPtr(ec.SecurityStatus),
 			Title:          optional.FromPtr(ec.Title),
 		}
-		ids := set.Of(characterID, arg.CorporationID)
-		if af.AllianceId != nil {
-			ids.Add(*af.AllianceId)
+		affiliationsOK, err := func() (bool, error) {
+			affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
+			if err != nil {
+				return false, err
+			}
+			if len(affiliations) != 1 {
+				slog.Warn("ignoring unexpected affiliations response", "characterID", characterID, "affiliations", affiliations)
+				return false, nil
+			}
+			af := affiliations[0]
+			if af.CharacterId == characterID {
+				arg.AllianceID = optional.FromPtr(af.AllianceId)
+				arg.CorporationID = af.CorporationId
+				arg.FactionID = optional.FromPtr(af.FactionId)
+			} else {
+				slog.Warn("ignoring affiliations mismatch", "characterID", characterID, "affiliations", affiliations)
+				return false, nil
+			}
+			return true, nil
+		}()
+		if err != nil {
+			return nil, err
 		}
-		if af.FactionId != nil {
-			ids.Add(*af.FactionId)
+		optionalID := func(o optional.Optional[*app.EveEntity]) optional.Optional[int64] {
+			v, ok := o.Value()
+			if !ok {
+				return optional.Optional[int64]{}
+			}
+			return optional.New(v.ID)
 		}
-		_, err = s.AddMissingEntities(ctx, ids)
+		if !affiliationsOK && c1 != nil {
+			// don't use affiliation info from character endpoint
+			// for updating existing characters
+			// when response from affiliation endpoint was invalid
+			arg.AllianceID = optionalID(c1.Alliance)
+			arg.FactionID = optionalID(c1.Faction)
+			arg.CorporationID = c1.Corporation.ID
+		}
+		changed := c1 == nil ||
+			optionalID(c1.Alliance) != arg.AllianceID ||
+			c1.Corporation.ID != arg.CorporationID ||
+			optionalID(c1.Faction) != arg.AllianceID ||
+			c1.Description != arg.Description ||
+			c1.Name != arg.Name ||
+			c1.SecurityStatus != arg.SecurityStatus ||
+			c1.Title != arg.Title
+		if !changed {
+			return nil, nil
+		}
+		_, err = s.AddMissingEntities(ctx, set.Of(
+			characterID,
+			arg.CorporationID,
+			arg.AllianceID.ValueOrZero(),
+			arg.FactionID.ValueOrZero()),
+		)
 		if err != nil {
 			return nil, err
 		}
 		if err := s.st.UpdateOrCreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
+		}
+		if c1 != nil && c1.Name != arg.Name {
+			_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+				ID:       characterID,
+				Name:     arg.Name,
+				Category: app.EveEntityCharacter,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 		c2, err := s.st.GetEveCharacter(ctx, characterID)
 		if err != nil {
@@ -113,21 +159,8 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 	if err != nil {
 		return nil, false, wrapErr(err)
 	}
-	if c2 == nil {
-		return nil, false, nil
-	}
-	changed := c1 == nil || c1.Hash() != c2.Hash()
+	changed := c2 != nil
 	slog.Info("Updated eve character", "ID", characterID, "changed", changed)
-	if c1 != nil && changed && c1.Name != c2.Name {
-		_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
-			ID:       characterID,
-			Name:     c2.Name,
-			Category: app.EveEntityCharacter,
-		})
-		if err != nil {
-			return nil, false, wrapErr(err)
-		}
-	}
 	return c2, changed, nil
 }
 

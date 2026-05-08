@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -168,12 +167,13 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
 	const invalidID = 666
-	t.Run("should create unknown character from ESI with minimal affiliations", func(t *testing.T) {
+	t.Run("should create new minimal character from ESI with affiliations", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		character := factory.CreateEveEntityCharacter()
-		corporation := factory.CreateEveEntityCorporation()
+		corporation1 := factory.CreateEveEntityCorporation()
+		corporation2 := factory.CreateEveEntityCorporation()
 		race := factory.CreateEveRace()
 		birthday := time.Now().Truncate(time.Second)
 		gender := "male"
@@ -185,7 +185,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        birthday.Format(time.RFC3339),
 				"bloodline_id":    3,
-				"corporation_id":  invalidID,
+				"corporation_id":  corporation1.ID,
 				"gender":          gender,
 				"name":            name,
 				"race_id":         race.ID,
@@ -198,7 +198,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"character_id":   character.ID,
-					"corporation_id": corporation.ID,
+					"corporation_id": corporation2.ID,
 				}}),
 		)
 		// when
@@ -210,7 +210,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Empty(t, x1.Faction)
 		xassert.Equal(t, character.ID, x1.ID)
 		xassert.Equal(t, birthday, x1.Birthday)
-		xassert.Equal(t, corporation, x1.Corporation)
+		xassert.Equal(t, corporation2, x1.Corporation)
 		assert.Empty(t, x1.Description)
 		xassert.Equal(t, gender, x1.Gender)
 		xassert.Equal(t, character.ID, x1.ID)
@@ -222,30 +222,90 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
-	t.Run("should create unknown character from ESI with full affiliations", func(t *testing.T) {
+	t.Run("should create new full character from ESI with affiliations", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		character := factory.CreateEveEntityCharacter()
-		corporation := factory.CreateEveEntityCorporation()
-		alliance := factory.CreateEveEntityAlliance()
-		faction := factory.CreateEveEntityFaction()
+		corporation1 := factory.CreateEveEntityCorporation()
+		corporation2 := factory.CreateEveEntityCorporation()
+		alliance1 := factory.CreateEveEntityAlliance()
+		alliance2 := factory.CreateEveEntityAlliance()
+		faction1 := factory.CreateEveEntityFaction()
+		faction2 := factory.CreateEveEntityFaction()
 		race := factory.CreateEveRace()
 		birthday := time.Now().Truncate(time.Second)
 		gender := "male"
 		description := "description"
 		name := "CCP Bartender"
 		securityStatus := -9.9
+		title := "title"
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"alliance_id":     invalidID,
+				"alliance_id":     alliance1.ID,
 				"birthday":        birthday.Format(time.RFC3339),
 				"bloodline_id":    3,
-				"corporation_id":  invalidID,
+				"corporation_id":  corporation1.ID,
 				"description":     description,
-				"faction_id":      invalidID,
+				"faction_id":      faction1.ID,
+				"gender":          gender,
+				"name":            name,
+				"race_id":         race.ID,
+				"security_status": securityStatus,
+				"title":           title,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"alliance_id":    alliance2.ID,
+					"character_id":   character.ID,
+					"corporation_id": corporation2.ID,
+					"faction_id":     faction2.ID,
+				}}),
+		)
+		// when
+		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, alliance2, x1.Alliance.ValueOrZero())
+		xassert.Equal(t, birthday, x1.Birthday)
+		xassert.Equal(t, corporation2, x1.Corporation)
+		xassert.Equal(t, description, x1.Description.ValueOrZero())
+		xassert.Equal(t, faction2, x1.Faction.ValueOrZero())
+		xassert.Equal(t, gender, x1.Gender)
+		xassert.Equal(t, character.ID, x1.ID)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, race, x1.Race)
+		xassert.Equal(t, title, x1.Title.ValueOrZero())
+		x2, err := st.GetEveCharacter(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+	t.Run("should create new character from ESI and ignore affiliations when they don't match", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		character := factory.CreateEveEntityCharacter()
+		corporation1 := factory.CreateEveEntityCorporation()
+		corporation2 := factory.CreateEveEntityCorporation()
+		race := factory.CreateEveRace()
+		birthday := time.Now().Truncate(time.Second)
+		gender := "male"
+		name := "CCP Bartender"
+		securityStatus := -9.9
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        birthday.Format(time.RFC3339),
+				"bloodline_id":    3,
+				"corporation_id":  corporation1.ID,
 				"gender":          gender,
 				"name":            name,
 				"race_id":         race.ID,
@@ -257,61 +317,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 			`=~^https://esi.evetech.net/characters/affiliation`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
-					"alliance_id":    alliance.ID,
-					"character_id":   character.ID,
-					"corporation_id": corporation.ID,
-					"faction_id":     faction.ID,
-				}}),
-		)
-		// when
-		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		xassert.Equal(t, alliance, x1.Alliance.ValueOrZero())
-		xassert.Equal(t, birthday, x1.Birthday)
-		xassert.Equal(t, corporation, x1.Corporation)
-		xassert.Equal(t, description, x1.Description.ValueOrZero())
-		xassert.Equal(t, faction, x1.Faction.ValueOrZero())
-		xassert.Equal(t, gender, x1.Gender)
-		xassert.Equal(t, character.ID, x1.ID)
-		xassert.Equal(t, name, x1.Name)
-		xassert.Equal(t, race, x1.Race)
-		assert.Empty(t, x1.Title)
-		x2, err := st.GetEveCharacter(ctx, character.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, x1, x2)
-	})
-	t.Run("should update existing character from ESI", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		character := factory.CreateEveCharacter()
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
-		alliance := factory.CreateEveEntityAlliance()
-		corporation2 := factory.CreateEveEntityCorporation()
-		httpmock.Reset()
-		httpmock.RegisterResponder(
-			"GET",
-			`=~^https://esi.evetech.net/characters/\d+`,
-			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"birthday":        character.Birthday.Format(app.DateTimeFormatESI),
-				"bloodline_id":    3,
-				"corporation_id":  invalidID,
-				"description":     character.Description,
-				"gender":          "male",
-				"name":            "CCP Bartender",
-				"race_id":         character.Race.ID,
-				"security_status": -9.9,
-				"title":           "super chad",
-			}),
-		)
-		httpmock.RegisterResponder(
-			"POST",
-			`=~^https://esi.evetech.net/characters/affiliation`,
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"alliance_id":    alliance.ID,
-					"character_id":   character.ID,
+					"character_id":   factory.CreateEveEntityCharacter().ID,
 					"corporation_id": corporation2.ID,
 				}}),
 		)
@@ -320,12 +326,192 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		xassert.Equal(t, alliance, x1.Alliance.MustValue())
+		xassert.Empty(t, x1.Alliance)
 		xassert.Empty(t, x1.Faction)
+		xassert.Equal(t, character.ID, x1.ID)
+		xassert.Equal(t, birthday, x1.Birthday)
+		xassert.Equal(t, corporation1, x1.Corporation)
+		assert.Empty(t, x1.Description)
+		xassert.Equal(t, gender, x1.Gender)
+		xassert.Equal(t, character.ID, x1.ID)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, race, x1.Race)
+		assert.Empty(t, x1.Title)
+		xassert.Equal(t, securityStatus, x1.SecurityStatus.ValueOrZero())
+		x2, err := st.GetEveCharacter(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+	t.Run("should create new character from ESI and ignore affiliations when their response is unexpected", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		character := factory.CreateEveEntityCharacter()
+		corporation1 := factory.CreateEveEntityCorporation()
+		corporation2 := factory.CreateEveEntityCorporation()
+		race := factory.CreateEveRace()
+		birthday := time.Now().Truncate(time.Second)
+		gender := "male"
+		name := "CCP Bartender"
+		securityStatus := -9.9
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        birthday.Format(time.RFC3339),
+				"bloodline_id":    3,
+				"corporation_id":  corporation1.ID,
+				"gender":          gender,
+				"name":            name,
+				"race_id":         race.ID,
+				"security_status": securityStatus,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"character_id":   factory.CreateEveEntityCharacter().ID,
+				"corporation_id": corporation2.ID,
+			}, {
+				"character_id":   666,
+				"corporation_id": factory.CreateEveEntityCorporation().ID,
+			}}),
+		)
+		// when
+		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Empty(t, x1.Alliance)
+		xassert.Empty(t, x1.Faction)
+		xassert.Equal(t, character.ID, x1.ID)
+		xassert.Equal(t, birthday, x1.Birthday)
+		xassert.Equal(t, corporation1, x1.Corporation)
+		assert.Empty(t, x1.Description)
+		xassert.Equal(t, gender, x1.Gender)
+		xassert.Equal(t, character.ID, x1.ID)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, race, x1.Race)
+		assert.Empty(t, x1.Title)
+		xassert.Equal(t, securityStatus, x1.SecurityStatus.ValueOrZero())
+		x2, err := st.GetEveCharacter(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+	t.Run("should update existing character from ESI with affiliations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		character := factory.CreateEveCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
+		alliance2 := factory.CreateEveEntityAlliance()
+		corporation2 := factory.CreateEveEntityCorporation()
+		faction2 := factory.CreateEveEntityFaction()
+		description := "description"
+		name2 := "CCP Bartender"
+		gender := "male"
+		securityStatus2 := -9.9
+		title2 := "super chad"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        character.Birthday.Format(app.DateTimeFormatESI),
+				"bloodline_id":    3,
+				"corporation_id":  character.Corporation.ID,
+				"description":     description,
+				"gender":          gender,
+				"name":            name2,
+				"race_id":         character.Race.ID,
+				"security_status": securityStatus2,
+				"title":           title2,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"alliance_id":    alliance2.ID,
+					"character_id":   character.ID,
+					"corporation_id": corporation2.ID,
+					"faction_id":     faction2.ID,
+				}}),
+		)
+		// when
+		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, alliance2, x1.Alliance.ValueOrZero())
 		xassert.Equal(t, corporation2, x1.Corporation)
-		xassert.Equal(t, "CCP Bartender", x1.Name)
-		xassert.Equal(t, "super chad", x1.Title.ValueOrZero())
-		assert.InDelta(t, -9.9, x1.SecurityStatus.ValueOrZero(), 0.01)
+		xassert.Equal(t, description, x1.Description.ValueOrZero())
+		xassert.Equal(t, faction2, x1.Faction.ValueOrZero())
+		xassert.Equal(t, name2, x1.Name)
+		xassert.Equal(t, securityStatus2, x1.SecurityStatus.ValueOrZero())
+		xassert.Equal(t, title2, x1.Title.ValueOrZero())
+		x2, err := st.GetEveCharacter(ctx, character.ID)
+		require.NoError(t, err)
+		assert.True(t, x1.Equal(x2), "got %q, wanted %q", x1, x2)
+	})
+	t.Run("should update existing character from ESI but keep affiliations when affiliations response is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		character := factory.CreateEveCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
+		alliance2 := factory.CreateEveEntityAlliance()
+		corporation2 := factory.CreateEveEntityCorporation()
+		faction2 := factory.CreateEveEntityFaction()
+		alliance3 := factory.CreateEveEntityAlliance()
+		corporation3 := factory.CreateEveEntityCorporation()
+		faction3 := factory.CreateEveEntityFaction()
+		description := "description"
+		name2 := "CCP Bartender"
+		gender := "male"
+		securityStatus2 := -9.9
+		title2 := "super chad"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"alliance_id":     alliance3.ID,
+				"birthday":        character.Birthday.Format(app.DateTimeFormatESI),
+				"bloodline_id":    3,
+				"corporation_id":  corporation3.ID,
+				"description":     description,
+				"faction_id":      faction3.ID,
+				"gender":          gender,
+				"name":            name2,
+				"race_id":         character.Race.ID,
+				"security_status": securityStatus2,
+				"title":           title2,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"alliance_id":    alliance2.ID,
+					"character_id":   factory.CreateEveEntityCharacter().ID,
+					"corporation_id": corporation2.ID,
+					"faction_id":     faction2.ID,
+				}}),
+		)
+		// when
+		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, character.Alliance, x1.Alliance)
+		xassert.Equal(t, character.Corporation, x1.Corporation)
+		xassert.Equal(t, description, x1.Description.ValueOrZero())
+		xassert.Equal(t, character.Faction, x1.Faction)
+		xassert.Equal(t, name2, x1.Name)
+		xassert.Equal(t, title2, x1.Title.ValueOrZero())
+		xassert.Equal(t, securityStatus2, x1.SecurityStatus.ValueOrZero())
 		x2, err := st.GetEveCharacter(ctx, character.ID)
 		require.NoError(t, err)
 		assert.True(t, x1.Equal(x2), "got %q, wanted %q", x1, x2)
@@ -333,14 +519,12 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	t.Run("should report when character was not changed", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		character := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
-			SecurityStatus: optional.New(-4.12),
-		})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
 		httpmock.Reset()
+		character := factory.CreateEveCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi.evetech.net/characters/\d+`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        character.Birthday.Format(app.DateTimeFormatESI),
 				"bloodline_id":    3,
@@ -368,58 +552,59 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, changed)
 	})
-	t.Run("should report specific error when character does not exist on ESI", func(t *testing.T) {
-		// given
-		httpmock.Reset()
-		httpmock.RegisterResponder(
-			"GET",
-			`=~^https://esi.evetech.net/characters/\d+`,
-			httpmock.NewJsonResponderOrPanic(404, map[string]any{
-				"error": "character not found",
-			}),
-		)
-		// when
-		_, _, err := s.UpdateOrCreateCharacterESI(ctx, 42)
-		// then
-		assert.ErrorIs(t, err, app.ErrNotFound)
-	})
-	t.Run("should report error when there is more then one response", func(t *testing.T) {
+	t.Run("should report character as unchanged when falling back to original affiliations", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		const characterID = 95465499
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		factory.CreateEveRace(app.EveRace{ID: 2})
 		httpmock.Reset()
+		character := factory.CreateEveCharacter()
+		corporation2 := factory.CreateEveEntityCorporation()
+		corporation3 := factory.CreateEveEntityCorporation()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
 		httpmock.RegisterResponder(
 			"GET",
-			`=~^https://esi.evetech.net/characters/\d+`,
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"birthday":        "2015-03-24T11:37:00Z",
+				"birthday":        character.Birthday.Format(app.DateTimeFormatESI),
 				"bloodline_id":    3,
-				"corporation_id":  109299958,
-				"gender":          "male",
-				"name":            "CCP Bartender",
-				"race_id":         2,
-				"security_status": -9.9,
+				"corporation_id":  corporation3.ID,
+				"description":     character.Description,
+				"gender":          character.Gender,
+				"name":            character.Name,
+				"race_id":         character.Race.ID,
+				"security_status": character.SecurityStatus,
+				"title":           character.Title,
 			}),
 		)
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi.evetech.net/characters/affiliation`,
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
-				"character_id":   characterID,
-				"corporation_id": 109299958,
-			}, {
-				"character_id":   666,
-				"corporation_id": 109299958,
-			}}),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   factory.CreateEveEntityCharacter().ID,
+					"corporation_id": corporation2.ID,
+				}}),
 		)
 		// when
-		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, characterID)
+		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
-		assert.Error(t, err)
+		require.NoError(t, err)
 		assert.False(t, changed)
+	})
+	t.Run("should report specific error when character does not exist on ESI", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		const characterID = 42
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", characterID),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{
+				"error": "character not found",
+			}),
+		)
+		// when
+		_, _, err := s.UpdateOrCreateCharacterESI(ctx, characterID)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return error when called with invalid ID", func(t *testing.T) {
 		// given
