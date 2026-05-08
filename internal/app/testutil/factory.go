@@ -2175,6 +2175,11 @@ func (f Factory) CreateEveEntityCorporation(args ...app.EveEntity) *app.EveEntit
 	return f.CreateEveEntity(args2...)
 }
 
+func (f Factory) CreateEveEntityFaction(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityFaction)
+	return f.CreateEveEntity(args2...)
+}
+
 func (f Factory) CreateEveEntityWithCategory(c app.EveEntityCategory, args ...app.EveEntity) *app.EveEntity {
 	args2 := eveEntityWithCategory(args, c)
 	return f.CreateEveEntity(args2...)
