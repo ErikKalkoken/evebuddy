@@ -154,6 +154,8 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			assert.NotZero(t, info)
 		}
 	})
+
+	// Test for verifying issue #443 - Part 1
 	t.Run("should create a character when affiliations endpoint fails", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -192,6 +194,87 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				{
 					"character_id":   factory.CreateEveEntityCharacter().ID,
 					"corporation_id": ec.Corporation.ID,
+				}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"ceo_id":       corporation.Ceo.ValueOrZero().ID,
+				"creator_id":   corporation.Creator.ValueOrZero().ID,
+				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
+				"description":  corporation.Description,
+				"member_count": corporation.MemberCount,
+				"name":         corporation.Name,
+				"tax_rate":     corporation.TaxRate,
+				"ticker":       corporation.Ticker,
+				"url":          corporation.URL,
+			}),
+		)
+		// when
+		var info string
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			info = s
+		})
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, ec.ID, got.ID)
+			ok, err := cs.HasCharacter(ctx, ec.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, ok)
+			}
+			token, err := st.GetCharacterToken(ctx, ec.ID)
+			if assert.NoError(t, err) {
+				xassert.Equal(t, token.CharacterID, ec.ID)
+			}
+			x, err := st.GetCorporation(ctx, corporation.ID)
+			if assert.NoError(t, err) {
+				xassert.Equal(t, corporation, x.EveCorporation)
+			}
+			assert.NotZero(t, info)
+		}
+	})
+
+	// Test for verifying issue #443 - Part 2
+	t.Run("should create a character when affiliations endpoint fails and evecharacter did not change", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateEveCorporation()
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		token := factory.CreateToken(app.Token{
+			CharacterID:   ec.ID,
+			CharacterName: ec.Name,
+		})
+		cs := characterservice.NewFake(characterservice.Params{
+			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token)},
+			Storage:    st,
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", ec.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        ec.Birthday.Format(app.DateTimeFormatESI),
+				"bloodline_id":    3,
+				"corporation_id":  ec.Corporation.ID,
+				"description":     ec.Description,
+				"gender":          ec.Gender,
+				"name":            ec.Name,
+				"race_id":         ec.Race.ID,
+				"security_status": ec.SecurityStatus,
+				"title":           ec.Title,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/characters/affiliation",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   factory.CreateEveEntityCharacter().ID,
+					"corporation_id": 666,
 				}}),
 		)
 		httpmock.RegisterResponder(

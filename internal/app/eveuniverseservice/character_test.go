@@ -451,9 +451,9 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Equal(t, name2, x1.Name)
 		xassert.Equal(t, securityStatus2, x1.SecurityStatus.ValueOrZero())
 		xassert.Equal(t, title2, x1.Title.ValueOrZero())
-		x2, err := st.GetEveCharacter(ctx, character.ID)
+		character2, err := st.GetEveCharacter(ctx, character.ID)
 		require.NoError(t, err)
-		assert.True(t, x1.Equal(x2), "got %q, wanted %q", x1, x2)
+		assert.True(t, x1.Equal(character2), "got %q, wanted %q", x1, character2)
 	})
 	t.Run("should update existing character from ESI but keep affiliations when affiliations response is invalid", func(t *testing.T) {
 		// given
@@ -501,22 +501,22 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 				}}),
 		)
 		// when
-		x1, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		got, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		xassert.Equal(t, character.Alliance, x1.Alliance)
-		xassert.Equal(t, character.Corporation, x1.Corporation)
-		xassert.Equal(t, description, x1.Description.ValueOrZero())
-		xassert.Equal(t, character.Faction, x1.Faction)
-		xassert.Equal(t, name2, x1.Name)
-		xassert.Equal(t, title2, x1.Title.ValueOrZero())
-		xassert.Equal(t, securityStatus2, x1.SecurityStatus.ValueOrZero())
-		x2, err := st.GetEveCharacter(ctx, character.ID)
+		xassert.Equal(t, character.Alliance, got.Alliance)
+		xassert.Equal(t, character.Corporation, got.Corporation)
+		xassert.Equal(t, description, got.Description.ValueOrZero())
+		xassert.Equal(t, character.Faction, got.Faction)
+		xassert.Equal(t, name2, got.Name)
+		xassert.Equal(t, title2, got.Title.ValueOrZero())
+		xassert.Equal(t, securityStatus2, got.SecurityStatus.ValueOrZero())
+		character2, err := st.GetEveCharacter(ctx, character.ID)
 		require.NoError(t, err)
-		assert.True(t, x1.Equal(x2), "got %q, wanted %q", x1, x2)
+		assert.True(t, got.Equal(character2), "got %q, wanted %q", got, character2)
 	})
-	t.Run("should report when character was not changed", func(t *testing.T) {
+	t.Run("should report when character was not changed and return unchanged character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
@@ -547,10 +547,11 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 				}}),
 		)
 		// when
-		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		got, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
+		xassert.Equal(t, character, got)
 	})
 	t.Run("should report character as unchanged when falling back to original affiliations", func(t *testing.T) {
 		// given
@@ -585,10 +586,11 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 				}}),
 		)
 		// when
-		_, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
+		got, changed, err := s.UpdateOrCreateCharacterESI(ctx, character.ID)
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
+		xassert.Equal(t, character, got)
 	})
 	t.Run("should report specific error when character does not exist on ESI", func(t *testing.T) {
 		// given
