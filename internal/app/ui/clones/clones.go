@@ -420,8 +420,7 @@ func (a *Clones) updateRoutesAsync() {
 
 func (a *Clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
-		slog.Error("Failed to resolve names", "search", search, "error", err)
-		ui.ShowErrorAndLog("Something went wrong", err, a.u.IsDeveloperMode(), w)
+		ui.ShowErrorAndLog("Failed to resolve search for "+search, err, a.u.IsDeveloperMode(), w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity

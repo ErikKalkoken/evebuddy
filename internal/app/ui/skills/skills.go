@@ -12,6 +12,7 @@ import (
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
+	DestroyWindow(id string) bool
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService

@@ -298,6 +298,9 @@ func (u *UIFake) Corporation() *corporationservice.CorporationService {
 	return u.rs
 }
 
+func (u *UIFake) DestroyWindow(id string) bool {
+	return true
+}
 func (u *UIFake) ErrorDisplay(err error) string {
 	return err.Error()
 }

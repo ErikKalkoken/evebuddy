@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"image/color"
-	"log/slog"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -471,8 +470,9 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 		modal.Hide()
 	}
 	showErrorDialog := func(search string, err error) {
-		slog.Error("Failed to resolve names", "search", search, "error", err)
-		ui.ShowErrorAndLog("Something went wrong", err, u.IsDeveloperMode(), w)
+		fyne.Do(func() {
+			ui.ShowErrorAndLog("Search for '"+search+"' failed", err, u.IsDeveloperMode(), w)
+		})
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
@@ -489,9 +489,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 		go func() {
 			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
-				fyne.Do(func() {
-					showErrorDialog(search, err)
-				})
+				showErrorDialog(search, err)
 				return
 			}
 			fyne.Do(func() {
@@ -506,9 +504,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 				search,
 			)
 			if err != nil {
-				fyne.Do(func() {
-					showErrorDialog(search, err)
-				})
+				showErrorDialog(search, err)
 				return
 			}
 			if missingIDs.Size() == 0 {
@@ -516,9 +512,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 			}
 			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
-				fyne.Do(func() {
-					showErrorDialog(search, err)
-				})
+				showErrorDialog(search, err)
 				return
 			}
 			fyne.Do(func() {

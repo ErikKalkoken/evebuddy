@@ -1116,6 +1116,21 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	return w, true, f
 }
 
+// TODO: Refactor window features into struct
+
+// DestroyWindow tries to destroy a window and reports whether it was successful.
+func (u *baseUI) DestroyWindow(id string) bool {
+	if id == "" {
+		return false
+	}
+	if w, ok := u.windows[id]; ok {
+		w.Close()
+		delete(u.windows, id)
+		return true
+	}
+	return false
+}
+
 // statusText is a widget that can show/hide multiple status texts with a spinner.
 type statusText struct {
 	widget.BaseWidget

@@ -484,9 +484,9 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *a
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
 func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, characterName string, refID int64) {
-	key := fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID)
+	windowID := fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID)
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(key, title, characterName)
+	w, created := u.GetOrCreateWindow(windowID, title, characterName)
 	if !created {
 		w.Show()
 		return
@@ -495,7 +495,10 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 	go func() {
 		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			fyne.Do(func() {
+				u.DestroyWindow(windowID)
+				ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			})
 			return
 		}
 
@@ -634,9 +637,9 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
 func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, refID int64) {
-	key := fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID)
+	windowID := fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID)
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(key, title, corporationName)
+	w, created := u.GetOrCreateWindow(windowID, title, corporationName)
 	if !created {
 		w.Show()
 		return
@@ -645,7 +648,10 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 	go func() {
 		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			fyne.Do(func() {
+				u.DestroyWindow(windowID)
+				ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
+			})
 			return
 		}
 

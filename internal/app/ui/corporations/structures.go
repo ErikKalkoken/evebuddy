@@ -433,8 +433,9 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 }
 
 func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporationID int64, structureID int64, title string) {
+	windowID := fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID)
 	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
+		windowID,
 		title,
 	)
 	if !created {
@@ -443,14 +444,20 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 	}
 
 	go func() {
+		reportError := func(err error) {
+			fyne.Do(func() {
+				u.DestroyWindow(windowID)
+				ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+			})
+		}
 		structure, err := u.Corporation().GetStructure(ctx, corporationID, structureID)
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
+			reportError(err)
 			return
 		}
 		corporationNames, err := u.Corporation().CorporationNames(ctx)
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
+			reportError(err)
 			return
 		}
 		corporationName := corporationNames[corporationID]
