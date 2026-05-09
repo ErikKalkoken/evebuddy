@@ -159,9 +159,14 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 	if err != nil {
 		return nil, false, wrapErr(err)
 	}
-	changed := c2 != nil
-	slog.Info("Updated eve character", "ID", characterID, "changed", changed)
-	return c2, changed, nil
+	if c2 != nil {
+		slog.Info("Updated eve character", "ID", characterID)
+		return c2, true, nil
+	}
+	if c1 != nil {
+		return c1, false, nil
+	}
+	return nil, false, wrapErr(fmt.Errorf("no character to return")) // should be unreachable
 }
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI
