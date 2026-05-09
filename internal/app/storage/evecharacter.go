@@ -31,7 +31,7 @@ func (st *Storage) UpdateOrCreateEveCharacter(ctx context.Context, arg CreateEve
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateEveCharacter: %+v: %w", arg, err)
 	}
-	if arg.ID == 0 || arg.CorporationID == 0 {
+	if arg.ID == 0 || arg.CorporationID == 0 || arg.RaceID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateEveCharacter(ctx, queries.UpdateOrCreateEveCharacterParams{
