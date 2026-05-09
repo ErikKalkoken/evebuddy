@@ -73,8 +73,8 @@ type colonyDetails struct {
 // showColonyDetailsWindow shows the details of a colony in a window.
 func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
-	key := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
-	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(key, title, r.ownerName)
+	windowID := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
+	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(windowID, title, r.ownerName)
 	if !ok {
 		w.Show()
 		return
@@ -89,6 +89,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 			slog.Any("planetID", r.planetID),
 			slog.Any("error", err),
 		)
+		u.DestroyWindow(windowID)
 		ui.ShowErrorAndLog("Failed to show colony details", err, u.IsDeveloperMode(), u.MainWindow())
 		return
 	}

@@ -34,7 +34,6 @@ func ShowCharacterContract2(ctx context.Context, u baseUI, characterID, contract
 	reportError := func(err error) {
 		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 	}
-
 	o, err := u.Character().GetContract(ctx, characterID, contractID)
 	if err != nil {
 		reportError(err)
@@ -287,7 +286,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 				main.Add(widget.NewSeparator())
 				x, err := makeItemsInfo()
 				if err != nil {
-					ui.ShowErrorAndLog("Failed to show contract items", err, u.IsDeveloperMode(), u.MainWindow())
+					reportError(err)
 					return
 				}
 				main.Add(x)

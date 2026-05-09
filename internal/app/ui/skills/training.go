@@ -619,7 +619,8 @@ func (a *Training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 }
 
 func (a *Training) showTrainingQueueWindow(r trainingRow) {
-	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(fmt.Sprintf("skillqueue-%d", r.characterID), "Skill Queue", r.characterName)
+	windowID := fmt.Sprintf("skillqueue-%d", r.characterID)
+	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(windowID, "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()
 		return
@@ -629,6 +630,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
 		if err != nil {
 			fyne.Do(func() {
+				a.u.DestroyWindow(windowID)
 				ui.ShowErrorAndLog("Failed to fetch character", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			})
 			return

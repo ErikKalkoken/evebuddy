@@ -1116,6 +1116,8 @@ func (u *baseUI) GetOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	return w, true, f
 }
 
+// TODO: Refactor window features into struct
+
 // DestroyWindow tries to destroy a window and reports whether it was successful.
 func (u *baseUI) DestroyWindow(id string) bool {
 	if id == "" {

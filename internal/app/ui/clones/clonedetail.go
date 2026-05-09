@@ -3,7 +3,6 @@ package clones
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -168,8 +167,9 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 	go func() {
 		clone, err := u.Character().GetJumpClone(context.Background(), characterID, cloneID)
 		if err != nil {
-			slog.Error("show clone", "error", err)
-			ui.ShowErrorAndLog("failed to load clone", err, IsDeveloperMode, w)
+			fyne.Do(func() {
+				ui.ShowErrorAndLog("failed to load clone", err, IsDeveloperMode, w)
+			})
 			return
 		}
 		fyne.Do(func() {
