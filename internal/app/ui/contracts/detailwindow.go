@@ -134,27 +134,29 @@ func ShowCorporationContract(u baseUI, r contractRow) {
 
 func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context) (int, float64, error), fetchItems func(context.Context) ([]contractItem, error)) {
 	title := fmt.Sprintf("Contract #%d", r.contractID)
-	w, created := u.GetOrCreateWindow(
-		fmt.Sprintf("contract-%d-%d", r.ownerID, r.contractID),
-		title,
-		r.ownerName,
-	)
+	windowID := fmt.Sprintf("contract-%d-%d", r.ownerID, r.contractID)
+	w, created := u.GetOrCreateWindow(windowID, title, r.ownerName)
 	if !created {
 		w.Show()
 		return
 	}
 	go func() {
 		reportError := func(err error) {
-			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+			fyne.Do(func() {
+				u.DestroyWindow(windowID)
+				ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+			})
 		}
 		ctx := context.Background()
 		totalBids, topBidAmount, err := fetchBids(ctx)
 		if err != nil {
 			reportError(err)
+			return
 		}
 		items, err := fetchItems(ctx)
 		if err != nil {
 			reportError(err)
+			return
 		}
 
 		fyne.Do(func() {
