@@ -33,7 +33,7 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 
 EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
-- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets.
+- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets. Export trained skills to clipboard in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible format or to a CSV file (Windows and macOS).
 - **Corporation monitor**: Check current information about each of your corporations: e.g. check wallets and assets.
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across of your characters or see which character has manufacturing slots available.
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates, e.g. a structure was attacked or a training queue became empty.
@@ -89,7 +89,9 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Communications: Browse through all communications
   - Mails: Browser through all mails
-  - Skills: Training queue, catalogue of all trained skills and what ships can be flown
+  - Skills: Training queue, catalogue of all trained skills and what ships can be flown, and export trained skills to clipboard or CSV (desktop only)
+    - **Copy to clipboard**: Copies all trained skills in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible plain-text format (`Skill Name Level`, one per line) so they can be pasted directly into PyFA's character skill import.
+    - **Export to CSV**: Saves all trained skills to a `.csv` file with `Name` and `Level` columns for use in spreadsheets or other tools.
   - Wallet: Wallet and market Transactions
 
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
