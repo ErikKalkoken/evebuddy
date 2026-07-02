@@ -1,8 +1,10 @@
 package skills
 
 import (
+	"bytes"
 	"cmp"
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,9 +14,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
@@ -115,6 +120,7 @@ type Training struct {
 
 	OnUpdate func(expired int)
 
+	exportButton *xwidget.ContextMenuButton
 	footer       *widget.Label
 	columnSorter *xwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
@@ -297,6 +303,13 @@ func NewTraining(u baseUI) *Training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
+	a.exportButton = xwidget.NewContextMenuButton(
+		"Export",
+		fyne.NewMenu("",
+			fyne.NewMenuItem("Copy to clipboard", a.copyTrainingToClipboard),
+			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
+		),
+	)
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -335,6 +348,8 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
 	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
+	} else {
+		filter.Add(a.exportButton)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
@@ -439,6 +454,72 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 		a.showTrainingQueueWindow(r)
 	}
 	return l
+}
+
+func (a *Training) makeCSVString() string {
+	rows := a.rowsFiltered
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+	_ = w.Write([]string{
+		"Character", "Tags", "Current Skill", "Current Remaining",
+		"Queued", "Queue Time", "Trained SP", "Unallocated SP", "Total SP",
+	})
+	for _, r := range rows {
+		tags := strings.Join(slices.Sorted(r.tags.All()), ";")
+		_ = w.Write([]string{
+			r.characterName,
+			tags,
+			r.skillName,
+			r.currentRemainingTimeString(),
+			r.totalRemainingCountDisplay,
+			r.totalRemainingTimeString(),
+			r.trainedSPDisplay,
+			r.unallocatedSPDisplay,
+			r.totalSPDisplay,
+		})
+	}
+	w.Flush()
+	return buf.String()
+}
+
+func (a *Training) copyTrainingToClipboard() {
+	fyne.CurrentApp().Clipboard().SetContent(a.makeCSVString())
+	a.u.ShowSnackbar("Copied to clipboard")
+}
+
+func (a *Training) saveTrainingAsCSV() {
+	_, s := a.u.MainWindow().Canvas().InteractiveArea()
+	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
+
+	w := fyne.CurrentApp().NewWindow("Save Training Data as CSV")
+	w.Resize(winSize)
+	w.SetContent(widget.NewLabel(""))
+
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+		w.Close()
+		if writer == nil {
+			return
+		}
+		defer writer.Close()
+		if err != nil {
+			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			return
+		}
+		_, err = writer.Write([]byte(a.makeCSVString()))
+		if err != nil {
+			ui.ShowErrorAndLog("Failed to write CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			return
+		}
+		slog.Info("Training data exported to file", "uri", writer.URI())
+		a.u.ShowSnackbar("Training data saved")
+	}, w)
+	d.SetFileName("training.csv")
+	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
+	d.SetTitleText("Save training data as CSV")
+	kxdialog.AddDialogKeyHandler(d, w)
+	d.Resize(winSize)
+	w.Show()
+	d.Show()
 }
 
 func (a *Training) filterRowsAsync(sortCol int) {
