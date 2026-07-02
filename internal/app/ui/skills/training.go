@@ -303,8 +303,9 @@ func NewTraining(u baseUI) *Training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.exportButton = xwidget.NewContextMenuButton(
+	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
 		"Export",
+		theme.DownloadIcon(),
 		fyne.NewMenu("",
 			fyne.NewMenuItem("Copy to clipboard", a.copyTrainingToClipboard),
 			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
