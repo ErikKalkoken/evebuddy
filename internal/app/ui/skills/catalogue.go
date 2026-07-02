@@ -140,7 +140,7 @@ func NewCatalogue(u baseUI) *Catalogue {
 			fyne.NewMenuItem("Copy to clipboard", func() {
 				a.copySkillsToClipboard()
 			}),
-			fyne.NewMenuItem("Export to CSV", func() {
+			fyne.NewMenuItem("Save as CSV", func() {
 				a.exportSkillsToCSV()
 			}),
 		))
