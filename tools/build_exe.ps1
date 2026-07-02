@@ -79,7 +79,7 @@ Write-Success "Working directory: $repoRoot"
 
 if (-not $SkipTests) {
     Write-Step "Running tests"
-    go test -test.short ./...
+    go test -short ./...
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "Tests failed. Fix failures or use -SkipTests to skip."
         exit 1
