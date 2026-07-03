@@ -404,6 +404,8 @@ func newBaseUI(arg UIParams) *baseUI {
 		slog.Debug("Signal: UpdateStarted", "section", s)
 	})
 
+	u.iw = infoviewer.New(u)
+
 	u.assetSearchAll = assets.NewSearchForAll(u)
 	u.augmentations = clones.NewAugmentations(u)
 	u.characterAssetBrowser = assets.NewCharacterBrowser(u)
@@ -446,8 +448,6 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.snackbar = xwidget.NewSnackbar(u.window)
 	u.training = skills.NewTraining(u)
 	u.wealth = wallets.NewWealth(u)
-
-	u.iw = infoviewer.New(u)
 
 	u.MainWindow().SetMaster()
 
