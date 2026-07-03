@@ -890,3 +890,154 @@ func eveEntityFromHTMLLink(html string) (*app.EveEntity, error) {
 	}
 	return o, nil
 }
+
+type structureLowReagentsAlert struct {
+	baseRenderer
+}
+
+func (n structureLowReagentsAlert) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructureLowReagentsAlert
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	o, err := makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "", n.eus)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Low reagents alert: %s", o.eveType.Name)
+	body := fmt.Sprintf("%s is running low on reagents.", o.intro)
+	return title, body, nil
+}
+
+type structureNoReagentsAlert struct {
+	baseRenderer
+}
+
+func (n structureNoReagentsAlert) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructureNoReagentsAlert
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	o, err := makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "", n.eus)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("No reagents: %s", o.eveType.Name)
+	body := fmt.Sprintf("%s has run out of reagents and is no longer operating.", o.intro)
+	return title, body, nil
+}
+
+type structurePaintPurchased struct {
+	baseRenderer
+}
+
+func (n structurePaintPurchased) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n structurePaintPurchased) unmarshal(text string) (notification2.StructurePaintPurchased, set.Set[int64], error) {
+	var data notification2.StructurePaintPurchased
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.CharID, data.StructureTypeID)
+	return data, ids, nil
+}
+
+func (n structurePaintPurchased) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Structure paint purchased for %s", entities[data.StructureTypeID].Name)
+	body = fmt.Sprintf(
+		"%s has purchased a paint scheme for a **%s** in %s.",
+		makeEveEntityProfileLink(entities[data.CharID]),
+		entities[data.StructureTypeID].Name,
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type structuresJobsCancelled struct {
+	baseRenderer
+}
+
+func (n structuresJobsCancelled) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructuresJobsCancelled
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	o, err := makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "", n.eus)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Industry jobs cancelled at %s", o.eveType.Name)
+	body := fmt.Sprintf(
+		"**%d** industry job(s) at %s have been cancelled.",
+		data.NumJobs,
+		o.intro,
+	)
+	return title, body, nil
+}
+
+type structuresJobsPaused struct {
+	baseRenderer
+}
+
+func (n structuresJobsPaused) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructuresJobsPaused
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	o, err := makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "", n.eus)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Industry jobs paused at %s", o.eveType.Name)
+	body := fmt.Sprintf(
+		"**%d** industry job(s) at %s have been paused.",
+		data.NumJobs,
+		o.intro,
+	)
+	return title, body, nil
+}
+
+type structureCourierContractChanged struct {
+	baseRenderer
+}
+
+func (n structureCourierContractChanged) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructureCourierContractChanged
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	structureType, err := n.eus.GetOrCreateEntityESI(ctx, data.StructureTypeID)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Courier contract changed at %s structure", structureType.Name)
+	body := fmt.Sprintf(
+		"A courier contract for a **%s** in %s has been updated.",
+		structureType.Name,
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
