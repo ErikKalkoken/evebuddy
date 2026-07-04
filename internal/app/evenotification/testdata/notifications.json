@@ -366,7 +366,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-26T16:42:00Z",
-        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "text": "allyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
         "is_read": true,
         "is_sent": false
     },
@@ -386,7 +386,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-26T16:42:00Z",
-        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "text": "aggressorID: 3011\nallyID: 2001\nstartTime: 132192745070000000\n",
         "is_read": true,
         "is_sent": false
     },
@@ -626,7 +626,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "aggressorID: 3011\ncharID: 1001\ndefenderID: 3001\nenemyID: 3011\niskValue: 0.0\nmercID: 2001",
+        "text": "charID: 1001\ndefenderID: 3001\nenemyID: 3011\niskValue: 0.0",
         "is_read": false,
         "is_sent": false
     },
@@ -1590,7 +1590,7 @@
         "sender_id": 1011,
         "sender_type": "character",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "characterID: 1011\nmessageIndex: 0\nTargetLocation:\n  5: 30002537\nagentLocation:\n  5: 30002537"
+        "text": "characterID: 1011\nmessageIndex: 0\ntargetLocation:\n  5: 30002537\nagentLocation:\n  5: 30002537"
     },
     {
         "notification_id": 1000002109,
