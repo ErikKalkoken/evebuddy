@@ -122,8 +122,15 @@ type showParams struct {
 }
 
 func (iw *InfoViewer) show2(arg showParams) {
+	// iw.w is nil after an info window has been closed; fall back to the main window
+	// so that error/informational dialogs always have a valid parent.
+	parentW := iw.w
+	if parentW == nil {
+		parentW = iw.u.MainWindow()
+	}
+
 	if arg.entityID == 0 || arg.variant == infoNotSupported {
-		ui.ShowErrorAndLog("Can't show info window", app.ErrInvalid, iw.u.IsDeveloperMode(), iw.w)
+		ui.ShowErrorAndLog("Can't show info window", app.ErrInvalid, iw.u.IsDeveloperMode(), parentW)
 		return
 	}
 
@@ -131,7 +138,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		ui.ShowInformation(
 			"Offline",
 			"Can't show info window when offline",
-			iw.w,
+			parentW,
 		)
 		return
 	}
@@ -161,7 +168,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 			ui.ShowInformation(
 				"Unknown location",
 				"Can't show info window for an unknown location",
-				iw.w,
+				parentW,
 			)
 			return
 		}
@@ -204,7 +211,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		ui.ShowInformation(
 			"Warning",
 			"Can't show info window for unknown category",
-			iw.w,
+			parentW,
 		)
 		return
 	}
