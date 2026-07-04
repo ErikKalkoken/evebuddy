@@ -311,6 +311,7 @@ func NewTraining(u baseUI) *Training {
 			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
 		),
 	)
+	a.exportButton.SetToolTip("Export training data to clipboard or file")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -457,7 +458,7 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *Training) makeCSVString() string {
+func (a *Training) makeTrainingCSVString() string {
 	rows := a.rowsFiltered
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
@@ -484,7 +485,7 @@ func (a *Training) makeCSVString() string {
 }
 
 func (a *Training) copyTrainingToClipboard() {
-	fyne.CurrentApp().Clipboard().SetContent(a.makeCSVString())
+	fyne.CurrentApp().Clipboard().SetContent(a.makeTrainingCSVString())
 	a.u.ShowSnackbar("Copied to clipboard")
 }
 
@@ -506,7 +507,7 @@ func (a *Training) saveTrainingAsCSV() {
 			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
-		_, err = writer.Write([]byte(a.makeCSVString()))
+		_, err = writer.Write([]byte(a.makeTrainingCSVString()))
 		if err != nil {
 			ui.ShowErrorAndLog("Failed to write CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
