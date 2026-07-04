@@ -2,42 +2,66 @@ package infoviewer
 
 import (
 	"strings"
+	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 )
 
+// UIServiceFake is a minimal coreUI implementation for unit tests.
 type UIServiceFake struct {
-	app fyne.App
+	app        fyne.App
+	mainWindow fyne.Window
 }
 
-func (u *UIServiceFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
-	return u.app.NewWindow("Dunmy"), true
+func newUIServiceFake(a fyne.App) *UIServiceFake {
+	return &UIServiceFake{app: a, mainWindow: a.NewWindow("Main")}
 }
 
-func (u *UIServiceFake) HumanizeError(err error) string {
-	return err.Error()
+func (u *UIServiceFake) Character() *characterservice.CharacterService       { return nil }
+func (u *UIServiceFake) EVEImage() ui.EVEImageService                        { return nil }
+func (u *UIServiceFake) EVEUniverse() *eveuniverseservice.EVEUniverseService { return nil }
+func (u *UIServiceFake) GetOrCreateWindow(id string, titles ...string) (fyne.Window, bool) {
+	return u.app.NewWindow(strings.Join(titles, " - ")), true
 }
-
-func (u *UIServiceFake) IsDeveloperMode() bool {
-	return false
+func (u *UIServiceFake) GetOrCreateWindowWithOnClosed(id string, titles ...string) (fyne.Window, bool, func()) {
+	return u.app.NewWindow(strings.Join(titles, " - ")), true, func() {}
 }
+func (u *UIServiceFake) ErrorDisplay(err error) string        { return err.Error() }
+func (u *UIServiceFake) IsDeveloperMode() bool                { return false }
+func (u *UIServiceFake) IsMobile() bool                       { return false }
+func (u *UIServiceFake) IsOffline() bool                      { return false }
+func (u *UIServiceFake) Janice() *janiceservice.JaniceService { return nil }
+func (u *UIServiceFake) MainWindow() fyne.Window              { return u.mainWindow }
+func (u *UIServiceFake) Settings() *settings.Settings         { return nil }
 
-func (u *UIServiceFake) IsOffline() bool {
-	return false
-}
+var _ coreUI = (*UIServiceFake)(nil)
 
-func (u *UIServiceFake) MainWindow() fyne.Window {
-	return u.app.NewWindow("Dummy")
-}
-
-func (u *UIServiceFake) MakeWindowTitle(parts ...string) string {
-	return strings.Join(parts, " - ")
-}
-
-type SettingsFake struct{}
-
-func (s *SettingsFake) PreferMarketTab() bool {
-	return false
+// TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed is a regression test
+// for the bug where show2 used iw.w directly as the dialog parent. After an info window is
+// opened and then closed, its OnClosed handler sets iw.w = nil. Any subsequent show2 call
+// (e.g. tapping an unsupported entity type) would then pass nil to a Fyne dialog, causing
+// a nil-pointer panic. The fix adds a fallback to iw.u.MainWindow() when iw.w is nil.
+func TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed(t *testing.T) {
+	a := test.NewTempApp(t)
+	// iw.w is nil here, simulating the state after an info window was opened and closed.
+	iw := &InfoViewer{
+		u: newUIServiceFake(a),
+		w: nil,
+	}
+	// entityID=0 takes the early-return error path which passes parentW to a dialog.
+	// Before the fix, parentW was iw.w (nil) here, causing a panic.
+	// After the fix, parentW falls back to iw.u.MainWindow(), which is always valid.
+	assert.NotPanics(t, func() {
+		iw.show2(showParams{variant: infoNotSupported, entityID: 0})
+	})
 }
 
 // FIXME

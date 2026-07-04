@@ -207,6 +207,18 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	return bu
 }
 
+// TestNewBaseUI_InfoViewerInitializedBeforeWidgets is a regression test for the bug where
+// u.iw was initialized after the widget constructors. NewCommunications and NewMails both
+// call u.InfoViewer().Show to bind a method value at construction time. When u.iw was nil
+// at that point, the bound method had a nil receiver and panicked on the first tap of any
+// sender, recipient, or icon in the mail or notification detail views.
+func TestNewBaseUI_InfoViewerInitializedBeforeWidgets(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+	assert.NotNil(t, u.iw)
+}
+
 func TestMakeOrFindWindow(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
