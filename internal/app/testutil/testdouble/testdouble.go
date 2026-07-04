@@ -369,6 +369,12 @@ func (u *UIFake) ShowSnackbar(text string) {
 	}
 }
 
+func (u *UIFake) ShowSnackbarWithTimeout(text string, timeout time.Duration) {
+	if f := u.showSnackbarFunc; f != nil {
+		f(text)
+	}
+}
+
 func (u *UIFake) Signals() *app.Signals {
 	return u.signals
 }

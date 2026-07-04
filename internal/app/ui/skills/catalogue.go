@@ -3,16 +3,17 @@ package skills
 import (
 	"cmp"
 	"context"
-	"encoding/csv"
 	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -135,16 +136,15 @@ func NewCatalogue(u baseUI) *Catalogue {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	if !u.IsMobile() {
-		a.exportButton = xwidget.NewContextMenuButtonWithIcon("Export", theme.DownloadIcon(), fyne.NewMenu("",
-			fyne.NewMenuItem("Copy to clipboard", func() {
-				a.copySkillsToClipboard()
-			}),
-			fyne.NewMenuItem("Save as CSV", func() {
-				a.exportSkillsToCSV()
-			}),
-		))
-	}
+	a.exportButton = xwidget.NewContextMenuButtonWithIcon("Export", theme.DownloadIcon(), fyne.NewMenu("",
+		fyne.NewMenuItem("Copy to clipboard", func() {
+			a.copySkillsToClipboard()
+		}),
+		fyne.NewMenuItem("Save as CSV", func() {
+			a.exportSkillsToCSV()
+		}),
+	))
+	a.exportButton.SetToolTip("Export Skills")
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -173,12 +173,14 @@ func NewCatalogue(u baseUI) *Catalogue {
 
 func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
-	topBox := container.NewVBox(a.top)
+	topBox := container.NewVBox()
 	if a.u.IsMobile() {
+		topBox.Add(a.top)
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
-		filter.Add(a.exportButton)
+		topAligned := container.NewVBox(layout.NewSpacer(), a.top, layout.NewSpacer())
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewPadded(a.exportButton), topAligned))
 		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
 	}
 	c := container.NewBorder(
@@ -443,69 +445,53 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 	return w
 }
 
-// makeExportLines returns a PyFA-compatible text with one trained skill per line
-// in the format "SkillName Level" (e.g. "Spaceship Command 5"), sorted by name.
-// Only skills with a trained level > 0 are included.
-func (a *Catalogue) makeExportLines() string {
-	rows := slices.Clone(a.rows)
-	rows = slices.DeleteFunc(rows, func(r skillRow) bool {
-		return r.levelTrained == 0
-	})
-	slices.SortFunc(rows, func(x, y skillRow) int {
-		return strings.Compare(x.name, y.name)
-	})
-	var sb strings.Builder
-	for _, r := range rows {
-		sb.WriteString(fmt.Sprintf("%s %d\n", r.name, r.levelTrained))
-	}
-	return sb.String()
-}
-
 func (a *Catalogue) copySkillsToClipboard() {
-	fyne.CurrentApp().Clipboard().SetContent(a.makeExportLines())
-	a.u.ShowSnackbar("Skills copied to clipboard")
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		a.u.ShowSnackbar("No character")
+		return
+	}
+	text, err := a.u.Character().MakeSkillsExportLines(context.Background(), characterID)
+	if err != nil {
+		slog.Error("Failed to generate skill export lines", "characterID", characterID, "err", err)
+		a.u.ShowSnackbar("Failed to copy skills to clipboard")
+		return
+	}
+	fyne.CurrentApp().Clipboard().SetContent(text)
+	a.u.ShowSnackbarWithTimeout("Skills copied to clipboard", 1200*time.Millisecond)
 }
 
 func (a *Catalogue) exportSkillsToCSV() {
-	rows := slices.Clone(a.rows)
-	rows = slices.DeleteFunc(rows, func(r skillRow) bool {
-		return r.levelTrained == 0
-	})
-	slices.SortFunc(rows, func(x, y skillRow) int {
-		return strings.Compare(x.name, y.name)
-	})
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		a.u.ShowSnackbar("No character")
+		return
+	}
 
 	// Use a dedicated window so the file browser is a native resizable OS window
 	// rather than a fixed-size overlay on the main window.
 	w := fyne.CurrentApp().NewWindow("Export skills to CSV")
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		defer w.Close()
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, saveErr error) {
 		if writer == nil {
+			w.Close()
 			return
 		}
+		if saveErr != nil {
+			w.Close()
+			slog.Error("Failed to open file for skill export", "err", saveErr)
+			a.u.ShowSnackbar("Failed to export skills to CSV")
+			return
+		}
+		// Close the dialog window right away so the main UI regains focus quickly.
+		w.Close()
 		defer writer.Close()
-		if err != nil {
-			slog.Error("Failed to open file for skill export", "err", err)
-			return
-		}
-		cw := csv.NewWriter(writer)
-		if err := cw.Write([]string{"Name", "Level"}); err != nil {
-			slog.Error("Failed to write CSV header", "err", err)
-			return
-		}
-		for _, r := range rows {
-			if err := cw.Write([]string{r.name, fmt.Sprintf("%d", r.levelTrained)}); err != nil {
-				slog.Error("Failed to write CSV row", "err", err)
-				return
-			}
-		}
-		cw.Flush()
-		if err := cw.Error(); err != nil {
-			slog.Error("Failed to flush CSV writer", "err", err)
+		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), characterID, writer); err != nil {
+			slog.Error("Failed to write CSV skill export", "characterID", characterID, "err", err)
+			a.u.ShowSnackbar("Failed to export skills to CSV")
 			return
 		}
 		slog.Info("Skills exported to CSV", "uri", writer.URI())
-		a.u.ShowSnackbar("Skills exported to CSV")
+		a.u.ShowSnackbarWithTimeout("Skills exported to CSV", 1200*time.Millisecond)
 	}, w)
 	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
 	d.SetFileName("skills.csv")

@@ -676,6 +676,10 @@ func (u *baseUI) ShowSnackbar(text string) {
 	u.snackbar.Show(text)
 }
 
+func (u *baseUI) ShowSnackbarWithTimeout(text string, timeout time.Duration) {
+	u.snackbar.ShowWithTimeout(text, timeout)
+}
+
 func (u *baseUI) Signals() *app.Signals {
 	return u.signals
 }
