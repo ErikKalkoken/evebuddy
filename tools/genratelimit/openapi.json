@@ -63,7 +63,7 @@
                 "required": true,
                 "schema": {
                     "enum": [
-                        "2025-12-16"
+                        "2026-05-19"
                     ],
                     "format": "date",
                     "type": "string"
@@ -97,6 +97,14 @@
             }
         },
         "schemas": {
+            "AccessListID": {
+                "examples": [
+                    1
+                ],
+                "format": "int64",
+                "type": "integer",
+                "x-common-model": "true"
+            },
             "AllianceDetail": {
                 "properties": {
                     "creator_corporation_id": {
@@ -262,6 +270,189 @@
                 "format": "int64",
                 "type": "integer",
                 "x-common-model": "true"
+            },
+            "CharactersAccessListsDetail": {
+                "properties": {
+                    "description": {
+                        "description": "The Access List's description",
+                        "type": "string"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/AccessListID",
+                        "description": "The Access List's ID"
+                    },
+                    "membership": {
+                        "$ref": "#/components/schemas/CharactersAccessListsDetailMembership",
+                        "description": "The Access List's membership"
+                    },
+                    "name": {
+                        "description": "The Access List's name",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "membership"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsDetailAllianceentry": {
+                "properties": {
+                    "access": {
+                        "description": "Alliance's access",
+                        "enum": [
+                            "Unspecified",
+                            "Allowed",
+                            "Blocked",
+                            "Manager",
+                            "Admin"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified access",
+                            "Member is allowed",
+                            "Member is blocked",
+                            "Member is a manager (characters only)",
+                            "Member is an admin (characters only)"
+                        ]
+                    },
+                    "alliance_id": {
+                        "$ref": "#/components/schemas/AllianceID",
+                        "description": "Alliance's ID"
+                    }
+                },
+                "required": [
+                    "alliance_id",
+                    "access"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsDetailCharacterentry": {
+                "properties": {
+                    "access": {
+                        "description": "Character's access",
+                        "enum": [
+                            "Unspecified",
+                            "Allowed",
+                            "Blocked",
+                            "Manager",
+                            "Admin"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified access",
+                            "Member is allowed",
+                            "Member is blocked",
+                            "Member is a manager (characters only)",
+                            "Member is an admin (characters only)"
+                        ]
+                    },
+                    "character_id": {
+                        "$ref": "#/components/schemas/CharacterID",
+                        "description": "Character's ID"
+                    }
+                },
+                "required": [
+                    "character_id",
+                    "access"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsDetailCorporationentry": {
+                "properties": {
+                    "access": {
+                        "description": "Corporation's access",
+                        "enum": [
+                            "Unspecified",
+                            "Allowed",
+                            "Blocked",
+                            "Manager",
+                            "Admin"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified access",
+                            "Member is allowed",
+                            "Member is blocked",
+                            "Member is a manager (characters only)",
+                            "Member is an admin (characters only)"
+                        ]
+                    },
+                    "corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Corporation's ID"
+                    }
+                },
+                "required": [
+                    "corporation_id",
+                    "access"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsDetailMembership": {
+                "properties": {
+                    "alliances": {
+                        "description": "Alliances in the Access List",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersAccessListsDetailAllianceentry"
+                        },
+                        "type": "array"
+                    },
+                    "allow_everyone": {
+                        "description": "Whether everyone is allowed unless blocked",
+                        "type": "boolean"
+                    },
+                    "characters": {
+                        "description": "Characters in the Access List",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersAccessListsDetailCharacterentry"
+                        },
+                        "type": "array"
+                    },
+                    "corporations": {
+                        "description": "Corporations in the Access List",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersAccessListsDetailCorporationentry"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "allow_everyone",
+                    "alliances",
+                    "corporations",
+                    "characters"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsListing": {
+                "properties": {
+                    "access_lists": {
+                        "description": "List of Access Lists",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersAccessListsListingAccesslist"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "access_lists"
+                ],
+                "type": "object"
+            },
+            "CharactersAccessListsListingAccesslist": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/AccessListID",
+                        "description": "Access List's ID"
+                    }
+                },
+                "required": [
+                    "id"
+                ],
+                "type": "object"
             },
             "CharactersAffiliationPost": {
                 "items": {
@@ -2179,16 +2370,22 @@
                                 "EntosisCaptureStarted",
                                 "ExpertSystemExpired",
                                 "ExpertSystemExpiryImminent",
+                                "FWAllianceKickCeoIndividualStandingWarning",
                                 "FWAllianceKickMsg",
+                                "FWAllianceKickedCeoIndividualStanding",
                                 "FWAllianceWarningMsg",
                                 "FWCharKickMsg",
                                 "FWCharRankGainMsg",
                                 "FWCharRankLossMsg",
                                 "FWCharWarningMsg",
+                                "FWCharacterKickFromCorpIndividualStandingWarning",
+                                "FWCharacterKickedFromCorpIndividualStanding",
                                 "FWCorpJoinMsg",
                                 "FWCorpKickMsg",
                                 "FWCorpLeaveMsg",
                                 "FWCorpWarningMsg",
+                                "FWCorporationKickCeoIndividualStandingWarning",
+                                "FWCorporationKickedCeoIndividualStanding",
                                 "FacWarCorpJoinRequestMsg",
                                 "FacWarCorpJoinWithdrawMsg",
                                 "FacWarCorpLeaveRequestMsg",
@@ -2198,6 +2395,7 @@
                                 "FacWarLPDisqualifiedKill",
                                 "FacWarLPPayoutEvent",
                                 "FacWarLPPayoutKill",
+                                "FreelanceProjectACLDeleted",
                                 "FreelanceProjectClosed",
                                 "FreelanceProjectCompleted",
                                 "FreelanceProjectCreated",
@@ -3364,6 +3562,8 @@
                             "description": "\"The transaction type for the given. transaction. Different transaction types will populate different attributes.\"",
                             "enum": [
                                 "acceleration_gate_fee",
+                                "achievement_category_milestone_reward",
+                                "achievement_milestone_reward",
                                 "advertisement_listing_fee",
                                 "agent_donation",
                                 "agent_location_services",
@@ -3372,6 +3572,7 @@
                                 "agent_mission_collateral_refunded",
                                 "agent_mission_reward",
                                 "agent_mission_reward_corporation_tax",
+                                "agent_mission_security_tax",
                                 "agent_mission_time_bonus_reward",
                                 "agent_mission_time_bonus_reward_corporation_tax",
                                 "agent_security_services",
@@ -3389,6 +3590,7 @@
                                 "bounty_reimbursement",
                                 "bounty_surcharge",
                                 "brokers_fee",
+                                "campaign_objective_isk_reward",
                                 "clone_activation",
                                 "clone_transfer",
                                 "contraband_fine",
@@ -3460,6 +3662,7 @@
                                 "gm_cash_transfer",
                                 "gm_plex_fee_refund",
                                 "industry_job_tax",
+                                "industry_security_tax",
                                 "infrastructure_hub_maintenance",
                                 "inheritance",
                                 "insurance",
@@ -3474,6 +3677,7 @@
                                 "market_escrow",
                                 "market_fine_paid",
                                 "market_provider_tax",
+                                "market_security_tax",
                                 "market_transaction",
                                 "medal_creation",
                                 "medal_issued",
@@ -3482,6 +3686,7 @@
                                 "mission_cost",
                                 "mission_expiration",
                                 "mission_reward",
+                                "npc_bounty_security_tax",
                                 "office_rental_fee",
                                 "operation_bonus",
                                 "opportunity_reward",
@@ -3659,6 +3864,9 @@
                     },
                     "security_status": {
                         "description": "Character's security status",
+                        "examples": [
+                            5
+                        ],
                         "format": "double",
                         "type": "number"
                     },
@@ -3734,6 +3942,90 @@
                     "state",
                     "contributed",
                     "last_modified"
+                ],
+                "type": "object"
+            },
+            "CharactersMercenaryTacticalOperationsDetail": {
+                "properties": {
+                    "dungeon_type_id": {
+                        "$ref": "#/components/schemas/DungeonID",
+                        "description": "Operation's dungeon type ID"
+                    },
+                    "expires": {
+                        "description": "Moment the operation will expire",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/UUID",
+                        "description": "Operation's ID"
+                    },
+                    "mercenary_den_id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "ID of Mercenary Den offering this operation"
+                    },
+                    "state": {
+                        "description": "Operation's state",
+                        "enum": [
+                            "Unspecified",
+                            "Available",
+                            "Started",
+                            "Completed",
+                            "Expired",
+                            "Removed"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Not started yet",
+                            "Started",
+                            "Completed",
+                            "Expired",
+                            "Removed (e.g. mercenary den removed)"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "mercenary_den_id",
+                    "state",
+                    "dungeon_type_id",
+                    "expires"
+                ],
+                "type": "object"
+            },
+            "CharactersMercenaryTacticalOperationsListing": {
+                "properties": {
+                    "operations": {
+                        "description": "List of available operations",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersMercenaryTacticalOperationsListingOperation"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "operations"
+                ],
+                "type": "object"
+            },
+            "CharactersMercenaryTacticalOperationsListingOperation": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/UUID",
+                        "description": "Operation's ID"
+                    },
+                    "mercenary_den_id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "ID of Mercenary Den offering this operation"
+                    }
+                },
+                "required": [
+                    "id",
+                    "mercenary_den_id"
                 ],
                 "type": "object"
             },
@@ -3840,6 +4132,233 @@
                     "trained_skill_level",
                     "active_skill_level",
                     "skillpoints_in_skill"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetail": {
+                "properties": {
+                    "evolution": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailEvolution",
+                        "description": "Mercenary Den's evolution"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Mercenary Den's ID"
+                    },
+                    "infomorphs": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailInfomorphs",
+                        "description": "Mercenary Den's infomorphs"
+                    },
+                    "reinforcement_timer": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailReinforcementtimer",
+                        "description": "Mercenary Den's reinforcement timer (if the structure is reinforced)"
+                    },
+                    "skyhook": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailSkyhook",
+                        "description": "Skyhook the Mercenary Den is attached to"
+                    },
+                    "state": {
+                        "description": "Mercenary Den's state",
+                        "enum": [
+                            "Unspecified",
+                            "Running",
+                            "Paused",
+                            "Disabled"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Running",
+                            "Paused (e.g. the Mercenary Den is reinforced)",
+                            "Disabled (e.g. the character no longer has the skills to operate the Mercenary Den)"
+                        ]
+                    },
+                    "type_id": {
+                        "$ref": "#/components/schemas/TypeID",
+                        "description": "Mercenary Den's type ID"
+                    }
+                },
+                "required": [
+                    "id",
+                    "skyhook",
+                    "state",
+                    "type_id",
+                    "infomorphs",
+                    "evolution"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailEvolution": {
+                "properties": {
+                    "anarchy": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailEvolutionanarchy",
+                        "description": "Mercenary Den's anarchy"
+                    },
+                    "development": {
+                        "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetailEvolutiondevelopment",
+                        "description": "Mercenary Den's development"
+                    }
+                },
+                "required": [
+                    "development",
+                    "anarchy"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailEvolutionanarchy": {
+                "properties": {
+                    "amount": {
+                        "description": "Anarchy's cumulative amount (0-100)",
+                        "examples": [
+                            0
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "level": {
+                        "description": "Anarchy's level",
+                        "enum": [
+                            "Unspecified",
+                            "Level0",
+                            "Level1",
+                            "Level2",
+                            "Level3",
+                            "Level4"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified level",
+                            "Level 0",
+                            "Level 1",
+                            "Level 2",
+                            "Level 3",
+                            "Level 4"
+                        ]
+                    }
+                },
+                "required": [
+                    "amount",
+                    "level"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailEvolutiondevelopment": {
+                "properties": {
+                    "amount": {
+                        "description": "Development's cumulative amount (0-100)",
+                        "examples": [
+                            50
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "level": {
+                        "description": "Development's level",
+                        "enum": [
+                            "Unspecified",
+                            "Level0",
+                            "Level1",
+                            "Level2",
+                            "Level3",
+                            "Level4"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified level",
+                            "Level 0",
+                            "Level 1",
+                            "Level 2",
+                            "Level 3",
+                            "Level 4"
+                        ]
+                    }
+                },
+                "required": [
+                    "amount",
+                    "level"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailInfomorphs": {
+                "properties": {
+                    "amount": {
+                        "description": "Amount of infomorphs",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "amount"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailReinforcementtimer": {
+                "properties": {
+                    "end": {
+                        "description": "The time when the reinforcement timer will end",
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "end"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensDetailSkyhook": {
+                "properties": {
+                    "corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Corporation that owns the Skyhook"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Skyhook's ID"
+                    },
+                    "planet_id": {
+                        "$ref": "#/components/schemas/PlanetID",
+                        "description": "ID of the planet the Skyhook is anchored on"
+                    }
+                },
+                "required": [
+                    "id",
+                    "planet_id",
+                    "corporation_id"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensListing": {
+                "properties": {
+                    "mercenary_dens": {
+                        "description": "List of Mercenary Dens",
+                        "items": {
+                            "$ref": "#/components/schemas/CharactersStructuresMercenaryDensListingMercenaryden"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "mercenary_dens"
+                ],
+                "type": "object"
+            },
+            "CharactersStructuresMercenaryDensListingMercenaryden": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Mercenary Den's ID"
+                    },
+                    "planet_id": {
+                        "$ref": "#/components/schemas/PlanetID",
+                        "description": "ID of the planet the Skyhook (to which the Mercenary Den is attached) is anchored on"
+                    }
+                },
+                "required": [
+                    "id",
+                    "planet_id"
                 ],
                 "type": "object"
             },
@@ -5147,7 +5666,7 @@
                             "type": "integer"
                         },
                         "reinforce_exit_start": {
-                            "description": "Together with reinforce_exit_end, marks a 2-hour period where this customs office could exit reinforcement mode during the day after initial attack",
+                            "description": "Together with reinforce_exit_end, marks a 2-hour or 6-hour (depending on the office type) period where this customs office could exit reinforcement mode during the day after initial attack",
                             "format": "int64",
                             "type": "integer"
                         },
@@ -5170,6 +5689,11 @@
                         "terrible_standing_tax_rate": {
                             "format": "double",
                             "type": "number"
+                        },
+                        "type_id": {
+                            "description": "ID of the type of this customs office",
+                            "format": "int64",
+                            "type": "integer"
                         }
                     },
                     "required": [
@@ -7529,6 +8053,8 @@
                             "description": "\"The transaction type for the given. transaction. Different transaction types will populate different attributes. Note: If you have an existing XML API application that is using ref_types, you will need to know which string ESI ref_type maps to which integer. You can look at the following file to see string-\u003eint mappings: https://github.com/ccpgames/eve-glue/blob/master/eve_glue/wallet_journal_ref.py\"",
                             "enum": [
                                 "acceleration_gate_fee",
+                                "achievement_category_milestone_reward",
+                                "achievement_milestone_reward",
                                 "advertisement_listing_fee",
                                 "agent_donation",
                                 "agent_location_services",
@@ -7537,6 +8063,7 @@
                                 "agent_mission_collateral_refunded",
                                 "agent_mission_reward",
                                 "agent_mission_reward_corporation_tax",
+                                "agent_mission_security_tax",
                                 "agent_mission_time_bonus_reward",
                                 "agent_mission_time_bonus_reward_corporation_tax",
                                 "agent_security_services",
@@ -7554,6 +8081,7 @@
                                 "bounty_reimbursement",
                                 "bounty_surcharge",
                                 "brokers_fee",
+                                "campaign_objective_isk_reward",
                                 "clone_activation",
                                 "clone_transfer",
                                 "contraband_fine",
@@ -7625,6 +8153,7 @@
                                 "gm_cash_transfer",
                                 "gm_plex_fee_refund",
                                 "industry_job_tax",
+                                "industry_security_tax",
                                 "infrastructure_hub_maintenance",
                                 "inheritance",
                                 "insurance",
@@ -7639,6 +8168,7 @@
                                 "market_escrow",
                                 "market_fine_paid",
                                 "market_provider_tax",
+                                "market_security_tax",
                                 "market_transaction",
                                 "medal_creation",
                                 "medal_issued",
@@ -7647,6 +8177,7 @@
                                 "mission_cost",
                                 "mission_expiration",
                                 "mission_reward",
+                                "npc_bounty_security_tax",
                                 "office_rental_fee",
                                 "operation_bonus",
                                 "opportunity_reward",
@@ -9802,6 +10333,626 @@
                 ],
                 "type": "object"
             },
+            "CorporationsStructuresSkyhooksDetail": {
+                "properties": {
+                    "effective_workforce": {
+                        "description": "Skyhook's effective workforce; this can differ from the Skyhook's normal workforce due to the influence of an attached Mercenary Den",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Skyhook's ID"
+                    },
+                    "is_active": {
+                        "description": "Whether the Skyhook is active and producing workforce/power/reagents",
+                        "type": "boolean"
+                    },
+                    "planet_id": {
+                        "$ref": "#/components/schemas/PlanetID",
+                        "description": "ID of the planet the Skyhook is anchored on"
+                    },
+                    "reagents": {
+                        "description": "Skyhook's reagents",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSkyhooksDetailReagent"
+                        },
+                        "type": "array"
+                    },
+                    "reinforcement_timer": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSkyhooksDetailReinforcementtimer",
+                        "description": "Skyhook's reinforcement timer (if the structure is reinforced)"
+                    },
+                    "state": {
+                        "description": "Skyhook's state",
+                        "enum": [
+                            "Unspecified",
+                            "ShieldVulnerable",
+                            "ArmorReinforced",
+                            "ArmorVulnerable",
+                            "HullReinforced",
+                            "HullVulnerable"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified state",
+                            "Skyhook is vulnerable to shield damage",
+                            "Skyhook is reinforced against armor damage",
+                            "Skyhook is vulnerable to armor damage",
+                            "Skyhook is reinforced against hull damage",
+                            "Skyhook is vulnerable to hull damage"
+                        ]
+                    },
+                    "theft_vulnerability": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSkyhooksDetailTheftvulnerability",
+                        "description": "Skyhook's theft vulnerability"
+                    }
+                },
+                "required": [
+                    "id",
+                    "planet_id",
+                    "state",
+                    "is_active"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSkyhooksDetailReagent": {
+                "properties": {
+                    "last_cycle": {
+                        "description": "Moment the 'SecureStock'/'UnsecuredStock' value had its last cycle; use SDE to calculate the current values",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "secured_stock": {
+                        "description": "Secured stock of the reagent at the time of 'last_cycle'",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "type_id": {
+                        "$ref": "#/components/schemas/TypeID",
+                        "description": "Reagent's type ID"
+                    },
+                    "unsecured_stock": {
+                        "description": "Unsecured stock of the reagent at the time of 'last_cycle'",
+                        "examples": [
+                            300
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "type_id",
+                    "secured_stock",
+                    "unsecured_stock",
+                    "last_cycle"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSkyhooksDetailReinforcementtimer": {
+                "properties": {
+                    "end": {
+                        "description": "The time when the reinforcement timer will end",
+                        "examples": [
+                            "2026-02-23T16:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "end"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSkyhooksDetailTheftvulnerability": {
+                "properties": {
+                    "end": {
+                        "description": "End time of the theft vulnerability window",
+                        "examples": [
+                            "2026-02-23T16:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "start": {
+                        "description": "Start time of the theft vulnerability window",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSkyhooksListing": {
+                "properties": {
+                    "skyhooks": {
+                        "description": "List of Skyhooks",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSkyhooksListingSkyhook"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "skyhooks"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSkyhooksListingSkyhook": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Skyhook's ID"
+                    },
+                    "planet_id": {
+                        "$ref": "#/components/schemas/PlanetID",
+                        "description": "ID of the planet the Skyhook is anchored on"
+                    }
+                },
+                "required": [
+                    "id",
+                    "planet_id"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetail": {
+                "properties": {
+                    "fuel_access_list_id": {
+                        "$ref": "#/components/schemas/AccessListID",
+                        "description": "Access List with who can manage Sovereignty Hub's fuel"
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Sovereignty Hub's ID"
+                    },
+                    "reagent_bay": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailReagentbay",
+                        "description": "Sovereignty Hub's reagent bay"
+                    },
+                    "resources": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailResources",
+                        "description": "Sovereignty Hub's resources"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Sovereignty Hub's solar system ID"
+                    },
+                    "upgrades": {
+                        "description": "Sovereignty Hub's installed upgrades",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailUpgrade"
+                        },
+                        "type": "array"
+                    },
+                    "vulnerability_window": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailVulnerabilitywindow",
+                        "description": "Sovereignty Hub's vulnerability window; if omitted, this Sovereignty Hub is part of an active campaign"
+                    },
+                    "workforce_transport": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransport",
+                        "description": "Sovereignty Hub's workforce transport settings"
+                    }
+                },
+                "required": [
+                    "id",
+                    "solar_system_id",
+                    "upgrades",
+                    "reagent_bay",
+                    "resources",
+                    "workforce_transport"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailReagent": {
+                "properties": {
+                    "amount": {
+                        "description": "Amount of reagent in the bay at the time of 'last_updated'",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "burning_per_hour": {
+                        "description": "Amount of reagent burning per hour",
+                        "examples": [
+                            10
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "type_id": {
+                        "$ref": "#/components/schemas/TypeID",
+                        "description": "Reagent's type ID"
+                    }
+                },
+                "required": [
+                    "type_id",
+                    "amount",
+                    "burning_per_hour"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailReagentbay": {
+                "properties": {
+                    "last_updated": {
+                        "description": "Moment the 'amount' value was last updated; use 'burning_per_hour' to calculate the current value",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "reagents": {
+                        "description": "Sovereignty Hub's reagents",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailReagent"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "last_updated",
+                    "reagents"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailResourcepower": {
+                "properties": {
+                    "allocated": {
+                        "description": "Allocated power",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "available": {
+                        "description": "Available power",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "available",
+                    "allocated"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailResources": {
+                "properties": {
+                    "power": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailResourcepower",
+                        "description": "Sovereignty Hub's power"
+                    },
+                    "workforce": {
+                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailResourceworkforce",
+                        "description": "Sovereignty Hub's workforce"
+                    }
+                },
+                "required": [
+                    "power",
+                    "workforce"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailResourceworkforce": {
+                "properties": {
+                    "allocated": {
+                        "description": "Allocated workforce",
+                        "examples": [
+                            100
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "available": {
+                        "description": "Available workforce",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "available",
+                    "allocated"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransport": {
+                "properties": {
+                    "configuration": {
+                        "description": "Configured workforce transport",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "import": {
+                                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportconfigurationimport",
+                                        "description": "Workforce is requested to be imported"
+                                    }
+                                },
+                                "title": "import",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "export": {
+                                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportconfigurationexport",
+                                        "description": "Workforce is requested to be exported"
+                                    }
+                                },
+                                "title": "export",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "transit": {
+                                        "description": "Workforce is requested to be brought to transit",
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "title": "transit",
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "state": {
+                        "description": "Current state of the workforce transport",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "import": {
+                                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportstateimport",
+                                        "description": "Workforce is being imported"
+                                    }
+                                },
+                                "title": "import",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "export": {
+                                        "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportstateexport",
+                                        "description": "Workforce is being exported"
+                                    }
+                                },
+                                "title": "export",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "transit": {
+                                        "description": "Workforce is being brought to transit",
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "title": "transit",
+                                "type": "object"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "configuration",
+                    "state"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportconfigurationexport": {
+                "properties": {
+                    "amount": {
+                        "description": "Amount to be exported",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Destination's solar system ID"
+                    }
+                },
+                "required": [
+                    "amount"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportconfigurationimport": {
+                "properties": {
+                    "sources": {
+                        "description": "Sources",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportconfigurationsource"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "sources"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportconfigurationsource": {
+                "properties": {
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Source's solar system ID"
+                    }
+                },
+                "required": [
+                    "solar_system_id"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportstateexport": {
+                "properties": {
+                    "amount": {
+                        "description": "Amount exported",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Destination's solar system ID"
+                    }
+                },
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportstateimport": {
+                "properties": {
+                    "sources": {
+                        "description": "Sources",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetailTransportstateimportsource"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "sources"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailTransportstateimportsource": {
+                "properties": {
+                    "amount": {
+                        "description": "Amount imported",
+                        "examples": [
+                            1000
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Source's solar system ID"
+                    }
+                },
+                "required": [
+                    "solar_system_id",
+                    "amount"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailUpgrade": {
+                "properties": {
+                    "power_state": {
+                        "description": "Upgrade's power state",
+                        "enum": [
+                            "Unspecified",
+                            "Online",
+                            "Offline",
+                            "Low",
+                            "Pending"
+                        ],
+                        "type": "string",
+                        "x-enum-descriptions": [
+                            "An unspecified power state",
+                            "Online",
+                            "Offline",
+                            "Not enough fuel/power/workforce",
+                            "Waiting for startup cost to be available"
+                        ]
+                    },
+                    "type_id": {
+                        "$ref": "#/components/schemas/TypeID",
+                        "description": "Upgrade's type ID"
+                    }
+                },
+                "required": [
+                    "type_id",
+                    "power_state"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsDetailVulnerabilitywindow": {
+                "properties": {
+                    "end": {
+                        "description": "End time of the vulnerability window; if in the past, the Sovereignty Hub is in overtime",
+                        "examples": [
+                            "2026-02-23T16:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "start": {
+                        "description": "Start time of the vulnerability window; if in the past, the Sovereignty Hub is vulnerable right now",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsListing": {
+                "properties": {
+                    "sovereignty_hubs": {
+                        "description": "List of Sovereignty Hubs",
+                        "items": {
+                            "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsListingSovereigntyhub"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "sovereignty_hubs"
+                ],
+                "type": "object"
+            },
+            "CorporationsStructuresSovereigntyHubsListingSovereigntyhub": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "Sovereignty Hub's ID"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "Sovereignty Hub's location"
+                    }
+                },
+                "required": [
+                    "id",
+                    "solar_system_id"
+                ],
+                "type": "object"
+            },
             "Cursor": {
                 "properties": {
                     "after": {
@@ -10050,6 +11201,14 @@
                     "type": "integer"
                 },
                 "type": "array"
+            },
+            "DungeonID": {
+                "examples": [
+                    12367
+                ],
+                "format": "int64",
+                "type": "integer",
+                "x-common-model": "true"
             },
             "Error": {
                 "properties": {
@@ -12394,6 +13553,14 @@
                 ],
                 "type": "object"
             },
+            "PlanetID": {
+                "examples": [
+                    40000002
+                ],
+                "format": "int64",
+                "type": "integer",
+                "x-common-model": "true"
+            },
             "RaceID": {
                 "examples": [
                     1
@@ -12496,6 +13663,68 @@
                 "type": "integer",
                 "x-common-model": "true"
             },
+            "SkyhooksRaidable": {
+                "properties": {
+                    "skyhooks": {
+                        "description": "List of (upcoming) raidable Skyhooks",
+                        "items": {
+                            "$ref": "#/components/schemas/SkyhooksRaidableVulnerableskyhook"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "skyhooks"
+                ],
+                "type": "object"
+            },
+            "SkyhooksRaidableTheftvulnerability": {
+                "properties": {
+                    "end": {
+                        "description": "End time of the theft vulnerability window",
+                        "examples": [
+                            "2026-02-23T16:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "start": {
+                        "description": "Start time of the theft vulnerability window",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ],
+                "type": "object"
+            },
+            "SkyhooksRaidableVulnerableskyhook": {
+                "properties": {
+                    "planet_id": {
+                        "$ref": "#/components/schemas/PlanetID",
+                        "description": "ID of the planet the Skyhook is anchored on"
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "ID of the solar system the Skyhook is anchored on"
+                    },
+                    "theft_vulnerability": {
+                        "$ref": "#/components/schemas/SkyhooksRaidableTheftvulnerability",
+                        "description": "Skyhook's theft vulnerability"
+                    }
+                },
+                "required": [
+                    "planet_id",
+                    "solar_system_id",
+                    "theft_vulnerability"
+                ],
+                "type": "object"
+            },
             "SolarSystemID": {
                 "examples": [
                     30000001
@@ -12592,81 +13821,208 @@
                 },
                 "type": "array"
             },
-            "SovereigntyMapGet": {
-                "items": {
-                    "properties": {
-                        "alliance_id": {
-                            "format": "int64",
-                            "type": "integer"
+            "SovereigntySystems": {
+                "properties": {
+                    "solar_systems": {
+                        "description": "List of solar systems and their sovereignty owners",
+                        "items": {
+                            "$ref": "#/components/schemas/SovereigntySystemsSolarsystem"
                         },
-                        "corporation_id": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "faction_id": {
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "system_id": {
-                            "format": "int64",
-                            "type": "integer"
-                        }
-                    },
-                    "required": [
-                        "system_id"
-                    ],
-                    "type": "object"
+                        "type": "array"
+                    }
                 },
-                "type": "array"
+                "required": [
+                    "solar_systems"
+                ],
+                "type": "object"
             },
-            "SovereigntyStructuresGet": {
-                "items": {
-                    "properties": {
-                        "alliance_id": {
-                            "description": "The alliance that owns the structure.\n",
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "solar_system_id": {
-                            "description": "Solar system in which the structure is located.\n",
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "structure_id": {
-                            "description": "Unique item ID for this structure.",
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "structure_type_id": {
-                            "description": "A reference to the type of structure this is.\n",
-                            "format": "int64",
-                            "type": "integer"
-                        },
-                        "vulnerability_occupancy_level": {
-                            "description": "The occupancy level for the next or current vulnerability window. This takes into account all development indexes and capital system bonuses. Also known as Activity Defense Multiplier from in the client. It increases the time that attackers must spend using their entosis links on the structure.\n",
-                            "format": "double",
-                            "type": "number"
-                        },
-                        "vulnerable_end_time": {
-                            "description": "The time at which the next or current vulnerability window ends. At the end of a vulnerability window the next window is recalculated and locked in along with the vulnerabilityOccupancyLevel. If the structure is not in 100% entosis control of the defender, it will go in to 'overtime' and stay vulnerable for as long as that situation persists. Only once the defenders have 100% entosis control and has the vulnerableEndTime passed does the vulnerability interval expire and a new one is calculated.\n",
-                            "format": "date-time",
-                            "type": "string"
-                        },
-                        "vulnerable_start_time": {
-                            "description": "The next time at which the structure will become vulnerable. Or the start time of the current window if current time is between this and vulnerableEndTime.\n",
-                            "format": "date-time",
-                            "type": "string"
-                        }
+            "SovereigntySystemsAlliance": {
+                "properties": {
+                    "alliance_id": {
+                        "$ref": "#/components/schemas/AllianceID",
+                        "description": "Alliance that claimed this solar system"
                     },
-                    "required": [
-                        "alliance_id",
-                        "solar_system_id",
-                        "structure_id",
-                        "structure_type_id"
-                    ],
-                    "type": "object"
+                    "claimed_since": {
+                        "description": "Time the claim was made",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "corporation_id": {
+                        "$ref": "#/components/schemas/CorporationID",
+                        "description": "Corporation that claimed this solar system"
+                    },
+                    "development": {
+                        "$ref": "#/components/schemas/SovereigntySystemsDevelopment",
+                        "description": "Solar system's development"
+                    },
+                    "is_capital_system": {
+                        "description": "Whether the system is the capital system of the alliance",
+                        "examples": [
+                            false
+                        ],
+                        "type": "boolean"
+                    },
+                    "sovereignty_hub": {
+                        "$ref": "#/components/schemas/SovereigntySystemsSovereigntyhub",
+                        "description": "Sovereignty Hub holding the claim"
+                    }
                 },
-                "type": "array"
+                "required": [
+                    "alliance_id",
+                    "corporation_id",
+                    "claimed_since",
+                    "sovereignty_hub",
+                    "is_capital_system",
+                    "development"
+                ],
+                "type": "object"
+            },
+            "SovereigntySystemsDevelopment": {
+                "properties": {
+                    "activity_defense_multiplier": {
+                        "description": "Current Activity Defense Multiplier",
+                        "examples": [
+                            1.2
+                        ],
+                        "format": "double",
+                        "type": "number"
+                    },
+                    "industrial_level": {
+                        "description": "Industrial level (0-5) of this solar system",
+                        "examples": [
+                            0
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "military_level": {
+                        "description": "Military level (0-5) of this solar system",
+                        "examples": [
+                            3
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "strategic_level": {
+                        "description": "Strategic level (0-5) of this solar system",
+                        "examples": [
+                            5
+                        ],
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "activity_defense_multiplier",
+                    "military_level",
+                    "industrial_level",
+                    "strategic_level"
+                ],
+                "type": "object"
+            },
+            "SovereigntySystemsFaction": {
+                "properties": {
+                    "faction_id": {
+                        "$ref": "#/components/schemas/FactionID",
+                        "description": "Faction that claimed this solar system"
+                    }
+                },
+                "required": [
+                    "faction_id"
+                ],
+                "type": "object"
+            },
+            "SovereigntySystemsSolarsystem": {
+                "properties": {
+                    "claim": {
+                        "description": "Claim on this solar system",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "faction": {
+                                        "$ref": "#/components/schemas/SovereigntySystemsFaction",
+                                        "description": "Solar system is claimed by a faction"
+                                    }
+                                },
+                                "title": "faction",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "alliance": {
+                                        "$ref": "#/components/schemas/SovereigntySystemsAlliance",
+                                        "description": "Solar system is claimed by an alliance"
+                                    }
+                                },
+                                "title": "alliance",
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "unclaimed": {
+                                        "description": "Solar system is unclaimed",
+                                        "type": "boolean"
+                                    }
+                                },
+                                "title": "unclaimed",
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "solar_system_id": {
+                        "$ref": "#/components/schemas/SolarSystemID",
+                        "description": "ID of the solar system"
+                    }
+                },
+                "required": [
+                    "solar_system_id",
+                    "claim"
+                ],
+                "type": "object"
+            },
+            "SovereigntySystemsSovereigntyhub": {
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/ItemID",
+                        "description": "ID of the Sovereignty Hub"
+                    },
+                    "vulnerability_window": {
+                        "$ref": "#/components/schemas/SovereigntySystemsVulnerabilitywindow",
+                        "description": "Sovereignty Hub's vulnerability window; if omitted, this Sovereignty Hub is part of an active campaign"
+                    }
+                },
+                "required": [
+                    "id"
+                ],
+                "type": "object"
+            },
+            "SovereigntySystemsVulnerabilitywindow": {
+                "properties": {
+                    "end": {
+                        "description": "End time of the vulnerability window; if in the past, the Sovereignty Hub is in overtime",
+                        "examples": [
+                            "2026-02-23T16:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "start": {
+                        "description": "Start time of the vulnerability window; if in the past, the Sovereignty Hub is vulnerable right now",
+                        "examples": [
+                            "2026-02-23T12:00:00Z"
+                        ],
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ],
+                "type": "object"
             },
             "StationID": {
                 "examples": [
@@ -14286,6 +15642,8 @@
                     "authorizationCode": {
                         "authorizationUrl": "https://login.eveonline.com/v2/oauth/authorize",
                         "scopes": {
+                            "esi-access.read_lists.v1": "esi-access.read_lists.v1",
+                            "esi-activities.read_character.v1": "esi-activities.read_character.v1",
                             "esi-alliances.read_contacts.v1": "esi-alliances.read_contacts.v1",
                             "esi-assets.read_assets.v1": "esi-assets.read_assets.v1",
                             "esi-assets.read_corporation_assets.v1": "esi-assets.read_corporation_assets.v1",
@@ -14347,6 +15705,8 @@
                             "esi-search.search_structures.v1": "esi-search.search_structures.v1",
                             "esi-skills.read_skillqueue.v1": "esi-skills.read_skillqueue.v1",
                             "esi-skills.read_skills.v1": "esi-skills.read_skills.v1",
+                            "esi-structures.read_character.v1": "esi-structures.read_character.v1",
+                            "esi-structures.read_corporation.v1": "esi-structures.read_corporation.v1",
                             "esi-ui.open_window.v1": "esi-ui.open_window.v1",
                             "esi-ui.write_waypoint.v1": "esi-ui.write_waypoint.v1",
                             "esi-universe.read_structures.v1": "esi-universe.read_structures.v1",
@@ -14370,8 +15730,8 @@
             "url": "https://developers.eveonline.com/license-agreement"
         },
         "termsOfService": "https://support.eveonline.com/hc/en-us/articles/8414770561948-EVE-Online-Terms-of-Service",
-        "title": "EVE Stable Infrastructure (ESI) - tranquility",
-        "version": "2025-12-16"
+        "title": "EVE Spring Inebriation (ESI) - tranquility",
+        "version": "2026-05-19"
     },
     "openapi": "3.1.0",
     "paths": {
@@ -14506,7 +15866,7 @@
                     "Alliance"
                 ],
                 "x-cache-age": 3600,
-                "x-cache-mode": "ttl-based",
+                "x-cache-mode": "event-based",
                 "x-compatibility-date": "2020-01-01"
             }
         },
@@ -14983,8 +16343,188 @@
                     "Character"
                 ],
                 "x-cache-age": 86400,
-                "x-cache-mode": "ttl-based",
+                "x-cache-mode": "event-based",
                 "x-compatibility-date": "2020-01-01"
+            }
+        },
+        "/characters/{character_id}/access-lists": {
+            "get": {
+                "description": "Lists all Access Lists the character is Manager or Admin of.",
+                "operationId": "GetCharactersAccessListsListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersAccessListsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-access.read_lists.v1"
+                        ]
+                    }
+                ],
+                "summary": "List Access Lists",
+                "tags": [
+                    "Access List"
+                ],
+                "x-cache-age": 300,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-access",
+                    "max-tokens": 600,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/characters/{character_id}/access-lists/{access_list_id}": {
+            "get": {
+                "description": "Get the details of an Access List.",
+                "operationId": "GetCharactersAccessListsDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the Access List",
+                        "in": "path",
+                        "name": "access_list_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/AccessListID",
+                            "description": "The ID of the Access List"
+                        }
+                    },
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersAccessListsDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-access.read_lists.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get Access List details",
+                "tags": [
+                    "Access List"
+                ],
+                "x-cache-age": 300,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-access",
+                    "max-tokens": 600,
+                    "window-size": "15m"
+                }
             }
         },
         "/characters/{character_id}/agents_research": {
@@ -19210,6 +20750,186 @@
                 }
             }
         },
+        "/characters/{character_id}/mercenary-tactical-operations": {
+            "get": {
+                "description": "Listing of all Mercenary Tactical Operations for the character.",
+                "operationId": "GetCharactersMercenaryTacticalOperationsListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersMercenaryTacticalOperationsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-activities.read_character.v1"
+                        ]
+                    }
+                ],
+                "summary": "List Mercenary Tactical Operations",
+                "tags": [
+                    "Activities"
+                ],
+                "x-cache-age": 300,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-activity",
+                    "max-tokens": 150,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/characters/{character_id}/mercenary-tactical-operations/{operation_id}": {
+            "get": {
+                "description": "Get the details of a Mercenary Tactical Operation.",
+                "operationId": "GetCharactersMercenaryTacticalOperationsDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the operation",
+                        "in": "path",
+                        "name": "operation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/UUID",
+                            "description": "The ID of the operation"
+                        }
+                    },
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersMercenaryTacticalOperationsDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-activities.read_character.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get Mercenary Tactical Operation details",
+                "tags": [
+                    "Activities"
+                ],
+                "x-cache-age": 300,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-activity",
+                    "max-tokens": 150,
+                    "window-size": "15m"
+                }
+            }
+        },
         "/characters/{character_id}/mining": {
             "get": {
                 "description": "Paginated record of all mining done by a character for the past 30 days",
@@ -20533,6 +22253,186 @@
                 }
             }
         },
+        "/characters/{character_id}/structures/mercenary-dens": {
+            "get": {
+                "description": "Listing of all Mercenary Dens.",
+                "operationId": "GetCharactersStructuresMercenaryDensListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersStructuresMercenaryDensListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_character.v1"
+                        ]
+                    }
+                ],
+                "summary": "List Mercenary Dens",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-structure",
+                    "max-tokens": 30,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/characters/{character_id}/structures/mercenary-dens/{mercenary_den_id}": {
+            "get": {
+                "description": "Get the details of a Mercenary Den.",
+                "operationId": "GetCharactersStructuresMercenaryDensDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the Mercenary Den",
+                        "in": "path",
+                        "name": "mercenary_den_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ItemID",
+                            "description": "The ID of the Mercenary Den"
+                        }
+                    },
+                    {
+                        "description": "The ID of the character",
+                        "in": "path",
+                        "name": "character_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CharacterID",
+                            "description": "The ID of the character"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CharactersStructuresMercenaryDensDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_character.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get Mercenary Den details",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "char-structure",
+                    "max-tokens": 30,
+                    "window-size": "15m"
+                }
+            }
+        },
         "/characters/{character_id}/titles": {
             "get": {
                 "description": "Returns a character's titles",
@@ -21625,7 +23525,7 @@
                     "Corporation"
                 ],
                 "x-cache-age": 3600,
-                "x-cache-mode": "ttl-based",
+                "x-cache-mode": "event-based",
                 "x-compatibility-date": "2020-01-01"
             }
         },
@@ -22388,6 +24288,11 @@
                 ],
                 "x-cache-age": 600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]
@@ -22961,6 +24866,11 @@
                 ],
                 "x-cache-age": 3600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Factory_Manager"
                 ]
@@ -25282,6 +27192,11 @@
                 ],
                 "x-cache-age": 3600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]
@@ -25383,6 +27298,11 @@
                 ],
                 "x-cache-age": 3600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]
@@ -25484,6 +27404,380 @@
                 ],
                 "x-cache-age": 3600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
+                "x-required-roles": [
+                    "Station_Manager"
+                ]
+            }
+        },
+        "/corporations/{corporation_id}/structures/skyhooks": {
+            "get": {
+                "description": "Listing of all Skyhooks.",
+                "operationId": "GetCorporationsStructuresSkyhooksListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsStructuresSkyhooksListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_corporation.v1"
+                        ]
+                    }
+                ],
+                "summary": "List Skyhooks",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
+                "x-required-roles": [
+                    "Station_Manager"
+                ]
+            }
+        },
+        "/corporations/{corporation_id}/structures/skyhooks/{skyhook_id}": {
+            "get": {
+                "description": "Get the details of a Skyhook.",
+                "operationId": "GetCorporationsStructuresSkyhooksDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the Skyhook",
+                        "in": "path",
+                        "name": "skyhook_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ItemID",
+                            "description": "The ID of the Skyhook"
+                        }
+                    },
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsStructuresSkyhooksDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_corporation.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get Skyhook details",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
+                "x-required-roles": [
+                    "Station_Manager"
+                ]
+            }
+        },
+        "/corporations/{corporation_id}/structures/sovereignty-hubs": {
+            "get": {
+                "description": "Listing of all Sovereignty Hubs.",
+                "operationId": "GetCorporationsStructuresSovereigntyHubsListing",
+                "parameters": [
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsListing"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_corporation.v1"
+                        ]
+                    }
+                ],
+                "summary": "List Sovereignty Hubs",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/corporations/{corporation_id}/structures/sovereignty-hubs/{sovereignty_hub_id}": {
+            "get": {
+                "description": "Get the details of a Sovereignty Hub.",
+                "operationId": "GetCorporationsStructuresSovereigntyHubsDetail",
+                "parameters": [
+                    {
+                        "description": "The ID of the Sovereignty Hub",
+                        "in": "path",
+                        "name": "sovereignty_hub_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ItemID",
+                            "description": "The ID of the Sovereignty Hub"
+                        }
+                    },
+                    {
+                        "description": "The ID of the corporation",
+                        "in": "path",
+                        "name": "corporation_id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/CorporationID",
+                            "description": "The ID of the corporation"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorporationsStructuresSovereigntyHubsDetail"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2": [
+                            "esi-structures.read_corporation.v1"
+                        ]
+                    }
+                ],
+                "summary": "Get Sovereignty Hub details",
+                "tags": [
+                    "Structures"
+                ],
+                "x-cache-age": 3600,
+                "x-cache-mode": "event-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "corp-structure",
+                    "max-tokens": 300,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Station_Manager"
                 ]
@@ -29098,6 +31392,8 @@
                 "tags": [
                     "Meta"
                 ],
+                "x-cache-age": 600,
+                "x-cache-mode": "not-cached",
                 "x-compatibility-date": "2025-09-26",
                 "x-rate-limit": {
                     "group": "meta",
@@ -29164,6 +31460,8 @@
                 "tags": [
                     "Meta"
                 ],
+                "x-cache-age": 600,
+                "x-cache-mode": "not-cached",
                 "x-compatibility-date": "2020-01-01",
                 "x-rate-limit": {
                     "group": "meta",
@@ -29230,6 +31528,7 @@
                 "tags": [
                     "Meta"
                 ],
+                "x-cache-age": 0,
                 "x-compatibility-date": "2025-11-06",
                 "x-rate-limit": {
                     "group": "meta",
@@ -29326,10 +31625,79 @@
                 "tags": [
                     "Routes"
                 ],
+                "x-cache-age": 0,
                 "x-compatibility-date": "2025-09-30",
                 "x-rate-limit": {
                     "group": "routes",
                     "max-tokens": 3600,
+                    "window-size": "15m"
+                }
+            }
+        },
+        "/skyhooks/raidable": {
+            "get": {
+                "description": "Listing of all Skyhooks that currently or will shortly be raidable.",
+                "operationId": "GetSkyhooksRaidable",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AcceptLanguage"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfNoneMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CompatibilityDate"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Tenant"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfModifiedSince"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkyhooksRaidable"
+                                }
+                            }
+                        },
+                        "description": "OK",
+                        "headers": {
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/CacheControl"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "Last-Modified": {
+                                "$ref": "#/components/headers/LastModified"
+                            }
+                        }
+                    },
+                    "default": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "Error"
+                    }
+                },
+                "summary": "List (upcoming) raidable Skyhooks",
+                "tags": [
+                    "Activities"
+                ],
+                "x-cache-age": 300,
+                "x-cache-mode": "ttl-based",
+                "x-compatibility-date": "2026-05-19",
+                "x-rate-limit": {
+                    "group": "activity",
+                    "max-tokens": 30,
                     "window-size": "15m"
                 }
             }
@@ -29401,10 +31769,10 @@
                 }
             }
         },
-        "/sovereignty/map": {
+        "/sovereignty/systems": {
             "get": {
-                "description": "Shows sovereignty information for solar systems",
-                "operationId": "GetSovereigntyMap",
+                "description": "Listing of sovereignty details for all K-space systems in New Eden.",
+                "operationId": "GetSovereigntySystems",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/AcceptLanguage"
@@ -29427,7 +31795,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SovereigntyMapGet"
+                                    "$ref": "#/components/schemas/SovereigntySystems"
                                 }
                             }
                         },
@@ -29455,79 +31823,13 @@
                         "description": "Error"
                     }
                 },
-                "summary": "List sovereignty of systems",
+                "summary": "List sovereignty details for K-space systems",
                 "tags": [
                     "Sovereignty"
                 ],
-                "x-cache-age": 3600,
-                "x-compatibility-date": "2020-01-01",
-                "x-rate-limit": {
-                    "group": "sovereignty",
-                    "max-tokens": 600,
-                    "window-size": "15m"
-                }
-            }
-        },
-        "/sovereignty/structures": {
-            "get": {
-                "description": "Shows sovereignty data for structures.",
-                "operationId": "GetSovereigntyStructures",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/AcceptLanguage"
-                    },
-                    {
-                        "$ref": "#/components/parameters/IfNoneMatch"
-                    },
-                    {
-                        "$ref": "#/components/parameters/CompatibilityDate"
-                    },
-                    {
-                        "$ref": "#/components/parameters/Tenant"
-                    },
-                    {
-                        "$ref": "#/components/parameters/IfModifiedSince"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SovereigntyStructuresGet"
-                                }
-                            }
-                        },
-                        "description": "OK",
-                        "headers": {
-                            "Cache-Control": {
-                                "$ref": "#/components/headers/CacheControl"
-                            },
-                            "ETag": {
-                                "$ref": "#/components/headers/ETag"
-                            },
-                            "Last-Modified": {
-                                "$ref": "#/components/headers/LastModified"
-                            }
-                        }
-                    },
-                    "default": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": "Error"
-                    }
-                },
-                "summary": "List sovereignty structures",
-                "tags": [
-                    "Sovereignty"
-                ],
-                "x-cache-age": 120,
-                "x-compatibility-date": "2020-01-01",
+                "x-cache-age": 300,
+                "x-cache-mode": "ttl-based",
+                "x-compatibility-date": "2026-05-19",
                 "x-rate-limit": {
                     "group": "sovereignty",
                     "max-tokens": 600,
@@ -32450,6 +34752,12 @@
     ],
     "tags": [
         {
+            "name": "Access List"
+        },
+        {
+            "name": "Activities"
+        },
+        {
             "name": "Alliance"
         },
         {
@@ -32535,6 +34843,9 @@
         },
         {
             "name": "Status"
+        },
+        {
+            "name": "Structures"
         },
         {
             "name": "Universe"

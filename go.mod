@@ -18,7 +18,7 @@ require (
 	github.com/chasinglogic/appdirs v0.0.0-20260224113447-85de447711c9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/dweymouth/fyne-tooltip v0.4.0
-	github.com/fnt-eve/goesi-openapi v0.0.22
+	github.com/fnt-eve/goesi-openapi v0.0.33
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gohugoio/httpcache v0.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
