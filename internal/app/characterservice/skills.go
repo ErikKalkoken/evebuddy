@@ -24,7 +24,7 @@ import (
 
 const cacheKeyTrainingNotified = "expired-training-notified"
 
-type SkillExportItem struct {
+type skillExportItem struct {
 	Name  string
 	Level int64
 }
@@ -213,23 +213,23 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 	return skills2, nil
 }
 
-// GetSkillsForExport returns active skills sorted by name for export.
-func (s *CharacterService) GetSkillsForExport(ctx context.Context, characterID int64) ([]SkillExportItem, error) {
+// getSkillsForExport returns active skills sorted by name for export.
+func (s *CharacterService) getSkillsForExport(ctx context.Context, characterID int64) ([]skillExportItem, error) {
 	skills, err := s.ListSkills(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	items := make([]SkillExportItem, 0, len(skills))
+	items := make([]skillExportItem, 0, len(skills))
 	for _, o := range skills {
 		if o.ActiveSkillLevel == 0 {
 			continue
 		}
-		items = append(items, SkillExportItem{
+		items = append(items, skillExportItem{
 			Name:  o.Skill.Type.Name,
 			Level: o.ActiveSkillLevel,
 		})
 	}
-	slices.SortFunc(items, func(a, b SkillExportItem) int {
+	slices.SortFunc(items, func(a, b skillExportItem) int {
 		return strings.Compare(a.Name, b.Name)
 	})
 	return items, nil
@@ -237,20 +237,20 @@ func (s *CharacterService) GetSkillsForExport(ctx context.Context, characterID i
 
 // MakeSkillsExportLines returns PyFA-compatible export lines from active skills.
 func (s *CharacterService) MakeSkillsExportLines(ctx context.Context, characterID int64) (string, error) {
-	items, err := s.GetSkillsForExport(ctx, characterID)
+	items, err := s.getSkillsForExport(ctx, characterID)
 	if err != nil {
 		return "", err
 	}
 	var sb strings.Builder
 	for _, r := range items {
-		sb.WriteString(fmt.Sprintf("%s %d\n", r.Name, r.Level))
+		fmt.Fprintf(&sb, "%s %d\n", r.Name, r.Level)
 	}
 	return sb.String(), nil
 }
 
 // WriteSkillsExportCSV writes active skills as CSV to the provided writer.
 func (s *CharacterService) WriteSkillsExportCSV(ctx context.Context, characterID int64, w io.Writer) error {
-	items, err := s.GetSkillsForExport(ctx, characterID)
+	items, err := s.getSkillsForExport(ctx, characterID)
 	if err != nil {
 		return err
 	}
