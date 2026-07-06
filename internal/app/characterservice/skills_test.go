@@ -251,7 +251,7 @@ func TestCharacterService_GetSkillsForExport(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("should return only trained skills sorted by name", func(t *testing.T) {
+	t.Run("should return only active skills sorted by name", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
@@ -261,19 +261,19 @@ func TestCharacterService_GetSkillsForExport(t *testing.T) {
 		skillB := factory.CreateEveType(storage.CreateEveTypeParams{ID: 5002, GroupID: group.ID, Name: "Alpha Skill", IsPublished: true})
 		skillC := factory.CreateEveType(storage.CreateEveTypeParams{ID: 5003, GroupID: group.ID, Name: "Beta Skill", IsPublished: true})
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skillA.ID,
-			TrainedSkillLevel: 5,
+			CharacterID:      c.ID,
+			TypeID:           skillA.ID,
+			ActiveSkillLevel: 5,
 		}))
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skillB.ID,
-			TrainedSkillLevel: 3,
+			CharacterID:      c.ID,
+			TypeID:           skillB.ID,
+			ActiveSkillLevel: 3,
 		}))
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skillC.ID,
-			TrainedSkillLevel: 0,
+			CharacterID:      c.ID,
+			TypeID:           skillC.ID,
+			ActiveSkillLevel: 0,
 		}))
 
 		// when
@@ -302,14 +302,14 @@ func TestCharacterService_MakeSkillsExportLines(t *testing.T) {
 		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 6001, GroupID: group.ID, Name: "Gamma Skill", IsPublished: true})
 		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 6002, GroupID: group.ID, Name: "Delta Skill", IsPublished: true})
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skill1.ID,
-			TrainedSkillLevel: 4,
+			CharacterID:      c.ID,
+			TypeID:           skill1.ID,
+			ActiveSkillLevel: 4,
 		}))
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skill2.ID,
-			TrainedSkillLevel: 2,
+			CharacterID:      c.ID,
+			TypeID:           skill2.ID,
+			ActiveSkillLevel: 2,
 		}))
 
 		// when
@@ -325,7 +325,7 @@ func TestCharacterService_WriteSkillsExportCSV(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("should write trained skills CSV with header", func(t *testing.T) {
+	t.Run("should write active skills CSV with header", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
@@ -334,14 +334,14 @@ func TestCharacterService_WriteSkillsExportCSV(t *testing.T) {
 		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 7001, GroupID: group.ID, Name: "Gamma Skill", IsPublished: true})
 		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 7002, GroupID: group.ID, Name: "Alpha Skill", IsPublished: true})
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skill1.ID,
-			TrainedSkillLevel: 4,
+			CharacterID:      c.ID,
+			TypeID:           skill1.ID,
+			ActiveSkillLevel: 4,
 		}))
 		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:       c.ID,
-			TypeID:            skill2.ID,
-			TrainedSkillLevel: 2,
+			CharacterID:      c.ID,
+			TypeID:           skill2.ID,
+			ActiveSkillLevel: 2,
 		}))
 
 		var b bytes.Buffer

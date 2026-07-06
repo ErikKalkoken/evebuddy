@@ -144,7 +144,7 @@ func NewCatalogue(u baseUI) *Catalogue {
 			a.exportSkillsToCSV()
 		}),
 	))
-	a.exportButton.SetToolTip("Export Skills")
+	a.exportButton.SetToolTip("Export skills to clipboard or CSV file")
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {

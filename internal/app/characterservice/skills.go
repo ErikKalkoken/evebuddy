@@ -213,7 +213,7 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 	return skills2, nil
 }
 
-// GetSkillsForExport returns trained skills sorted by name for export.
+// GetSkillsForExport returns active skills sorted by name for export.
 func (s *CharacterService) GetSkillsForExport(ctx context.Context, characterID int64) ([]SkillExportItem, error) {
 	skills, err := s.ListSkills(ctx, characterID)
 	if err != nil {
@@ -221,12 +221,12 @@ func (s *CharacterService) GetSkillsForExport(ctx context.Context, characterID i
 	}
 	items := make([]SkillExportItem, 0, len(skills))
 	for _, o := range skills {
-		if o.TrainedSkillLevel == 0 {
+		if o.ActiveSkillLevel == 0 {
 			continue
 		}
 		items = append(items, SkillExportItem{
 			Name:  o.Skill.Type.Name,
-			Level: o.TrainedSkillLevel,
+			Level: o.ActiveSkillLevel,
 		})
 	}
 	slices.SortFunc(items, func(a, b SkillExportItem) int {
@@ -235,7 +235,7 @@ func (s *CharacterService) GetSkillsForExport(ctx context.Context, characterID i
 	return items, nil
 }
 
-// MakeSkillsExportLines returns PyFA-compatible export lines from trained skills.
+// MakeSkillsExportLines returns PyFA-compatible export lines from active skills.
 func (s *CharacterService) MakeSkillsExportLines(ctx context.Context, characterID int64) (string, error) {
 	items, err := s.GetSkillsForExport(ctx, characterID)
 	if err != nil {
@@ -248,7 +248,7 @@ func (s *CharacterService) MakeSkillsExportLines(ctx context.Context, characterI
 	return sb.String(), nil
 }
 
-// WriteSkillsExportCSV writes trained skills as CSV to the provided writer.
+// WriteSkillsExportCSV writes active skills as CSV to the provided writer.
 func (s *CharacterService) WriteSkillsExportCSV(ctx context.Context, characterID int64, w io.Writer) error {
 	items, err := s.GetSkillsForExport(ctx, characterID)
 	if err != nil {
