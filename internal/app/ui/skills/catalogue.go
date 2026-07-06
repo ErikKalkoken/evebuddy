@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -136,14 +137,17 @@ func NewCatalogue(u baseUI) *Catalogue {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	a.exportButton = xwidget.NewContextMenuButtonWithIcon("Export", theme.DownloadIcon(), fyne.NewMenu("",
-		fyne.NewMenuItem("Copy to clipboard", func() {
-			a.copySkillsToClipboard()
-		}),
-		fyne.NewMenuItem("Save as CSV", func() {
-			a.exportSkillsToCSV()
-		}),
-	))
+	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
+		"Export",
+		theme.NewThemedResource(icons.ExportVariantSvg),
+		fyne.NewMenu("",
+			fyne.NewMenuItem("Copy to clipboard", func() {
+				a.copySkillsToClipboard()
+			}),
+			fyne.NewMenuItem("Save as CSV", func() {
+				a.exportSkillsToCSV()
+			}),
+		))
 	a.exportButton.SetToolTip("Export skills to clipboard or CSV file")
 
 	// signals

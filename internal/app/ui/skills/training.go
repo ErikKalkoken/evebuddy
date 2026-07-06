@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -305,7 +306,7 @@ func NewTraining(u baseUI) *Training {
 	})
 	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
 		"Export",
-		theme.DownloadIcon(),
+		theme.NewThemedResource(icons.ExportVariantSvg),
 		fyne.NewMenu("",
 			fyne.NewMenuItem("Copy to clipboard", a.copyTrainingToClipboard),
 			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
