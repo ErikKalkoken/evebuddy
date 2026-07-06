@@ -1,6 +1,7 @@
 package characterservice_test
 
 import (
+	"bytes"
 	"context"
 	"maps"
 	"testing"
@@ -243,5 +244,71 @@ func TestCharacterService_ListSkills(t *testing.T) {
 
 		o1 := m[es1.ID]
 		assert.False(t, o1.HasPrerequisites)
+	})
+}
+
+func TestCharacterService_MakeSkillsExportLines(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("should return pyfa compatible lines", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 6001, GroupID: group.ID, Name: "Gamma Skill", IsPublished: true})
+		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 6002, GroupID: group.ID, Name: "Delta Skill", IsPublished: true})
+		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           skill1.ID,
+			ActiveSkillLevel: 4,
+		}))
+		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           skill2.ID,
+			ActiveSkillLevel: 2,
+		}))
+
+		// when
+		text, err := cs.MakeSkillsExportLines(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, "Delta Skill 2\nGamma Skill 4\n", text)
+	})
+}
+
+func TestCharacterService_WriteSkillsExportCSV(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("should write active skills CSV with header", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 7001, GroupID: group.ID, Name: "Gamma Skill", IsPublished: true})
+		skill2 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 7002, GroupID: group.ID, Name: "Alpha Skill", IsPublished: true})
+		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           skill1.ID,
+			ActiveSkillLevel: 4,
+		}))
+		require.NoError(t, st.UpdateOrCreateCharacterSkill(t.Context(), storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           skill2.ID,
+			ActiveSkillLevel: 2,
+		}))
+
+		var b bytes.Buffer
+
+		// when
+		err := cs.WriteSkillsExportCSV(t.Context(), c.ID, &b)
+
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, "Name,Level\nAlpha Skill,2\nGamma Skill,4\n", b.String())
 	})
 }

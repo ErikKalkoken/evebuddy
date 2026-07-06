@@ -8,11 +8,16 @@ import (
 	"slices"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -65,6 +70,7 @@ type Catalogue struct {
 	u              baseUI
 	sortButton     *xwidget.SortButton
 	columnSorter   *xwidget.ColumnSorter[skillRow]
+	exportButton   *xwidget.ContextMenuButton
 }
 
 func NewCatalogue(u baseUI) *Catalogue {
@@ -130,6 +136,16 @@ func NewCatalogue(u baseUI) *Catalogue {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
+	a.exportButton = xwidget.NewContextMenuButtonWithIcon("Export", theme.DownloadIcon(), fyne.NewMenu("",
+		fyne.NewMenuItem("Copy to clipboard", func() {
+			a.copySkillsToClipboard()
+		}),
+		fyne.NewMenuItem("Save as CSV", func() {
+			a.exportSkillsToCSV()
+		}),
+	))
+	a.exportButton.SetToolTip("Export skills to clipboard or CSV file")
+
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
@@ -157,11 +173,14 @@ func NewCatalogue(u baseUI) *Catalogue {
 
 func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
-	topBox := container.NewVBox(a.top)
+	topBox := container.NewVBox()
 	if a.u.IsMobile() {
+		topBox.Add(a.top)
 		topBox.Add(a.search)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
+		topAligned := container.NewVBox(layout.NewSpacer(), a.top, layout.NewSpacer())
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewPadded(a.exportButton), topAligned))
 		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
 	}
 	c := container.NewBorder(
@@ -424,4 +443,76 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 		})
 	}
 	return w
+}
+
+func (a *Catalogue) copySkillsToClipboard() {
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		a.u.ShowSnackbar("No character")
+		return
+	}
+	text, err := a.u.Character().MakeSkillsExportLines(context.Background(), characterID)
+	if err != nil {
+		slog.Error("Failed to generate skill export lines", "characterID", characterID, "err", err)
+		a.u.ShowSnackbar("Failed to copy skills to clipboard")
+		return
+	}
+	fyne.CurrentApp().Clipboard().SetContent(text)
+	a.u.ShowSnackbarWithTimeout("Skills copied to clipboard", 1200*time.Millisecond)
+}
+
+func (a *Catalogue) exportSkillsToCSV() {
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
+		a.u.ShowSnackbar("No character")
+		return
+	}
+
+	// Use a dedicated window so the file browser is a native resizable OS window
+	// rather than a fixed-size overlay on the main window.
+	w := fyne.CurrentApp().NewWindow("Export skills to CSV")
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, saveErr error) {
+		if writer == nil {
+			w.Close()
+			return
+		}
+		if saveErr != nil {
+			w.Close()
+			slog.Error("Failed to open file for skill export", "err", saveErr)
+			a.u.ShowSnackbar("Failed to export skills to CSV")
+			return
+		}
+		// Close the dialog window right away so the main UI regains focus quickly.
+		w.Close()
+		defer writer.Close()
+		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), characterID, writer); err != nil {
+			slog.Error("Failed to write CSV skill export", "characterID", characterID, "err", err)
+			a.u.ShowSnackbar("Failed to export skills to CSV")
+			return
+		}
+		slog.Info("Skills exported to CSV", "uri", writer.URI())
+		a.u.ShowSnackbarWithTimeout("Skills exported to CSV", 1200*time.Millisecond)
+	}, w)
+	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
+	d.SetFileName("skills.csv")
+	kxdialog.AddDialogKeyHandler(d, w)
+	// dialogFillLayout propagates window resize events to the dialog overlay.
+	w.SetContent(container.New(&dialogFillLayout{d: d}))
+	w.Resize(fyne.NewSize(700, 500))
+	w.Show()
+	d.Show()
+}
+
+// dialogFillLayout is a fyne.Layout that resizes a dialog to match its
+// container whenever the container (and its parent window) is resized.
+type dialogFillLayout struct {
+	d dialog.Dialog
+}
+
+func (l *dialogFillLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
+	l.d.Resize(size)
+}
+
+func (l *dialogFillLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(400, 300)
 }

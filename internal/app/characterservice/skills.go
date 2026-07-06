@@ -2,8 +2,10 @@ package characterservice
 
 import (
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"slices"
@@ -21,6 +23,11 @@ import (
 )
 
 const cacheKeyTrainingNotified = "expired-training-notified"
+
+type skillExportItem struct {
+	Name  string
+	Level int64
+}
 
 func (s *CharacterService) GetAttributes(ctx context.Context, characterID int64) (*app.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
@@ -204,6 +211,63 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 		skills2 = append(skills2, o)
 	}
 	return skills2, nil
+}
+
+// getSkillsForExport returns active skills sorted by name for export.
+func (s *CharacterService) getSkillsForExport(ctx context.Context, characterID int64) ([]skillExportItem, error) {
+	skills, err := s.ListSkills(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]skillExportItem, 0, len(skills))
+	for _, o := range skills {
+		if o.ActiveSkillLevel == 0 {
+			continue
+		}
+		items = append(items, skillExportItem{
+			Name:  o.Skill.Type.Name,
+			Level: o.ActiveSkillLevel,
+		})
+	}
+	slices.SortFunc(items, func(a, b skillExportItem) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return items, nil
+}
+
+// MakeSkillsExportLines returns PyFA-compatible export lines from active skills.
+func (s *CharacterService) MakeSkillsExportLines(ctx context.Context, characterID int64) (string, error) {
+	items, err := s.getSkillsForExport(ctx, characterID)
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	for _, r := range items {
+		fmt.Fprintf(&sb, "%s %d\n", r.Name, r.Level)
+	}
+	return sb.String(), nil
+}
+
+// WriteSkillsExportCSV writes active skills as CSV to the provided writer.
+func (s *CharacterService) WriteSkillsExportCSV(ctx context.Context, characterID int64, w io.Writer) error {
+	items, err := s.getSkillsForExport(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	cw := csv.NewWriter(w)
+	if err := cw.Write([]string{"Name", "Level"}); err != nil {
+		return err
+	}
+	for _, r := range items {
+		if err := cw.Write([]string{r.Name, fmt.Sprintf("%d", r.Level)}); err != nil {
+			return err
+		}
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
