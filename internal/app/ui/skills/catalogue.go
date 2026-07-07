@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -461,7 +460,7 @@ func (a *Catalogue) copySkillsToClipboard() {
 		return
 	}
 	fyne.CurrentApp().Clipboard().SetContent(text)
-	a.u.ShowSnackbarWithTimeout("Skills copied to clipboard", 1200*time.Millisecond)
+	a.u.ShowSnackbar("Skills copied to clipboard")
 }
 
 func (a *Catalogue) exportSkillsToCSV() {
@@ -485,7 +484,7 @@ func (a *Catalogue) exportSkillsToCSV() {
 			return
 		}
 		slog.Info("Skills exported to file", "uri", writer.URI())
-		a.u.ShowSnackbarWithTimeout("Skills saved to CSV", 1200*time.Millisecond)
+		a.u.ShowSnackbar("Skills saved to CSV")
 	}, a.u.MainWindow())
 
 	characterName := character.NameOrZero()
