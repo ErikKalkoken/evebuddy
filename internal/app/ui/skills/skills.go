@@ -2,8 +2,6 @@
 package skills
 
 import (
-	"time"
-
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -25,6 +23,5 @@ type baseUI interface {
 	IsMobile() bool
 	MainWindow() fyne.Window
 	ShowSnackbar(text string)
-	ShowSnackbarWithTimeout(text string, timeout time.Duration)
 	Signals() *app.Signals
 }

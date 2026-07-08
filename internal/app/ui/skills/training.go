@@ -19,7 +19,6 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
@@ -27,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -305,7 +305,7 @@ func NewTraining(u baseUI) *Training {
 	})
 	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
 		"Export",
-		theme.DownloadIcon(),
+		theme.NewThemedResource(icons.ExportVariantSvg),
 		fyne.NewMenu("",
 			fyne.NewMenuItem("Copy to clipboard", a.copyTrainingToClipboard),
 			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
@@ -490,15 +490,7 @@ func (a *Training) copyTrainingToClipboard() {
 }
 
 func (a *Training) saveTrainingAsCSV() {
-	_, s := a.u.MainWindow().Canvas().InteractiveArea()
-	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-
-	w := fyne.CurrentApp().NewWindow("Save Training Data as CSV")
-	w.Resize(winSize)
-	w.SetContent(widget.NewLabel(""))
-
 	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		w.Close()
 		if writer == nil {
 			return
 		}
@@ -509,19 +501,21 @@ func (a *Training) saveTrainingAsCSV() {
 		}
 		_, err = writer.Write([]byte(a.makeTrainingCSVString()))
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to write CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
 		slog.Info("Training data exported to file", "uri", writer.URI())
-		a.u.ShowSnackbar("Training data saved")
-	}, w)
+		a.u.ShowSnackbar("Training data saved to CSV")
+	}, a.u.MainWindow())
+
 	d.SetFileName("training.csv")
 	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
 	d.SetTitleText("Save training data as CSV")
-	kxdialog.AddDialogKeyHandler(d, w)
-	d.Resize(winSize)
-	w.Show()
 	d.Show()
+
+	_, s := a.u.MainWindow().Canvas().InteractiveArea()
+	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
+	d.Resize(winSize)
 }
 
 func (a *Training) filterRowsAsync(sortCol int) {

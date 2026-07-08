@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -17,13 +16,13 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -136,15 +135,18 @@ func NewCatalogue(u baseUI) *Catalogue {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	a.exportButton = xwidget.NewContextMenuButtonWithIcon("Export", theme.DownloadIcon(), fyne.NewMenu("",
-		fyne.NewMenuItem("Copy to clipboard", func() {
-			a.copySkillsToClipboard()
-		}),
-		fyne.NewMenuItem("Save as CSV", func() {
-			a.exportSkillsToCSV()
-		}),
-	))
-	a.exportButton.SetToolTip("Export skills to clipboard or CSV file")
+	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
+		"Export",
+		theme.NewThemedResource(icons.ExportVariantSvg),
+		fyne.NewMenu("",
+			fyne.NewMenuItem("Copy to clipboard", func() {
+				a.copySkillsToClipboard()
+			}),
+			fyne.NewMenuItem("Save as CSV", func() {
+				a.exportSkillsToCSV()
+			}),
+		))
+	a.exportButton.SetToolTip("Export skills to clipboard or file")
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -458,49 +460,43 @@ func (a *Catalogue) copySkillsToClipboard() {
 		return
 	}
 	fyne.CurrentApp().Clipboard().SetContent(text)
-	a.u.ShowSnackbarWithTimeout("Skills copied to clipboard", 1200*time.Millisecond)
+	a.u.ShowSnackbar("Skills copied to clipboard")
 }
 
 func (a *Catalogue) exportSkillsToCSV() {
-	characterID := a.character.Load().IDOrZero()
-	if characterID == 0 {
+	character := a.character.Load()
+	if character == nil {
 		a.u.ShowSnackbar("No character")
 		return
 	}
 
-	// Use a dedicated window so the file browser is a native resizable OS window
-	// rather than a fixed-size overlay on the main window.
-	w := fyne.CurrentApp().NewWindow("Export skills to CSV")
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, saveErr error) {
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if writer == nil {
-			w.Close()
 			return
 		}
-		if saveErr != nil {
-			w.Close()
-			slog.Error("Failed to open file for skill export", "err", saveErr)
-			a.u.ShowSnackbar("Failed to export skills to CSV")
-			return
-		}
-		// Close the dialog window right away so the main UI regains focus quickly.
-		w.Close()
 		defer writer.Close()
-		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), characterID, writer); err != nil {
-			slog.Error("Failed to write CSV skill export", "characterID", characterID, "err", err)
-			a.u.ShowSnackbar("Failed to export skills to CSV")
+		if err != nil {
+			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
-		slog.Info("Skills exported to CSV", "uri", writer.URI())
-		a.u.ShowSnackbarWithTimeout("Skills exported to CSV", 1200*time.Millisecond)
-	}, w)
+		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), character.ID, writer); err != nil {
+			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			return
+		}
+		slog.Info("Skills exported to file", "uri", writer.URI())
+		a.u.ShowSnackbar("Skills saved to CSV")
+	}, a.u.MainWindow())
+
+	characterName := character.NameOrZero()
+	fileName := "skills_" + strings.ReplaceAll(characterName, " ", "") + ".csv"
+	d.SetFileName(fileName)
 	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetFileName("skills.csv")
-	kxdialog.AddDialogKeyHandler(d, w)
-	// dialogFillLayout propagates window resize events to the dialog overlay.
-	w.SetContent(container.New(&dialogFillLayout{d: d}))
-	w.Resize(fyne.NewSize(700, 500))
-	w.Show()
+	d.SetTitleText("Save skills as CSV - " + characterName)
 	d.Show()
+
+	_, s := a.u.MainWindow().Canvas().InteractiveArea()
+	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
+	d.Resize(winSize)
 }
 
 // dialogFillLayout is a fyne.Layout that resizes a dialog to match its
