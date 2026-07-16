@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 
@@ -267,5 +268,73 @@ func TestMakeOrFindWindow(t *testing.T) {
 		assert.True(t, ok)
 		assert.True(t, called)
 		assert.Contains(t, w.Title(), "title-new")
+	})
+}
+func TestUpdateEveStatus(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should clear isOffline when server recovers from downtime", func(t *testing.T) {
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/status",
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"players":        12345,
+				"server_version": "1132976",
+				"start_time":     "2017-01-02T12:34:56Z",
+			}),
+		)
+		bu := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+		if bu.ess.IsDailyDowntime() {
+			t.Skip("skipped during EVE daily downtime window")
+		}
+		u := &DesktopUI{baseUI: bu}
+		sb := newStatusBar(u)
+		u.isOffline.Store(true) // simulate server was previously offline
+
+		sb.updateEveStatus(context.Background())
+
+		assert.False(t, u.isOffline.Load())
+	})
+
+	t.Run("should not fetch status when in intentional offline mode", func(t *testing.T) {
+		httpmock.Reset()
+		// no responder registered — any HTTP call would return a connection error
+		bu := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+		u := &DesktopUI{baseUI: bu}
+		sb := newStatusBar(u)
+		u.isOfflineMode = true
+		u.isOffline.Store(false)
+
+		sb.updateEveStatus(context.Background())
+
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		assert.False(t, u.isOffline.Load()) // unchanged
+	})
+
+	t.Run("should set isOffline when server returns error status", func(t *testing.T) {
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/status",
+			httpmock.NewJsonResponderOrPanic(503, map[string]any{
+				"error": "service unavailable",
+			}),
+		)
+		bu := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+		if bu.ess.IsDailyDowntime() {
+			t.Skip("skipped during EVE daily downtime window")
+		}
+		u := &DesktopUI{baseUI: bu}
+		sb := newStatusBar(u)
+		u.isOffline.Store(false)
+
+		sb.updateEveStatus(context.Background())
+
+		assert.True(t, u.isOffline.Load())
 	})
 }
