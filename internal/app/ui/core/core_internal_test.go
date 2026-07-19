@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -116,6 +117,18 @@ func (a *AppFake) SetSystemTrayIcon(_ fyne.Resource) {
 
 func (a *AppFake) SetSystemTrayWindow(fyne.Window) {
 	// noop
+}
+
+func (a *AppFake) Cache() fyne.Cache {
+	return a.app.Cache()
+}
+
+func (a *AppFake) ScheduleNotification(n *fyne.Notification, deliverAt time.Time) (*fyne.ScheduledNotification, error) {
+	panic("not implemented")
+}
+
+func (a *AppFake) CancelScheduledNotification(id string) error {
+	return nil
 }
 
 var _ fyne.App = (*AppFake)(nil)
