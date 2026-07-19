@@ -8,7 +8,7 @@ tool (
 )
 
 require (
-	fyne.io/fyne/v2 v2.7.4
+	fyne.io/fyne/v2 v2.8.0
 	github.com/ErikKalkoken/eveauth v0.2.0
 	github.com/ErikKalkoken/fyne-kx v0.7.2
 	github.com/ErikKalkoken/go-set v0.3.0
@@ -18,7 +18,7 @@ require (
 	github.com/chasinglogic/appdirs v0.0.0-20260224113447-85de447711c9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/dweymouth/fyne-tooltip v0.4.0
-	github.com/fnt-eve/goesi-openapi v0.0.33
+	github.com/fnt-eve/goesi-openapi v0.0.36
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gohugoio/httpcache v0.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
@@ -44,6 +44,7 @@ require (
 	fyne.io/systray v1.12.2 // indirect
 	fyne.io/tools v1.7.2 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
+	github.com/FyshOS/fancyfs v0.0.1 // indirect
 	github.com/MicahParks/jwkset v0.11.0 // indirect
 	github.com/MicahParks/keyfunc/v3 v3.8.0 // indirect
 	github.com/akavel/rsrc v0.10.2 // indirect
@@ -58,13 +59,12 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/fyne-io/gl-js v0.2.0 // indirect
+	github.com/fyne-io/gl-js v0.2.1-0.20260315212741-029c47fd27e8 // indirect
 	github.com/fyne-io/glfw-js v0.4.0 // indirect
 	github.com/fyne-io/image v0.1.1 // indirect
 	github.com/fyne-io/oksvg v0.2.0 // indirect
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20260628091122-0bd588dc30cf // indirect
-	github.com/go-gl/glfw/v3.4/glfw v0.1.0-pre.1 // indirect
+	github.com/go-gl/glfw/v3.4/glfw v0.1.0-pre.1.0.20260707082822-2a407d02d01a // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-text/render v0.2.1 // indirect
 	github.com/go-text/typesetting v0.3.4 // indirect

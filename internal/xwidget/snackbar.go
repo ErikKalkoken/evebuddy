@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -53,7 +54,12 @@ func NewSnackbar(win fyne.Window) *Snackbar {
 	sb.button = kxwidget.NewIconButton(theme.WindowCloseIcon(), func() {
 		sb.hideC <- struct{}{}
 	})
-	sb.popup = widget.NewPopUp(container.NewBorder(nil, nil, nil, sb.button, sb.label), win.Canvas())
+	p := theme.Padding()
+	content := container.New(
+		layout.NewCustomPaddedLayout(0, 0, p, p),
+		container.NewBorder(nil, nil, nil, sb.button, sb.label),
+	)
+	sb.popup = widget.NewPopUp(content, win.Canvas())
 	return sb
 }
 
