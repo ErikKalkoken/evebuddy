@@ -366,7 +366,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-26T16:42:00Z",
-        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "text": "allyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
         "is_read": true,
         "is_sent": false
     },
@@ -386,7 +386,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-26T16:42:00Z",
-        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "text": "aggressorID: 3011\nallyID: 2001\nstartTime: 132192745070000000\n",
         "is_read": true,
         "is_sent": false
     },
@@ -626,7 +626,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "aggressorID: 3011\ncharID: 1001\ndefenderID: 3001\nenemyID: 3011\niskValue: 0.0\nmercID: 2001",
+        "text": "charID: 1001\ndefenderID: 3001\nenemyID: 3011\niskValue: 0.0",
         "is_read": false,
         "is_sent": false
     },
@@ -727,6 +727,1334 @@
         "text": "aggressorAllianceName: <a href=\"showinfo:16159//3011\">Bad Alliance</a>\naggressorCharacterID: 1011\naggressorCorporationName: <a href=\"showinfo:2//2011\">Bad Corp</a>\nitemID: &id001 1000000000099\nmercenaryDenShowInfoData:\n- showinfo\n- 85230\n- *id001\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 11\n- 40161469\nsolarsystemID: 30002537\ntimestampEntered: 134026459143594820\ntimestampExited: 134027264983594820\ntypeID: 85230\n",
         "timestamp": "2025-09-18T05:12:00Z",
         "type": "MercenaryDenReinforced"
+    },
+    {
+        "notification_id": 1000002001,
+        "type": "AcceptedSurrender",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nentityID: 3001\niskValue: 100000000.0\nofferingID: 2001"
+    },
+    {
+        "notification_id": 1000002002,
+        "type": "AgentRetiredTrigravian",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "agentID: 1001\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002003,
+        "type": "AllMaintenanceBillMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\ndueDate: 132936019800000000"
+    },
+    {
+        "notification_id": 1000002004,
+        "type": "AllStrucInvulnerableMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "{}"
+    },
+    {
+        "notification_id": 1000002005,
+        "type": "AllStructVulnerableMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "{}"
+    },
+    {
+        "notification_id": 1000002006,
+        "type": "AllWarDeclaredMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ncost: 100000000.0\ndeclaredByID: 3011\ndelayHours: 24\nhostileState: 0"
+    },
+    {
+        "notification_id": 1000002007,
+        "type": "AllWarInvalidatedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ncost: 100000000.0\ndeclaredByID: 3011\ndelayHours: 24\nhostileState: 0"
+    },
+    {
+        "notification_id": 1000002008,
+        "type": "AllWarRetractedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ncost: 100000000.0\ndeclaredByID: 3011\ndelayHours: 24\nhostileState: 0"
+    },
+    {
+        "notification_id": 1000002009,
+        "type": "AllianceCapitalChanged",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002010,
+        "type": "AllianceWarDeclaredV2",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ncost: 100000000.0\ndeclaredByID: 3011\ndelayHours: 24"
+    },
+    {
+        "notification_id": 1000002011,
+        "type": "AllyContractCancelled",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\ndefenderID: 3001\ntimeFinished: 132192745070000000"
+    },
+    {
+        "notification_id": 1000002012,
+        "type": "BattlePunishFriendlyFire",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "billAmount: 1000000.0\nkilledCharID: 1001\nkillerCharID: 1011"
+    },
+    {
+        "notification_id": 1000002013,
+        "type": "BountyClaimMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 1000000.0\ncharID: 1001"
+    },
+    {
+        "notification_id": 1000002014,
+        "type": "BountyESSShared",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nmyIsk: 500000.0\ntotalIsk: 1000000.0"
+    },
+    {
+        "notification_id": 1000002015,
+        "type": "BountyESSTaken",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nmyIsk: 1000000.0\ntotalIsk: 1000000.0"
+    },
+    {
+        "notification_id": 1000002016,
+        "type": "BountyPlacedAlliance",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "bounty: 5000000.0\nbountyPlacerID: 1011"
+    },
+    {
+        "notification_id": 1000002017,
+        "type": "BountyPlacedChar",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "bounty: 5000000.0\nbountyPlacerID: 1011"
+    },
+    {
+        "notification_id": 1000002018,
+        "type": "BountyPlacedCorp",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "bounty: 5000000.0\nbountyPlacerID: 1011"
+    },
+    {
+        "notification_id": 1000002019,
+        "type": "BountyYourBountyClaimed",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "bounty: 5000000.0\nvictimID: 1001"
+    },
+    {
+        "notification_id": 1000002020,
+        "type": "BuddyConnectContactAdd",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "level: 5\nmessage: Hey buddy!"
+    },
+    {
+        "notification_id": 1000002021,
+        "type": "CharMedalMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nmedalID: 1234\nreason: For exceptional service"
+    },
+    {
+        "notification_id": 1000002022,
+        "type": "CharTerminationMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ncorpID: 2001\nroleName: Director\nroleNameIDs: []\nsecurity: 0.5"
+    },
+    {
+        "notification_id": 1000002023,
+        "type": "CloneActivationMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "cloneBought: 0\ncloneStationID: 60003760\ncloneTypeID: 35835\ncorpStationID: 60003760\nlastCloned: 132000000000000000\npodKillerID: 1011\nskillID: 0\nskillPointsLost: 0"
+    },
+    {
+        "notification_id": 1000002024,
+        "type": "CloneActivationMsg2",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "cloneStationID: 60003760\ncorpStationID: 60003760\nlastCloned: 132000000000000000\npodKillerID: 1011"
+    },
+    {
+        "notification_id": 1000002025,
+        "type": "CloneMovedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charsInCorpID: 1011\ncorpID: 2001\nnewStationID: 60003760\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002026,
+        "type": "CloneRevokedMsg1",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "newStationID: 60003760\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002027,
+        "type": "CloneRevokedMsg2",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nnewStationID: 60003760\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002028,
+        "type": "CombatOperationFinished",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "operationID: 1234"
+    },
+    {
+        "notification_id": 1000002029,
+        "type": "ContactAdd",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "level: 5\nmessage: New contact"
+    },
+    {
+        "notification_id": 1000002030,
+        "type": "ContactEdit",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "level: 5.0\nmessage: Updated contact"
+    },
+    {
+        "notification_id": 1000002031,
+        "type": "ContainerPasswordMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\npassword: testpass\npasswordType: general\nsolarSystemID: 30002537\nstationID: 60003760\ntypeID: 27"
+    },
+    {
+        "notification_id": 1000002032,
+        "type": "ContractRegionChangedToPochven",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "contractID: 1234"
+    },
+    {
+        "notification_id": 1000002033,
+        "type": "CorpAppAcceptMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "applicationText: I want to join\ncharID: 1011\ncorpID: 2001"
+    },
+    {
+        "notification_id": 1000002034,
+        "type": "CorpAppRejectMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "applicationText: I want to join\ncharID: 1011\ncorpID: 2001"
+    },
+    {
+        "notification_id": 1000002035,
+        "type": "CorpDividendMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 5000000.0\ncorpID: 2001\nisMembers: true\npayout: 100.0"
+    },
+    {
+        "notification_id": 1000002036,
+        "type": "CorpFriendlyFireDisableTimerCompleted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001"
+    },
+    {
+        "notification_id": 1000002037,
+        "type": "CorpFriendlyFireDisableTimerStarted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ncorpID: 2001\ntimeFinished: 132936019800000000"
+    },
+    {
+        "notification_id": 1000002038,
+        "type": "CorpFriendlyFireEnableTimerCompleted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001"
+    },
+    {
+        "notification_id": 1000002039,
+        "type": "CorpFriendlyFireEnableTimerStarted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ncorpID: 2001\ntimeFinished: 132936019800000000"
+    },
+    {
+        "notification_id": 1000002040,
+        "type": "CorpKicked",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001"
+    },
+    {
+        "notification_id": 1000002041,
+        "type": "CorpLiquidationMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 1000000.0\ncorpID: 2001\npayout: 100.0"
+    },
+    {
+        "notification_id": 1000002042,
+        "type": "CorpNewCEOMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nnewCeoID: 1001\noldCeoID: 1011"
+    },
+    {
+        "notification_id": 1000002043,
+        "type": "CorpNewsMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "body: Important news\ncorpID: 2001\ninEffect: 1\nparameter: 0\nvoteType: 1"
+    },
+    {
+        "notification_id": 1000002044,
+        "type": "CorpOfficeExpirationMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\ndaysToExpiry: 7\nstationName: Test Station"
+    },
+    {
+        "notification_id": 1000002045,
+        "type": "CorpStructLostMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002046,
+        "type": "CorpTaxChangeMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nnewTaxRate: 0.05\noldTaxRate: 0.03"
+    },
+    {
+        "notification_id": 1000002047,
+        "type": "CorpVoteCEORevokedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ncorpID: 2001"
+    },
+    {
+        "notification_id": 1000002048,
+        "type": "CorpVoteMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "body: Should we change HQ?\nsubject: Corporation Vote"
+    },
+    {
+        "notification_id": 1000002049,
+        "type": "CorpWarDeclaredMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ncost: 50000000.0\ndeclaredByID: 2011"
+    },
+    {
+        "notification_id": 1000002050,
+        "type": "CorpWarDeclaredV2",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ncost: 50000000.0\ndeclaredByID: 2011"
+    },
+    {
+        "notification_id": 1000002051,
+        "type": "CorpWarFightingLegalMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ncost: 50000000.0\ndeclaredByID: 2011"
+    },
+    {
+        "notification_id": 1000002052,
+        "type": "CorpWarInvalidatedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ncost: 50000000.0\ndeclaredByID: 2011"
+    },
+    {
+        "notification_id": 1000002053,
+        "type": "CorpWarRetractedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ncost: 50000000.0\ndeclaredByID: 2011"
+    },
+    {
+        "notification_id": 1000002054,
+        "type": "CorporationGoalClosed",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: testgoalid123\ngoal_name: Test Goal Closed"
+    },
+    {
+        "notification_id": 1000002055,
+        "type": "CorporationGoalNameChange",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corporation_id: 2001\ngoal_id: testgoalid123\nnew_name: New Goal Name\nold_name: Old Goal Name"
+    },
+    {
+        "notification_id": 1000002056,
+        "type": "CorporationLeft",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001"
+    },
+    {
+        "notification_id": 1000002057,
+        "type": "CustomsMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "factionID: 3001\nlostList: []\nsecurityLevel: 0.5\nshouldAttack: 0\nshouldConfiscate: 0\nsolarSystemID: 30002537\nstandingDivision: 0.0"
+    },
+    {
+        "notification_id": 1000002058,
+        "type": "DistrictAttacked",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 1011\ndistrictID: 1234\nsolarSystemID: 30002537\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002059,
+        "type": "DustAppAcceptedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011"
+    },
+    {
+        "notification_id": 1000002060,
+        "type": "ESSMainBankLink",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nsolarSystemID: 30002537\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002061,
+        "type": "ExpertSystemExpired",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "typeID: 27"
+    },
+    {
+        "notification_id": 1000002062,
+        "type": "ExpertSystemExpiryImminent",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "daysUntilExpiry: 3\ntypeID: 27"
+    },
+    {
+        "notification_id": 1000002063,
+        "type": "FWAllianceKickMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002064,
+        "type": "FWAllianceWarningMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\ncorpList: ''\nfactionID: 3001\nrequiredStanding: 0.1"
+    },
+    {
+        "notification_id": 1000002065,
+        "type": "FWCharKickMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "factionID: 3001"
+    },
+    {
+        "notification_id": 1000002066,
+        "type": "FWCharRankGainMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "factionID: 3001\nnewRank: 3"
+    },
+    {
+        "notification_id": 1000002067,
+        "type": "FWCharRankLossMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "factionID: 3001\nnewRank: 2"
+    },
+    {
+        "notification_id": 1000002068,
+        "type": "FWCharWarningMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "currentStanding: 0.05\nfactionID: 3001\nrequiredStanding: 0.1"
+    },
+    {
+        "notification_id": 1000002069,
+        "type": "FWCorpJoinMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002070,
+        "type": "FWCorpKickMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\ncurrentStanding: 0.02\nfactionID: 3001\nrequiredStanding: 0.1"
+    },
+    {
+        "notification_id": 1000002071,
+        "type": "FWCorpLeaveMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002072,
+        "type": "FWCorpWarningMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\ncurrentStanding: 0.02\nfactionID: 3001\nrequiredStanding: 0.1"
+    },
+    {
+        "notification_id": 1000002073,
+        "type": "FacWarCorpJoinRequestMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002074,
+        "type": "FacWarCorpJoinWithdrawMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002075,
+        "type": "FacWarCorpLeaveRequestMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002076,
+        "type": "FacWarCorpLeaveWithdrawMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nfactionID: 3001"
+    },
+    {
+        "notification_id": 1000002077,
+        "type": "FacWarLPDisqualifiedEvent",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 100\ncharRefID: 1011\ncorpID: 2001\ndisqualificationType: 1\nevent: 1\nitemRefID: 1001\nlocationID: 60003760"
+    },
+    {
+        "notification_id": 1000002078,
+        "type": "FacWarLPDisqualifiedKill",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 100\ncharRefID: 1011\ncorpID: 2001\ndisqualificationType: 1\nevent: 1\nitemRefID: 1001\nlocationID: 60003760"
+    },
+    {
+        "notification_id": 1000002079,
+        "type": "FacWarLPPayoutEvent",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 200\ncharRefID: 1011\ncorpID: 2001\nevent: 1\nitemRefID: 1001\nlocationID: 60003760"
+    },
+    {
+        "notification_id": 1000002080,
+        "type": "FacWarLPPayoutKill",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 200\ncharRefID: 1011\ncorpID: 2001\nevent: 1\nitemRefID: 1001\nlocationID: 60003760"
+    },
+    {
+        "notification_id": 1000002081,
+        "type": "GameTimeAdded",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "{}"
+    },
+    {
+        "notification_id": 1000002082,
+        "type": "GameTimeReceived",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "message: Enjoy!\nofferID: 1234\nquantity: 30\nsenderCharID: 1001"
+    },
+    {
+        "notification_id": 1000002083,
+        "type": "GameTimeSent",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "receiverCharID: 1001\nsenderCharID: 1011"
+    },
+    {
+        "notification_id": 1000002084,
+        "type": "GiftReceived",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "message: Happy birthday!\nofferID: 1234\nquantity: 1\nsenderCharID: 1001"
+    },
+    {
+        "notification_id": 1000002085,
+        "type": "IncursionCompletedMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "emailMessageId: 1234.0\nsolarSystemID: 30002537\ntaleID: 5678\ntopTen: []"
+    },
+    {
+        "notification_id": 1000002086,
+        "type": "IndustryOperationFinished",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "blueprintTypeID: 35835\nproductTypeID: 35835\nruns: 10\nsolarSystemID: 30002537\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002087,
+        "type": "IndustryTeamAuctionLost",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\nsystemBids: {}\nteamNameInfo: []\ntotalIsk: 1000000.0\nyourAmount: 500000.0"
+    },
+    {
+        "notification_id": 1000002088,
+        "type": "IndustryTeamAuctionWon",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\ntotalIsk: 1000000.0\nyourAmount: 500000.0"
+    },
+    {
+        "notification_id": 1000002089,
+        "type": "InsuranceExpirationMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "endDate: 133000000000000000\nshipID: 1234567\nshipName: My Battleship\nstartDate: 132000000000000000"
+    },
+    {
+        "notification_id": 1000002090,
+        "type": "InsuranceFirstShipMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "isHouseWarmingGift: 0\nshipTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002091,
+        "type": "InsuranceInvalidatedMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "endDate: 133000000000000000\nownerID: 1011\nreason: 0\nshipID: 1234567\nstartDate: 132000000000000000\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002092,
+        "type": "InsuranceIssuedMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "endDate: 133000000000000000\nitemID: 1234567\nlevel: 3.0\nnumWeeks: 12\nshipName: My Battleship\nstartDate: 132000000000000000\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002093,
+        "type": "InsurancePayoutMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 100000000.0\nitemID: 1234567\npayout: 5"
+    },
+    {
+        "notification_id": 1000002094,
+        "type": "InvasionCompletedMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002095,
+        "type": "InvasionSystemLogin",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002096,
+        "type": "InvasionSystemStart",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002097,
+        "type": "JumpCloneDeletedMsg1",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "locationID: 60003760\nlocationOwnerID: 2001\nownerID: 1011\ntypeIDs: []"
+    },
+    {
+        "notification_id": 1000002098,
+        "type": "JumpCloneDeletedMsg2",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "destroyerID: 1011\nlocationID: 60003760\nlocationOwnerID: 2001\nownerID: 1011\ntypeIDs: []"
+    },
+    {
+        "notification_id": 1000002099,
+        "type": "KillReportFinalBlow",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "killMailHash: abc123\nkillMailID: 12345\nvictimID: 1001\nvictimShipTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002100,
+        "type": "KillReportVictim",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "killMailHash: abc123\nkillMailID: 12345\nvictimShipTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002101,
+        "type": "KillRightAvailable",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nprice: 1000000.0\ntoEntityID: 2001"
+    },
+    {
+        "notification_id": 1000002102,
+        "type": "KillRightAvailableOpen",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nprice: 1000000.0"
+    },
+    {
+        "notification_id": 1000002103,
+        "type": "KillRightEarned",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011"
+    },
+    {
+        "notification_id": 1000002104,
+        "type": "KillRightUnavailable",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ntoEntityID: 2001"
+    },
+    {
+        "notification_id": 1000002105,
+        "type": "KillRightUnavailableOpen",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011"
+    },
+    {
+        "notification_id": 1000002106,
+        "type": "KillRightUsed",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011"
+    },
+    {
+        "notification_id": 1000002107,
+        "type": "LPAutoRedeemed",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "factionID: 3001\nlp: 500"
+    },
+    {
+        "notification_id": 1000002108,
+        "type": "LocateCharMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "characterID: 1011\nmessageIndex: 0\ntargetLocation:\n  5: 30002537\nagentLocation:\n  5: 30002537"
+    },
+    {
+        "notification_id": 1000002109,
+        "type": "MadeWarMutual",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nenemyID: 2011"
+    },
+    {
+        "notification_id": 1000002110,
+        "type": "MissionCanceledTriglavian",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "agentID: 1001"
+    },
+    {
+        "notification_id": 1000002111,
+        "type": "MissionOfferExpirationMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "body: []\nheader:\n- A mission is expiring soon\nmissionKeywords:\n  objectiveDestinationID: 0\n  objectiveLocationID: 0\n  objectiveQuantity: 0\n  objectiveTypeID: 0\n  rewardQuantity: 0\n  rewardTypeID: 0"
+    },
+    {
+        "notification_id": 1000002112,
+        "type": "MissionTimeoutMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "agentID: 1001"
+    },
+    {
+        "notification_id": 1000002113,
+        "type": "MutualWarExpired",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011"
+    },
+    {
+        "notification_id": 1000002114,
+        "type": "MutualWarInviteAccepted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011"
+    },
+    {
+        "notification_id": 1000002115,
+        "type": "MutualWarInviteRejected",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011"
+    },
+    {
+        "notification_id": 1000002116,
+        "type": "NPCStandingsGained",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "- - 3001.0\n  - 0.5"
+    },
+    {
+        "notification_id": 1000002117,
+        "type": "NPCStandingsLost",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "- - 3001.0\n  - -0.5"
+    },
+    {
+        "notification_id": 1000002118,
+        "type": "OfficeLeaseCanceledInsufficientStandings",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002119,
+        "type": "OfferToAllyRetracted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\ndefenderID: 3001\nenemyID: 3011"
+    },
+    {
+        "notification_id": 1000002120,
+        "type": "OldLscMessages",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "subject: Ancient Message\nbody: This is an old LSC message body"
+    },
+    {
+        "notification_id": 1000002121,
+        "type": "OperationFinished",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "operationID: 1234\nrewards:\n  isk: 100000"
+    },
+    {
+        "notification_id": 1000002122,
+        "type": "RaffleCreated",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "raffleID: 1234\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002123,
+        "type": "RaffleExpired",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "raffleID: 1234\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002124,
+        "type": "RaffleFinished",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "isWinner: true\nraffleID: 1234\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002125,
+        "type": "ReimbursementMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "addCloneInfo: 0\nshipTypeID: 35835\nsolarSystemID: 30002537\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002126,
+        "type": "ResearchMissionAvailableMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "{}"
+    },
+    {
+        "notification_id": 1000002127,
+        "type": "RetractsWar",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nenemyID: 2001"
+    },
+    {
+        "notification_id": 1000002128,
+        "type": "SPAutoRedeemed",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 10000"
+    },
+    {
+        "notification_id": 1000002129,
+        "type": "SeasonalChallengeCompleted",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "challenge_name_id: 1234\nmax_progress: 100\npoints_awarded: 50\nprogress_text: 0"
+    },
+    {
+        "notification_id": 1000002130,
+        "type": "SkinSequencingCompleted",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "typeID: 35835"
+    },
+    {
+        "notification_id": 1000002131,
+        "type": "SkyhookDeployed",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "itemID: 1000000000099\nplanetID: 40161469\nsolarsystemID: 30002537\ntypeID: 85230"
+    },
+    {
+        "notification_id": 1000002132,
+        "type": "SkyhookDestroyed",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCharacterID: 1011\naggressorCorpID: 2011\nitemID: 1000000000099\nplanetID: 40161469\nsolarsystemID: 30002537\ntypeID: 85230"
+    },
+    {
+        "notification_id": 1000002133,
+        "type": "SkyhookLostShields",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "itemID: 1000000000099\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 11\n- 40161469\nskyhookShowInfoData:\n- showinfo\n- 85230\n- 1000000000099\nsolarsystemID: 30002537\ntimeLeft: 9000000000\ntimestamp: 134026459143594820\ntypeID: 85230\nvulnerableTime: 9000000000"
+    },
+    {
+        "notification_id": 1000002134,
+        "type": "SkyhookOnline",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "itemID: 1000000000099\nplanetID: 40161469\nsolarsystemID: 30002537\ntypeID: 85230"
+    },
+    {
+        "notification_id": 1000002135,
+        "type": "SkyhookUnderAttack",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Bad Alliance\narmorPercentage: 80.0\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Corp\nhullPercentage: 90.0\nisActive: true\nitemID: '1000000000099'\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 11\n- 40161469\nshieldPercentage: 50.0\nsolarsystemID: 30002537\nstructureID: 1000000000099\ntypeID: 85230"
+    },
+    {
+        "notification_id": 1000002136,
+        "type": "SovCorpBillLateMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002137,
+        "type": "SovCorpClaimFailMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corpID: 2001\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002138,
+        "type": "SovDisruptorMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 1011\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002139,
+        "type": "SovStationEnteredFreeport",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "freeportexittime: 132936019800000000\nsolarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002140,
+        "type": "SovStructureSelfDestructCancel",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nsolarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002141,
+        "type": "SovStructureSelfDestructFinished",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002142,
+        "type": "SovStructureSelfDestructRequested",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ncorpName: Test Corp\ndestructTime: 132936019800000000\nsolarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002143,
+        "type": "SovereigntyIHDamageMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.95\nhullValue: 1.0\nshieldValue: 0.7\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002144,
+        "type": "SovereigntySBUDamageMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.95\nhullValue: 1.0\nshieldValue: 0.7\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002145,
+        "type": "SovereigntyTCUDamageMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.95\nhullValue: 1.0\nshieldValue: 0.7\nsolarSystemID: 30002537"
+    },
+    {
+        "notification_id": 1000002146,
+        "type": "StationAggressionMsg1",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.95\nhullValue: 1.0\nshieldValue: 0.7\nsolarSystemID: 30002537\nstationID: 60003760\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002147,
+        "type": "StationAggressionMsg2",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.95\nhullValue: 1.0\nshieldValue: 0.7\nsolarSystemID: 30002537\nstationID: 60003760\ntypeID: 35835"
+    },
+    {
+        "notification_id": 1000002148,
+        "type": "StationConquerMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "newOwnerCorpID: 2001\noldOwnerCorpID: 2011\nsolarSystemID: 30002537\nstationID: 60003760"
+    },
+    {
+        "notification_id": 1000002149,
+        "type": "StationServiceDisabled",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002150,
+        "type": "StationServiceEnabled",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32226"
+    },
+    {
+        "notification_id": 1000002151,
+        "type": "StationStateChangeMsg",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30002537\nstationID: 60003760\nstate: freeport"
+    },
+    {
+        "notification_id": 1000002152,
+        "type": "StoryLineMissionAvailableMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "agentID: 1001"
+    },
+    {
+        "notification_id": 1000002153,
+        "type": "StructureCourierContractChanged",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002154,
+        "type": "StructureLowReagentsAlert",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 100\nsolarsystemID: 30002537\nstructureID: 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002155,
+        "type": "StructureNoReagentsAlert",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 0\nsolarsystemID: 30002537\nstructureID: 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002156,
+        "type": "StructurePaintPurchased",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\nsolarsystemID: 30002537\nstructureID: 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002157,
+        "type": "StructuresJobsCancelled",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "numJobs: 5\nsolarsystemID: 30002537\nstructureID: 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002158,
+        "type": "StructuresJobsPaused",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "numJobs: 3\nsolarsystemID: 30002537\nstructureID: 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- 1000000000001\nstructureTypeID: 35835"
+    },
+    {
+        "notification_id": 1000002159,
+        "type": "TransactionReversalMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 100000.0\ncharID: 1011"
+    },
+    {
+        "notification_id": 1000002160,
+        "type": "TutorialMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "tutorialID: 1"
+    },
+    {
+        "notification_id": 1000002161,
+        "type": "WarAllyInherited",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\nallyID: 2001\nopenDate: 132936019800000000"
+    },
+    {
+        "notification_id": 1000002162,
+        "type": "WarAllyOfferDeclinedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\nallyID: 2001\ncharID: 1011\ndefenderID: 3001"
+    },
+    {
+        "notification_id": 1000002163,
+        "type": "WarConcordInvalidates",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011"
+    },
+    {
+        "notification_id": 1000002164,
+        "type": "WarEndedHqSecurityDrop",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011"
+    },
+    {
+        "notification_id": 1000002165,
+        "type": "WarRetracted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ndeclaredByID: 3011\nendDate: 133441135200000000"
+    },
+    {
+        "notification_id": 1000002166,
+        "type": "WarSurrenderDeclinedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "iskValue: 10000000.0\nownerID: 3001"
     },
     {
         "notification_id": 1999999999,

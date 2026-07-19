@@ -10,6 +10,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 )
 
 var eventToStructureTypeID = map[int32]int64{
@@ -275,6 +276,443 @@ func (n sovStructureReinforced) render(ctx context.Context, text string, _ time.
 		structureTypeName,
 		makeSolarSystemLink(solarSystem),
 		fromLDAPTime(data.DecloakTime).Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}
+
+type sovStationEnteredFreeport struct {
+	baseRenderer
+}
+
+func (n sovStationEnteredFreeport) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data goesi.SovStationEnteredFreeport
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return "", "", err
+	}
+	structureType, err := n.eus.GetOrCreateEntityESI(ctx, data.StructureTypeID)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("%s in %s has entered freeport mode", structureType.Name, solarSystem.Name)
+	body := fmt.Sprintf(
+		"A **%s** in %s has entered freeport mode and will exit freeport on **%s**.",
+		structureType.Name,
+		makeSolarSystemLink(solarSystem),
+		fromLDAPTime(data.Freeportexittime).Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}
+
+type sovStructureSelfDestructCancel struct {
+	baseRenderer
+}
+
+func (n sovStructureSelfDestructCancel) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovStructureSelfDestructCancel) unmarshal(text string) (goesi.SovStructureSelfDestructCancel, set.Set[int64], error) {
+	var data goesi.SovStructureSelfDestructCancel
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.CharID)
+	return data, ids, nil
+}
+
+func (n sovStructureSelfDestructCancel) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	structureType, err := n.eus.GetOrCreateEntityESI(ctx, data.StructureTypeID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Self-destruct of %s in %s cancelled", structureType.Name, solarSystem.Name)
+	body = fmt.Sprintf(
+		"%s has cancelled the self-destruct sequence for the **%s** in %s.",
+		makeEveEntityProfileLink(entities[data.CharID]),
+		structureType.Name,
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type sovStructureSelfDestructFinished struct {
+	baseRenderer
+}
+
+func (n sovStructureSelfDestructFinished) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data goesi.SovStructureSelfDestructFinished
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return "", "", err
+	}
+	structureType, err := n.eus.GetOrCreateEntityESI(ctx, data.StructureTypeID)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("%s in %s has self-destructed", structureType.Name, solarSystem.Name)
+	body := fmt.Sprintf(
+		"The **%s** in %s has completed its self-destruct sequence and been destroyed.",
+		structureType.Name,
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type sovStructureSelfDestructRequested struct {
+	baseRenderer
+}
+
+func (n sovStructureSelfDestructRequested) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovStructureSelfDestructRequested) unmarshal(text string) (goesi.SovStructureSelfDestructRequested, set.Set[int64], error) {
+	var data goesi.SovStructureSelfDestructRequested
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.CharID)
+	return data, ids, nil
+}
+
+func (n sovStructureSelfDestructRequested) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	structureType, err := n.eus.GetOrCreateEntityESI(ctx, data.StructureTypeID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Self-destruct requested for %s in %s", structureType.Name, solarSystem.Name)
+	body = fmt.Sprintf(
+		"%s of **%s** has initiated a self-destruct sequence for the **%s** in %s. "+
+			"The structure will be destroyed at **%s**.",
+		makeEveEntityProfileLink(entities[data.CharID]),
+		data.CorpName,
+		structureType.Name,
+		makeSolarSystemLink(solarSystem),
+		fromLDAPTime(data.DestructTime).Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}
+
+type sovereigntyIHDamageMsg struct {
+	baseRenderer
+}
+
+func (n sovereigntyIHDamageMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovereigntyIHDamageMsg) unmarshal(text string) (goesi.SovereigntyIHDamageMsg, set.Set[int64], error) {
+	var data goesi.SovereigntyIHDamageMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
+	return data, ids, nil
+}
+
+func (n sovereigntyIHDamageMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Infrastructure Hub in %s under attack", solarSystem.Name)
+	body = fmt.Sprintf(
+		"The Infrastructure Hub (IHub) in %s is under attack by %s of %s/%s.\n\n"+
+			"Shield: **%.0f%%** Armor: **%.0f%%** Hull: **%.0f%%**",
+		makeSolarSystemLink(solarSystem),
+		makeEveEntityProfileLink(entities[data.AggressorID]),
+		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+		data.ShieldValue*100,
+		data.ArmorValue*100,
+		data.HullValue*100,
+	)
+	return title, body, nil
+}
+
+type sovereigntySBUDamageMsg struct {
+	baseRenderer
+}
+
+func (n sovereigntySBUDamageMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovereigntySBUDamageMsg) unmarshal(text string) (goesi.SovereigntySBUDamageMsg, set.Set[int64], error) {
+	var data goesi.SovereigntySBUDamageMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
+	return data, ids, nil
+}
+
+func (n sovereigntySBUDamageMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Sovereignty Blockade Unit in %s under attack", solarSystem.Name)
+	body = fmt.Sprintf(
+		"The Sovereignty Blockade Unit (SBU) in %s is under attack by %s of %s/%s.\n\n"+
+			"Shield: **%.0f%%** Armor: **%.0f%%** Hull: **%.0f%%**",
+		makeSolarSystemLink(solarSystem),
+		makeEveEntityProfileLink(entities[data.AggressorID]),
+		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+		data.ShieldValue*100,
+		data.ArmorValue*100,
+		data.HullValue*100,
+	)
+	return title, body, nil
+}
+
+type sovereigntyTCUDamageMsg struct {
+	baseRenderer
+}
+
+func (n sovereigntyTCUDamageMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovereigntyTCUDamageMsg) unmarshal(text string) (goesi.SovereigntyTCUDamageMsg, set.Set[int64], error) {
+	var data goesi.SovereigntyTCUDamageMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID)
+	return data, ids, nil
+}
+
+func (n sovereigntyTCUDamageMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Territorial Claim Unit in %s under attack", solarSystem.Name)
+	body = fmt.Sprintf(
+		"The Territorial Claim Unit (TCU) in %s is under attack by %s of %s/%s.\n\n"+
+			"Shield: **%.0f%%** Armor: **%.0f%%** Hull: **%.0f%%**",
+		makeSolarSystemLink(solarSystem),
+		makeEveEntityProfileLink(entities[data.AggressorID]),
+		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+		data.ShieldValue*100,
+		data.ArmorValue*100,
+		data.HullValue*100,
+	)
+	return title, body, nil
+}
+
+type sovCorpBillLateMsg struct {
+	baseRenderer
+}
+
+func (n sovCorpBillLateMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovCorpBillLateMsg) unmarshal(text string) (notification2.SovCorpBillLateMsg, set.Set[int64], error) {
+	var data notification2.SovCorpBillLateMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.CorpID)
+	return data, ids, nil
+}
+
+func (n sovCorpBillLateMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Sovereignty bill late in %s", solarSystem.Name)
+	body = fmt.Sprintf(
+		"The sovereignty bill for %s in %s is late. "+
+			"Sovereignty will be lost if the bill is not paid.",
+		makeEveEntityProfileLink(entities[data.CorpID]),
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type sovCorpClaimFailMsg struct {
+	baseRenderer
+}
+
+func (n sovCorpClaimFailMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovCorpClaimFailMsg) unmarshal(text string) (notification2.SovCorpClaimFailMsg, set.Set[int64], error) {
+	var data notification2.SovCorpClaimFailMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.CorpID)
+	return data, ids, nil
+}
+
+func (n sovCorpClaimFailMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Sovereignty claim failed for %s in %s", entities[data.CorpID].Name, solarSystem.Name)
+	body = fmt.Sprintf(
+		"The sovereignty claim by %s in %s has failed.",
+		makeEveEntityProfileLink(entities[data.CorpID]),
+		makeSolarSystemLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type sovDisruptorMsg struct {
+	baseRenderer
+}
+
+func (n sovDisruptorMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	return ids, nil
+}
+
+func (n sovDisruptorMsg) unmarshal(text string) (notification2.SovDisruptorMsg, set.Set[int64], error) {
+	var data notification2.SovDisruptorMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	ids := set.Of(data.AggressorID)
+	return data, ids, nil
+}
+
+func (n sovDisruptorMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf("Sovereignty disrupted in %s", solarSystem.Name)
+	body = fmt.Sprintf(
+		"%s has disrupted sovereignty in %s.",
+		makeEveEntityProfileLink(entities[data.AggressorID]),
+		makeSolarSystemLink(solarSystem),
 	)
 	return title, body, nil
 }
