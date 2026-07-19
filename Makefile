@@ -3,8 +3,8 @@ generate: bundle queries mapping
 
 bundle:
 	go generate ./internal/eveicon ;
-	go generate ./internal/eveimageservice ;
-	go generate ./internal/app/icons ;
+	go generate ./internal/app/eveimageservice ;
+	go generate ./internal/icons ;
 
 mapping:
 	go generate ./internal/eveicon ;

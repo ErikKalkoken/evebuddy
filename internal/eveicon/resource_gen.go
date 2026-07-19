@@ -5,6 +5,7 @@ package eveicon
 
 import (
 	_ "embed"
+
 	"fyne.io/fyne/v2"
 )
 
