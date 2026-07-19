@@ -55,7 +55,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return nil, false, wrapErr(err)
 	}
 	c2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (*app.EveCharacter, error) {
-		ec, r, err := s.esiClient.CharacterAPI.GetCharactersCharacterId(ctx, characterID).Execute()
+		ec, r, err := s.esiClient.CharacterAPI.GetCharactersDetail(ctx, characterID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return nil, app.ErrNotFound // character does not exist
@@ -77,7 +77,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 			Name:           ec.Name,
 			RaceID:         ec.RaceId,
 			SecurityStatus: optional.FromPtr(ec.SecurityStatus),
-			Title:          optional.FromPtr(ec.Title),
+			Title:          optional.FromPtr(ec.CorporationTitle),
 		}
 		affiliationsOK, err := func() (bool, error) {
 			affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
