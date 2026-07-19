@@ -26,7 +26,7 @@ jobs:
       - name: Install OS dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install go dependencies
         run: go mod download
@@ -54,7 +54,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@v1.7.0
@@ -95,7 +95,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev libfuse2
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@v1.7.0
@@ -270,7 +270,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Download Android NDK
         run: |
