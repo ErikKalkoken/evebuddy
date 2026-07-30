@@ -31,7 +31,20 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
-// TODO: Add Bloodline (e.g. to show in character description)
+// EveBloodline is a bloodline in EVE Online.
+type EveBloodline struct {
+	Charisma     optional.Optional[int64]
+	Corporation  *EveEntity
+	Description  string
+	ID           int64
+	Intelligence optional.Optional[int64]
+	Memory       optional.Optional[int64]
+	Name         string
+	Perception   optional.Optional[int64]
+	Race         *EveRace
+	ShipTypeID   optional.Optional[int64]
+	Willpower    optional.Optional[int64]
+}
 
 // EveCharacter is a character in EVE Online.
 type EveCharacter struct {

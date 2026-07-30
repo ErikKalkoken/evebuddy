@@ -1964,6 +1964,40 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 	return x
 }
 
+func (f Factory) CreateEveBloodline(args ...storage.CreateEveBloodlineParams) *app.EveBloodline {
+	var arg storage.CreateEveBloodlineParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int64(f.calcNewID("eve_bloodlines", "id", 1))
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.Description == "" {
+		arg.Name = fake.Paragraph()
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	if arg.RaceID == 0 {
+		x := f.CreateEveRace()
+		arg.RaceID = x.ID
+	}
+	err := f.st.CreateEveBloodline(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveBloodline(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams

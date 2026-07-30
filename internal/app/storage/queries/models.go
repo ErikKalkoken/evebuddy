@@ -564,6 +564,20 @@ type CorporationWalletTransaction struct {
 	UnitPrice     float64
 }
 
+type EveBloodline struct {
+	ID            int64
+	Charisma      sql.NullInt64
+	CorporationID int64
+	Description   string
+	Intelligence  sql.NullInt64
+	Memory        sql.NullInt64
+	Name          string
+	Perception    sql.NullInt64
+	RaceID        int64
+	ShipTypeID    sql.NullInt64
+	Willpower     sql.NullInt64
+}
+
 type EveCategory struct {
 	ID          int64
 	Name        string
