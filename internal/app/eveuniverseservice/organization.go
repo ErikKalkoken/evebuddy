@@ -126,18 +126,18 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			return nil, err
 		}
 
-		ceoID := optionalFromSpecialEntityID(r.CeoId)
-		creatorID := optionalFromSpecialEntityID(r.CreatorId)
+		ceoID := optional.FromPtr(r.CeoId)
+		creatorID := optional.FromPtr(r.CreatorId)
 		var factionID optional.Optional[int64]
 		if app.IsNPCCorporation(corporationID) {
 			if id, ok := evesde.NPCCorporationFactionID(corporationID); ok {
 				factionID = optional.New(id)
 			}
 		} else {
-			factionID = optional.FromPtr(r.FactionId)
+			factionID = optional.FromPtr(r.EnlistedFactionId)
 		}
 		allianceID := optional.FromPtr(r.AllianceId)
-		homeStationID := optional.FromPtr(r.HomeStationId)
+		homeStationID := optional.New(r.HomeStationId)
 
 		ids := set.Of(corporationID)
 		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID, homeStationID} {
@@ -155,16 +155,16 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			CreatorID:     creatorID,
 			FactionID:     factionID,
 			DateFounded:   optional.FromPtr(r.DateFounded),
-			Description:   optional.FromPtr(r.Description),
+			Description:   optional.New(r.Description),
 			HomeStationID: homeStationID,
 			ID:            corporationID,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,
-			Shares:        optional.FromPtr(r.Shares),
-			TaxRate:       r.TaxRate,
+			Shares:        optional.New(r.Shares),
+			TaxRate:       r.TaxRates.Isk,
 			Ticker:        r.Ticker,
 			URL:           optional.FromPtr(r.Url),
-			WarEligible:   optional.FromPtr(r.WarEligible),
+			WarEligible:   optional.New(r.WarEligible),
 		}); err != nil {
 			return nil, err
 		}
@@ -175,13 +175,6 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		return nil, err
 	}
 	return o, nil
-}
-
-func optionalFromSpecialEntityID(v int64) optional.Optional[int64] {
-	if v == 0 || v == 1 {
-		return optional.Optional[int64]{}
-	}
-	return optional.New(v)
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.

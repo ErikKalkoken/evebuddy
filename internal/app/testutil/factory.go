@@ -2033,8 +2033,15 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 	if arg.Description.IsEmpty() {
 		arg.Description.Set(fake.Paragraphs())
 	}
+	if arg.HomeStationID.IsEmpty() {
+		station := f.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		arg.HomeStationID.Set(station.ID)
+	}
 	if arg.MemberCount == 0 {
 		arg.MemberCount = rand.Int64N(1000 + 1)
+	}
+	if arg.Shares.IsEmpty() {
+		arg.Shares.Set(rand.Int64N(10_000 + 1))
 	}
 	err := f.st.UpdateOrCreateEveCorporation(context.Background(), arg)
 	if err != nil {
