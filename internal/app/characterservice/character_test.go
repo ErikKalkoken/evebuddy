@@ -22,6 +22,7 @@ func TestGetCharacter(t *testing.T) {
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
+
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -30,6 +31,7 @@ func TestGetCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -76,6 +78,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
 	test.NewTempApp(t)
+
 	t.Run("create new character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -99,9 +102,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"achievement_score": 1234,
 				"birthday":          ec.Birthday.Format(app.DateTimeFormatESI),
-				"bloodline_id":      3,
+				"bloodline_id":      ec.Bloodline.MustValue().ID,
 				"corporation_id":    ec.Corporation.ID,
-				"corporation_title": ec.Title,
+				"corporation_title": ec.CorporationTitle,
 				"gender":            ec.Gender,
 				"name":              ec.Name,
 				"race_id":           ec.Race.ID,
@@ -189,9 +192,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"achievement_score": 1234,
 				"birthday":          ec.Birthday.Format(app.DateTimeFormatESI),
-				"bloodline_id":      3,
+				"bloodline_id":      ec.Bloodline.MustValue().ID,
 				"corporation_id":    ec.Corporation.ID,
-				"corporation_title": ec.Title,
+				"corporation_title": ec.CorporationTitle,
 				"gender":            ec.Gender,
 				"name":              ec.Name,
 				"race_id":           ec.Race.ID,
@@ -279,9 +282,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"achievement_score": 1234,
 				"birthday":          ec.Birthday.Format(app.DateTimeFormatESI),
-				"bloodline_id":      3,
+				"bloodline_id":      ec.Bloodline.MustValue().ID,
 				"corporation_id":    ec.Corporation.ID,
-				"corporation_title": ec.Title,
+				"corporation_title": ec.CorporationTitle,
 				"description":       ec.Description,
 				"gender":            ec.Gender,
 				"name":              ec.Name,
@@ -345,6 +348,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			assert.NotZero(t, info)
 		}
 	})
+
 	t.Run("update existing character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -373,9 +377,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"achievement_score": 1234,
 				"birthday":          ec.Birthday.Format(app.DateTimeFormatESI),
-				"bloodline_id":      3,
+				"bloodline_id":      ec.Bloodline.MustValue().ID,
 				"corporation_id":    ec.Corporation.ID,
-				"corporation_title": ec.Title,
+				"corporation_title": ec.CorporationTitle,
 				"gender":            ec.Gender,
 				"name":              ec.Name,
 				"race_id":           ec.Race.ID,

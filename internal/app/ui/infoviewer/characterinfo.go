@@ -210,7 +210,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 	})
 	fyne.Do(func() {
-		v, ok := o.Title.Value()
+		v, ok := o.CorporationTitle.Value()
 		if !ok {
 			a.title.Hide()
 			return
@@ -260,6 +260,9 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
+		newAttributeItem("Bloodline", o.Bloodline.StringFunc("?", func(v *app.EntityShort) string {
+			return v.Name
+		})),
 		newAttributeItem("Security Status", o.SecurityStatus.StringFunc("?", func(v float64) string {
 			return fmt.Sprintf("%.1f", v)
 		})),

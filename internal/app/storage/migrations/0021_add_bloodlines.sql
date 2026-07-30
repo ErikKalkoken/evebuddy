@@ -20,3 +20,9 @@ CREATE INDEX eve_bloodlines_idx1 ON eve_bloodlines (corporation_id);
 CREATE INDEX eve_bloodlines_idx2 ON eve_bloodlines (race_id);
 
 CREATE INDEX eve_bloodlines_idx3 ON eve_bloodlines (ship_type_id);
+
+ALTER TABLE eve_characters
+ADD COLUMN bloodline_id INTEGER
+REFERENCES eve_bloodlines(id) ON DELETE SET NULL;
+
+CREATE INDEX eve_characters_idx5 ON eve_characters (bloodline_id);

@@ -7,6 +7,15 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+type nullEntity struct {
+	id   sql.NullInt64
+	name sql.NullString
+}
+
+func (ne nullEntity) isValid() bool {
+	return ne.id.Valid && ne.name.Valid
+}
+
 // NewNullFloat64 returns a value as null type. Will assume not set when value is zero.
 func NewNullFloat64(v float64) sql.NullFloat64 {
 	if v == 0 {

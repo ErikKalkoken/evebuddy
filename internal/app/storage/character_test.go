@@ -27,11 +27,11 @@ func TestCharacter(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
-		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			AllianceID: optional.New(a.ID),
 			FactionID:  optional.New(f.ID),
 		})
-		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: eveC.ID})
+		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		// then
@@ -40,7 +40,7 @@ func TestCharacter(t *testing.T) {
 		xassert.Equal(t, c1.AssetValue, c2.AssetValue)
 		xassert.Equal(t, c1.ContractItemsValue, c2.ContractItemsValue)
 		xassert.Equal(t, c1.ContractsEscrow, c2.ContractsEscrow)
-		xassert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
+		xassert.Equal(t, c1.EveCharacter, c2.EveCharacter)
 		xassert.Equal(t, c1.Home, c2.Home)
 		xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
 		xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)

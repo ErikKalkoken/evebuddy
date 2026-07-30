@@ -2025,11 +2025,15 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		arg.Gender = "male"
 	}
 	if arg.RaceID == 0 {
-		r := f.CreateEveRace()
-		arg.RaceID = r.ID
+		x := f.CreateEveRace()
+		arg.RaceID = x.ID
 	}
-	if arg.Title.IsEmpty() {
-		arg.Title.Set(fake.JobTitle())
+	if arg.BloodlineID == 0 {
+		x := f.CreateEveBloodline()
+		arg.BloodlineID = x.ID
+	}
+	if arg.CorporationTitle.IsEmpty() {
+		arg.CorporationTitle.Set(fake.JobTitle())
 	}
 	err := f.st.UpdateOrCreateEveCharacter(ctx, arg)
 	if err != nil {

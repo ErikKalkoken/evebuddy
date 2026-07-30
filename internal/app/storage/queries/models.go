@@ -596,6 +596,7 @@ type EveCharacter struct {
 	RaceID         int64
 	SecurityStatus float64
 	Title          string
+	BloodlineID    sql.NullInt64
 }
 
 type EveConstellation struct {

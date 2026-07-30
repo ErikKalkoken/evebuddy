@@ -48,17 +48,18 @@ type EveBloodline struct {
 
 // EveCharacter is a character in EVE Online.
 type EveCharacter struct {
-	Alliance       optional.Optional[*EveEntity]
-	Birthday       time.Time
-	Corporation    *EveEntity
-	Description    optional.Optional[string]
-	Faction        optional.Optional[*EveEntity]
-	Gender         string
-	ID             int64
-	Name           string
-	Race           *EveRace
-	SecurityStatus optional.Optional[float64]
-	Title          optional.Optional[string]
+	Alliance         optional.Optional[*EveEntity]
+	Birthday         time.Time
+	Bloodline        optional.Optional[*EntityShort] // optional, because added later
+	Corporation      *EveEntity
+	CorporationTitle optional.Optional[string]
+	Description      optional.Optional[string]
+	Faction          optional.Optional[*EveEntity]
+	Gender           string
+	ID               int64
+	Name             string
+	Race             *EveRace
+	SecurityStatus   optional.Optional[float64]
 }
 
 func (ec EveCharacter) DescriptionPlain() string {
@@ -103,7 +104,7 @@ func (ec EveCharacter) Hash() string {
 		ec.Name,
 		ec.Race.ID,
 		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
-		ec.Title,
+		ec.CorporationTitle,
 	}
 	var s []string
 	for _, x := range xx {

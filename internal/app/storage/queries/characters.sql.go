@@ -100,7 +100,7 @@ func (q *Queries) DisableAllTrainingWatchers(ctx context.Context) error {
 const getCharacter = `-- name: GetCharacter :one
 SELECT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contracts_escrow, cc.contract_items_value, cc.orders_escrow, cc.order_items_value, cc.skill_points_value,
-    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
     eea.name as alliance_name,
@@ -166,6 +166,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveCharacter.RaceID,
 		&i.EveCharacter.SecurityStatus,
 		&i.EveCharacter.Title,
+		&i.EveCharacter.BloodlineID,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -341,7 +342,7 @@ func (q *Queries) ListCharacterWealthValues(ctx context.Context) ([]ListCharacte
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contracts_escrow, cc.contract_items_value, cc.orders_escrow, cc.order_items_value, cc.skill_points_value,
-    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
     eea.name as alliance_name,
@@ -413,6 +414,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.EveCharacter.RaceID,
 			&i.EveCharacter.SecurityStatus,
 			&i.EveCharacter.Title,
+			&i.EveCharacter.BloodlineID,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
