@@ -86,6 +86,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
 	t.Run("should return existing bloodline", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -97,6 +98,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
 	t.Run("should create normal bloodline from ESI when it does not exit", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -135,6 +137,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 
 		// when
 		x1, err := s.GetOrCreateBloodlineESI(t.Context(), id)
+
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, x1.Corporation)
@@ -147,10 +150,14 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 		xassert.Equal(t, memory, x1.Memory.MustValue())
 		xassert.Equal(t, perception, x1.Perception.MustValue())
 		xassert.Equal(t, willpower, x1.Willpower.MustValue())
+		if xassert.NotEmpty(t, x1.ShipTypeID) {
+			xassert.Equal(t, shipType.ID, x1.ShipTypeID.MustValue())
+		}
 		x2, err := st.GetEveBloodline(t.Context(), id)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
 	t.Run("should create minimal bloodline from ESI when it does not exit", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -183,6 +190,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 
 		// when
 		x1, err := s.GetOrCreateBloodlineESI(t.Context(), id)
+
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, x1.Corporation)
@@ -200,6 +208,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
 	t.Run("should return specific error when bloodline ID is invalid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -225,6 +234,7 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 
 		// when
 		_, err := s.GetOrCreateBloodlineESI(t.Context(), 42)
+
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
