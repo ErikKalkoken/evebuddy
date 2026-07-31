@@ -101,6 +101,10 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		name:     r.FactionName,
 		category: r.FactionCategory,
 	}
+	bloodline := nullEntity{
+		id:   r.BloodlineID,
+		name: r.BloodlineName,
+	}
 	c, err := st.characterFromDBModel(
 		ctx,
 		r.Character,
@@ -112,6 +116,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		r.HomeID,
 		r.LocationID,
 		r.ShipID,
+		bloodline,
 	)
 	if err != nil {
 		return nil, wrapErr(err)
@@ -167,6 +172,10 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			name:     r.FactionName,
 			category: r.FactionCategory,
 		}
+		bloodline := nullEntity{
+			id:   r.BloodlineID,
+			name: r.BloodlineName,
+		}
 		c, err := st.characterFromDBModel(
 			ctx,
 			r.Character,
@@ -178,6 +187,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			r.HomeID,
 			r.LocationID,
 			r.ShipID,
+			bloodline,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("list characters: %w", err)
@@ -402,22 +412,30 @@ func (st *Storage) characterFromDBModel(
 	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,
+	bloodline nullEntity,
 ) (*app.Character, error) {
 	o := app.Character{
 		AssetValue:         optional.FromNullFloat64(character.AssetValue),
 		ContractItemsValue: optional.FromNullFloat64(character.ContractItemsValue),
 		ContractsEscrow:    optional.FromNullFloat64(character.ContractsEscrow),
-		EveCharacter:       eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
-		ID:                 character.ID,
-		IsTrainingWatched:  character.IsTrainingWatched,
-		LastCloneJumpAt:    optional.FromNullTime(character.LastCloneJumpAt),
-		LastLoginAt:        optional.FromNullTime(character.LastLoginAt),
-		OrderItemsValue:    optional.FromNullFloat64(character.OrderItemsValue),
-		OrdersEscrow:       optional.FromNullFloat64(character.OrdersEscrow),
-		SkillPointsValue:   optional.FromNullFloat64(character.SkillPointsValue),
-		TrainedSP:          optional.FromNullInt64(character.TotalSp),
-		UnallocatedSP:      optional.FromNullInt64(character.UnallocatedSp),
-		WalletBalance:      optional.FromNullFloat64(character.WalletBalance),
+		EveCharacter: eveCharacterFromDBModel(
+			eveCharacter,
+			corporation,
+			race,
+			alliance,
+			faction,
+			bloodline,
+		),
+		ID:                character.ID,
+		IsTrainingWatched: character.IsTrainingWatched,
+		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
+		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
+		OrderItemsValue:   optional.FromNullFloat64(character.OrderItemsValue),
+		OrdersEscrow:      optional.FromNullFloat64(character.OrdersEscrow),
+		SkillPointsValue:  optional.FromNullFloat64(character.SkillPointsValue),
+		TrainedSP:         optional.FromNullInt64(character.TotalSp),
+		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
+		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
 	}
 	if homeID.Valid {
 		x, err := st.GetLocation(ctx, homeID.Int64)

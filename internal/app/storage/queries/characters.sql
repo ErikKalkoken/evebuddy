@@ -43,7 +43,9 @@ SELECT
     eef.category as faction_category,
     home_id,
     location_id,
-    ship_id
+    ship_id,
+    eb.id as bloodline_id,
+    eb.name as bloodline_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -51,6 +53,7 @@ FROM
     JOIN eve_races er ON er.id = ec.race_id
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
 WHERE
     cc.id = ?;
 
@@ -74,7 +77,9 @@ SELECT DISTINCT
     eef.category as faction_category,
     home_id,
     location_id,
-    ship_id
+    ship_id,
+    eb.id as bloodline_id,
+    eb.name as bloodline_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -82,6 +87,7 @@ FROM
     JOIN eve_races er ON er.id = ec.race_id
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
 ORDER BY
     ec.name;
 

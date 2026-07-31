@@ -25,6 +25,7 @@ import (
 type CharacterSheet struct {
 	widget.BaseWidget
 
+	bloodline   *widget.Hyperlink
 	born        *widget.Label
 	character   atomic.Pointer[app.Character]
 	faction     *widget.Hyperlink
@@ -45,6 +46,7 @@ type CharacterSheet struct {
 func NewCharacterSheet(u baseUI) *CharacterSheet {
 	makeHyperLink := func() *widget.Hyperlink {
 		x := widget.NewHyperlink("?", nil)
+		x.OnTapped = nil
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x
 	}
@@ -59,6 +61,7 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	portrait.SetToolTip("Show details")
 	a := &CharacterSheet{
+		bloodline:   makeHyperLink(),
 		born:        makeLabel(),
 		faction:     makeHyperLink(),
 		home:        makeHyperLink(),
@@ -124,6 +127,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 		widget.NewFormItem("Name", a.name),
 		widget.NewFormItem("Born", a.born),
 		widget.NewFormItem("Race", a.race),
+		widget.NewFormItem("Bloodline", a.bloodline),
 		widget.NewFormItem("Faction", a.faction),
 		widget.NewFormItem("Home Station", a.home),
 		widget.NewFormItem("Security Status", a.security),
@@ -208,6 +212,18 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		a.location.SetText(el.DisplayName())
 		a.location.OnTapped = func() {
 			a.u.InfoViewer().ShowLocation(el.ID)
+		}
+	})
+	fyne.Do(func() {
+		v, ok := c.EveCharacter.Bloodline.Value()
+		if !ok {
+			a.bloodline.SetText("?")
+			a.bloodline.OnTapped = nil
+			return
+		}
+		a.bloodline.SetText(v.Name)
+		a.bloodline.OnTapped = func() {
+			a.u.InfoViewer().ShowBloodline(v.ID)
 		}
 	})
 	fyne.Do(func() {

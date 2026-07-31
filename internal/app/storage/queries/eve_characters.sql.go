@@ -24,19 +24,22 @@ func (q *Queries) DeleteEveCharacter(ctx context.Context, id int64) error {
 
 const getEveCharacter = `-- name: GetEveCharacter :one
 SELECT
-    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
     eea.name as alliance_name,
     eea.category as alliance_category,
     eef.name as faction_name,
-    eef.category as faction_category
+    eef.category as faction_category,
+    eb.id as bloodline_id,
+    eb.name as bloodline_name
 FROM
     eve_characters ec
-    JOIN eve_entities AS eec ON eec.id = ec.corporation_id
+    JOIN eve_entities eec ON eec.id = ec.corporation_id
     JOIN eve_races er ON er.id = ec.race_id
-    LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
-    LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
 WHERE
     ec.id = ?
 `
@@ -49,6 +52,8 @@ type GetEveCharacterRow struct {
 	AllianceCategory sql.NullString
 	FactionName      sql.NullString
 	FactionCategory  sql.NullString
+	BloodlineID      sql.NullInt64
+	BloodlineName    sql.NullString
 }
 
 func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacterRow, error) {
@@ -66,6 +71,7 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 		&i.EveCharacter.RaceID,
 		&i.EveCharacter.SecurityStatus,
 		&i.EveCharacter.Title,
+		&i.EveCharacter.BloodlineID,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -76,6 +82,8 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 		&i.AllianceCategory,
 		&i.FactionName,
 		&i.FactionCategory,
+		&i.BloodlineID,
+		&i.BloodlineName,
 	)
 	return i, err
 }
@@ -114,10 +122,14 @@ const updateEveCharacter = `-- name: UpdateEveCharacter :exec
 UPDATE eve_characters
 SET
     alliance_id = ?,
+    birthday = ?,
+    bloodline_id = ?,
     corporation_id = ?,
     description = ?,
     faction_id = ?,
+    gender = ?,
     name = ?,
+    race_id = ?,
     security_status = ?,
     title = ?
 WHERE
@@ -126,10 +138,14 @@ WHERE
 
 type UpdateEveCharacterParams struct {
 	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	BloodlineID    sql.NullInt64
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
+	Gender         string
 	Name           string
+	RaceID         int64
 	SecurityStatus float64
 	Title          string
 	ID             int64
@@ -138,10 +154,14 @@ type UpdateEveCharacterParams struct {
 func (q *Queries) UpdateEveCharacter(ctx context.Context, arg UpdateEveCharacterParams) error {
 	_, err := q.db.ExecContext(ctx, updateEveCharacter,
 		arg.AllianceID,
+		arg.Birthday,
+		arg.BloodlineID,
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
+		arg.Gender,
 		arg.Name,
+		arg.RaceID,
 		arg.SecurityStatus,
 		arg.Title,
 		arg.ID,
@@ -173,6 +193,7 @@ INSERT INTO
         id,
         alliance_id,
         birthday,
+        bloodline_id,
         corporation_id,
         description,
         faction_id,
@@ -183,22 +204,27 @@ INSERT INTO
         title
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
 ON CONFLICT (id) DO UPDATE
 SET
     alliance_id = ?2,
-    corporation_id = ?4,
-    description = ?5,
-    faction_id = ?6,
-    name = ?8,
-    security_status = ?10,
-    title = ?11
+    birthday = ?3,
+    bloodline_id = ?4,
+    corporation_id = ?5,
+    description = ?6,
+    faction_id = ?7,
+    gender = ?8,
+    name = ?9,
+    race_id = ?10,
+    security_status = ?11,
+    title = ?12
 `
 
 type UpdateOrCreateEveCharacterParams struct {
 	ID             int64
 	AllianceID     sql.NullInt64
 	Birthday       time.Time
+	BloodlineID    sql.NullInt64
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
@@ -214,6 +240,7 @@ func (q *Queries) UpdateOrCreateEveCharacter(ctx context.Context, arg UpdateOrCr
 		arg.ID,
 		arg.AllianceID,
 		arg.Birthday,
+		arg.BloodlineID,
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,

@@ -66,18 +66,23 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
+		_, err = s.GetOrCreateBloodlineESI(ctx, ec.BloodlineId)
+		if err != nil {
+			return nil, err
+		}
 		arg := storage.CreateEveCharacterParams{
-			AllianceID:     optional.FromPtr(ec.AllianceId),
-			Birthday:       ec.Birthday,
-			CorporationID:  ec.CorporationId,
-			Description:    optional.FromPtr(ec.Description),
-			FactionID:      optional.FromPtr(ec.FactionId),
-			Gender:         ec.Gender,
-			ID:             characterID,
-			Name:           ec.Name,
-			RaceID:         ec.RaceId,
-			SecurityStatus: optional.FromPtr(ec.SecurityStatus),
-			Title:          optional.FromPtr(ec.CorporationTitle),
+			AllianceID:       optional.FromPtr(ec.AllianceId),
+			Birthday:         ec.Birthday,
+			BloodlineID:      ec.BloodlineId,
+			CorporationID:    ec.CorporationId,
+			CorporationTitle: optional.FromPtr(ec.CorporationTitle),
+			Description:      optional.FromPtr(ec.Description),
+			FactionID:        optional.FromPtr(ec.FactionId),
+			Gender:           ec.Gender,
+			ID:               characterID,
+			Name:             ec.Name,
+			RaceID:           ec.RaceId,
+			SecurityStatus:   optional.FromPtr(ec.SecurityStatus),
 		}
 		affiliationsOK, err := func() (bool, error) {
 			affiliations, _, err := s.esiClient.CharacterAPI.PostCharactersAffiliation(ctx).RequestBody([]int64{characterID}).Execute()
@@ -102,13 +107,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		optionalID := func(o optional.Optional[*app.EveEntity]) optional.Optional[int64] {
-			v, ok := o.Value()
-			if !ok {
-				return optional.Optional[int64]{}
-			}
-			return optional.New(v.ID)
-		}
+
 		if !affiliationsOK && c1 != nil {
 			// don't use affiliation info from character endpoint
 			// for updating existing characters
@@ -117,15 +116,7 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 			arg.FactionID = optionalID(c1.Faction)
 			arg.CorporationID = c1.Corporation.ID
 		}
-		changed := c1 == nil ||
-			optionalID(c1.Alliance) != arg.AllianceID ||
-			c1.Corporation.ID != arg.CorporationID ||
-			optionalID(c1.Faction) != arg.AllianceID ||
-			c1.Description != arg.Description ||
-			c1.Name != arg.Name ||
-			c1.SecurityStatus != arg.SecurityStatus ||
-			c1.Title != arg.Title
-		if !changed {
+		if !hasCharacterChanged(c1, arg) {
 			return nil, nil
 		}
 		_, err = s.AddMissingEntities(ctx, set.Of(
@@ -167,6 +158,43 @@ func (s *EVEUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return c1, false, nil
 	}
 	return nil, false, wrapErr(fmt.Errorf("no character to return")) // should be unreachable
+}
+
+func optionalID(o optional.Optional[*app.EveEntity]) optional.Optional[int64] {
+	v, ok := o.Value()
+	if !ok {
+		return optional.Optional[int64]{}
+	}
+	return optional.New(v.ID)
+}
+
+func hasCharacterChanged(c1 *app.EveCharacter, arg storage.CreateEveCharacterParams) bool {
+	if c1 == nil {
+		return true
+	}
+	if c1.ID != arg.ID ||
+		c1.Birthday != arg.Birthday ||
+		c1.Corporation.ID != arg.CorporationID ||
+		c1.CorporationTitle != arg.CorporationTitle ||
+		c1.Description != arg.Description ||
+		c1.Gender != arg.Gender ||
+		c1.Name != arg.Name ||
+		c1.Race.ID != arg.RaceID ||
+		c1.SecurityStatus != arg.SecurityStatus {
+		return true
+	}
+	if optionalID(c1.Alliance) != arg.AllianceID ||
+		optionalID(c1.Faction) != arg.FactionID {
+		return true
+	}
+	var bloodlineID int64
+	if v, ok := c1.Bloodline.Value(); ok {
+		bloodlineID = v.ID
+	}
+	if bloodlineID != arg.BloodlineID {
+		return true
+	}
+	return false
 }
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI

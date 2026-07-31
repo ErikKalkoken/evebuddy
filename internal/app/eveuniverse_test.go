@@ -50,7 +50,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			Name:           "Bruce Wayne",
 			Race:           &app.EveRace{ID: 4},
 			SecurityStatus: optional.New(-4.5),
-			Title:          optional.New("def"),
+			CorporationTitle:          optional.New("def"),
 		}
 		x2 := new(app.EveCharacter)
 		*x2 = *x1
@@ -68,7 +68,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			Name:           "Bruce Wayne",
 			Race:           &app.EveRace{ID: 4},
 			SecurityStatus: optional.New(-4.5),
-			Title:          optional.New("def"),
+			CorporationTitle:          optional.New("def"),
 		}
 		x2 := new(app.EveCharacter)
 		*x2 = *x1

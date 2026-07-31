@@ -25,6 +25,7 @@ type fakeInfoViewer struct {
 }
 
 func (f *fakeInfoViewer) Show(o *app.EveEntity) { f.called = true; f.entity = o }
+func (f *fakeInfoViewer) ShowBloodline(_ int64) {}
 func (f *fakeInfoViewer) ShowLocation(_ int64)  {}
 func (f *fakeInfoViewer) ShowRace(_ int64)      {}
 func (f *fakeInfoViewer) ShowType(_, _ int64)   {}

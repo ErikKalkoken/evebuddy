@@ -3,6 +3,7 @@ package infoviewer
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -210,7 +211,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 	})
 	fyne.Do(func() {
-		v, ok := o.Title.Value()
+		v, ok := o.CorporationTitle.Value()
 		if !ok {
 			a.title.Hide()
 			return
@@ -264,6 +265,9 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 			return fmt.Sprintf("%.1f", v)
 		})),
 		newAttributeItem("Corporation", o.Corporation),
+	}
+	if v, ok := o.Bloodline.Value(); ok {
+		attributes = slices.Insert(attributes, 2, newAttributeItem("Bloodline", (*eveBloodlineShort)(v)))
 	}
 	if v, ok := o.Alliance.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Alliance", v))
