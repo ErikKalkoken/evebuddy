@@ -178,7 +178,7 @@ func eveCharacterFromDBModel(
 		ID:               character.ID,
 		Name:             character.Name,
 		Race:             eveRaceFromDBModel(race),
-		SecurityStatus:   optional.FromZeroValue(character.SecurityStatus),
+		SecurityStatus:   optional.New(character.SecurityStatus),
 		CorporationTitle: optional.FromZeroValue(character.Title),
 		Bloodline:        bloodline2,
 	}

@@ -73,6 +73,8 @@ func (eb EveBloodline) Logo() (fyne.Resource, bool) {
 	return eveicon.FromID(iconID)
 }
 
+// TODO: SecurityStatus not really optional. Change the DB field to nullable and remove workaround.
+
 // EveCharacter is a character in EVE Online.
 type EveCharacter struct {
 	Alliance         optional.Optional[*EveEntity]

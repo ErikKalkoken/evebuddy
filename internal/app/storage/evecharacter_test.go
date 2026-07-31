@@ -17,6 +17,7 @@ import (
 func TestEveCharacter(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
+
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -159,6 +160,37 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, "Erik", c2.Name)
+	})
+
+	t.Run("can update existing with neutral security status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := f.CreateEveCharacter()
+		const (
+			securityStatus = 0
+		)
+
+		// when
+		err := st.UpdateOrCreateEveCharacter(t.Context(), storage.CreateEveCharacterParams{
+			Birthday:         c1.Birthday,
+			BloodlineID:      c1.Bloodline.MustValue().ID,
+			CorporationID:    c1.Corporation.ID,
+			CorporationTitle: c1.CorporationTitle,
+			Description:      c1.Description,
+			Gender:           c1.Gender,
+			ID:               c1.ID,
+			Name:             c1.Name,
+			RaceID:           c1.Race.ID,
+			SecurityStatus:   optional.New[float64](securityStatus),
+		})
+
+		// then
+		require.NoError(t, err)
+		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
+		require.NoError(t, err)
+		if xassert.NotEmpty(t, c2.SecurityStatus) {
+			xassert.Equal(t, securityStatus, c2.SecurityStatus.MustValue())
+		}
 	})
 
 	t.Run("can delete", func(t *testing.T) {

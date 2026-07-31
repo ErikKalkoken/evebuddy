@@ -193,7 +193,6 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		birthday := time.Now().Truncate(time.Second)
 		gender := "male"
 		name := "CCP Bartender"
-		securityStatus := -9.9
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
@@ -205,7 +204,6 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 				"gender":            gender,
 				"name":              name,
 				"race_id":           race.ID,
-				"security_status":   securityStatus,
 			}),
 		)
 		httpmock.RegisterResponder(
@@ -219,27 +217,29 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		)
 
 		// when
-		x1, changed, err := s.UpdateOrCreateCharacterESI(t.Context(), character.ID)
+		o, changed, err := s.UpdateOrCreateCharacterESI(t.Context(), character.ID)
 
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		xassert.Empty(t, x1.Alliance)
-		xassert.Empty(t, x1.Faction)
-		xassert.Equal(t, character.ID, x1.ID)
-		xassert.Equal(t, birthday, x1.Birthday)
-		xassert.Equal(t, corporation2, x1.Corporation)
-		assert.Empty(t, x1.Description)
-		xassert.Equal(t, gender, x1.Gender)
-		xassert.Equal(t, character.ID, x1.ID)
-		xassert.Equal(t, name, x1.Name)
-		xassert.Equal(t, race, x1.Race)
-		xassert.Equal(t, bloodline.ID, x1.Bloodline.MustValue().ID)
-		assert.Empty(t, x1.CorporationTitle)
-		xassert.Equal(t, securityStatus, x1.SecurityStatus.ValueOrZero())
+		xassert.Empty(t, o.Alliance)
+		xassert.Empty(t, o.Faction)
+		xassert.Equal(t, character.ID, o.ID)
+		xassert.Equal(t, birthday, o.Birthday)
+		xassert.Equal(t, corporation2, o.Corporation)
+		assert.Empty(t, o.Description)
+		xassert.Equal(t, gender, o.Gender)
+		xassert.Equal(t, character.ID, o.ID)
+		xassert.Equal(t, name, o.Name)
+		xassert.Equal(t, race, o.Race)
+		if xassert.NotEmpty(t, o.Bloodline) {
+			xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		}
+		assert.Empty(t, o.CorporationTitle)
+		// assert.Empty(t, o.SecurityStatus)
 		x2, err := st.GetEveCharacter(t.Context(), character.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x1, x2)
+		xassert.Equal(t, o, x2)
 	})
 
 	t.Run("should create new full character from ESI with affiliations", func(t *testing.T) {
@@ -309,6 +309,71 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		x2, err := st.GetEveCharacter(t.Context(), character.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
+	})
+
+	t.Run("should create new minimal character from ESI with neutral security status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		character := f.CreateEveEntityCharacter()
+		corporation := f.CreateEveEntityCorporation()
+		bloodline := f.CreateEveBloodline()
+		race := bloodline.Race
+		birthday := time.Now().Truncate(time.Second)
+		gender := "male"
+		name := "CCP Bartender"
+		securityStatus := float64(0)
+
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d", character.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"achievement_score": 1234,
+				"birthday":          birthday.Format(time.RFC3339),
+				"bloodline_id":      bloodline.ID,
+				"corporation_id":    corporation.ID,
+				"gender":            gender,
+				"name":              name,
+				"race_id":           race.ID,
+				"security_status":   securityStatus,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi.evetech.net/characters/affiliation`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   character.ID,
+					"corporation_id": corporation.ID,
+				}}),
+		)
+
+		// when
+		o, changed, err := s.UpdateOrCreateCharacterESI(t.Context(), character.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Empty(t, o.Alliance)
+		xassert.Empty(t, o.Faction)
+		xassert.Equal(t, character.ID, o.ID)
+		xassert.Equal(t, birthday, o.Birthday)
+		xassert.Equal(t, corporation, o.Corporation)
+		assert.Empty(t, o.Description)
+		xassert.Equal(t, gender, o.Gender)
+		xassert.Equal(t, character.ID, o.ID)
+		xassert.Equal(t, name, o.Name)
+		xassert.Equal(t, race, o.Race)
+		if xassert.NotEmpty(t, o.Bloodline) {
+			xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		}
+		assert.Empty(t, o.CorporationTitle)
+		if assert.NotEmpty(t, o.SecurityStatus) {
+			xassert.Equal(t, securityStatus, o.SecurityStatus.MustValue())
+		}
+		x2, err := st.GetEveCharacter(t.Context(), character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, o, x2)
 	})
 
 	t.Run("should create new character from ESI and ignore affiliations when they don't match", func(t *testing.T) {
