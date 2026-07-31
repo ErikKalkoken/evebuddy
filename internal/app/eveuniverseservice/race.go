@@ -73,7 +73,7 @@ func (s *EVEUniverseService) GetOrCreateBloodlineESI(ctx context.Context, id int
 			if err != nil {
 				return nil, err
 			}
-			if err := s.st.CreateEveBloodline(ctx, storage.CreateEveBloodlineParams{
+			arg := storage.CreateEveBloodlineParams{
 				Charisma:      optional.FromZeroValue(bl.Charisma),
 				CorporationID: corporation.ID,
 				Description:   bl.Description,
@@ -84,7 +84,15 @@ func (s *EVEUniverseService) GetOrCreateBloodlineESI(ctx context.Context, id int
 				Perception:    optional.FromZeroValue(bl.Perception),
 				RaceID:        race.ID,
 				Willpower:     optional.FromZeroValue(bl.Willpower),
-			}); err != nil {
+			}
+			if bl.ShipTypeId > 0 {
+				et, err := s.GetOrCreateTypeESI(ctx, bl.ShipTypeId)
+				if err != nil {
+					return nil, err
+				}
+				arg.ShipTypeID.Set(et.ID)
+			}
+			if err := s.st.CreateEveBloodline(ctx, arg); err != nil {
 				return nil, err
 			}
 			slog.Info("Created eve bloodline", "id", id)

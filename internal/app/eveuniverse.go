@@ -31,6 +31,24 @@ func (ea EveAlliance) EveEntity() *EveEntity {
 	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
+// eveBloodline2IconID maps a bloodline ID to an eveIcon ID.
+// A missing mapping means there is no icon for the bloodline.
+var eveBloodline2IconID = map[int64]int64{
+	1:  1633,
+	2:  1631,
+	3:  1634,
+	4:  1635,
+	5:  1628,
+	6:  1632,
+	7:  1629,
+	8:  1630,
+	11: 3022,
+	12: 3024,
+	13: 3023,
+	14: 3021,
+	19: 21404,
+}
+
 // EveBloodline is a bloodline in EVE Online.
 type EveBloodline struct {
 	Charisma     optional.Optional[int64]
@@ -44,6 +62,15 @@ type EveBloodline struct {
 	Race         *EveRace
 	ShipTypeID   optional.Optional[int64]
 	Willpower    optional.Optional[int64]
+}
+
+// Logo returns the logo for a bloodline and reports whether one exists.
+func (eb EveBloodline) Logo() (fyne.Resource, bool) {
+	iconID, ok := eveBloodline2IconID[eb.ID]
+	if !ok {
+		return nil, false
+	}
+	return eveicon.FromID(iconID)
 }
 
 // EveCharacter is a character in EVE Online.

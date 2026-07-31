@@ -195,6 +195,9 @@ func (iw *InfoViewer) show2(arg showParams) {
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
+	case infoBloodline:
+		title = "Bloodline"
+		page = newBloodlineInfo(iw, arg.entityID)
 	case infoRace:
 		title = "Race"
 		page = newRaceInfo(iw, arg.entityID)
@@ -380,19 +383,21 @@ type infoVariant uint
 const (
 	infoNotSupported infoVariant = iota
 	infoAlliance
+	infoBloodline
 	infoCharacter
 	infoConstellation
 	infoCorporation
 	infoInventoryType
 	infoLocation
-	infoRegion
 	infoRace
+	infoRegion
 	infoSolarSystem
 )
 
 func (iv infoVariant) String() string {
 	m := map[infoVariant]string{
 		infoAlliance:      "alliance",
+		infoBloodline:     "bloodline",
 		infoCharacter:     "character",
 		infoConstellation: "constellation",
 		infoCorporation:   "corporation",
@@ -402,6 +407,7 @@ func (iv infoVariant) String() string {
 		infoRace:          "race",
 		infoSolarSystem:   "solar system",
 	}
+
 	s, ok := m[iv]
 	if !ok {
 		return ""
@@ -537,12 +543,24 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 					break
 				}
 				s = x.Name
+			case *eveBloodlineShort:
+				if x == nil {
+					s = "?"
+					break
+				}
+				s = x.Name
 			case *app.EveLocation:
 				if x == nil {
 					s = "?"
 					break
 				}
 				s = x.DisplayName()
+			case *app.EveType:
+				if x == nil {
+					s = "?"
+					break
+				}
+				s = x.Name
 			case *url.URL:
 				if x == nil {
 					s = "?"
@@ -591,10 +609,22 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 						w.iw.show(infoLocation, x.ID)
 					}
 				}
+			case *eveBloodlineShort:
+				if x != nil {
+					f = func() {
+						w.iw.show(infoBloodline, x.ID)
+					}
+				}
 			case *app.EveRace:
 				if x != nil {
 					f = func() {
 						w.iw.show(infoRace, x.ID)
+					}
+				}
+			case *app.EveType:
+				if x != nil {
+					f = func() {
+						w.iw.show(infoInventoryType, x.ID)
 					}
 				}
 			}

@@ -3,6 +3,7 @@ package infoviewer
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -260,13 +261,13 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
-		newAttributeItem("Bloodline", o.Bloodline.StringFunc("?", func(v *app.EntityShort) string {
-			return v.Name
-		})),
 		newAttributeItem("Security Status", o.SecurityStatus.StringFunc("?", func(v float64) string {
 			return fmt.Sprintf("%.1f", v)
 		})),
 		newAttributeItem("Corporation", o.Corporation),
+	}
+	if v, ok := o.Bloodline.Value(); ok {
+		attributes = slices.Insert(attributes, 2, newAttributeItem("Bloodline", (*eveBloodlineShort)(v)))
 	}
 	if v, ok := o.Alliance.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Alliance", v))
