@@ -120,10 +120,15 @@ func (ec EveCharacter) Hash() string {
 	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
 		return x.ID
 	})
+	bloodlineID := optional.Map(ec.Bloodline, 0, func(x *EntityShort) int64 {
+		return x.ID
+	})
 	xx := []any{
 		allianceID,
+		bloodlineID,
 		ec.Birthday,
 		ec.Corporation.ID,
+		ec.CorporationTitle,
 		ec.Description,
 		factionID,
 		ec.Gender,
@@ -131,7 +136,6 @@ func (ec EveCharacter) Hash() string {
 		ec.Name,
 		ec.Race.ID,
 		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
-		ec.CorporationTitle,
 	}
 	var s []string
 	for _, x := range xx {

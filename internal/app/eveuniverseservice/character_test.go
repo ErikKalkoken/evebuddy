@@ -31,15 +31,15 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := f.CreateEveCharacter()
+		c1 := f.CreateEveCharacter()
 
 		// when
-		x1, changed, err := s.GetOrCreateCharacterESI(t.Context(), c.ID)
+		c2, changed, err := s.GetOrCreateCharacterESI(t.Context(), c1.ID)
 
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
-		xassert.Equal(t, c.ID, x1.ID)
+		xassert.Equal(t, c1.ID, c2.ID)
 	})
 
 	t.Run("should fetch minimal character from ESI and create it", func(t *testing.T) {

@@ -39,11 +39,11 @@ func Equal[T any](t *testing.T, want, got T) bool {
 // Empty asserts that an optional is empty.
 func Empty[T any](t *testing.T, v optional.Optional[T]) bool {
 	t.Helper()
-	return assert.Truef(t, v.IsEmpty(), "Should be empty:\n%v", v)
+	return assert.Truef(t, v.IsEmpty(), "Variable should be empty:\n%v", v)
 }
 
 // NotEmpty asserts that an optional is not empty.
 func NotEmpty[T any](t *testing.T, v optional.Optional[T]) bool {
 	t.Helper()
-	return assert.False(t, v.IsEmpty(), "Should not be empty")
+	return assert.False(t, v.IsEmpty(), "Variable should not be empty")
 }

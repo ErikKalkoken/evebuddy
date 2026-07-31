@@ -84,6 +84,10 @@ func (iw *InfoViewer) Show(o *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(o), o.ID)
 }
 
+func (iw *InfoViewer) ShowBloodline(id int64) {
+	iw.show(infoBloodline, id)
+}
+
 func (iw *InfoViewer) ShowLocation(id int64) {
 	iw.show(infoLocation, id)
 }
