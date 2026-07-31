@@ -106,9 +106,8 @@ func (iw *InfoViewer) ShowType(typeID, characterID int64) {
 
 func (iw *InfoViewer) show(v infoVariant, id int64) {
 	iw.show2(showParams{
-		variant:     v,
-		entityID:    id,
-		characterID: id,
+		variant:  v,
+		entityID: id,
 	})
 }
 
