@@ -107,14 +107,14 @@ func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int6
 	if err != nil {
 		return nil, fmt.Errorf("GetCharacterMarketOrder for character %d: %w", characterID, convertGetError(err))
 	}
-	o := characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-		cmo:              r.CharacterMarketOrder,
-		locationName:     r.LocationName,
-		locationSecurity: r.LocationSecurity,
-		owner:            r.EveEntity,
-		regionName:       r.RegionName,
-		typeName:         r.TypeName,
-	})
+	o := characterMarketOrderFromDBModel(
+		r.CharacterMarketOrder,
+		r.LocationName,
+		r.LocationSecurity,
+		r.EveEntity,
+		regionName(r.RegionName),
+		typeName(r.TypeName),
+	)
 	return o, err
 }
 
@@ -125,14 +125,14 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders
 	}
 	oo := make([]*app.CharacterMarketOrder, len(rows))
 	for i, r := range rows {
-		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-			cmo:              r.CharacterMarketOrder,
-			locationName:     r.LocationName,
-			locationSecurity: r.LocationSecurity,
-			owner:            r.EveEntity,
-			regionName:       r.RegionName,
-			typeName:         r.TypeName,
-		})
+		oo[i] = characterMarketOrderFromDBModel(
+			r.CharacterMarketOrder,
+			r.LocationName,
+			r.LocationSecurity,
+			r.EveEntity,
+			regionName(r.RegionName),
+			typeName(r.TypeName),
+		)
 	}
 	return oo, nil
 }
@@ -152,56 +152,55 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 	}
 	oo := make([]*app.CharacterMarketOrder, len(rows))
 	for i, r := range rows {
-		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-			cmo:              r.CharacterMarketOrder,
-			locationName:     r.LocationName,
-			locationSecurity: r.LocationSecurity,
-			owner:            r.EveEntity,
-			regionName:       r.RegionName,
-			typeName:         r.TypeName,
-		})
+		oo[i] = characterMarketOrderFromDBModel(
+			r.CharacterMarketOrder,
+			r.LocationName,
+			r.LocationSecurity,
+			r.EveEntity,
+			regionName(r.RegionName),
+			typeName(r.TypeName),
+		)
 	}
 	return oo, nil
 }
 
-type characterMarketOrderFromDBModelParams struct {
-	cmo              queries.CharacterMarketOrder
-	locationName     string
-	locationSecurity sql.NullFloat64
-	owner            queries.EveEntity
-	regionName       string
-	typeName         string
-}
 
-func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) *app.CharacterMarketOrder {
+func characterMarketOrderFromDBModel(
+	cmo queries.CharacterMarketOrder,
+	locationName string,
+	locationSecurity sql.NullFloat64,
+	owner queries.EveEntity,
+	regionName regionName,
+	typeName typeName,
+) *app.CharacterMarketOrder {
 	o2 := &app.CharacterMarketOrder{
-		CharacterID:   arg.cmo.CharacterID,
-		Duration:      arg.cmo.Duration,
-		Escrow:        optional.FromNullFloat64(arg.cmo.Escrow),
-		IsBuyOrder:    optional.FromZeroValue(arg.cmo.IsBuyOrder),
-		IsCorporation: arg.cmo.IsCorporation,
-		Issued:        arg.cmo.Issued,
+		CharacterID:   cmo.CharacterID,
+		Duration:      cmo.Duration,
+		Escrow:        optional.FromNullFloat64(cmo.Escrow),
+		IsBuyOrder:    optional.FromZeroValue(cmo.IsBuyOrder),
+		IsCorporation: cmo.IsCorporation,
+		Issued:        cmo.Issued,
 		Location: &app.EveLocationShort{
-			ID:             arg.cmo.LocationID,
-			Name:           optional.New(arg.locationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
+			ID:             cmo.LocationID,
+			Name:           optional.New(locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity),
 		},
-		MinVolume: optional.FromNullInt64(arg.cmo.MinVolume),
-		OrderID:   arg.cmo.OrderID,
-		Owner:     eveEntityFromDBModel(arg.owner),
-		Price:     arg.cmo.Price,
-		Range:     arg.cmo.Range,
+		MinVolume: optional.FromNullInt64(cmo.MinVolume),
+		OrderID:   cmo.OrderID,
+		Owner:     eveEntityFromDBModel(owner),
+		Price:     cmo.Price,
+		Range:     cmo.Range,
 		Region: &app.EntityShort{
-			ID:   arg.cmo.RegionID,
-			Name: arg.regionName,
+			ID:   cmo.RegionID,
+			Name: string(regionName),
 		},
-		State: orderStatusFromDBValue[arg.cmo.State],
+		State: orderStatusFromDBValue[cmo.State],
 		Type: &app.EntityShort{
-			ID:   arg.cmo.TypeID,
-			Name: arg.typeName,
+			ID:   cmo.TypeID,
+			Name: string(typeName),
 		},
-		VolumeRemains: arg.cmo.VolumeRemains,
-		VolumeTotal:   arg.cmo.VolumeTotal,
+		VolumeRemains: cmo.VolumeRemains,
+		VolumeTotal:   cmo.VolumeTotal,
 	}
 	return o2
 }

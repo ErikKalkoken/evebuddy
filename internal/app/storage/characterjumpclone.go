@@ -36,13 +36,13 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int64,
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := characterJumpCloneFromDBModel(characterJumpCloneFromDBModelParams{
-		jc:               r.CharacterJumpClone,
-		locationName:     r.LocationName,
-		regionID:         r.RegionID,
-		regionName:       r.RegionName,
-		locationSecurity: r.LocationSecurity,
-	})
+	o := characterJumpCloneFromDBModel(
+		r.CharacterJumpClone,
+		r.LocationName,
+		r.LocationSecurity,
+		r.RegionID,
+		r.RegionName,
+	)
 	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)
 	if err != nil {
 		return nil, err
@@ -61,35 +61,33 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	}
 	var oo []*app.CharacterJumpCloneImplant
 	for _, r := range rows {
-		oo = append(oo, characterJumpCloneImplantFromDBModel(characterJumpCloneImplantFromDBModelParams{
-			jci:  r.CharacterJumpCloneImplant,
-			et:   r.EveType,
-			eg:   r.EveGroup,
-			ec:   r.EveCategory,
-			slot: r.SlotNum,
-		}))
+		oo = append(oo, characterJumpCloneImplantFromDBModel(
+			r.CharacterJumpCloneImplant,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.SlotNum,
+		))
 	}
 	return oo, nil
 }
 
-type characterJumpCloneImplantFromDBModelParams struct {
-	jci  queries.CharacterJumpCloneImplant
-	et   queries.EveType
-	eg   queries.EveGroup
-	ec   queries.EveCategory
-	slot sql.NullFloat64
-}
-
-func characterJumpCloneImplantFromDBModel(arg characterJumpCloneImplantFromDBModelParams) *app.CharacterJumpCloneImplant {
-	if arg.jci.CloneID == 0 {
+func characterJumpCloneImplantFromDBModel(
+	jci queries.CharacterJumpCloneImplant,
+	et queries.EveType,
+	eg queries.EveGroup,
+	ec queries.EveCategory,
+	slot sql.NullFloat64,
+) *app.CharacterJumpCloneImplant {
+	if jci.CloneID == 0 {
 		panic("missing clone ID")
 	}
 	o2 := &app.CharacterJumpCloneImplant{
-		EveType: eveTypeFromDBModel(arg.et, arg.eg, arg.ec),
-		ID:      arg.jci.ID,
+		EveType: eveTypeFromDBModel(et, eg, ec),
+		ID:      jci.ID,
 	}
-	if arg.slot.Valid {
-		o2.SlotNum = int(arg.slot.Float64)
+	if slot.Valid {
+		o2.SlotNum = int(slot.Float64)
 	}
 	return o2
 }
@@ -137,13 +135,13 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int6
 	}
 	var oo []*app.CharacterJumpClone
 	for _, r := range rows {
-		o := characterJumpCloneFromDBModel(characterJumpCloneFromDBModelParams{
-			jc:               r.CharacterJumpClone,
-			locationName:     r.LocationName,
-			regionID:         r.RegionID,
-			regionName:       r.RegionName,
-			locationSecurity: r.LocationSecurity,
-		})
+		o := characterJumpCloneFromDBModel(
+			r.CharacterJumpClone,
+			r.LocationName,
+			r.LocationSecurity,
+			r.RegionID,
+			r.RegionName,
+		)
 		x, err := listCharacterJumpCloneImplants(ctx, st.qRO, r.CharacterJumpClone.ID)
 		if err != nil {
 			return nil, err
@@ -210,30 +208,29 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	return nil
 }
 
-type characterJumpCloneFromDBModelParams struct {
-	jc               queries.CharacterJumpClone
-	locationName     string
-	locationSecurity sql.NullFloat64
-	regionID         sql.NullInt64
-	regionName       sql.NullString
-}
+func characterJumpCloneFromDBModel(
+	jc queries.CharacterJumpClone,
+	locationName string,
+	locationSecurity sql.NullFloat64,
+	regionID sql.NullInt64,
+	regionName sql.NullString,
 
-func characterJumpCloneFromDBModel(arg characterJumpCloneFromDBModelParams) *app.CharacterJumpClone {
-	if arg.jc.CharacterID == 0 || arg.jc.JumpCloneID == 0 || arg.jc.LocationID == 0 {
+) *app.CharacterJumpClone {
+	if jc.CharacterID == 0 || jc.JumpCloneID == 0 || jc.LocationID == 0 {
 		panic("invalid IDs")
 	}
 	o2 := &app.CharacterJumpClone{
-		CharacterID: arg.jc.CharacterID,
-		ID:          arg.jc.ID,
-		CloneID:     arg.jc.JumpCloneID,
+		CharacterID: jc.CharacterID,
+		ID:          jc.ID,
+		CloneID:     jc.JumpCloneID,
 		Location: &app.EveLocationShort{
-			ID:             arg.jc.LocationID,
-			Name:           optional.New(arg.locationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity)},
-		Name: optional.FromZeroValue(arg.jc.Name),
+			ID:             jc.LocationID,
+			Name:           optional.New(locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity)},
+		Name: optional.FromZeroValue(jc.Name),
 	}
-	if arg.regionID.Valid && arg.regionName.Valid {
-		o2.Region = &app.EntityShort{ID: arg.regionID.Int64, Name: arg.regionName.String}
+	if regionID.Valid && regionName.Valid {
+		o2.Region = &app.EntityShort{ID: regionID.Int64, Name: regionName.String}
 	}
 	return o2
 }

@@ -30,13 +30,13 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int64, t
 	if err != nil {
 		return nil, fmt.Errorf("get implant %d for character %d: %w", typeID, characterID, convertGetError(err))
 	}
-	o := characterImplantFromDBModel(characterImplantFromDBModelParams{
-		ci: r.CharacterImplant,
-		et: r.EveType,
-		eg: r.EveGroup,
-		ec: r.EveCategory,
-		sn: r.SlotNum,
-	})
+	o := characterImplantFromDBModel(
+		r.CharacterImplant,
+		r.EveType,
+		r.EveGroup,
+		r.EveCategory,
+		r.SlotNum,
+	)
 	return o, nil
 }
 
@@ -58,13 +58,13 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int64)
 	}
 	var oo []*app.CharacterImplant
 	for _, r := range rows {
-		oo = append(oo, characterImplantFromDBModel(characterImplantFromDBModelParams{
-			ci: r.CharacterImplant,
-			et: r.EveType,
-			eg: r.EveGroup,
-			ec: r.EveCategory,
-			sn: r.SlotNum,
-		}))
+		oo = append(oo, characterImplantFromDBModel(
+			r.CharacterImplant,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.SlotNum,
+		))
 	}
 	return oo, nil
 }
@@ -76,13 +76,13 @@ func (st *Storage) ListAllCharacterImplants(ctx context.Context) ([]*app.Charact
 	}
 	var oo []*app.CharacterImplant
 	for _, r := range rows {
-		oo = append(oo, characterImplantFromDBModel(characterImplantFromDBModelParams{
-			ci: r.CharacterImplant,
-			et: r.EveType,
-			eg: r.EveGroup,
-			ec: r.EveCategory,
-			sn: r.SlotNum,
-		}))
+		oo = append(oo, characterImplantFromDBModel(
+			r.CharacterImplant,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.SlotNum,
+		))
 	}
 	return oo, nil
 }
@@ -133,24 +133,25 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 }
 
 type characterImplantFromDBModelParams struct {
-	ci queries.CharacterImplant
-	et queries.EveType
-	eg queries.EveGroup
-	ec queries.EveCategory
-	sn sql.NullFloat64
 }
 
-func characterImplantFromDBModel(arg characterImplantFromDBModelParams) *app.CharacterImplant {
-	if arg.ci.CharacterID == 0 {
+func characterImplantFromDBModel(
+	ci queries.CharacterImplant,
+	et queries.EveType,
+	eg queries.EveGroup,
+	ec queries.EveCategory,
+	sn sql.NullFloat64,
+) *app.CharacterImplant {
+	if ci.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	o2 := &app.CharacterImplant{
-		CharacterID: arg.ci.CharacterID,
-		EveType:     eveTypeFromDBModel(arg.et, arg.eg, arg.ec),
-		ID:          arg.ci.ID,
+		CharacterID: ci.CharacterID,
+		EveType:     eveTypeFromDBModel(et, eg, ec),
+		ID:          ci.ID,
 	}
-	if arg.sn.Valid {
-		o2.SlotNum = int(arg.sn.Float64)
+	if sn.Valid {
+		o2.SlotNum = int(sn.Float64)
 	}
 	return o2
 }
