@@ -244,25 +244,25 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	c := r.CharacterContract
-	acceptor := nullEveEntry{id: c.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-	assignee := nullEveEntry{id: c.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-	o := characterContractFromDBModel(characterContractFromDBModelParams{
-		acceptor:                 acceptor,
-		assignee:                 assignee,
-		contract:                 c,
-		endLocationName:          r.EndLocationName,
-		endSolarSystemID:         r.EndSolarSystemID,
-		endSolarSystemName:       r.EndSolarSystemName,
-		endSolarSystemSecurity:   r.EndSolarSystemSecurityStatus,
-		issuer:                   r.EveEntity_2,
-		issuerCorporation:        r.EveEntity,
-		items:                    r.Items,
-		startLocationName:        r.StartLocationName,
-		startSolarSystemID:       r.StartSolarSystemID,
-		startSolarSystemName:     r.StartSolarSystemName,
-		startSolarSystemSecurity: r.StartSolarSystemSecurityStatus,
-	})
+	cc := r.CharacterContract
+	acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+	assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
+	o := characterContractFromDBModel(
+		acceptor,
+		assignee,
+		cc,
+		endLocationName(r.EndLocationName),
+		endSolarSystemID(r.EndSolarSystemID),
+		endSolarSystemName(r.EndSolarSystemName),
+		endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
+		issuer(r.EveEntity_2),
+		issuerCorporation(r.EveEntity),
+		r.Items,
+		startLocationName(r.StartLocationName),
+		startSolarSystemID(r.StartSolarSystemID),
+		startSolarSystemName(r.StartSolarSystemName),
+		startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
+	)
 	return o, nil
 }
 
@@ -287,25 +287,25 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
-		c := r.CharacterContract
-		acceptor := nullEveEntry{id: c.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullEveEntry{id: c.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = characterContractFromDBModel(characterContractFromDBModelParams{
-			acceptor:                 acceptor,
-			assignee:                 assignee,
-			contract:                 c,
-			endLocationName:          r.EndLocationName,
-			endSolarSystemID:         r.EndSolarSystemID,
-			endSolarSystemName:       r.EndSolarSystemName,
-			endSolarSystemSecurity:   r.EndSolarSystemSecurityStatus,
-			issuer:                   r.EveEntity_2,
-			issuerCorporation:        r.EveEntity,
-			items:                    r.Items,
-			startLocationName:        r.StartLocationName,
-			startSolarSystemID:       r.StartSolarSystemID,
-			startSolarSystemName:     r.StartSolarSystemName,
-			startSolarSystemSecurity: r.StartSolarSystemSecurityStatus,
-		})
+		cc := r.CharacterContract
+		acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+		assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
+		oo[i] = characterContractFromDBModel(
+			acceptor,
+			assignee,
+			cc,
+			endLocationName(r.EndLocationName),
+			endSolarSystemID(r.EndSolarSystemID),
+			endSolarSystemName(r.EndSolarSystemName),
+			endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
+			issuer(r.EveEntity_2),
+			issuerCorporation(r.EveEntity),
+			r.Items,
+			startLocationName(r.StartLocationName),
+			startSolarSystemID(r.StartSolarSystemID),
+			startSolarSystemName(r.StartSolarSystemName),
+			startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
+		)
 	}
 	return oo, nil
 }
@@ -323,25 +323,25 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int64
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
-		c := r.CharacterContract
-		acceptor := nullEveEntry{id: c.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullEveEntry{id: c.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = characterContractFromDBModel(characterContractFromDBModelParams{
-			acceptor:                 acceptor,
-			assignee:                 assignee,
-			contract:                 c,
-			endLocationName:          r.EndLocationName,
-			endSolarSystemID:         r.EndSolarSystemID,
-			endSolarSystemName:       r.EndSolarSystemName,
-			endSolarSystemSecurity:   r.EndSolarSystemSecurityStatus,
-			issuer:                   r.EveEntity_2,
-			issuerCorporation:        r.EveEntity,
-			items:                    r.Items,
-			startLocationName:        r.StartLocationName,
-			startSolarSystemID:       r.StartSolarSystemID,
-			startSolarSystemName:     r.StartSolarSystemName,
-			startSolarSystemSecurity: r.StartSolarSystemSecurityStatus,
-		})
+		cc := r.CharacterContract
+		acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+		assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
+		oo[i] = characterContractFromDBModel(
+			acceptor,
+			assignee,
+			cc,
+			endLocationName(r.EndLocationName),
+			endSolarSystemID(r.EndSolarSystemID),
+			endSolarSystemName(r.EndSolarSystemName),
+			endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
+			issuer(r.EveEntity_2),
+			issuerCorporation(r.EveEntity),
+			r.Items,
+			startLocationName(r.StartLocationName),
+			startSolarSystemID(r.StartSolarSystemID),
+			startSolarSystemName(r.StartSolarSystemName),
+			startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
+		)
 	}
 	return oo, nil
 }
@@ -402,82 +402,80 @@ func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64
 	return nil
 }
 
-type characterContractFromDBModelParams struct {
-	acceptor                 nullEveEntry
-	assignee                 nullEveEntry
-	contract                 queries.CharacterContract
-	endLocationName          sql.NullString
-	endSolarSystemID         sql.NullInt64
-	endSolarSystemName       sql.NullString
-	endSolarSystemSecurity   sql.NullFloat64
-	issuer                   queries.EveEntity
-	issuerCorporation        queries.EveEntity
-	items                    any
-	startLocationName        sql.NullString
-	startSolarSystemID       sql.NullInt64
-	startSolarSystemName     sql.NullString
-	startSolarSystemSecurity sql.NullFloat64
-}
-
-func characterContractFromDBModel(arg characterContractFromDBModelParams) *app.CharacterContract {
-	i2, ok := arg.items.(string)
+func characterContractFromDBModel(
+	acceptor nullAcceptor,
+	assignee nullAssignee,
+	cc queries.CharacterContract,
+	endLocationName endLocationName,
+	endSolarSystemID endSolarSystemID,
+	endSolarSystemName endSolarSystemName,
+	endSolarSystemSecurity endSolarSystemSecurity,
+	issuer issuer,
+	issuerCorporation issuerCorporation,
+	items any,
+	startLocationName startLocationName,
+	startSolarSystemID startSolarSystemID,
+	startSolarSystemName startSolarSystemName,
+	startSolarSystemSecurity startSolarSystemSecurity,
+) *app.CharacterContract {
+	i2, ok := items.(string)
 	if !ok {
 		i2 = ""
 	}
-	o2 := &app.CharacterContract{
-		Acceptor:          eveEntityFromNullableDBModel(arg.acceptor),
-		Assignee:          eveEntityFromNullableDBModel(arg.assignee),
-		Availability:      characterContractAvailabilityFromDBValue[arg.contract.Availability],
-		Buyout:            optional.FromZeroValue(arg.contract.Buyout),
-		CharacterID:       arg.contract.CharacterID,
-		Collateral:        optional.FromZeroValue(arg.contract.Collateral),
-		ContractID:        arg.contract.ContractID,
-		DateAccepted:      optional.FromNullTime(arg.contract.DateAccepted),
-		DateCompleted:     optional.FromNullTime(arg.contract.DateCompleted),
-		DateExpired:       arg.contract.DateExpired,
-		DateIssued:        arg.contract.DateIssued,
-		DaysToComplete:    optional.FromZeroValue(arg.contract.DaysToComplete),
-		ForCorporation:    arg.contract.ForCorporation,
-		ID:                arg.contract.ID,
-		Issuer:            eveEntityFromDBModel(arg.issuer),
-		IssuerCorporation: eveEntityFromDBModel(arg.issuerCorporation),
+	o := &app.CharacterContract{
+		Acceptor:          eveEntityFromNullableDBModel(nullEveEntry(acceptor)),
+		Assignee:          eveEntityFromNullableDBModel(nullEveEntry(assignee)),
+		Availability:      characterContractAvailabilityFromDBValue[cc.Availability],
+		Buyout:            optional.FromZeroValue(cc.Buyout),
+		CharacterID:       cc.CharacterID,
+		Collateral:        optional.FromZeroValue(cc.Collateral),
+		ContractID:        cc.ContractID,
+		DateAccepted:      optional.FromNullTime(cc.DateAccepted),
+		DateCompleted:     optional.FromNullTime(cc.DateCompleted),
+		DateExpired:       cc.DateExpired,
+		DateIssued:        cc.DateIssued,
+		DaysToComplete:    optional.FromZeroValue(cc.DaysToComplete),
+		ForCorporation:    cc.ForCorporation,
+		ID:                cc.ID,
+		Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
+		IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
 		Items:             strings.Split(i2, ","),
-		Price:             optional.FromZeroValue(arg.contract.Price),
-		Reward:            optional.FromZeroValue(arg.contract.Reward),
-		Status:            characterContractStatusFromDBValue[arg.contract.Status],
-		StatusNotified:    characterContractStatusFromDBValue[arg.contract.StatusNotified],
-		Title:             optional.FromZeroValue(arg.contract.Title),
-		Type:              characterContractTypeFromDBValue[arg.contract.Type],
-		UpdatedAt:         arg.contract.UpdatedAt,
-		Volume:            optional.FromZeroValue(arg.contract.Volume),
+		Price:             optional.FromZeroValue(cc.Price),
+		Reward:            optional.FromZeroValue(cc.Reward),
+		Status:            characterContractStatusFromDBValue[cc.Status],
+		StatusNotified:    characterContractStatusFromDBValue[cc.StatusNotified],
+		Title:             optional.FromZeroValue(cc.Title),
+		Type:              characterContractTypeFromDBValue[cc.Type],
+		UpdatedAt:         cc.UpdatedAt,
+		Volume:            optional.FromZeroValue(cc.Volume),
 	}
-	if arg.contract.EndLocationID.Valid {
-		o2.EndLocation = optional.New(&app.EveLocationShort{
-			ID:             arg.contract.EndLocationID.Int64,
-			Name:           optional.FromNullString(arg.endLocationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.endSolarSystemSecurity),
+	if cc.EndLocationID.Valid {
+		o.EndLocation = optional.New(&app.EveLocationShort{
+			ID:             cc.EndLocationID.Int64,
+			Name:           optional.FromNullString(sql.NullString(endLocationName)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(endSolarSystemSecurity)),
 		})
 	}
-	if arg.contract.StartLocationID.Valid {
-		o2.StartLocation = optional.New(&app.EveLocationShort{
-			ID:             arg.contract.StartLocationID.Int64,
-			Name:           optional.FromNullString(arg.startLocationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.startSolarSystemSecurity),
+	if cc.StartLocationID.Valid {
+		o.StartLocation = optional.New(&app.EveLocationShort{
+			ID:             cc.StartLocationID.Int64,
+			Name:           optional.FromNullString(sql.NullString(startLocationName)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(startSolarSystemSecurity)),
 		})
 	}
-	if arg.endSolarSystemID.Valid && arg.endSolarSystemName.Valid {
-		o2.EndSolarSystem = optional.New(&app.EntityShort{
-			ID:   arg.endSolarSystemID.Int64,
-			Name: arg.endSolarSystemName.String,
+	if endSolarSystemID.Valid && endSolarSystemName.Valid {
+		o.EndSolarSystem = optional.New(&app.EntityShort{
+			ID:   endSolarSystemID.Int64,
+			Name: endSolarSystemName.String,
 		})
 	}
-	if arg.startSolarSystemID.Valid && arg.startSolarSystemName.Valid {
-		o2.StartSolarSystem = optional.New(&app.EntityShort{
-			ID:   arg.startSolarSystemID.Int64,
-			Name: arg.startSolarSystemName.String,
+	if startSolarSystemID.Valid && startSolarSystemName.Valid {
+		o.StartSolarSystem = optional.New(&app.EntityShort{
+			ID:   startSolarSystemID.Int64,
+			Name: startSolarSystemName.String,
 		})
 	}
-	return o2
+	return o
 }
 
 type CreateCharacterContractBidParams struct {
@@ -617,7 +615,12 @@ func (st *Storage) ListCharacterContractItems(ctx context.Context, contractID in
 	return oo, nil
 }
 
-func characterContractItemFromDBModel(o queries.CharacterContractItem, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.CharacterContractItem {
+func characterContractItemFromDBModel(
+	o queries.CharacterContractItem,
+	t queries.EveType,
+	g queries.EveGroup,
+	c queries.EveCategory,
+) *app.CharacterContractItem {
 	o2 := &app.CharacterContractItem{
 		ContractID:  o.ContractID,
 		IsIncluded:  o.IsIncluded,

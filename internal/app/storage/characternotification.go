@@ -368,16 +368,16 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	if !found {
 		nt = app.UnknownNotification
 	}
-	o := characterNotificationFromDBModel(characterNotificationFromDBModelParams{
-		cn: r.CharacterNotification,
-		nt: nt,
-		recipient: nullEveEntry{
+	o := characterNotificationFromDBModel(
+		r.CharacterNotification,
+		r.EveEntity,
+		nt,
+		nullEveEntry{
 			category: r.RecipientCategory,
 			id:       r.CharacterNotification.RecipientID,
 			name:     r.RecipientName,
 		},
-		sender: r.EveEntity,
-	})
+	)
 	return o, err
 }
 
@@ -441,16 +441,16 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
-			cn: r.CharacterNotification,
-			nt: nt,
-			recipient: nullEveEntry{
+		ee[i] = characterNotificationFromDBModel(
+			r.CharacterNotification,
+			r.EveEntity,
+			nt,
+			nullEveEntry{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
 			},
-			sender: r.EveEntity,
-		})
+		)
 
 	}
 	return ee, nil
@@ -467,16 +467,16 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
-			cn: r.CharacterNotification,
-			nt: nt,
-			recipient: nullEveEntry{
+		ee[i] = characterNotificationFromDBModel(
+			r.CharacterNotification,
+			r.EveEntity,
+			nt,
+			nullEveEntry{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
 			},
-			sender: r.EveEntity,
-		})
+		)
 	}
 	return ee, nil
 }
@@ -492,16 +492,16 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
-			cn: r.CharacterNotification,
-			nt: nt,
-			recipient: nullEveEntry{
+		ee[i] = characterNotificationFromDBModel(
+			r.CharacterNotification,
+			r.EveEntity,
+			nt,
+			nullEveEntry{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
 			},
-			sender: r.EveEntity,
-		})
+		)
 	}
 	return ee, nil
 }
@@ -524,41 +524,39 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
-			cn: r.CharacterNotification,
-			nt: nt,
-			recipient: nullEveEntry{
+		ee[i] = characterNotificationFromDBModel(
+			r.CharacterNotification,
+			r.EveEntity,
+			nt,
+			nullEveEntry{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
 			},
-			sender: r.EveEntity,
-		})
+		)
 	}
 	return ee, nil
 }
 
-type characterNotificationFromDBModelParams struct {
-	cn        queries.CharacterNotification
-	sender    queries.EveEntity
-	nt        app.EveNotificationType
-	recipient nullEveEntry
-}
-
-func characterNotificationFromDBModel(arg characterNotificationFromDBModelParams) *app.CharacterNotification {
+func characterNotificationFromDBModel(
+	cn queries.CharacterNotification,
+	sender queries.EveEntity,
+	nt app.EveNotificationType,
+	recipient nullEveEntry,
+) *app.CharacterNotification {
 	o2 := &app.CharacterNotification{
-		ID:             arg.cn.ID,
-		Body:           optional.FromNullString(arg.cn.Body),
-		CharacterID:    arg.cn.CharacterID,
-		IsProcessed:    arg.cn.IsProcessed,
-		IsRead:         optional.FromZeroValue(arg.cn.IsRead),
-		NotificationID: arg.cn.NotificationID,
-		Recipient:      eveEntityFromNullableDBModel(arg.recipient),
-		Sender:         eveEntityFromDBModel(arg.sender),
-		Text:           optional.FromZeroValue(arg.cn.Text),
-		Timestamp:      arg.cn.Timestamp,
-		Title:          optional.FromNullString(arg.cn.Title),
-		Type:           arg.nt,
+		ID:             cn.ID,
+		Body:           optional.FromNullString(cn.Body),
+		CharacterID:    cn.CharacterID,
+		IsProcessed:    cn.IsProcessed,
+		IsRead:         optional.FromZeroValue(cn.IsRead),
+		NotificationID: cn.NotificationID,
+		Recipient:      eveEntityFromNullableDBModel(recipient),
+		Sender:         eveEntityFromDBModel(sender),
+		Text:           optional.FromZeroValue(cn.Text),
+		Timestamp:      cn.Timestamp,
+		Title:          optional.FromNullString(cn.Title),
+		Type:           nt,
 	}
 	return o2
 }

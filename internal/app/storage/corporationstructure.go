@@ -63,7 +63,7 @@ func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationI
 		return nil
 	}
 	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
-		CorporationID:corporationID,
+		CorporationID: corporationID,
 		StructureIds:  slices.Collect(structureIDs.All()),
 	})
 	if err != nil {
@@ -81,7 +81,7 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationStructure(ctx, queries.GetCorporationStructureParams{
-		CorporationID:corporationID,
+		CorporationID: corporationID,
 		StructureID:   structureID,
 	})
 	if err != nil {
@@ -91,16 +91,17 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	return corporationStructureFromDBModel(corporationStructureFromDBModelParams{
-		corporationStructure: r.CorporationStructure,
-		eveSolarSystem:       r.EveSolarSystem,
-		eveConstellation:     r.EveConstellation,
-		eveRegion:            r.EveRegion,
-		eveType:              r.EveType,
-		eveGroup:             r.EveGroup,
-		eveCategory:          r.EveCategory,
-		services:             services,
-	}), nil
+	o := corporationStructureFromDBModel(
+		r.CorporationStructure,
+		r.EveSolarSystem,
+		r.EveConstellation,
+		r.EveRegion,
+		r.EveType,
+		r.EveGroup,
+		r.EveCategory,
+		services,
+	)
+	return o, nil
 }
 
 func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID int64) ([]*app.CorporationStructure, error) {
@@ -110,7 +111,7 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationStructures(ctx,corporationID)
+	rows, err := st.qRO.ListCorporationStructures(ctx, corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -120,16 +121,16 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 		if err != nil {
 			return nil, wrapErr(convertGetError(err))
 		}
-		oo[i] = corporationStructureFromDBModel(corporationStructureFromDBModelParams{
-			corporationStructure: r.CorporationStructure,
-			eveSolarSystem:       r.EveSolarSystem,
-			eveConstellation:     r.EveConstellation,
-			eveRegion:            r.EveRegion,
-			eveType:              r.EveType,
-			eveGroup:             r.EveGroup,
-			eveCategory:          r.EveCategory,
-			services:             services,
-		})
+		oo[i] = corporationStructureFromDBModel(
+			r.CorporationStructure,
+			r.EveSolarSystem,
+			r.EveConstellation,
+			r.EveRegion,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			services,
+		)
 	}
 	return oo, nil
 }
@@ -141,44 +142,42 @@ func (st *Storage) ListCorporationStructureIDs(ctx context.Context, corporationI
 	if corporationID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCorporationStructureIDs(ctx,corporationID)
+	ids, err := st.qRO.ListCorporationStructureIDs(ctx, corporationID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Collect(slices.Values(ids)), nil
 }
 
-type corporationStructureFromDBModelParams struct {
-	corporationStructure queries.CorporationStructure
-	eveSolarSystem       queries.EveSolarSystem
-	eveConstellation     queries.EveConstellation
-	eveRegion            queries.EveRegion
-	eveType              queries.EveType
-	eveGroup             queries.EveGroup
-	eveCategory          queries.EveCategory
-	services             []*app.StructureService
-}
-
-func corporationStructureFromDBModel(arg corporationStructureFromDBModelParams) *app.CorporationStructure {
-	o2 := &app.CorporationStructure{
-		CorporationID:     arg.corporationStructure.CorporationID,
-		FuelExpires:        optional.FromNullTime(arg.corporationStructure.FuelExpires),
-		ID:                 arg.corporationStructure.ID,
-		Name:               optional.FromZeroValue(arg.corporationStructure.Name),
-		NextReinforceApply: optional.FromNullTime(arg.corporationStructure.NextReinforceApply),
-		NextReinforceHour:  optional.FromNullInt64(arg.corporationStructure.NextReinforceHour),
-		ProfileID:          arg.corporationStructure.ProfileID,
-		ReinforceHour:      optional.FromNullInt64(arg.corporationStructure.ReinforceHour),
-		Services:           arg.services,
-		State:              structureStateFromDBValue[arg.corporationStructure.State],
-		StateTimerEnd:      optional.FromNullTime(arg.corporationStructure.StateTimerEnd),
-		StateTimerStart:    optional.FromNullTime(arg.corporationStructure.StateTimerStart),
-		StructureID:        arg.corporationStructure.StructureID,
-		System:             eveSolarSystemFromDBModel(arg.eveSolarSystem, arg.eveConstellation, arg.eveRegion),
-		Type:               eveTypeFromDBModel(arg.eveType, arg.eveGroup, arg.eveCategory),
-		UnanchorsAt:        optional.FromNullTime(arg.corporationStructure.UnanchorsAt),
+func corporationStructureFromDBModel(
+	corporationStructure queries.CorporationStructure,
+	eveSolarSystem queries.EveSolarSystem,
+	eveConstellation queries.EveConstellation,
+	eveRegion queries.EveRegion,
+	eveType queries.EveType,
+	eveGroup queries.EveGroup,
+	eveCategory queries.EveCategory,
+	services []*app.StructureService,
+) *app.CorporationStructure {
+	o := &app.CorporationStructure{
+		CorporationID:      corporationStructure.CorporationID,
+		FuelExpires:        optional.FromNullTime(corporationStructure.FuelExpires),
+		ID:                 corporationStructure.ID,
+		Name:               optional.FromZeroValue(corporationStructure.Name),
+		NextReinforceApply: optional.FromNullTime(corporationStructure.NextReinforceApply),
+		NextReinforceHour:  optional.FromNullInt64(corporationStructure.NextReinforceHour),
+		ProfileID:          corporationStructure.ProfileID,
+		ReinforceHour:      optional.FromNullInt64(corporationStructure.ReinforceHour),
+		Services:           services,
+		State:              structureStateFromDBValue[corporationStructure.State],
+		StateTimerEnd:      optional.FromNullTime(corporationStructure.StateTimerEnd),
+		StateTimerStart:    optional.FromNullTime(corporationStructure.StateTimerStart),
+		StructureID:        corporationStructure.StructureID,
+		System:             eveSolarSystemFromDBModel(eveSolarSystem, eveConstellation, eveRegion),
+		Type:               eveTypeFromDBModel(eveType, eveGroup, eveCategory),
+		UnanchorsAt:        optional.FromNullTime(corporationStructure.UnanchorsAt),
 	}
-	return o2
+	return o
 }
 
 type StructureServiceParams struct {
@@ -220,7 +219,7 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 		return wrapErr(app.ErrInvalid)
 	}
 	id, err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
-		CorporationID:     arg.CorporationID,
+		CorporationID:      arg.CorporationID,
 		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
 		Name:               arg.Name.ValueOrZero(),
 		NextReinforceApply: optional.ToNullTime(arg.NextReinforceApply),
@@ -231,8 +230,8 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 		StateTimerEnd:      optional.ToNullTime(arg.StateTimerEnd),
 		StateTimerStart:    optional.ToNullTime(arg.StateTimerStart),
 		StructureID:        arg.StructureID,
-		SystemID:          arg.SystemID,
-		TypeID:            arg.TypeID,
+		SystemID:           arg.SystemID,
+		TypeID:             arg.TypeID,
 		UnanchorsAt:        optional.ToNullTime(arg.UnanchorsAt),
 	})
 	if err != nil {

@@ -59,15 +59,15 @@ func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID,
 	if err != nil {
 		return nil, fmt.Errorf("get industry job for corporation %d: %w", corporationID, convertGetError(err))
 	}
-	o := corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-		blueprintTypeName:      r.BlueprintTypeName,
-		cij:                    r.CorporationIndustryJob,
-		completedCharacterName: r.CompletedCharacterName,
-		installer:              r.EveEntity,
-		locationName:           r.LocationName,
-		locationSecurity:       r.StationSecurity,
-		productTypeName:        r.ProductTypeName,
-	})
+	o := corporationIndustryJobFromDBModel(
+		blueprintTypeName(r.BlueprintTypeName),
+		r.CorporationIndustryJob,
+		completedCharacterName(r.CompletedCharacterName),
+		r.EveEntity,
+		locationName(r.LocationName),
+		r.StationSecurity,
+		productTypeName(r.ProductTypeName),
+	)
 	return o, err
 }
 
@@ -84,15 +84,15 @@ func (st *Storage) ListCorporationIndustryJobs(ctx context.Context, corporationI
 	}
 	oo := make([]*app.CorporationIndustryJob, len(rows))
 	for i, r := range rows {
-		oo[i] = corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-			blueprintTypeName:      r.BlueprintTypeName,
-			cij:                    r.CorporationIndustryJob,
-			completedCharacterName: r.CompletedCharacterName,
-			installer:              r.EveEntity,
-			locationName:           r.LocationName,
-			locationSecurity:       r.StationSecurity,
-			productTypeName:        r.ProductTypeName,
-		})
+		oo[i] = corporationIndustryJobFromDBModel(
+			blueprintTypeName(r.BlueprintTypeName),
+			r.CorporationIndustryJob,
+			completedCharacterName(r.CompletedCharacterName),
+			r.EveEntity,
+			locationName(r.LocationName),
+			r.StationSecurity,
+			productTypeName(r.ProductTypeName),
+		)
 	}
 	return oo, nil
 }
@@ -104,72 +104,71 @@ func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.C
 	}
 	oo := make([]*app.CorporationIndustryJob, len(rows))
 	for i, r := range rows {
-		oo[i] = corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-			blueprintTypeName:      r.BlueprintTypeName,
-			cij:                    r.CorporationIndustryJob,
-			completedCharacterName: r.CompletedCharacterName,
-			installer:              r.EveEntity,
-			locationName:           r.LocationName,
-			locationSecurity:       r.StationSecurity,
-			productTypeName:        r.ProductTypeName,
-		})
+		oo[i] = corporationIndustryJobFromDBModel(
+			blueprintTypeName(r.BlueprintTypeName),
+			r.CorporationIndustryJob,
+			completedCharacterName(r.CompletedCharacterName),
+			r.EveEntity,
+			locationName(r.LocationName),
+			r.StationSecurity,
+			productTypeName(r.ProductTypeName),
+		)
 	}
 	return oo, nil
 }
 
-type corporationIndustryJobFromDBModelParams struct {
-	blueprintTypeName      string
-	cij                    queries.CorporationIndustryJob
-	completedCharacterName sql.NullString
-	installer              queries.EveEntity
-	locationName           string
-	locationSecurity       sql.NullFloat64
-	productTypeName        sql.NullString
-}
 
-func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelParams) *app.CorporationIndustryJob {
+func corporationIndustryJobFromDBModel(
+	blueprintTypeName blueprintTypeName,
+	cij queries.CorporationIndustryJob,
+	completedCharacterName completedCharacterName,
+	installer queries.EveEntity,
+	locationName locationName,
+	locationSecurity sql.NullFloat64,
+	productTypeName productTypeName,
+) *app.CorporationIndustryJob {
 	o2 := &app.CorporationIndustryJob{
-		Activity:            app.IndustryActivity(arg.cij.ActivityID),
-		BlueprintID:         arg.cij.BlueprintID,
-		BlueprintLocationID: arg.cij.BlueprintLocationID,
+		Activity:            app.IndustryActivity(cij.ActivityID),
+		BlueprintID:         cij.BlueprintID,
+		BlueprintLocationID: cij.BlueprintLocationID,
 		BlueprintType: &app.EntityShort{
-			ID:   arg.cij.BlueprintTypeID,
-			Name: arg.blueprintTypeName,
+			ID:   cij.BlueprintTypeID,
+			Name: string(blueprintTypeName),
 		},
-		CorporationID: arg.cij.CorporationID,
-		CompletedDate: optional.FromNullTime(arg.cij.CompletedDate),
-		Cost:          optional.FromNullFloat64(arg.cij.Cost),
-		Duration:      int(arg.cij.Duration),
-		EndDate:       arg.cij.EndDate,
-		FacilityID:    arg.cij.FacilityID,
-		ID:            arg.cij.ID,
-		Installer:     eveEntityFromDBModel(arg.installer),
-		JobID:         arg.cij.JobID,
-		LicensedRuns:  optional.FromNullInt64ToInteger[int](arg.cij.LicensedRuns),
-		PauseDate:     optional.FromNullTime(arg.cij.PauseDate),
-		Probability:   optional.FromNullFloat64ToFloat32(arg.cij.Probability),
-		Runs:          int(arg.cij.Runs),
+		CorporationID: cij.CorporationID,
+		CompletedDate: optional.FromNullTime(cij.CompletedDate),
+		Cost:          optional.FromNullFloat64(cij.Cost),
+		Duration:      int(cij.Duration),
+		EndDate:       cij.EndDate,
+		FacilityID:    cij.FacilityID,
+		ID:            cij.ID,
+		Installer:     eveEntityFromDBModel(installer),
+		JobID:         cij.JobID,
+		LicensedRuns:  optional.FromNullInt64ToInteger[int](cij.LicensedRuns),
+		PauseDate:     optional.FromNullTime(cij.PauseDate),
+		Probability:   optional.FromNullFloat64ToFloat32(cij.Probability),
+		Runs:          int(cij.Runs),
 		Location: &app.EveLocationShort{
-			ID:             arg.cij.LocationID,
-			Name:           optional.New(arg.locationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
+			ID:             cij.LocationID,
+			Name:           optional.New(string(locationName)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity),
 		},
-		OutputLocationID: arg.cij.OutputLocationID,
-		StartDate:        arg.cij.StartDate,
-		Status:           jobStatusFromDBValue[arg.cij.Status],
-		SuccessfulRuns:   optional.FromNullInt64ToInteger[int64](arg.cij.SuccessfulRuns),
+		OutputLocationID: cij.OutputLocationID,
+		StartDate:        cij.StartDate,
+		Status:           jobStatusFromDBValue[cij.Status],
+		SuccessfulRuns:   optional.FromNullInt64ToInteger[int64](cij.SuccessfulRuns),
 	}
-	if arg.cij.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
+	if cij.CompletedCharacterID.Valid && completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       arg.cij.CompletedCharacterID.Int64,
-			Name:     arg.completedCharacterName.String,
+			ID:       cij.CompletedCharacterID.Int64,
+			Name:     completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
-	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
+	if cij.ProductTypeID.Valid && productTypeName.Valid {
 		o2.ProductType = optional.New(&app.EntityShort{
-			ID:   arg.cij.ProductTypeID.Int64,
-			Name: arg.productTypeName.String,
+			ID:   cij.ProductTypeID.Int64,
+			Name: productTypeName.String,
 		})
 	}
 	return o2

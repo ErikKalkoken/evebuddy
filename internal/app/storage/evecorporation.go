@@ -18,63 +18,61 @@ func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int64) (
 	if err != nil {
 		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, convertGetError(err))
 	}
-	c := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
-		corporation: r.EveCorporation,
-		ceo: nullEveEntry{
+	c := eveCorporationFromDBModel(
+		r.EveCorporation,
+		nullCEO{
 			id:       r.EveCorporation.CeoID,
 			name:     r.CeoName,
 			category: r.CeoCategory,
 		},
-		creator: nullEveEntry{
+		nullCreator{
 			id:       r.EveCorporation.CreatorID,
 			name:     r.CreatorName,
 			category: r.CreatorCategory,
 		},
-		alliance: nullEveEntry{
+		nullAlliance{
 			id:       r.EveCorporation.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		},
-		faction: nullEveEntry{
+		nullFaction{
 			id:       r.EveCorporation.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
 		},
-		station: nullEveEntry{
+		nullStation{
 			id:       r.EveCorporation.HomeStationID,
 			name:     r.StationName,
 			category: r.StationCategory,
 		},
-	})
+	)
 	return c, nil
 }
 
-type eveCorporationFromDBModelParams struct {
-	corporation queries.EveCorporation
-	ceo         nullEveEntry
-	creator     nullEveEntry
-	alliance    nullEveEntry
-	faction     nullEveEntry
-	station     nullEveEntry
-}
-
-func eveCorporationFromDBModel(arg eveCorporationFromDBModelParams) *app.EveCorporation {
+func eveCorporationFromDBModel(
+	corporation queries.EveCorporation,
+	ceo nullCEO,
+	creator nullCreator,
+	alliance nullAlliance,
+	faction nullFaction,
+	station nullStation,
+) *app.EveCorporation {
 	o := &app.EveCorporation{
-		ID:          arg.corporation.ID,
-		Alliance:    eveEntityFromNullableDBModel(arg.alliance),
-		Ceo:         eveEntityFromNullableDBModel(arg.ceo),
-		Creator:     eveEntityFromNullableDBModel(arg.creator),
-		DateFounded: optional.FromNullTime(arg.corporation.DateFounded),
-		Description: arg.corporation.Description,
-		Faction:     eveEntityFromNullableDBModel(arg.faction),
-		HomeStation: eveEntityFromNullableDBModel(arg.station),
-		MemberCount: arg.corporation.MemberCount,
-		Name:        arg.corporation.Name,
-		Shares:      optional.FromNullInt64(arg.corporation.Shares),
-		TaxRate:     arg.corporation.TaxRate,
-		Ticker:      arg.corporation.Ticker,
-		URL:         optional.FromZeroValue(arg.corporation.Url),
-		WarEligible: optional.FromZeroValue(arg.corporation.WarEligible),
+		ID:          corporation.ID,
+		Alliance:    eveEntityFromNullableDBModel(nullEveEntry(alliance)),
+		Ceo:         eveEntityFromNullableDBModel(nullEveEntry(ceo)),
+		Creator:     eveEntityFromNullableDBModel(nullEveEntry(creator)),
+		DateFounded: optional.FromNullTime(corporation.DateFounded),
+		Description: corporation.Description,
+		Faction:     eveEntityFromNullableDBModel(nullEveEntry(faction)),
+		HomeStation: eveEntityFromNullableDBModel(nullEveEntry(station)),
+		MemberCount: corporation.MemberCount,
+		Name:        corporation.Name,
+		Shares:      optional.FromNullInt64(corporation.Shares),
+		TaxRate:     corporation.TaxRate,
+		Ticker:      corporation.Ticker,
+		URL:         optional.FromZeroValue(corporation.Url),
+		WarEligible: optional.FromZeroValue(corporation.WarEligible),
 	}
 	return o
 }
