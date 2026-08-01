@@ -114,24 +114,24 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	}
 	var external1 string
 	if x, ok := entities[data.ExternalID]; ok && x.Name != "" {
-		external1 = x.Name
+		external1 = makeInfoLink(x)
 	} else {
 		external1 = "?"
 	}
 	var external2 string
 	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
-		external2 = x.Name
+		external2 = makeInfoLink(x)
 	} else {
 		external2 = "?"
 	}
 	var billPurpose string
 	switch data.BillTypeID {
 	case billTypeLease:
-		billPurpose = fmt.Sprintf("extending the lease of **%s** at **%s**", external1, external2)
+		billPurpose = fmt.Sprintf("extending the lease of %s at %s", external1, external2)
 	case billTypeAlliance:
-		billPurpose = fmt.Sprintf("maintenance of **%s**", external1)
+		billPurpose = fmt.Sprintf("maintenance of %s", external1)
 	case billTypeInfrastructureHub:
-		billPurpose = fmt.Sprintf("maintenance of infrastructure hub in **%s**", external1)
+		billPurpose = fmt.Sprintf("maintenance of infrastructure hub in %s", external1)
 	default:
 		billPurpose = "?"
 	}
