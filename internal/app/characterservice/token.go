@@ -75,7 +75,7 @@ func (s *CharacterService) TokenSourceForCorporation(ctx context.Context, corpor
 }
 
 // TokenSource returns a valid token source for a character.
-// The token source will automatically refresh a token when needed.
+// The token source will automatically refresh when needed.
 func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, scopes set.Set[string]) (oauth2.TokenSource, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {

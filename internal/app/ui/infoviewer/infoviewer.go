@@ -36,6 +36,69 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+type infoVariant uint
+
+const (
+	infoNotSupported infoVariant = iota
+	infoAlliance
+	infoBloodline
+	infoCharacter
+	infoConstellation
+	infoCorporation
+	infoInventoryType
+	infoLocation
+	infoRace
+	infoRegion
+	infoSolarSystem
+)
+
+func (iv infoVariant) String() string {
+	m := map[infoVariant]string{
+		infoAlliance:      "alliance",
+		infoBloodline:     "bloodline",
+		infoCharacter:     "character",
+		infoConstellation: "constellation",
+		infoCorporation:   "corporation",
+		infoInventoryType: "type",
+		infoLocation:      "location",
+		infoRegion:        "region",
+		infoRace:          "race",
+		infoSolarSystem:   "solar system",
+	}
+
+	s, ok := m[iv]
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
+	app.EveEntityAlliance:      infoAlliance,
+	app.EveEntityCharacter:     infoCharacter,
+	app.EveEntityConstellation: infoConstellation,
+	app.EveEntityCorporation:   infoCorporation,
+	app.EveEntityRegion:        infoRegion,
+	app.EveEntitySolarSystem:   infoSolarSystem,
+	app.EveEntityStation:       infoLocation,
+	app.EveEntityInventoryType: infoInventoryType,
+}
+
+func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
+	v, ok := eveEntityCategory2InfoVariant[ee.Category]
+	if !ok {
+		return infoNotSupported
+	}
+	return v
+
+}
+
+// SupportedCategories returns which EveEntity categories are supported.
+func SupportedCategories() set.Set[app.EveEntityCategory] {
+	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
+
+}
+
 type coreUI interface {
 	Character() *characterservice.CharacterService
 	EVEImage() ui.EVEImageService
@@ -82,6 +145,76 @@ func New(u coreUI) *InfoViewer {
 
 func (iw *InfoViewer) Show(o *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(o), o.ID)
+}
+
+// Show2 displays the info window for an object.
+// itemID and characterID are optional and can be 0.
+func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
+	slog.Info("Showing info window", "typeID", typeID, "itemID", itemID)
+	w := iw.w
+	if w == nil {
+		w = iw.u.MainWindow()
+	}
+	showError := func(err error) {
+		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), w)
+	}
+	if typeID == 0 {
+		showError(fmt.Errorf("missing type ID"))
+		return
+	}
+	if itemID == 0 {
+		iw.show(infoInventoryType, typeID)
+		return
+	}
+	switch typeID {
+	case app.EveTypeAlliance:
+		iw.show(infoAlliance, itemID)
+		return
+	case app.EveTypeCharacter:
+		iw.show(infoCharacter, itemID)
+		return
+	case app.EveTypeConstellation:
+		iw.show(infoConstellation, itemID)
+		return
+	case app.EveTypeCorporation:
+		iw.show(infoCorporation, itemID)
+		return
+	case app.EveTypeRegion:
+		iw.show(infoRegion, itemID)
+		return
+	case app.EveTypeSolarSystem:
+		iw.show(infoSolarSystem, itemID)
+		return
+	case app.EveTypeCaldariLogisticsStation:
+		iw.show(infoLocation, itemID)
+		return
+	}
+
+	ctx := context.Background()
+	et, err := iw.u.EVEUniverse().GetOrCreateTypeESI(ctx, typeID)
+	if err != nil {
+		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), w)
+		return
+	}
+	switch et.Group.Category.ID {
+	case app.EveCategoryStation:
+		iw.show(infoLocation, itemID)
+		return
+	case app.EveCategoryStructure:
+		iw.show2(showParams{
+			variant:     infoLocation,
+			entityID:    itemID,
+			characterID: characterID,
+		})
+		return
+	}
+	switch et.Group.ID {
+	case app.EveGroupCharacter:
+		iw.show(infoCharacter, itemID)
+		return
+	}
+
+	iw.show(infoNotSupported, 0)
 }
 
 func (iw *InfoViewer) ShowBloodline(id int64) {
@@ -132,8 +265,13 @@ func (iw *InfoViewer) show2(arg showParams) {
 		parentW = iw.u.MainWindow()
 	}
 
-	if arg.entityID == 0 || arg.variant == infoNotSupported {
-		ui.ShowErrorAndLog("Can't show info window", app.ErrInvalid, iw.u.IsDeveloperMode(), parentW)
+	if arg.entityID == 0 {
+		ui.ShowErrorAndLog("Can't show info window", fmt.Errorf("no ID provided"), iw.u.IsDeveloperMode(), parentW)
+		return
+	}
+
+	if arg.variant == infoNotSupported {
+		ui.ShowErrorAndLog("Can't show info window", fmt.Errorf("not supported"), iw.u.IsDeveloperMode(), parentW)
 		return
 	}
 
@@ -212,7 +350,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		page = newSolarSystemInfo(iw, arg.entityID)
 	case infoLocation:
 		title = "Location"
-		page = newLocationInfo(iw, arg.entityID)
+		page = newLocationInfo(iw, arg.entityID, arg.characterID)
 	default:
 		ui.ShowInformation(
 			"Warning",
@@ -379,69 +517,6 @@ func (iw *InfoViewer) renderIconSize() fyne.Size {
 		s = renderIconUnitSize
 	}
 	return fyne.NewSquareSize(s)
-}
-
-type infoVariant uint
-
-const (
-	infoNotSupported infoVariant = iota
-	infoAlliance
-	infoBloodline
-	infoCharacter
-	infoConstellation
-	infoCorporation
-	infoInventoryType
-	infoLocation
-	infoRace
-	infoRegion
-	infoSolarSystem
-)
-
-func (iv infoVariant) String() string {
-	m := map[infoVariant]string{
-		infoAlliance:      "alliance",
-		infoBloodline:     "bloodline",
-		infoCharacter:     "character",
-		infoConstellation: "constellation",
-		infoCorporation:   "corporation",
-		infoInventoryType: "type",
-		infoLocation:      "location",
-		infoRegion:        "region",
-		infoRace:          "race",
-		infoSolarSystem:   "solar system",
-	}
-
-	s, ok := m[iv]
-	if !ok {
-		return ""
-	}
-	return s
-}
-
-var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
-	app.EveEntityAlliance:      infoAlliance,
-	app.EveEntityCharacter:     infoCharacter,
-	app.EveEntityConstellation: infoConstellation,
-	app.EveEntityCorporation:   infoCorporation,
-	app.EveEntityRegion:        infoRegion,
-	app.EveEntitySolarSystem:   infoSolarSystem,
-	app.EveEntityStation:       infoLocation,
-	app.EveEntityInventoryType: infoInventoryType,
-}
-
-func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
-	v, ok := eveEntityCategory2InfoVariant[ee.Category]
-	if !ok {
-		return infoNotSupported
-	}
-	return v
-
-}
-
-// SupportedCategories returns which EveEntity categories are supported.
-func SupportedCategories() set.Set[app.EveEntityCategory] {
-	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
-
 }
 
 // baseInfo represents shared functionality between all info widgets.

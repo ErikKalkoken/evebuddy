@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -21,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type notificationFolder struct {
@@ -61,7 +64,9 @@ func NewCommunications(u baseUI) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show)
+	a.Detail = newCommunicationDetail(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show, func(typeID, itemID int64) {
+		u.InfoViewer().Show2(typeID, itemID, a.character.Load().IDOrZero())
+	})
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -501,23 +506,23 @@ func notificationRecipient(cn *app.CharacterNotification, characterName string) 
 type communicationDetail struct {
 	widget.BaseWidget
 
-	body    *widget.Label
+	body    *xwidget.RichText
 	header  *MailHeader
 	subject *widget.Label
+	show2   func(int64, int64)
 }
 
-func newCommunicationDetail(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *communicationDetail {
+func newCommunicationDetail(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity), show2 func(int64, int64)) *communicationDetail {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
-	subject.Selectable = true
-	body := widget.NewLabel("")
+	body := xwidget.NewRichText()
 	body.Wrapping = fyne.TextWrapWord
-	body.Selectable = true
 	w := &communicationDetail{
 		body:    body,
 		header:  NewMailHeader(loadIcon, show),
 		subject: subject,
+		show2:   show2,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -531,22 +536,54 @@ func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
 func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
 	w.subject.SetText(n.TitleDisplay())
 	w.header.Set(n.Sender, n.Timestamp, recipient)
-	b, err := n.BodyPlain() // using markdown blocked by #61
-	if err != nil {
-		return fmt.Errorf("failed to convert markdown for notification %+v: %w", n, err)
+	v, ok := n.Body.Value()
+	if !ok {
+		w.body.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
+			ColorName: theme.ColorNameDisabled,
+		})
+		return nil
 	}
-	w.body.Text = b.StringFunc("[This notification type is not fully supported yet]", func(v string) string {
-		return v
-	})
-	w.body.Importance = widget.MediumImportance
-	w.body.Refresh()
+	w.body.ParseMarkdown(v)
+	for _, s := range w.body.Segments {
+		s2, ok := s.(*widget.HyperlinkSegment)
+		if !ok {
+			continue
+		}
+		if s2.URL.Scheme != "showinfo" {
+			continue
+		}
+		typeID, itemID, err := parseIDs(s2.URL.Opaque)
+		if err != nil {
+			slog.Warn("Failed to parse showinfo link in communication", "error", err)
+			continue
+		}
+		s2.OnTapped = func() {
+			w.show2(typeID, itemID)
+		}
+	}
 	return nil
+}
+
+func parseIDs(input string) (int64, int64, error) {
+	parts := strings.SplitN(input, "//", 2)
+	id1, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid first ID %q: %w", parts[0], err)
+	}
+	if len(parts) < 2 {
+		return id1, 0, nil
+	}
+	id2, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid second ID %q: %w", parts[1], err)
+	}
+	return id1, id2, nil
 }
 
 func (w *communicationDetail) setError(text string) {
 	w.subject.SetText("ERROR")
 	w.header.Clear()
-	w.body.Text = text
-	w.body.Importance = widget.DangerImportance
-	w.body.Refresh()
+	w.body.SetWithText(text, widget.RichTextStyle{
+		ColorName: theme.ColorNameError,
+	})
 }

@@ -39,6 +39,7 @@ const (
 	EveGroupCapitalIndustrialShip   = 883
 	EveGroupCargoContainer          = 12
 	EveGroupCarrier                 = 547
+	EveGroupCharacter               = 1
 	EveGroupCommandCenters          = 1027
 	EveGroupDreadnought             = 485
 	EveGroupExtractorControlUnits   = 1063
@@ -49,6 +50,7 @@ const (
 	EveGroupProcessors              = 1028
 	EveGroupSecureCargoContainer    = 340
 	EveGroupSpaceports              = 1030
+	EveGroupStation                 = 15
 	EveGroupStorageFacilities       = 1029
 	EveGroupSuperCarrier            = 659
 	EveGroupTitan                   = 30
@@ -75,8 +77,12 @@ const (
 	EveTypeAdvancedMassReactions       = 45749
 	EveTypeAlliance                    = 16159
 	EveTypeAssetSafetyWrap             = 60
+	EveTypeAstroidBelt                 = 9
+	EveTypeCharacter                   = 1373
+	EveTypeConstellation               = 4
 	EveTypeCorporation                 = 2
 	EveTypeCustomsOffice               = 2233
+	EveTypeFaction                     = 19
 	EveTypeIHUB                        = 32458
 	EveTypeIndustry                    = 3380
 	EveTypeInfomorphSynchronizing      = 33399
@@ -85,11 +91,14 @@ const (
 	EveTypeLargeSkillInjector          = 40520
 	EveTypeMassProduction              = 3387
 	EveTypeMassReactions               = 45748
+	EveTypeMoon                        = 8
 	EveTypeOffice                      = 27
 	EveTypePlanetTemperate             = 11
+	EveTypeRegion                      = 3
 	EveTypeSkillExtractor              = 40519
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
+	EveTypeCaldariLogisticsStation     = 54
 )
 
 // EveType is a type in EVE Online.

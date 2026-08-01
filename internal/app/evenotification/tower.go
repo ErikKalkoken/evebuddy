@@ -28,7 +28,7 @@ func makeTowerBaseText(ctx context.Context, moonID, typeID int64, eus EVEUnivers
 	if err != nil {
 		return towerInfo{}, err
 	}
-	intro := fmt.Sprintf("The %s at %s in %s ", structureType.Name, moon.Name, makeSolarSystemLink(moon.SolarSystem))
+	intro := fmt.Sprintf("The %s at %s in %s ", makeInfoLink(structureType), moon.Name, makeInfoLink(moon.SolarSystem))
 	x := towerInfo{
 		et:    structureType,
 		moon:  moon,
@@ -78,13 +78,13 @@ func (n towerAlertMsg) render(ctx context.Context, text string, _ time.Time) (st
 			"Aggressing Pilot: %s\n\n"+
 			"Aggressing Pilot's Corporation: %s",
 		o.intro,
-		makeEveEntityProfileLink(entities[data.AggressorID]),
-		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeInfoLink(entities[data.AggressorID]),
+		makeInfoLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		b += fmt.Sprintf(
 			"\n\nAggressing Pilot's Alliance: %s",
-			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+			makeInfoLink(entities[data.AggressorAllianceID]),
 		)
 	}
 	body = b

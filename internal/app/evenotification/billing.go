@@ -139,8 +139,8 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 		"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 		humanize.Commaf(data.Amount),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
-		makeEveEntityProfileLink(entities[data.DebtorID]),
-		makeEveEntityProfileLink(entities[data.CreditorID]),
+		makeInfoLink(entities[data.DebtorID]),
+		makeInfoLink(entities[data.CreditorID]),
 		fromLDAPTime(data.CurrentDate).Format(app.DateTimeFormat),
 		billPurpose,
 	)
@@ -165,7 +165,7 @@ func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text str
 	}
 	out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
 		"if not paid in time this Infrastructure Hub will self-destruct.",
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(solarSystem),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
 	)
 	body = out
@@ -192,11 +192,11 @@ func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, _ t
 	}
 	title = fmt.Sprintf(
 		"%s has self-destructed due to unpaid maintenance bills",
-		structureType.Name,
+		makeInfoLink(structureType),
 	)
 	out := fmt.Sprintf("%s in %s has self-destructed, as the standard maintenance bills where not paid.",
-		structureType.Name,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(structureType),
+		makeInfoLink(solarSystem),
 	)
 	body = out
 	return title, body, nil
