@@ -508,7 +508,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 				})),
 				widget.NewFormItem("System", makeSolarSystemLabel(structure.System, u.InfoViewer().Show)),
 				widget.NewFormItem("Region", ui.MakeLinkLabel(structure.System.Constellation.Region.Name, func() {
-					u.InfoViewer().Show(structure.System.Constellation.Region.EveEntity())
+					u.InfoViewer().Show(structure.System.Constellation.Region.ToEveEntity())
 				})),
 				widget.NewFormItem("Services", widget.NewRichText(services...)),
 				widget.NewFormItem("Fuel Expires", widget.NewRichText(xwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{

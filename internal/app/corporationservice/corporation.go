@@ -35,7 +35,7 @@ func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corpora
 	if err != nil {
 		return nil, err
 	}
-	if isNPC, ok := corporation.EveEntity().IsNPC().Value(); !ok || isNPC {
+	if isNPC, ok := corporation.ToEveEntity().IsNPC().Value(); !ok || isNPC {
 		return nil, app.ErrNotFound
 	}
 	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)

@@ -119,7 +119,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.Show(et.EveEntity())
+				a.iw.Show(et.ToEveEntity())
 			}
 			a.typeImage.OnTapped = func() {
 				a.iw.showZoomWindow(o.Name, et.ID, a.iw.u.EVEImage().InventoryTypeRenderAsync, a.iw.w)
@@ -146,8 +146,8 @@ func (a *locationInfo) update(ctx context.Context) error {
 	if es, ok := o.SolarSystem.Value(); ok {
 		fyne.Do(func() {
 			a.location.set(
-				newEntityItemFromEveEntityWithText(es.Constellation.Region.EveEntity(), ""),
-				newEntityItemFromEveEntityWithText(es.Constellation.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.Region.ToEveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.ToEveEntity(), ""),
 				newEntityItemFromEveSolarSystem(es),
 			)
 		})

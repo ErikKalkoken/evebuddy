@@ -16,7 +16,7 @@ func TestEveAlliance(t *testing.T) {
 		ID:   42,
 		Name: "name",
 	}
-	ee := x.EveEntity()
+	ee := x.ToEveEntity()
 	xassert.Equal(t, 42, ee.ID)
 	xassert.Equal(t, "name", ee.Name)
 	xassert.Equal(t, app.EveEntityAlliance, ee.Category)
@@ -31,7 +31,7 @@ func TestEveCharacter_Description(t *testing.T) {
 
 func TestEveCharacter_EveEntity(t *testing.T) {
 	x1 := &app.EveCharacter{ID: 42, Name: "name"}
-	x2 := x1.EveEntity()
+	x2 := x1.ToEveEntity()
 	xassert.Equal(t, 42, x2.ID)
 	xassert.Equal(t, "name", x2.Name)
 	xassert.Equal(t, app.EveEntityCharacter, x2.Category)
@@ -79,7 +79,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 
 func TestEveCorporation_EveEntity(t *testing.T) {
 	x1 := &app.EveCorporation{ID: 42, Name: "name"}
-	x2 := x1.EveEntity()
+	x2 := x1.ToEveEntity()
 	xassert.Equal(t, 42, x2.ID)
 	xassert.Equal(t, "name", x2.Name)
 	xassert.Equal(t, app.EveEntityCorporation, x2.Category)

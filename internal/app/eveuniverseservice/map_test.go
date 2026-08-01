@@ -684,7 +684,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	ctx := context.Background()
 	system := factory.CreateEveSolarSystem()
 	constellation := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityConstellation})
-	factory.CreateEveEntity(*system.EveEntity())
+	factory.CreateEveEntity(*system.ToEveEntity())
 	station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
 	structure := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		SolarSystemID: optional.New(system.ID),

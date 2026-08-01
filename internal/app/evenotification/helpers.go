@@ -39,13 +39,13 @@ func makeInfoLink2(name string, linkData []any) string {
 }
 
 type eveEntityConvertible interface {
-	EveEntity() *app.EveEntity
+	ToEveEntity() *app.EveEntity
 }
 
 // makeInfoLink returns an info link for an entity.
 // It returns the name if a link can not be constructed.
 func makeInfoLink(x eveEntityConvertible) string {
-	o := x.EveEntity()
+	o := x.ToEveEntity()
 	if o == nil {
 		return "?"
 	}

@@ -186,7 +186,7 @@ func (et EveType) Icon() (fyne.Resource, bool) {
 	return res, true
 }
 
-func (et EveType) EveEntity() *EveEntity {
+func (et EveType) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: et.ID, Name: et.Name, Category: EveEntityInventoryType}
 }
 

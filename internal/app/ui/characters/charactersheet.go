@@ -181,7 +181,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoViewer().Show(c.EveCharacter.EveEntity())
+			a.u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
 		}
 		a.portrait.OnTapped = a.name.OnTapped
 
@@ -235,7 +235,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.ship.SetText(ship.Name)
 		a.ship.OnTapped = func() {
-			a.u.InfoViewer().Show(ship.EveEntity())
+			a.u.InfoViewer().Show(ship.ToEveEntity())
 		}
 	})
 	fyne.Do(func() {

@@ -30,7 +30,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		const notificationID = 42
 		sender := factory.CreateEveEntityCorporation()
@@ -77,7 +77,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 	testutil.TruncateTables(db)
 	// 	httpmock.Reset()
 	// 	c := factory.CreateCharacter()
-	// 	factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+	// 	factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 	// 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1234})
 	// 	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 	// 	sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
@@ -125,7 +125,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
 		sender := factory.CreateEveEntityCorporation()
@@ -180,7 +180,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID:    c.ID,
 			NotificationID: 42,
@@ -224,7 +224,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		recruit := factory.CreateEveEntityCharacter()
 		corporation := c.EveCharacter.Corporation
@@ -270,7 +270,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -310,7 +310,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
+		factory.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		corporation := c.EveCharacter.Corporation
 		text := fmt.Sprintf("charID: %d\ncorpID: %d\n", recruitID, corporation.ID)

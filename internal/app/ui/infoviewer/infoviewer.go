@@ -764,7 +764,7 @@ func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 }
 
 func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
-	ee := o.EveEntity()
+	ee := o.ToEveEntity()
 	return entityItem{
 		id:           ee.ID,
 		category:     ee.CategoryDisplay(),

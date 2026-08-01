@@ -48,7 +48,7 @@ func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, rou
 	var originInfo fyne.CanvasObject
 	if hasOrigin {
 		originInfo = xwidget.NewTappableRichText(origin.DisplayRichText(), func() {
-			u.InfoViewer().Show(origin.EveEntity())
+			u.InfoViewer().Show(origin.ToEveEntity())
 		})
 	} else {
 		l := widget.NewLabel("No origin")
@@ -151,7 +151,7 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 				return
 			}
 			r := implants[id]
-			co.(*ui.EveEntityListItem).Set(r.EveType.EveEntity())
+			co.(*ui.EveEntityListItem).Set(r.EveType.ToEveEntity())
 		},
 	)
 	list.HideSeparators = true
@@ -202,7 +202,7 @@ func makeRoute(u baseUI, r cloneRow) *widget.List {
 			return
 		}
 		s := r.route[id]
-		u.InfoViewer().Show(s.EveEntity())
+		u.InfoViewer().Show(s.ToEveEntity())
 	}
 	return list
 }

@@ -22,10 +22,16 @@ type EveEntity struct {
 	Name     string
 }
 
-// EveEntity returns itself.
-// Needed to comply with the same interface as many other eve universe models.
-func (ee *EveEntity) EveEntity() *EveEntity {
-	return ee
+// ToEveEntity returns a clone of itself.
+func (ee *EveEntity) ToEveEntity() *EveEntity {
+	if ee == nil {
+		return nil
+	}
+	return &EveEntity{
+		Category: ee.Category,
+		ID:       ee.ID,
+		Name:     ee.Name,
+	}
 }
 
 func (ee *EveEntity) IDOrZero() int64 {
@@ -88,7 +94,7 @@ func (ee *EveEntity) Compare(other *EveEntity) int {
 	return cmp.Compare(ee.Name, other.Name)
 }
 
-// InfoLink returns a link to show information in Eve format.
+// InfoLink returns a showinfo schema link for this object.
 func (ee *EveEntity) InfoLink() (string, error) {
 	if ee == nil {
 		return "", fmt.Errorf("no value: %w", ErrInvalid)
