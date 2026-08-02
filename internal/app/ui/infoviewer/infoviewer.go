@@ -147,10 +147,13 @@ func (iw *InfoViewer) Show(o *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(o), o.ID)
 }
 
-// Show2 displays the info window for an object.
-// itemID and characterID are optional and can be 0.
+// Show2 displays an info window for an object.
+//
+// It is designed to take IDs from a showinfo scheme link.
+// The typeID is mandatory, itemID and characterID are optional.
+// The characterID is used to fetch a token when trying to show a structure location.
 func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
-	slog.Info("Showing info window", "typeID", typeID, "itemID", itemID)
+	slog.Debug("Showing info window", "typeID", typeID, "itemID", itemID)
 	w := iw.w
 	if w == nil {
 		w = iw.u.MainWindow()
