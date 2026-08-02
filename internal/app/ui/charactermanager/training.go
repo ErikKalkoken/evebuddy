@@ -101,7 +101,7 @@ func (a *training) makeList() *widget.List {
 			r := a.characters[id]
 			border := co.(*fyne.Container).Objects
 
-			border[0].(*ui.EveEntityListItem).Set(r.EveCharacter.EveEntity())
+			border[0].(*ui.EveEntityListItem).Set(r.EveCharacter.ToEveEntity())
 
 			sw := border[1].(*kxwidget.Switch)
 			sw.On = r.IsTrainingWatched

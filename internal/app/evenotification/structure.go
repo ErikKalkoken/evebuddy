@@ -59,13 +59,13 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structur
 			structureName = structure.DisplayName2()
 			if v, ok := structure.Owner.Value(); ok {
 				owner = v
-				ownerLink = makeEveEntityProfileLink(v)
+				ownerLink = makeInfoLink(v)
 			}
 		}
 	}
 	if structureName == "" {
 		if eveType != nil {
-			structureName = eveType.Name
+			structureName = makeInfoLink(eveType)
 		} else {
 			structureName = "???"
 		}
@@ -75,9 +75,9 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structur
 	if eveType != nil {
 		isOrbital := eveType.Group.Category.ID == app.EveCategoryOrbitals
 		if isOrbital && structureName != "" {
-			name = fmt.Sprintf("**%s**", structureName)
+			name = structureName
 		} else if structureName != "" {
-			name = fmt.Sprintf("%s **%s**", eveType.Name, structureName)
+			name = fmt.Sprintf("%s **%s**", makeInfoLink(eveType), structureName)
 		} else {
 			name = eveType.Name
 		}
@@ -86,7 +86,7 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int64, structur
 	} else {
 		name = "unknown"
 	}
-	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(system))
+	text := fmt.Sprintf("The %s in %s", name, makeInfoLink(system))
 	if ownerLink != "" {
 		text += fmt.Sprintf(" belonging to %s", ownerLink)
 	}
@@ -163,9 +163,9 @@ func (n ownershipTransferred) render(ctx context.Context, text string, _ time.Ti
 	body = fmt.Sprintf(
 		"%s has been transferred from %s to %s by %s.",
 		o.intro,
-		makeEveEntityProfileLink(entities[d.OldOwnerCorpID]),
-		makeEveEntityProfileLink(entities[d.NewOwnerCorpID]),
-		makeEveEntityProfileLink(entities[d.CharID]),
+		makeInfoLink(entities[d.OldOwnerCorpID]),
+		makeInfoLink(entities[d.NewOwnerCorpID]),
+		makeInfoLink(entities[d.CharID]),
 	)
 	return title, body, nil
 }
@@ -259,11 +259,11 @@ func (n structureImpendingAbandonmentAssetsAtRisk) render(ctx context.Context, t
 	name := evehtml.Strip(data.StructureLink)
 	title = fmt.Sprintf("Your assets located in %s are at risk", name)
 	body = fmt.Sprintf(
-		"You have assets located at **%s** in %s. "+
+		"You have assets located at %s in %s. "+
 			"These assets are at risk of loss as the structure is close to becoming abandoned.\n\n"+
 			"In approximately %d days this structure will become abandoned.",
-		name,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink2(name, data.StructureShowInfoData),
+		makeInfoLink(solarSystem),
 		data.DaysUntilAbandon,
 	)
 	return title, body, nil
@@ -316,13 +316,13 @@ func (n structureItemsDelivered) render(ctx context.Context, text string, _ time
 	if structure.Name != "" {
 		location = fmt.Sprintf("**%s**", structure.Name)
 	} else {
-		location = fmt.Sprintf("a %s", makeEveEntityProfileLink(entities[data.StructureTypeID]))
+		location = fmt.Sprintf("a %s", makeInfoLink(entities[data.StructureTypeID]))
 	}
 	body = fmt.Sprintf(
 		"%s has delivered the following items to %s in %s:\n\n",
-		makeEveEntityProfileLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CharID]),
 		location,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(solarSystem),
 	)
 	var p []string
 	for _, r := range data.ListOfTypesAndQty {
@@ -370,13 +370,13 @@ func (n structureItemsMovedToSafety) render(ctx context.Context, text string, _ 
 	name := evehtml.Strip(data.StructureLink)
 	title = fmt.Sprintf("Your assets located in %s have been moved to asset safety", name)
 	body = fmt.Sprintf(
-		"You assets located at **%s** in %s have been moved to asset safety.\n\n"+
+		"You assets located at %s in %s have been moved to asset safety.\n\n"+
 			"They can be moved to a location of your choosing earliest at %s.\n\n"+
-			"They will be moved automatically to %s by %s.",
-		name,
-		makeSolarSystemLink(solarSystem),
+			"They will be moved automatically to %s by **%s**.",
+		makeInfoLink2(name, data.StructureShowInfoData),
+		makeInfoLink(solarSystem),
 		fromLDAPTime(data.AssetSafetyMinimumTimestamp).Format(app.DateTimeFormat),
-		station.Name,
+		makeInfoLink(station),
 		fromLDAPTime(data.AssetSafetyFullTimestamp).Format(app.DateTimeFormat),
 	)
 	return title, body, nil
@@ -653,13 +653,13 @@ func (n structureUnderAttack) render(ctx context.Context, text string, _ time.Ti
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
 		o.intro,
-		makeEveEntityProfileLink(attackChar),
-		makeCorporationLink(data.CorpName),
+		makeInfoLink(attackChar),
+		makeInfoLink2(data.CorpName, data.CorpLinkData),
 	)
 	if data.AllianceName != "" {
 		t += fmt.Sprintf(
 			"\n\nAggressing Pilot's Alliance: %s",
-			makeAllianceLink(data.AllianceName),
+			makeInfoLink2(data.AllianceName, data.AllianceLinkData),
 		)
 	}
 	body = t
@@ -758,8 +758,8 @@ func (n mercenaryDenAttacked) render(ctx context.Context, text string, _ time.Ti
 		data.ShieldPercentage,
 		data.ArmorPercentage,
 		data.HullPercentage,
-		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),
-		makeEveEntityProfileLink(corporation),
+		makeInfoLink(entities[data.AggressorCharacterID]),
+		makeInfoLink(corporation),
 	)
 	if data.AggressorAllianceName != "" {
 		alliance, err := eveEntityFromHTMLLink(data.AggressorAllianceName)
@@ -768,7 +768,7 @@ func (n mercenaryDenAttacked) render(ctx context.Context, text string, _ time.Ti
 		}
 		t += fmt.Sprintf(
 			"\n\nAggressing Pilot's Alliance: %s",
-			makeEveEntityProfileLink(alliance),
+			makeInfoLink(alliance),
 		)
 	}
 	body = t
@@ -825,8 +825,8 @@ func (n mercenaryDenReinforced) render(ctx context.Context, text string, _ time.
 		o.intro,
 		fromLDAPTime(data.TimestampEntered).Format(app.DateTimeFormat),
 		fromLDAPTime(data.TimestampExited).Format(app.DateTimeFormat),
-		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),
-		makeEveEntityProfileLink(corporation),
+		makeInfoLink(entities[data.AggressorCharacterID]),
+		makeInfoLink(corporation),
 	)
 	if data.AggressorAllianceName != "" {
 		alliance, err := eveEntityFromHTMLLink(data.AggressorAllianceName)
@@ -835,7 +835,7 @@ func (n mercenaryDenReinforced) render(ctx context.Context, text string, _ time.
 		}
 		b += fmt.Sprintf(
 			"\n\nAggressing Pilots' Alliance: %s",
-			makeEveEntityProfileLink(alliance),
+			makeInfoLink(alliance),
 		)
 	}
 	body = b

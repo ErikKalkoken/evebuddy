@@ -194,7 +194,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.name.SetText(corporation.Name)
 		a.name.OnTapped = func() {
-			a.u.InfoViewer().Show(corporation.EveEntity())
+			a.u.InfoViewer().Show(corporation.ToEveEntity())
 		}
 		a.logo.OnTapped = a.name.OnTapped
 		a.members.SetText(humanize.Comma(corporation.MemberCount))

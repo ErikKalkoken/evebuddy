@@ -367,12 +367,12 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
-			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.EveEntity())
+			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.ToEveEntity())
 		}
 		a.region.SetText(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name))
 		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
 		a.planetType.OnTapped = func() {
-			a.u.InfoViewer().Show(cp.EvePlanet.Type.EveEntity())
+			a.u.InfoViewer().Show(cp.EvePlanet.Type.ToEveEntity())
 		}
 		a.owner.SetText(c.NameOrZero())
 		a.owner.OnTapped = func() {

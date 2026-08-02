@@ -56,13 +56,13 @@ func (n orbitalAttacked) render(ctx context.Context, text string, _ time.Time) (
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
 		o.intro,
-		makeEveEntityProfileLink(entities[data.AggressorID]),
-		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeInfoLink(entities[data.AggressorID]),
+		makeInfoLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		t += fmt.Sprintf(
 			"\n\nAggressing Pilot's Alliance: %s",
-			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+			makeInfoLink(entities[data.AggressorAllianceID]),
 		)
 	}
 	body = t
@@ -113,13 +113,13 @@ func (n orbitalReinforced) render(ctx context.Context, text string, _ time.Time)
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
 		fromLDAPTime(data.ReinforceExitTime).Format(app.DateTimeFormat),
-		makeEveEntityProfileLink(entities[data.AggressorID]),
-		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		makeInfoLink(entities[data.AggressorID]),
+		makeInfoLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		t += fmt.Sprintf(
 			"\n\nAggressing Pilot's Alliance: %s",
-			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+			makeInfoLink(entities[data.AggressorAllianceID]),
 		)
 	}
 	body = t
@@ -143,9 +143,9 @@ func makeOrbitalBaseText(ctx context.Context, planetID, typeID int64, eus EVEUni
 	}
 	intro := fmt.Sprintf(
 		"The %s at %s in %s",
-		structureType.Name,
+		makeInfoLink(structureType),
 		planet.Name,
-		makeSolarSystemLink(planet.SolarSystem),
+		makeInfoLink(planet.SolarSystem),
 	)
 	x := orbitalInfo{
 		structureType: structureType,

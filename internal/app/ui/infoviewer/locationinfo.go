@@ -13,9 +13,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ErikKalkoken/go-set"
+	"github.com/fnt-eve/goesi-openapi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -27,7 +31,8 @@ type locationInfo struct {
 	baseInfo
 
 	description *widget.Label
-	id          int64
+	itemID      int64
+	characterID int64
 	location    *entityList
 	owner       *widget.Hyperlink
 	ownerLogo   *canvas.Image
@@ -37,7 +42,7 @@ type locationInfo struct {
 	typeInfo    *widget.Hyperlink
 }
 
-func newLocationInfo(iw *InfoViewer, id int64) *locationInfo {
+func newLocationInfo(iw *InfoViewer, itemID, characterID int64) *locationInfo {
 	typeInfo := widget.NewHyperlink("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := widget.NewHyperlink("", nil)
@@ -47,7 +52,8 @@ func newLocationInfo(iw *InfoViewer, id int64) *locationInfo {
 	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
 		description: newLabelWithWrapAndSelectable(""),
-		id:          id,
+		itemID:      itemID,
+		characterID: characterID,
 		owner:       owner,
 		ownerLogo:   xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		typeImage:   typeImage,
@@ -89,9 +95,19 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *locationInfo) update(ctx context.Context) error {
-	o, err := a.iw.u.EVEUniverse().GetOrCreateLocationESI(ctx, a.id)
+	if a.characterID != 0 {
+		ts, err := a.iw.u.Character().TokenSource(ctx, a.characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
+		if err != nil {
+			return err
+		}
+		ctx = xgoesi.NewContextWithAuth(ctx, a.characterID, ts)
+	}
+	o, err := a.iw.u.EVEUniverse().GetOrCreateLocationESI(ctx, a.itemID)
 	if err != nil {
 		return err
+	}
+	if o.Name == "" {
+		return fmt.Errorf("not allowed to access structure")
 	}
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
@@ -103,7 +119,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			})
 			a.typeInfo.SetText(et.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.Show(et.EveEntity())
+				a.iw.Show(et.ToEveEntity())
 			}
 			a.typeImage.OnTapped = func() {
 				a.iw.showZoomWindow(o.Name, et.ID, a.iw.u.EVEImage().InventoryTypeRenderAsync, a.iw.w)
@@ -130,8 +146,8 @@ func (a *locationInfo) update(ctx context.Context) error {
 	if es, ok := o.SolarSystem.Value(); ok {
 		fyne.Do(func() {
 			a.location.set(
-				newEntityItemFromEveEntityWithText(es.Constellation.Region.EveEntity(), ""),
-				newEntityItemFromEveEntityWithText(es.Constellation.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.Region.ToEveEntity(), ""),
+				newEntityItemFromEveEntityWithText(es.Constellation.ToEveEntity(), ""),
 				newEntityItemFromEveSolarSystem(es),
 			)
 		})
@@ -155,7 +171,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 		if o.Variant() != app.EveLocationStation {
 			return nil
 		}
-		ss, err := a.iw.u.EVEUniverse().GetStationServicesESI(ctx, a.id)
+		ss, err := a.iw.u.EVEUniverse().GetStationServicesESI(ctx, a.itemID)
 		if err != nil {
 			return err
 		}

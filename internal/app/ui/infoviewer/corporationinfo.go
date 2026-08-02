@@ -196,7 +196,7 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+	if v, ok := o.ToEveEntity().IsNPC().Value(); ok {
 		u = v
 	} else {
 		u = "?"

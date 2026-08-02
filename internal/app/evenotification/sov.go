@@ -55,8 +55,8 @@ func (n entosisCaptureStarted) render(ctx context.Context, text string, _ time.T
 	title = fmt.Sprintf("%s in %s is being captured", structureType.Name, solarSystem.Name)
 	body = fmt.Sprintf(
 		"A capsuleer has started to influence the **%s** in %s with an Entosis Link.",
-		structureType.Name,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(structureType),
+		makeInfoLink(solarSystem),
 	)
 	return title, body, nil
 }
@@ -101,8 +101,8 @@ func (n sovAllClaimAcquiredMsg) render(ctx context.Context, text string, _ time.
 		"This mail is your confirmation that DED now officially acknowledges "+
 			"that your member organization %s has claimed sovereignty "+
 			"on your behalf in the system %s.",
-		makeEveEntityProfileLink(corporation),
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(corporation),
+		makeInfoLink(solarSystem),
 	)
 	return title, body, nil
 }
@@ -146,8 +146,8 @@ func (n sovAllClaimLostMsg) render(ctx context.Context, text string, _ time.Time
 	body = fmt.Sprintf(
 		"DED acknowledges that your member organization %s has lost its claim "+
 			"to sovereignty on your behalf in the system %s.",
-		makeEveEntityProfileLink(corporation),
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(corporation),
+		makeInfoLink(solarSystem),
 	)
 	return title, body, nil
 }
@@ -189,8 +189,8 @@ func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, _ t
 	body = fmt.Sprintf(
 		"Command nodes for %s in %s can now be found throughout the **%s** constellation",
 		structureTypeName,
-		makeSolarSystemLink(solarSystem),
-		solarSystem.Constellation.Name,
+		makeInfoLink(solarSystem),
+		makeInfoLink(solarSystem.Constellation),
 	)
 	return title, body, nil
 }
@@ -234,7 +234,7 @@ func (n sovStructureDestroyed) render(ctx context.Context, text string, _ time.T
 	body = fmt.Sprintf(
 		"The command nodes for %s in %s have been destroyed by hostile forces.",
 		structureType.Name,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(solarSystem),
 	)
 	return title, body, nil
 }
@@ -260,7 +260,7 @@ func (n sovStructureReinforced) render(ctx context.Context, text string, _ time.
 		if err != nil {
 			return title, body, err
 		}
-		structureTypeName = ee.Name
+		structureTypeName = makeInfoLink(ee)
 	} else {
 		structureTypeName = "?"
 	}
@@ -273,7 +273,7 @@ func (n sovStructureReinforced) render(ctx context.Context, text string, _ time.
 		"The %s in %s has been reinforced by hostile forces "+
 			"and command nodes will begin decloaking at **%s**.",
 		structureTypeName,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(solarSystem),
 		fromLDAPTime(data.DecloakTime).Format(app.DateTimeFormat),
 	)
 	return title, body, nil

@@ -50,8 +50,8 @@ func (n allWarSurrenderMsg) render(ctx context.Context, text string, _ time.Time
 	body := fmt.Sprintf(
 		"%s has surrendered in the war against %s.\n\n"+
 			"The war will be declared as being over after approximately %d hours.",
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 		data.DelayHours,
 	)
 	return title, body, nil
@@ -92,8 +92,8 @@ func (n corpWarSurrenderMsg) render(ctx context.Context, text string, _ time.Tim
 	out := fmt.Sprintf(
 		"The war between %s and %s is coming to an end as one party has surrendered.\n\n"+
 			"The war will be declared as being over after approximately 24 hours.",
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 	)
 	body = out
 	return title, body, nil
@@ -133,9 +133,9 @@ func (n declareWar) render(ctx context.Context, text string, _ time.Time) (strin
 	title = fmt.Sprintf("%s declared war", entities[data.EntityID].Name)
 	out := fmt.Sprintf(
 		"%s has declared war on %s on behalf of %s.",
-		makeEveEntityProfileLink(entities[data.CharID]),
-		makeEveEntityProfileLink(entities[data.DefenderID]),
-		makeEveEntityProfileLink(entities[data.EntityID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.DefenderID]),
+		makeInfoLink(entities[data.EntityID]),
 	)
 	body = out
 	return title, body, nil
@@ -177,9 +177,9 @@ func (n warAdopted) render(ctx context.Context, text string, _ time.Time) (strin
 		entities[data.AgainstID].Name,
 		entities[data.AllianceID].Name,
 	)
-	declaredBy := makeEveEntityProfileLink(entities[data.DeclaredByID])
-	alliance := makeEveEntityProfileLink(entities[data.AllianceID])
-	against := makeEveEntityProfileLink(entities[data.AgainstID])
+	declaredBy := makeInfoLink(entities[data.DeclaredByID])
+	alliance := makeInfoLink(entities[data.AllianceID])
+	against := makeInfoLink(entities[data.AgainstID])
 	out := fmt.Sprintf(
 		"There has been a development in the war between %s and %s.\n"+
 			"%s is no longer a member of %s, "+
@@ -235,8 +235,8 @@ func (n warDeclared) render(ctx context.Context, text string, _ time.Time) (stri
 		"%s has declared war on %s with **%s** "+
 			"as the designated war headquarters.\n\n"+
 			"Within **%d** hours fighting can legally occur between those involved.",
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 		data.WarHQ,
 		data.DelayHours,
 	)
@@ -281,8 +281,8 @@ func (n warHQRemovedFromSpace) render(ctx context.Context, text string, _ time.T
 			"As a consequence, the war declared by %s against %s on %s "+
 			"has been declared invalid by CONCORD and has entered its cooldown period.",
 		data.WarHQ,
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 		fromLDAPTime(data.TimeDeclared).Format(app.DateTimeFormat),
 	)
 	body = out
@@ -331,9 +331,9 @@ func (n warInherited) render(ctx context.Context, text string, _ time.Time) (str
 		entities[data.QuitterID].Name,
 		entities[data.AllianceID].Name,
 	)
-	alliance := makeEveEntityProfileLink(entities[data.AllianceID])
-	against := makeEveEntityProfileLink(entities[data.AgainstID])
-	quitter := makeEveEntityProfileLink(entities[data.QuitterID])
+	alliance := makeInfoLink(entities[data.AllianceID])
+	against := makeInfoLink(entities[data.AgainstID])
+	quitter := makeInfoLink(entities[data.QuitterID])
 	out := fmt.Sprintf(
 		"There has been a development in the war between %s and %s.\n\n"+
 			"%s is no longer a member of %s, and therefore a new war between %s and %s has begun.",
@@ -386,8 +386,8 @@ func (n warInvalid) render(ctx context.Context, text string, _ time.Time) (strin
 			"because at least one of the involved parties "+
 			"has become ineligible for war declarations.\n\n"+
 			"Fighting must cease on %s.",
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
 	body = out
@@ -431,8 +431,8 @@ func (n warRetractedByConcord) render(ctx context.Context, text string, _ time.T
 			"has been retracted by CONCORD.\n\n"+
 			"After %s CONCORD will again respond to any hostilities "+
 			"between those involved with full force.",
-		makeEveEntityProfileLink(entities[data.DeclaredByID]),
-		makeEveEntityProfileLink(entities[data.AgainstID]),
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
 		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
 	body = out

@@ -27,7 +27,7 @@ type EveAlliance struct {
 	Ticker              string
 }
 
-func (ea EveAlliance) EveEntity() *EveEntity {
+func (ea EveAlliance) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
@@ -148,7 +148,7 @@ func (ec EveCharacter) Hash() string {
 	return h2
 }
 
-func (ec EveCharacter) EveEntity() *EveEntity {
+func (ec EveCharacter) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
@@ -176,7 +176,7 @@ func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
 
-func (ec EveCorporation) EveEntity() *EveEntity {
+func (ec EveCorporation) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
 }
 

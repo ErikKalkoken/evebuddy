@@ -60,6 +60,7 @@ type EVEImageService interface {
 // InfoViewer defines which methods from the info viewer is used in the UI.
 type InfoViewer interface {
 	Show(o *app.EveEntity)
+	Show2(typeID, itemID, characterID int64)
 	ShowBloodline(id int64)
 	ShowLocation(id int64)
 	ShowRace(id int64)

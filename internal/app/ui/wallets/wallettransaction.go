@@ -657,7 +657,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, char
 				widget.NewFormItem("Activity", widget.NewLabel(activity)),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoViewer().Show(o.Type.EveEntity())
+					u.InfoViewer().Show(o.Type.ToEveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", total),
@@ -724,7 +724,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoViewer().Show(o.Type.EveEntity())
+					u.InfoViewer().Show(o.Type.ToEveEntity())
 				})),
 				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
 				widget.NewFormItem("Total", widget.NewLabel(ui.FormatISKAmount(totalAmount))),
