@@ -14,16 +14,17 @@ func _() {
 	_ = x[Character-3]
 	_ = x[Constellation-4]
 	_ = x[Corporation-5]
-	_ = x[Location-6]
-	_ = x[Race-7]
-	_ = x[Region-8]
-	_ = x[SolarSystem-9]
-	_ = x[Type-10]
+	_ = x[Faction-6]
+	_ = x[Location-7]
+	_ = x[Race-8]
+	_ = x[Region-9]
+	_ = x[SolarSystem-10]
+	_ = x[Type-11]
 }
 
-const _Kind_name = "UndefinedAllianceBloodlineCharacterConstellationCorporationLocationRaceRegionSolarSystemType"
+const _Kind_name = "UndefinedAllianceBloodlineCharacterConstellationCorporationFactionLocationRaceRegionSolarSystemType"
 
-var _Kind_index = [...]uint8{0, 9, 17, 26, 35, 48, 59, 67, 71, 77, 88, 92}
+var _Kind_index = [...]uint8{0, 9, 17, 26, 35, 48, 59, 66, 74, 78, 84, 95, 99}
 
 func (i Kind) String() string {
 	idx := int(i) - 0

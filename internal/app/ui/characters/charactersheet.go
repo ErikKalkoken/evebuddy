@@ -260,7 +260,8 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		faction, ok := c.EveCharacter.Faction.Value()
 		if !ok {
-			a.faction.SetText("")
+			a.faction.SetText("-")
+			a.faction.OnTapped = nil
 			return
 		}
 		a.faction.SetText(faction.Name)

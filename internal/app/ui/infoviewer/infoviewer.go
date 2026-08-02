@@ -49,6 +49,7 @@ const (
 	Character
 	Constellation
 	Corporation
+	Faction
 	Location
 	Race
 	Region
@@ -61,6 +62,7 @@ var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]Kind{
 	app.EveEntityCharacter:     Character,
 	app.EveEntityConstellation: Constellation,
 	app.EveEntityCorporation:   Corporation,
+	app.EveEntityFaction:       Faction,
 	app.EveEntityInventoryType: Type,
 	app.EveEntityRegion:        Region,
 	app.EveEntitySolarSystem:   SolarSystem,
@@ -314,6 +316,9 @@ func (iw *InfoViewer) show2(arg showParams) {
 	case Alliance:
 		title = "Alliance"
 		page = newAllianceInfo(iw, arg.entityID)
+	case Bloodline:
+		title = "Bloodline"
+		page = newBloodlineInfo(iw, arg.entityID)
 	case Character:
 		title = "Character"
 		page = newCharacterInfo(iw, arg.entityID)
@@ -323,14 +328,12 @@ func (iw *InfoViewer) show2(arg showParams) {
 	case Corporation:
 		title = "Corporation"
 		page = newCorporationInfo(iw, arg.entityID)
-	case Type:
-		x := newInventoryTypeInfo(iw, arg.entityID, arg.characterID)
-		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
-		page = x
-		title = "Item"
-	case Bloodline:
-		title = "Bloodline"
-		page = newBloodlineInfo(iw, arg.entityID)
+	case Faction:
+		title = "Faction"
+		page = newFactionInfo(iw, arg.entityID)
+	case Location:
+		title = "Location"
+		page = newLocationInfo(iw, arg.entityID, arg.characterID)
 	case Race:
 		title = "Race"
 		page = newRaceInfo(iw, arg.entityID)
@@ -340,9 +343,11 @@ func (iw *InfoViewer) show2(arg showParams) {
 	case SolarSystem:
 		title = "Solar System"
 		page = newSolarSystemInfo(iw, arg.entityID)
-	case Location:
-		title = "Location"
-		page = newLocationInfo(iw, arg.entityID, arg.characterID)
+	case Type:
+		x := newInventoryTypeInfo(iw, arg.entityID, arg.characterID)
+		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
+		page = x
+		title = "Item"
 	default:
 		ui.ShowInformation(
 			"Warning",
@@ -607,6 +612,12 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 					break
 				}
 				s = x.Name
+			case *app.EveFaction:
+				if x == nil {
+					s = "?"
+					break
+				}
+				s = x.Name
 			case *app.EveRace:
 				if x == nil {
 					s = "?"
@@ -683,6 +694,13 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 				if x != nil {
 					f = func() {
 						w.iw.show(Bloodline, x.ID)
+					}
+				}
+
+			case *app.EveFaction:
+				if x != nil {
+					f = func() {
+						w.iw.show(Faction, x.ID)
 					}
 				}
 			case *app.EveRace:
