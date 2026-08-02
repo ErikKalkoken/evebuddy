@@ -644,7 +644,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
 		r := requiredSkills[id]
-		a.iw.show(infoInventoryType, r.typeID)
+		a.iw.show(Type, r.typeID)
 	}
 	return container.NewTabItem("Requirements", list)
 }

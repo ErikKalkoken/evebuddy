@@ -92,8 +92,8 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoSolarSystem),
-				a.iw.makeDotlanIcon(a.id, infoSolarSystem),
+				a.iw.makeZKillboardIcon(a.id, SolarSystem),
+				a.iw.makeDotlanIcon(a.id, SolarSystem),
 				layout.NewSpacer(),
 			),
 		),
@@ -150,7 +150,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 				x.ID,
 				x.Name,
 				"Structure",
-				infoLocation,
+				Location,
 			)
 		})
 		fyne.Do(func() {

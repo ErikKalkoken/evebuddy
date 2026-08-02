@@ -58,9 +58,9 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoAlliance),
-				a.iw.makeDotlanIcon(a.id, infoAlliance),
-				a.iw.makeEveWhoIcon(a.id, infoAlliance),
+				a.iw.makeZKillboardIcon(a.id, Alliance),
+				a.iw.makeDotlanIcon(a.id, Alliance),
+				a.iw.makeEveWhoIcon(a.id, Alliance),
 				layout.NewSpacer(),
 			),
 		),

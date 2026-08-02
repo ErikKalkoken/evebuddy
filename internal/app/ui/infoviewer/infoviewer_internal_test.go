@@ -60,7 +60,7 @@ func TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed(t *testin
 	// Before the fix, parentW was iw.w (nil) here, causing a panic.
 	// After the fix, parentW falls back to iw.u.MainWindow(), which is always valid.
 	assert.NotPanics(t, func() {
-		iw.show2(showParams{variant: infoNotSupported, entityID: 0})
+		iw.show2(showParams{variant: Undefined, entityID: 0})
 	})
 }
 
