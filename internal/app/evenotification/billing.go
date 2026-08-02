@@ -112,28 +112,36 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	if err != nil {
 		return title, body, err
 	}
-	var external1 string
+	var external1Link, external1Name string
 	if x, ok := entities[data.ExternalID]; ok && x.Name != "" {
-		external1 = makeInfoLink(x)
+		external1Link = makeInfoLink(x)
+		external1Name = x.Name
 	} else {
-		external1 = "?"
+		external1Link = "?"
+		external1Name = "?"
 	}
-	var external2 string
+	var external2Link, external2Name string
 	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
-		external2 = makeInfoLink(x)
+		external2Link = makeInfoLink(x)
+		external2Name = x.Name
 	} else {
-		external2 = "?"
+		external2Link = "?"
+		external2Name = "?"
 	}
-	var billPurpose string
+	var purposeShort, purposeLong string
 	switch data.BillTypeID {
 	case billTypeLease:
-		billPurpose = fmt.Sprintf("extending the lease of %s at %s", external1, external2)
+		purposeShort = fmt.Sprintf("extending lease at %s", external2Name)
+		purposeLong = fmt.Sprintf("extending the lease of %s at %s", external1Link, external2Link)
 	case billTypeAlliance:
-		billPurpose = fmt.Sprintf("maintenance of %s", external1)
+		purposeShort = fmt.Sprintf("maintenance of %s", external2Name)
+		purposeLong = fmt.Sprintf("maintenance of %s", external1Link)
 	case billTypeInfrastructureHub:
-		billPurpose = fmt.Sprintf("maintenance of infrastructure hub in %s", external1)
+		purposeShort = fmt.Sprintf("maintenance of infrastructure hub in %s", external1Name)
+		purposeLong = fmt.Sprintf("maintenance of infrastructure hub in %s", external1Link)
 	default:
-		billPurpose = "?"
+		purposeShort = "?"
+		purposeLong = "?"
 	}
 	body = fmt.Sprintf(
 		"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
@@ -142,9 +150,9 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 		makeInfoLink(entities[data.DebtorID]),
 		makeInfoLink(entities[data.CreditorID]),
 		fromLDAPTime(data.CurrentDate).Format(app.DateTimeFormat),
-		billPurpose,
+		purposeLong,
 	)
-	title = fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID))
+	title = fmt.Sprintf("Bill issued for %s", purposeShort)
 	return title, body, err
 }
 

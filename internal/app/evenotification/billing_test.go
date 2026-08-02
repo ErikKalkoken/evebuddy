@@ -1,7 +1,6 @@
 package evenotification_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -25,7 +24,7 @@ func TestBilling_RenderESI(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	eus := evenotification.NewEveUniverseService(st)
 	en := evenotification.New(eus)
-	ctx := context.Background()
+
 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -43,14 +42,15 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
-		title, body, err := en.RenderESI(ctx, app.CorpAllBillMsg, optional.New(text), time.Now())
+		title, body, err := en.RenderESI(t.Context(), app.CorpAllBillMsg, optional.New(text), time.Now())
 		require.NoError(t, err)
-		xassert.Equal(t, "Bill issued for lease", title)
+		xassert.Equal(t, "Bill issued for extending lease at station #60003760", title)
 		assert.Contains(t, body, creditor.Name)
 		assert.Contains(t, body, debtor.Name)
 		assert.Contains(t, body, office.Name)
 		assert.Contains(t, body, station.Name)
 	})
+
 	t.Run("CorpAllBillMsg partial data", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -66,9 +66,9 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 0
 externalID2: 0`
-		title, body, err := en.RenderESI(ctx, app.CorpAllBillMsg, optional.New(text), time.Now())
+		title, body, err := en.RenderESI(t.Context(), app.CorpAllBillMsg, optional.New(text), time.Now())
 		require.NoError(t, err)
-		xassert.Equal(t, "Bill issued for lease", title)
+		xassert.Equal(t, "Bill issued for extending lease at ?", title)
 		assert.Contains(t, body, creditor.Name)
 		assert.Contains(t, body, debtor.Name)
 		assert.Contains(t, body, "?")
