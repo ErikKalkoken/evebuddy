@@ -118,57 +118,6 @@ func (q *Queries) ListEveCharacterIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
-const updateEveCharacter = `-- name: UpdateEveCharacter :exec
-UPDATE eve_characters
-SET
-    alliance_id = ?,
-    birthday = ?,
-    bloodline_id = ?,
-    corporation_id = ?,
-    description = ?,
-    faction_id = ?,
-    gender = ?,
-    name = ?,
-    race_id = ?,
-    security_status = ?,
-    title = ?
-WHERE
-    id = ?
-`
-
-type UpdateEveCharacterParams struct {
-	AllianceID     sql.NullInt64
-	Birthday       time.Time
-	BloodlineID    sql.NullInt64
-	CorporationID  int64
-	Description    string
-	FactionID      sql.NullInt64
-	Gender         string
-	Name           string
-	RaceID         int64
-	SecurityStatus float64
-	Title          string
-	ID             int64
-}
-
-func (q *Queries) UpdateEveCharacter(ctx context.Context, arg UpdateEveCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, updateEveCharacter,
-		arg.AllianceID,
-		arg.Birthday,
-		arg.BloodlineID,
-		arg.CorporationID,
-		arg.Description,
-		arg.FactionID,
-		arg.Gender,
-		arg.Name,
-		arg.RaceID,
-		arg.SecurityStatus,
-		arg.Title,
-		arg.ID,
-	)
-	return err
-}
-
 const updateEveCharacterName = `-- name: UpdateEveCharacterName :exec
 UPDATE eve_characters
 SET

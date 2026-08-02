@@ -62,23 +62,6 @@ SELECT
 FROM
     eve_characters;
 
--- name: UpdateEveCharacter :exec
-UPDATE eve_characters
-SET
-    alliance_id = ?,
-    birthday = ?,
-    bloodline_id = ?,
-    corporation_id = ?,
-    description = ?,
-    faction_id = ?,
-    gender = ?,
-    name = ?,
-    race_id = ?,
-    security_status = ?,
-    title = ?
-WHERE
-    id = ?;
-
 -- name: UpdateEveCharacterName :exec
 UPDATE eve_characters
 SET

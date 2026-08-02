@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
 	"time"
@@ -98,45 +97,6 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int64], err
 	}
 	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
-}
-
-// TODO: Remove unused method: UpdateEveCharacter
-
-func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateEveCharacter: %+v: %w", c, err)
-	}
-	if c.ID == 0 || c.Corporation == nil {
-		return wrapErr(app.ErrInvalid)
-	}
-	allianceID := optional.Map(c.Alliance, 0, func(x *app.EveEntity) int64 {
-		return x.ID
-	})
-	factionID := optional.Map(c.Faction, 0, func(x *app.EveEntity) int64 {
-		return x.ID
-	})
-	var bloodlineID sql.NullInt64
-	if v, ok := c.Bloodline.Value(); ok && v != nil {
-		bloodlineID = NewNullInt64(v.ID)
-	}
-	err := st.qRW.UpdateEveCharacter(ctx, queries.UpdateEveCharacterParams{
-		AllianceID:     NewNullInt64(allianceID),
-		Birthday:       c.Birthday,
-		BloodlineID:    bloodlineID,
-		CorporationID:  c.Corporation.ID,
-		Description:    c.Description.ValueOrZero(),
-		FactionID:      NewNullInt64(factionID),
-		Gender:         c.Gender,
-		ID:             c.ID,
-		Name:           c.Name,
-		RaceID:         c.Race.ID,
-		SecurityStatus: c.SecurityStatus.ValueOrZero(),
-		Title:          c.CorporationTitle.ValueOrZero(),
-	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	return nil
 }
 
 func (st *Storage) UpdateEveCharacterName(ctx context.Context, characterID int64, name string) error {
