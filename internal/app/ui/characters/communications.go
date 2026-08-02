@@ -3,6 +3,7 @@ package characters
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -16,11 +17,11 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -50,7 +51,7 @@ type Communications struct {
 	notificationList       *widget.List
 	notifications          []*app.CharacterNotification
 	notificationsTop       *widget.Label
-	sendNotificationAction *widget.ToolbarAction
+	developerToolbarAction *widget.ToolbarAction
 	u                      baseUI
 }
 
@@ -196,9 +197,9 @@ func (a *Communications) setDetail(n *app.CharacterNotification) {
 		return
 	}
 	if a.u.IsDeveloperMode() {
-		a.sendNotificationAction.ToolbarObject().Show()
+		a.developerToolbarAction.ToolbarObject().Show()
 	} else {
-		a.sendNotificationAction.ToolbarObject().Hide()
+		a.developerToolbarAction.ToolbarObject().Hide()
 	}
 	a.current = n
 	a.Toolbar.Show()
@@ -211,14 +212,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			processErr := func(err error) {
-				ui.ShowErrorAndLog(
-					"Failed to generated notification for clipboard",
-					err,
-					a.u.IsDeveloperMode(),
-					a.u.MainWindow(),
-				)
-			}
+
 			cn := a.current
 			recipient := notificationRecipient(cn, a.character.Load().NameOrZero())
 			header := fmt.Sprintf(
@@ -230,7 +224,12 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			s := cn.TitleDisplay() + "\n" + header
 			b, err := cn.BodyPlain()
 			if err != nil {
-				processErr(err)
+				ui.ShowErrorAndLog(
+					"Failed to copy notification to clipboard",
+					err,
+					a.u.IsDeveloperMode(),
+					a.u.MainWindow(),
+				)
 				return
 			}
 			s += "\n\n"
@@ -240,19 +239,58 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 				s += "(no body)"
 			}
 			fyne.CurrentApp().Clipboard().SetContent(s)
+			a.u.ShowSnackbar("Communication copied to clipboard")
 		}),
 	)
-	a.sendNotificationAction = widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
-		if a.current == nil {
-			return
-		}
-		if a.character.Load() == nil {
-			return
-		}
-		go a.u.Character().SendDesktopNotification(context.Background(), a.current)
-	})
-	a.sendNotificationAction.ToolbarObject().Hide()
-	toolbar.Append(a.sendNotificationAction)
+	items := []*fyne.MenuItem{
+		fyne.NewMenuItem(
+			"Send test notification",
+			func() {
+				if a.current == nil {
+					return
+				}
+				if a.character.Load() == nil {
+					return
+				}
+				go a.u.Character().SendDesktopNotification(context.Background(), a.current)
+			},
+		),
+		fyne.NewMenuItem(
+			"Copy data to clipboard",
+			func() {
+				if a.current == nil {
+					return
+				}
+
+				processErr := func(err error) {
+					slog.Error("Failed to convert notification data", "characterID", a.current.CharacterID, "notificationID", a.current.NotificationID, "error", err)
+					a.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
+				}
+
+				v, ok := a.current.Text.Value()
+				if !ok {
+					a.u.ShowSnackbar("ERROR: Notification has no data")
+					return
+				}
+				var data any
+				if err := yaml.Unmarshal([]byte(v), &data); err != nil {
+					processErr(err)
+					return
+				}
+				b, err := json.MarshalIndent(data, "", "    ")
+				if err != nil {
+					processErr(err)
+					return
+				}
+				fyne.CurrentApp().Clipboard().SetContent(string(b))
+				a.u.ShowSnackbar("Notification data copied to clipboard")
+			},
+		),
+	}
+	a.developerToolbarAction = kxwidget.NewToolbarActionMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("", items...))
+	a.developerToolbarAction.ToolbarObject().Hide()
+	toolbar.Append(widget.NewToolbarSpacer())
+	toolbar.Append(a.developerToolbarAction)
 	return toolbar
 }
 
