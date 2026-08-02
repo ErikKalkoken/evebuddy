@@ -60,7 +60,7 @@ func TestEveFaction(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		const (
-			id                 = 42
+			factionID          = 42
 			description        = "description"
 			name               = "name"
 			isUnique           = true
@@ -72,7 +72,7 @@ func TestEveFaction(t *testing.T) {
 		militaryCorporation := f.CreateEveEntityCorporation()
 		solarSystem := f.CreateEveSolarSystem()
 		arg := storage.CreateEveFactionParams{
-			ID:                   id,
+			ID:                   factionID,
 			Description:          description,
 			Name:                 name,
 			IsUnique:             isUnique,
@@ -89,10 +89,10 @@ func TestEveFaction(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		ef, err := st.GetEveFaction(t.Context(), id)
+		ef, err := st.GetEveFaction(t.Context(), factionID)
 		require.NoError(t, err)
 		xassert.Equal(t, description, ef.Description)
-		xassert.Equal(t, id, ef.ID)
+		xassert.Equal(t, factionID, ef.ID)
 		xassert.Equal(t, name, ef.Name)
 		xassert.Equal(t, isUnique, ef.IsUnique)
 		xassert.Equal(t, sizeFactor, ef.SizeFactor)

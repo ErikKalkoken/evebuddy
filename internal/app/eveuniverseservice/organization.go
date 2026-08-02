@@ -335,3 +335,69 @@ func (s *EVEUniverseService) makeMembershipHistory(ctx context.Context, items []
 	})
 	return oo, nil
 }
+
+func (s *EVEUniverseService) GetOrCreateFactionESI(ctx context.Context, factionID int64) (*app.EveFaction, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateFactionESI-%d", factionID), func() (*app.EveFaction, error) {
+		o, err := s.st.GetEveFaction(ctx, factionID)
+		if err == nil {
+			return o, nil
+		}
+		if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		factions, _, err := s.esiClient.UniverseAPI.GetUniverseFactions(ctx).Execute()
+		if err != nil {
+			return nil, err
+		}
+		for _, ef := range factions {
+			if ef.FactionId != factionID {
+				continue
+			}
+			arg := storage.CreateEveFactionParams{
+				ID:                   ef.FactionId,
+				CorporationID:        optional.FromPtr(ef.CorporationId),
+				Description:          ef.Description,
+				IsUnique:             ef.IsUnique,
+				MilitiaCorporationID: optional.FromPtr(ef.MilitiaCorporationId),
+				Name:                 ef.Name,
+				SizeFactor:           ef.SizeFactor,
+				SolarSystemID:        optional.FromPtr(ef.SolarSystemId),
+				StationCount:         ef.StationCount,
+				StationSystemCount:   ef.StationSystemCount,
+			}
+			var ids set.Set[int64]
+			if id, ok := arg.CorporationID.Value(); ok {
+				ids.Add(id)
+			}
+			if id, ok := arg.MilitiaCorporationID.Value(); ok {
+				ids.Add(id)
+			}
+			if ids.Size() > 0 {
+				_, err := s.AddMissingEntities(ctx, ids)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if id, ok := arg.SolarSystemID.Value(); ok {
+				_, err := s.GetOrCreateSolarSystemESI(ctx, id)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if err := s.st.CreateEveFaction(ctx, arg); err != nil {
+				return nil, err
+			}
+			slog.Info("Created eve faction", "id", factionID)
+			o, err := s.st.GetEveFaction(ctx, factionID)
+			if err != nil {
+				return nil, err
+			}
+			return o, nil
+		}
+		return nil, fmt.Errorf("faction ID %d: %w", factionID, app.ErrNotFound)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
