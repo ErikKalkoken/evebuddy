@@ -121,13 +121,6 @@ func eveCharacterFromDBModel(
 	bloodline nullEntity,
 
 ) *app.EveCharacter {
-	var bloodline2 optional.Optional[*app.EntityShort]
-	if bloodline.isValid() {
-		bloodline2.Set(&app.EntityShort{
-			ID:   bloodline.id.Int64,
-			Name: bloodline.name.String,
-		})
-	}
 	o := app.EveCharacter{
 		Alliance:         eveEntityFromNullableDBModel(alliance),
 		Birthday:         character.Birthday,
@@ -140,7 +133,7 @@ func eveCharacterFromDBModel(
 		Race:             eveRaceFromDBModel(race),
 		SecurityStatus:   optional.New(character.SecurityStatus),
 		CorporationTitle: optional.FromZeroValue(character.Title),
-		Bloodline:        bloodline2,
+		Bloodline:        entityShortFromNullableDBModel(bloodline),
 	}
 	return &o
 }

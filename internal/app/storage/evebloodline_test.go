@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ import (
 func TestEveBloodline(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -34,10 +33,10 @@ func TestEveBloodline(t *testing.T) {
 			CorporationID: corporation.ID,
 			RaceID:        race.ID,
 		}
-		err := st.CreateEveBloodline(ctx, arg)
+		err := st.CreateEveBloodline(t.Context(), arg)
 		// then
 		require.NoError(t, err)
-		eb, err := st.GetEveBloodline(ctx, id)
+		eb, err := st.GetEveBloodline(t.Context(), id)
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, eb.Corporation)
 		xassert.Equal(t, description, eb.Description)
@@ -51,6 +50,7 @@ func TestEveBloodline(t *testing.T) {
 		xassert.Empty(t, eb.Willpower)
 		xassert.Empty(t, eb.ShipTypeID)
 	})
+
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -81,10 +81,10 @@ func TestEveBloodline(t *testing.T) {
 			ShipTypeID:    optional.New(shipType.ID),
 			Willpower:     optional.New[int64](willpower),
 		}
-		err := st.CreateEveBloodline(ctx, arg)
+		err := st.CreateEveBloodline(t.Context(), arg)
 		// then
 		require.NoError(t, err)
-		eb, err := st.GetEveBloodline(ctx, id)
+		eb, err := st.GetEveBloodline(t.Context(), id)
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, eb.Corporation)
 		xassert.Equal(t, description, eb.Description)

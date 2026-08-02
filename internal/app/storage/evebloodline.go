@@ -60,7 +60,8 @@ func (st *Storage) GetEveBloodline(ctx context.Context, id int64) (*app.EveBlood
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	return eveBloodlineFromDBModel(r.EveBloodline, r.EveEntity, r.EveRace), nil
+	o := eveBloodlineFromDBModel(r.EveBloodline, r.EveEntity, r.EveRace)
+	return o, nil
 }
 
 func eveBloodlineFromDBModel(eb queries.EveBloodline, ee queries.EveEntity, er queries.EveRace) *app.EveBloodline {

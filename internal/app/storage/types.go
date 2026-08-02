@@ -29,8 +29,10 @@ type nullAcceptor nullEveEntity
 type nullAlliance nullEveEntity
 type nullAssignee nullEveEntity
 type nullCEO nullEveEntity
+type nullCorporation nullEveEntity
 type nullCreator nullEveEntity
 type nullFaction nullEveEntity
+type nullMilitiaCorporation nullEveEntity
 type nullStation nullEveEntity
 type outputLocationName string
 type outputLocationSecurity sql.NullFloat64
