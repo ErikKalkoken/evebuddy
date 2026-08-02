@@ -72,12 +72,12 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int64) (*app
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
-		nullEveEntry{
+		nullEveEntity{
 			id:       r.EveCharacter.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		},
-		nullEveEntry{
+		nullEveEntity{
 			id:       r.EveCharacter.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
@@ -116,8 +116,8 @@ func eveCharacterFromDBModel(
 	character queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance nullEveEntry,
-	faction nullEveEntry,
+	alliance nullEveEntity,
+	faction nullEveEntity,
 	bloodline nullEntity,
 
 ) *app.EveCharacter {

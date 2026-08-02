@@ -59,13 +59,13 @@ func eveCorporationFromDBModel(
 ) *app.EveCorporation {
 	o := &app.EveCorporation{
 		ID:          corporation.ID,
-		Alliance:    eveEntityFromNullableDBModel(nullEveEntry(alliance)),
-		Ceo:         eveEntityFromNullableDBModel(nullEveEntry(ceo)),
-		Creator:     eveEntityFromNullableDBModel(nullEveEntry(creator)),
+		Alliance:    eveEntityFromNullableDBModel(nullEveEntity(alliance)),
+		Ceo:         eveEntityFromNullableDBModel(nullEveEntity(ceo)),
+		Creator:     eveEntityFromNullableDBModel(nullEveEntity(creator)),
 		DateFounded: optional.FromNullTime(corporation.DateFounded),
 		Description: corporation.Description,
-		Faction:     eveEntityFromNullableDBModel(nullEveEntry(faction)),
-		HomeStation: eveEntityFromNullableDBModel(nullEveEntry(station)),
+		Faction:     eveEntityFromNullableDBModel(nullEveEntity(faction)),
+		HomeStation: eveEntityFromNullableDBModel(nullEveEntity(station)),
 		MemberCount: corporation.MemberCount,
 		Name:        corporation.Name,
 		Shares:      optional.FromNullInt64(corporation.Shares),

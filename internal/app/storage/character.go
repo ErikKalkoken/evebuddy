@@ -91,12 +91,12 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	alliance := nullEveEntry{
+	alliance := nullEveEntity{
 		id:       r.EveCharacter.AllianceID,
 		name:     r.AllianceName,
 		category: r.AllianceCategory,
 	}
-	faction := nullEveEntry{
+	faction := nullEveEntity{
 		id:       r.EveCharacter.FactionID,
 		name:     r.FactionName,
 		category: r.FactionCategory,
@@ -162,12 +162,12 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 	}
 	cc := make([]*app.Character, len(rows))
 	for i, r := range rows {
-		alliance := nullEveEntry{
+		alliance := nullEveEntity{
 			id:       r.EveCharacter.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		}
-		faction := nullEveEntry{
+		faction := nullEveEntity{
 			id:       r.EveCharacter.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
@@ -407,8 +407,8 @@ func (st *Storage) characterFromDBModel(
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance nullEveEntry,
-	faction nullEveEntry,
+	alliance nullEveEntity,
+	faction nullEveEntity,
 	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,

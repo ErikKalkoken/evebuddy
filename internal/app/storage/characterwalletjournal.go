@@ -81,9 +81,9 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 		return nil, wrapErr(convertGetError(err))
 	}
 	o := r.CharacterWalletJournalEntry
-	firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
-	secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
-	taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
+	firstParty := nullEveEntity{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+	secondParty := nullEveEntity{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+	taxReceiver := nullEveEntity{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
@@ -115,9 +115,9 @@ func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charac
 	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
 	for i, r := range rows {
 		o := r.CharacterWalletJournalEntry
-		firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
-		secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
-		taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
+		firstParty := nullEveEntity{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+		secondParty := nullEveEntity{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+		taxReceiver := nullEveEntity{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 		ee[i] = characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
 	}
 	return ee, nil
@@ -125,7 +125,7 @@ func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charac
 
 func characterWalletJournalEntryFromDBModel(
 	o queries.CharacterWalletJournalEntry,
-	firstParty, secondParty, taxReceiver nullEveEntry,
+	firstParty, secondParty, taxReceiver nullEveEntity,
 ) *app.CharacterWalletJournalEntry {
 	o2 := &app.CharacterWalletJournalEntry{
 		Amount:        optional.FromZeroValue(o.Amount),

@@ -294,13 +294,13 @@ func eveEntityFromDBModel(r queries.EveEntity) *app.EveEntity {
 	return o
 }
 
-type nullEveEntry struct {
+type nullEveEntity struct {
 	id       sql.NullInt64
 	category sql.NullString
 	name     sql.NullString
 }
 
-func eveEntityFromNullableDBModel(o nullEveEntry) optional.Optional[*app.EveEntity] {
+func eveEntityFromNullableDBModel(o nullEveEntity) optional.Optional[*app.EveEntity] {
 	if !o.id.Valid {
 		return optional.Optional[*app.EveEntity]{}
 	}
