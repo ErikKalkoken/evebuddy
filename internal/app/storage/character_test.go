@@ -340,7 +340,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
+		xassert.EqualOptional(t, x, c2.LastCloneJumpAt)
 	})
 
 	t.Run("can update last clone jump with zero time", func(t *testing.T) {
@@ -385,7 +385,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
+		xassert.EqualOptional(t, x, c2.LastLoginAt)
 	})
 
 	t.Run("can update location", func(t *testing.T) {
