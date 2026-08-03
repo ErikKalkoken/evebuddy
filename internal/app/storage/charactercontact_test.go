@@ -65,8 +65,8 @@ func TestCharacterContact(t *testing.T) {
 		xassert.Equal(t, contact.ID, o.Contact.ID)
 		xassert.Equal(t, contact.Name, o.Contact.Name)
 		xassert.Equal(t, -1.5, o.Standing)
-		xassert.Equal(t, true, o.IsBlocked.MustValue())
-		xassert.Equal(t, false, o.IsWatched.MustValue())
+		xassert.EqualOptional(t, true, o.IsBlocked)
+		xassert.EqualOptional(t, false, o.IsWatched)
 		xassert.Equal(t, set.Of(label.Name), o.Labels)
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -100,8 +100,8 @@ func TestCharacterContact(t *testing.T) {
 		xassert.Equal(t, o1.CharacterID, o2.CharacterID)
 		xassert.Equal(t, o1.Contact.ID, o2.Contact.ID)
 		xassert.Equal(t, -1.5, o2.Standing)
-		xassert.Equal(t, true, o2.IsBlocked.MustValue())
-		xassert.Equal(t, false, o2.IsWatched.MustValue())
+		xassert.EqualOptional(t, true, o2.IsBlocked)
+		xassert.EqualOptional(t, false, o2.IsWatched)
 		xassert.Equal(t, set.Of(label2.Name), o2.Labels)
 	})
 	t.Run("should ignore missing label IDs", func(t *testing.T) {

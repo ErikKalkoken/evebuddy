@@ -203,7 +203,7 @@ func TestEveCorporation(t *testing.T) {
 			xassert.Equal(t, station, c2.HomeStation.ValueOrZero())
 			xassert.Equal(t, 42, c2.MemberCount)
 			xassert.Equal(t, "name", c2.Name)
-			xassert.Equal(t, 888, c2.Shares.MustValue())
+			xassert.EqualOptional(t, 888, c2.Shares)
 			assert.InDelta(t, 0.1, c2.TaxRate, 0.01)
 			xassert.Equal(t, "ticker", c2.Ticker)
 			xassert.Equal(t, "url", c2.URL.ValueOrZero())

@@ -13,23 +13,23 @@ import (
 func TestType(t *testing.T) {
 	t.Run("can convert to string", func(t *testing.T) {
 		x := app.BountyClaimMsg
-	xassert.Equal(t, "BountyClaimMsg", x.String())
+		xassert.Equal(t, "BountyClaimMsg", x.String())
 	})
 	t.Run("can convert to display string", func(t *testing.T) {
 		x := app.SovereigntyTCUDamageMsg
-	xassert.Equal(t, "Sovereignty TCU Damage Msg", x.Display())
+		xassert.Equal(t, "Sovereignty TCU Damage Msg", x.Display())
 	})
 	t.Run("can return group", func(t *testing.T) {
-	xassert.Equal(t, app.GroupStructure, app.StructureDestroyed.Group())
+		xassert.Equal(t, app.GroupStructure, app.StructureDestroyed.Group())
 	})
 }
 
 func TestType_Category(t *testing.T) {
 	t.Run("returns category when known", func(t *testing.T) {
-	xassert.Equal(t, app.EveEntityCorporation, app.StructureDestroyed.Category())
+		xassert.Equal(t, app.EveEntityCorporation, app.StructureDestroyed.Category())
 	})
 	t.Run("reports when category not known", func(t *testing.T) {
-	xassert.Equal(t, app.EveEntityCharacter, app.AgentRetiredTrigravian.Category())
+		xassert.Equal(t, app.EveEntityCharacter, app.AgentRetiredTrigravian.Category())
 	})
 }
 
@@ -44,7 +44,7 @@ func TestCharacterNotification(t *testing.T) {
 			Type: app.StructureFuelAlert,
 		}
 		y := x.TitleFake()
-	xassert.Equal(t, "Structure Fuel Alert", y)
+		xassert.Equal(t, "Structure Fuel Alert", y)
 	})
 }
 
@@ -56,7 +56,7 @@ func TestCharacterNotificationBodyPlain(t *testing.T) {
 		}
 		got, err := n.BodyPlain()
 		if assert.NoError(t, err) {
-		xassert.Equal(t, "alpha\n", got.MustValue())
+			xassert.EqualOptional(t, "alpha\n", got)
 		}
 	})
 	t.Run("should return empty when body is empty", func(t *testing.T) {

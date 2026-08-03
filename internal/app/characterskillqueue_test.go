@@ -254,7 +254,7 @@ func TestCharacterSkillqueueItem_Duration(t *testing.T) {
 			FinishDate: optional.New(now.Add(time.Hour * +3)),
 		}
 		d := q.Duration()
-		xassert.Equal(t, 2*time.Hour, d.MustValue())
+		xassert.EqualOptional(t, 2*time.Hour, d)
 	})
 	t.Run("should return null when duration can not be calculated 1", func(t *testing.T) {
 		now := time.Now()
@@ -284,19 +284,19 @@ func TestCharacterSkillqueueItem_Remaining(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, now.Add(time.Hour*+3))
 		d := q.Remaining()
-		xassert.EqualDuration(t, 3*time.Hour, d.MustValue(), time.Second)
+		xassert.EqualDuration(t, 3*time.Hour, d.ValueOrZero(), time.Second)
 	})
 	t.Run("should return correct value when start and finish in the future", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*+1), now.Add(time.Hour*+3))
 		d := q.Remaining()
-		xassert.EqualDuration(t, 2*time.Hour, d.MustValue(), time.Second)
+		xassert.EqualDuration(t, 2*time.Hour, d.ValueOrZero(), time.Second)
 	})
 	t.Run("should return 0 remaining when completed", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*-3), now.Add(time.Hour*-2))
 		d := q.Remaining()
-		xassert.Equal(t, time.Duration(0), d.MustValue())
+		xassert.EqualOptional(t, time.Duration(0), d)
 	})
 	t.Run("should return null when no finish date", func(t *testing.T) {
 		now := time.Now()

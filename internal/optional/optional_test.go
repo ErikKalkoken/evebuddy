@@ -18,7 +18,7 @@ import (
 func TestOptional_New(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
-		xassert.Equal(t, 55, x.MustValue())
+		xassert.EqualOptional(t, 55, x)
 		assert.False(t, x.IsEmpty())
 	})
 	t.Run("can create an empty optional", func(t *testing.T) {
@@ -44,12 +44,12 @@ func TestOptional_Set(t *testing.T) {
 	t.Run("can update an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		x.Set(45)
-		xassert.Equal(t, 45, x.MustValue())
+		xassert.EqualOptional(t, 45, x)
 	})
 	t.Run("can update a non none", func(t *testing.T) {
 		x := optional.New(12)
 		x.Set(45)
-		xassert.Equal(t, 45, x.MustValue())
+		xassert.EqualOptional(t, 45, x)
 	})
 }
 

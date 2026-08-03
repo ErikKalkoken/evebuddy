@@ -96,8 +96,8 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		o, err := st.GetCharacterContact(ctx, c.ID, contact.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, -1.5, o.Standing)
-		xassert.Equal(t, true, o.IsBlocked.MustValue())
-		xassert.Equal(t, true, o.IsWatched.MustValue())
+		xassert.EqualOptional(t, true, o.IsBlocked)
+		xassert.EqualOptional(t, true, o.IsWatched)
 	})
 	t.Run("should delete obsolete entries", func(t *testing.T) {
 		// given

@@ -66,12 +66,12 @@ func TestPlanetPin(t *testing.T) {
 			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, pinType, c2.Type)
-				xassert.Equal(t, productType, c2.ExtractorProductType.MustValue())
-				xassert.Equal(t, expiryTime, c2.ExpiryTime.MustValue())
-				xassert.Equal(t, installTime, c2.InstallTime.MustValue())
-				xassert.Equal(t, lastCycleStart, c2.LastCycleStart.MustValue())
-				xassert.Equal(t, schematic, c2.Schematic.MustValue())
-				xassert.Equal(t, factorySchematic, c2.FactorySchematic.MustValue())
+				xassert.EqualOptional(t, productType, c2.ExtractorProductType)
+				xassert.EqualOptional(t, expiryTime, c2.ExpiryTime)
+				xassert.EqualOptional(t, installTime, c2.InstallTime)
+				xassert.EqualOptional(t, lastCycleStart, c2.LastCycleStart)
+				xassert.EqualOptional(t, schematic, c2.Schematic)
+				xassert.EqualOptional(t, factorySchematic, c2.FactorySchematic)
 			}
 		}
 	})

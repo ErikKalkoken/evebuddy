@@ -67,12 +67,12 @@ func TestNullTypeConversion(t *testing.T) {
 	t.Run("can convert NullInt64 to int", func(t *testing.T) {
 		x1 := sql.NullInt64{Int64: 42, Valid: true}
 		o := optional.FromNullInt64ToInteger[int](x1)
-		xassert.Equal(t, x1.Int64, int64(o.MustValue()))
+		xassert.EqualOptional(t, 42, o)
 	})
 	t.Run("can convert NullInt64 to int32", func(t *testing.T) {
 		x1 := sql.NullInt64{Int64: 42, Valid: true}
 		o := optional.FromNullInt64ToInteger[int32](x1)
-		xassert.Equal(t, x1.Int64, int64(o.MustValue()))
+		xassert.EqualOptional(t, 42, o)
 	})
 	t.Run("can convert NullInt64 to int 2", func(t *testing.T) {
 		x1 := sql.NullInt64{}

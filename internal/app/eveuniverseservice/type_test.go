@@ -411,11 +411,11 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		for _, o := range prices {
 			switch o.TypeID {
 			case knownTypeID:
-				xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
-				xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+				xassert.EqualOptional(t, 306988.09, o.AdjustedPrice)
+				xassert.EqualOptional(t, 306292.67, o.AveragePrice)
 			case o.TypeID:
-				xassert.Equal(t, 123.45, o.AdjustedPrice.MustValue())
-				xassert.Equal(t, 456.78, o.AveragePrice.MustValue())
+				xassert.EqualOptional(t, 123.45, o.AdjustedPrice)
+				xassert.EqualOptional(t, 456.78, o.AveragePrice)
 			}
 		}
 	})

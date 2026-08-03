@@ -106,8 +106,8 @@ func TestCharacterMarketOrder(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
 		require.NoError(t, err)
-		xassert.Equal(t, 234.56, o.Escrow.MustValue())
-		xassert.Equal(t, 3, o.MinVolume.MustValue())
+		xassert.EqualOptional(t, 234.56, o.Escrow)
+		xassert.EqualOptional(t, 3, o.MinVolume)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given

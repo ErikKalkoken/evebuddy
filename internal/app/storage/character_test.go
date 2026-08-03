@@ -183,10 +183,10 @@ func TestCharacter_Create(t *testing.T) {
 		xassert.Equal(t, 5.0, o.OrdersEscrow.ValueOrZero())
 		xassert.Equal(t, 6.0, o.SkillPointsValue.ValueOrZero())
 		xassert.Equal(t, cloneJump, o.LastCloneJumpAt.ValueOrZero())
-		xassert.Equal(t, home, o.Home.MustValue())
-		xassert.Equal(t, location, o.Location.MustValue())
+		xassert.EqualOptional(t, home, o.Home)
+		xassert.EqualOptional(t, location, o.Location)
 		xassert.Equal(t, login, o.LastLoginAt.ValueOrZero())
-		xassert.Equal(t, ship, o.Ship.MustValue())
+		xassert.EqualOptional(t, ship, o.Ship)
 		xassert.Equal(t, true, o.IsTrainingWatched)
 		xassert.Equal(t, ec, o.EveCharacter)
 	})
@@ -324,7 +324,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, home, c2.Home.MustValue())
+		xassert.EqualOptional(t, home, c2.Home)
 	})
 
 	t.Run("can update last clone jump with a time", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
+		xassert.EqualOptional(t, x, c2.LastCloneJumpAt)
 	})
 
 	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
@@ -401,7 +401,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, location, c2.Location.MustValue())
+		xassert.EqualOptional(t, location, c2.Location)
 	})
 
 	t.Run("can update ship", func(t *testing.T) {
@@ -417,7 +417,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.Ship.MustValue())
+		xassert.EqualOptional(t, x, c2.Ship)
 	})
 
 	t.Run("can update is training watched", func(t *testing.T) {
