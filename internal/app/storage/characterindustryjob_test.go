@@ -210,9 +210,9 @@ func TestCharacterIndustryJob(t *testing.T) {
 				xassert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
 				xassert.EqualOptional(t, completedDate, j2.CompletedDate)
 				xassert.Equal(t, endDate2, j2.EndDate)
-				xassert.Equal(t, pauseDate, j2.PauseDate.ValueOrZero())
+				xassert.EqualOptional(t, pauseDate, j2.PauseDate)
 				xassert.Equal(t, app.JobDelivered, j2.Status)
-				xassert.Equal(t, 5, j2.SuccessfulRuns.ValueOrZero())
+				xassert.EqualOptional(t, 5, j2.SuccessfulRuns)
 			}
 		}
 	})

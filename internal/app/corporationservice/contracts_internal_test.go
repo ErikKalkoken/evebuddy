@@ -96,7 +96,7 @@ func TestUpdateContractESI(t *testing.T) {
 		xassert.Equal(t, endLocation.ID, o.EndLocation.MustValue().ID)
 		xassert.Equal(t, app.ContractStatusFinished, o.Status)
 		xassert.Equal(t, app.ContractTypeCourier, o.Type)
-		xassert.Equal(t, volume, o.Volume.ValueOrZero())
+		xassert.EqualOptional(t, volume, o.Volume)
 		ii, err := st.ListCorporationContractItems(ctx, o.ID)
 
 		require.NoError(t, err)
@@ -186,7 +186,7 @@ func TestUpdateContractESI(t *testing.T) {
 		xassert.Equal(t, startLocation.ID, o.StartLocation.MustValue().ID)
 		xassert.Equal(t, app.ContractStatusOutstanding, o.Status)
 		xassert.Equal(t, app.ContractTypeAuction, o.Type)
-		xassert.Equal(t, buyout, o.Buyout.ValueOrZero())
+		xassert.EqualOptional(t, buyout, o.Buyout)
 		ii, err := st.ListCorporationContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Len(t, ii, 1)

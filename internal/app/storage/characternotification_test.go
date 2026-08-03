@@ -46,7 +46,7 @@ func TestCharacterNotification(t *testing.T) {
 			assert.True(t, o.IsRead.ValueOrZero())
 			xassert.Equal(t, 42, o.NotificationID)
 			xassert.Equal(t, sender, o.Sender)
-			xassert.Equal(t, "text", o.Text.ValueOrZero())
+			xassert.EqualOptional(t, "text", o.Text)
 			xassert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
 			xassert.Equal(t, app.StructureDestroyed, o.Type)
 			assert.True(t, o.Recipient.IsEmpty())
@@ -81,12 +81,12 @@ func TestCharacterNotification(t *testing.T) {
 				assert.True(t, o.IsRead.ValueOrZero())
 				xassert.Equal(t, 42, o.NotificationID)
 				xassert.Equal(t, sender, o.Sender)
-				xassert.Equal(t, "text", o.Text.ValueOrZero())
+				xassert.EqualOptional(t, "text", o.Text)
 				xassert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
 				xassert.Equal(t, app.StructureDestroyed, o.Type)
-				xassert.Equal(t, "body", o.Body.ValueOrZero())
-				xassert.Equal(t, "title", o.Title.ValueOrZero())
-				xassert.Equal(t, recipient, o.Recipient.ValueOrZero())
+				xassert.EqualOptional(t, "body", o.Body)
+				xassert.EqualOptional(t, "title", o.Title)
+				xassert.EqualOptional(t, recipient, o.Recipient)
 			}
 		}
 	})
@@ -160,7 +160,7 @@ func TestCharacterNotification(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
-			xassert.Equal(t, "title", o.Title.ValueOrZero())
+			xassert.EqualOptional(t, "title", o.Title)
 		}
 	})
 	t.Run("can update body", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestCharacterNotification(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 		if assert.NoError(t, err) {
-			xassert.Equal(t, "body", o.Body.ValueOrZero())
+			xassert.EqualOptional(t, "body", o.Body)
 		}
 	})
 	t.Run("can mark notifs as processed", func(t *testing.T) {

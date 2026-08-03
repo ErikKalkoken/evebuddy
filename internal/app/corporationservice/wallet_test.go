@@ -72,7 +72,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 		got, err := s.GetWalletBalancesTotal(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			xassert.Equal(t, 36, got.ValueOrZero())
+			xassert.EqualOptional(t, 36, got)
 		}
 	})
 	t.Run("return empty when no balances found", func(t *testing.T) {

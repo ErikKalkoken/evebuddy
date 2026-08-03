@@ -57,12 +57,12 @@ func TestOptional_SetWhenEmpty(t *testing.T) {
 	t.Run("sets an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		x.SetWhenEmpty(45)
-		xassert.Equal(t, 45, x.ValueOrZero())
+		xassert.EqualOptional(t, 45, x)
 	})
 	t.Run("does not set a non-empty optional", func(t *testing.T) {
 		x := optional.New(12)
 		x.SetWhenEmpty(45)
-		xassert.Equal(t, 12, x.ValueOrZero())
+		xassert.EqualOptional(t, 12, x)
 	})
 }
 

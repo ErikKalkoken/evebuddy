@@ -34,9 +34,9 @@ func TestMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, "Dummy", l.Name.ValueOrZero())
-				xassert.Equal(t, "xyz", l.Color.ValueOrZero())
-				xassert.Equal(t, 99, l.UnreadCount.ValueOrZero())
+				xassert.EqualOptional(t, "Dummy", l.Name)
+				xassert.EqualOptional(t, "xyz", l.Color)
+				xassert.EqualOptional(t, 99, l.UnreadCount)
 			}
 		}
 	})
@@ -58,9 +58,9 @@ func TestMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, "Dummy", l.Name.ValueOrZero())
-				xassert.Equal(t, "xyz", l.Color.ValueOrZero())
-				xassert.Equal(t, 99, l.UnreadCount.ValueOrZero())
+				xassert.EqualOptional(t, "Dummy", l.Name)
+				xassert.EqualOptional(t, "xyz", l.Color)
+				xassert.EqualOptional(t, 99, l.UnreadCount)
 			}
 		}
 	})
@@ -86,7 +86,7 @@ func TestMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, "Dummy", l.Name.ValueOrZero())
+				xassert.EqualOptional(t, "Dummy", l.Name)
 			}
 		}
 	})
@@ -107,7 +107,7 @@ func TestMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, "Johnny", l.Name.ValueOrZero())
+				xassert.EqualOptional(t, "Johnny", l.Name)
 			}
 		}
 	})

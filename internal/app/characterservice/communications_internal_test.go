@@ -64,7 +64,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, notificationID, o.NotificationID)
 		xassert.Equal(t, sender, o.Sender)
 		xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
-		xassert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text.ValueOrZero())
+		xassert.EqualOptional(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
 		xassert.Equal(t, timestamp, o.Timestamp)
 		xassert.Equal(t, c.ID, o.Recipient.ValueOrZero().ID)
 
@@ -255,9 +255,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, notificationID, o.NotificationID)
 		xassert.Equal(t, corporation, o.Sender)
 		xassert.Equal(t, app.CharLeftCorpMsg, o.Type)
-		xassert.Equal(t, text, o.Text.ValueOrZero())
+		xassert.EqualOptional(t, text, o.Text)
 		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
-		xassert.Equal(t, corporation, o.Recipient.ValueOrZero())
+		xassert.EqualOptional(t, corporation, o.Recipient)
 	})
 
 	t.Run("should abort when sender can not be resolved", func(t *testing.T) {
@@ -344,9 +344,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, notificationID, o.NotificationID)
 		xassert.Equal(t, corporation, o.Sender)
 		xassert.Equal(t, app.CharLeftCorpMsg, o.Type)
-		xassert.Equal(t, text, o.Text.ValueOrZero())
+		xassert.EqualOptional(t, text, o.Text)
 		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
-		xassert.Equal(t, corporation, o.Recipient.ValueOrZero())
+		xassert.EqualOptional(t, corporation, o.Recipient)
 	})
 }
 

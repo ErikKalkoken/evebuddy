@@ -38,7 +38,7 @@ func TestCharacterSkillqueue(t *testing.T) {
 			xassert.Equal(t, item2, sq.Item(1))
 			assert.InDelta(t, 0.5, sq.CompletionP().ValueOrZero(), 0.01)
 			assert.True(t, sq.IsActive())
-			xassert.Equal(t, 2, sq.RemainingCount().ValueOrZero())
+			xassert.EqualOptional(t, 2, sq.RemainingCount())
 		}
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {

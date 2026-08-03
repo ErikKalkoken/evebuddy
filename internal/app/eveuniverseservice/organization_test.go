@@ -203,7 +203,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, taxRate, o.TaxRate)
 		xassert.Equal(t, ticker, o.Ticker)
-		xassert.Equal(t, url, o.URL.ValueOrZero())
+		xassert.EqualOptional(t, url, o.URL)
 	})
 
 	t.Run("can handle no CEO and no creator", func(t *testing.T) {
@@ -360,7 +360,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, taxRate, o.TaxRate)
 		xassert.Equal(t, ticker, o.Ticker)
-		xassert.Equal(t, url, o.URL.ValueOrZero())
+		xassert.EqualOptional(t, url, o.URL)
 	})
 
 	t.Run("should update existing", func(t *testing.T) {
@@ -424,7 +424,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, name, c2.Name)
 		xassert.Equal(t, taxRate, c2.TaxRate)
 		xassert.Equal(t, ticker, c2.Ticker)
-		xassert.Equal(t, url, c2.URL.ValueOrZero())
+		xassert.EqualOptional(t, url, c2.URL)
 	})
 }
 
@@ -499,7 +499,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, name, c2.Name)
 		xassert.Equal(t, taxRate, c2.TaxRate)
 		xassert.Equal(t, ticker, c2.Ticker)
-		xassert.Equal(t, url, c2.URL.ValueOrZero())
+		xassert.EqualOptional(t, url, c2.URL)
 		ee, err := st.GetEveEntity(t.Context(), c1.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, c2.Name, ee.Name)

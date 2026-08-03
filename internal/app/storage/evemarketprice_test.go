@@ -32,8 +32,8 @@ func TestStorage_EveMarketPrices(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 42, x.TypeID)
-		xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
-		xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
+		xassert.EqualOptional(t, 1.23, x.AdjustedPrice)
+		xassert.EqualOptional(t, 4.56, x.AveragePrice)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -52,8 +52,8 @@ func TestStorage_EveMarketPrices(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 42, x.TypeID)
-		xassert.Equal(t, 1.23, x.AdjustedPrice.ValueOrZero())
-		xassert.Equal(t, 4.56, x.AveragePrice.ValueOrZero())
+		xassert.EqualOptional(t, 1.23, x.AdjustedPrice)
+		xassert.EqualOptional(t, 4.56, x.AveragePrice)
 	})
 
 	t.Run("can fetch existing", func(t *testing.T) {

@@ -62,9 +62,9 @@ func TestLocation(t *testing.T) {
 			x, err := st.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, "Alpha", x.Name)
-				xassert.Equal(t, owner, x.Owner.ValueOrZero())
-				xassert.Equal(t, system, x.SolarSystem.ValueOrZero())
-				xassert.Equal(t, myType, x.Type.ValueOrZero())
+				xassert.EqualOptional(t, owner, x.Owner)
+				xassert.EqualOptional(t, system, x.SolarSystem)
+				xassert.EqualOptional(t, myType, x.Type)
 				xassert.Equal(t, updatedAt.UTC(), x.UpdatedAt.UTC())
 			}
 		}
@@ -103,9 +103,9 @@ func TestLocation(t *testing.T) {
 			x, err := st.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, "Alpha", x.Name)
-				xassert.Equal(t, owner, x.Owner.ValueOrZero())
-				xassert.Equal(t, system, x.SolarSystem.ValueOrZero())
-				xassert.Equal(t, myType, x.Type.ValueOrZero())
+				xassert.EqualOptional(t, owner, x.Owner)
+				xassert.EqualOptional(t, system, x.SolarSystem)
+				xassert.EqualOptional(t, myType, x.Type)
 				xassert.Equal(t, updatedAt, x.UpdatedAt)
 			}
 		}

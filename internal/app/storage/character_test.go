@@ -173,19 +173,19 @@ func TestCharacter_Create(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacter(t.Context(), arg.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, 1.2, o.WalletBalance.ValueOrZero())
-		xassert.Equal(t, 123, o.TrainedSP.ValueOrZero())
-		xassert.Equal(t, 2.0, o.ContractItemsValue.ValueOrZero())
-		xassert.Equal(t, 3.0, o.ContractsEscrow.ValueOrZero())
-		xassert.Equal(t, 3.4, o.AssetValue.ValueOrZero())
-		xassert.Equal(t, 4.0, o.OrderItemsValue.ValueOrZero())
-		xassert.Equal(t, 42, o.UnallocatedSP.ValueOrZero())
-		xassert.Equal(t, 5.0, o.OrdersEscrow.ValueOrZero())
-		xassert.Equal(t, 6.0, o.SkillPointsValue.ValueOrZero())
-		xassert.Equal(t, cloneJump, o.LastCloneJumpAt.ValueOrZero())
+		xassert.EqualOptional(t, 1.2, o.WalletBalance)
+		xassert.EqualOptional(t, 123, o.TrainedSP)
+		xassert.EqualOptional(t, 2.0, o.ContractItemsValue)
+		xassert.EqualOptional(t, 3.0, o.ContractsEscrow)
+		xassert.EqualOptional(t, 3.4, o.AssetValue)
+		xassert.EqualOptional(t, 4.0, o.OrderItemsValue)
+		xassert.EqualOptional(t, 42, o.UnallocatedSP)
+		xassert.EqualOptional(t, 5.0, o.OrdersEscrow)
+		xassert.EqualOptional(t, 6.0, o.SkillPointsValue)
+		xassert.EqualOptional(t, cloneJump, o.LastCloneJumpAt)
 		xassert.EqualOptional(t, home, o.Home)
 		xassert.EqualOptional(t, location, o.Location)
-		xassert.Equal(t, login, o.LastLoginAt.ValueOrZero())
+		xassert.EqualOptional(t, login, o.LastLoginAt)
 		xassert.EqualOptional(t, ship, o.Ship)
 		xassert.Equal(t, true, o.IsTrainingWatched)
 		xassert.Equal(t, ec, o.EveCharacter)
@@ -251,7 +251,7 @@ func TestListCharacters(t *testing.T) {
 		if assert.NotNil(t, c2) {
 			assert.Len(t, cc, 1)
 			xassert.Equal(t, c1.ID, c2.ID)
-			xassert.Equal(t, c1.LastLoginAt.ValueOrZero(), c2.LastLoginAt.ValueOrZero())
+			xassert.EqualOptional(t, c1.LastLoginAt.ValueOrZero(), c2.LastLoginAt)
 			xassert.Equal(t, c1.Ship, c2.Ship)
 			xassert.Equal(t, c1.Location, c2.Location)
 			xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
@@ -484,7 +484,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.WalletBalance.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.WalletBalance)
 	})
 
 	t.Run("can disable all training watchers", func(t *testing.T) {
@@ -523,7 +523,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.ContractsEscrow.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.ContractsEscrow)
 	})
 
 	t.Run("can update market escrow", func(t *testing.T) {
@@ -539,7 +539,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.OrdersEscrow.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.OrdersEscrow)
 	})
 
 	t.Run("can update contract items value", func(t *testing.T) {
@@ -555,7 +555,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.ContractItemsValue.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.ContractItemsValue)
 	})
 
 	t.Run("can update order items value", func(t *testing.T) {
@@ -571,7 +571,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.OrderItemsValue.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.OrderItemsValue)
 	})
 
 	t.Run("can update skill points value", func(t *testing.T) {
@@ -587,7 +587,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, x, c2.SkillPointsValue.ValueOrZero())
+		xassert.EqualOptional(t, x, c2.SkillPointsValue)
 	})
 }
 
@@ -608,7 +608,7 @@ func TestCharacterAssetValue(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, v, c2.AssetValue.ValueOrZero())
+		xassert.EqualOptional(t, v, c2.AssetValue)
 	})
 
 	t.Run("can reset", func(t *testing.T) {
@@ -637,7 +637,7 @@ func TestCharacterAssetValue(t *testing.T) {
 		got, err := st.GetCharacterAssetValue(t.Context(), c1.ID)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, v, got.ValueOrZero())
+		xassert.EqualOptional(t, v, got)
 	})
 
 	t.Run("can get empty value", func(t *testing.T) {

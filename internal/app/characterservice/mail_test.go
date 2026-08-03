@@ -67,7 +67,7 @@ func TestUpdateMailBodies(t *testing.T) {
 		xassert.Equal(t, "body", body)
 		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body", mail2.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body", mail2.Body)
 	})
 	t.Run("Can download missing mail bodies", func(t *testing.T) {
 		// given
@@ -96,10 +96,10 @@ func TestUpdateMailBodies(t *testing.T) {
 		require.False(t, aborted)
 		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body1", mail1b.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body1", mail1b.Body)
 		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body2", mail2b.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body2", mail2b.Body)
 	})
 }
 
@@ -166,6 +166,6 @@ func TestSendMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body", m.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body", m.Body)
 	})
 }
