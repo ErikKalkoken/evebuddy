@@ -31,3 +31,7 @@ func TestEmpty(t *testing.T) {
 func TestNotEmpty(t *testing.T) {
 	assert.True(t, xassert.NotEmpty(t, optional.New(1)))
 }
+
+func TestEqualOptional(t *testing.T) {
+	assert.True(t, xassert.EqualOptional(t, 1, optional.New(1)))
+}

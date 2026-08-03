@@ -65,7 +65,10 @@ type EveBloodline struct {
 }
 
 // Logo returns the logo for a bloodline and reports whether one exists.
-func (eb EveBloodline) Logo() (fyne.Resource, bool) {
+func (eb *EveBloodline) Logo() (fyne.Resource, bool) {
+	if eb == nil {
+		return nil, false
+	}
 	iconID, ok := eveBloodline2IconID[eb.ID]
 	if !ok {
 		return nil, false

@@ -637,15 +637,9 @@ func TestGetOrCreateEveFactionESI(t *testing.T) {
 		xassert.Equal(t, sizeFactor, x1.SizeFactor)
 		xassert.Equal(t, stationCount, x1.StationCount)
 		xassert.Equal(t, stationSystemCount, x1.StationSystemCount)
-		if xassert.NotEmpty(t, x1.Corporation) {
-			xassert.Equal(t, corporation, x1.Corporation.MustValue())
-		}
-		if xassert.NotEmpty(t, x1.MilitiaCorporation) {
-			xassert.Equal(t, militaryCorporation, x1.MilitiaCorporation.MustValue())
-		}
-		if xassert.NotEmpty(t, x1.SolarSystem) {
-			xassert.Equal(t, solarSystem.ID, x1.SolarSystem.MustValue().ID)
-		}
+		xassert.EqualOptional(t, corporation, x1.Corporation)
+		xassert.EqualOptional(t, militaryCorporation, x1.MilitiaCorporation)
+		xassert.EqualOptional(t, solarSystem.ToEveEntity(), x1.SolarSystem)
 		x2, err := st.GetEveFaction(t.Context(), factionID)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)

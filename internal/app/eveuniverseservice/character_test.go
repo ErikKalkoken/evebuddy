@@ -232,9 +232,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Equal(t, character.ID, o.ID)
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, race, o.Race)
-		if xassert.NotEmpty(t, o.Bloodline) {
-			xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
-		}
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		assert.Empty(t, o.CorporationTitle)
 		// assert.Empty(t, o.SecurityStatus)
 		x2, err := st.GetEveCharacter(t.Context(), character.ID)
@@ -364,9 +362,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 		xassert.Equal(t, character.ID, o.ID)
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, race, o.Race)
-		if xassert.NotEmpty(t, o.Bloodline) {
-			xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
-		}
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		assert.Empty(t, o.CorporationTitle)
 		if assert.NotEmpty(t, o.SecurityStatus) {
 			xassert.Equal(t, securityStatus, o.SecurityStatus.MustValue())
@@ -824,4 +820,15 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		_, err2 := st.GetEveCharacter(t.Context(), characterID)
 		assert.ErrorIs(t, err2, app.ErrNotFound)
 	})
+}
+
+func eveBloodlineToEntityShort(eb *app.EveBloodline) *app.EntityShort {
+	if eb == nil {
+		return nil
+	}
+	o := &app.EntityShort{
+		ID:   eb.ID,
+		Name: eb.Name,
+	}
+	return o
 }

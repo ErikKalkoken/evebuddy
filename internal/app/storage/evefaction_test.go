@@ -98,14 +98,8 @@ func TestEveFaction(t *testing.T) {
 		xassert.Equal(t, sizeFactor, ef.SizeFactor)
 		xassert.Equal(t, stationCount, ef.StationCount)
 		xassert.Equal(t, stationSystemCount, ef.StationSystemCount)
-		if xassert.NotEmpty(t, ef.Corporation) {
-			xassert.Equal(t, corporation, ef.Corporation.MustValue())
-		}
-		if xassert.NotEmpty(t, ef.MilitiaCorporation) {
-			xassert.Equal(t, militaryCorporation, ef.MilitiaCorporation.MustValue())
-		}
-		if xassert.NotEmpty(t, ef.SolarSystem) {
-			xassert.Equal(t, solarSystem.ID, ef.SolarSystem.MustValue().ID)
-		}
+		xassert.EqualOptional(t, corporation, ef.Corporation)
+		xassert.EqualOptional(t, militaryCorporation, ef.MilitiaCorporation)
+		xassert.EqualOptional(t, solarSystem.ToEveEntity(), ef.SolarSystem)
 	})
 }

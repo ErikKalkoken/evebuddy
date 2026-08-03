@@ -174,9 +174,7 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		if xassert.NotEmpty(t, c2.SecurityStatus) {
-			xassert.Equal(t, securityStatus, c2.SecurityStatus.MustValue())
-		}
+		xassert.EqualOptional(t, securityStatus, c2.SecurityStatus)
 	})
 
 	t.Run("can delete", func(t *testing.T) {
