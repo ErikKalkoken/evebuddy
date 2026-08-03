@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -92,23 +91,23 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 
 	mailMenu := fyne.NewMenu("")
-	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characters.NewSendMail(u, c, mode, mail)
-		if mode != app.SendMailNew {
-			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
-		}
-		characterNav.PushAndHideNavBar(
-			xwidget.NewAppBar(
-				"Send Mail",
-				page,
-				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
-					if page.SendAction() {
-						characterNav.Pop()
-					}
-				}),
-			),
-		)
-	}
+	// u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	// 	page := characters.NewSendMail(u, c, mode, mail)
+	// 	if mode != app.SendMailNew {
+	// 		characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
+	// 	}
+	// 	characterNav.PushAndHideNavBar(
+	// 		xwidget.NewAppBar(
+	// 			"Send Mail",
+	// 			page,
+	// 			kxwidget.NewIconButton(theme.MailSendIcon(), func() {
+	// 				if page.SendAction() {
+	// 					characterNav.Pop()
+	// 				}
+	// 			}),
+	// 		),
+	// 	)
+	// }
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),

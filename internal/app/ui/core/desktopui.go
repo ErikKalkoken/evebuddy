@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -216,9 +215,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.characterMails.OnUpdate = func(unread, _ int) {
 		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 	}
-	u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		characters.ShowSendMailWindow(u, character, mode, mail)
-	}
+	// u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	// 	characters.ShowSendMailWindow(u, character, mode, mail)
+	// }
 
 	characterCommunicationsNav := xwidget.NewNavPage(
 		"Communications",

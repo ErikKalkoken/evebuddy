@@ -26,7 +26,7 @@ import (
 
 const labelWith = 45
 
-type SendMail struct {
+type sendMail struct {
 	widget.BaseWidget
 
 	body      *widget.Entry
@@ -41,7 +41,7 @@ type SendMail struct {
 func ShowSendMailWindow(u baseUI, c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
-	page := NewSendMail(u, c, mode, mail)
+	page := newSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	var send *widget.Button
 	send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
@@ -65,8 +65,8 @@ func ShowSendMailWindow(u baseUI, c *app.Character, mode app.SendMailMode, mail 
 	w.Show()
 }
 
-func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
-	a := &SendMail{
+func newSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *sendMail {
+	a := &sendMail{
 		u: u,
 		w: u.MainWindow(),
 	}
@@ -129,7 +129,7 @@ func NewSendMail(u baseUI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	return a
 }
 
-func (a *SendMail) CreateRenderer() fyne.WidgetRenderer {
+func (a *sendMail) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(a.from, a.to, a.subject),
 		nil,
@@ -140,12 +140,12 @@ func (a *SendMail) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *SendMail) SetWindow(w fyne.Window) {
+func (a *sendMail) SetWindow(w fyne.Window) {
 	a.w = w
 }
 
 // SendAction tries to send the current mail and reports whether it was successful
-func (a *SendMail) SendAction() bool {
+func (a *sendMail) SendAction() bool {
 	showErrorDialog := func(message string) {
 		ui.ShowInformation("Failed to send mail", message, a.u.MainWindow())
 	}

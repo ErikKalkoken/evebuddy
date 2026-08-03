@@ -83,11 +83,10 @@ func (f mailFolderNode) icon() fyne.Resource {
 type Mails struct {
 	widget.BaseWidget
 
-	Detail        *mailDetail
-	Headers       *fyne.Container
-	OnUpdate      func(unread, missing int)
-	OnSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
-	OnSelected    func()
+	Detail     *mailDetail
+	Headers    *fyne.Container
+	OnUpdate   func(unread, missing int)
+	OnSelected func()
 
 	character        atomic.Pointer[app.Character]
 	compose          *widget.Button
@@ -650,14 +649,11 @@ func (a *Mails) fetchHeaders(ctx context.Context, f *mailFolderNode) ([]*app.Cha
 }
 
 func (a *Mails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
-	if a.OnSendMessage == nil {
-		return
-	}
 	c := a.character.Load()
 	if c == nil {
 		return
 	}
-	a.OnSendMessage(c, mode, mail)
+	ShowSendMailWindow(a.u, c, mode, mail)
 }
 
 func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
