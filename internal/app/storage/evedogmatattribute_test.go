@@ -38,11 +38,11 @@ func TestEveDogmaAttribute(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			xassert.Equal(t, 42, x1.ID)
-			xassert.Equal(t, 1.2, x1.DefaultValue.ValueOrZero())
-			xassert.Equal(t, "description", x1.Description.ValueOrZero())
-			xassert.Equal(t, "display name", x1.DisplayName.ValueOrZero())
-			xassert.Equal(t, 7, x1.IconID.ValueOrZero())
-			xassert.Equal(t, "name", x1.Name.ValueOrZero())
+			xassert.EqualOptional(t, 1.2, x1.DefaultValue)
+			xassert.EqualOptional(t, "description", x1.Description)
+			xassert.EqualOptional(t, "display name", x1.DisplayName)
+			xassert.EqualOptional(t, 7, x1.IconID)
+			xassert.EqualOptional(t, "name", x1.Name)
 			assert.True(t, x1.IsHighGood.ValueOrZero())
 			assert.True(t, x1.IsPublished.ValueOrZero())
 			assert.True(t, x1.IsStackable.ValueOrZero())

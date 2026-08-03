@@ -45,10 +45,10 @@ func TestCharacterMail(t *testing.T) {
 			m, err := st.GetCharacterMail(ctx, c.ID, 42)
 			assert.NoError(t, err)
 			xassert.Equal(t, 42, m.MailID)
-			xassert.Equal(t, "body", m.Body.ValueOrZero())
+			xassert.EqualOptional(t, "body", m.Body)
 			xassert.Equal(t, f, m.From)
 			xassert.Equal(t, c.ID, m.CharacterID)
-			xassert.Equal(t, "subject", m.Subject.ValueOrZero())
+			xassert.EqualOptional(t, "subject", m.Subject)
 			xassert.Equal(t, timestamp, m.Timestamp)
 			xassert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
 			xassert.Equal(t, label.Name, m.Labels[0].Name)
@@ -92,7 +92,7 @@ func TestCharacterMail(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
 			assert.NoError(t, err)
-			xassert.Equal(t, "alpha", got.Body.ValueOrZero())
+			xassert.EqualOptional(t, "alpha", got.Body)
 		}
 	})
 	t.Run("can set processed", func(t *testing.T) {

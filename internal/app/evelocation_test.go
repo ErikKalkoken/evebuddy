@@ -236,7 +236,7 @@ func TestEveLocation_ToShort(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			xassert.Equal(t, tc.want, tc.in.ToShort())
+			xassert.Equal(t, tc.want, tc.in.ToEveLocationShort())
 		})
 	}
 }

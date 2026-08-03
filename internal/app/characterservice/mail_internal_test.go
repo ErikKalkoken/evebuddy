@@ -131,7 +131,7 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c1.ID, mailID)
 		require.NoError(t, err)
-		xassert.Equal(t, subject, m.Subject.ValueOrZero())
+		xassert.EqualOptional(t, subject, m.Subject)
 		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 		require.NoError(t, err)
 		got := set.Of[int64]()
@@ -238,7 +238,7 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "blah blah blah", m.Body.ValueOrZero())
+		xassert.EqualOptional(t, "blah blah blah", m.Body)
 		assert.True(t, m.IsRead.ValueOrZero())
 		assert.Len(t, m.Labels, 1)
 		xassert.Equal(t, int64(32), m.Labels[0].LabelID)
@@ -394,9 +394,9 @@ func TestUpdateMailLabel(t *testing.T) {
 		if assert.NoError(t, err) {
 			l2, err := st.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, "PINK", l2.Name.ValueOrZero())
-				xassert.Equal(t, "#660066", l2.Color.ValueOrZero())
-				xassert.Equal(t, 4, l2.UnreadCount.ValueOrZero())
+				xassert.EqualOptional(t, "PINK", l2.Name)
+				xassert.EqualOptional(t, "#660066", l2.Color)
+				xassert.EqualOptional(t, 4, l2.UnreadCount)
 			}
 		}
 	})

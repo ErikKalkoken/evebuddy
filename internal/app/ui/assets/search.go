@@ -139,7 +139,7 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 		r.locationDisplay = xwidget.RichTextSegmentsFromText("?")
 		return
 	}
-	r.location = el.ToShort()
+	r.location = el.ToEveLocationShort()
 	r.locationName = el.DisplayName()
 	r.locationDisplay = el.DisplayRichText()
 	n, ok := ac.Node(itemID)

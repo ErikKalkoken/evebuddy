@@ -124,7 +124,7 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 	return nil
 }
 
-func (el EveLocation) ToShort() *EveLocationShort {
+func (el EveLocation) ToEveLocationShort() *EveLocationShort {
 	o := &EveLocationShort{
 		ID:   el.ID,
 		Name: optional.New(el.Name),

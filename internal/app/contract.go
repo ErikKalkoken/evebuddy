@@ -205,7 +205,7 @@ type CharacterContract struct {
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
 	EndLocation       optional.Optional[*EveLocationShort]
-	EndSolarSystem    optional.Optional[*EntityShort]
+	EndSolarSystem    optional.Optional[*EntityShort] // TODO: Convert to EveEntity
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
@@ -213,7 +213,7 @@ type CharacterContract struct {
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
 	StartLocation     optional.Optional[*EveLocationShort]
-	StartSolarSystem  optional.Optional[*EntityShort]
+	StartSolarSystem  optional.Optional[*EntityShort] // TODO: Convert to EveEntity
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]

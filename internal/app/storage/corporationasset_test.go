@@ -55,7 +55,7 @@ func TestCorporationAsset(t *testing.T) {
 		xassert.Equal(t, app.TypeOther, x.LocationType)
 		xassert.Equal(t, "Alpha", x.Name)
 		xassert.Equal(t, 7, x.Quantity)
-		xassert.Equal(t, 1.24, x.Price.ValueOrZero())
+		xassert.EqualOptional(t, 1.24, x.Price)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given

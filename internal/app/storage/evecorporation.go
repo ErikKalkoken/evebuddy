@@ -72,7 +72,7 @@ func eveCorporationFromDBModel(
 		TaxRate:     corporation.TaxRate,
 		Ticker:      corporation.Ticker,
 		URL:         optional.FromZeroValue(corporation.Url),
-		WarEligible: optional.FromZeroValue(corporation.WarEligible),
+		WarEligible: optional.New(corporation.WarEligible),
 	}
 	return o
 }
@@ -91,9 +91,9 @@ type UpdateOrCreateEveCorporationParams struct {
 	CeoID         optional.Optional[int64]
 	CreatorID     optional.Optional[int64]
 	DateFounded   optional.Optional[time.Time]
-	Description   optional.Optional[string]
+	Description   string
 	FactionID     optional.Optional[int64]
-	HomeStationID optional.Optional[int64]
+	HomeStationID int64
 	ID            int64
 	MemberCount   int64
 	Name          string
@@ -101,21 +101,21 @@ type UpdateOrCreateEveCorporationParams struct {
 	TaxRate       float64
 	Ticker        string
 	URL           optional.Optional[string]
-	WarEligible   optional.Optional[bool]
+	WarEligible   bool
 }
 
 func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateOrCreateEveCorporationParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("update or create corporation industry job: %+v: invalid parameters", arg)
 	}
-	arg2 := queries.UpdateOrCreateEveCorporationParams{
+	err := st.qRW.UpdateOrCreateEveCorporation(ctx, queries.UpdateOrCreateEveCorporationParams{
 		AllianceID:    optional.ToNullInt64(arg.AllianceID),
 		CeoID:         optional.ToNullInt64(arg.CeoID),
 		CreatorID:     optional.ToNullInt64(arg.CreatorID),
 		DateFounded:   optional.ToNullTime(arg.DateFounded),
-		Description:   arg.Description.ValueOrZero(),
+		Description:   arg.Description,
 		FactionID:     optional.ToNullInt64(arg.FactionID),
-		HomeStationID: optional.ToNullInt64(arg.HomeStationID),
+		HomeStationID: NewNullInt64(arg.HomeStationID),
 		ID:            arg.ID,
 		MemberCount:   arg.MemberCount,
 		Name:          arg.Name,
@@ -123,9 +123,8 @@ func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateO
 		TaxRate:       float64(arg.TaxRate),
 		Ticker:        arg.Ticker,
 		Url:           arg.URL.ValueOrZero(),
-		WarEligible:   arg.WarEligible.ValueOrZero(),
-	}
-	err := st.qRW.UpdateOrCreateEveCorporation(ctx, arg2)
+		WarEligible:   arg.WarEligible,
+	})
 	if err != nil {
 		return fmt.Errorf("UpdateOrCreateEveCorporation: %+v: %w", arg, err)
 	}

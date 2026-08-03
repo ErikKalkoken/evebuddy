@@ -54,6 +54,10 @@ func (f Factory) RandomTime() time.Time {
 	return time.Now().Add(-d).UTC()
 }
 
+func (f Factory) RandomTimeRounded() time.Time {
+	return f.RandomTime().Round(time.Second)
+}
+
 // CreateCharacter creates and returns a new character. Empty optional values are not filled.
 func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
 	var arg storage.CreateCharacterParams
@@ -2066,14 +2070,14 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 		arg.CreatorID.Set(c.ID)
 	}
 	if arg.DateFounded.IsEmpty() {
-		arg.DateFounded = optional.New(time.Now().Add(-100 * time.Hour).UTC())
+		arg.DateFounded = optional.New(f.RandomTimeRounded())
 	}
-	if arg.Description.IsEmpty() {
-		arg.Description.Set(fake.Paragraphs())
+	if arg.Description == "" {
+		arg.Description = fake.Paragraphs()
 	}
-	if arg.HomeStationID.IsEmpty() {
-		station := f.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
-		arg.HomeStationID.Set(station.ID)
+	if arg.HomeStationID == 0 {
+		x := f.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		arg.HomeStationID = x.ID
 	}
 	if arg.MemberCount == 0 {
 		arg.MemberCount = rand.Int64N(1000 + 1)

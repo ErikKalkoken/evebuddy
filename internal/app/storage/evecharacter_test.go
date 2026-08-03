@@ -43,7 +43,7 @@ func TestEveCharacter(t *testing.T) {
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, ID, o.ID)
 		xassert.Equal(t, corporation, o.Corporation)
-		xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		xassert.Equal(t, race, o.Race)
 	})
 
@@ -85,17 +85,17 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetEveCharacter(t.Context(), ID)
 		require.NoError(t, err)
-		xassert.Equal(t, alliance, o.Alliance.MustValue())
+		xassert.EqualOptional(t, alliance, o.Alliance)
 		xassert.Equal(t, birthday, o.Birthday)
-		xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		xassert.Equal(t, corporation, o.Corporation)
-		xassert.Equal(t, corporationTitle, o.CorporationTitle.MustValue())
-		xassert.Equal(t, description, o.Description.MustValue())
-		xassert.Equal(t, faction, o.Faction.MustValue())
+		xassert.EqualOptional(t, corporationTitle, o.CorporationTitle)
+		xassert.EqualOptional(t, description, o.Description)
+		xassert.EqualOptional(t, faction, o.Faction)
 		xassert.Equal(t, gender, o.Gender)
 		xassert.Equal(t, ID, o.ID)
 		xassert.Equal(t, name, o.Name)
-		xassert.Equal(t, securityStatus, o.SecurityStatus.MustValue())
+		xassert.EqualOptional(t, securityStatus, o.SecurityStatus)
 	})
 
 	t.Run("can update existing 1", func(t *testing.T) {
@@ -136,16 +136,16 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, alliance, c2.Alliance.MustValue())
+		xassert.EqualOptional(t, alliance, c2.Alliance)
 		xassert.Equal(t, birthday, c2.Birthday)
-		xassert.Equal(t, bloodline.ID, c2.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), c2.Bloodline)
 		xassert.Equal(t, corporation, c2.Corporation)
-		xassert.Equal(t, corporationTitle, c2.CorporationTitle.MustValue())
-		xassert.Equal(t, description, c2.Description.MustValue())
-		xassert.Equal(t, faction, c2.Faction.MustValue())
+		xassert.EqualOptional(t, corporationTitle, c2.CorporationTitle)
+		xassert.EqualOptional(t, description, c2.Description)
+		xassert.EqualOptional(t, faction, c2.Faction)
 		xassert.Equal(t, gender, c2.Gender)
 		xassert.Equal(t, name, c2.Name)
-		xassert.Equal(t, securityStatus, c2.SecurityStatus.MustValue())
+		xassert.EqualOptional(t, securityStatus, c2.SecurityStatus)
 	})
 
 	t.Run("can update existing with neutral security status", func(t *testing.T) {
@@ -174,9 +174,7 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		if xassert.NotEmpty(t, c2.SecurityStatus) {
-			xassert.Equal(t, securityStatus, c2.SecurityStatus.MustValue())
-		}
+		xassert.EqualOptional(t, securityStatus, c2.SecurityStatus)
 	})
 
 	t.Run("can delete", func(t *testing.T) {
@@ -236,11 +234,11 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, alliance, c2.Alliance.ValueOrZero())
+		xassert.EqualOptional(t, alliance, c2.Alliance)
 		xassert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
 		xassert.Equal(t, c1.Corporation, c2.Corporation)
 		xassert.Equal(t, c1.Description, c2.Description)
-		xassert.Equal(t, faction, c2.Faction.ValueOrZero())
+		xassert.EqualOptional(t, faction, c2.Faction)
 		xassert.Equal(t, c1.ID, c2.ID)
 		xassert.Equal(t, c1.Name, c2.Name)
 	})
@@ -257,4 +255,15 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, "Erik", c2.Name)
 	})
+}
+
+func eveBloodlineToEntityShort(eb *app.EveBloodline) *app.EntityShort {
+	if eb == nil {
+		return nil
+	}
+	o := &app.EntityShort{
+		ID:   eb.ID,
+		Name: eb.Name,
+	}
+	return o
 }

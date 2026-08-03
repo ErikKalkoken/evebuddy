@@ -65,9 +65,7 @@ func TestEveRace(t *testing.T) {
 		xassert.Equal(t, raceID, x.ID)
 		xassert.Equal(t, description, x.Description)
 		xassert.Equal(t, name, x.Name)
-		if xassert.NotEmpty(t, x.Faction) {
-			xassert.Equal(t, faction, x.Faction.MustValue())
-		}
+		xassert.EqualOptional(t, faction, x.Faction)
 	})
 
 	t.Run("can update existing", func(t *testing.T) {
@@ -93,8 +91,6 @@ func TestEveRace(t *testing.T) {
 		xassert.Equal(t, x1.ID, x.ID)
 		xassert.Equal(t, description, x.Description)
 		xassert.Equal(t, name, x.Name)
-		if xassert.NotEmpty(t, x.Faction) {
-			xassert.Equal(t, faction, x.Faction.MustValue())
-		}
+		xassert.EqualOptional(t, faction, x.Faction)
 	})
 }

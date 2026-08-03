@@ -137,10 +137,9 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			factionID = optional.FromPtr(r.EnlistedFactionId)
 		}
 		allianceID := optional.FromPtr(r.AllianceId)
-		homeStationID := optional.New(r.HomeStationId)
 
-		ids := set.Of(corporationID)
-		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID, homeStationID} {
+		ids := set.Of(corporationID, r.HomeStationId)
+		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID} {
 			if v, ok := o.Value(); ok {
 				ids.Add(v)
 			}
@@ -155,8 +154,8 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			CreatorID:     creatorID,
 			FactionID:     factionID,
 			DateFounded:   optional.FromPtr(r.DateFounded),
-			Description:   optional.New(r.Description),
-			HomeStationID: homeStationID,
+			Description:   r.Description,
+			HomeStationID: r.HomeStationId,
 			ID:            corporationID,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,
@@ -164,7 +163,7 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			TaxRate:       r.TaxRates.Isk,
 			Ticker:        r.Ticker,
 			URL:           optional.FromPtr(r.Url),
-			WarEligible:   optional.New(r.WarEligible),
+			WarEligible:   r.WarEligible,
 		}); err != nil {
 			return nil, err
 		}

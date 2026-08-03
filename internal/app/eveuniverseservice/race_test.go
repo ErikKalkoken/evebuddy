@@ -64,9 +64,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, name, x1.Name)
 		xassert.Equal(t, description, x1.Description)
-		if xassert.NotEmpty(t, x1.Faction) {
-			xassert.Equal(t, faction, x1.Faction.MustValue())
-		}
+		xassert.EqualOptional(t, faction, x1.Faction)
 		x2, err := st.GetEveRace(t.Context(), raceID)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
@@ -108,9 +106,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, name, x2.Name)
 		xassert.Equal(t, description, x2.Description)
-		if xassert.NotEmpty(t, x2.Faction) {
-			xassert.Equal(t, faction, x2.Faction.MustValue())
-		}
+		xassert.EqualOptional(t, faction, x2.Faction)
 		x3, err := st.GetEveRace(t.Context(), raceID)
 		require.NoError(t, err)
 		xassert.Equal(t, x2, x3)
@@ -204,14 +200,12 @@ func TestGetOrCreateEveBloodlineESI(t *testing.T) {
 		xassert.Equal(t, id, x1.ID)
 		xassert.Equal(t, name, x1.Name)
 		xassert.Equal(t, race, x1.Race)
-		xassert.Equal(t, charisma, x1.Charisma.MustValue())
-		xassert.Equal(t, intelligence, x1.Intelligence.MustValue())
-		xassert.Equal(t, memory, x1.Memory.MustValue())
-		xassert.Equal(t, perception, x1.Perception.MustValue())
-		xassert.Equal(t, willpower, x1.Willpower.MustValue())
-		if xassert.NotEmpty(t, x1.ShipTypeID) {
-			xassert.Equal(t, shipType.ID, x1.ShipTypeID.MustValue())
-		}
+		xassert.EqualOptional(t, charisma, x1.Charisma)
+		xassert.EqualOptional(t, intelligence, x1.Intelligence)
+		xassert.EqualOptional(t, memory, x1.Memory)
+		xassert.EqualOptional(t, perception, x1.Perception)
+		xassert.EqualOptional(t, willpower, x1.Willpower)
+		xassert.EqualOptional(t, shipType.ID, x1.ShipTypeID)
 		x2, err := st.GetEveBloodline(t.Context(), id)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)

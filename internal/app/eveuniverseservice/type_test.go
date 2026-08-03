@@ -324,11 +324,11 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			xassert.Equal(t, int64(20), x1.ID)
-			xassert.Equal(t, 1.0, x1.DefaultValue.ValueOrZero())
-			xassert.Equal(t, "Factor by which top speed increases.", x1.Description.ValueOrZero())
-			xassert.Equal(t, "Maximum Velocity Bonus", x1.DisplayName.ValueOrZero())
-			xassert.Equal(t, int64(1389), x1.IconID.ValueOrZero())
-			xassert.Equal(t, "speedFactor", x1.Name.ValueOrZero())
+			xassert.EqualOptional(t, 1.0, x1.DefaultValue)
+			xassert.EqualOptional(t, "Factor by which top speed increases.", x1.Description)
+			xassert.EqualOptional(t, "Maximum Velocity Bonus", x1.DisplayName)
+			xassert.EqualOptional(t, int64(1389), x1.IconID)
+			xassert.EqualOptional(t, "speedFactor", x1.Name)
 			assert.True(t, x1.IsHighGood.ValueOrZero())
 			assert.True(t, x1.IsPublished.ValueOrZero())
 			assert.False(t, x1.IsStackable.ValueOrZero())
@@ -411,11 +411,11 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		for _, o := range prices {
 			switch o.TypeID {
 			case knownTypeID:
-				xassert.Equal(t, 306988.09, o.AdjustedPrice.MustValue())
-				xassert.Equal(t, 306292.67, o.AveragePrice.MustValue())
+				xassert.EqualOptional(t, 306988.09, o.AdjustedPrice)
+				xassert.EqualOptional(t, 306292.67, o.AveragePrice)
 			case o.TypeID:
-				xassert.Equal(t, 123.45, o.AdjustedPrice.MustValue())
-				xassert.Equal(t, 456.78, o.AveragePrice.MustValue())
+				xassert.EqualOptional(t, 123.45, o.AdjustedPrice)
+				xassert.EqualOptional(t, 456.78, o.AveragePrice)
 			}
 		}
 	})
@@ -448,8 +448,8 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		xassert.Equal(t, want, got)
 		o, err := st.GetEveMarketPrice(ctx, knownTypeID)
 		require.NoError(t, err)
-		xassert.Equal(t, 306988.09, o.AdjustedPrice.ValueOrZero())
-		xassert.Equal(t, 306292.67, o.AveragePrice.ValueOrZero())
+		xassert.EqualOptional(t, 306988.09, o.AdjustedPrice)
+		xassert.EqualOptional(t, 306292.67, o.AveragePrice)
 	})
 	t.Run("should only report changes for known types", func(t *testing.T) {
 		// given

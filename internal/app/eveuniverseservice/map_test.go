@@ -722,7 +722,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	starID, planets, stargateIDs, stations, structures, err := s.GetSolarSystemInfoESI(ctx, system.ID)
 	// then
 	if assert.NoError(t, err) {
-		xassert.Equal(t, 40000040, starID.ValueOrZero())
+		xassert.EqualOptional(t, 40000040, starID)
 		assert.ElementsMatch(t, []app.EveSolarSystemPlanet{
 			{
 				PlanetID: int64(40000041),

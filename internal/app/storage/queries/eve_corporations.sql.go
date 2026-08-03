@@ -170,6 +170,8 @@ ON CONFLICT (id) DO UPDATE
 SET
     alliance_id = ?2,
     ceo_id = ?3,
+    creator_id = ?4,
+    date_founded = ?5,
     description = ?6,
     faction_id = ?7,
     home_station_id = ?8,
