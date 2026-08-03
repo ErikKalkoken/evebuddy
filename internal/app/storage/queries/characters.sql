@@ -45,7 +45,8 @@ SELECT
     location_id,
     ship_id,
     eb.id as bloodline_id,
-    eb.name as bloodline_name
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -54,6 +55,7 @@ FROM
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
     LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
 WHERE
     cc.id = ?;
 
@@ -79,7 +81,8 @@ SELECT DISTINCT
     location_id,
     ship_id,
     eb.id as bloodline_id,
-    eb.name as bloodline_name
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -88,6 +91,7 @@ FROM
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
     LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
 ORDER BY
     ec.name;
 

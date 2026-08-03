@@ -694,6 +694,7 @@ type EveRace struct {
 	ID          int64
 	Description string
 	Name        string
+	FactionID   sql.NullInt64
 }
 
 type EveRegion struct {

@@ -20,43 +20,54 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
 	t.Run("should return existing race", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		x1 := f.CreateEveRace(app.EveRace{ID: 7})
+		x1 := f.CreateEveRace()
 		// when
-		x2, err := s.GetOrCreateRaceESI(t.Context(), 7)
+		x2, err := s.GetOrCreateRaceESI(t.Context(), x1.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
 	t.Run("should create race from ESI when it does not exit in DB", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
+		const (
+			name        = "name"
+			description = "description"
+			raceID      = 7
+		)
+		faction := f.CreateEveEntityFaction()
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/universe/races",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
-					"alliance_id": 500001,
-					"description": "Founded on the tenets of patriotism and hard work...",
-					"name":        "Caldari",
-					"race_id":     7,
+					"alliance_id": faction.ID,
+					"description": description,
+					"name":        name,
+					"race_id":     raceID,
 				},
 			}))
 
 		// when
-		x1, err := s.GetOrCreateRaceESI(t.Context(), 7)
+
+		x1, err := s.GetOrCreateRaceESI(t.Context(), raceID)
+
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, "Caldari", x1.Name)
-		xassert.Equal(t, "Founded on the tenets of patriotism and hard work...", x1.Description)
-		x2, err := st.GetEveRace(t.Context(), 7)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, description, x1.Description)
+		x2, err := st.GetEveRace(t.Context(), raceID)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
 	t.Run("should return specific error when race ID is invalid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

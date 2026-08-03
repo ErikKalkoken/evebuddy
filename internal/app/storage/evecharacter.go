@@ -68,24 +68,33 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int64) (*app
 	if err != nil {
 		return nil, fmt.Errorf("GetEveCharacter %d: %w", characterID, convertGetError(err))
 	}
+	eea := nullAlliance{
+		id:       r.EveCharacter.AllianceID,
+		name:     r.AllianceName,
+		category: r.AllianceCategory,
+	}
+	eef := nullFaction{
+		id:       r.EveCharacter.FactionID,
+		name:     r.FactionName,
+		category: r.FactionCategory,
+	}
+	eb := nullEntity{
+		id:   r.BloodlineID,
+		name: r.BloodlineName,
+	}
+	eer := nullRaceFaction{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.RaceFactionName,
+	}
 	o := eveCharacterFromDBModel(
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
-		nullEveEntity{
-			id:       r.EveCharacter.AllianceID,
-			name:     r.AllianceName,
-			category: r.AllianceCategory,
-		},
-		nullEveEntity{
-			id:       r.EveCharacter.FactionID,
-			name:     r.FactionName,
-			category: r.FactionCategory,
-		},
-		nullEntity{
-			id:   r.BloodlineID,
-			name: r.BloodlineName,
-		},
+		eea,
+		eef,
+		eb,
+		eer,
 	)
 	return o, nil
 }
@@ -114,26 +123,27 @@ func (st *Storage) UpdateEveCharacterName(ctx context.Context, characterID int64
 
 func eveCharacterFromDBModel(
 	character queries.EveCharacter,
-	corporation queries.EveEntity,
-	race queries.EveRace,
-	alliance nullEveEntity,
-	faction nullEveEntity,
-	bloodline nullEntity,
+	eec queries.EveEntity,
+	er queries.EveRace,
+	eea nullAlliance,
+	eef nullFaction,
+	eb nullEntity,
+	eer nullRaceFaction,
 
 ) *app.EveCharacter {
 	o := app.EveCharacter{
-		Alliance:         eveEntityFromNullableDBModel(alliance),
+		Alliance:         eveEntityFromNullableDBModel(nullEveEntity(eea)),
 		Birthday:         character.Birthday,
-		Corporation:      eveEntityFromDBModel(corporation),
+		Corporation:      eveEntityFromDBModel(eec),
 		Description:      optional.FromZeroValue(character.Description),
 		Gender:           character.Gender,
-		Faction:          eveEntityFromNullableDBModel(faction),
+		Faction:          eveEntityFromNullableDBModel(nullEveEntity(eef)),
 		ID:               character.ID,
 		Name:             character.Name,
-		Race:             eveRaceFromDBModel(race),
+		Race:             eveRaceFromDBModel(er, nullEveEntity(eer)),
 		SecurityStatus:   optional.New(character.SecurityStatus),
 		CorporationTitle: optional.FromZeroValue(character.Title),
-		Bloodline:        entityShortFromNullableDBModel(bloodline),
+		Bloodline:        entityShortFromNullableDBModel(eb),
 	}
 	return &o
 }

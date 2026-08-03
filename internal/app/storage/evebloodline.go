@@ -60,21 +60,31 @@ func (st *Storage) GetEveBloodline(ctx context.Context, id int64) (*app.EveBlood
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := eveBloodlineFromDBModel(r.EveBloodline, r.EveEntity, r.EveRace)
+	eea := nullEveEntity{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.FactionName,
+	}
+	o := eveBloodlineFromDBModel(r.EveBloodline, r.EveEntity, r.EveRace, eea)
 	return o, nil
 }
 
-func eveBloodlineFromDBModel(eb queries.EveBloodline, ee queries.EveEntity, er queries.EveRace) *app.EveBloodline {
+func eveBloodlineFromDBModel(
+	eb queries.EveBloodline,
+	eec queries.EveEntity,
+	er queries.EveRace,
+	eea nullEveEntity,
+) *app.EveBloodline {
 	return &app.EveBloodline{
 		Charisma:     optional.FromNullInt64(eb.Charisma),
-		Corporation:  eveEntityFromDBModel(ee),
+		Corporation:  eveEntityFromDBModel(eec),
 		Description:  eb.Description,
 		ID:           eb.ID,
 		Intelligence: optional.FromNullInt64(eb.Intelligence),
 		Memory:       optional.FromNullInt64(eb.Memory),
 		Name:         eb.Name,
 		Perception:   optional.FromNullInt64(eb.Perception),
-		Race:         eveRaceFromDBModel(er),
+		Race:         eveRaceFromDBModel(er, eea),
 		ShipTypeID:   optional.FromNullInt64(eb.ShipTypeID),
 		Willpower:    optional.FromNullInt64(eb.Willpower),
 	}

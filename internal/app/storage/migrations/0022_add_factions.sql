@@ -19,3 +19,9 @@ CREATE INDEX eve_factions_idx1 ON eve_factions (corporation_id);
 CREATE INDEX eve_factions_idx2 ON eve_factions (militia_corporation_id);
 
 CREATE INDEX eve_factions_idx3 ON eve_factions (solar_system_id);
+
+ALTER TABLE eve_races
+ADD COLUMN faction_id INTEGER
+REFERENCES eve_entities(id) ON DELETE SET NULL;
+
+CREATE INDEX eve_races_idx1 ON eve_races (faction_id);

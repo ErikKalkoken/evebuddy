@@ -6,30 +6,33 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateEveRaceParams struct {
 	ID          int64
+	FactionID   optional.Optional[int64]
 	Name        string
 	Description string
 }
 
-func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (*app.EveRace, error) {
+func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateEveRace: %+v, %w", arg, err)
 	}
 	if arg.ID == 0 {
-		return nil, wrapErr(app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
-	o, err := st.qRW.CreateEveRace(ctx, queries.CreateEveRaceParams{
+	err := st.qRW.CreateEveRace(ctx, queries.CreateEveRaceParams{
 		ID:          arg.ID,
 		Description: arg.Description,
 		Name:        arg.Name,
+		FactionID:   optional.ToNullInt64(arg.FactionID),
 	})
 	if err != nil {
-		return nil, wrapErr(err)
+		return wrapErr(err)
 	}
-	return eveRaceFromDBModel(o), nil
+	return nil
 }
 
 func (st *Storage) GetEveRace(ctx context.Context, id int64) (*app.EveRace, error) {
@@ -39,15 +42,22 @@ func (st *Storage) GetEveRace(ctx context.Context, id int64) (*app.EveRace, erro
 	if id == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	o, err := st.qRO.GetEveRace(ctx, id)
+	r, err := st.qRO.GetEveRace(ctx, id)
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	return eveRaceFromDBModel(o), nil
+	alliance := nullEveEntity{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.AllianceName,
+	}
+	o := eveRaceFromDBModel(r.EveRace, alliance)
+	return o, nil
 }
 
-func eveRaceFromDBModel(er queries.EveRace) *app.EveRace {
+func eveRaceFromDBModel(er queries.EveRace, alliance nullEveEntity) *app.EveRace {
 	return &app.EveRace{
+		Faction:     eveEntityFromNullableDBModel(alliance),
 		Description: er.Description,
 		ID:          er.ID,
 		Name:        er.Name,

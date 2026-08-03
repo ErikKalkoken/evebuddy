@@ -2625,10 +2625,8 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 	return o
 }
 
-// TODO: Refactor to storage.CreateEveRaceParams
-
-func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
-	var arg app.EveRace
+func (f Factory) CreateEveRace(args ...storage.CreateEveRaceParams) *app.EveRace {
+	var arg storage.CreateEveRaceParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -2642,16 +2640,19 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
 	}
-	arg2 := storage.CreateEveRaceParams{
-		ID:          arg.ID,
-		Description: arg.Description,
-		Name:        arg.Name,
+	if arg.FactionID.IsEmpty() {
+		x := f.CreateEveEntityFaction()
+		arg.FactionID.Set(x.ID)
 	}
-	r, err := f.st.CreateEveRace(ctx, arg2)
+	err := f.st.CreateEveRace(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	o, err := f.st.GetEveRace(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {

@@ -242,10 +242,9 @@ type EveFaction struct {
 	StationSystemCount int64
 }
 
-// TODO: Add race alliance
-
 // EveRace is a race in EVE Online.
 type EveRace struct {
+	Faction    optional.Optional[*EveEntity] // optional, because added later
 	Description string
 	Name        string
 	ID          int64
