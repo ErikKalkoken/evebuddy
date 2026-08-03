@@ -161,7 +161,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				xassert.EqualOptional(t, 3, o.LicensedRuns)
 				xassert.Equal(t, outputLocation.ID, o.OutputLocation.ID)
 				xassert.EqualOptional(t, float32(0.8), o.Probability)
-				xassert.Equal(t, productType.ID, o.ProductType.MustValue().ID)
+				xassert.EqualOptional(t, eveTypeToEntityShort(productType), o.ProductType)
 				xassert.EqualOptional(t, pauseDate, o.PauseDate)
 				xassert.Equal(t, 7, o.Runs)
 				xassert.Equal(t, startDate, o.StartDate)
@@ -207,7 +207,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCharacterIndustryJob(ctx, j1.CharacterID, j1.JobID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
+				xassert.EqualOptional(t, completedCharacter, j2.CompletedCharacter)
 				xassert.EqualOptional(t, completedDate, j2.CompletedDate)
 				xassert.Equal(t, endDate2, j2.EndDate)
 				xassert.EqualOptional(t, pauseDate, j2.PauseDate)
@@ -393,4 +393,15 @@ func TestCharacterIndustryJob(t *testing.T) {
 			}
 		}
 	})
+}
+
+func eveTypeToEntityShort(eb *app.EveType) *app.EntityShort {
+	if eb == nil {
+		return nil
+	}
+	o := &app.EntityShort{
+		ID:   eb.ID,
+		Name: eb.Name,
+	}
+	return o
 }

@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -18,42 +17,54 @@ import (
 func TestEveCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		arg := storage.UpdateOrCreateEveCorporationParams{
-			Description: optional.New("description"),
-			ID:          42,
-			MemberCount: 888,
-			Name:        "name",
-			TaxRate:     0.12,
-			Ticker:      "ticker",
-			URL:         optional.New("url"),
-			WarEligible: optional.New(false),
-		}
+		const (
+			corporationID = 42
+			memberCount   = 888
+			name          = "name"
+			taxRate       = 0.12
+			ticker        = "ABC"
+			url           = "https://www.example.com"
+			warEligible   = false
+			description   = "description"
+		)
+
 		// when
-		err := st.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(t.Context(), storage.UpdateOrCreateEveCorporationParams{
+			Description: optional.New(string(description)),
+			ID:          corporationID,
+			MemberCount: memberCount,
+			Name:        name,
+			TaxRate:     taxRate,
+			Ticker:      ticker,
+			URL:         optional.New(url),
+			WarEligible: optional.New(false),
+		})
+
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(t.Context(), corporationID)
 			if assert.NoError(t, err) {
-				assert.True(t, got.Alliance.IsEmpty())
-				assert.True(t, got.Faction.IsEmpty())
-				assert.True(t, got.Ceo.IsEmpty())
-				assert.True(t, got.Creator.IsEmpty())
+				xassert.Equal(t, description, got.Description)
+				xassert.Equal(t, corporationID, got.ID)
+				xassert.Equal(t, memberCount, got.MemberCount)
+				xassert.Equal(t, name, got.Name)
+				xassert.Equal(t, taxRate, got.TaxRate)
+				xassert.Equal(t, ticker, got.Ticker)
+				xassert.EqualOptional(t, url, got.URL)
+				xassert.EqualOptional(t, warEligible, got.WarEligible)
+				assert.Empty(t, got.Alliance)
+				assert.Empty(t, got.Faction)
+				assert.Empty(t, got.Ceo)
+				assert.Empty(t, got.Creator)
 				assert.Empty(t, got.HomeStation)
-				xassert.Equal(t, arg.Description.ValueOrZero(), got.Description)
-				xassert.Equal(t, arg.ID, got.ID)
-				xassert.Equal(t, arg.MemberCount, got.MemberCount)
-				xassert.Equal(t, arg.Name, got.Name)
-				xassert.Equal(t, arg.TaxRate, got.TaxRate)
-				xassert.Equal(t, arg.Ticker, got.Ticker)
-				xassert.EqualOptional(t, arg.URL.ValueOrZero(), got.URL)
-				xassert.EqualOptional(t, arg.WarEligible.ValueOrZero(), got.WarEligible)
 			}
 		}
 	})
+
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -81,10 +92,10 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   optional.New(false),
 		}
 		// when
-		err := st.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(t.Context(), arg)
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(t.Context(), arg.ID)
 			if assert.NoError(t, err) {
 				xassert.EqualOptional(t, alliance, got.Alliance)
 				xassert.EqualOptional(t, ceo, got.Ceo)
@@ -104,6 +115,7 @@ func TestEveCorporation(t *testing.T) {
 			}
 		}
 	})
+
 	t.Run("can update existing full", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -132,10 +144,10 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   optional.New(false),
 		}
 		// when
-		err := st.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(t.Context(), arg)
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(t.Context(), arg.ID)
 			if assert.NoError(t, err) {
 				xassert.EqualOptional(t, alliance, got.Alliance)
 				xassert.EqualOptional(t, ceo, got.Ceo)
@@ -153,17 +165,19 @@ func TestEveCorporation(t *testing.T) {
 			}
 		}
 	})
+
 	t.Run("can fetch by ID with minimal fields populated only", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
-		c2, err := st.GetEveCorporation(ctx, c1.ID)
+		c2, err := st.GetEveCorporation(t.Context(), c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			xassert.Equal(t, c1.Name, c2.Name)
 		}
 	})
+
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -191,7 +205,7 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   optional.New(true),
 		})
 		// when
-		c2, err := st.GetEveCorporation(ctx, c1.ID)
+		c2, err := st.GetEveCorporation(t.Context(), c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			xassert.EqualOptional(t, alliance, c2.Alliance)
@@ -211,29 +225,31 @@ func TestEveCorporation(t *testing.T) {
 			assert.True(t, c2.WarEligible.ValueOrZero())
 		}
 	})
+
 	t.Run("list corporation IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		c2 := factory.CreateEveCorporation()
 		// when
-		got, err := st.ListEveCorporationIDs(ctx)
+		got, err := st.ListEveCorporationIDs(t.Context())
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
 			xassert.Equal(t, want, got)
 		}
 	})
+
 	t.Run("can update name", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
-		err := st.UpdateEveCorporationName(ctx, c1.ID, "Alpha")
+		err := st.UpdateEveCorporationName(t.Context(), c1.ID, "Alpha")
 		// then
 		if assert.NoError(t, err) {
 			// assert.False(t, created)
-			r, err := st.GetEveCorporation(ctx, c1.ID)
+			r, err := st.GetEveCorporation(t.Context(), c1.ID)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, "Alpha", r.Name)
 			}

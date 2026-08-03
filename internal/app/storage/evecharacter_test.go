@@ -43,7 +43,7 @@ func TestEveCharacter(t *testing.T) {
 		xassert.Equal(t, name, o.Name)
 		xassert.Equal(t, ID, o.ID)
 		xassert.Equal(t, corporation, o.Corporation)
-		xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		xassert.Equal(t, race, o.Race)
 	})
 
@@ -87,7 +87,7 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, alliance, o.Alliance)
 		xassert.Equal(t, birthday, o.Birthday)
-		xassert.Equal(t, bloodline.ID, o.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), o.Bloodline)
 		xassert.Equal(t, corporation, o.Corporation)
 		xassert.EqualOptional(t, corporationTitle, o.CorporationTitle)
 		xassert.EqualOptional(t, description, o.Description)
@@ -138,7 +138,7 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, alliance, c2.Alliance)
 		xassert.Equal(t, birthday, c2.Birthday)
-		xassert.Equal(t, bloodline.ID, c2.Bloodline.MustValue().ID)
+		xassert.EqualOptional(t, eveBloodlineToEntityShort(bloodline), c2.Bloodline)
 		xassert.Equal(t, corporation, c2.Corporation)
 		xassert.EqualOptional(t, corporationTitle, c2.CorporationTitle)
 		xassert.EqualOptional(t, description, c2.Description)
@@ -255,4 +255,15 @@ func TestEveCharacter(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, "Erik", c2.Name)
 	})
+}
+
+func eveBloodlineToEntityShort(eb *app.EveBloodline) *app.EntityShort {
+	if eb == nil {
+		return nil
+	}
+	o := &app.EntityShort{
+		ID:   eb.ID,
+		Name: eb.Name,
+	}
+	return o
 }

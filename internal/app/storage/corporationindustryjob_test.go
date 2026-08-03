@@ -136,7 +136,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 				xassert.EqualOptional(t, 3, o.LicensedRuns)
 				xassert.Equal(t, 13, o.OutputLocationID)
 				xassert.EqualOptional(t, float32(0.8), o.Probability)
-				xassert.Equal(t, productType.ID, o.ProductType.MustValue().ID)
+				xassert.EqualOptional(t, eveTypeToEntityShort(productType), o.ProductType)
 				xassert.EqualOptional(t, pauseDate, o.PauseDate)
 				xassert.Equal(t, 7, o.Runs)
 				xassert.Equal(t, startDate, o.StartDate)
@@ -182,7 +182,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
+				xassert.EqualOptional(t, completedCharacter, j2.CompletedCharacter)
 				assert.True(t, j2.CompletedDate.MustValue().Equal(completedDate), "got %q, wanted %q", j2.CompletedDate.MustValue(), completedDate)
 				assert.True(t, j2.EndDate.Equal(endDate2), "got %q, wanted %q", j2.EndDate, endDate2)
 				assert.True(t, j2.PauseDate.MustValue().Equal(pauseDate), "got %q, wanted %q", j2.PauseDate.MustValue(), pauseDate)

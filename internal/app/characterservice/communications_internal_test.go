@@ -1,7 +1,6 @@
 package characterservice
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -24,7 +23,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
+
 	t.Run("should create new notification from scratch 1", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -50,7 +49,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
@@ -58,7 +57,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		o, err := st.GetCharacterNotification(ctx, c.ID, notificationID)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, notificationID)
 		require.NoError(t, err)
 		assert.True(t, o.IsRead.ValueOrZero())
 		xassert.Equal(t, notificationID, o.NotificationID)
@@ -66,9 +65,9 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, app.InsurancePayoutMsg, o.Type)
 		xassert.EqualOptional(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
 		xassert.Equal(t, timestamp, o.Timestamp)
-		xassert.Equal(t, c.ID, o.Recipient.ValueOrZero().ID)
+		xassert.EqualOptional(t, c.EveCharacter.ToEveEntity(), o.Recipient)
 
-		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](notificationID), ids)
 	})
@@ -95,14 +94,14 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 		}}),
 	// 	)
 	// 	// when
-	// 	changed, err := s.updateNotificationsESI(ctx, CharacterSectionUpdateParams{
+	// 	changed, err := s.updateNotificationsESI(t.Context(), CharacterSectionUpdateParams{
 	// 		CharacterID: c.ID,
 	// 		Section:     app.SectionCharacterNotifications,
 	// 	})
 	// 	// then
 	// 	require.NoError(t, err)
 	// 		assert.True(t, changed)
-	// 		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
+	// 		o, err := st.GetCharacterNotification(t.Context(), c.ID, 42)
 	// 		require.NoError(t, err)
 	// 			assert.True(t, o.IsRead)
 	// 			 xassert.Equal(t, int64(42), o.NotificationID)
@@ -111,7 +110,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// 			 xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 	// 			 xassert.Equal(t, sender.ID, o.Recipient.ID)
 	// 		}
-	// 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+	// 		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
 	// 		require.NoError(t, err)
 	// 			 xassert.Equal(t, 1, ids.Size())
 	// 		}
@@ -151,7 +150,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
@@ -160,11 +159,11 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, changed)
 
-		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(newNotificationID, n1.NotificationID), ids)
 
-		o, err := st.GetCharacterNotification(ctx, c.ID, newNotificationID)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, newNotificationID)
 		require.NoError(t, err)
 		xassert.Equal(t, newNotificationID, o.NotificationID)
 		assert.False(t, o.IsRead.ValueOrZero())
@@ -172,7 +171,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.Equal(t, app.CorpNoLongerWarEligible, o.Type)
 		xassert.Empty(t, o.Text)
 		xassert.Equal(t, timestamp, o.Timestamp)
-		xassert.Equal(t, c.EveCharacter.Corporation.ID, o.Recipient.ValueOrZero().ID) // this is a corp notification
+		xassert.EqualOptional(t, c.EveCharacter.Corporation, o.Recipient) // this is a corp notification
 	})
 
 	t.Run("should update isRead for existing notification", func(t *testing.T) {
@@ -201,17 +200,17 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		o, err := st.GetCharacterNotification(ctx, c.ID, 42)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		assert.True(t, o.IsRead.ValueOrZero())
-		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
 	})
@@ -243,13 +242,13 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}}),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		_, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(ctx, c.ID, notificationID)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, notificationID)
 		require.NoError(t, err)
 		assert.True(t, o.IsRead.ValueOrZero())
 		xassert.Equal(t, notificationID, o.NotificationID)
@@ -290,13 +289,13 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		_, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		assert.Error(t, err)
-		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](), ids)
 	})
@@ -332,13 +331,13 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			httpmock.NewErrorResponder(fmt.Errorf("failed")),
 		)
 		// when
-		_, err := s.updateNotificationsESI(ctx, characterSectionUpdateParams{
+		_, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterNotifications,
 		})
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(ctx, c.ID, notificationID)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, notificationID)
 		require.NoError(t, err)
 		assert.True(t, o.IsRead.ValueOrZero())
 		xassert.Equal(t, notificationID, o.NotificationID)
@@ -354,7 +353,7 @@ func TestListCharacterNotifications(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
+
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -372,7 +371,7 @@ func TestListCharacterNotifications(t *testing.T) {
 			Type:        "alpha",
 		})
 		// when
-		tt, err := s.ListNotificationsForGroup(ctx, c.ID, app.GroupStructure)
+		tt, err := s.ListNotificationsForGroup(t.Context(), c.ID, app.GroupStructure)
 		// then
 		require.NoError(t, err)
 		assert.Len(t, tt, 2)
