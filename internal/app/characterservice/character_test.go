@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -39,9 +40,8 @@ func TestGetCharacter(t *testing.T) {
 		// when
 		x2, err := cs.GetCharacter(ctx, x1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x1.ID, x2.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x1.ID, x2.ID)
 	})
 }
 
@@ -65,9 +65,8 @@ func TestGetAnyCharacter(t *testing.T) {
 		// when
 		x2, err := cs.GetAnyCharacter(ctx)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x1, x2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -87,12 +86,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
-		token := factory.CreateToken(app.Token{
+		token1 := factory.CreateToken(app.Token{
 			CharacterID:   ec.ID,
 			CharacterName: ec.Name,
 		})
 		cs := characterservice.NewFake(characterservice.Params{
-			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token)},
+			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token1)},
 			Storage:    st,
 		})
 		httpmock.Reset()
@@ -133,7 +132,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				"name":            corporation.Name,
 				"ticker":          corporation.Ticker,
 				"url":             corporation.URL,
-				"war_eligible":    false,
+				"war_eligible":    corporation.WarEligible,
 				"shares":          corporation.Shares.ValueOrZero(),
 				"state":           "active",
 				"friendly_fire":   "legal",
@@ -150,22 +149,18 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			info = s
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, ec.ID, got.ID)
-			ok, err := cs.HasCharacter(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, ok)
-			}
-			token, err := st.GetCharacterToken(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, token.CharacterID, ec.ID)
-			}
-			x, err := st.GetCorporation(ctx, corporation.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, corporation, x.EveCorporation)
-			}
-			assert.NotZero(t, info)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, ec.ID, got.ID)
+		ok, err := cs.HasCharacter(ctx, ec.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		token2, err := st.GetCharacterToken(ctx, ec.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, token2.CharacterID, ec.ID)
+		x, err := st.GetCorporation(ctx, corporation.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, corporation, x.EveCorporation)
+		assert.NotZero(t, info)
 	})
 
 	// Test for verifying issue #443 - Part 1
@@ -177,12 +172,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
-		token := factory.CreateToken(app.Token{
+		token1 := factory.CreateToken(app.Token{
 			CharacterID:   ec.ID,
 			CharacterName: ec.Name,
 		})
 		cs := characterservice.NewFake(characterservice.Params{
-			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token)},
+			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token1)},
 			Storage:    st,
 		})
 		httpmock.Reset()
@@ -240,22 +235,18 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			info = s
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, ec.ID, got.ID)
-			ok, err := cs.HasCharacter(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, ok)
-			}
-			token, err := st.GetCharacterToken(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, token.CharacterID, ec.ID)
-			}
-			x, err := st.GetCorporation(ctx, corporation.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, corporation, x.EveCorporation)
-			}
-			assert.NotZero(t, info)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, ec.ID, got.ID)
+		ok, err := cs.HasCharacter(ctx, ec.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		token2, err := st.GetCharacterToken(ctx, ec.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, token2.CharacterID, ec.ID)
+		x, err := st.GetCorporation(ctx, corporation.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, corporation, x.EveCorporation)
+		assert.NotZero(t, info)
 	})
 
 	// Test for verifying issue #443 - Part 2
@@ -267,12 +258,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
-		token := factory.CreateToken(app.Token{
+		token1 := factory.CreateToken(app.Token{
 			CharacterID:   ec.ID,
 			CharacterName: ec.Name,
 		})
 		cs := characterservice.NewFake(characterservice.Params{
-			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token)},
+			AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token1)},
 			Storage:    st,
 		})
 		httpmock.Reset()
@@ -331,22 +322,18 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			info = s
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, ec.ID, got.ID)
-			ok, err := cs.HasCharacter(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, ok)
-			}
-			token, err := st.GetCharacterToken(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, token.CharacterID, ec.ID)
-			}
-			x, err := st.GetCorporation(ctx, corporation.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, corporation, x.EveCorporation)
-			}
-			assert.NotZero(t, info)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, ec.ID, got.ID)
+		ok, err := cs.HasCharacter(ctx, ec.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		token2, err := st.GetCharacterToken(ctx, ec.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, token2.CharacterID, ec.ID)
+		x, err := st.GetCorporation(ctx, corporation.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, corporation, x.EveCorporation)
+		assert.NotZero(t, info)
 	})
 
 	t.Run("update existing character", func(t *testing.T) {
@@ -425,14 +412,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			info = s
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.ID)
-			token, err := st.GetCharacterToken(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, token.CharacterID, c.ID)
-			}
-			assert.NotZero(t, info)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.ID)
+		token, err := st.GetCharacterToken(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, token.CharacterID, c.ID)
+		assert.NotZero(t, info)
 	})
 }
 
@@ -452,13 +437,12 @@ func TestDeleteCharacter(t *testing.T) {
 		// when
 		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err = st.GetCharacter(ctx, character.ID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-			_, err = st.GetCorporation(ctx, corporation.ID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-			assert.True(t, got)
-		}
+		require.NoError(t, err)
+		_, err = st.GetCharacter(ctx, character.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		assert.True(t, got)
 	})
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
 		// given
@@ -473,12 +457,11 @@ func TestDeleteCharacter(t *testing.T) {
 		// when
 		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err = st.GetCharacter(ctx, character.ID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-			_, err = st.GetCorporation(ctx, corporation.ID)
-			assert.NoError(t, err)
-			assert.False(t, got)
-		}
+		require.NoError(t, err)
+		_, err = st.GetCharacter(ctx, character.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.NoError(t, err)
+		assert.False(t, got)
 	})
 }

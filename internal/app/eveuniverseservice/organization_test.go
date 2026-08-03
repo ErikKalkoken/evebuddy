@@ -378,10 +378,11 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 			url         = "http://www.eveonline.com"
 		)
 		alliance := factory.CreateEveEntityAlliance()
-		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
+		faction := factory.CreateEveEntityFaction()
 		station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
 		ceo := factory.CreateEveEntityCharacter()
 		creator := factory.CreateEveEntityCharacter()
+		dateFounded := factory.RandomTimeRounded()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -390,7 +391,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 				"alliance_id":         alliance.ID,
 				"ceo_id":              ceo.ID,
 				"creator_id":          creator.ID,
-				"date_founded":        c1.DateFounded.MustValue().Format(time.RFC3339),
+				"date_founded":        dateFounded.Format(time.RFC3339),
 				"description":         description,
 				"enlisted_faction_id": faction.ID,
 				"home_station_id":     station.ID,
@@ -414,9 +415,9 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.EqualOptional(t, alliance, c2.Alliance)
-		xassert.Equal(t, c1.Creator, c2.Creator)
+		xassert.EqualOptional(t, creator, c2.Creator)
 		xassert.EqualOptional(t, ceo, c2.Ceo)
-		xassert.EqualOptional(t, c1.DateFounded.MustValue(), c2.DateFounded)
+		xassert.EqualOptional(t, dateFounded, c2.DateFounded)
 		xassert.Equal(t, description, c2.Description)
 		xassert.EqualOptional(t, faction, c2.Faction)
 		xassert.EqualOptional(t, station, c2.HomeStation)
@@ -449,10 +450,11 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 			url         = "http://www.eveonline.com"
 		)
 		alliance := factory.CreateEveEntityAlliance()
-		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
+		faction := factory.CreateEveEntityFaction()
 		station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
 		ceo := factory.CreateEveEntityCharacter()
 		creator := factory.CreateEveEntityCharacter()
+		dateFounded := factory.RandomTimeRounded()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -461,7 +463,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 				"alliance_id":         alliance.ID,
 				"ceo_id":              ceo.ID,
 				"creator_id":          creator.ID,
-				"date_founded":        c1.DateFounded.MustValue().Format(time.RFC3339),
+				"date_founded":        dateFounded.Format(time.RFC3339),
 				"description":         description,
 				"enlisted_faction_id": faction.ID,
 				"home_station_id":     station.ID,
@@ -482,6 +484,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		)
 		// when
 		got, err := s.UpdateAllCorporationsESI(t.Context())
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(c1.ID)
@@ -489,9 +492,9 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		c2, err := st.GetEveCorporation(t.Context(), c1.ID)
 		require.NoError(t, err)
 		xassert.EqualOptional(t, alliance, c2.Alliance)
-		xassert.Equal(t, c1.Creator, c2.Creator)
+		xassert.EqualOptional(t, creator, c2.Creator)
 		xassert.EqualOptional(t, ceo, c2.Ceo)
-		xassert.EqualOptional(t, c1.DateFounded.MustValue(), c2.DateFounded)
+		xassert.EqualOptional(t, dateFounded, c2.DateFounded)
 		xassert.Equal(t, description, c2.Description)
 		xassert.EqualOptional(t, faction, c2.Faction)
 		xassert.EqualOptional(t, station, c2.HomeStation)
@@ -520,16 +523,16 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 			CeoID:         optional.New(ceo.ID),
 			CreatorID:     optional.New(creator.ID),
 			DateFounded:   optional.New(time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC)),
-			Description:   optional.New("This is a corporation description, it's basically just a string"),
+			Description:   "This is a corporation description, it's basically just a string",
 			FactionID:     optional.New(faction.ID),
-			HomeStationID: optional.New(station.ID),
+			HomeStationID: station.ID,
 			MemberCount:   656,
 			Name:          "C C P",
 			Shares:        optional.New[int64](1000),
 			TaxRate:       0.256,
 			Ticker:        "-CCP-",
 			URL:           optional.New("http://www.eveonline.com"),
-			WarEligible:   optional.New(false),
+			WarEligible:   false,
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
