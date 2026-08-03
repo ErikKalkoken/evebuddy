@@ -34,6 +34,7 @@ type nullCreator nullEveEntity
 type nullFaction nullEveEntity
 type nullMilitiaCorporation nullEveEntity
 type nullRaceFaction nullEveEntity
+type nullSolarSystem nullEveEntity
 type nullStation nullEveEntity
 type outputLocationName string
 type outputLocationSecurity sql.NullFloat64

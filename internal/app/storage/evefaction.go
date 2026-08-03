@@ -68,15 +68,16 @@ func (st *Storage) GetEveFaction(ctx context.Context, id int64) (*app.EveFaction
 		category: NewNullString(eveEntityCorporation),
 		name:     r.MilitiaCorporationName,
 	}
-	es := nullEntity{
-		id:   r.EveFaction.SolarSystemID,
-		name: r.SolarSystemName,
+	es := nullSolarSystem{
+		category: NewNullString(eveEntitySolarSystem),
+		id:       r.EveFaction.SolarSystemID,
+		name:     r.SolarSystemName,
 	}
 	o := eveFactionFromDBModel(r.EveFaction, cc, mc, es)
 	return o, nil
 }
 
-func eveFactionFromDBModel(ef queries.EveFaction, cc nullCorporation, mc nullMilitiaCorporation, es nullEntity) *app.EveFaction {
+func eveFactionFromDBModel(ef queries.EveFaction, cc nullCorporation, mc nullMilitiaCorporation, es nullSolarSystem) *app.EveFaction {
 	return &app.EveFaction{
 		ID:                 ef.ID,
 		Corporation:        eveEntityFromNullableDBModel(nullEveEntity(cc)),
@@ -85,7 +86,7 @@ func eveFactionFromDBModel(ef queries.EveFaction, cc nullCorporation, mc nullMil
 		MilitiaCorporation: eveEntityFromNullableDBModel(nullEveEntity(mc)),
 		Name:               ef.Name,
 		SizeFactor:         ef.SizeFactor,
-		SolarSystem:        entityShortFromNullableDBModel(es),
+		SolarSystem:        eveEntityFromNullableDBModel(nullEveEntity(es)),
 		StationCount:       ef.StationCount,
 		StationSystemCount: ef.StationSystemCount,
 	}

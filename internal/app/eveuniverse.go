@@ -237,14 +237,14 @@ type EveFaction struct {
 	MilitiaCorporation optional.Optional[*EveEntity]
 	Name               string
 	SizeFactor         float64
-	SolarSystem        optional.Optional[*EntityShort]
+	SolarSystem        optional.Optional[*EveEntity]
 	StationCount       int64
 	StationSystemCount int64
 }
 
 // EveRace is a race in EVE Online.
 type EveRace struct {
-	Faction    optional.Optional[*EveEntity] // optional, because added later
+	Faction     optional.Optional[*EveEntity] // optional, because added later
 	Description string
 	Name        string
 	ID          int64
