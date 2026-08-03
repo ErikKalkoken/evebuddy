@@ -10,30 +10,6 @@ import (
 	"database/sql"
 )
 
-const createEveRace = `-- name: CreateEveRace :exec
-INSERT INTO
-    eve_races (id, description, name, faction_id)
-VALUES
-    (?, ?, ?, ?)
-`
-
-type CreateEveRaceParams struct {
-	ID          int64
-	Description string
-	Name        string
-	FactionID   sql.NullInt64
-}
-
-func (q *Queries) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) error {
-	_, err := q.db.ExecContext(ctx, createEveRace,
-		arg.ID,
-		arg.Description,
-		arg.Name,
-		arg.FactionID,
-	)
-	return err
-}
-
 const getEveRace = `-- name: GetEveRace :one
 SELECT
     er.id, er.description, er.name, er.faction_id,
@@ -91,4 +67,33 @@ func (q *Queries) ListEveRaceIDs(ctx context.Context) ([]int64, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOrCreateEveRace = `-- name: UpdateOrCreateEveRace :exec
+INSERT INTO
+    eve_races (id, description, faction_id, name)
+VALUES
+    (?1, ?2, ?3, ?4)
+ON CONFLICT (id) DO UPDATE
+SET
+    description = ?2,
+    faction_id = ?3,
+    name = ?4
+`
+
+type UpdateOrCreateEveRaceParams struct {
+	ID          int64
+	Description string
+	FactionID   sql.NullInt64
+	Name        string
+}
+
+func (q *Queries) UpdateOrCreateEveRace(ctx context.Context, arg UpdateOrCreateEveRaceParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveRace,
+		arg.ID,
+		arg.Description,
+		arg.FactionID,
+		arg.Name,
+	)
+	return err
 }

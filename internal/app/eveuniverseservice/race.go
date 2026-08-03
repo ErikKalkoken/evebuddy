@@ -17,11 +17,14 @@ import (
 func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, raceID int64) (*app.EveRace, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", raceID), func() (*app.EveRace, error) {
 		o, err := s.st.GetEveRace(ctx, raceID)
-		if err == nil {
-			return o, nil
-		}
-		if !errors.Is(err, app.ErrNotFound) {
+		if errors.Is(err, app.ErrNotFound) {
+			// pass
+		} else if err != nil {
 			return nil, err
+		} else {
+			if !o.Faction.IsEmpty() { // update race if it was created before the faction field was added
+				return o, nil
+			}
 		}
 		races, _, err := s.esiClient.UniverseAPI.GetUniverseRaces(ctx).Execute()
 		if err != nil {
@@ -35,7 +38,7 @@ func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, raceID int6
 			if err != nil {
 				return nil, err
 			}
-			if err := s.st.CreateEveRace(ctx, storage.CreateEveRaceParams{
+			if err := s.st.UpdateOrCreateEveRace(ctx, storage.UpdateOrCreateEveRaceParams{
 				ID:          r.RaceId,
 				Description: r.Description,
 				Name:        r.Name,

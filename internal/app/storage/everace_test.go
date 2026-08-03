@@ -25,7 +25,7 @@ func TestEveRace(t *testing.T) {
 		)
 
 		// when
-		err := st.CreateEveRace(t.Context(), storage.CreateEveRaceParams{
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
 			ID:          raceID,
 			Description: description,
 			Name:        name,
@@ -51,7 +51,7 @@ func TestEveRace(t *testing.T) {
 		faction := f.CreateEveEntityFaction()
 
 		// when
-		err := st.CreateEveRace(t.Context(), storage.CreateEveRaceParams{
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
 			ID:          raceID,
 			Description: description,
 			Name:        name,
@@ -63,6 +63,34 @@ func TestEveRace(t *testing.T) {
 		x, err := st.GetEveRace(t.Context(), raceID)
 		require.NoError(t, err)
 		xassert.Equal(t, raceID, x.ID)
+		xassert.Equal(t, description, x.Description)
+		xassert.Equal(t, name, x.Name)
+		if xassert.NotEmpty(t, x.Faction) {
+			xassert.Equal(t, faction, x.Faction.MustValue())
+		}
+	})
+
+	t.Run("can update existing", func(t *testing.T) {
+		x1 := f.CreateEveRace()
+		const (
+			description = "description"
+			name        = "name"
+		)
+		faction := f.CreateEveEntityFaction()
+
+		// when
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
+			ID:          x1.ID,
+			Description: description,
+			Name:        name,
+			FactionID:   optional.New(faction.ID),
+		})
+
+		// then
+		require.NoError(t, err)
+		x, err := st.GetEveRace(t.Context(), x1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1.ID, x.ID)
 		xassert.Equal(t, description, x.Description)
 		xassert.Equal(t, name, x.Name)
 		if xassert.NotEmpty(t, x.Faction) {

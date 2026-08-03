@@ -1,8 +1,13 @@
--- name: CreateEveRace :exec
+-- name: UpdateOrCreateEveRace :exec
 INSERT INTO
-    eve_races (id, description, name, faction_id)
+    eve_races (id, description, faction_id, name)
 VALUES
-    (?, ?, ?, ?);
+    (?1, ?2, ?3, ?4)
+ON CONFLICT (id) DO UPDATE
+SET
+    description = ?2,
+    faction_id = ?3,
+    name = ?4;
 
 -- name: GetEveRace :one
 SELECT

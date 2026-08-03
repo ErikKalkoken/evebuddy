@@ -2625,8 +2625,8 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 	return o
 }
 
-func (f Factory) CreateEveRace(args ...storage.CreateEveRaceParams) *app.EveRace {
-	var arg storage.CreateEveRaceParams
+func (f Factory) CreateEveRace(args ...storage.UpdateOrCreateEveRaceParams) *app.EveRace {
+	var arg storage.UpdateOrCreateEveRaceParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -2644,7 +2644,7 @@ func (f Factory) CreateEveRace(args ...storage.CreateEveRaceParams) *app.EveRace
 		x := f.CreateEveEntityFaction()
 		arg.FactionID.Set(x.ID)
 	}
-	err := f.st.CreateEveRace(ctx, arg)
+	err := f.st.UpdateOrCreateEveRace(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

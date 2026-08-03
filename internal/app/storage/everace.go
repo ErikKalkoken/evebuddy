@@ -9,25 +9,25 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type CreateEveRaceParams struct {
-	ID          int64
-	FactionID   optional.Optional[int64]
-	Name        string
+type UpdateOrCreateEveRaceParams struct {
 	Description string
+	FactionID   optional.Optional[int64]
+	ID          int64
+	Name        string
 }
 
-func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) error {
+func (st *Storage) UpdateOrCreateEveRace(ctx context.Context, arg UpdateOrCreateEveRaceParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateEveRace: %+v, %w", arg, err)
+		return fmt.Errorf("UpdateOrCreateEveRace: %+v, %w", arg, err)
 	}
 	if arg.ID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateEveRace(ctx, queries.CreateEveRaceParams{
-		ID:          arg.ID,
+	err := st.qRW.UpdateOrCreateEveRace(ctx, queries.UpdateOrCreateEveRaceParams{
 		Description: arg.Description,
-		Name:        arg.Name,
 		FactionID:   optional.ToNullInt64(arg.FactionID),
+		ID:          arg.ID,
+		Name:        arg.Name,
 	})
 	if err != nil {
 		return wrapErr(err)
