@@ -148,20 +148,6 @@ func TestEveCharacter(t *testing.T) {
 		xassert.Equal(t, securityStatus, c2.SecurityStatus.MustValue())
 	})
 
-	t.Run("can update existing 2", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c1 := f.CreateEveCharacter()
-		// when
-		c1.Name = "Erik"
-		err := st.UpdateEveCharacter(t.Context(), c1)
-		// then
-		require.NoError(t, err)
-		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, "Erik", c2.Name)
-	})
-
 	t.Run("can update existing with neutral security status", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

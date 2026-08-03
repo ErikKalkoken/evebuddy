@@ -132,9 +132,6 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 	return nil
 }
 
-type characterImplantFromDBModelParams struct {
-}
-
 func characterImplantFromDBModel(
 	ci queries.CharacterImplant,
 	et queries.EveType,

@@ -19,12 +19,14 @@ VALUES
 -- name: GetEveBloodline :one
 SELECT
     sqlc.embed(eb),
-    sqlc.embed(ee),
-    sqlc.embed(er)
+    sqlc.embed(eec),
+    sqlc.embed(er),
+    eea.name as faction_name
 FROM
     eve_bloodlines eb
-    JOIN eve_entities ee ON ee.id = eb.corporation_id
+    JOIN eve_entities eec ON eec.id = eb.corporation_id
     JOIN eve_races er ON er.id = eb.race_id
+    LEFT JOIN eve_entities eea ON eea.id = er.faction_id
 WHERE
     eb.id = ?;
 

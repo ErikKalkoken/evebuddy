@@ -303,8 +303,8 @@ func corporationContractFromDBModel(
 		i2 = ""
 	}
 	o2 := &app.CorporationContract{
-		Acceptor:          eveEntityFromNullableDBModel(nullEveEntry(acceptor)),
-		Assignee:          eveEntityFromNullableDBModel(nullEveEntry(assignee)),
+		Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
+		Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
 		Availability:      corporationContractAvailabilityFromDBValue[cc.Availability],
 		Buyout:            optional.FromZeroValue(cc.Buyout),
 		CorporationID:     cc.CorporationID,

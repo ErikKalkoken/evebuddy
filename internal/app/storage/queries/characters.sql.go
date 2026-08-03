@@ -102,7 +102,7 @@ SELECT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contracts_escrow, cc.contract_items_value, cc.orders_escrow, cc.order_items_value, cc.skill_points_value,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
     eec.id, eec.category, eec.name,
-    er.id, er.description, er.name,
+    er.id, er.description, er.name, er.faction_id,
     eea.name as alliance_name,
     eea.category as alliance_category,
     eef.name as faction_name,
@@ -111,7 +111,8 @@ SELECT
     location_id,
     ship_id,
     eb.id as bloodline_id,
-    eb.name as bloodline_name
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -120,6 +121,7 @@ FROM
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
     LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
 WHERE
     cc.id = ?
 `
@@ -138,6 +140,7 @@ type GetCharacterRow struct {
 	ShipID           sql.NullInt64
 	BloodlineID      sql.NullInt64
 	BloodlineName    sql.NullString
+	RaceFactionName  sql.NullString
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -178,6 +181,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveRace.ID,
 		&i.EveRace.Description,
 		&i.EveRace.Name,
+		&i.EveRace.FactionID,
 		&i.AllianceName,
 		&i.AllianceCategory,
 		&i.FactionName,
@@ -187,6 +191,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.ShipID,
 		&i.BloodlineID,
 		&i.BloodlineName,
+		&i.RaceFactionName,
 	)
 	return i, err
 }
@@ -351,7 +356,7 @@ SELECT DISTINCT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at, cc.contracts_escrow, cc.contract_items_value, cc.orders_escrow, cc.order_items_value, cc.skill_points_value,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
     eec.id, eec.category, eec.name,
-    er.id, er.description, er.name,
+    er.id, er.description, er.name, er.faction_id,
     eea.name as alliance_name,
     eea.category as alliance_category,
     eef.name as faction_name,
@@ -360,7 +365,8 @@ SELECT DISTINCT
     location_id,
     ship_id,
     eb.id as bloodline_id,
-    eb.name as bloodline_name
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
 FROM
     characters cc
     JOIN eve_characters ec ON ec.id = cc.id
@@ -369,6 +375,7 @@ FROM
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
     LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
 ORDER BY
     ec.name
 `
@@ -387,6 +394,7 @@ type ListCharactersRow struct {
 	ShipID           sql.NullInt64
 	BloodlineID      sql.NullInt64
 	BloodlineName    sql.NullString
+	RaceFactionName  sql.NullString
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -433,6 +441,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.EveRace.ID,
 			&i.EveRace.Description,
 			&i.EveRace.Name,
+			&i.EveRace.FactionID,
 			&i.AllianceName,
 			&i.AllianceCategory,
 			&i.FactionName,
@@ -442,6 +451,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.ShipID,
 			&i.BloodlineID,
 			&i.BloodlineName,
+			&i.RaceFactionName,
 		); err != nil {
 			return nil, err
 		}

@@ -151,8 +151,8 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoCharacter),
-				a.iw.makeEveWhoIcon(a.id, infoCharacter),
+				a.iw.makeZKillboardIcon(a.id, Character),
+				a.iw.makeEveWhoIcon(a.id, Character),
 				forums,
 				layout.NewSpacer(),
 			),
@@ -272,7 +272,7 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 	if v, ok := o.Alliance.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
-	if v, ok := o.Alliance.Value(); ok {
+	if v, ok := o.Faction.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any

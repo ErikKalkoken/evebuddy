@@ -2230,6 +2230,49 @@ func (f Factory) CreateEveEntityWithCategory(c app.EveEntityCategory, args ...ap
 	return f.CreateEveEntity(args2...)
 }
 
+func (f Factory) CreateEveFaction(args ...storage.CreateEveFactionParams) *app.EveFaction {
+	var arg storage.CreateEveFactionParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int64(f.calcNewID("eve_factions", "id", 1))
+	}
+	if arg.CorporationID.IsEmpty() {
+		x := f.CreateEveEntityCorporation()
+		arg.CorporationID.Set(x.ID)
+	}
+	if arg.Description == "" {
+		arg.Name = fake.Paragraph()
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	if arg.SizeFactor == 0 {
+		arg.SizeFactor = 5
+	}
+	if arg.StationCount == 0 {
+		arg.StationCount = rand.Int64N(1000) + 1
+	}
+	if arg.StationSystemCount == 0 {
+		arg.StationSystemCount = rand.Int64N(500) + 1
+	}
+	if arg.SolarSystemID.IsEmpty() {
+		x := f.CreateEveSolarSystem()
+		arg.SolarSystemID.Set(x.ID)
+	}
+	err := f.st.CreateEveFaction(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveFaction(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory) []app.EveEntity {
 	var e app.EveEntity
 	if len(args) > 0 {
@@ -2582,10 +2625,8 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 	return o
 }
 
-// TODO: Refactor to storage.CreateEveRaceParams
-
-func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
-	var arg app.EveRace
+func (f Factory) CreateEveRace(args ...storage.UpdateOrCreateEveRaceParams) *app.EveRace {
+	var arg storage.UpdateOrCreateEveRaceParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -2599,16 +2640,19 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
 	}
-	arg2 := storage.CreateEveRaceParams{
-		ID:          arg.ID,
-		Description: arg.Description,
-		Name:        arg.Name,
+	if arg.FactionID.IsEmpty() {
+		x := f.CreateEveEntityFaction()
+		arg.FactionID.Set(x.ID)
 	}
-	r, err := f.st.CreateEveRace(ctx, arg2)
+	err := f.st.UpdateOrCreateEveRace(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	o, err := f.st.GetEveRace(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {

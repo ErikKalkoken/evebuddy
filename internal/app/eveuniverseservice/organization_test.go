@@ -1,7 +1,6 @@
 package eveuniverseservice_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -32,7 +31,7 @@ func TestFetchAlliance(t *testing.T) {
 	creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
 	creatorCorp := factory.CreateEveEntityCorporation(app.EveEntity{ID: 45678})
 	executor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98356193})
-	ctx := context.Background()
+
 	t.Run("should return complete alliance", func(t *testing.T) {
 		// given
 		faction := factory.CreateEveEntity(app.EveEntity{ID: 888, Category: app.EveEntityFaction})
@@ -51,7 +50,7 @@ func TestFetchAlliance(t *testing.T) {
 			}),
 		)
 		// when
-		x, err := s.FetchAlliance(ctx, allianceID)
+		x, err := s.FetchAlliance(t.Context(), allianceID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, "C C P Alliance", x.Name)
@@ -62,6 +61,7 @@ func TestFetchAlliance(t *testing.T) {
 		xassert.Equal(t, faction, x.Faction.MustValue())
 		xassert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
 	})
+
 	t.Run("should return nil for undefined entities", func(t *testing.T) {
 		// given
 		httpmock.Reset()
@@ -78,7 +78,7 @@ func TestFetchAlliance(t *testing.T) {
 			}),
 		)
 		// when
-		x, err := s.FetchAlliance(ctx, allianceID)
+		x, err := s.FetchAlliance(t.Context(), allianceID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, "C C P Alliance", x.Name)
@@ -92,7 +92,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
-	ctx := context.Background()
+
 	t.Run("should return corporations", func(t *testing.T) {
 		// given
 		const allianceID = 42
@@ -108,7 +108,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{102, 103}),
 		)
 		// when
-		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
+		oo, err := s.FetchAllianceCorporations(t.Context(), allianceID)
 		// then
 		require.NoError(t, err)
 		got := xslices.Map(oo, func(a *app.EveEntity) int64 {
@@ -117,6 +117,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 		want := []int64{103, 102}
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("should return empty list when there are no corporations", func(t *testing.T) {
 		// given
 		const allianceID = 42
@@ -129,7 +130,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int64{}),
 		)
 		// when
-		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
+		oo, err := s.FetchAllianceCorporations(t.Context(), allianceID)
 		// then
 		require.NoError(t, err)
 		assert.Len(t, oo, 0)
@@ -141,6 +142,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
 	t.Run("should create new corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -203,6 +205,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, ticker, o.Ticker)
 		xassert.Equal(t, url, o.URL.ValueOrZero())
 	})
+
 	t.Run("can handle no CEO and no creator", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -244,6 +247,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
 	t.Run("should create new minimal corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -295,6 +299,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, ticker, o.Ticker)
 		xassert.Empty(t, o.URL)
 	})
+
 	t.Run("should create new full corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -357,6 +362,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, ticker, o.Ticker)
 		xassert.Equal(t, url, o.URL.ValueOrZero())
 	})
+
 	t.Run("should update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -428,6 +434,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
 	t.Run("can update from ESI and report changed IDs", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
@@ -498,6 +505,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		xassert.Equal(t, c2.Name, ee.Name)
 		xassert.Equal(t, app.EveEntityCorporation, ee.Category)
 	})
+
 	t.Run("can report when not changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateEveEntityCorporation()
@@ -559,5 +567,165 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		assert.Equal(t, c2, c1)
 		want := set.Of[int64]()
 		xassert.Equal(t, want, got)
+	})
+}
+
+func TestGetOrCreateEveFactionESI(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+
+	t.Run("should return existing faction", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		x1 := f.CreateEveFaction()
+
+		// when
+		x2, err := s.GetOrCreateFactionESI(t.Context(), x1.ID)
+
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+
+	t.Run("should create normal faction from ESI when it does not exit", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		const (
+			factionID          = 42
+			description        = "description"
+			name               = "name"
+			isUnique           = true
+			sizeFactor         = 4
+			stationCount       = 99
+			stationSystemCount = 7
+		)
+		corporation := f.CreateEveEntityCorporation()
+		militaryCorporation := f.CreateEveEntityCorporation()
+		solarSystem := f.CreateEveSolarSystem()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/universe/factions",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"corporation_id":         corporation.ID,
+					"description":            description,
+					"faction_id":             factionID,
+					"is_unique":              isUnique,
+					"militia_corporation_id": militaryCorporation.ID,
+					"name":                   name,
+					"size_factor":            sizeFactor,
+					"solar_system_id":        solarSystem.ID,
+					"station_count":          stationCount,
+					"station_system_count":   stationSystemCount,
+				},
+			}))
+
+		// when
+		x1, err := s.GetOrCreateFactionESI(t.Context(), factionID)
+
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, description, x1.Description)
+		xassert.Equal(t, factionID, x1.ID)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, isUnique, x1.IsUnique)
+		xassert.Equal(t, sizeFactor, x1.SizeFactor)
+		xassert.Equal(t, stationCount, x1.StationCount)
+		xassert.Equal(t, stationSystemCount, x1.StationSystemCount)
+		if xassert.NotEmpty(t, x1.Corporation) {
+			xassert.Equal(t, corporation, x1.Corporation.MustValue())
+		}
+		if xassert.NotEmpty(t, x1.MilitiaCorporation) {
+			xassert.Equal(t, militaryCorporation, x1.MilitiaCorporation.MustValue())
+		}
+		if xassert.NotEmpty(t, x1.SolarSystem) {
+			xassert.Equal(t, solarSystem.ID, x1.SolarSystem.MustValue().ID)
+		}
+		x2, err := st.GetEveFaction(t.Context(), factionID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+
+	t.Run("should create minimal faction from ESI when it does not exit", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		const (
+			factionID          = 42
+			description        = "description"
+			name               = "name"
+			isUnique           = true
+			sizeFactor         = 4
+			stationCount       = 99
+			stationSystemCount = 7
+		)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/universe/factions",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"description":          description,
+					"faction_id":           factionID,
+					"is_unique":            isUnique,
+					"name":                 name,
+					"size_factor":          sizeFactor,
+					"station_count":        stationCount,
+					"station_system_count": stationSystemCount,
+				},
+			}))
+
+		// when
+		x1, err := s.GetOrCreateFactionESI(t.Context(), factionID)
+
+		// then
+		require.NoError(t, err)
+		require.NoError(t, err)
+		xassert.Equal(t, description, x1.Description)
+		xassert.Equal(t, factionID, x1.ID)
+		xassert.Equal(t, name, x1.Name)
+		xassert.Equal(t, isUnique, x1.IsUnique)
+		xassert.Equal(t, sizeFactor, x1.SizeFactor)
+		xassert.Equal(t, stationCount, x1.StationCount)
+		xassert.Equal(t, stationSystemCount, x1.StationSystemCount)
+		xassert.Empty(t, x1.Corporation)
+		xassert.Empty(t, x1.MilitiaCorporation)
+		xassert.Empty(t, x1.SolarSystem)
+		x2, err := st.GetEveFaction(t.Context(), factionID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+	})
+
+	t.Run("should return specific error when faction ID is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/universe/factions",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"corporation_id":         1000127,
+					"description":            "Formed by two former members of the Caldari Navy, the pair go by the names Fatal and the Rabbit, the Guristas are a constant thorn in the side of the Caldari State. The Guristas are traditional pirates in the sense that their operation is not based around some creed or ideology, but rather a plain and simple greed. The Guristas have bases close to Caldari space and from them they embark on daring raids, often into the State itself. Though the Guristas are considered more honorable than many of their counterparts, they are still extremely dangerous and not to be tampered with.",
+					"faction_id":             500010,
+					"is_unique":              true,
+					"militia_corporation_id": 1000437,
+					"name":                   "Guristas Pirates",
+					"size_factor":            4,
+					"solar_system_id":        30001290,
+					"station_count":          9,
+					"station_system_count":   7,
+				},
+			}))
+
+		// when
+		_, err := s.GetOrCreateFactionESI(t.Context(), 42)
+
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

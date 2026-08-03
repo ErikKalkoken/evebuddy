@@ -91,19 +91,24 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	alliance := nullEveEntry{
+	eea := nullAlliance{
 		id:       r.EveCharacter.AllianceID,
 		name:     r.AllianceName,
 		category: r.AllianceCategory,
 	}
-	faction := nullEveEntry{
+	eef := nullFaction{
 		id:       r.EveCharacter.FactionID,
 		name:     r.FactionName,
 		category: r.FactionCategory,
 	}
-	bloodline := nullEntity{
+	eb := nullEntity{
 		id:   r.BloodlineID,
 		name: r.BloodlineName,
+	}
+	eer := nullRaceFaction{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.RaceFactionName,
 	}
 	c, err := st.characterFromDBModel(
 		ctx,
@@ -111,12 +116,13 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
-		alliance,
-		faction,
-		r.HomeID,
-		r.LocationID,
-		r.ShipID,
-		bloodline,
+		eea,
+		eef,
+		nullHomeID(r.HomeID),
+		nullLocationID(r.LocationID),
+		nullShipID(r.ShipID),
+		eb,
+		eer,
 	)
 	if err != nil {
 		return nil, wrapErr(err)
@@ -162,19 +168,24 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 	}
 	cc := make([]*app.Character, len(rows))
 	for i, r := range rows {
-		alliance := nullEveEntry{
+		eea := nullAlliance{
 			id:       r.EveCharacter.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		}
-		faction := nullEveEntry{
+		eef := nullFaction{
 			id:       r.EveCharacter.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
 		}
-		bloodline := nullEntity{
+		eb := nullEntity{
 			id:   r.BloodlineID,
 			name: r.BloodlineName,
+		}
+		eer := nullRaceFaction{
+			id:       r.EveRace.FactionID,
+			category: NewNullString(eveEntityFaction),
+			name:     r.RaceFactionName,
 		}
 		c, err := st.characterFromDBModel(
 			ctx,
@@ -182,12 +193,13 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			r.EveCharacter,
 			r.EveEntity,
 			r.EveRace,
-			alliance,
-			faction,
-			r.HomeID,
-			r.LocationID,
-			r.ShipID,
-			bloodline,
+			eea,
+			eef,
+			nullHomeID(r.HomeID),
+			nullLocationID(r.LocationID),
+			nullShipID(r.ShipID),
+			eb,
+			eer,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("list characters: %w", err)
@@ -399,6 +411,10 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 	return nil
 }
 
+type nullHomeID sql.NullInt64
+type nullLocationID sql.NullInt64
+type nullShipID sql.NullInt64
+
 // TODO: Optimize so additional queries are not needed
 
 func (st *Storage) characterFromDBModel(
@@ -407,12 +423,13 @@ func (st *Storage) characterFromDBModel(
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance nullEveEntry,
-	faction nullEveEntry,
-	homeID sql.NullInt64,
-	locationID sql.NullInt64,
-	shipID sql.NullInt64,
-	bloodline nullEntity,
+	eea nullAlliance,
+	eef nullFaction,
+	homeID nullHomeID,
+	locationID nullLocationID,
+	shipID nullShipID,
+	eb nullEntity,
+	eer nullRaceFaction,
 ) (*app.Character, error) {
 	o := app.Character{
 		AssetValue:         optional.FromNullFloat64(character.AssetValue),
@@ -422,9 +439,10 @@ func (st *Storage) characterFromDBModel(
 			eveCharacter,
 			corporation,
 			race,
-			alliance,
-			faction,
-			bloodline,
+			eea,
+			eef,
+			eb,
+			eer,
 		),
 		ID:                character.ID,
 		IsTrainingWatched: character.IsTrainingWatched,

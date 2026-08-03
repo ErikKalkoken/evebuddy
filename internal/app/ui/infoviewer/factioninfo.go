@@ -11,11 +11,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
-type raceInfo struct {
+type factionInfo struct {
 	widget.BaseWidget
 	baseInfo
 
@@ -25,8 +26,8 @@ type raceInfo struct {
 	description *widget.Label
 }
 
-func newRaceInfo(iw *InfoViewer, id int64) *raceInfo {
-	a := &raceInfo{
+func newFactionInfo(iw *InfoViewer, id int64) *factionInfo {
+	a := &factionInfo{
 		description: newLabelWithWrapAndSelectable(""),
 		id:          id,
 		logo:        makeInfoLogo(),
@@ -41,7 +42,7 @@ func newRaceInfo(iw *InfoViewer, id int64) *raceInfo {
 	return a
 }
 
-func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
+func (a *factionInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -53,8 +54,8 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *raceInfo) update(ctx context.Context) error {
-	o, err := a.iw.u.EVEUniverse().GetOrCreateRaceESI(ctx, a.id)
+func (a *factionInfo) update(ctx context.Context) error {
+	o, err := a.iw.u.EVEUniverse().GetOrCreateFactionESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -63,17 +64,29 @@ func (a *raceInfo) update(ctx context.Context) error {
 		a.description.SetText(o.Description)
 		a.tabs.Refresh()
 	})
-	if factionID, ok := o.FactionID(); ok {
-		fyne.Do(func() {
-			a.iw.u.EVEImage().FactionLogoAsync(factionID, ui.IconPixelSize, func(r fyne.Resource) {
-				a.logo.Resource = r
-				a.logo.Refresh()
-			})
+	fyne.Do(func() {
+		a.iw.u.EVEImage().FactionLogoAsync(a.id, ui.IconPixelSize, func(r fyne.Resource) {
+			a.logo.Resource = r
+			a.logo.Refresh()
 		})
+	})
+	items := []attributeItem{
+		newAttributeItem("Unique", o.IsUnique),
+		newAttributeItem("Stations", o.StationCount),
+		newAttributeItem("Systems with station", o.StationSystemCount),
 	}
-	var items []attributeItem
-	if v, ok := o.Faction.Value(); ok {
-		items = append(items, newAttributeItem("Faction", v))
+	if v, ok := o.Corporation.Value(); ok {
+		items = append(items, newAttributeItem("Corporation", v))
+	}
+	if v, ok := o.MilitiaCorporation.Value(); ok {
+		items = append(items, newAttributeItem("Military Corporation", v))
+	}
+	if v, ok := o.SolarSystem.Value(); ok {
+		items = append(items, newAttributeItem("Solar System", &app.EveEntity{
+			Category: app.EveEntitySolarSystem,
+			ID:       v.ID,
+			Name:     v.Name,
+		}))
 	}
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
@@ -82,12 +95,10 @@ func (a *raceInfo) update(ctx context.Context) error {
 		}
 		items = append(items, x)
 	}
-	if len(items) > 0 {
-		attributeList := newAttributeList(a.iw, items...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
-		})
-	}
+	attributeList := newAttributeList(a.iw, items...)
+	attributesTab := container.NewTabItem("Attributes", attributeList)
+	fyne.Do(func() {
+		a.tabs.Append(attributesTab)
+	})
 	return nil
 }

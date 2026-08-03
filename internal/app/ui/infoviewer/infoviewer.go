@@ -3,6 +3,7 @@ package infoviewer
 
 import (
 	"context"
+	"strings"
 
 	"fmt"
 
@@ -36,58 +37,42 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type infoVariant uint
+//go:generate go tool stringer -type=Kind
+
+// Kind of entity for showing an info window.
+type Kind uint
 
 const (
-	infoNotSupported infoVariant = iota
-	infoAlliance
-	infoBloodline
-	infoCharacter
-	infoConstellation
-	infoCorporation
-	infoInventoryType
-	infoLocation
-	infoRace
-	infoRegion
-	infoSolarSystem
+	Undefined Kind = iota
+	Alliance
+	Bloodline
+	Character
+	Constellation
+	Corporation
+	Faction
+	Location
+	Race
+	Region
+	SolarSystem
+	Type
 )
 
-func (iv infoVariant) String() string {
-	m := map[infoVariant]string{
-		infoAlliance:      "alliance",
-		infoBloodline:     "bloodline",
-		infoCharacter:     "character",
-		infoConstellation: "constellation",
-		infoCorporation:   "corporation",
-		infoInventoryType: "type",
-		infoLocation:      "location",
-		infoRegion:        "region",
-		infoRace:          "race",
-		infoSolarSystem:   "solar system",
-	}
-
-	s, ok := m[iv]
-	if !ok {
-		return ""
-	}
-	return s
+var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]Kind{
+	app.EveEntityAlliance:      Alliance,
+	app.EveEntityCharacter:     Character,
+	app.EveEntityConstellation: Constellation,
+	app.EveEntityCorporation:   Corporation,
+	app.EveEntityFaction:       Faction,
+	app.EveEntityInventoryType: Type,
+	app.EveEntityRegion:        Region,
+	app.EveEntitySolarSystem:   SolarSystem,
+	app.EveEntityStation:       Location,
 }
 
-var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
-	app.EveEntityAlliance:      infoAlliance,
-	app.EveEntityCharacter:     infoCharacter,
-	app.EveEntityConstellation: infoConstellation,
-	app.EveEntityCorporation:   infoCorporation,
-	app.EveEntityRegion:        infoRegion,
-	app.EveEntitySolarSystem:   infoSolarSystem,
-	app.EveEntityStation:       infoLocation,
-	app.EveEntityInventoryType: infoInventoryType,
-}
-
-func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
+func eveEntity2InfoVariant(ee *app.EveEntity) Kind {
 	v, ok := eveEntityCategory2InfoVariant[ee.Category]
 	if !ok {
-		return infoNotSupported
+		return Undefined
 	}
 	return v
 
@@ -143,6 +128,9 @@ func New(u coreUI) *InfoViewer {
 	return iw
 }
 
+// Show display an info window for an entity.
+//
+// Note that not all entity categories are supported. See also SupportedCategories().
 func (iw *InfoViewer) Show(o *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(o), o.ID)
 }
@@ -158,54 +146,57 @@ func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 	if w == nil {
 		w = iw.u.MainWindow()
 	}
+
 	showError := func(err error) {
 		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), w)
 	}
+
 	if typeID == 0 {
 		showError(fmt.Errorf("missing type ID"))
 		return
 	}
 	if itemID == 0 {
-		iw.show(infoInventoryType, typeID)
+		iw.show(Type, typeID)
 		return
 	}
+
 	switch typeID {
 	case app.EveTypeAlliance:
-		iw.show(infoAlliance, itemID)
+		iw.show(Alliance, itemID)
 		return
 	case app.EveTypeCharacter:
-		iw.show(infoCharacter, itemID)
+		iw.show(Character, itemID)
 		return
 	case app.EveTypeConstellation:
-		iw.show(infoConstellation, itemID)
+		iw.show(Constellation, itemID)
 		return
 	case app.EveTypeCorporation:
-		iw.show(infoCorporation, itemID)
+		iw.show(Corporation, itemID)
 		return
 	case app.EveTypeRegion:
-		iw.show(infoRegion, itemID)
+		iw.show(Region, itemID)
 		return
 	case app.EveTypeSolarSystem:
-		iw.show(infoSolarSystem, itemID)
+		iw.show(SolarSystem, itemID)
 		return
 	case app.EveTypeCaldariLogisticsStation:
-		iw.show(infoLocation, itemID)
+		iw.show(Location, itemID)
 		return
 	}
 
 	ctx := context.Background()
 	et, err := iw.u.EVEUniverse().GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
-		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), w)
+		showError(err)
 		return
 	}
 	switch et.Group.Category.ID {
 	case app.EveCategoryStation:
-		iw.show(infoLocation, itemID)
+		iw.show(Location, itemID)
 		return
 	case app.EveCategoryStructure:
 		iw.show2(showParams{
-			variant:     infoLocation,
+			variant:     Location,
 			entityID:    itemID,
 			characterID: characterID,
 		})
@@ -213,34 +204,34 @@ func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 	}
 	switch et.Group.ID {
 	case app.EveGroupCharacter:
-		iw.show(infoCharacter, itemID)
+		iw.show(Character, itemID)
 		return
 	}
 
-	iw.show(infoNotSupported, 0)
+	showError(fmt.Errorf("not supported"))
 }
 
 func (iw *InfoViewer) ShowBloodline(id int64) {
-	iw.show(infoBloodline, id)
+	iw.show(Bloodline, id)
 }
 
 func (iw *InfoViewer) ShowLocation(id int64) {
-	iw.show(infoLocation, id)
+	iw.show(Location, id)
 }
 
 func (iw *InfoViewer) ShowRace(id int64) {
-	iw.show(infoRace, id)
+	iw.show(Race, id)
 }
 
 func (iw *InfoViewer) ShowType(typeID, characterID int64) {
 	iw.show2(showParams{
-		variant:     infoInventoryType,
+		variant:     Type,
 		entityID:    typeID,
 		characterID: characterID,
 	})
 }
 
-func (iw *InfoViewer) show(v infoVariant, id int64) {
+func (iw *InfoViewer) show(v Kind, id int64) {
 	iw.show2(showParams{
 		variant:  v,
 		entityID: id,
@@ -255,7 +246,7 @@ type infoWidget interface {
 }
 
 type showParams struct {
-	variant     infoVariant
+	variant     Kind
 	entityID    int64
 	characterID int64
 }
@@ -273,7 +264,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		return
 	}
 
-	if arg.variant == infoNotSupported {
+	if arg.variant == Undefined {
 		ui.ShowErrorAndLog("Can't show info window", fmt.Errorf("not supported"), iw.u.IsDeveloperMode(), parentW)
 		return
 	}
@@ -304,10 +295,10 @@ func (iw *InfoViewer) show2(arg showParams) {
 		return s + ": Information"
 	}
 
-	if arg.variant == infoLocation {
+	if arg.variant == Location {
 		switch app.LocationVariantFromID(arg.entityID) {
 		case app.EveLocationSolarSystem:
-			arg.variant = infoSolarSystem
+			arg.variant = SolarSystem
 		case app.EveLocationUnknown:
 			ui.ShowInformation(
 				"Unknown location",
@@ -322,38 +313,41 @@ func (iw *InfoViewer) show2(arg showParams) {
 	var page infoWidget
 	var ab *xwidget.AppBar
 	switch arg.variant {
-	case infoAlliance:
+	case Alliance:
 		title = "Alliance"
 		page = newAllianceInfo(iw, arg.entityID)
-	case infoCharacter:
+	case Bloodline:
+		title = "Bloodline"
+		page = newBloodlineInfo(iw, arg.entityID)
+	case Character:
 		title = "Character"
 		page = newCharacterInfo(iw, arg.entityID)
-	case infoConstellation:
+	case Constellation:
 		title = "Constellation"
 		page = newConstellationInfo(iw, arg.entityID)
-	case infoCorporation:
+	case Corporation:
 		title = "Corporation"
 		page = newCorporationInfo(iw, arg.entityID)
-	case infoInventoryType:
+	case Faction:
+		title = "Faction"
+		page = newFactionInfo(iw, arg.entityID)
+	case Location:
+		title = "Location"
+		page = newLocationInfo(iw, arg.entityID, arg.characterID)
+	case Race:
+		title = "Race"
+		page = newRaceInfo(iw, arg.entityID)
+	case Region:
+		title = "Region"
+		page = newRegionInfo(iw, arg.entityID)
+	case SolarSystem:
+		title = "Solar System"
+		page = newSolarSystemInfo(iw, arg.entityID)
+	case Type:
 		x := newInventoryTypeInfo(iw, arg.entityID, arg.characterID)
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
-	case infoBloodline:
-		title = "Bloodline"
-		page = newBloodlineInfo(iw, arg.entityID)
-	case infoRace:
-		title = "Race"
-		page = newRaceInfo(iw, arg.entityID)
-	case infoRegion:
-		title = "Region"
-		page = newRegionInfo(iw, arg.entityID)
-	case infoSolarSystem:
-		title = "Solar System"
-		page = newSolarSystemInfo(iw, arg.entityID)
-	case infoLocation:
-		title = "Location"
-		page = newLocationInfo(iw, arg.entityID, arg.characterID)
 	default:
 		ui.ShowInformation(
 			"Warning",
@@ -443,13 +437,13 @@ func (iw *InfoViewer) openURL(s string) {
 	}
 }
 
-func (iw *InfoViewer) makeZKillboardIcon(id int64, v infoVariant) *xwidget.TappableIcon {
-	m := map[infoVariant]string{
-		infoAlliance:    "alliance",
-		infoCharacter:   "character",
-		infoCorporation: "corporation",
-		infoRegion:      "region",
-		infoSolarSystem: "system",
+func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.TappableIcon {
+	m := map[Kind]string{
+		Alliance:    "alliance",
+		Character:   "character",
+		Corporation: "corporation",
+		Region:      "region",
+		SolarSystem: "system",
 	}
 	var f func()
 	var title string
@@ -458,7 +452,7 @@ func (iw *InfoViewer) makeZKillboardIcon(id int64, v infoVariant) *xwidget.Tappa
 		f = func() {
 			iw.openURL(fmt.Sprintf("https://zkillboard.com/%s/%d/", partial, id))
 		}
-		title = fmt.Sprintf("Show %s on zKillboard.com", v)
+		title = fmt.Sprintf("Show %s on zKillboard.com", strings.ToLower(v.String()))
 	}
 	icon := xwidget.NewTappableIcon(icons.ZkillboardPng, f)
 	if title != "" {
@@ -467,12 +461,12 @@ func (iw *InfoViewer) makeZKillboardIcon(id int64, v infoVariant) *xwidget.Tappa
 	return icon
 }
 
-func (iw *InfoViewer) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableIcon {
-	m := map[infoVariant]string{
-		infoAlliance:    "alliance",
-		infoCorporation: "corp",
-		infoRegion:      "region",
-		infoSolarSystem: "system",
+func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.TappableIcon {
+	m := map[Kind]string{
+		Alliance:    "alliance",
+		Corporation: "corp",
+		Region:      "region",
+		SolarSystem: "system",
 	}
 	var f func()
 	var title string
@@ -481,7 +475,7 @@ func (iw *InfoViewer) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableI
 		f = func() {
 			iw.openURL(fmt.Sprintf("https://evemaps.dotlan.net/%s/%d", partial, id))
 		}
-		title = fmt.Sprintf("Show %s on evemaps.dotlan.net", v)
+		title = fmt.Sprintf("Show %s on evemaps.dotlan.net", strings.ToLower(v.String()))
 	}
 	icon := xwidget.NewTappableIcon(icons.DotlanAvatarPng, f)
 	if title != "" {
@@ -490,11 +484,11 @@ func (iw *InfoViewer) makeDotlanIcon(id int64, v infoVariant) *xwidget.TappableI
 	return icon
 }
 
-func (iw *InfoViewer) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableIcon {
-	m := map[infoVariant]string{
-		infoAlliance:    "alliance",
-		infoCorporation: "corporation",
-		infoCharacter:   "character",
+func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.TappableIcon {
+	m := map[Kind]string{
+		Alliance:    "alliance",
+		Corporation: "corporation",
+		Character:   "character",
 	}
 	var f func()
 	var title string
@@ -503,7 +497,7 @@ func (iw *InfoViewer) makeEveWhoIcon(id int64, v infoVariant) *xwidget.TappableI
 		f = func() {
 			iw.openURL(fmt.Sprintf("https://evewho.com/%s/%d", partial, id))
 		}
-		title = fmt.Sprintf("Show %s on evewho.com", v)
+		title = fmt.Sprintf("Show %s on evewho.com", strings.ToLower(v.String()))
 	}
 	icon := xwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, f)
 	if title != "" {
@@ -618,6 +612,12 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 					break
 				}
 				s = x.Name
+			case *app.EveFaction:
+				if x == nil {
+					s = "?"
+					break
+				}
+				s = x.Name
 			case *app.EveRace:
 				if x == nil {
 					s = "?"
@@ -687,25 +687,32 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			case *app.EveLocation:
 				if x != nil {
 					f = func() {
-						w.iw.show(infoLocation, x.ID)
+						w.iw.show(Location, x.ID)
 					}
 				}
 			case *eveBloodlineShort:
 				if x != nil {
 					f = func() {
-						w.iw.show(infoBloodline, x.ID)
+						w.iw.show(Bloodline, x.ID)
+					}
+				}
+
+			case *app.EveFaction:
+				if x != nil {
+					f = func() {
+						w.iw.show(Faction, x.ID)
 					}
 				}
 			case *app.EveRace:
 				if x != nil {
 					f = func() {
-						w.iw.show(infoRace, x.ID)
+						w.iw.show(Race, x.ID)
 					}
 				}
 			case *app.EveType:
 				if x != nil {
 					f = func() {
-						w.iw.show(infoInventoryType, x.ID)
+						w.iw.show(Type, x.ID)
 					}
 				}
 			}
@@ -745,10 +752,10 @@ type entityItem struct {
 	category     string
 	text         string                   // text in markdown
 	textSegments []widget.RichTextSegment // takes precedence over text when not empty
-	infoVariant  infoVariant
+	infoVariant  Kind
 }
 
-func newEntityItem(id int64, category, text string, v infoVariant) entityItem {
+func newEntityItem(id int64, category, text string, v Kind) entityItem {
 	return entityItem{
 		id:          id,
 		category:    category,
@@ -762,7 +769,7 @@ func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 		id:          o.ID,
 		category:    "Planet",
 		text:        o.Name,
-		infoVariant: infoNotSupported,
+		infoVariant: Undefined,
 	}
 }
 
@@ -792,7 +799,7 @@ type entityList struct {
 	widget.BaseWidget
 
 	items    []entityItem
-	showInfo func(infoVariant, int64)
+	showInfo func(Kind, int64)
 }
 
 func entityItemsFromEveEntities(ee []*app.EveEntity) []entityItem {
@@ -802,12 +809,12 @@ func entityItemsFromEveEntities(ee []*app.EveEntity) []entityItem {
 	return items
 }
 
-func newEntityList(show func(infoVariant, int64)) *entityList {
+func newEntityList(show func(Kind, int64)) *entityList {
 	var items []entityItem
 	return newEntityListFromItems(show, items...)
 }
 
-func newEntityListFromItems(show func(infoVariant, int64), items ...entityItem) *entityList {
+func newEntityListFromItems(show func(Kind, int64), items ...entityItem) *entityList {
 	w := &entityList{
 		items:    items,
 		showInfo: show,
@@ -854,7 +861,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.TappableIcon)
 			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
-			if it.infoVariant == infoNotSupported {
+			if it.infoVariant == Undefined {
 				icon.Hide()
 				icon.OnTapped = nil
 			} else {

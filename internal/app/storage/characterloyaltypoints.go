@@ -44,7 +44,7 @@ func (st *Storage) GetCharacterLoyaltyPointEntry(ctx context.Context, characterI
 	o := characterLoyaltyPointEntryFromDBModel(
 		r.CharacterLoyaltyPointEntry,
 		r.CorporationName,
-		nullEveEntry{
+		nullEveEntity{
 			id:       r.FactionID,
 			category: r.FactionCategory,
 			name:     r.FactionName,
@@ -64,7 +64,7 @@ func (st *Storage) ListAllCharacterLoyaltyPointEntries(ctx context.Context) ([]*
 		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
 			r.CharacterLoyaltyPointEntry,
 			r.CorporationName,
-			nullEveEntry{
+			nullEveEntity{
 				id:       r.FactionID,
 				category: r.FactionCategory,
 				name:     r.FactionName,
@@ -92,7 +92,7 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
 			r.CharacterLoyaltyPointEntry,
 			r.CorporationName,
-			nullEveEntry{
+			nullEveEntity{
 				id:       r.FactionID,
 				category: r.FactionCategory,
 				name:     r.FactionName,
@@ -105,7 +105,7 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 func characterLoyaltyPointEntryFromDBModel(
 	entry queries.CharacterLoyaltyPointEntry,
 	corporationName string,
-	faction nullEveEntry,
+	faction nullEveEntity,
 
 ) *app.CharacterLoyaltyPointEntry {
 	o2 := &app.CharacterLoyaltyPointEntry{

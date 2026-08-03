@@ -92,9 +92,9 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoCorporation),
-				a.iw.makeDotlanIcon(a.id, infoCorporation),
-				a.iw.makeEveWhoIcon(a.id, infoCorporation),
+				a.iw.makeZKillboardIcon(a.id, Corporation),
+				a.iw.makeDotlanIcon(a.id, Corporation),
+				a.iw.makeEveWhoIcon(a.id, Corporation),
 				layout.NewSpacer(),
 			),
 		),
@@ -168,7 +168,7 @@ func (a *corporationInfo) update(ctx context.Context) error {
 		} else {
 			founded = "?"
 		}
-		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
+		items = append(items, newEntityItem(0, "Corporation Founded", founded, Undefined))
 		fyne.Do(func() {
 			a.allianceHistory.set(items...)
 			a.tabs.Refresh()

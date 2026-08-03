@@ -228,10 +228,23 @@ func (ec EveCorporation) Hash() string {
 	return h2
 }
 
-// TODO: Add race alliance
+// EveFaction is a faction in EVE Online.
+type EveFaction struct {
+	ID                 int64
+	Corporation        optional.Optional[*EveEntity]
+	Description        string
+	IsUnique           bool
+	MilitiaCorporation optional.Optional[*EveEntity]
+	Name               string
+	SizeFactor         float64
+	SolarSystem        optional.Optional[*EveEntity]
+	StationCount       int64
+	StationSystemCount int64
+}
 
 // EveRace is a race in EVE Online.
 type EveRace struct {
+	Faction     optional.Optional[*EveEntity] // optional, because added later
 	Description string
 	Name        string
 	ID          int64

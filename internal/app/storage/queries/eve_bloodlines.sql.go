@@ -63,12 +63,14 @@ func (q *Queries) CreateEveBloodline(ctx context.Context, arg CreateEveBloodline
 const getEveBloodline = `-- name: GetEveBloodline :one
 SELECT
     eb.id, eb.charisma, eb.corporation_id, eb.description, eb.intelligence, eb.memory, eb.name, eb.perception, eb.race_id, eb.ship_type_id, eb.willpower,
-    ee.id, ee.category, ee.name,
-    er.id, er.description, er.name
+    eec.id, eec.category, eec.name,
+    er.id, er.description, er.name, er.faction_id,
+    eea.name as faction_name
 FROM
     eve_bloodlines eb
-    JOIN eve_entities ee ON ee.id = eb.corporation_id
+    JOIN eve_entities eec ON eec.id = eb.corporation_id
     JOIN eve_races er ON er.id = eb.race_id
+    LEFT JOIN eve_entities eea ON eea.id = er.faction_id
 WHERE
     eb.id = ?
 `
@@ -77,6 +79,7 @@ type GetEveBloodlineRow struct {
 	EveBloodline EveBloodline
 	EveEntity    EveEntity
 	EveRace      EveRace
+	FactionName  sql.NullString
 }
 
 func (q *Queries) GetEveBloodline(ctx context.Context, id int64) (GetEveBloodlineRow, error) {
@@ -100,6 +103,8 @@ func (q *Queries) GetEveBloodline(ctx context.Context, id int64) (GetEveBloodlin
 		&i.EveRace.ID,
 		&i.EveRace.Description,
 		&i.EveRace.Name,
+		&i.EveRace.FactionID,
+		&i.FactionName,
 	)
 	return i, err
 }

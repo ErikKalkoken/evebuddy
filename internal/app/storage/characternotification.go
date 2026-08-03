@@ -372,7 +372,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 		r.CharacterNotification,
 		r.EveEntity,
 		nt,
-		nullEveEntry{
+		nullEveEntity{
 			category: r.RecipientCategory,
 			id:       r.CharacterNotification.RecipientID,
 			name:     r.RecipientName,
@@ -445,7 +445,7 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 			r.CharacterNotification,
 			r.EveEntity,
 			nt,
-			nullEveEntry{
+			nullEveEntity{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
@@ -471,7 +471,7 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 			r.CharacterNotification,
 			r.EveEntity,
 			nt,
-			nullEveEntry{
+			nullEveEntity{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
@@ -496,7 +496,7 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 			r.CharacterNotification,
 			r.EveEntity,
 			nt,
-			nullEveEntry{
+			nullEveEntity{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
@@ -528,7 +528,7 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 			r.CharacterNotification,
 			r.EveEntity,
 			nt,
-			nullEveEntry{
+			nullEveEntity{
 				category: r.RecipientCategory,
 				id:       r.CharacterNotification.RecipientID,
 				name:     r.RecipientName,
@@ -542,7 +542,7 @@ func characterNotificationFromDBModel(
 	cn queries.CharacterNotification,
 	sender queries.EveEntity,
 	nt app.EveNotificationType,
-	recipient nullEveEntry,
+	recipient nullEveEntity,
 ) *app.CharacterNotification {
 	o2 := &app.CharacterNotification{
 		ID:             cn.ID,

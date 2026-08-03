@@ -178,7 +178,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 		items := xslices.Map(ss, func(s string) entityItem {
 			s2 := strings.ReplaceAll(s, "-", " ")
 			name := xstrings.Title(s2)
-			return newEntityItem(0, "Service", name, infoNotSupported)
+			return newEntityItem(0, "Service", name, Undefined)
 		})
 		fyne.Do(func() {
 			a.services.set(items...)

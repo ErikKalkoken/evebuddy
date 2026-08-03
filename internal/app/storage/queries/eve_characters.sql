@@ -45,7 +45,8 @@ SELECT
     eef.name as faction_name,
     eef.category as faction_category,
     eb.id as bloodline_id,
-    eb.name as bloodline_name
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
 FROM
     eve_characters ec
     JOIN eve_entities eec ON eec.id = ec.corporation_id
@@ -53,6 +54,7 @@ FROM
     LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
     LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
 WHERE
     ec.id = ?;
 
@@ -61,23 +63,6 @@ SELECT
     id
 FROM
     eve_characters;
-
--- name: UpdateEveCharacter :exec
-UPDATE eve_characters
-SET
-    alliance_id = ?,
-    birthday = ?,
-    bloodline_id = ?,
-    corporation_id = ?,
-    description = ?,
-    faction_id = ?,
-    gender = ?,
-    name = ?,
-    race_id = ?,
-    security_status = ?,
-    title = ?
-WHERE
-    id = ?;
 
 -- name: UpdateEveCharacterName :exec
 UPDATE eve_characters

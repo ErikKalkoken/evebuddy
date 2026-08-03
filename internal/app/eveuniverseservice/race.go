@@ -6,41 +6,54 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
-	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (*app.EveRace, error) {
-		o, err := s.st.GetEveRace(ctx, id)
-		if err == nil {
-			return o, nil
-		}
-		if !errors.Is(err, app.ErrNotFound) {
+func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, raceID int64) (*app.EveRace, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", raceID), func() (*app.EveRace, error) {
+		o, err := s.st.GetEveRace(ctx, raceID)
+		if errors.Is(err, app.ErrNotFound) {
+			// pass
+		} else if err != nil {
 			return nil, err
+		} else {
+			if !o.Faction.IsEmpty() { // update race if it was created before the faction field was added
+				return o, nil
+			}
 		}
 		races, _, err := s.esiClient.UniverseAPI.GetUniverseRaces(ctx).Execute()
 		if err != nil {
 			return nil, err
 		}
-		for _, race := range races {
-			if race.RaceId != id {
+		for _, r := range races {
+			if r.RaceId != raceID {
 				continue
 			}
-			o, err := s.st.CreateEveRace(ctx, storage.CreateEveRaceParams{
-				ID:          race.RaceId,
-				Description: race.Description,
-				Name:        race.Name,
-			})
+			_, err := s.AddMissingEntities(ctx, set.Of(r.AllianceId))
 			if err != nil {
 				return nil, err
 			}
-			slog.Info("Created eve race", "id", id)
+			if err := s.st.UpdateOrCreateEveRace(ctx, storage.UpdateOrCreateEveRaceParams{
+				ID:          r.RaceId,
+				Description: r.Description,
+				Name:        r.Name,
+				FactionID:   optional.New(r.AllianceId),
+			}); err != nil {
+				return nil, err
+			}
+			slog.Info("Created eve race", "id", raceID)
+			o, err := s.st.GetEveRace(ctx, raceID)
+			if err != nil {
+				return nil, err
+			}
 			return o, nil
 		}
-		return nil, fmt.Errorf("race ID %d: %w", id, app.ErrNotFound)
+		return nil, fmt.Errorf("race ID %d: %w", raceID, app.ErrNotFound)
 	})
 	if err != nil {
 		return nil, err

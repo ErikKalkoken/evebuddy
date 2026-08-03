@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type nullEntity struct {
@@ -12,8 +15,15 @@ type nullEntity struct {
 	name sql.NullString
 }
 
-func (ne nullEntity) isValid() bool {
-	return ne.id.Valid && ne.name.Valid
+func entityShortFromNullableDBModel(ne nullEntity) optional.Optional[*app.EntityShort] {
+	var o optional.Optional[*app.EntityShort]
+	if ne.id.Valid && ne.name.Valid {
+		o.Set(&app.EntityShort{
+			ID:   ne.id.Int64,
+			Name: ne.name.String,
+		})
+	}
+	return o
 }
 
 // NewNullFloat64 returns a value as null type. Will assume not set when value is zero.

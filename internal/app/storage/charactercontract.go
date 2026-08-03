@@ -423,8 +423,8 @@ func characterContractFromDBModel(
 		i2 = ""
 	}
 	o := &app.CharacterContract{
-		Acceptor:          eveEntityFromNullableDBModel(nullEveEntry(acceptor)),
-		Assignee:          eveEntityFromNullableDBModel(nullEveEntry(assignee)),
+		Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
+		Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
 		Availability:      characterContractAvailabilityFromDBValue[cc.Availability],
 		Buyout:            optional.FromZeroValue(cc.Buyout),
 		CharacterID:       cc.CharacterID,
