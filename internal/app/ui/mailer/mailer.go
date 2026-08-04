@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 //go:generate go tool stringer -type=Mode
@@ -84,11 +85,12 @@ type mailer struct {
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
 	from      *eveEntityEntry
-	send      *widget.Button
+	send      *xwidget.ButtonWithProgressIndicator
 	subject   *widget.Entry
 	to        *eveEntityEntry
 	u         baseUI
 	w         fyne.Window
+	spinner   *widget.Activity
 }
 
 func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w fyne.Window) *mailer {
@@ -153,35 +155,42 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		panic(fmt.Errorf("unexpected mailer mode: %v", mode))
 	}
 
-	a.send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
-		a.send.Disable()
-		defer a.send.Enable()
+	a.spinner = widget.NewActivity()
+	a.spinner.Hide()
 
+	a.send = xwidget.NewButtonWithProgress("Send", theme.MailSendIcon(), func() {
+
+		// TODO: Convert to dynamic enable/disable of send button
 		var issue string
 		if a.to.IsEmpty() {
-			issue = "mail needs to have at least one recipient"
+			issue = "Needs to have at least one recipient."
 		}
 		if a.subject.Text == "" {
-			issue = "subject can not be empty"
+			issue = "Subject can not be empty"
 		}
 		if a.body.Text == "" {
-			issue = "message can not be empty"
+			issue = "Message can not be empty"
 		}
 		if issue != "" {
-			ui.ShowInformation("Failed to send mail", issue, a.u.MainWindow())
+			fyne.Do(func() {
+				ui.ShowInformation("Incomplete mail", issue, w)
+			})
 			return
 		}
-
-		if err := a.Send(); err != nil {
-			ui.ShowErrorAndLog("Failed to send mail", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+		ctx := context.Background()
+		if err := a.Send(ctx); err != nil {
+			fyne.Do(func() {
+				ui.ShowErrorAndLog("Failed to send mail", err, a.u.IsDeveloperMode(), w)
+			})
 			return
 		}
-
-		w.Hide()
+		fyne.Do(func() {
+			w.Close()
+		})
 		a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
-	})
-	a.send.Importance = widget.HighImportance
 
+	})
+	a.send.SetImportance(widget.HighImportance)
 	return a
 }
 
@@ -196,7 +205,9 @@ func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
-		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.send)),
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0),
+			container.NewHBox(a.send, a.spinner),
+		)),
 		nil,
 		nil,
 		inner,
@@ -206,8 +217,7 @@ func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // Send tries to send the current mail and reports any errors.
-func (a *mailer) Send() error {
-	ctx := context.Background()
+func (a *mailer) Send(ctx context.Context) error {
 	c := a.character.Load()
 	_, err := a.u.Character().SendMail(
 		ctx,
