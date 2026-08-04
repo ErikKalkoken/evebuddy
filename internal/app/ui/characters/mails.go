@@ -672,6 +672,8 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 	}
 }
 
+// TODO: Convert to ButtonWithProgressIndicator
+
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		ui.ShowConfirm(

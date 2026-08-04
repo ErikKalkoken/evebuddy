@@ -108,6 +108,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 	// 		),
 	// 	)
 	// }
+
+	var mailPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -121,18 +123,20 @@ func NewMobileUI(params UIParams) *MobileUI {
 						kxwidget.NewIconButton(u.characterMails.MakeReplyAllAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeForwardAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeDeleteAction(func() {
-							characterNav.Pop()
+							fyne.Do(func() {
+								characterNav.Pop()
+							})
 						})),
 					),
 				)
 			}
-			characterNav.Push(
-				newCharacterAppBar(
-					"Mail",
-					u.characterMails.Headers,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
-				))
+			mailPage = newCharacterAppBar(
+				"Mail",
+				u.characterMails.Headers,
+				kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+				kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
+			)
+			characterNav.Push(mailPage)
 		},
 	)
 
@@ -205,6 +209,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemMail.Supporting = strings.Join(s, " • ")
 		navItemMail.Refresh()
+		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
+			characterNav.Pop()
+		}
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
