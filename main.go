@@ -492,11 +492,14 @@ func setupCrashFile(path string) error {
 }
 
 // customCheckRetry is a custom retry policy for a retryablehttp client
-// that adds retry for 420s.
+// that adds retry for 420s and removes retries for 520s.
 func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	shouldRetry, checkErr := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 	if checkErr != nil {
 		return false, checkErr
+	}
+	if resp != nil && resp.StatusCode == xgoesi.StatusUnknownError {
+		return false, nil // Don't retry on 520
 	}
 	if shouldRetry {
 		return true, nil
