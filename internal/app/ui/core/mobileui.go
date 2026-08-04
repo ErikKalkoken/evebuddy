@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -92,23 +91,25 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 
 	mailMenu := fyne.NewMenu("")
-	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characters.NewSendMail(u, c, mode, mail)
-		if mode != app.SendMailNew {
-			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
-		}
-		characterNav.PushAndHideNavBar(
-			xwidget.NewAppBar(
-				"Send Mail",
-				page,
-				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
-					if page.SendAction() {
-						characterNav.Pop()
-					}
-				}),
-			),
-		)
-	}
+	// u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	// 	page := characters.NewSendMail(u, c, mode, mail)
+	// 	if mode != app.SendMailNew {
+	// 		characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
+	// 	}
+	// 	characterNav.PushAndHideNavBar(
+	// 		xwidget.NewAppBar(
+	// 			"Send Mail",
+	// 			page,
+	// 			kxwidget.NewIconButton(theme.MailSendIcon(), func() {
+	// 				if page.SendAction() {
+	// 					characterNav.Pop()
+	// 				}
+	// 			}),
+	// 		),
+	// 	)
+	// }
+
+	var mailPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -122,18 +123,20 @@ func NewMobileUI(params UIParams) *MobileUI {
 						kxwidget.NewIconButton(u.characterMails.MakeReplyAllAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeForwardAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeDeleteAction(func() {
-							characterNav.Pop()
+							fyne.Do(func() {
+								characterNav.Pop()
+							})
 						})),
 					),
 				)
 			}
-			characterNav.Push(
-				newCharacterAppBar(
-					"Mail",
-					u.characterMails.Headers,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
-				))
+			mailPage = newCharacterAppBar(
+				"Mail",
+				u.characterMails.Headers,
+				kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+				kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
+			)
+			characterNav.Push(mailPage)
 		},
 	)
 
@@ -206,6 +209,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemMail.Supporting = strings.Join(s, " • ")
 		navItemMail.Refresh()
+		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
+			characterNav.Pop()
+		}
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {

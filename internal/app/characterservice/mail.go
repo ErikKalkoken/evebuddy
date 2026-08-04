@@ -118,13 +118,13 @@ func (s *CharacterService) ListMailLabelsOrdered(ctx context.Context, characterI
 // SendMail creates a new mail on ESI and stores it locally.
 func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subject string, recipients []*app.EveEntity, body string) (int64, error) {
 	if subject == "" {
-		return 0, fmt.Errorf("missing subject")
+		return 0, fmt.Errorf("missing subject: %w", app.ErrInvalid)
 	}
 	if body == "" {
-		return 0, fmt.Errorf("missing body")
+		return 0, fmt.Errorf("missing body: %w", app.ErrInvalid)
 	}
 	if len(recipients) == 0 {
-		return 0, fmt.Errorf("missing recipients")
+		return 0, fmt.Errorf("missing recipients: %w", app.ErrInvalid)
 	}
 	rr, err := eveEntitiesToESIMailRecipients(recipients)
 	if err != nil {

@@ -381,7 +381,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		if fyne.CurrentDevice().IsMobile() {
 			w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 				if ev.Name == mobile.KeyBack {
-					if !iw.nav.Pop() {
+					if iw.nav.Pop() == nil {
 						w.Close()
 					}
 				}

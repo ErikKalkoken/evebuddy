@@ -61,37 +61,39 @@ func (n *Navigator) push(ab *AppBar, hideNavBar bool) {
 	if hideNavBar && n.NavBar != nil {
 		n.NavBar.HideBar()
 	}
-	previous := n.topPage()
+	previous := n.Current()
 	n.pages.Add(ab)
 	n.hideNavBar.Push(hideNavBar)
 	previous.Hide()
 }
 
 // Pop tries remove the current page and show the previous page.
-// And it reports whether it was successful.
-// Does not pop the root page.
-func (n *Navigator) Pop() bool {
+//
+// Returns the removed page or nil.
+// It does not remove the root page.
+func (n *Navigator) Pop() fyne.CanvasObject {
 	if len(n.pages.Objects) < 2 {
-		return false
+		return nil
 	}
-	n.pages.Remove(n.topPage())
+	page := n.Current()
+	n.pages.Remove(page)
 	n.hideNavBar.Pop()
-	n.topPage().Show()
+	n.Current().Show()
 	n.showNavBarWhenRequired()
-	return true
+	return page
 }
 
-// PopAll removes all additional pages and shows the root page.
+// PopAll removes all non-root pages and shows the root page.
 // Does nothing when the root page is shown.
 func (n *Navigator) PopAll() {
 	if len(n.pages.Objects) == 0 {
 		return
 	}
 	for len(n.pages.Objects) > 1 {
-		n.pages.Remove(n.topPage())
+		n.pages.Remove(n.Current())
 		n.hideNavBar.Pop()
 	}
-	n.topPage().Show()
+	n.Current().Show()
 	n.showNavBarWhenRequired()
 }
 
@@ -104,8 +106,13 @@ func (n *Navigator) showNavBarWhenRequired() {
 	}
 }
 
-func (n *Navigator) topPage() fyne.CanvasObject {
+// Current returns the current page.
+func (n *Navigator) Current() fyne.CanvasObject {
 	return n.pages.Objects[len(n.pages.Objects)-1]
+}
+
+func (n *Navigator) IsRoot() bool {
+	return len(n.pages.Objects) == 1
 }
 
 func (n *Navigator) CreateRenderer() fyne.WidgetRenderer {

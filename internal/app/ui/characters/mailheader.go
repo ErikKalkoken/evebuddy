@@ -63,10 +63,12 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 }
 
 func (w *MailHeaderItem) Refresh() {
-	w.from.Refresh()
-	w.subject.Refresh()
-	w.timestamp.Refresh()
-	w.BaseWidget.Refresh()
+	fyne.Do(func() {
+		w.from.Refresh()
+		w.subject.Refresh()
+		w.timestamp.Refresh()
+		w.BaseWidget.Refresh()
+	})
 }
 
 func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {

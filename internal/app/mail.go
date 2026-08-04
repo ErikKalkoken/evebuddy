@@ -11,15 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type SendMailMode uint
-
-const (
-	SendMailNew SendMailMode = iota + 1
-	SendMailReply
-	SendMailReplyAll
-	SendMailForward
-)
-
 // Special mail label IDs
 const (
 	MailLabelAll      = 1<<31 - 1

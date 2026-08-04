@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mailer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -83,11 +84,10 @@ func (f mailFolderNode) icon() fyne.Resource {
 type Mails struct {
 	widget.BaseWidget
 
-	Detail        *mailDetail
-	Headers       *fyne.Container
-	OnUpdate      func(unread, missing int)
-	OnSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
-	OnSelected    func()
+	Detail     *mailDetail
+	Headers    *fyne.Container
+	OnUpdate   func(unread, missing int)
+	OnSelected func()
 
 	character        atomic.Pointer[app.Character]
 	compose          *widget.Button
@@ -649,22 +649,30 @@ func (a *Mails) fetchHeaders(ctx context.Context, f *mailFolderNode) ([]*app.Cha
 	return h, err
 }
 
-func (a *Mails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
-	if a.OnSendMessage == nil {
-		return
-	}
+func (a *Mails) showMailerWindow(mode mailer.Mode, mail *app.CharacterMail) {
 	c := a.character.Load()
 	if c == nil {
 		return
 	}
-	a.OnSendMessage(c, mode, mail)
+	w, err := mailer.NewWindow(a.u, c, mode, mail)
+	if err != nil {
+		ui.ShowErrorAndLog(
+			"Failed to show mailer window",
+			err,
+			a.u.IsDeveloperMode(),
+			a.u.MainWindow(),
+		)
+	}
+	w.Show()
 }
 
 func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
-		a.doOnSendMessage(app.SendMailNew, nil)
+		a.showMailerWindow(mailer.New, nil)
 	}
 }
+
+// TODO: Convert to ButtonWithProgressIndicator
 
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
@@ -708,19 +716,19 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 
 func (a *Mails) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.doOnSendMessage(app.SendMailForward, a.mail)
+		a.showMailerWindow(mailer.Forward, a.mail)
 	}
 }
 
 func (a *Mails) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.doOnSendMessage(app.SendMailReply, a.mail)
+		a.showMailerWindow(mailer.Reply, a.mail)
 	}
 }
 
 func (a *Mails) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.doOnSendMessage(app.SendMailReplyAll, a.mail)
+		a.showMailerWindow(mailer.ReplyAll, a.mail)
 	}
 }
 

@@ -140,3 +140,21 @@ func TestShouldRetryOn429s(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, 2, callCount)
 }
+
+func TestShouldNotRetryOn520s(t *testing.T) {
+	var callCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(xgoesi.StatusUnknownError)
+		w.Write([]byte("Hello, World!"))
+		callCount++
+	}))
+	defer ts.Close()
+	client := retryablehttp.NewClient()
+	client.RetryMax = 1
+	client.CheckRetry = customCheckRetry
+	client.Backoff = customBackoff
+	resp, err := client.Get(ts.URL)
+	require.NoError(t, err)
+	assert.Equal(t, xgoesi.StatusUnknownError, resp.StatusCode)
+	assert.Equal(t, 1, callCount)
+}
