@@ -2,10 +2,12 @@ package characterservice_test
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -49,6 +51,7 @@ func TestUpdateMailBodies(t *testing.T) {
 		}
 		return data
 	}
+
 	t.Run("Can update mail body", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -61,14 +64,40 @@ func TestUpdateMailBodies(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail)),
 		)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
+
 		// when
 		body, err := s.UpdateMailBodyESI(t.Context(), mail.CharacterID, mail.MailID)
+
+		// then
 		require.NoError(t, err)
 		xassert.Equal(t, "body", body)
 		mail2, err := s.GetMail(t.Context(), mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
 		xassert.EqualOptional(t, "body", mail2.Body)
 	})
+
+	t.Run("should delete local mail when it no longer exists on the server", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		mail := factory.CreateCharacterMail()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", mail.CharacterID, mail.MailID),
+			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{"error": "some error"}),
+		)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
+
+		// when
+		_, err := s.UpdateMailBodyESI(t.Context(), mail.CharacterID, mail.MailID)
+
+		// then
+		assert.Error(t, err)
+		_, err2 := s.GetMail(t.Context(), mail.CharacterID, mail.MailID)
+		assert.ErrorIs(t, err2, app.ErrNotFound)
+
+	})
+
 	t.Run("Can download missing mail bodies", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -90,8 +119,11 @@ func TestUpdateMailBodies(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, mail2a.MailID),
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail2a)),
 		)
+
 		// when
 		aborted, err := s.DownloadMissingMailBodies(t.Context(), c.ID)
+
+		// then
 		require.NoError(t, err)
 		require.False(t, aborted)
 		mail1b, err := s.GetMail(t.Context(), c.ID, mail1a.MailID)
