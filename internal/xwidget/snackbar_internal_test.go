@@ -18,7 +18,7 @@ func TestSnackbar_Show(t *testing.T) {
 		w := test.NewWindow(widget.NewLabel(""))
 		defer w.Close()
 		w.Resize(fyne.NewSize(500, 300))
-		sb := NewSnackbar(w)
+		sb := NewSnackbar(w.Canvas())
 		sb.Start()
 		sb.Show("Dummy")
 		for {
@@ -33,7 +33,7 @@ func TestSnackbar_Show(t *testing.T) {
 		w := test.NewWindow(widget.NewLabel(""))
 		defer w.Close()
 		w.Resize(fyne.NewSize(500, 300))
-		sb := NewSnackbar(w)
+		sb := NewSnackbar(w.Canvas())
 		sb.Start()
 		sb.Show(longText)
 		for {

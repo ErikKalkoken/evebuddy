@@ -110,7 +110,7 @@ func newUpdateStatus(s baseUI, w fyne.Window) *updateStatus {
 		charactersTop:     ui.NewLabelWithWrapping(""),
 		details:           newSectionDetails(),
 		detailsTop:        ui.NewLabelWithWrapping(""),
-		sb:                xwidget.NewSnackbar(w),
+		sb:                xwidget.NewSnackbar(w.Canvas()),
 		sectionsTop:       ui.NewLabelWithWrapping(""),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,

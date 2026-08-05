@@ -474,7 +474,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	corpNav.NavBar = navBar
 	searchNav.NavBar = navBar
 
-	u.snackbar.Bottom = 90
+	u.snackbar.BottomMargin = theme.Padding() * 17
 
 	w := u.MainWindow()
 	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {

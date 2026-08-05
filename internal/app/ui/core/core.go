@@ -445,7 +445,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.slotsManufacturing = industry.NewSlots(u, app.ManufacturingJob)
 	u.slotsReactions = industry.NewSlots(u, app.ReactionJob)
 	u.slotsResearch = industry.NewSlots(u, app.ScienceJob)
-	u.snackbar = xwidget.NewSnackbar(u.window)
+	u.snackbar = xwidget.NewSnackbar(u.window.Canvas())
 	u.training = skills.NewTraining(u)
 	u.wealth = wallets.NewWealth(u)
 

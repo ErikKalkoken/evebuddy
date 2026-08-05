@@ -85,7 +85,7 @@ type settings struct {
 
 func newSettings(u baseUI, w fyne.Window) *settings {
 	a := &settings{
-		sb: xwidget.NewSnackbar(w),
+		sb: xwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}
@@ -384,12 +384,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		})
 	}
 	if a.u.IsDeveloperMode() {
-		actions = append(actions, settingAction{
-			Label: "Show snackbar (debug)",
-			Action: func() {
-				a.sb.Show("This is a test")
-			},
-		})
 		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
