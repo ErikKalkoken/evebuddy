@@ -98,8 +98,8 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *manageTags) deleteTags() {
 	ui.ShowConfirm(
-		"Delete All Tags",
-		"Are you sure you want to delete all tags?",
+		"Delete all tags?",
+		"This will permanently remove all tags",
 		"Delete",
 		func(confirmed bool) {
 			if !confirmed {
@@ -352,9 +352,9 @@ func (a *manageTags) makeTagList() *widget.List {
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
-				s := "Are you sure you want to delete tag " + tag.Name + "?"
+				s := "This will permanently delete tag \"" + tag.Name + "\""
 				ui.ShowConfirm(
-					"Delete Tag", s, "Delete", func(confirmed bool) {
+					"Delete Tag?", s, "Delete", func(confirmed bool) {
 						if !confirmed {
 							return
 						}

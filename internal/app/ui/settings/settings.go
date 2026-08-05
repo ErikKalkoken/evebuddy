@@ -307,8 +307,8 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		Action: func() {
 			w := a.w
 			ui.ShowConfirm(
-				"Clear Cache",
-				"Are you sure you want to clear the cache?",
+				"Clear Cache?",
+				"This will clear the cache",
 				"Clear",
 				func(confirmed bool) {
 					if !confirmed {
@@ -405,8 +405,8 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 
 func (a *settings) showDeleteFileDialog(name, path string) {
 	ui.ShowConfirm(
-		"Delete File",
-		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
+		"Delete File?",
+		fmt.Sprintf("This will permanently delete this file:\n\n%s", name),
 		"Delete",
 		func(confirmed bool) {
 			if !confirmed {

@@ -48,7 +48,7 @@ func (u *ui) ShowAndRun() {
 
 func (u *ui) makePage() *fyne.Container {
 	okBtn := widget.NewButtonWithIcon("Delete", theme.ConfirmIcon(), func() {
-		title := widget.NewLabel("Deleting user data...")
+		title := widget.NewLabel("Delete all user data?")
 		pb := widget.NewProgressBar()
 		errText := widget.NewLabel("")
 		errText.Importance = widget.DangerImportance
@@ -100,10 +100,7 @@ func (u *ui) makePage() *fyne.Container {
 	cancelBtn := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		u.closeWithDialog("Aborted")
 	})
-	label := widget.NewLabel(fmt.Sprint(
-		"Are you sure you want to delete\n" +
-			"all data of the current user?",
-	))
+	label := widget.NewLabel("This will permanently delete all locally stored data.")
 	c := container.NewBorder(
 		nil,
 		container.NewHBox(cancelBtn, layout.NewSpacer(), okBtn),

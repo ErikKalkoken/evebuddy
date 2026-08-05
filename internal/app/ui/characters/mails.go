@@ -677,8 +677,12 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		ui.ShowConfirm(
-			"Delete mail",
-			fmt.Sprintf("Are you sure you want to permanently delete this mail?\n\n%s", a.mail.Header()),
+			"Delete mail?",
+			fmt.Sprintf(
+				"This mail will be permanently removed from your character including in-game.\n\n%s\n%s",
+				a.mail.Subject.ValueOrFallback("?"),
+				a.mail.Header(),
+			),
 			"Delete",
 			func(confirmed bool) {
 				if !confirmed {

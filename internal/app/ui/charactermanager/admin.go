@@ -220,8 +220,8 @@ func (a *admin) showAddCharacterDialog() {
 
 func (a *admin) showDeleteDialog(r adminRow) {
 	ui.ShowConfirm(
-		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
+		"Delete Character?",
+		fmt.Sprintf("%s will be permanently removed from this app", r.characterName),
 		"Delete",
 		func(confirmed bool) {
 			if !confirmed {
