@@ -97,35 +97,21 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *manageTags) deleteTags() {
-	ui.ShowConfirm(
+	ui.ShowProgressConfirm(
 		"Delete all tags?",
 		"This will permanently remove all tags",
 		"Delete",
-		func(confirmed bool) {
-			if !confirmed {
+		widget.DangerImportance,
+		func() {
+			ctx := context.Background()
+			err := a.cw.u.Character().DeleteAllTags(ctx)
+			if err != nil {
+				a.cw.reportError("Failed to delete tags", err)
 				return
 			}
-			m := kmodal.NewProgressInfinite(
-				"Deleting all tags",
-				"Deleting...",
-				func() error {
-					ctx := context.Background()
-					err := a.cw.u.Character().DeleteAllTags(ctx)
-					if err != nil {
-						return err
-					}
-					a.update(ctx)
-					go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-					return nil
-				},
-				a.cw.w,
-			)
-			m.OnError = func(err error) {
-				fyne.Do(func() {
-					a.cw.reportError("Failed to delete tags", err)
-				})
-			}
-			m.Start()
+			a.update(ctx)
+			go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
+			a.cw.sb.Show("All tags deleted")
 		},
 		a.cw.w,
 	)
@@ -352,31 +338,33 @@ func (a *manageTags) makeTagList() *widget.List {
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
-				s := "This will permanently delete tag \"" + tag.Name + "\""
-				ui.ShowConfirm(
-					"Delete Tag?", s, "Delete", func(confirmed bool) {
-						if !confirmed {
-							return
-						}
+				ui.ShowProgressConfirm(
+					"Delete Tag?",
+					"This will permanently delete tag \""+tag.Name+"\"",
+					"Delete",
+					widget.DangerImportance,
+					func() {
 						ctx := context.Background()
 						err := a.cw.u.Character().DeleteTag(ctx, tag.ID)
 						if err != nil {
-							ui.ShowErrorAndLog("Failed to delete tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+							a.cw.reportError("Failed to delete tag", err)
 							return
 						}
 						a.update(ctx)
 						go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-						if len(a.tags) > 0 {
-							a.tagList.Select(0)
-							return
-						}
-						a.tagList.UnselectAll()
-						a.selectedTag = nil
-						a.characters = xslices.Reset(a.characters)
-						a.addCharactersButton.Disable()
-						a.characterList.Refresh()
-						a.addCharactersButton.Disable()
-						a.manageCharacters.Hide()
+						fyne.Do(func() {
+							if len(a.tags) > 0 {
+								a.tagList.Select(0)
+								return
+							}
+							a.tagList.UnselectAll()
+							a.selectedTag = nil
+							a.characters = xslices.Reset(a.characters)
+							a.addCharactersButton.Disable()
+							a.characterList.Refresh()
+							a.addCharactersButton.Disable()
+							a.manageCharacters.Hide()
+						})
 					}, a.cw.w,
 				)
 			}

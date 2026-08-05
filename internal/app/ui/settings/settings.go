@@ -19,7 +19,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
@@ -305,34 +304,15 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	clearCache := settingAction{
 		Label: "Clear cache",
 		Action: func() {
-			w := a.w
-			ui.ShowConfirm(
+			ui.ShowProgressConfirm(
 				"Clear Cache?",
 				"This will clear the cache",
 				"Clear",
-				func(confirmed bool) {
-					if !confirmed {
-						return
-					}
-					m := kxmodal.NewProgressInfinite(
-						"Clearing cache...",
-						"",
-						func() error {
-							a.u.ClearAllCaches()
-							return nil
-						},
-						w,
-					)
-					m.OnSuccess = func() {
-						slog.Info("Cleared cache")
-						a.sb.Show("Cache cleared")
-					}
-					m.OnError = func(err error) {
-						slog.Error("Failed to clear cache", "error", err)
-						a.sb.Show(fmt.Sprintf("Failed to clear cache: %s", a.u.ErrorDisplay(err)))
-					}
-					m.Start()
-				}, w,
+				widget.DangerImportance,
+				func() {
+					a.u.ClearAllCaches()
+					a.sb.Show("Cache cleared")
+				}, a.w,
 			)
 		},
 	}
@@ -404,14 +384,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 }
 
 func (a *settings) showDeleteFileDialog(name, path string) {
-	ui.ShowConfirm(
+	ui.ShowProgressConfirm(
 		"Delete File?",
-		fmt.Sprintf("This will permanently delete this file:\n\n%s", name),
+		fmt.Sprintf("This will permanently delete the %s", name),
 		"Delete",
-		func(confirmed bool) {
-			if !confirmed {
-				return
-			}
+		widget.DangerImportance,
+		func() {
 			err := func() error {
 				files, err := filepath.Glob(path)
 				if err != nil {

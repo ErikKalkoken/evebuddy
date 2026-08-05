@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
@@ -676,43 +675,32 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
-		ui.ShowConfirm(
+		ui.ShowProgressConfirm(
 			"Delete mail?",
 			fmt.Sprintf(
-				"This mail will be permanently removed from your character including in-game.\n\n%s\n%s",
+				"This will permanently remove this mail from your character including in-game.\n\n%s\n%s",
 				a.mail.Subject.ValueOrFallback("?"),
 				a.mail.Header(),
 			),
 			"Delete",
-			func(confirmed bool) {
-				if !confirmed {
-					return
-				}
+			widget.DangerImportance,
+			func() {
+				subject := a.mail.Subject.ValueOrFallback("?")
 				ctx := context.Background()
-				m := kxmodal.NewProgressInfinite(
-					"Deleting mail...",
-					"",
-					func() error {
-						return a.u.Character().DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
-					},
-					a.u.MainWindow(),
-				)
-				m.OnSuccess = func() {
-					a.headerUpdate(ctx)
-					if onSuccess != nil {
-						onSuccess()
-					}
-					a.u.ShowSnackbar(fmt.Sprintf("Mail \"%s\" deleted", a.mail.Subject))
-				}
-				m.OnError = func(err error) {
+				err := a.u.Character().DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
+				if err != nil {
 					slog.Error("Failed to delete mail",
 						slog.Int64("characterID", a.mail.CharacterID),
 						slog.Int64("mailID", a.mail.MailID),
 						slog.Any("err", err),
 					)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.ErrorDisplay(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
 				}
-				m.Start()
+				a.headerUpdate(ctx)
+				if onSuccess != nil {
+					onSuccess()
+				}
+				a.u.ShowSnackbar(fmt.Sprintf("Mail \"%s\" deleted", subject))
 			}, a.u.MainWindow(),
 		)
 	}
