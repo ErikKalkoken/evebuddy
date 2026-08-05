@@ -134,20 +134,9 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		window:   a.w,
 	})
 
-	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
-		label:  "Developer Mode",
-		hint:   "App shows additional technical information like Character IDs",
-		getter: a.u.Settings().DeveloperMode,
-		onChanged: func(b bool) {
-			a.u.Settings().SetDeveloperMode(b)
-			a.u.SetDeveloperMode(b)
-		},
-	})
-
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
-		developerMode,
 	}
 
 	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
@@ -295,6 +284,20 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		maxMail,
 		maxWallet,
 		marketOrdersRetention,
+	})
+
+	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
+		label:  "Developer mode",
+		hint:   "Show debug information, e.g. EVE IDs of objects",
+		getter: a.u.Settings().DeveloperMode,
+		onChanged: func(b bool) {
+			a.u.Settings().SetDeveloperMode(b)
+			a.u.SetDeveloperMode(b)
+		},
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("Advanced settings"),
+		developerMode,
 	})
 
 	list := newSettingList(items)
