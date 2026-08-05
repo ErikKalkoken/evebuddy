@@ -361,7 +361,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
-		iw.sb = xwidget.NewSnackbar(w)
+		iw.sb = xwidget.NewSnackbar(w.Canvas())
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		w.SetOnClosed(func() {

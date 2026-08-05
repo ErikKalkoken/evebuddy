@@ -79,7 +79,7 @@ type manageCharacters struct {
 
 func newManageCharacters(u baseUI, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
-		sb: xwidget.NewSnackbar(w),
+		sb: xwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}

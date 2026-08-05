@@ -456,7 +456,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	w := u.MainWindow()
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
 
-	u.snackbar.Bottom = statusBar.MinSize().Height
+	u.snackbar.BottomMargin = statusBar.MinSize().Height
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
@@ -696,7 +696,7 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				u.ShowSnackbar(fmt.Sprintf(
 					"%s. This is a test snack bar at %s",
-					fake.WordsN(10),
+					fake.Paragraph(),
 					time.Now().Format("15:04:05.999999999"),
 				))
 				u.ShowSnackbar(fmt.Sprintf(

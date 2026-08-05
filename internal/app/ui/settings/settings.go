@@ -85,7 +85,7 @@ type settings struct {
 
 func newSettings(u baseUI, w fyne.Window) *settings {
 	a := &settings{
-		sb: xwidget.NewSnackbar(w),
+		sb: xwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}
@@ -134,20 +134,9 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		window:   a.w,
 	})
 
-	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
-		label:  "Developer Mode",
-		hint:   "App shows additional technical information like Character IDs",
-		getter: a.u.Settings().DeveloperMode,
-		onChanged: func(b bool) {
-			a.u.Settings().SetDeveloperMode(b)
-			a.u.SetDeveloperMode(b)
-		},
-	})
-
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
-		developerMode,
 	}
 
 	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
@@ -297,6 +286,20 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		marketOrdersRetention,
 	})
 
+	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
+		label:  "Developer mode",
+		hint:   "Show debug information, e.g. EVE IDs of objects",
+		getter: a.u.Settings().DeveloperMode,
+		onChanged: func(b bool) {
+			a.u.Settings().SetDeveloperMode(b)
+			a.u.SetDeveloperMode(b)
+		},
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("Advanced settings"),
+		developerMode,
+	})
+
 	list := newSettingList(items)
 
 	clearCache := settingAction{
@@ -384,12 +387,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		})
 	}
 	if a.u.IsDeveloperMode() {
-		actions = append(actions, settingAction{
-			Label: "Show snackbar (debug)",
-			Action: func() {
-				a.sb.Show("This is a test")
-			},
-		})
 		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
