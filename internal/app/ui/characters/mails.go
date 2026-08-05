@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -673,17 +674,18 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
+		subject := xstrings.TruncateWithSuffix(a.mail.Subject.ValueOrFallback("?"), 50, 0)
 		ui.ShowProgressConfirm(
 			"Delete mail?",
 			fmt.Sprintf(
-				"This will permanently remove this mail from your character including in-game.\n\n%s\n%s",
-				a.mail.Subject.ValueOrFallback("?"),
-				a.mail.Header(),
+				"You are about to permanently delete \"%s\" from %s. "+
+					"This action cannot be undone and the mail cannot be recovered.",
+				subject,
+				a.mail.From.Name,
 			),
 			"Delete",
 			widget.DangerImportance,
 			func() {
-				subject := a.mail.Subject.ValueOrFallback("?")
 				ctx := context.Background()
 				err := a.u.Character().DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
 				if err != nil {

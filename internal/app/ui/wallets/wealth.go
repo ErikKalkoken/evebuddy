@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -377,7 +378,7 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 		if total.IsEmpty() {
 			continue
 		}
-		name := TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
+		name := xstrings.TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
 		r := wealthRow{
 			characterID:     c.ID,
 			characterName:   name,
@@ -426,22 +427,4 @@ func (w *colorWheel) next() fyne.ThemeColorName {
 		w.n = 0
 	}
 	return c
-}
-
-// func (w *colorWheel) reset() {
-// 	w.n = 0
-// }
-
-// TruncateWithSuffix shortens a string to length limit.
-// It adds "..." and keeps 'suffixLen' characters at the end.
-func TruncateWithSuffix(s string, limit int, suffixLen int) string {
-	runes := []rune(strings.TrimRight(s, " "))
-	if len(runes) <= limit {
-		return string(runes)
-	}
-	prefixLen := max(limit-1-suffixLen, 0) // ellipsis counts as 1
-	prefix := runes[:prefixLen]
-	suffix := runes[len(runes)-suffixLen:]
-	strSuffix := strings.TrimRight(string(suffix), " ")
-	return string(prefix) + "..." + strSuffix
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"time"
 
@@ -233,8 +234,14 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 		}
 		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
-		mail, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
+		mail, r, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				err2 := s.st.DeleteCharacterMail(ctx, characterID, mailID)
+				if err2 != nil {
+					slog.Error("Failed to delete mail that no longer exists on the server", "characterID", characterID, "mailID", mail, "error", err2)
+				}
+			}
 			return "", err
 		}
 		body := optional.FromPtr(mail.Body)
