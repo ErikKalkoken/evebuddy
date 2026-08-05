@@ -137,9 +137,10 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdMail")
 	request := esi.PostCharactersCharacterIdMailRequest{
-		Body:       body,
-		Subject:    subject,
-		Recipients: rr,
+		ApprovedCost: new(int64(s.settings.ApprovedContactCost())),
+		Body:         body,
+		Subject:      subject,
+		Recipients:   rr,
 	}
 	mailID, _, err := s.esiClient.MailAPI.PostCharactersCharacterIdMail(ctx, characterID).PostCharactersCharacterIdMailRequest(request).Execute()
 	if err != nil {

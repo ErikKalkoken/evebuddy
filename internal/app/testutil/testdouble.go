@@ -326,6 +326,10 @@ type SettingsStub struct {
 	MarketOrderRetentionDaysDefault int
 }
 
+func (s *SettingsStub) ApprovedContactCost() int {
+	return 0
+}
+
 func (s *SettingsStub) MaxMails() int {
 	return s.MaxMailsDefault
 }

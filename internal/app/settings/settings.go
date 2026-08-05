@@ -32,6 +32,8 @@ const (
 	settingLastCorporationID                  = "settingLastCorporationID"
 	settingLogLevel                           = "logLevel"
 	settingLogLevelDefault                    = "info"
+	settingApprovedContactCost                = "settingApprovedContactCost"
+	settingApprovedContactCostMax             = 1_000_000
 	settingMaxMails                           = "settingMaxMails"
 	settingMaxMailsDefault                    = 250
 	settingMaxMailsMax                        = 10_000
@@ -146,6 +148,20 @@ func (s Settings) ResetLogLevel() {
 
 func (s Settings) SetLogLevel(l string) {
 	s.p.SetString(settingLogLevel, l)
+}
+
+func (s Settings) ApprovedContactCost() int {
+	return s.p.IntWithFallback(settingApprovedContactCost, 0)
+}
+
+func (s Settings) ApprovedContactCostPresets() (minimum int, maximum int, def int) {
+	minimum = 0
+	maximum = settingApprovedContactCostMax
+	def = 0
+	return
+}
+func (s Settings) SetApprovedContactCost(v int) {
+	s.p.SetInt(settingApprovedContactCost, v)
 }
 
 func (s Settings) MaxMails() int {

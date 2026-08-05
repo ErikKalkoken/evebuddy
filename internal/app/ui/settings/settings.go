@@ -278,8 +278,27 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		window:   a.w,
 	})
 
+	vMin, vMax, vDef = a.u.Settings().ApprovedContactCostPresets()
+	approvedContactCost := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Approved contact cost",
+		hint:         "Maximum approved cost per contact in ISK",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         10,
+		getter: func() float64 {
+			return float64(a.u.Settings().ApprovedContactCost())
+		},
+		setter: func(v float64) {
+			a.u.Settings().SetApprovedContactCost(int(v))
+		},
+		isMobile: a.u.IsMobile(),
+		window:   a.w,
+	})
+
 	items = slices.Concat(items, []SettingItem{
-		NewSettingItemHeading("Section updates"),
+		NewSettingItemHeading("EVE Online API"),
+		approvedContactCost,
 		maxMail,
 		maxWallet,
 		marketOrdersRetention,
@@ -287,7 +306,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 
 	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
 		label:  "Developer mode",
-		hint:   "Show debug information, e.g. EVE IDs of objects",
+		hint:   "Show debug information, e.g. EVE IDs and technical error messages",
 		getter: a.u.Settings().DeveloperMode,
 		onChanged: func(b bool) {
 			a.u.Settings().SetDeveloperMode(b)
