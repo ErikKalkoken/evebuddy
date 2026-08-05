@@ -579,6 +579,7 @@ func (u *baseUI) ShowAndRun() {
 
 func (u *baseUI) ClearAllCaches() {
 	u.clearCache()
+	slog.Info("Cleared all caches")
 }
 
 func (u *baseUI) Character() *characterservice.CharacterService {

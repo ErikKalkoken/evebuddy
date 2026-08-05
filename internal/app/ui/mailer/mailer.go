@@ -85,7 +85,7 @@ type mailer struct {
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
 	from      *eveEntityEntry
-	send      *xwidget.ButtonWithProgressIndicator
+	send      *xwidget.ProgressButton
 	subject   *widget.Entry
 	to        *eveEntityEntry
 	u         baseUI
@@ -158,7 +158,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.spinner = widget.NewActivity()
 	a.spinner.Hide()
 
-	a.send = xwidget.NewButtonWithProgress("Send", theme.MailSendIcon(), func() {
+	a.send = xwidget.NewProgressButton("Send", theme.MailSendIcon(), func() {
 
 		// TODO: Convert to dynamic enable/disable of send button
 		var issue string

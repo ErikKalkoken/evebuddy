@@ -1,85 +1,102 @@
 package xwidget
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
-// ButtonWithProgressIndicator represents a button widget with a progress indicator
-type ButtonWithProgressIndicator struct {
+// ProgressButton represents a button widget which shows a progress indicator.
+type ProgressButton struct {
 	widget.BaseWidget
 
 	isDisabled bool
 	button     *widget.Button
-	progress   *widget.ProgressBarInfinite
+	progress   *widget.Activity
+	spacer     *canvas.Rectangle
+	label      string
+	icon       fyne.Resource
 }
 
-// NewButtonWithProgress creates a new button with a progress indicator.
+// NewProgressButton creates a new button with a progress indicator.
 //
 // Note that action will be run in a goroutine.
 // Make use to use fyne.Do when accessing the Fyne API
-func NewButtonWithProgress(label string, icon fyne.Resource, action func()) *ButtonWithProgressIndicator {
-	w := &ButtonWithProgressIndicator{
+func NewProgressButton(label string, icon fyne.Resource, action func()) *ProgressButton {
+	w := &ProgressButton{
 		button:   widget.NewButtonWithIcon(label, icon, nil),
-		progress: widget.NewProgressBarInfinite(),
+		progress: widget.NewActivity(),
+		spacer:   canvas.NewRectangle(color.Transparent),
+		label:    label,
+		icon:     icon,
 	}
 	w.ExtendBaseWidget(w)
 	w.progress.Hide()
 	w.progress.Stop()
 	w.button.OnTapped = func() {
-		w.button.Disable()
+		// clear button
+		w.spacer.SetMinSize(w.button.Size())
+		w.button.Text = ""
+		w.button.Icon = nil
+		w.button.Refresh()
+		// show progress
 		w.progress.Show()
 		w.progress.Start()
 		go func() {
 			action()
 			fyne.Do(func() {
+				// restore button
+				w.button.Text = label
+				w.button.Icon = icon
+				w.button.Refresh()
+				w.spacer.SetMinSize(fyne.Size{})
+				// hide progress
 				w.progress.Stop()
 				w.progress.Hide()
 				w.progress.Stop()
-				if !w.isDisabled {
-					w.button.Enable()
-				}
 			})
 		}()
 	}
 	return w
 }
 
-func (w *ButtonWithProgressIndicator) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewStack(w.button, w.progress)
+func (w *ProgressButton) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewStack(w.spacer, w.button, w.progress)
 	return widget.NewSimpleRenderer(c)
 }
 
 // SetImportance sets the importance of the button.
-func (w *ButtonWithProgressIndicator) SetImportance(v widget.Importance) {
+func (w *ProgressButton) SetImportance(v widget.Importance) {
 	w.button.Importance = v
 	w.button.Refresh()
 }
 
 // SetText sets the text of the button.
-func (w *ButtonWithProgressIndicator) SetText(text string) {
+func (w *ProgressButton) SetText(text string) {
 	w.button.SetText(text)
 }
 
 // SetIcon sets the icon of the button.
-func (w *ButtonWithProgressIndicator) SetIcon(icon fyne.Resource) {
+func (w *ProgressButton) SetIcon(icon fyne.Resource) {
 	w.button.SetIcon(icon)
 }
 
 // Disabled reports whether this widget is disabled.
-func (w *ButtonWithProgressIndicator) Disabled() bool {
+func (w *ProgressButton) Disabled() bool {
 	return w.isDisabled
 }
 
 // Disable disables this widget.
-func (w *ButtonWithProgressIndicator) Disable() {
+func (w *ProgressButton) Disable() {
 	w.isDisabled = true
 	w.button.Disable()
 }
 
 // Enable enables this widget.
-func (w *ButtonWithProgressIndicator) Enable() {
+func (w *ProgressButton) Enable() {
 	w.isDisabled = false
 	w.button.Enable()
 }
