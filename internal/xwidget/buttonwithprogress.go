@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -13,21 +14,20 @@ import (
 type ProgressButton struct {
 	widget.BaseWidget
 
-	isDisabled bool
-	button     *widget.Button
-	progress   *widget.Activity
-	spacer     *canvas.Rectangle
-	label      string
-	icon       fyne.Resource
+	button   *lockableButton
+	progress *widget.Activity
+	spacer   *canvas.Rectangle
+	label    string
+	icon     fyne.Resource
 }
 
 // NewProgressButton creates a new button with a progress indicator.
 //
-// Note that action will be run in a goroutine.
-// Make use to use fyne.Do when accessing the Fyne API
+// The action will be run in a goroutine.
+// Note that the button remains clickable
 func NewProgressButton(label string, icon fyne.Resource, action func()) *ProgressButton {
 	w := &ProgressButton{
-		button:   widget.NewButtonWithIcon(label, icon, nil),
+		button:   newLockableButton(label, icon, nil),
 		progress: widget.NewActivity(),
 		spacer:   canvas.NewRectangle(color.Transparent),
 		label:    label,
@@ -37,6 +37,7 @@ func NewProgressButton(label string, icon fyne.Resource, action func()) *Progres
 	w.progress.Hide()
 	w.progress.Stop()
 	w.button.OnTapped = func() {
+		w.button.disable()
 		// clear button
 		w.spacer.SetMinSize(w.button.Size())
 		w.button.Text = ""
@@ -57,6 +58,7 @@ func NewProgressButton(label string, icon fyne.Resource, action func()) *Progres
 				w.progress.Stop()
 				w.progress.Hide()
 				w.progress.Stop()
+				w.button.enable()
 			})
 		}()
 	}
@@ -86,17 +88,66 @@ func (w *ProgressButton) SetIcon(icon fyne.Resource) {
 
 // Disabled reports whether this widget is disabled.
 func (w *ProgressButton) Disabled() bool {
-	return w.isDisabled
+	return w.button.Disabled()
 }
 
 // Disable disables this widget.
 func (w *ProgressButton) Disable() {
-	w.isDisabled = true
 	w.button.Disable()
 }
 
 // Enable enables this widget.
 func (w *ProgressButton) Enable() {
-	w.isDisabled = false
 	w.button.Enable()
+}
+
+// lockableButton is an extension of the Fyne button which can be fully disabled
+// without changing it's appearance.
+//
+// This feature is used by the ProgressButton.
+type lockableButton struct {
+	widget.Button
+	disabled bool
+}
+
+func newLockableButton(label string, icon fyne.Resource, tapped func()) *lockableButton {
+	w := &lockableButton{
+		Button: widget.Button{
+			Text:     label,
+			Icon:     icon,
+			OnTapped: tapped,
+		},
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *lockableButton) enable() {
+	w.disabled = false
+}
+
+func (w *lockableButton) disable() {
+	w.disabled = true
+}
+
+func (w *lockableButton) Tapped(pe *fyne.PointEvent) {
+	if w.disabled {
+		return
+	}
+	w.Button.Tapped(pe)
+}
+
+func (w *lockableButton) MouseIn(me *desktop.MouseEvent) {
+	if w.disabled {
+		return
+	}
+	w.Button.MouseIn(me)
+}
+
+func (w *lockableButton) MouseOut() {
+	if w.disabled {
+		return
+	}
+	w.Button.MouseOut()
+
 }
