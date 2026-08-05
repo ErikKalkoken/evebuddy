@@ -40,6 +40,7 @@ type EVENotificationService interface {
 }
 
 type Settings interface {
+	ApprovedContactCost() int
 	MarketOrderRetentionDays() int
 	MaxMails() int
 	MaxWalletTransactions() int
