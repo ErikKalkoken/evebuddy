@@ -172,6 +172,16 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 	return rows, nil
 }
 
+// ListAllSkills returns the skills from all characters.
+func (s *CharacterService) ListAllSkills(ctx context.Context) ([]*app.CharacterSkill, error) {
+	oo, err := s.st.ListAllCharacterSkills(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return oo, nil
+}
+
+// ListSkills returns the skills from a character.
 func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([]*app.CharacterSkill2, error) {
 	oo, err := s.st.ListCharacterSkills(ctx, characterID)
 	if err != nil {

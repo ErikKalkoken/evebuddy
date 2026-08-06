@@ -102,6 +102,77 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 	return i, err
 }
 
+const listAllCharacterSkills = `-- name: ListAllCharacterSkills :many
+SELECT
+    cs.id, cs.active_skill_level, cs.character_id, cs.eve_type_id, cs.skill_points_in_skill, cs.trained_skill_level,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    character_skills cs
+    JOIN eve_types et ON et.id = cs.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+`
+
+type ListAllCharacterSkillsRow struct {
+	CharacterSkill CharacterSkill
+	EveType        EveType
+	EveGroup       EveGroup
+	EveCategory    EveCategory
+}
+
+func (q *Queries) ListAllCharacterSkills(ctx context.Context) ([]ListAllCharacterSkillsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterSkills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterSkillsRow
+	for rows.Next() {
+		var i ListAllCharacterSkillsRow
+		if err := rows.Scan(
+			&i.CharacterSkill.ID,
+			&i.CharacterSkill.ActiveSkillLevel,
+			&i.CharacterSkill.CharacterID,
+			&i.CharacterSkill.EveTypeID,
+			&i.CharacterSkill.SkillPointsInSkill,
+			&i.CharacterSkill.TrainedSkillLevel,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterShipSkills = `-- name: ListCharacterShipSkills :many
 SELECT
     rank,

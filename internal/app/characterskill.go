@@ -24,6 +24,8 @@ type CharacterSkill2 struct {
 	TrainedSkillLevel  int64
 }
 
+// TODO: Move to ui package
+
 func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }

@@ -165,17 +165,21 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("", u.training.MoreItems()...),
 	)
-	training := xwidget.NewNavPage(
-		"Training",
+
+	skills := xwidget.NewNavPage(
+		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
-		newContentPage("Training", u.training, trainingMore),
+		newContentPage("Skills", container.NewAppTabs(
+			container.NewTabItem("Training", u.training),
+			container.NewTabItem("Search", u.skillSearch),
+		), trainingMore),
 	)
 	u.training.OnUpdate = func(expired int) {
 		var badge string
 		if expired > 0 {
 			badge = ihumanize.Comma(expired)
 		}
-		homeNav.SetItemBadge(training, badge)
+		homeNav.SetItemBadge(skills, badge)
 	}
 
 	homeNav = xwidget.NewNavDrawer(
@@ -198,7 +202,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			newContentPage("Loyalty Points", u.loyaltyPoints),
 		),
 		marketOrders,
-		training,
+		skills,
 		wealth,
 	)
 	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
