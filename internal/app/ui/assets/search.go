@@ -220,7 +220,7 @@ type Search struct {
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *xwidget.SortButton
 	top            *widget.Label
-	u              coreUI
+	u              baseUI
 }
 
 const (
@@ -234,15 +234,15 @@ const (
 	searchColTags
 )
 
-func NewSearchForAll(u coreUI) *Search {
+func NewSearchForAll(u baseUI) *Search {
 	return newAssetSearch(u, false)
 }
 
-func NewSearchForCorporation(u coreUI) *Search {
+func NewSearchForCorporation(u baseUI) *Search {
 	return newAssetSearch(u, true)
 }
 
-func newAssetSearch(u coreUI, forCorporation bool) *Search {
+func newAssetSearch(u baseUI, forCorporation bool) *Search {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
 		ID:    searchColItem,

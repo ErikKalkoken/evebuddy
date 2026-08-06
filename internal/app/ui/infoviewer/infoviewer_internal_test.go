@@ -42,7 +42,7 @@ func (u *UIServiceFake) Janice() *janiceservice.JaniceService { return nil }
 func (u *UIServiceFake) MainWindow() fyne.Window              { return u.mainWindow }
 func (u *UIServiceFake) Settings() *settings.Settings         { return nil }
 
-var _ coreUI = (*UIServiceFake)(nil)
+var _ baseUI = (*UIServiceFake)(nil)
 
 // TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed is a regression test
 // for the bug where show2 used iw.w directly as the dialog parent. After an info window is
