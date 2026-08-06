@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -55,21 +54,21 @@ type Catalogue struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
+	columnSorter   *xwidget.ColumnSorter[skillRow]
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
+	moreButton     *xwidget.IconButton
 	rows           []skillRow
 	rowsFiltered   []skillRow
 	search         *widget.Entry
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
+	sortButton     *xwidget.SortButton
 	top            *widget.Label
 	u              baseUI
-	sortButton     *xwidget.SortButton
-	columnSorter   *xwidget.ColumnSorter[skillRow]
-	exportButton   *xwidget.ContextMenuButton
 }
 
 func NewCatalogue(u baseUI) *Catalogue {
@@ -135,18 +134,17 @@ func NewCatalogue(u baseUI) *Catalogue {
 		a.filterRowsAsync()
 	}, a.u.MainWindow())
 
-	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
-		"Export",
-		theme.NewThemedResource(icons.ExportVariantSvg),
+	a.moreButton = xwidget.NewIconButtonWithMenu(
+		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("",
-			fyne.NewMenuItem("Copy to clipboard", func() {
+			fyne.NewMenuItem("Copy skills to clipboard", func() {
 				a.copySkillsToClipboard()
 			}),
-			fyne.NewMenuItem("Save as CSV", func() {
+			fyne.NewMenuItem("Save skills as CSV", func() {
 				a.exportSkillsToCSV()
 			}),
-		))
-	a.exportButton.SetToolTip("Export skills to clipboard or file")
+		),
+	)
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -182,7 +180,7 @@ func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
 		topBox.Add(container.NewHScroll(filter))
 	} else {
 		topAligned := container.NewVBox(layout.NewSpacer(), a.top, layout.NewSpacer())
-		topBox.Add(container.NewBorder(nil, nil, nil, container.NewPadded(a.exportButton), topAligned))
+		topBox.Add(container.NewBorder(nil, nil, nil, a.moreButton, topAligned))
 		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
 	}
 	c := container.NewBorder(
@@ -450,7 +448,7 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 func (a *Catalogue) copySkillsToClipboard() {
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
-		a.u.ShowSnackbar("No character")
+		a.u.ShowSnackbar("No skills to copy")
 		return
 	}
 	text, err := a.u.Character().MakeSkillsExportLines(context.Background(), characterID)
@@ -466,7 +464,7 @@ func (a *Catalogue) copySkillsToClipboard() {
 func (a *Catalogue) exportSkillsToCSV() {
 	character := a.character.Load()
 	if character == nil {
-		a.u.ShowSnackbar("No character")
+		a.u.ShowSnackbar("No skills to export")
 		return
 	}
 
@@ -476,15 +474,15 @@ func (a *Catalogue) exportSkillsToCSV() {
 		}
 		defer writer.Close()
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
 		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), character.ID, writer); err != nil {
-			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
 		slog.Info("Skills exported to file", "uri", writer.URI())
-		a.u.ShowSnackbar("Skills saved to CSV")
+		a.u.ShowSnackbar("Skills saved")
 	}, a.u.MainWindow())
 
 	characterName := character.NameOrZero()
