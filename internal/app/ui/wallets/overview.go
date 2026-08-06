@@ -66,7 +66,7 @@ type Overview struct {
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	u            baseUI
-	showHelp     *xwidget.TappableIcon
+	showHelp     *xwidget.IconButton
 }
 
 const (
@@ -215,7 +215,7 @@ func NewOverview(u baseUI) *Overview {
 	}
 	a.search.PlaceHolder = "Search characters"
 
-	a.showHelp = xwidget.NewTappableIcon(theme.QuestionIcon(), func() {
+	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
 		showHelpPopUp(overviewHelpText, a.u.IsMobile(), a.showHelp)
 	})
 	a.showHelp.SetToolTip("Show explanation for columns")

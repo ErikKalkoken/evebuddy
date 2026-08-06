@@ -20,8 +20,6 @@ import (
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
@@ -163,13 +161,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
+	trainingMore := xwidget.NewIconButtonWithMenu(
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("", u.training.MoreItems()...),
+	)
+	trainingMore.SetToolTip("More actions")
 	training := xwidget.NewNavPage(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
-		newContentPage("Training", u.training, kxwidget.NewIconButtonWithMenu(
-			theme.MoreHorizontalIcon(),
-			fyne.NewMenu("", u.training.MoreItems()...),
-		)),
+		newContentPage("Training", u.training, trainingMore),
 	)
 	u.training.OnUpdate = func(expired int) {
 		var badge string

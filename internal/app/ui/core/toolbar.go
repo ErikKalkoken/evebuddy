@@ -21,8 +21,8 @@ type toolbar struct {
 	widget.BaseWidget
 
 	searchBar  *widget.Entry
-	searchIcon *xwidget.TappableIcon
-	hamburger  *xwidget.TappableIcon
+	searchIcon *xwidget.IconButton
+	hamburger  *xwidget.IconButton
 	u          *DesktopUI
 }
 
@@ -40,7 +40,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 	clearSearch.SetToolTip("Clear search bar")
 	searchBar.ActionItem = container.NewPadded(clearSearch)
 
-	searchIcon := xwidget.NewTappableIcon(theme.SearchIcon(), func() {
+	searchIcon := xwidget.NewIconButton(theme.SearchIcon(), func() {
 		u.showAdvancedSearch(searchBar.Text)
 	})
 	searchIcon.SetToolTip("Advanced search")
@@ -76,7 +76,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 		it,
 		makeMenuItem("Quit", quit),
 	)
-	hamburger := xwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)
+	hamburger := xwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu)
 	hamburger.SetToolTip("Main menu")
 	a := &toolbar{
 		hamburger:  hamburger,
