@@ -174,7 +174,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			}
 			fi := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(r.ownerID, r.ownerName, u.InfoViewer().Show)),
-				widget.NewFormItem("Info by issuer", widget.NewLabel(r.title)),
+				widget.NewFormItem("Description", widget.NewLabel(r.title)),
 				widget.NewFormItem("Type", widget.NewLabel(r.contractType.Display())),
 				widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(r.issuer, u.InfoViewer().Show)),
 				widget.NewFormItem("Availability", availability),
