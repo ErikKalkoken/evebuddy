@@ -287,7 +287,7 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, charact
 			"Owner",
 			ui.MakeCharacterActionLabel(r.CharacterID, characterName, u.InfoViewer().Show),
 		),
-		widget.NewFormItem("Skill", ui.MakeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
+		widget.NewFormItem("Skill", ui.MakeLinkLabel(ui.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
 			u.InfoViewer().ShowType(r.SkillID, r.CharacterID)
 		})),
 		widget.NewFormItem("Group", widget.NewLabel(r.GroupName)),
@@ -318,7 +318,7 @@ func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, charact
 
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
+	subTitle := fmt.Sprintf("%s by %s", ui.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 		Content: f,
 		ImageAction: func() {

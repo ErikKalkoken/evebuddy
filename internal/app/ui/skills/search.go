@@ -336,7 +336,7 @@ func (a *Search) fetchRows(ctx context.Context) ([]searchRow, error) {
 			groupID:       s.Type.Group.ID,
 			groupName:     s.Type.Group.Name,
 			searchTarget:  strings.ToLower(fmt.Sprintf("%s %d", s.Type.Name, s.ActiveSkillLevel)),
-			skillName:     app.SkillDisplayName(s.Type.Name, s.ActiveSkillLevel),
+			skillName:     ui.SkillDisplayName(s.Type.Name, s.ActiveSkillLevel),
 			trainedLevel:  s.TrainedSkillLevel,
 			typeID:        s.Type.ID,
 			typeName:      s.Type.Name,

@@ -619,7 +619,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 			text := row[2].(*widget.Label)
 			level := row[3].(*xwidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
-			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
+			skill.SetText(ui.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
 				text.Text = "Skill not injected"
 				text.Importance = widget.DangerImportance
