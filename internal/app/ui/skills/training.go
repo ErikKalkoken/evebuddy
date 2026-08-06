@@ -364,7 +364,7 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 func (a *Training) MoreItems() []*fyne.MenuItem {
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("Copy training data to clipboard", a.copyTrainingToClipboard),
-		fyne.NewMenuItem("Save training data as CSV", a.saveTrainingAsCSV),
+		fyne.NewMenuItem("Save training data as file", a.saveTrainingAsCSV),
 	}
 	return items
 }
@@ -483,7 +483,7 @@ func (a *Training) makeTrainingCSVString() string {
 
 func (a *Training) copyTrainingToClipboard() {
 	fyne.CurrentApp().Clipboard().SetContent(a.makeTrainingCSVString())
-	a.u.ShowSnackbar("Copied to clipboard")
+	a.u.ShowSnackbar("Training data copied to clipboard")
 }
 
 func (a *Training) saveTrainingAsCSV() {
@@ -493,21 +493,21 @@ func (a *Training) saveTrainingAsCSV() {
 		}
 		defer writer.Close()
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
 		_, err = writer.Write([]byte(a.makeTrainingCSVString()))
 		if err != nil {
-			ui.ShowErrorAndLog("Failed to save CSV", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
 			return
 		}
 		slog.Info("Training data exported to file", "uri", writer.URI())
-		a.u.ShowSnackbar("Training data saved to CSV")
+		a.u.ShowSnackbar("Training data saved to file")
 	}, a.u.MainWindow())
 
 	d.SetFileName("training.csv")
 	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetTitleText("Save training data as CSV")
+	d.SetTitleText("Save training data")
 	d.Show()
 
 	_, s := a.u.MainWindow().Canvas().InteractiveArea()

@@ -165,7 +165,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("", u.training.MoreItems()...),
 	)
-	trainingMore.SetToolTip("More actions")
 	training := xwidget.NewNavPage(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
