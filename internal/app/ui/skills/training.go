@@ -26,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -303,15 +302,6 @@ func NewTraining(u baseUI) *Training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.exportButton = xwidget.NewContextMenuButtonWithIcon(
-		"Export",
-		theme.NewThemedResource(icons.ExportVariantSvg),
-		fyne.NewMenu("",
-			fyne.NewMenuItem("Copy to clipboard", a.copyTrainingToClipboard),
-			fyne.NewMenuItem("Save as CSV", a.saveTrainingAsCSV),
-		),
-	)
-	a.exportButton.SetToolTip("Export training data to clipboard or file")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -350,8 +340,6 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
 	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
-	} else {
-		filter.Add(a.exportButton)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
@@ -370,6 +358,15 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 		a.main,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// MoreItems returns the list of menu items for the overflow menu.
+func (a *Training) MoreItems() []*fyne.MenuItem {
+	items := []*fyne.MenuItem{
+		fyne.NewMenuItem("Copy training data to clipboard", a.copyTrainingToClipboard),
+		fyne.NewMenuItem("Save training data as CSV", a.saveTrainingAsCSV),
+	}
+	return items
 }
 
 func (a *Training) makeDataList() *xwidget.StripedList {

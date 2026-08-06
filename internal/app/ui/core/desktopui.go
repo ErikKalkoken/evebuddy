@@ -20,6 +20,8 @@ import (
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
@@ -164,7 +166,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	training := xwidget.NewNavPage(
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
-		newContentPage("Training", u.training),
+		newContentPage("Training", u.training, kxwidget.NewIconButtonWithMenu(
+			theme.MoreHorizontalIcon(),
+			fyne.NewMenu("", u.training.MoreItems()...),
+		)),
 	)
 	u.training.OnUpdate = func(expired int) {
 		var badge string
@@ -826,27 +831,39 @@ func (u *DesktopUI) showUserDataDialog() {
 	d.Show()
 }
 
+// contentPage is a widget that is used produce a consistent appearance for each page.
+// It always has a title.
+// It can optionally have trailing items, i.e. icon buttons.
 type contentPage struct {
 	widget.BaseWidget
 
-	content fyne.CanvasObject
-	title   *widget.Label
+	content  fyne.CanvasObject
+	title    *widget.Label
+	trailing []fyne.CanvasObject
 }
 
-func newContentPage(title string, content fyne.CanvasObject) *contentPage {
+func newContentPage(title string, content fyne.CanvasObject, trailing ...fyne.CanvasObject) *contentPage {
 	l := widget.NewLabel(title)
 	l.SizeName = theme.SizeNameSubHeadingText
 	w := &contentPage{
-		content: content,
-		title:   l,
+		content:  content,
+		title:    l,
+		trailing: trailing,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewHBox(w.title)
+	if len(w.trailing) > 0 {
+		top.Add(layout.NewSpacer())
+		for _, x := range w.trailing {
+			top.Add(x)
+		}
+	}
 	c := container.NewBorder(
-		w.title,
+		top,
 		nil,
 		nil,
 		nil,

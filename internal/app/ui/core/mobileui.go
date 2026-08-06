@@ -877,7 +877,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		"Training",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Training", u.training))
+			homeNav.Push(xwidget.NewAppBar("Training", u.training, kxwidget.NewIconButtonWithMenu(
+				theme.MoreHorizontalIcon(),
+				fyne.NewMenu("", u.training.MoreItems()...),
+			)))
 		},
 	)
 	u.training.OnUpdate = func(expired int) {
