@@ -355,7 +355,10 @@ func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntitySh
 		return "[Multiple Items]"
 	}
 	if len(items) == 1 {
+		if items[0] == "" {
+			return "[Single Item]"
+		}
 		return items[0]
 	}
-	return "?"
+	return "[Empty]"
 }

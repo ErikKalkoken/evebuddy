@@ -230,6 +230,7 @@ const (
 	contractsColStatus
 	contractsColIssuedAt
 	contractsColExpiresAt
+	contractsColDescription
 )
 
 func NewContractsForCorporation(u baseUI) *Contracts {
@@ -310,6 +311,16 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
+		},
+	}, {
+		ID:    contractsColDescription,
+		Label: "Description",
+		Width: 300,
+		Sort: func(a, b contractRow) int {
+			return strings.Compare(a.title, b.title)
+		},
+		Update: func(r contractRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(r.title)
 		},
 	}})
 	a := &Contracts{

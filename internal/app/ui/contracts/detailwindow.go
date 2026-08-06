@@ -174,7 +174,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			}
 			fi := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(r.ownerID, r.ownerName, u.InfoViewer().Show)),
-				widget.NewFormItem("Info by issuer", widget.NewLabel(r.title)),
+				widget.NewFormItem("Description", widget.NewLabel(r.title)),
 				widget.NewFormItem("Type", widget.NewLabel(r.contractType.Display())),
 				widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(r.issuer, u.InfoViewer().Show)),
 				widget.NewFormItem("Availability", availability),
@@ -213,12 +213,13 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					{Text: "Destination", Widget: makeLocationLabel2(r.endLocation, u.InfoViewer().ShowLocation)},
 				})
 			case app.ContractTypeItemExchange:
-				if r.price.ValueOrZero() > 0 {
-					x := widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))
+				if v, ok := r.price.Value(); ok {
+					x := widget.NewLabel(ui.FormatISKAmount(v))
 					x.Importance = widget.DangerImportance
 					fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
-				} else {
-					x := widget.NewLabel(r.reward.StringFunc("?", ui.FormatISKAmount))
+				}
+				if v, ok := r.reward.Value(); ok {
+					x := widget.NewLabel(ui.FormatISKAmount(v))
 					x.Importance = widget.SuccessImportance
 					fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 				}
