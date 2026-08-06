@@ -213,12 +213,13 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					{Text: "Destination", Widget: makeLocationLabel2(r.endLocation, u.InfoViewer().ShowLocation)},
 				})
 			case app.ContractTypeItemExchange:
-				if r.price.ValueOrZero() > 0 {
-					x := widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))
+				if v, ok := r.price.Value(); ok {
+					x := widget.NewLabel(ui.FormatISKAmount(v))
 					x.Importance = widget.DangerImportance
 					fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
-				} else {
-					x := widget.NewLabel(r.reward.StringFunc("?", ui.FormatISKAmount))
+				}
+				if v, ok := r.reward.Value(); ok {
+					x := widget.NewLabel(ui.FormatISKAmount(v))
 					x.Importance = widget.SuccessImportance
 					fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 				}
