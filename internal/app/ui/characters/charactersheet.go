@@ -16,6 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -25,18 +26,18 @@ import (
 type CharacterSheet struct {
 	widget.BaseWidget
 
-	bloodline   *widget.Hyperlink
+	bloodline   *ui.InfoLink
 	born        *widget.Label
 	character   atomic.Pointer[app.Character]
-	faction     *widget.Hyperlink
-	home        *widget.Hyperlink
+	faction     *ui.InfoLink
+	home        *ui.InfoLink
 	lastLoginAt *widget.Label
-	location    *widget.Hyperlink
-	name        *widget.Hyperlink
+	location    *ui.InfoLink
+	name        *ui.InfoLink
 	portrait    *xwidget.TappableImage
-	race        *widget.Hyperlink
+	race        *ui.InfoLink
 	security    *widget.Label
-	ship        *widget.Hyperlink
+	ship        *ui.InfoLink
 	skillpoints *widget.Label
 	tags        *widget.Label
 	u           baseUI
@@ -44,34 +45,31 @@ type CharacterSheet struct {
 }
 
 func NewCharacterSheet(u baseUI) *CharacterSheet {
-	makeHyperLink := func() *widget.Hyperlink {
-		x := widget.NewHyperlink("?", nil)
-		x.OnTapped = nil
-		x.Truncation = fyne.TextTruncateEllipsis
-		return x
-	}
 	makeLabel := func() *widget.Label {
 		x := widget.NewLabel("?")
 		x.Selectable = true
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x
 	}
+	makeInfoLink := func() *ui.InfoLink {
+		return ui.NewInfoLink(u.InfoViewer())
+	}
 	portrait := xwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	portrait.SetToolTip("Show details")
 	a := &CharacterSheet{
-		bloodline:   makeHyperLink(),
+		bloodline:   makeInfoLink(),
 		born:        makeLabel(),
-		faction:     makeHyperLink(),
-		home:        makeHyperLink(),
+		faction:     makeInfoLink(),
+		home:        makeInfoLink(),
 		lastLoginAt: makeLabel(),
-		location:    makeHyperLink(),
-		name:        makeHyperLink(),
+		location:    makeInfoLink(),
+		name:        makeInfoLink(),
 		portrait:    portrait,
-		race:        makeHyperLink(),
+		race:        makeInfoLink(),
 		security:    makeLabel(),
-		ship:        makeHyperLink(),
+		ship:        makeInfoLink(),
 		skillpoints: makeLabel(),
 		tags:        makeLabel(),
 		u:           u,
@@ -157,39 +155,44 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterSheet) update(ctx context.Context) {
-	setName := func(s string) {
+	clearAll := func() {
 		fyne.Do(func() {
-			a.name.Text = s
-			a.name.OnTapped = nil
-			a.name.Refresh()
+			a.bloodline.Clear()
+			a.born.SetText("")
+			a.faction.Clear()
+			a.home.Clear()
+			a.lastLoginAt.SetText("")
+			a.location.Clear()
+			a.name.Clear()
+			a.portrait.SetResource(icons.BlankSvg)
+			a.race.Clear()
+			a.security.SetText("")
+			a.ship.Clear()
+			a.skillpoints.SetText("")
+			a.tags.SetText("")
+			a.wealth.SetText("")
 		})
 	}
 	c := a.character.Load()
 	if c == nil || c.EveCharacter == nil {
-		setName("No character...")
+		clearAll()
 		return
 	}
 	c2, err := a.u.Character().GetCharacter(ctx, c.ID)
 	if err != nil {
 		slog.Error("Failed to fetch character for sheet", "err", err)
-		setName("ERROR: " + a.u.ErrorDisplay(err))
+		clearAll()
 		return
 	}
 	a.character.Store(c2)
 	c = c2
 
 	fyne.Do(func() {
-		a.name.SetText(c.EveCharacter.Name)
-		a.name.OnTapped = func() {
+		a.name.Set(c.EveCharacter.ToEveEntity())
+		a.portrait.OnTapped = func() {
 			a.u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
 		}
-		a.portrait.OnTapped = a.name.OnTapped
-
-		a.race.SetText(c.EveCharacter.Race.Name)
-		a.race.OnTapped = func() {
-			a.u.InfoViewer().ShowRace(c.EveCharacter.Race.ID)
-		}
-
+		a.race.SetRace(c.EveCharacter.Race)
 		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
 		a.security.SetText(c.EveCharacter.SecurityStatus.StringFunc("?", func(v float64) string {
 			return fmt.Sprintf("%.1f", v)
@@ -205,50 +208,34 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		})
 		el, ok := c.Location.Value()
 		if !ok {
-			a.location.SetText("?")
-			a.location.OnTapped = nil
+			a.location.Clear()
 			return
 		}
-		a.location.SetText(el.DisplayName())
-		a.location.OnTapped = func() {
-			a.u.InfoViewer().ShowLocation(el.ID)
-		}
+		a.location.SetLocation(el)
 	})
 	fyne.Do(func() {
 		v, ok := c.EveCharacter.Bloodline.Value()
 		if !ok {
-			a.bloodline.SetText("?")
-			a.bloodline.OnTapped = nil
+			a.bloodline.Clear()
 			return
 		}
-		a.bloodline.SetText(v.Name)
-		a.bloodline.OnTapped = func() {
-			a.u.InfoViewer().ShowBloodline(v.ID)
-		}
+		a.bloodline.SetBloodline(v)
 	})
 	fyne.Do(func() {
 		ship, ok := c.Ship.Value()
 		if !ok {
-			a.ship.SetText("?")
-			a.ship.OnTapped = nil
+			a.ship.Clear()
 			return
 		}
-		a.ship.SetText(ship.Name)
-		a.ship.OnTapped = func() {
-			a.u.InfoViewer().Show(ship.ToEveEntity())
-		}
+		a.ship.Set(ship.ToEveEntity())
 	})
 	fyne.Do(func() {
 		home, ok := c.Home.Value()
 		if !ok {
-			a.home.SetText("?")
-			a.home.OnTapped = nil
+			a.home.Clear()
 			return
 		}
-		a.home.SetText(home.DisplayName())
-		a.home.OnTapped = func() {
-			a.u.InfoViewer().ShowLocation(home.ID)
-		}
+		a.home.SetLocation(home)
 	})
 	fyne.Do(func() {
 		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TrainedSP, "?"))
@@ -260,14 +247,10 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	fyne.Do(func() {
 		faction, ok := c.EveCharacter.Faction.Value()
 		if !ok {
-			a.faction.SetText("-")
-			a.faction.OnTapped = nil
+			a.faction.Clear()
 			return
 		}
-		a.faction.SetText(faction.Name)
-		a.faction.OnTapped = func() {
-			a.u.InfoViewer().Show(faction)
-		}
+		a.faction.Set(faction)
 	})
 
 	var s string

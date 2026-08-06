@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -25,16 +26,16 @@ import (
 type CorporationSheet struct {
 	widget.BaseWidget
 
-	alliance    *widget.Hyperlink
-	ceo         *widget.Hyperlink
+	alliance    *ui.InfoLink
+	ceo         *ui.InfoLink
 	character   atomic.Pointer[app.Character]
 	corporation atomic.Pointer[app.Corporation]
-	faction     *widget.Hyperlink
-	home        *widget.Hyperlink
+	faction     *ui.InfoLink
+	home        *ui.InfoLink
 	isCorpMode  bool
 	logo        *xwidget.TappableImage
 	members     *widget.Label
-	name        *widget.Hyperlink
+	name        *ui.InfoLink
 	roles       *widget.Label
 	taxRate     *widget.Label
 	ticker      *widget.Label
@@ -45,26 +46,24 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 	logo := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
-	makeHyperLink := func() *widget.Hyperlink {
-		x := widget.NewHyperlink("?", nil)
-		x.Truncation = fyne.TextTruncateEllipsis
-		return x
-	}
 	makeLabel := func() *widget.Label {
 		x := xwidget.NewLabelWithSelection("?")
 		x.Selectable = true
 		x.Truncation = fyne.TextTruncateEllipsis
 		return x
 	}
+	makeInfoLabel := func() *ui.InfoLink {
+		return ui.NewInfoLink(u.InfoViewer())
+	}
 	a := &CorporationSheet{
-		alliance:   makeHyperLink(),
-		ceo:        makeHyperLink(),
-		faction:    makeHyperLink(),
-		home:       makeHyperLink(),
+		alliance:   makeInfoLabel(),
+		ceo:        makeInfoLabel(),
+		faction:    makeInfoLabel(),
+		home:       makeInfoLabel(),
 		isCorpMode: isCorpMode,
 		logo:       logo,
 		members:    makeLabel(),
-		name:       makeHyperLink(),
+		name:       makeInfoLabel(),
 		roles:      makeLabel(),
 		taxRate:    makeLabel(),
 		ticker:     makeLabel(),
@@ -177,14 +176,13 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	}
 	if corporation == nil {
 		fyne.Do(func() {
-			a.alliance.SetText("")
-			a.ceo.SetText("")
-			a.faction.SetText("")
-			a.home.SetText("")
+			a.alliance.Clear()
+			a.ceo.Clear()
+			a.faction.Clear()
+			a.home.Clear()
 			a.logo.SetResource(icons.BlankSvg)
 			a.members.SetText("")
-			a.name.OnTapped = nil
-			a.name.SetText("No corporation...")
+			a.name.Clear()
 			a.roles.SetText("")
 			a.taxRate.SetText("")
 			a.ticker.SetText("")
@@ -192,11 +190,10 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
-		a.name.SetText(corporation.Name)
-		a.name.OnTapped = func() {
+		a.name.Set(corporation.ToEveEntity())
+		a.logo.OnTapped = func() {
 			a.u.InfoViewer().Show(corporation.ToEveEntity())
 		}
-		a.logo.OnTapped = a.name.OnTapped
 		a.members.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRate.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
 		a.ticker.SetText(corporation.Ticker)
@@ -206,46 +203,30 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	})
 	fyne.Do(func() {
 		if alliance, ok := corporation.Alliance.Value(); ok {
-			a.alliance.SetText(alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.u.InfoViewer().Show(alliance)
-			}
+			a.alliance.Set(alliance)
 		} else {
-			a.alliance.SetText("-")
-			a.alliance.OnTapped = nil
+			a.alliance.Clear()
 		}
 	})
 	fyne.Do(func() {
 		if faction, ok := corporation.Faction.Value(); ok {
-			a.faction.SetText(faction.Name)
-			a.faction.OnTapped = func() {
-				a.u.InfoViewer().Show(faction)
-			}
+			a.faction.Set(faction)
 		} else {
-			a.faction.SetText("-")
-			a.faction.OnTapped = nil
+			a.faction.Clear()
 		}
 	})
 	fyne.Do(func() {
 		if ceo, ok := corporation.Ceo.Value(); ok {
-			a.ceo.SetText(ceo.Name)
-			a.ceo.OnTapped = func() {
-				a.u.InfoViewer().Show(ceo)
-			}
+			a.ceo.Set(ceo)
 		} else {
-			a.ceo.SetText("-")
-			a.ceo.OnTapped = nil
+			a.ceo.Clear()
 		}
 	})
 	fyne.Do(func() {
 		if home, ok := corporation.HomeStation.Value(); ok {
-			a.home.SetText(home.Name)
-			a.home.OnTapped = func() {
-				a.u.InfoViewer().Show(home)
-			}
+			a.home.Set(home)
 		} else {
-			a.home.SetText("-")
-			a.home.OnTapped = nil
+			a.home.Clear()
 		}
 	})
 }
