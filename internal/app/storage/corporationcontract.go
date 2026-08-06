@@ -298,9 +298,9 @@ func corporationContractFromDBModel(
 	startSolarSystemName startSolarSystemName,
 	startSolarSystemSecurity startSolarSystemSecurity,
 ) *app.CorporationContract {
-	i2, ok := items.(string)
-	if !ok {
-		i2 = ""
+	var items2 []string
+	if x, ok := items.(string); ok && x != "" {
+		items2 = strings.Split(x, ",")
 	}
 	o2 := &app.CorporationContract{
 		Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
@@ -319,7 +319,7 @@ func corporationContractFromDBModel(
 		ID:                cc.ID,
 		Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
 		IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-		Items:             strings.Split(i2, ","),
+		Items:             items2,
 		Price:             optional.FromZeroValue(cc.Price),
 		Reward:            optional.FromZeroValue(cc.Reward),
 		Status:            corporationContractStatusFromDBValue[cc.Status],

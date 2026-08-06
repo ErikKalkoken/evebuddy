@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -19,18 +18,20 @@ import (
 )
 
 func TestCorporationContract(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
-	t.Run("can create new minimal", func(t *testing.T) {
+
+	t.Run("can create new minimal courier", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		c := f.CreateCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCorporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
-		arg := storage.CreateCorporationContractParams{
+
+		// when
+		id, err := st.CreateCorporationContract(t.Context(), storage.CreateCorporationContractParams{
 			Availability:        app.ContractAvailabilityPrivate,
 			CorporationID:       c.ID,
 			ContractID:          42,
@@ -40,12 +41,11 @@ func TestCorporationContract(t *testing.T) {
 			IssuerID:            issuer.ID,
 			Status:              app.ContractStatusOutstanding,
 			Type:                app.ContractTypeCourier,
-		}
-		// when
-		id, err := st.CreateCorporationContract(ctx, arg)
+		})
+
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCorporationContract(ctx, c.ID, 42)
+		o, err := st.GetCorporationContract(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		xassert.Equal(t, id, o.ID)
 		xassert.Equal(t, issuer, o.Issuer)
@@ -55,17 +55,20 @@ func TestCorporationContract(t *testing.T) {
 		xassert.Equal(t, app.ContractTypeCourier, o.Type)
 		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
-	t.Run("can create new full", func(t *testing.T) {
+
+	t.Run("can create new full courier", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		c := f.CreateCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCorporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
-		startLocation := factory.CreateEveLocationStructure()
-		endLocation := factory.CreateEveLocationStructure()
-		arg := storage.CreateCorporationContractParams{
+		startLocation := f.CreateEveLocationStructure()
+		endLocation := f.CreateEveLocationStructure()
+
+		// when
+		id, err := st.CreateCorporationContract(t.Context(), storage.CreateCorporationContractParams{
 			Availability:        app.ContractAvailabilityPrivate,
 			CorporationID:       c.ID,
 			ContractID:          42,
@@ -77,12 +80,11 @@ func TestCorporationContract(t *testing.T) {
 			Type:                app.ContractTypeCourier,
 			EndLocationID:       optional.New(endLocation.ID),
 			StartLocationID:     optional.New(startLocation.ID),
-		}
-		// when
-		id, err := st.CreateCorporationContract(ctx, arg)
+		})
+
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCorporationContract(ctx, c.ID, 42)
+		o, err := st.GetCorporationContract(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		xassert.Equal(t, id, o.ID)
 		xassert.Equal(t, issuer, o.Issuer)
@@ -98,10 +100,78 @@ func TestCorporationContract(t *testing.T) {
 		xassert.Equal(t, startLocation.SolarSystem.MustValue().Name, o.StartSolarSystem.MustValue().Name)
 		assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 	})
+
+	t.Run("can create new minimal item exchange with item", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCorporation
+		dateExpired := time.Now().Add(12 * time.Hour).UTC()
+		dateIssued := time.Now().UTC()
+		item := f.CreateEveType()
+
+		// when
+		id, err := st.CreateCorporationContract(t.Context(), storage.CreateCorporationContractParams{
+			Availability:        app.ContractAvailabilityPrivate,
+			CorporationID:       c.ID,
+			ContractID:          42,
+			DateExpired:         dateExpired,
+			DateIssued:          dateIssued,
+			IssuerCorporationID: issuerCorporation.ID,
+			IssuerID:            issuer.ID,
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		})
+		require.NoError(t, err)
+		err2 := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
+			ContractID: id,
+			IsIncluded: true,
+			Quantity:   1,
+			RecordID:   42,
+			TypeID:     item.ID,
+		})
+
+		// then
+		require.NoError(t, err2)
+		got, err := st.GetCorporationContract(t.Context(), c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, []string{item.Name + " x 1"}, got.Items)
+	})
+
+	t.Run("can create new minimal item exchange without items", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCorporation
+		dateExpired := time.Now().Add(12 * time.Hour).UTC()
+		dateIssued := time.Now().UTC()
+
+		// when
+		_, err := st.CreateCorporationContract(t.Context(), storage.CreateCorporationContractParams{
+			Availability:        app.ContractAvailabilityPrivate,
+			CorporationID:       c.ID,
+			ContractID:          42,
+			DateExpired:         dateExpired,
+			DateIssued:          dateIssued,
+			IssuerCorporationID: issuerCorporation.ID,
+			IssuerID:            issuer.ID,
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		})
+
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCorporationContract(t.Context(), c.ID, 42)
+		require.NoError(t, err)
+		assert.Len(t, got.Items, 0)
+	})
+
 	t.Run("can update contract", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+		o1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
 		dateAccepted := time.Now().UTC()
@@ -113,55 +183,66 @@ func TestCorporationContract(t *testing.T) {
 			DateCompleted: optional.New(dateCompleted),
 			Status:        app.ContractStatusFinished,
 		}
+
 		// when
-		err := st.UpdateCorporationContract(ctx, arg2)
+		err := st.UpdateCorporationContract(t.Context(), arg2)
+
 		// then
 		require.NoError(t, err)
-		o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
+		o2, err := st.GetCorporationContract(t.Context(), o1.CorporationID, o1.ContractID)
 		require.NoError(t, err)
 		xassert.Equal(t, app.ContractStatusFinished, o2.Status)
 		xassert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
 		xassert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
 		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
+
 	t.Run("can update notified", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+		o1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
+
 		// when
-		err := st.UpdateCorporationContractNotified(ctx, o1.ID, app.ContractStatusInProgress)
+		err := st.UpdateCorporationContractNotified(t.Context(), o1.ID, app.ContractStatusInProgress)
+
 		// then
 		require.NoError(t, err)
-		o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
+		o2, err := st.GetCorporationContract(t.Context(), o1.CorporationID, o1.ContractID)
 		require.NoError(t, err)
 		xassert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
 		assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 	})
+
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		e1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		e3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		c := f.CreateCorporation()
+		e1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e2 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e3 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+
 		// when
-		got, err := st.ListCorporationContractIDs(ctx, c.ID)
+		got, err := st.ListCorporationContractIDs(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(e1.ContractID, e2.ContractID, e3.ContractID)
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can list contracts for a corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		factory.CreateCorporationContract()
+		c := f.CreateCorporation()
+		o1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		o2 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		f.CreateCorporationContract()
+
 		// when
-		oo, err := st.ListCorporationContracts(ctx, c.ID)
+		oo, err := st.ListCorporationContracts(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(o1.ID, o2.ID)
@@ -170,18 +251,21 @@ func TestCorporationContract(t *testing.T) {
 		})...)
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can delete contracts", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		e1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		e3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		c := f.CreateCorporation()
+		e1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e2 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e3 := f.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+
 		// when
-		err := st.DeleteCorporationContracts(ctx, c.ID, set.Of(e1.ContractID))
+		err := st.DeleteCorporationContracts(t.Context(), c.ID, set.Of(e1.ContractID))
+
 		// then
 		require.NoError(t, err)
-		got, err := st.ListCorporationContractIDs(ctx, c.ID)
+		got, err := st.ListCorporationContractIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		want := set.Of(e2.ContractID, e3.ContractID)
 		xassert.Equal(t, want, got)
@@ -189,14 +273,14 @@ func TestCorporationContract(t *testing.T) {
 }
 
 func TestCorporationContractBid(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporationContract()
-		bidder := factory.CreateEveEntityCorporation()
+		c := f.CreateCorporationContract()
+		bidder := f.CreateEveEntityCorporation()
 		const (
 			amount = 123.45
 			bidID  = 12345
@@ -210,10 +294,10 @@ func TestCorporationContractBid(t *testing.T) {
 			DateBid:    dateBid,
 		}
 		// when
-		err := st.CreateCorporationContractBid(ctx, arg)
+		err := st.CreateCorporationContractBid(t.Context(), arg)
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCorporationContractBid(ctx, c.ID, bidID)
+		o, err := st.GetCorporationContractBid(t.Context(), c.ID, bidID)
 		require.NoError(t, err)
 		assert.InDelta(t, amount, o.Amount, 0.1)
 		xassert.Equal(t, bidder, o.Bidder)
@@ -222,11 +306,11 @@ func TestCorporationContractBid(t *testing.T) {
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporationContract()
-		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		c := f.CreateCorporationContract()
+		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		// when
-		oo, err := st.ListCorporationContractBids(ctx, c.ID)
+		oo, err := st.ListCorporationContractBids(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractBid) int64 {
@@ -238,11 +322,11 @@ func TestCorporationContractBid(t *testing.T) {
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporationContract()
-		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		c := f.CreateCorporationContract()
+		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		// when
-		got, err := st.ListCorporationContractBidIDs(ctx, c.ID)
+		got, err := st.ListCorporationContractBidIDs(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		want := set.Of(b1.BidID, b2.BidID)
@@ -251,15 +335,17 @@ func TestCorporationContractBid(t *testing.T) {
 }
 
 func TestCorporationContractItem(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporationContract()
-		et := factory.CreateEveType()
-		arg := storage.CreateCorporationContractItemParams{
+		c := f.CreateCorporationContract()
+		et := f.CreateEveType()
+
+		// when
+		err := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -267,12 +353,11 @@ func TestCorporationContractItem(t *testing.T) {
 			RawQuantity: optional.New[int64](-5),
 			RecordID:    42,
 			TypeID:      et.ID,
-		}
-		// when
-		err := st.CreateCorporationContractItem(ctx, arg)
+		})
+
 		// then
 		require.NoError(t, err)
-		o, err := st.GetCorporationContractItem(ctx, c.ID, 42)
+		o, err := st.GetCorporationContractItem(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		assert.True(t, o.IsIncluded)
 		assert.True(t, o.IsSingleton)
@@ -280,14 +365,17 @@ func TestCorporationContractItem(t *testing.T) {
 		xassert.EqualOptional(t, -5, o.RawQuantity)
 		xassert.Equal(t, et, o.Type)
 	})
+
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporationContract()
-		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
-		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+		c := f.CreateCorporationContract()
+		i1 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+		i2 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+
 		// when
-		oo, err := st.ListCorporationContractItems(ctx, c.ID)
+		oo, err := st.ListCorporationContractItems(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractItem) int64 {

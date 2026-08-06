@@ -418,9 +418,9 @@ func characterContractFromDBModel(
 	startSolarSystemName startSolarSystemName,
 	startSolarSystemSecurity startSolarSystemSecurity,
 ) *app.CharacterContract {
-	i2, ok := items.(string)
-	if !ok {
-		i2 = ""
+	var items2 []string
+	if x, ok := items.(string); ok && x != "" {
+		items2 = strings.Split(x, ",")
 	}
 	o := &app.CharacterContract{
 		Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
@@ -439,7 +439,7 @@ func characterContractFromDBModel(
 		ID:                cc.ID,
 		Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
 		IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-		Items:             strings.Split(i2, ","),
+		Items:             items2,
 		Price:             optional.FromZeroValue(cc.Price),
 		Reward:            optional.FromZeroValue(cc.Reward),
 		Status:            characterContractStatusFromDBValue[cc.Status],
