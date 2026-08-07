@@ -122,9 +122,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 
 	a.sectionList = a.makeSectionList()
 	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
-	a.entityMoreButton.Disable()
 	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
-	a.sectionMoreButton.Disable()
 
 	menu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
@@ -150,9 +148,11 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
 		}),
 	)
-	ab := xwidget.NewAppBar("Update status", a.entityList, kxwidget.NewIconButtonWithMenu(
-		theme.MoreVerticalIcon(), menu,
-	))
+	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), menu)
+	if a.u.IsOffline() {
+		moreButton.Disable()
+	}
+	ab := xwidget.NewAppBar("Update status", a.entityList, moreButton)
 	ab.HideBackground = !a.u.IsMobile()
 	a.nav = xwidget.NewNavigator(ab)
 
@@ -219,8 +219,10 @@ func (a *updateStatus) makeEntityList() *widget.List {
 		a.currentSectionID = -1
 		a.sectionList.UnselectAll()
 
-		if !a.u.IsOffline() {
-			a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems())
+		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems())
+		if a.u.IsOffline() {
+			a.entityMoreButton.Disable()
+		} else {
 			a.entityMoreButton.Enable()
 		}
 
@@ -370,20 +372,16 @@ func (a *updateStatus) refreshSections() {
 func (a *updateStatus) refreshDetails() {
 	id := a.currentSectionID
 	if id == -1 || id >= len(a.currentSections) {
-		a.sectionStatus.Hide()
-		a.sectionMoreButton.Disable()
 		return
 	}
 	ss := a.currentSections[id]
-	if !a.u.IsOffline() {
-		a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss.EntityID, ss.SectionID))
-		a.sectionMoreButton.Enable()
-	}
+	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss.EntityID, ss.SectionID))
 	a.sectionStatus.set(ss)
 	a.sectionStatus.Show()
 }
 
 func (a *updateStatus) makeSectionMenuItems(entityID int64, sectionID string) []*fyne.MenuItem {
+	items := make([]*fyne.MenuItem, 0)
 	action := func() {
 		ctx := context.Background()
 		c := a.entities[a.currentEntityID]
@@ -404,8 +402,25 @@ func (a *updateStatus) makeSectionMenuItems(entityID int64, sectionID string) []
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
 	}
-	item := fyne.NewMenuItem("Update section", action)
-	return []*fyne.MenuItem{item}
+	item1 := fyne.NewMenuItem("Update section", action)
+	if a.u.IsOffline() {
+		item1.Disabled = true
+	}
+	items = append(items, item1)
+	item2 := fyne.NewMenuItem("Copy issue to clipboard", func() {
+		x := a.currentSections[a.currentSectionID]
+		s := fmt.Sprintf(
+			"%s [%d] / %s: %s",
+			x.EntityName,
+			x.EntityID,
+			x.SectionName,
+			x.ErrorMessage,
+		)
+		fyne.CurrentApp().Clipboard().SetContent(s)
+		a.sb.Show("Issue copied to clipboard")
+	})
+	items = append(items, item2)
+	return items
 }
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
