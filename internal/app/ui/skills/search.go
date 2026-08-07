@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -22,17 +23,50 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Option in search skill widget
+const (
+	searchSkillActive     = "Active skills"
+	searchSkillRestricted = "Restricted skills"
+	searchSkillAll        = "All skills"
+)
+
+// Column number in search table
+const (
+	searchColSkill = iota + 1
+	searchColActiveLevel
+	searchColTrainedLevel
+	searchColSkillPoints
+	searchColGroup
+	searchColCharacter
+)
+
 type searchRow struct {
-	activeLevel   int64
-	characterID   int64
-	characterName string
-	groupID       int64
-	groupName     string
-	searchTarget  string
-	skillName     string
-	trainedLevel  int64
-	typeID        int64
-	typeName      string
+	activeLevel        int64
+	activeLevelRoman   string
+	characterID        int64
+	characterName      string
+	groupID            int64
+	groupName          string
+	searchTarget       string
+	skillPoints        int64
+	skillPointsDisplay string
+	trainedLevel       int64
+	trainedLevelRoman  string
+	typeID             int64
+	typeName           string
+}
+
+func (r searchRow) skillNameCondensed() string {
+	skill := r.typeName
+	if r.activeLevel == 0 && r.trainedLevel > 0 {
+		skill += fmt.Sprintf(" [%s]", r.trainedLevelRoman)
+	} else {
+		skill += fmt.Sprintf(" %s", r.activeLevelRoman)
+		if r.activeLevel != r.trainedLevel {
+			skill += fmt.Sprintf(" [%s]", r.trainedLevelRoman)
+		}
+	}
+	return skill
 }
 
 type Search struct {
@@ -44,35 +78,69 @@ type Search struct {
 	rows            []searchRow
 	rowsFiltered    []searchRow
 	search          *widget.Entry
-	selectGroup     *kxwidget.FilterChipSelect
-	selectType      *kxwidget.FilterChipSelect
 	selectCharacter *kxwidget.FilterChipSelect
+	selectGroup     *kxwidget.FilterChipSelect
+	selectSkill     *kxwidget.FilterChipSelect
+	selectType      *kxwidget.FilterChipSelect
 	sortButton      *xwidget.SortButton
 	top             *widget.Label
 	u               baseUI
 }
 
-const (
-	searchColName = iota + 1
-	searchColGroup
-	searchColCharacter
-)
-
 func NewSearch(u baseUI) *Search {
 	cols := []xwidget.DataColumn[searchRow]{{
-		ID:    searchColName,
+		ID:    searchColSkill,
 		Label: "Skill",
-		Width: 300,
+		Width: 275,
 		Sort: func(a, b searchRow) int {
 			return strings.Compare(a.searchTarget, b.searchTarget)
 		},
 		Update: func(r searchRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.skillName)
+			co.(*xwidget.RichText).SetWithText(r.typeName)
+		},
+	}, {
+		ID:    searchColActiveLevel,
+		Label: "Active",
+		Width: 70,
+		Sort: func(a, b searchRow) int {
+			return cmp.Compare(a.activeLevel, b.activeLevel)
+		},
+		Update: func(r searchRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(
+				fmt.Sprint(r.activeLevelRoman),
+				widget.RichTextStyle{Alignment: fyne.TextAlignCenter},
+			)
+		},
+	}, {
+		ID:    searchColTrainedLevel,
+		Label: "Trained",
+		Width: 70,
+		Sort: func(a, b searchRow) int {
+			return cmp.Compare(a.trainedLevel, b.trainedLevel)
+		},
+		Update: func(r searchRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(
+				fmt.Sprint(r.trainedLevelRoman),
+				widget.RichTextStyle{Alignment: fyne.TextAlignCenter},
+			)
+		},
+	}, {
+		ID:    searchColSkillPoints,
+		Label: "Skill Points",
+		Width: 90,
+		Sort: func(a, b searchRow) int {
+			return cmp.Compare(a.skillPoints, b.skillPoints)
+		},
+		Update: func(r searchRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(
+				r.skillPointsDisplay,
+				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
+			)
 		},
 	}, {
 		ID:    searchColGroup,
 		Label: "Group",
-		Width: 200,
+		Width: 180,
 		Sort: func(a, b searchRow) int {
 			return strings.Compare(a.groupName, b.groupName)
 		},
@@ -91,11 +159,12 @@ func NewSearch(u baseUI) *Search {
 		},
 		IsAvatar: true,
 		Label:    "Character",
+		Width:    250,
 	})}
 
 	columns := xwidget.NewDataColumns(cols)
 	a := &Search{
-		columnSorter: xwidget.NewColumnSorter(columns, searchColName, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, searchColSkill, xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
 		search:       widget.NewEntry(),
 		top:          ui.NewLabelWithWrapping(""),
@@ -127,7 +196,17 @@ func NewSearch(u baseUI) *Search {
 	a.search.OnChanged = func(_ string) {
 		a.filterRowsAsync(-1)
 	}
-	a.search.PlaceHolder = "Search items"
+	a.search.PlaceHolder = "Search skills"
+	a.selectSkill = kxwidget.NewFilterChipSelect("", []string{
+		searchSkillActive,
+		searchSkillRestricted,
+		searchSkillAll,
+	}, func(_ string) {
+		a.filterRowsAsync(-1)
+	})
+	a.selectSkill.Selected = searchSkillActive
+	a.selectSkill.SortDisabled = true
+
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -164,6 +243,7 @@ func (a *Search) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectGroup,
 		a.selectType,
+		a.selectSkill,
 		a.selectCharacter,
 	)
 	topBox := container.NewVBox(a.top)
@@ -185,24 +265,14 @@ func (a *Search) makeDataList() *xwidget.StripedList {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			character := widget.NewLabel("Template")
-			group := widget.NewLabel("Template")
-			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-				title,
-				group,
-				character,
-			)
+			return newSearchRowWidget(p)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
-			r := a.rowsFiltered[id]
-			box := co.(*fyne.Container).Objects
-			box[0].(*widget.Label).SetText(r.skillName)
-			box[1].(*widget.Label).SetText(r.groupName)
-			box[2].(*widget.Label).SetText(r.characterName)
+
+			co.(*searchRowWidget).Set(a.rowsFiltered[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -230,6 +300,18 @@ func (a *Search) filterRowsAsync(sortCol int) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
+		// filter
+		rows := slices.DeleteFunc(rows, func(r searchRow) bool {
+			switch a.selectSkill.Selected {
+			case searchSkillActive:
+				return r.activeLevel == 0
+			case searchSkillRestricted:
+				return r.activeLevel >= r.trainedLevel
+			case searchSkillAll:
+				return false
+			}
+			return true
+		})
 		if character != "" {
 			rows = slices.DeleteFunc(rows, func(r searchRow) bool {
 				return r.characterName != character
@@ -246,7 +328,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 			})
 		}
 
-		// search filter
+		// search
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r searchRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -326,22 +408,63 @@ func (a *Search) fetchRows(ctx context.Context) ([]searchRow, error) {
 	}
 	var rows []searchRow
 	for _, s := range skills {
-		if s.ActiveSkillLevel == 0 {
-			continue
-		}
 		r := searchRow{
-			activeLevel:   s.ActiveSkillLevel,
-			characterID:   s.CharacterID,
-			characterName: characters[s.CharacterID],
-			groupID:       s.Type.Group.ID,
-			groupName:     s.Type.Group.Name,
-			searchTarget:  strings.ToLower(fmt.Sprintf("%s %d", s.Type.Name, s.ActiveSkillLevel)),
-			skillName:     ui.SkillDisplayName(s.Type.Name, s.ActiveSkillLevel),
-			trainedLevel:  s.TrainedSkillLevel,
-			typeID:        s.Type.ID,
-			typeName:      s.Type.Name,
+			activeLevel:        s.ActiveSkillLevel,
+			activeLevelRoman:   ihumanize.RomanLetter(s.ActiveSkillLevel),
+			characterID:        s.CharacterID,
+			characterName:      characters[s.CharacterID],
+			groupID:            s.Type.Group.ID,
+			groupName:          s.Type.Group.Name,
+			searchTarget:       strings.ToLower(fmt.Sprintf("%s %d", s.Type.Name, s.ActiveSkillLevel)),
+			skillPoints:        s.SkillPointsInSkill,
+			skillPointsDisplay: ihumanize.Comma(s.SkillPointsInSkill),
+			trainedLevel:       s.TrainedSkillLevel,
+			trainedLevelRoman:  ihumanize.RomanLetter(s.TrainedSkillLevel),
+			typeID:             s.Type.ID,
+			typeName:           s.Type.Name,
 		}
 		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+type searchRowWidget struct {
+	widget.BaseWidget
+
+	skill       *widget.Label
+	group       *widget.Label
+	skillPoints *widget.Label
+	character   *widget.Label
+	padding     float32
+}
+
+func newSearchRowWidget(padding float32) *searchRowWidget {
+	w := &searchRowWidget{
+		skill:       widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		group:       widget.NewLabel(""),
+		skillPoints: widget.NewLabel(""),
+		character:   widget.NewLabel(""),
+		padding:     padding,
+	}
+
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *searchRowWidget) Set(r searchRow) {
+	w.skill.SetText(r.skillNameCondensed())
+	w.group.SetText(r.groupName)
+	w.skillPoints.SetText(fmt.Sprintf("%s SP", r.skillPointsDisplay))
+	w.character.SetText(r.characterName)
+}
+
+func (w *searchRowWidget) CreateRenderer() fyne.WidgetRenderer {
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(-w.padding),
+		w.skill,
+		container.NewHBox(w.group, layout.NewSpacer(), w.skillPoints),
+		w.character,
+	)
+
+	return widget.NewSimpleRenderer(c)
 }
