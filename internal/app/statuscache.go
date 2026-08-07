@@ -108,20 +108,16 @@ const (
 )
 
 type CacheSectionStatus struct {
-	EntityID     int64
-	EntityName   string
 	Comment      string
 	CompletedAt  time.Time
 	ContentHash  string
+	EntityID     int64
+	EntityName   string
 	ErrorMessage string
 	SectionID    string
 	SectionName  string
 	StartedAt    time.Time
 	Timeout      time.Duration
-}
-
-func (ss CacheSectionStatus) IsEveUniverseSection() bool {
-	return ss.EntityID == EveUniverseSectionEntityID
 }
 
 func (ss CacheSectionStatus) HasError() bool {
