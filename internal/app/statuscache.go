@@ -120,10 +120,6 @@ type CacheSectionStatus struct {
 	Timeout      time.Duration
 }
 
-func (ss CacheSectionStatus) IsEveUniverseSection() bool {
-	return ss.EntityID == EveUniverseSectionEntityID
-}
-
 func (ss CacheSectionStatus) HasError() bool {
 	return ss.ErrorMessage != ""
 }

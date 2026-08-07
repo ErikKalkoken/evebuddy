@@ -51,14 +51,16 @@ func Show(s baseUI) {
 	a := newUpdateStatus(s, w)
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 400, Height: 700})
+	ctx, cancel := context.WithCancel(context.Background())
 	w.SetOnClosed(func() {
+		cancel()
 		a.stop()
 		if onClosed != nil {
 			onClosed()
 		}
 	})
 	w.Show()
-	go a.update(context.Background())
+	go a.update(ctx)
 }
 
 type sectionCategory uint
@@ -95,15 +97,15 @@ type updateStatus struct {
 
 	currentEntityID   int
 	currentSectionID  int
-	entitySections    []app.CacheSectionStatus
 	entities          []entity
 	entityList        *widget.List
 	entityMoreButton  *kxwidget.IconButton
+	entitySections    []app.CacheSectionStatus
 	nav               *xwidget.Navigator
 	sb                *xwidget.Snackbar
-	sectionStatus     *sectionStatus
 	sectionList       *widget.List
 	sectionMoreButton *kxwidget.IconButton
+	sectionStatus     *sectionStatus
 	signalKey         string
 	u                 baseUI
 }
@@ -118,8 +120,8 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		u:                u,
 	}
 	a.ExtendBaseWidget(a)
-	a.entityList = a.makeEntityList()
 
+	a.entityList = a.makeEntityList()
 	a.sectionList = a.makeSectionList()
 	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
 	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
@@ -152,6 +154,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
 			a.sb.Show("Started updating all general entities")
 		}),
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Update notifications for all characters", func() {
 			var characterIDs []int64
 			for _, x := range a.entities {
@@ -161,10 +164,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				characterIDs = append(characterIDs, x.id)
 			}
 			go func() {
-				ctx := context.Background()
 				for _, id := range characterIDs {
 					go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-						ctx,
+						context.Background(),
 						id,
 						app.SectionCharacterNotifications,
 						true,
@@ -269,15 +271,14 @@ func (a *updateStatus) makeEntityList() *widget.List {
 
 func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 	action := func() {
-		ctx := context.Background()
 		c := a.entities[a.currentEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.EVEUniverse().UpdateSectionsIfNeeded(ctx, true)
+			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
 		case sectionCharacter:
-			go a.u.Character().UpdateCharacterAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.Character().UpdateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
 		case sectionCorporation:
-			go a.u.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.Corporation().UpdateCorporationAndRefreshIfNeeded(context.Background(), c.id, true)
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
@@ -288,8 +289,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 }
 
 func (a *updateStatus) update(ctx context.Context) {
-	entities, _ := a.updateEntityList(ctx)
-
+	entities := a.updateEntityList(ctx)
 	fyne.Do(func() {
 		a.entities = entities
 		a.entityList.Refresh()
@@ -298,13 +298,11 @@ func (a *updateStatus) update(ctx context.Context) {
 	})
 }
 
-func (a *updateStatus) updateEntityList(_ context.Context) ([]entity, int) {
-	var count int
+func (a *updateStatus) updateEntityList(_ context.Context) []entity {
 	var entities []entity
 	cc := a.u.StatusCache().ListCharacters()
 	if len(cc) > 0 {
 		entities = append(entities, entity{category: sectionHeader, name: "Characters"})
-		count += len(cc)
 		for _, c := range cc {
 			ss := a.u.StatusCache().CharacterSectionSummary(c.ID)
 			o := entity{
@@ -319,7 +317,6 @@ func (a *updateStatus) updateEntityList(_ context.Context) ([]entity, int) {
 	rr := a.u.StatusCache().ListCorporations()
 	if len(rr) > 0 {
 		entities = append(entities, entity{category: sectionHeader, name: "Corporations"})
-		count += len(rr)
 		for _, r := range rr {
 			ss := a.u.StatusCache().CorporationSectionSummary(r.ID)
 			o := entity{
@@ -340,8 +337,7 @@ func (a *updateStatus) updateEntityList(_ context.Context) ([]entity, int) {
 		ss:       ss,
 	}
 	entities = append(entities, o)
-	count++
-	return entities, count
+	return entities
 }
 
 func (a *updateStatus) makeSectionList() *widget.List {
@@ -410,19 +406,18 @@ func (a *updateStatus) refreshDetails() {
 func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c sectionCategory) []*fyne.MenuItem {
 	items := make([]*fyne.MenuItem, 0)
 	action := func() {
-		ctx := context.Background()
 		switch c {
 		case sectionGeneral:
 			go a.u.EVEUniverse().UpdateSectionAndRefreshIfNeeded(
-				ctx, app.EveUniverseSection(ss.SectionID), true,
+				context.Background(), app.EveUniverseSection(ss.SectionID), true,
 			)
 		case sectionCharacter:
 			go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-				ctx, ss.EntityID, app.CharacterSection(ss.SectionID), true,
+				context.Background(), ss.EntityID, app.CharacterSection(ss.SectionID), true,
 			)
 		case sectionCorporation:
 			go a.u.Corporation().UpdateSectionAndRefreshIfNeeded(
-				ctx, ss.EntityID, app.CorporationSection(ss.SectionID), true,
+				context.Background(), ss.EntityID, app.CorporationSection(ss.SectionID), true,
 			)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
