@@ -455,8 +455,10 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 		})
 	}
 	reset := func() {
-		a.rows = xslices.Reset(a.rows)
-		a.filterRowsAsync(-1)
+		fyne.Do(func() {
+			a.rows = xslices.Reset(a.rows)
+			a.filterRowsAsync(-1)
+		})
 	}
 	character := a.character.Load()
 	if character == nil {
@@ -540,8 +542,10 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 		})
 	}
 	reset := func() {
-		a.rows = xslices.Reset(a.rows)
-		a.filterRowsAsync(-1)
+		fyne.Do(func() {
+			a.rows = xslices.Reset(a.rows)
+			a.filterRowsAsync(-1)
+		})
 	}
 	corporation := a.corporation.Load()
 	if corporation == nil {
