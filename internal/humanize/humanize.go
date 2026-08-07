@@ -161,10 +161,13 @@ func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals 
 	return NumberF(float64(v), decimals)
 }
 
-// RomanLetter returns a number as roman letters.
+// RomanLetter returns a number as roman letters
+//
+// Zero is returned as dash.
 // Returns an empty string if v can not be resolved.
 func RomanLetter[T constraints.Integer](v T) string {
 	m := map[int]string{
+		0: "-",
 		1: "I",
 		2: "II",
 		3: "III",

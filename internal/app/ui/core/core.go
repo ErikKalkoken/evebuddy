@@ -114,8 +114,8 @@ type baseUI struct {
 	characterAttributes     *skills.Attributes
 	characterAugmentations  *clones.CharacterAugmentations
 	characterBiography      *characters.Biography
-	characterContacts       *characters.Contacts
 	characterCommunications *characters.Communications
+	characterContacts       *characters.Contacts
 	characterCorporation    *corporations.CorporationSheet
 	characterJumpClones     *clones.CharacterClones
 	characterMails          *characters.Mails
@@ -138,9 +138,11 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*wallets.CorporationWallet
 	gameSearch              *gamesearch.GameSearch
 	industryJobs            *industry.Jobs
+	iw                      *infoviewer.InfoViewer
 	loyaltyPoints           *wallets.LoyaltyPoints
 	marketOrdersBuy         *industry.MarketOrders
 	marketOrdersSell        *industry.MarketOrders
+	skillSearch             *skills.Search
 	slotsManufacturing      *industry.Slots
 	slotsReactions          *industry.Slots
 	slotsResearch           *industry.Slots
@@ -148,7 +150,6 @@ type baseUI struct {
 	statusText              *statusText
 	training                *skills.Training
 	wealth                  *wallets.Wealth
-	iw                      *infoviewer.InfoViewer
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -446,6 +447,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.slotsReactions = industry.NewSlots(u, app.ReactionJob)
 	u.slotsResearch = industry.NewSlots(u, app.ScienceJob)
 	u.snackbar = xwidget.NewSnackbar(u.window.Canvas())
+	u.skillSearch = skills.NewSearch(u)
 	u.training = skills.NewTraining(u)
 	u.wealth = wallets.NewWealth(u)
 

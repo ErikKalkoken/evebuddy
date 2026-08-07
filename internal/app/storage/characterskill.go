@@ -63,6 +63,19 @@ func (st *Storage) ListCharacterSkills(ctx context.Context, characterID int64) (
 	}
 	return oo, nil
 }
+
+func (st *Storage) ListAllCharacterSkills(ctx context.Context) ([]*app.CharacterSkill, error) {
+	rows, err := st.qRO.ListAllCharacterSkills(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListAllCharacterSkills: %w", err)
+	}
+	var oo []*app.CharacterSkill
+	for _, r := range rows {
+		oo = append(oo, characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory))
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeID int64) ([]app.CharacterActiveSkillLevel, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListAllCharactersActiveSkillLevels: %d: %w", typeID, err)
@@ -128,7 +141,12 @@ func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateO
 	return nil
 }
 
-func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.CharacterSkill {
+func characterSkillFromDBModel(
+	o queries.CharacterSkill,
+	t queries.EveType,
+	g queries.EveGroup,
+	c queries.EveCategory,
+) *app.CharacterSkill {
 	return &app.CharacterSkill{
 		ActiveSkillLevel:   o.ActiveSkillLevel,
 		CharacterID:        o.CharacterID,

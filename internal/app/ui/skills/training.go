@@ -678,7 +678,7 @@ func (a *Training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 	if r.skill != nil {
 		r.isActive = true
 		r.skillID = r.skill.SkillID
-		r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
+		r.skillName = ui.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
 		r.skillFinishDate = r.skill.FinishDate
 		r.skillProgress.Set(r.skill.CompletionP())
 	} else {

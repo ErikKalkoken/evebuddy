@@ -2,12 +2,14 @@
 package ui
 
 import (
+	"fmt"
 	"log/slog"
 	"net/url"
 
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // Width of common columns in data tables
@@ -89,4 +91,8 @@ func WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
+}
+
+func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
+	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }

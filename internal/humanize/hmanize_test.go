@@ -125,7 +125,7 @@ func TestRomanLetters(t *testing.T) {
 		{4, "IV"},
 		{5, "V"},
 		{5, "V"},
-		{0, ""},
+		{0, "-"},
 		{6, ""},
 	}
 	for _, tc := range cases {

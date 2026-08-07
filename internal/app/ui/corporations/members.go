@@ -145,10 +145,12 @@ func (a *Members) filterRowsAsync() {
 
 func (a *Members) update(ctx context.Context) {
 	reset := func() {
-		a.rows = xslices.Reset(a.rows)
-		a.rowsFiltered = xslices.Reset(a.rowsFiltered)
-		a.searchBox.SetText("")
-		a.list.Refresh()
+		fyne.Do(func() {
+			a.rows = xslices.Reset(a.rows)
+			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
+			a.searchBox.SetText("")
+			a.list.Refresh()
+		})
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {

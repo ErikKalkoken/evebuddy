@@ -19,6 +19,18 @@ WHERE
     character_id = ?
     AND eve_type_id IN (sqlc.slice ('eve_type_ids'));
 
+-- name: ListAllCharacterSkills :many
+SELECT
+    sqlc.embed(cs),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM
+    character_skills cs
+    JOIN eve_types et ON et.id = cs.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id;
+
 -- name: ListCharactersActiveSkillLevels :many
 SELECT
     c.id as character_id,

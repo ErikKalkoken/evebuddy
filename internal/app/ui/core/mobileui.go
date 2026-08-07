@@ -873,19 +873,22 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemCharacters.Refresh()
 	}
 
-	navItemTraining := xwidget.NewNavListItem(
-		"Training",
+	navItemSkills := xwidget.NewNavListItem(
+		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Training", u.training, kxwidget.NewIconButtonWithMenu(
+			homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
+				container.NewTabItem("Training", u.training),
+				container.NewTabItem("Search", u.skillSearch),
+			), kxwidget.NewIconButtonWithMenu(
 				theme.MoreHorizontalIcon(),
 				fyne.NewMenu("", u.training.MoreItems()...),
 			)))
 		},
 	)
 	u.training.OnUpdate = func(expired int) {
-		navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
-		navItemTraining.Refresh()
+		navItemSkills.Supporting = fmt.Sprintf("%d expired", expired)
+		navItemSkills.Refresh()
 	}
 
 	homeList = xwidget.NewNavList(
@@ -923,7 +926,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				))
 			},
 		),
-		navItemTraining,
+		navItemSkills,
 		navItemWealth,
 	)
 	status := NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {

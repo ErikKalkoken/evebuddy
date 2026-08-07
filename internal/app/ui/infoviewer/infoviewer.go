@@ -84,7 +84,7 @@ func SupportedCategories() set.Set[app.EveEntityCategory] {
 
 }
 
-type coreUI interface {
+type baseUI interface {
 	Character() *characterservice.CharacterService
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
@@ -106,7 +106,7 @@ type InfoViewer struct {
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
 	sb            *xwidget.Snackbar
-	u             coreUI
+	u             baseUI
 	w             fyne.Window
 }
 
@@ -120,7 +120,7 @@ const (
 )
 
 // New returns a new InfoViewer.
-func New(u coreUI) *InfoViewer {
+func New(u baseUI) *InfoViewer {
 	iw := &InfoViewer{
 		u: u,
 		w: u.MainWindow(),

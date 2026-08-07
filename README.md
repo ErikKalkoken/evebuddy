@@ -46,17 +46,23 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
 > [!NOTE]
-> We are proud to have been mentioned twice in Eve Online's official Community Beat newsletter:
+>**Featured in EVE Online's Official Community Beat!**<br>
+> We're proud to have been featured in EVE Online's official Community Beat newsletter:
 >
-> - [EVE Community Beat newsletter 16 August 2025](https://www.eveonline.com/news/view/community-beat-for-16-august-2025).
-> - [EVE Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
+> - [16 August 2025 Edition](https://www.eveonline.com/news/view/community-beat-for-16-august-2025).
+> - [22 November 2024 Edition](https://www.eveonline.com/news/view/community-beat-for-22-november).
 
 > [!NOTE]
-> We would very much appreciate your feedback. If you encounter any problems or have a question please feel free to open an issue or come chat with us on our [Discord server](https://discord.gg/tVSCQEVJnJ) in the support channel **#evebuddy**.<br>
-> We are constantly adding new features and improving EVE Buddy further. If you are missing a feature that would make the app more useful for you, please feel free to open a feature request.
+> **Feedback & Support**
+>
+> We’d love to hear from you! If you run into bugs or have questions, feel free to open an issue or drop by the **#evebuddy** channel on our [Discord](https://discord.gg/tVSCQEVJnJ).
+>
+> Missing a feature? Open a feature request—we're actively building and improving EVE Buddy every day!
 
 > [!TIP]
-> Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free to open a PR. Or if you have any questions please contact us on Discord.
+> **Contribute & Get Involved**
+>
+> We welcome all contributions! Whether you want to fix a bug, add a feature, or improve documentation, feel free to open a Pull Request. Have questions or want to discuss an idea first? Join our community on [Discord](https://discord.gg/tVSCQEVJnJ).
 
 ## Screenshots
 
@@ -81,7 +87,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Contracts: Browse contracts of all characters
   - Industry: Browse industry jobs for all characters and related corporations
   - Location: Browse the location of all characters and their current ships
-  - Training: Keep track of the training status for all characters
+  - Skills: Keep track of the training status for all characters and search for skills across of characters.
   - Wealth: Charts showing wealth distribution across all characters
 
 - **Character monitor**: Check current information about each of your characters:
