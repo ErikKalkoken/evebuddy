@@ -166,12 +166,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		},
 	})
 
-	items = slices.Concat(items, []SettingItem{
-		NewSettingItemHeading("UI"),
-		preferMarketTab,
-		hideLimitedCorporations,
-	})
-
 	colorTheme := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
@@ -187,6 +181,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		},
 		isMobile: a.u.IsMobile(),
 		window:   a.w,
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("UI"),
+		preferMarketTab,
+		hideLimitedCorporations,
+		colorTheme,
 	})
 
 	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
@@ -218,7 +218,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 
 	if !a.u.IsMobile() {
 		items = slices.Concat(items, []SettingItem{
-			colorTheme,
 			fyneScale,
 			disableDPIDetection,
 		})
