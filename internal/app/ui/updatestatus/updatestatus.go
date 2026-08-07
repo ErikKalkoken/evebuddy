@@ -50,7 +50,7 @@ func Show(s baseUI) {
 	}
 	a := newUpdateStatus(s, w)
 	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 400, Height: 600})
+	w.Resize(fyne.Size{Width: 400, Height: 700})
 	w.SetOnClosed(func() {
 		a.stop()
 		if onClosed != nil {
@@ -95,7 +95,7 @@ type updateStatus struct {
 
 	currentEntityID   int
 	currentSectionID  int
-	currentSections   []app.CacheSectionStatus
+	entitySections    []app.CacheSectionStatus
 	entities          []entity
 	entityList        *widget.List
 	entityMoreButton  *kxwidget.IconButton
@@ -131,8 +131,10 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
+					return
 				}
 			}()
+			a.sb.Show("Started updating characters")
 		}),
 		fyne.NewMenuItem("Update all corporations", func() {
 			go func() {
@@ -140,12 +142,36 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				if err != nil {
 					slog.Error("update status", "error", err)
 					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
+					return
 				}
 			}()
+			a.sb.Show("Started updating corporations")
 
 		}),
-		fyne.NewMenuItem("Update all general topics", func() {
+		fyne.NewMenuItem("Update all general entities", func() {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
+			a.sb.Show("Started updating all general entities")
+		}),
+		fyne.NewMenuItem("Update notifications for all characters", func() {
+			var characterIDs []int64
+			for _, x := range a.entities {
+				if x.category != sectionCharacter {
+					continue
+				}
+				characterIDs = append(characterIDs, x.id)
+			}
+			go func() {
+				ctx := context.Background()
+				for _, id := range characterIDs {
+					go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
+						ctx,
+						id,
+						app.SectionCharacterNotifications,
+						true,
+					)
+				}
+			}()
+			a.sb.Show("Started updating notifications")
 		}),
 	)
 	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), menu)
@@ -255,6 +281,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
+		a.sb.Show("Started updating sections")
 	}
 	item := fyne.NewMenuItem("Update all sections", action)
 	return []*fyne.MenuItem{item}
@@ -321,28 +348,27 @@ func (a *updateStatus) makeSectionList() *widget.List {
 	isOfflineMode := a.u.IsOffline()
 	l := widget.NewList(
 		func() int {
-			return len(a.currentSections)
+			return len(a.entitySections)
 		},
 		func() fyne.CanvasObject {
 			return newSectionItem(isOfflineMode)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			if id >= len(a.currentSections) {
+			if id >= len(a.entitySections) {
 				return
 			}
-			co.(*sectionItem).set(a.currentSections[id])
+			co.(*sectionItem).set(a.entitySections[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		if id >= len(a.currentSections) {
+		if id >= len(a.entitySections) {
 			l.UnselectAll()
 			return
 		}
 		a.currentSectionID = id
 		a.refreshDetails()
-		x1 := a.entities[a.currentEntityID]
-		x2 := a.currentSections[id]
-		subTitle := widget.NewLabel(fmt.Sprintf("%s > %s", x1.category.name(), x2.EntityName))
+		x2 := a.entitySections[id]
+		subTitle := widget.NewLabel(x2.EntityName)
 		subTitle.TextStyle.Bold = true
 		c := container.NewBorder(subTitle, nil, nil, nil, a.sectionStatus)
 		ab := xwidget.NewAppBar(x2.SectionName, c, a.sectionMoreButton)
@@ -360,47 +386,48 @@ func (a *updateStatus) refreshSections() {
 	se := a.entities[a.currentEntityID]
 	switch se.category {
 	case sectionCharacter:
-		a.currentSections = a.u.StatusCache().ListCharacterSections(se.id)
+		a.entitySections = a.u.StatusCache().ListCharacterSections(se.id)
 	case sectionCorporation:
-		a.currentSections = a.u.StatusCache().ListCorporationSections(se.id)
+		a.entitySections = a.u.StatusCache().ListCorporationSections(se.id)
 	case sectionGeneral:
-		a.currentSections = a.u.StatusCache().ListEveUniverseSections()
+		a.entitySections = a.u.StatusCache().ListEveUniverseSections()
 	}
 	a.sectionList.Refresh()
 }
 
 func (a *updateStatus) refreshDetails() {
 	id := a.currentSectionID
-	if id == -1 || id >= len(a.currentSections) {
+	if id == -1 || id >= len(a.entitySections) {
 		return
 	}
-	ss := a.currentSections[id]
-	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss.EntityID, ss.SectionID))
+	ss := a.entitySections[id]
+	c := a.entities[a.currentEntityID].category
+	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss, c))
 	a.sectionStatus.set(ss)
 	a.sectionStatus.Show()
 }
 
-func (a *updateStatus) makeSectionMenuItems(entityID int64, sectionID string) []*fyne.MenuItem {
+func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c sectionCategory) []*fyne.MenuItem {
 	items := make([]*fyne.MenuItem, 0)
 	action := func() {
 		ctx := context.Background()
-		c := a.entities[a.currentEntityID]
-		switch c.category {
+		switch c {
 		case sectionGeneral:
 			go a.u.EVEUniverse().UpdateSectionAndRefreshIfNeeded(
-				ctx, app.EveUniverseSection(sectionID), true,
+				ctx, app.EveUniverseSection(ss.SectionID), true,
 			)
 		case sectionCharacter:
 			go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-				ctx, entityID, app.CharacterSection(sectionID), true,
+				ctx, ss.EntityID, app.CharacterSection(ss.SectionID), true,
 			)
 		case sectionCorporation:
 			go a.u.Corporation().UpdateSectionAndRefreshIfNeeded(
-				ctx, entityID, app.CorporationSection(sectionID), true,
+				ctx, ss.EntityID, app.CorporationSection(ss.SectionID), true,
 			)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
+		a.sb.Show("Started updating section")
 	}
 	item1 := fyne.NewMenuItem("Update section", action)
 	if a.u.IsOffline() {
@@ -408,13 +435,12 @@ func (a *updateStatus) makeSectionMenuItems(entityID int64, sectionID string) []
 	}
 	items = append(items, item1)
 	item2 := fyne.NewMenuItem("Copy issue to clipboard", func() {
-		x := a.currentSections[a.currentSectionID]
 		s := fmt.Sprintf(
 			"%s [%d] / %s: %s",
-			x.EntityName,
-			x.EntityID,
-			x.SectionName,
-			x.ErrorMessage,
+			ss.EntityName,
+			ss.EntityID,
+			ss.SectionName,
+			ss.ErrorMessage,
 		)
 		fyne.CurrentApp().Clipboard().SetContent(s)
 		a.sb.Show("Issue copied to clipboard")

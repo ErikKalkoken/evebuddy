@@ -108,11 +108,11 @@ const (
 )
 
 type CacheSectionStatus struct {
-	EntityID     int64
-	EntityName   string
 	Comment      string
 	CompletedAt  time.Time
 	ContentHash  string
+	EntityID     int64
+	EntityName   string
 	ErrorMessage string
 	SectionID    string
 	SectionName  string
