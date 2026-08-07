@@ -195,7 +195,7 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOffline() {
+	if a.u.isOfflineMode {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
@@ -206,7 +206,7 @@ func (a *statusBar) start() {
 		a.updateEveStatus(ctx)
 	})
 
-	if !a.u.IsOffline() {
+	if !a.u.isOfflineMode {
 		tickerNewVersion := time.NewTicker(versionTicker)
 		go func() {
 			for {
@@ -237,7 +237,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 		})
 	}
 
-	if a.u.IsOffline() {
+	if a.u.isOfflineMode {
 		return
 	}
 
