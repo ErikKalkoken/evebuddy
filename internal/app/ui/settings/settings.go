@@ -1072,6 +1072,12 @@ func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c2)
 }
 
+func (w *settingListItem) Refresh() {
+	w.BaseWidget.Refresh()
+	w.background.FillColor = theme.Color(theme.ColorNameInputBackground)
+	w.background.Refresh()
+}
+
 func (w *settingListItem) set(r SettingItem) {
 	if r.Hint != "" {
 		w.hint.SetText(r.Hint)
