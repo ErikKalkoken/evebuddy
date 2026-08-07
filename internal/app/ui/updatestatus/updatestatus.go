@@ -1,4 +1,4 @@
-// Package updatestatus provides a window that shows the current update status.
+// Package updatestatus shows the current update status in a window.
 package updatestatus
 
 import (
@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
@@ -42,7 +41,7 @@ type baseUI interface {
 	StatusCache() *statuscache.StatusCache
 }
 
-// Show shows the status window.
+// Show shows the update status window.
 func Show(s baseUI) {
 	w, ok, onClosed := s.GetOrCreateWindowWithOnClosed("statusWindow", "Update Status")
 	if !ok {
@@ -94,29 +93,29 @@ type entity struct {
 type updateStatus struct {
 	widget.BaseWidget
 
-	details           *sectionDetails
+	currentEntityID   int
+	currentSectionID  int
+	currentSections   []app.CacheSectionStatus
 	entities          []entity
 	entityList        *widget.List
 	entityMoreButton  *kxwidget.IconButton
 	nav               *xwidget.Navigator
 	sb                *xwidget.Snackbar
+	sectionStatus     *sectionStatus
 	sectionList       *widget.List
 	sectionMoreButton *kxwidget.IconButton
-	currentSections   []app.CacheSectionStatus
-	currentEntityID   int
-	currentSectionID  int
 	signalKey         string
 	u                 baseUI
 }
 
-func newUpdateStatus(s baseUI, w fyne.Window) *updateStatus {
+func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
-		details:          newSectionDetails(),
+		sectionStatus:    newSectionStatus(u.IsMobile()),
 		sb:               xwidget.NewSnackbar(w.Canvas()),
 		currentEntityID:  -1,
 		currentSectionID: -1,
-		signalKey:        s.Signals().UniqueKey(),
-		u:                s,
+		signalKey:        u.Signals().UniqueKey(),
+		u:                u,
 	}
 	a.ExtendBaseWidget(a)
 	a.entityList = a.makeEntityList()
@@ -343,7 +342,7 @@ func (a *updateStatus) makeSectionList() *widget.List {
 		x2 := a.currentSections[id]
 		subTitle := widget.NewLabel(fmt.Sprintf("%s > %s", x1.category.name(), x2.EntityName))
 		subTitle.TextStyle.Bold = true
-		c := container.NewBorder(subTitle, nil, nil, nil, a.details)
+		c := container.NewBorder(subTitle, nil, nil, nil, a.sectionStatus)
 		ab := xwidget.NewAppBar(x2.SectionName, c, a.sectionMoreButton)
 		ab.HideBackground = !a.u.IsMobile()
 		a.nav.Push(ab)
@@ -371,7 +370,7 @@ func (a *updateStatus) refreshSections() {
 func (a *updateStatus) refreshDetails() {
 	id := a.currentSectionID
 	if id == -1 || id >= len(a.currentSections) {
-		a.details.Hide()
+		a.sectionStatus.Hide()
 		a.sectionMoreButton.Disable()
 		return
 	}
@@ -380,8 +379,8 @@ func (a *updateStatus) refreshDetails() {
 		a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss.EntityID, ss.SectionID))
 		a.sectionMoreButton.Enable()
 	}
-	a.details.set(ss)
-	a.details.Show()
+	a.sectionStatus.set(ss)
+	a.sectionStatus.Show()
 }
 
 func (a *updateStatus) makeSectionMenuItems(entityID int64, sectionID string) []*fyne.MenuItem {
@@ -556,7 +555,7 @@ func (w *sectionItem) set(r app.CacheSectionStatus) {
 	}
 }
 
-type sectionDetails struct {
+type sectionStatus struct {
 	widget.BaseWidget
 
 	completedAt *widget.Label
@@ -565,35 +564,39 @@ type sectionDetails struct {
 	startedAt   *widget.Label
 	status      *widget.Label
 	timeout     *widget.Label
+	isMobile    bool
 }
 
-func newSectionDetails() *sectionDetails {
-	w := &sectionDetails{
+func newSectionStatus(isMobile bool) *sectionStatus {
+	w := &sectionStatus{
 		completedAt: ui.NewLabelWithWrapping(""),
 		issue:       ui.NewLabelWithWrapping(""),
 		nextUpdate:  ui.NewLabelWithWrapping(""),
 		startedAt:   ui.NewLabelWithWrapping(""),
 		status:      ui.NewLabelWithWrapping(""),
 		timeout:     ui.NewLabelWithWrapping(""),
+		isMobile:    isMobile,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *sectionDetails) CreateRenderer() fyne.WidgetRenderer {
-	layout := kxlayout.NewColumns(100)
-	c := container.NewVScroll(container.NewVBox(
-		container.New(layout, widget.NewLabel("Status"), w.status),
-		container.New(layout, widget.NewLabel("Started"), w.startedAt),
-		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
-		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
-		container.New(layout, widget.NewLabel("Next update"), w.nextUpdate),
-		container.New(layout, widget.NewLabel("Issue"), w.issue),
-	))
-	return widget.NewSimpleRenderer(c)
+func (w *sectionStatus) CreateRenderer() fyne.WidgetRenderer {
+	c := widget.NewForm(
+		widget.NewFormItem("Status", w.status),
+		widget.NewFormItem("Started", w.startedAt),
+		widget.NewFormItem("Completed", w.completedAt),
+		widget.NewFormItem("Timeout", w.timeout),
+		widget.NewFormItem("Next update", w.nextUpdate),
+		widget.NewFormItem("Issue", w.issue),
+	)
+	if w.isMobile {
+		c.Orientation = widget.Adaptive
+	}
+	return widget.NewSimpleRenderer(container.NewVScroll(c))
 }
 
-func (w *sectionDetails) set(ss app.CacheSectionStatus) {
+func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 	w.status.Text, w.status.Importance = ss.Display()
 	w.status.Refresh()
 
