@@ -3,7 +3,6 @@ package characters
 import (
 	"cmp"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -17,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -256,34 +254,19 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			},
 		),
 		fyne.NewMenuItem(
-			"Copy data to clipboard",
+			"Copy notification object to clipboard",
 			func() {
-				if a.current == nil {
-					return
-				}
-
-				processErr := func(err error) {
-					slog.Error("Failed to convert notification data", "characterID", a.current.CharacterID, "notificationID", a.current.NotificationID, "error", err)
-					a.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
-				}
-
-				v, ok := a.current.Text.Value()
-				if !ok {
-					a.u.ShowSnackbar("ERROR: Notification has no data")
-					return
-				}
-				var data any
-				if err := yaml.Unmarshal([]byte(v), &data); err != nil {
-					processErr(err)
-					return
-				}
-				b, err := json.MarshalIndent(data, "", "    ")
+				b, err := a.current.ToJSON()
 				if err != nil {
-					processErr(err)
+					slog.Error("Failed to convert notification to JSON", "characterID", a.current.CharacterID, "notificationID", a.current.NotificationID, "error", err)
+					a.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
+					return
+				}
+				if len(b) == 0 {
 					return
 				}
 				fyne.CurrentApp().Clipboard().SetContent(string(b))
-				a.u.ShowSnackbar("Notification data copied to clipboard")
+				a.u.ShowSnackbar("Notification object copied to clipboard")
 			},
 		),
 	}
