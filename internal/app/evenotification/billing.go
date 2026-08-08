@@ -134,7 +134,7 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 		purposeShort = fmt.Sprintf("extending lease at %s", external2Name)
 		purposeLong = fmt.Sprintf("extending the lease of %s at %s", external1Link, external2Link)
 	case billTypeAlliance:
-		purposeShort = fmt.Sprintf("maintenance of %s", external2Name)
+		purposeShort = fmt.Sprintf("maintenance of %s", external1Name)
 		purposeLong = fmt.Sprintf("maintenance of %s", external1Link)
 	case billTypeInfrastructureHub:
 		purposeShort = fmt.Sprintf("maintenance of infrastructure hub in %s", external1Name)
