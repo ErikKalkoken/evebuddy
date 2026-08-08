@@ -76,3 +76,16 @@ func TestMap_Concurrency(_ *testing.T) {
 
 	wg.Wait()
 }
+
+func TestMap_Clear(t *testing.T) {
+	var myMap Map[string, int]
+	myMap.Store("a", 1)
+	myMap.Store("b", 2)
+
+	myMap.Clear()
+
+	_, ok := myMap.Load("a")
+	assert.False(t, ok)
+	_, ok = myMap.Load("b")
+	assert.False(t, ok)
+}
