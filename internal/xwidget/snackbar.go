@@ -3,6 +3,7 @@ package xwidget
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,49 +18,45 @@ import (
 )
 
 const (
-	snackbarTimeoutDefault      = 3 * time.Second
 	snackbarColorNameBackground = theme.ColorNameForeground
-	snackbarColorNameForeGround = theme.ColorNameBackground
-	snackbarMarginSides         = 10 // multiples of standard padding
+	snackbarColorNameForeground = theme.ColorNameBackground
 	snackbarMarginBottom        = 7  // multiples of standard padding
+	snackbarMarginSides         = 10 // multiples of standard padding
+	snackbarTimeoutDefault      = 3 * time.Second
 )
 
 type snackbarMessage struct {
 	text    string        // text of the message
-	timeout time.Duration // Duration the snackbar is shown before it disappears on it's own
+	timeout time.Duration // Duration the snackbar is shown before it disappears on its own
 }
-
-// FIXME: Horizontal positioning is off for multi-line snackbars
 
 // A Snackbar shows short updates about app processes at the bottom of the window.
 // and disappear on their own after a short while.
-// Or after the user clicks on the window to dismiss them.
+// Snackbars can also be dismissed by clicking anywhere on the screen.
 //
 // Snackbars are designed to be created once for each window and then re-used.
 //
-// A snackbar can be used concurrently.
-// When a snackbar receives several texts at the same time,
-// it will queue them and display them one after the other.
+// A snackbar can be stopped and started.
+// Texts received while a snackbar is not started will be queued.
 type Snackbar struct {
 	BottomMargin float32 // additional bottom padding makes a snackbar appear higher
 
-	bg        *canvas.Rectangle
-	hideC     chan struct{}
-	isRunning atomic.Bool
-	popup     *widget.PopUp
-	q         *syncqueue.SyncQueue[snackbarMessage]
-	stopC     chan struct{}
-	text      *RichText
+	bg           *canvas.Rectangle
+	isRunning    atomic.Bool
+	itemCancel   func()
+	mu           sync.Mutex
+	parentCancel func()
+	popup        *popUp2
+	q            *syncqueue.SyncQueue[snackbarMessage]
+	text         *RichText
 }
 
 // NewSnackbar returns a new snackbar. Call Start() to activate it.
 func NewSnackbar(c fyne.Canvas) *Snackbar {
 	sb := &Snackbar{
-		bg:    canvas.NewRectangle(theme.Color(snackbarColorNameBackground)),
-		hideC: make(chan struct{}),
-		q:     syncqueue.New[snackbarMessage](),
-		stopC: make(chan struct{}),
-		text:  NewRichText(),
+		bg:   canvas.NewRectangle(theme.Color(snackbarColorNameBackground)),
+		q:    syncqueue.New[snackbarMessage](),
+		text: NewRichText(),
 	}
 	p := theme.Padding()
 	content := container.NewStack(
@@ -69,16 +66,22 @@ func NewSnackbar(c fyne.Canvas) *Snackbar {
 			sb.text,
 		),
 	)
-	sb.popup = widget.NewPopUp(content, c)
+	sb.popup = newPopUp2(content, c, func() {
+		sb.hide()
+	})
+	sb.popup.Hide()
 	return sb
 }
 
 // Show displays a SnackBar with a message and the the default timeout.
+// Show can be used concurrently.
+// When a snackbar receives several texts at the same time,
+// it will queue them and display them one after the other.
 func (sb *Snackbar) Show(text string) {
 	sb.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
 }
 
-// ShowWithTimeout displays a SnackBar with a message and the a custom timeout.
+// ShowWithTimeout is similar to Show but uses a custom timeout.
 func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
 	sb.q.Put(snackbarMessage{text: text, timeout: timeout})
 }
@@ -91,51 +94,71 @@ func (sb *Snackbar) Start() {
 		slog.Warn("Snackbar has already been started")
 		return
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	parentCtx, parentCancel := context.WithCancel(context.Background())
+	sb.mu.Lock()
+	sb.parentCancel = parentCancel
+	sb.mu.Unlock()
 	go func() {
-		<-sb.stopC
-		cancel()
-	}()
-	go func() {
-	L:
+		defer func() {
+			sb.isRunning.Store(false)
+			sb.parentCancel()
+			slog.Debug("Snackbar stopped")
+		}()
 		for {
-			m, err := sb.q.Get(ctx)
+			m, err := sb.q.Get(parentCtx)
 			if err != nil {
 				break
 			}
-			fyne.Do(func() {
-				sb.show(m.text)
-			})
-			select {
-			case <-sb.hideC:
-			case <-sb.stopC:
-				fyne.Do(func() {
-					sb.popup.Hide()
-				})
-				cancel()
-				break L
-			case <-time.After(m.timeout):
+			abort := sb.showMessage(parentCtx, m)
+			if abort {
+				return
 			}
-			fyne.Do(func() {
-				sb.popup.Hide()
-			})
 		}
-		sb.isRunning.Store(false)
-		slog.Debug("Snackbar stopped")
 	}()
 	slog.Debug("Snackbar started")
 }
 
-// Stop stops a running snackbar and allows the gc to clean up it's resources.
-func (sb *Snackbar) Stop() {
-	if !sb.isRunning.Load() {
-		return
+func (sb *Snackbar) showMessage(parentCtx context.Context, m snackbarMessage) bool {
+	itemCtx, itemCancel := context.WithCancel(parentCtx)
+	sb.mu.Lock()
+	sb.itemCancel = itemCancel
+	sb.mu.Unlock()
+	fyne.Do(func() {
+		sb.show(m.text)
+	})
+	timer := time.NewTimer(m.timeout)
+	defer func() {
+		timer.Stop()
+		itemCancel()
+		fyne.Do(func() {
+			sb.popup.Hide()
+		})
+	}()
+	select {
+	case <-parentCtx.Done():
+		return true
+	case <-timer.C:
+	case <-itemCtx.Done():
 	}
-	sb.stopC <- struct{}{}
+	return false
 }
 
-func (sb *Snackbar) IsRunning() bool {
-	return sb.isRunning.Load()
+func (sb *Snackbar) hide() {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	if sb.itemCancel != nil {
+		sb.itemCancel()
+	}
+}
+
+// Stop stops a running snackbar and allows the gc to clean up its resources.
+// A stopped snackbar can be restarted.
+func (sb *Snackbar) Stop() {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	if sb.parentCancel != nil {
+		sb.parentCancel()
+	}
 }
 
 func (sb *Snackbar) show(text string) {
@@ -145,9 +168,9 @@ func (sb *Snackbar) show(text string) {
 	maxW := canvasSize.Width - padding
 
 	// 1. Assign text and determine if wrapping is needed
-	sb.text.SetWithText(text, widget.RichTextStyle{ColorName: snackbarColorNameForeGround})
+	sb.text.SetWithText(text, widget.RichTextStyle{ColorName: snackbarColorNameForeground})
 
-	measurer := canvas.NewText(text, theme.Color(snackbarColorNameForeGround))
+	measurer := canvas.NewText(text, theme.Color(snackbarColorNameForeground))
 	measurer.TextSize = theme.TextSize()
 	unwrappedSize := measurer.MinSize()
 
@@ -200,4 +223,28 @@ func (sb *Snackbar) show(text string) {
 	sb.bg.Refresh()
 
 	sb.popup.Show()
+}
+
+type popUp2 struct {
+	widget.PopUp
+	tapped func()
+}
+
+func newPopUp2(content fyne.CanvasObject, canvas fyne.Canvas, tapped func()) *popUp2 {
+	w := &popUp2{
+		PopUp: widget.PopUp{
+			Content: content,
+			Canvas:  canvas,
+		},
+		tapped: tapped,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *popUp2) Tapped(pe *fyne.PointEvent) {
+	if w.tapped != nil {
+		w.tapped()
+	}
+	w.PopUp.Tapped(pe)
 }
