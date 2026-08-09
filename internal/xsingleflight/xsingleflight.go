@@ -7,11 +7,11 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// Do is a type safe and panic free variant of Group.Do().
+// Do is a type safe variant of singleflight.Group.Do().
 func Do[T any](g *singleflight.Group, key string, fn func() (T, error)) (T, error, bool) {
 	if g == nil {
 		var z T
-		return z, fmt.Errorf("xsingleflight: group missing: %s", key), false
+		return z, fmt.Errorf("xsingleflight: missing group: %s", key), false
 	}
 	x, err, shared := g.Do(key, func() (any, error) {
 		v, err := fn()
@@ -23,6 +23,10 @@ func Do[T any](g *singleflight.Group, key string, fn func() (T, error)) (T, erro
 	if err != nil {
 		var z T
 		return z, err, false
+	}
+	if x == nil {
+		var z T
+		return z, nil, shared
 	}
 	v, ok := x.(T)
 	if !ok {
