@@ -86,7 +86,12 @@ func NewWealth(u baseUI) *Wealth {
 	a.totalSplit.SetTitleStyle(ts)
 	a.characterSplit.SetTitleStyle(ts)
 
-	a.defaultPieLabelStyle = style.DefaultValueLabelStyle()
+	pls := style.DefaultValueLabelStyle()
+	if u.IsMobile() {
+		pls.ValueTextStyle.SizeName = ui.SizeNameSmallText
+	}
+	a.defaultPieLabelStyle = pls
+
 	ls := style.DefaultValueLabelStyle()
 	ls.StrokeWidth = 0
 	a.defaultBarLabelStyle = ls
