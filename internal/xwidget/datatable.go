@@ -2,6 +2,7 @@ package xwidget
 
 import (
 	"fmt"
+	"image/color"
 	"iter"
 	"slices"
 
@@ -544,58 +545,15 @@ func MakeDataList[S ~[]E, E any](
 			return len(*data)
 		},
 		func() fyne.CanvasObject {
-			p := theme.Padding()
-			rowLayout := kxlayout.NewColumns(def.maxColumnWidth() + theme.Padding())
-			c := container.New(layout.NewCustomPaddedVBoxLayout(0))
-			for _, h := range def.cols {
-				row := container.New(rowLayout, widget.NewLabel(h.Label), NewRichText())
-				bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
-				bg.Hide()
-				c.Add(container.NewStack(bg, row))
-				c.Add(container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator()))
-			}
-			return c
+			return newDataCardWidget(def, makeCell)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			f := co.(*fyne.Container).Objects
 			if id >= len(*data) || id < 0 {
 				return
 			}
-			r := (*data)[id]
-			for col := range def.size() {
-				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-				cell := row[1].(*RichText)
-				id, ok := def.IDLookup(col)
-				if !ok {
-					continue
-				}
-				cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(id, r))
-				cell.Wrapping = fyne.TextWrapWord
-				bg := f[col*2].(*fyne.Container).Objects[0]
-				if col == 0 {
-					bg.Show()
-					for _, s := range cell.Segments {
-						x, ok := s.(*widget.TextSegment)
-						if !ok {
-							continue
-						}
-						x.Style.TextStyle.Bold = true
-					}
-					label := row[0].(*widget.Label)
-					label.TextStyle.Bold = true
-					label.Refresh()
-				} else {
-					bg.Hide()
-				}
-				cell.Refresh()
-				divider := f[col*2+1]
-				if col > 0 && col < def.size()-1 {
-					divider.Show()
-				} else {
-					divider.Hide()
-				}
-			}
-			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+			item := co.(*dataCardWidget[E])
+			item.Update((*data)[id])
+			l.SetItemHeight(id, co.(*dataCardWidget[E]).MinSize().Height) // some rows need more height for wrapped text
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -608,5 +566,140 @@ func MakeDataList[S ~[]E, E any](
 			onSelected(r)
 		}
 	}
+	l.HideSeparators = true
 	return l
+}
+
+const (
+	dataCardRowHighlightColor = theme.ColorNameInputBackground
+	dataCardBorderColor       = theme.ColorNameInputBorder
+)
+
+// dataCardWidget renders a card with multiple rows from a data row.
+// The first row is highlighted.
+type dataCardWidget[E any] struct {
+	widget.BaseWidget
+
+	border         *canvas.Rectangle
+	def            DataColumns[E]
+	makeCell       func(int, E) []widget.RichTextSegment
+	maxColumnWidth float32
+	rows           []*dataCardRowWidget
+}
+
+func newDataCardWidget[E any](def DataColumns[E], makeCell func(int, E) []widget.RichTextSegment) *dataCardWidget[E] {
+	border := canvas.NewRectangle(color.Transparent)
+	border.StrokeColor = theme.Color(dataCardBorderColor)
+	border.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
+	border.CornerRadius = theme.Size(theme.SizeNameCardRadius)
+	w := &dataCardWidget[E]{
+		rows:           make([]*dataCardRowWidget, len(def.cols)),
+		def:            def,
+		makeCell:       makeCell,
+		maxColumnWidth: def.maxColumnWidth(),
+		border:         border,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *dataCardWidget[E]) CreateRenderer() fyne.WidgetRenderer {
+	width := w.maxColumnWidth + theme.Padding()
+	p := theme.Padding()
+	rows := container.New(layout.NewCustomPaddedVBoxLayout(0))
+	for i := range w.def.cols {
+		rowWidget := newDataCardRowWidget(width)
+		rows.Add(rowWidget)
+		w.rows[i] = rowWidget
+		showDivider := i < w.def.size()-1
+		if showDivider {
+			divider := container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator())
+			rows.Add(divider)
+		}
+	}
+	rows.Add(NewSpacer(fyne.NewSize(1, p)))
+	c := container.NewStack(rows, w.border)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *dataCardWidget[E]) Refresh() {
+	w.BaseWidget.Refresh()
+	w.border.StrokeColor = theme.Color(dataCardBorderColor)
+	w.border.Refresh()
+
+}
+
+func (w *dataCardWidget[E]) Update(r E) {
+	for col, item := range w.rows {
+		id, ok := w.def.IDLookup(col)
+		if !ok {
+			continue
+		}
+
+		cell := w.makeCell(id, r)
+		isFirst := col == 0
+
+		label := w.def.cols[col].Label
+		item.Update(label, cell, isFirst)
+	}
+}
+
+// dataCardRowWidget renders a row in a data card.
+type dataCardRowWidget struct {
+	widget.BaseWidget
+
+	bg    *canvas.Rectangle
+	cell  *RichText
+	label *RichText
+	width float32
+}
+
+func newDataCardRowWidget(width float32) *dataCardRowWidget {
+	label := NewRichText()
+	cell := NewRichText()
+	cell.Wrapping = fyne.TextWrapWord
+
+	bg := canvas.NewRectangle(theme.Color(dataCardRowHighlightColor))
+	bg.Hide()
+
+	w := &dataCardRowWidget{
+		bg:    bg,
+		cell:  cell,
+		label: label,
+		width: width,
+	}
+
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *dataCardRowWidget) CreateRenderer() fyne.WidgetRenderer {
+	rowLayout := kxlayout.NewColumns(w.width + theme.Padding())
+	row := container.New(rowLayout, w.label, w.cell)
+	c := container.NewStack(w.bg, row)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *dataCardRowWidget) Refresh() {
+	w.bg.FillColor = theme.Color(dataCardRowHighlightColor)
+	w.bg.Refresh()
+	w.BaseWidget.Refresh()
+}
+
+func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegment, isFirst bool) {
+	if isFirst {
+		w.bg.Show()
+		for _, s := range cell {
+			if x, ok := s.(*widget.TextSegment); ok {
+				x.Style.TextStyle.Bold = true
+			}
+		}
+		w.label.Set(cell)
+	} else {
+		w.cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, cell)
+		w.label.SetWithText(labelText)
+		w.bg.Hide()
+	}
+	w.cell.Refresh()
+
 }
