@@ -376,7 +376,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 		skillpointsTotal := optional.Sum(skillpoints...)
 		rows = append(rows, overviewRow{
 			characterID:            0,
-			characterName:          "Total",
+			characterName:          "TOTAL",
 			combinedAssetsDisplay:  formatISKValue(assetsTotal),
 			combinedAssetsValue:    assetsTotal,
 			contractsEscrow:        contractsTotal,
