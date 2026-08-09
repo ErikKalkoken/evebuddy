@@ -27,7 +27,7 @@ func TestPCache(t *testing.T) {
 		// then
 		x, found := c.Get(key)
 		if assert.True(t, found) {
-		xassert.Equal(t, value, x)
+			xassert.Equal(t, value, x)
 		}
 	})
 }

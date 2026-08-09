@@ -1,11 +1,11 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -16,163 +16,70 @@ import (
 func TestCacheGet(t *testing.T) {
 	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can get and existing entry", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
+
 		// when
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: expiresAt,
 		})
+
 		// then
-		if assert.NoError(t, err) {
-			v, err := r.CacheGet(ctx, key)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, value, v)
-			}
-		}
+		require.NoError(t, err)
+		got1, got2, err := r.CacheGet(t.Context(), key)
+		require.NoError(t, err)
+		xassert.Equal(t, value, got1)
+		xassert.Equal(t, expiresAt, got2)
 	})
+
 	t.Run("should treat expired entries as non existent for get", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(-time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: expiresAt,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		// when
-		_, err = r.CacheGet(ctx, key)
+		_, _, err = r.CacheGet(t.Context(), key)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
 	t.Run("should return entries with get which never expiry", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: time.Time{},
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		// when
-		x, err := r.CacheGet(ctx, key)
+		got1, got2, err := r.CacheGet(t.Context(), key)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, value, x)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, value, got1)
+		assert.True(t, got2.IsZero())
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		_, err := r.CacheGet(ctx, "")
-		assert.ErrorIs(t, err, app.ErrInvalid)
-	})
-}
-
-func TestCacheExists(t *testing.T) {
-	db, r, _ := testutil.NewDBInMemory()
-	defer db.Close()
-	ctx := context.Background()
-	t.Run("should return true when entry exists", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, key)
-		if assert.NoError(t, err) {
-			assert.True(t, ok)
-		}
-	})
-	t.Run("should return false when entry expired", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(-time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, key)
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should report false when entry does not exist", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, "key-2")
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should return true when entry has no expiration date", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: time.Time{},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, key)
-		if assert.NoError(t, err) {
-			assert.True(t, ok)
-		}
-	})
-	t.Run("should return error when key is empty", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		// when
-		_, err := r.CacheExists(ctx, "")
+		_, _, err := r.CacheGet(t.Context(), "")
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 }
@@ -180,40 +87,39 @@ func TestCacheExists(t *testing.T) {
 func TestCacheSet(t *testing.T) {
 	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can update existing entry", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     []byte("old-value"),
 			ExpiresAt: time.Now().Add(3 * time.Minute),
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		value := []byte("value")
 		expiresAt := time.Now().Add(5 * time.Minute)
+
 		// when
-		err = r.CacheSet(ctx, storage.CacheSetParams{
+		err = r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: expiresAt,
 		})
+
 		// then
-		if assert.NoError(t, err) {
-			v, err := r.CacheGet(ctx, key)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, value, v)
-			}
-		}
+		require.NoError(t, err)
+		got1, got2, err := r.CacheGet(t.Context(), key)
+		require.NoError(t, err)
+		xassert.Equal(t, value, got1)
+		xassert.Equal(t, expiresAt, got2)
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		err := r.CacheSet(ctx, storage.CacheSetParams{})
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{})
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 }
@@ -221,88 +127,81 @@ func TestCacheSet(t *testing.T) {
 func TestCacheOther(t *testing.T) {
 	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can delete entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: expiresAt,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		// when
-		err = r.CacheDelete(ctx, key)
+		err = r.CacheDelete(t.Context(), key)
 		// then
-		if assert.NoError(t, err) {
-			ok, err := r.CacheExists(ctx, key)
-			if assert.NoError(t, err) {
-				assert.False(t, ok)
-			}
-		}
+		require.NoError(t, err)
+		_, _, err2 := r.CacheGet(t.Context(), key)
+		assert.Error(t, err2, app.ErrNotFound)
 	})
+
 	t.Run("should return error when delete and key is empty", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		err := r.CacheDelete(ctx, "")
+		err := r.CacheDelete(t.Context(), "")
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
+
 	t.Run("can clear cache", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
+		err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       key,
 			Value:     value,
 			ExpiresAt: expiresAt,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		// when
-		err = r.CacheClear(ctx)
+		err = r.CacheClear(t.Context())
 		// then
-		if assert.NoError(t, err) {
-			ok, err := r.CacheExists(ctx, key)
-			if assert.NoError(t, err) {
-				assert.False(t, ok)
-			}
-		}
+		require.NoError(t, err)
+		_, _, err2 := r.CacheGet(t.Context(), key)
+		assert.Error(t, err2, app.ErrNotFound)
 	})
+
 	t.Run("can remove all expired entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		now := time.Now()
-		if err := r.CacheSet(ctx, storage.CacheSetParams{
+		if err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       "k1",
 			Value:     []byte("not expired"),
 			ExpiresAt: now.Add(time.Minute),
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if err := r.CacheSet(ctx, storage.CacheSetParams{
+		if err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       "k2",
 			Value:     []byte("expired"),
 			ExpiresAt: now.Add(-time.Minute),
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if err := r.CacheSet(ctx, storage.CacheSetParams{
+		if err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       "k3",
 			Value:     []byte("no expireation date"),
 			ExpiresAt: time.Time{},
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if err := r.CacheSet(ctx, storage.CacheSetParams{
+		if err := r.CacheSet(t.Context(), storage.CacheSetParams{
 			Key:       "k4",
 			Value:     []byte("expired"),
 			ExpiresAt: now.Add(-time.Hour),
@@ -310,23 +209,20 @@ func TestCacheOther(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		n, err := r.CacheCleanUp(ctx)
+		n, err := r.CacheCleanUp(t.Context())
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 2, n)
-			rows, err := db.Query("SELECT key FROM cache;")
-			if err != nil {
+		require.NoError(t, err)
+		xassert.Equal(t, 2, n)
+		rows, err := db.Query("SELECT key FROM cache;")
+		require.NoError(t, err)
+		var keys []string
+		for rows.Next() {
+			var k string
+			if err := rows.Scan(&k); err != nil {
 				t.Fatal(err)
 			}
-			var keys []string
-			for rows.Next() {
-				var k string
-				if err := rows.Scan(&k); err != nil {
-					t.Fatal(err)
-				}
-				keys = append(keys, k)
-			}
-			assert.ElementsMatch(t, []string{"k1", "k3"}, keys)
+			keys = append(keys, k)
 		}
+		assert.ElementsMatch(t, []string{"k1", "k3"}, keys)
 	})
 }
