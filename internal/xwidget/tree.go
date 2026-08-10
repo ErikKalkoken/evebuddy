@@ -39,7 +39,7 @@ type Tree[T any] struct {
 	OnSelectedNode     func(n *T) // Called when the given node is selected.
 	OnUnselectedNode   func(n *T) // Called when the given node is unselected.
 
-	td TreeData[T]
+	td *TreeData[T]
 }
 
 // NewTree returns a new Tree2 object.
@@ -48,7 +48,7 @@ func NewTree[T any](
 	update func(n *T, isBranch bool, co fyne.CanvasObject),
 ) *Tree[T] {
 	w := &Tree[T]{
-		td: newTreeData[T](),
+		td: NewTreeData[T](),
 	}
 	w.Root = treeRootID
 	w.ChildUIDs = func(uid widget.TreeNodeID) []widget.TreeNodeID {
@@ -91,17 +91,29 @@ func NewTree[T any](
 
 // Clear removes all nodes of the tree.
 func (w *Tree[T]) Clear() {
+	if w == nil {
+		fyne.LogError("Tree.Clear: nil object", ErrInvalid)
+		return
+	}
+
 	w.td.Clear()
 	w.Refresh()
 }
 
 // Data returns the tree's data.
-func (w *Tree[T]) Data() TreeData[T] {
+func (w *Tree[T]) Data() *TreeData[T] {
+	if w == nil {
+		return nil
+	}
 	return w.td
 }
 
 // Set replaces the tree's data, resets and refreshes it.
-func (w *Tree[T]) Set(data TreeData[T]) {
+func (w *Tree[T]) Set(data *TreeData[T]) {
+	if w == nil {
+		fyne.LogError("Tree.Set: nil object", ErrInvalid)
+		return
+	}
 	w.UnselectAll()
 	w.CloseAllBranches()
 	w.td = data
@@ -113,11 +125,17 @@ func (w *Tree[T]) Set(data TreeData[T]) {
 
 // CloseBranchNode closes the branch of node n.
 func (w *Tree[T]) CloseBranchNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.CloseBranch)
 }
 
 // IsBranchOpenNode reports whether the given branch is expanded.
 func (w *Tree[T]) IsBranchOpenNode(n *T) bool {
+	if w == nil {
+		return false
+	}
 	if uid, ok := w.td.uidLookup[n]; ok {
 		return w.IsBranchOpen(uid)
 	}
@@ -126,31 +144,49 @@ func (w *Tree[T]) IsBranchOpenNode(n *T) bool {
 
 // OpenBranchNode opens the branch of node n.
 func (w *Tree[T]) OpenBranchNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.OpenBranch)
 }
 
 // RefreshNode refreshes the given node.
 func (w *Tree[T]) RefreshNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.RefreshItem)
 }
 
 // ScrollToNode scrolls to node n.
 func (w *Tree[T]) ScrollToNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.ScrollTo)
 }
 
 // SelectNode marks node n to be selected.
 func (w *Tree[T]) SelectNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.Select)
 }
 
 // ToggleBranchNode flips the state of branch node n.
 func (w *Tree[T]) ToggleBranchNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.ToggleBranch)
 }
 
 // UnselectNode marks node n to be not selected.
 func (w *Tree[T]) UnselectNode(n *T) {
+	if w == nil {
+		return
+	}
 	w.callWhenFound(n, w.Unselect)
 }
 
@@ -177,8 +213,8 @@ type TreeData[T any] struct {
 	uidLookup map[*T]widget.TreeNodeID
 }
 
-func newTreeData[T any]() TreeData[T] {
-	td := TreeData[T]{}
+func NewTreeData[T any]() *TreeData[T] {
+	td := &TreeData[T]{}
 	td.init()
 	return td
 }
@@ -226,7 +262,10 @@ func (td *TreeData[T]) Add(parent *T, node *T, isBranch bool) error {
 // Children returns a new slice with the direct children of node parent.
 // The children are returned in the same order as they were added.
 // When parent was not found a nil slice is returned.
-func (td TreeData[T]) Children(parent *T) []*T {
+func (td *TreeData[T]) Children(parent *T) []*T {
+	if td == nil {
+		return nil
+	}
 	uid, ok := td.UID(parent)
 	if !ok {
 		return nil
@@ -240,7 +279,10 @@ func (td TreeData[T]) Children(parent *T) []*T {
 
 // ChildrenCount returns the number of direct children of node parent.
 // It returns 0 when the node is not found.
-func (td TreeData[T]) ChildrenCount(parent *T) int {
+func (td *TreeData[T]) ChildrenCount(parent *T) int {
+	if td == nil {
+		return 0
+	}
 	uid, found := td.UID(parent)
 	if !found {
 		return 0
@@ -251,7 +293,7 @@ func (td TreeData[T]) ChildrenCount(parent *T) int {
 // Clear removes all nodes.
 func (td *TreeData[T]) Clear() {
 	if td == nil {
-		fyne.LogError("Trying to clear a nil tree", ErrInvalid)
+		fyne.LogError("TreeData.Clear: nil object", ErrInvalid)
 		return
 	}
 	if td.IsEmpty() {
@@ -263,8 +305,11 @@ func (td *TreeData[T]) Clear() {
 // Clone returns a shallow copy of the tree data object.
 // A clone can be used to modify the structure of a tree separately
 // and then update the tree widget later in one operation.
-func (td TreeData[T]) Clone() TreeData[T] {
-	t2 := TreeData[T]{
+func (td *TreeData[T]) Clone() *TreeData[T] {
+	if td == nil {
+		return nil
+	}
+	t2 := &TreeData[T]{
 		children:  make(map[widget.TreeNodeID][]widget.TreeNodeID),
 		isBranch:  maps.Clone(td.isBranch),
 		lastID:    td.lastID,
@@ -281,27 +326,34 @@ func (td TreeData[T]) Clone() TreeData[T] {
 // Delete deletes the given nodes including their subtrees.
 // It will return an error if a node can not be deleted.
 // The root node can not be removed.
-func (td TreeData[T]) Delete(node ...*T) error {
+func (td *TreeData[T]) Delete(node ...*T) error {
+	if td == nil {
+		return fmt.Errorf("TreeData: nil object: %w", ErrInvalid)
+	}
 	for _, n := range node {
 		if n == nil {
-			return fmt.Errorf("Delete: can not remove root node: %w", ErrInvalid)
+			return fmt.Errorf("TreeData: can not remove root node: %w", ErrInvalid)
 		}
 		uid, found := td.uidLookup[n]
 		if !found {
-			return fmt.Errorf("Delete: uid %s: %w", uid, ErrNotFound)
+			return fmt.Errorf("TreeData: uid %s: %w", uid, ErrNotFound)
 		}
 		td.delete(uid)
 	}
 	return nil
 }
 
-func (td TreeData[T]) delete(uid widget.TreeNodeID) {
+func (td *TreeData[T]) delete(uid widget.TreeNodeID) {
+	if td == nil {
+		fyne.LogError("TreeData.delete: : nil object: "+uid, ErrInvalid)
+		return
+	}
 	s, found := td.children[uid]
 	if found {
 		s2 := slices.Clone(s)
 		for _, n := range s2 {
 			if n == treeRootID {
-				fyne.LogError("root ID found in children: "+uid, ErrInvalid)
+				fyne.LogError("TreeData.delete: root ID found in children: "+uid, ErrInvalid)
 				return
 			}
 			td.delete(n)
@@ -310,7 +362,7 @@ func (td TreeData[T]) delete(uid widget.TreeNodeID) {
 	}
 	parent, found := td.parents[uid]
 	if !found {
-		fyne.LogError("Parent not found for UID: "+uid, ErrInvalid)
+		fyne.LogError("TreeData.delete: Parent not found for UID: "+uid, ErrInvalid)
 		return
 	}
 	td.children[parent] = slices.DeleteFunc(td.children[parent], func(x widget.TreeNodeID) bool {
@@ -326,7 +378,11 @@ func (td TreeData[T]) delete(uid widget.TreeNodeID) {
 
 // DeleteChildrenFunc removes any nodes from parent for which del returns true.
 // It does nothing when parent is not found.
-func (td TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
+func (td *TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
+	if td == nil {
+		fyne.LogError("TreeData.DeleteChildrenFunc: nil object: ", ErrInvalid)
+		return
+	}
 	uid, ok := td.UID(parent)
 	if !ok {
 		return
@@ -338,7 +394,10 @@ func (td TreeData[T]) DeleteChildrenFunc(parent *T, del func(n *T) bool) {
 
 // Exists reports whether a node exists.
 // Nil will also return represents the root node and will also return true.
-func (td TreeData[T]) Exists(node *T) bool {
+func (td *TreeData[T]) Exists(node *T) bool {
+	if td == nil {
+		return false
+	}
 	if node == nil {
 		return true
 	}
@@ -347,11 +406,14 @@ func (td TreeData[T]) Exists(node *T) bool {
 }
 
 // IsEmpty reports whether the tree has any nodes (other then the root node).
-func (td TreeData[T]) IsEmpty() bool {
-	return len(td.nodes) == 0
+func (td *TreeData[T]) IsEmpty() bool {
+	return td == nil || len(td.nodes) == 0
 }
 
-func (td TreeData[T]) IsBranch(node *T) bool {
+func (td *TreeData[T]) IsBranch(node *T) bool {
+	if td == nil {
+		return false
+	}
 	if node == nil {
 		return true // root is always a branch
 	}
@@ -363,7 +425,10 @@ func (td TreeData[T]) IsBranch(node *T) bool {
 
 // Node returns a node by UID and reports whether it was found.
 // The root node will be returned as nil.
-func (td TreeData[T]) Node(uid widget.TreeNodeID) (node *T, ok bool) {
+func (td *TreeData[T]) Node(uid widget.TreeNodeID) (node *T, ok bool) {
+	if td == nil {
+		return nil, false
+	}
 	if uid == treeRootID {
 		return nil, true
 	}
@@ -372,7 +437,10 @@ func (td TreeData[T]) Node(uid widget.TreeNodeID) (node *T, ok bool) {
 }
 
 // Parent returns the parent of a node and reports whether the operation succeeded.
-func (td TreeData[T]) Parent(node *T) (*T, bool) {
+func (td *TreeData[T]) Parent(node *T) (*T, bool) {
+	if td == nil {
+		return nil, false
+	}
 	uid, ok := td.uidLookup[node]
 	if !ok {
 		return nil, false
@@ -385,8 +453,8 @@ func (td TreeData[T]) Parent(node *T) (*T, bool) {
 // The path includes parent (except root) and n.
 // Parent must be an ancestor of n or nil for the root node.
 // Returns a nil slice when no path can be found.
-func (td TreeData[T]) Path(parent, n *T) []*T {
-	if n == nil {
+func (td *TreeData[T]) Path(parent, n *T) []*T {
+	if td == nil || n == nil {
 		return nil
 	}
 	aUID, ok := td.UID(n)
@@ -416,7 +484,10 @@ func (td TreeData[T]) Path(parent, n *T) []*T {
 // This is a type of linearization and can be useful for comparing trees in tests.
 //
 // Will return all paths from root when parent is nil.
-func (td TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string {
+func (td *TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string {
+	if td == nil {
+		return nil
+	}
 	var all [][]string
 	td.Walk(parent, func(n *T) bool {
 		if td.ChildrenCount(n) == 0 {
@@ -433,9 +504,15 @@ func (td TreeData[T]) AllPaths(parent *T, stringify func(*T) string) [][]string 
 
 // Print prints a sub tree of node n to the console using stringify for each node.
 // This can be useful to visualize a tree for debugging.
-func (td TreeData[T]) Print(n *T, stringify func(*T) string) {
+func (td *TreeData[T]) Print(n *T, stringify func(*T) string) {
+	if td == nil {
+		fyne.LogError("TreeData.Print: nil object: ", ErrInvalid)
+		return
+	}
+
 	uid, ok := td.UID(n)
 	if !ok {
+		fyne.LogError("TreeData.Print: node not found: ", ErrInvalid)
 		return
 	}
 
@@ -466,7 +543,11 @@ func (td TreeData[T]) Print(n *T, stringify func(*T) string) {
 // SortChildrenFunc sorts the direct children of parent in ascending order
 // as determined by the cmp function.
 // It does nothing when parent is not found.
-func (td TreeData[T]) SortChildrenFunc(parent *T, cmp func(a *T, b *T) int) {
+func (td *TreeData[T]) SortChildrenFunc(parent *T, cmp func(a *T, b *T) int) {
+	if td == nil {
+		fyne.LogError("TreeData.SortChildrenFunc: nil object: ", ErrInvalid)
+		return
+	}
 	uid, ok := td.UID(parent)
 	if !ok {
 		return
@@ -476,7 +557,10 @@ func (td TreeData[T]) SortChildrenFunc(parent *T, cmp func(a *T, b *T) int) {
 	})
 }
 
-func (td TreeData[T]) SetBranch(node *T, isBranch bool) error {
+func (td *TreeData[T]) SetBranch(node *T, isBranch bool) error {
+	if td == nil {
+		return fmt.Errorf("SetBranch: nil object: %w", ErrInvalid)
+	}
 	if node == nil {
 		return fmt.Errorf("SetBranch: can not set root: %w", ErrInvalid)
 	}
@@ -492,13 +576,19 @@ func (td TreeData[T]) SetBranch(node *T, isBranch bool) error {
 }
 
 // Size returns the number of nodes in the tree excluding the virtual root node.
-func (td TreeData[T]) Size() int {
+func (td *TreeData[T]) Size() int {
+	if td == nil {
+		return 0
+	}
 	return len(td.nodes)
 }
 
 // UID returns the UID for a node and reports whether it was found.
 // Nil represents the root node and is valid.
-func (td TreeData[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
+func (td *TreeData[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
+	if td == nil {
+		return widget.TreeNodeID("invalid"), false
+	}
 	if node == nil {
 		return treeRootID, true
 	}
@@ -513,7 +603,11 @@ func (td TreeData[T]) UID(node *T) (uid widget.TreeNodeID, ok bool) {
 // The nodes are walked in depth first order.
 // Walk starts at the root when parent is nil.
 // Walk does nothing if parent is not found.
-func (td TreeData[T]) Walk(parent *T, f func(n *T) bool) {
+func (td *TreeData[T]) Walk(parent *T, f func(n *T) bool) {
+	if td == nil {
+		fyne.LogError("TreeData.Walk: nil object: ", ErrInvalid)
+		return
+	}
 	var traverse func(widget.TreeNodeID) bool
 	traverse = func(curr widget.TreeNodeID) bool {
 		if curr != treeRootID {

@@ -440,7 +440,7 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 	if total == 0 {
 		return
 	}
-	var td xwidget.TreeData[resultNode]
+	td := xwidget.NewTreeData[resultNode]()
 	var categoriesFound int
 	for _, c := range categories {
 		items, ok := results[c]

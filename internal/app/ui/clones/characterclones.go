@@ -148,12 +148,13 @@ func (a *CharacterClones) update(ctx context.Context) {
 	})
 }
 
-func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[characterCloneNode], error) {
-	var td xwidget.TreeData[characterCloneNode]
+func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xwidget.TreeData[characterCloneNode], error) {
 	clones, err := a.u.Character().ListJumpClones(ctx, characterID)
 	if err != nil {
-		return td, err
+		return nil, err
 	}
+
+	td := xwidget.NewTreeData[characterCloneNode]()
 	for _, c := range clones {
 		clone := &characterCloneNode{
 			characterID:   characterID,

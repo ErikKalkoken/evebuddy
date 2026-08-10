@@ -81,7 +81,7 @@ func TestTreeData_Node(t *testing.T) {
 func TestTreeData_Clone(t *testing.T) {
 	t.Run("can clone a td object", func(t *testing.T) {
 		// given
-		var td TreeData[MyNode2]
+		td := NewTreeData[MyNode2]()
 		top := &MyNode2{"Top"}
 		td.Add(nil, top, true)
 		alpha := &MyNode2{"Alpha"}
@@ -95,7 +95,7 @@ func TestTreeData_Clone(t *testing.T) {
 	})
 	t.Run("can clone a empty td object", func(t *testing.T) {
 		// given
-		td := newTreeData[MyNode2]()
+		td := NewTreeData[MyNode2]()
 		// when
 		got := td.Clone()
 		// then
@@ -103,7 +103,7 @@ func TestTreeData_Clone(t *testing.T) {
 	})
 }
 
-func equalTreeData[T any](t *testing.T, want, got TreeData[T]) {
+func equalTreeData[T any](t *testing.T, want, got *TreeData[T]) {
 	t.Helper()
 	assert.Equal(t, want.children, got.children)
 	assert.Equal(t, want.isBranch, got.isBranch)

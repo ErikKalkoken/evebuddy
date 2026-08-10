@@ -241,7 +241,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 		a.columnSorter.SortRows(corporations, sortCol, dir, doSort)
 
 		// build tree
-		var td xwidget.TreeData[loyaltyPointsNode]
+		td := xwidget.NewTreeData[loyaltyPointsNode]()
 		var factionOptions, characterOptions []string
 		var tags set.Set[string]
 		for _, c := range corporations {

@@ -331,11 +331,12 @@ func (a *Mails) updateDownloaded(ctx context.Context) {
 	})
 }
 
-func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
-	var td xwidget.TreeData[mailFolderNode]
+func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (*xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
 	if characterID == 0 {
-		return td, nil, nil
+		return nil, nil, nil
 	}
+
+	td := xwidget.NewTreeData[mailFolderNode]()
 
 	// Add unread folder
 	err := td.Add(nil, &mailFolderNode{
@@ -462,7 +463,7 @@ func (a *Mails) updateUnreadCounts(ctx context.Context) {
 	})
 }
 
-func (a *Mails) updateCountsInTree(ctx context.Context, characterID int64, td xwidget.TreeData[mailFolderNode]) (int, error) {
+func (a *Mails) updateCountsInTree(ctx context.Context, characterID int64, td *xwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}
