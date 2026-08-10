@@ -64,7 +64,7 @@ type Clones struct {
 	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
-	selectOwner       *kxwidget.FilterChipSelect
+	selectCharacter   *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
@@ -198,7 +198,7 @@ func NewClones(u baseUI) *Clones {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
 
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
@@ -241,7 +241,7 @@ func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectRegion,
 		a.selectSolarSystem,
-		a.selectOwner,
+		a.selectCharacter,
 		a.selectTag,
 	)
 	if a.u.IsMobile() {
@@ -266,7 +266,7 @@ func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
 func (a *Clones) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	owner := a.selectOwner.Selected
+	character := a.selectCharacter.Selected
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
 	tag := a.selectTag.Selected
@@ -274,9 +274,9 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 
 	go func() {
 		// filter
-		if owner != "" {
+		if character != "" {
 			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
-				return r.jc.Character.Name != owner
+				return r.jc.Character.Name != character
 			})
 		}
 		if region != "" {
@@ -299,7 +299,7 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
 			return r.tags
 		})...).All())
-		ownerOptions := xslices.Map(rows, func(r cloneRow) string {
+		characterOptions := xslices.Map(rows, func(r cloneRow) string {
 			return r.jc.Character.Name
 		})
 		regionOptions := xslices.Map(rows, func(r cloneRow) string {
@@ -316,7 +316,7 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
 			a.selectTag.SetOptions(tagOptions)
-			a.selectOwner.SetOptions(ownerOptions)
+			a.selectCharacter.SetOptions(characterOptions)
 			a.selectRegion.SetOptions(regionOptions)
 			a.selectSolarSystem.SetOptions(solarSystemOptions)
 			a.rowsFiltered = rows

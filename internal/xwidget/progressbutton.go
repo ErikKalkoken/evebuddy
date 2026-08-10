@@ -14,17 +14,24 @@ import (
 type ProgressButton struct {
 	widget.BaseWidget
 
-	button   *lockableButton
-	progress *widget.Activity
-	spacer   *canvas.Rectangle
-	label    string
-	icon     fyne.Resource
+	OnAction func()
+
+	button       *lockableButton
+	disabledTemp bool
+	icon         fyne.Resource
+	label        string
+	progress     *widget.Activity
+	spacer       *canvas.Rectangle
 }
 
-// NewProgressButton creates a new button with a progress indicator.
+// NewProgressButton creates a new button that shows a progress indicator
+// while the button's action is in progress.
 //
-// The action will be run in a goroutine.
-// Note that the button remains clickable
+// Interactions are suspended while action is running
+// and will be applied once it has completed.
+//
+// Note that action will run in a goroutine.
+// Interactions with the Fyne API need to be wrapped in Fyne.Do or Fyne.DoAndWait.
 func NewProgressButton(label string, icon fyne.Resource, action func()) *ProgressButton {
 	w := &ProgressButton{
 		button:   newLockableButton(label, icon, nil),
@@ -32,34 +39,43 @@ func NewProgressButton(label string, icon fyne.Resource, action func()) *Progres
 		spacer:   canvas.NewRectangle(color.Transparent),
 		label:    label,
 		icon:     icon,
+		OnAction: action,
 	}
 	w.ExtendBaseWidget(w)
 	w.progress.Hide()
 	w.progress.Stop()
 	w.button.OnTapped = func() {
-		w.button.disable()
+		if w.OnAction == nil {
+			return
+		}
+		w.button.lock()
 		// clear button
-		w.spacer.SetMinSize(w.button.Size())
+		w.spacer.SetMinSize(w.button.MinSize())
 		w.button.Text = ""
 		w.button.Icon = nil
 		w.button.Refresh()
 		// show progress
 		w.progress.Show()
 		w.progress.Start()
+		action := w.OnAction
 		go func() {
+			defer func() {
+				fyne.Do(func() {
+					// restore button
+					w.button.Text = w.label
+					w.button.Icon = w.icon
+					w.button.Refresh()
+					if w.disabledTemp {
+						w.button.Disable()
+					}
+					w.spacer.SetMinSize(fyne.Size{})
+					// hide progress
+					w.progress.Stop()
+					w.progress.Hide()
+					w.button.unlock()
+				})
+			}()
 			action()
-			fyne.Do(func() {
-				// restore button
-				w.button.Text = label
-				w.button.Icon = icon
-				w.button.Refresh()
-				w.spacer.SetMinSize(fyne.Size{})
-				// hide progress
-				w.progress.Stop()
-				w.progress.Hide()
-				w.progress.Stop()
-				w.button.enable()
-			})
 		}()
 	}
 	return w
@@ -73,16 +89,27 @@ func (w *ProgressButton) CreateRenderer() fyne.WidgetRenderer {
 // SetImportance sets the importance of the button.
 func (w *ProgressButton) SetImportance(v widget.Importance) {
 	w.button.Importance = v
+	if w.button.locked {
+		return
+	}
 	w.button.Refresh()
 }
 
 // SetText sets the text of the button.
-func (w *ProgressButton) SetText(text string) {
-	w.button.SetText(text)
+func (w *ProgressButton) SetText(label string) {
+	w.label = label
+	if w.button.locked {
+		return
+	}
+	w.button.SetText(label)
 }
 
 // SetIcon sets the icon of the button.
 func (w *ProgressButton) SetIcon(icon fyne.Resource) {
+	w.icon = icon
+	if w.button.locked {
+		return
+	}
 	w.button.SetIcon(icon)
 }
 
@@ -93,21 +120,29 @@ func (w *ProgressButton) Disabled() bool {
 
 // Disable disables this widget.
 func (w *ProgressButton) Disable() {
+	if w.button.locked {
+		w.disabledTemp = true
+		return
+	}
 	w.button.Disable()
 }
 
 // Enable enables this widget.
 func (w *ProgressButton) Enable() {
+	if w.button.locked {
+		w.disabledTemp = false
+		return
+	}
 	w.button.Enable()
 }
 
-// lockableButton is an extension of the Fyne button which can be fully disabled
-// without changing it's appearance.
+// lockableButton is an extension of the Fyne button which can be
+// disabled / locked without changing it's appearance.
 //
 // This feature is used by the ProgressButton.
 type lockableButton struct {
 	widget.Button
-	disabled bool
+	locked bool
 }
 
 func newLockableButton(label string, icon fyne.Resource, tapped func()) *lockableButton {
@@ -122,32 +157,56 @@ func newLockableButton(label string, icon fyne.Resource, tapped func()) *lockabl
 	return w
 }
 
-func (w *lockableButton) enable() {
-	w.disabled = false
+func (w *lockableButton) unlock() {
+	w.locked = false
 }
 
-func (w *lockableButton) disable() {
-	w.disabled = true
+func (w *lockableButton) lock() {
+	w.locked = true
 }
 
 func (w *lockableButton) Tapped(pe *fyne.PointEvent) {
-	if w.disabled {
+	if w.locked {
 		return
 	}
 	w.Button.Tapped(pe)
 }
 
 func (w *lockableButton) MouseIn(me *desktop.MouseEvent) {
-	if w.disabled {
+	if w.locked {
 		return
 	}
 	w.Button.MouseIn(me)
 }
 
 func (w *lockableButton) MouseOut() {
-	if w.disabled {
+	w.Button.MouseOut()
+}
+
+func (w *lockableButton) TypedKey(key *fyne.KeyEvent) {
+	if w.locked {
 		return
 	}
-	w.Button.MouseOut()
+	w.Button.TypedKey(key)
+}
 
+func (w *lockableButton) TypedRune(r rune) {
+	if w.locked {
+		return
+	}
+	w.Button.TypedRune(r)
+}
+
+func (w *lockableButton) FocusGained() {
+	if w.locked {
+		return
+	}
+	w.Button.FocusGained()
+}
+
+func (w *lockableButton) FocusLost() {
+	if w.locked {
+		return
+	}
+	w.Button.FocusLost()
 }

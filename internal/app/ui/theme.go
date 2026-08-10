@@ -15,6 +15,7 @@ const (
 	ColorNameCreative  fyne.ThemeColorName = "creative"
 	ColorNameSystem    fyne.ThemeColorName = "system"
 	ColorNameAttention fyne.ThemeColorName = "attention"
+	SizeNameSmallText  fyne.ThemeSizeName  = "small_text"
 )
 
 var themeColors = map[fyne.ThemeColorName][]color.Color{
@@ -64,9 +65,8 @@ func (th Theme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch c {
 	case ColorNameInfo, ColorNameCreative, ColorNameSystem, ColorNameAttention:
 		return themeColors[c][v]
-	default:
-		return th.defaultTheme.Color(c, v)
 	}
+	return th.defaultTheme.Color(c, v)
 }
 
 func (th Theme) Font(style fyne.TextStyle) fyne.Resource {
@@ -78,5 +78,9 @@ func (th Theme) Icon(n fyne.ThemeIconName) fyne.Resource {
 }
 
 func (th Theme) Size(s fyne.ThemeSizeName) float32 {
+	switch s {
+	case SizeNameSmallText:
+		return 12
+	}
 	return th.defaultTheme.Size(s)
 }

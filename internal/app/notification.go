@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/goccy/go-yaml"
 	"github.com/yuin/goldmark"
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
@@ -891,15 +893,48 @@ func (cn *CharacterNotification) TitleFake() string {
 
 // BodyPlain returns the body of a notification as plain text.
 func (cn *CharacterNotification) BodyPlain() (optional.Optional[string], error) {
-	var b optional.Optional[string]
+	var z optional.Optional[string]
 	v, ok := cn.Body.Value()
 	if !ok {
-		return b, nil
+		return z, nil
 	}
 	var buf bytes.Buffer
 	if err := goldmark.Convert([]byte(v), &buf); err != nil {
-		return b, fmt.Errorf("convert notification body: %w", err)
+		return z, fmt.Errorf("convert notification body: %w", err)
 	}
-	b.Set(evehtml.Strip(buf.String()))
+	z.Set(evehtml.Strip(buf.String()))
+	return z, nil
+}
+
+func (cn *CharacterNotification) ToJSON() ([]byte, error) {
+	if cn == nil {
+		return nil, nil
+	}
+
+	var data any
+	if v, ok := cn.Text.Value(); ok {
+		if err := yaml.Unmarshal([]byte(v), &data); err != nil {
+			return nil, err
+		}
+	}
+	notif := struct {
+		NotificationID int64     `json:"notification_id"`
+		SenderID       int64     `json:"sender_id"`
+		SenderType     string    `json:"sender_type"`
+		Text           any       `json:"text"`
+		Timestamp      time.Time `json:"timestamp"`
+		Type           string    `json:"type"`
+	}{
+		NotificationID: cn.NotificationID,
+		SenderID:       cn.Sender.ID,
+		SenderType:     cn.Sender.Category.String(),
+		Text:           data,
+		Timestamp:      cn.Timestamp,
+		Type:           cn.Type.String(),
+	}
+	b, err := json.MarshalIndent(notif, "", "    ")
+	if err != nil {
+		return nil, err
+	}
 	return b, nil
 }

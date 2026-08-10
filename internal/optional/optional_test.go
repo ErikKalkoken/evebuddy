@@ -251,7 +251,7 @@ func TestSumNonEmpty(t *testing.T) {
 		xassert.Equal(t, tc.want, got)
 	}
 
-	xassert.Equal(t, optional.Optional[int]{}, optional.Sum[int]())
+	xassert.Equal(t, optional.Optional[int]{}, optional.SumNonEmpty[int]())
 }
 
 func TestFromPointerOptional(t *testing.T) {

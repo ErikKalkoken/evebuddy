@@ -3,48 +3,56 @@ package syncqueue_test
 import (
 	"context"
 	"testing"
-	"time"
+	"testing/synctest"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/sync/errgroup"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
+
+type result struct {
+	value int
+	err   error
+}
 
 func TestSyncQueue_Get(t *testing.T) {
 	t.Run("should wait until there is an item in the queue", func(t *testing.T) {
-		q := syncqueue.New[int]()
-		g := new(errgroup.Group)
-		ctx := context.Background()
-		g.Go(func() error {
-			v, err := q.Get(ctx)
-			if err != nil {
-				return err
-			}
-			assert.Equal(t, 42, v)
-			return nil
+		synctest.Test(t, func(t *testing.T) {
+			q := syncqueue.New[int]()
+			c := make(chan result)
+			go func() {
+				v, err := q.Get(t.Context())
+				c <- result{
+					value: v,
+					err:   err,
+				}
+			}()
+			q.Put(42)
+			synctest.Wait()
+			r := <-c
+			require.NoError(t, r.err)
+			xassert.Equal(t, 42, r.value)
 		})
-		time.Sleep(250 * time.Millisecond)
-		q.Put(42)
-		err := g.Wait()
-		if assert.NoError(t, err) {
-			assert.True(t, q.IsEmpty())
-		}
 	})
-	t.Run("should abort while waiting for a new item the queue", func(t *testing.T) {
-		q := syncqueue.New[int]()
-		g := new(errgroup.Group)
-		ctx, cancel := context.WithCancel(context.Background())
-		g.Go(func() error {
-			_, err := q.Get(ctx)
-			if err != nil {
-				return err
-			}
-			return nil
+	t.Run("should abort waiting for a new item when context is canceled", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			q := syncqueue.New[int]()
+			c := make(chan result)
+			ctx, cancel := context.WithCancel(t.Context())
+			go func() {
+				v, err := q.Get(ctx)
+				c <- result{
+					value: v,
+					err:   err,
+				}
+			}()
+			cancel()
+			synctest.Wait()
+			r := <-c
+			assert.ErrorIs(t, r.err, context.Canceled)
 		})
-		time.Sleep(10 * time.Millisecond)
-		cancel()
-		err := g.Wait()
-		assert.ErrorIs(t, err, context.Canceled)
 	})
 }
 
@@ -93,5 +101,118 @@ func TestSyncQueue_Size(t *testing.T) {
 		q := syncqueue.New[int]()
 		v := q.Size()
 		assert.Equal(t, 0, v)
+	})
+}
+
+func TestSyncQueue_Get_ContextPreCanceled(t *testing.T) {
+	t.Run("should fail immediately if context is already canceled", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			q := syncqueue.New[int]()
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel() // Pre-cancel before calling Get
+
+			v, err := q.Get(ctx)
+			require.ErrorIs(t, err, context.Canceled)
+			assert.Zero(t, v)
+		})
+	})
+}
+
+func TestSyncQueue_Get_MultipleWaiters(t *testing.T) {
+	t.Run("should wake up the correct waiter and leave others waiting", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			q := syncqueue.New[int]()
+
+			resCh1 := make(chan result, 1)
+			resCh2 := make(chan result, 1)
+
+			ctx1, cancel1 := context.WithCancel(t.Context())
+			defer cancel1()
+
+			// Start Waiter 1
+			go func() {
+				v, err := q.Get(ctx1)
+				resCh1 <- result{value: v, err: err}
+			}()
+
+			// Start Waiter 2
+			go func() {
+				v, err := q.Get(t.Context())
+				resCh2 <- result{value: v, err: err}
+			}()
+
+			synctest.Wait()
+
+			// Cancel Waiter 1 specifically
+			cancel1()
+			synctest.Wait()
+
+			r1 := <-resCh1
+			require.ErrorIs(t, r1.err, context.Canceled)
+
+			// Waiter 2 should still be waiting until an item is pushed
+			q.Put(100)
+			synctest.Wait()
+
+			r2 := <-resCh2
+			require.NoError(t, r2.err)
+			assert.Equal(t, 100, r2.value)
+		})
+	})
+
+	t.Run("should fulfill multiple waiters sequentially as items are added", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			q := syncqueue.New[int]()
+			results := make(chan int, 2)
+
+			for range 2 {
+				go func() {
+					v, err := q.Get(t.Context())
+					if err == nil {
+						results <- v
+					}
+				}()
+			}
+
+			synctest.Wait()
+
+			q.Put(1)
+			q.Put(2)
+			synctest.Wait()
+
+			require.Len(t, results, 2)
+			val1 := <-results
+			val2 := <-results
+			assert.ElementsMatch(t, []int{1, 2}, []int{val1, val2})
+		})
+	})
+}
+
+func TestSyncQueue_LifecycleAndMemoryReset(t *testing.T) {
+	t.Run("should accurately reflect Size and IsEmpty during push/pop lifecycle", func(t *testing.T) {
+		q := syncqueue.New[string]()
+		require.True(t, q.IsEmpty())
+		require.Equal(t, 0, q.Size())
+
+		q.Put("first")
+		q.Put("second")
+		require.False(t, q.IsEmpty())
+		require.Equal(t, 2, q.Size())
+
+		v1, err := q.GetNoWait()
+		require.NoError(t, err)
+		assert.Equal(t, "first", v1)
+		require.Equal(t, 1, q.Size())
+
+		v2, err := q.GetNoWait()
+		require.NoError(t, err)
+		assert.Equal(t, "second", v2)
+
+		require.True(t, q.IsEmpty())
+		require.Equal(t, 0, q.Size())
+
+		// Extra pop should fail
+		_, err = q.GetNoWait()
+		require.ErrorIs(t, err, syncqueue.ErrEmpty)
 	})
 }

@@ -5,29 +5,71 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestPCache(t *testing.T) {
+func TestPCache_Get(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
+
+	t.Run("should return false when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+
+		// when
+		_, found := c.Get("key")
+		assert.False(t, found)
+	})
+
+	t.Run("should return value when found in storage and not memory", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		key := "key"
+		value := []byte("value")
+		err := st.CacheSet(t.Context(), storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: time.Time{},
+		})
+		require.NoError(t, err)
+
+		// when
+		got, found := c.Get(key)
+		assert.True(t, found)
+		xassert.Equal(t, value, got)
+	})
+
+}
+
+func TestPCache_Set(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+
 	t.Run("can set and get a cache entry", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		value := []byte("value")
+
 		// when
 		c.Set("key", value, time.Minute)
+
 		// then
 		got, found := c.Get("key")
-		if assert.True(t, found) {
+		assert.True(t, found)
 		xassert.Equal(t, value, got)
-		}
 	})
+
 	t.Run("should create immortal cache", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -40,9 +82,15 @@ func TestPCache(t *testing.T) {
 		// then
 		got, found := c.Get("key")
 		if assert.True(t, found) {
-		xassert.Equal(t, value, got)
+			xassert.Equal(t, value, got)
 		}
 	})
+}
+
+func TestPCache(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+
 	t.Run("can check key existance 1", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -52,6 +100,7 @@ func TestPCache(t *testing.T) {
 		// when
 		assert.True(t, c.Exists("key"))
 	})
+
 	t.Run("can check key existance 2", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -60,6 +109,7 @@ func TestPCache(t *testing.T) {
 		// when
 		assert.False(t, c.Exists("key"))
 	})
+
 	t.Run("can delete entry", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -71,6 +121,7 @@ func TestPCache(t *testing.T) {
 		// then
 		assert.False(t, c.Exists("key"))
 	})
+
 	t.Run("can clear all entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -84,6 +135,7 @@ func TestPCache(t *testing.T) {
 		assert.False(t, c.Exists("k1"))
 		assert.False(t, c.Exists("k2"))
 	})
+
 	t.Run("can clear expired entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -97,8 +149,9 @@ func TestPCache(t *testing.T) {
 		// then
 		assert.False(t, c.Exists("k1"))
 		assert.True(t, c.Exists("k2"))
-	xassert.Equal(t, 1, got)
+		xassert.Equal(t, 1, got)
 	})
+
 	t.Run("can start with cleanup", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -107,5 +160,4 @@ func TestPCache(t *testing.T) {
 		defer c.Close()
 		// then
 	})
-
 }

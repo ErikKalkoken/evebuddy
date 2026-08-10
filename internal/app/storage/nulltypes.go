@@ -54,6 +54,7 @@ func NewNullTimeFromTime(v time.Time) sql.NullTime {
 	return sql.NullTime{Time: v, Valid: true}
 }
 
+// NewTimeFromNullTime converts a NullTime into a time value and returns it.
 func NewTimeFromNullTime(v sql.NullTime) time.Time {
 	if !v.Valid {
 		return time.Time{}
