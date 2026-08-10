@@ -61,16 +61,16 @@ type mailFolderNode struct {
 	UnreadCount int
 }
 
-func (f mailFolderNode) IsEmpty() bool {
-	return f.CharacterID == 0
+func (n *mailFolderNode) IsEmpty() bool {
+	return n.CharacterID == 0
 }
 
-func (f mailFolderNode) isBranch() bool {
-	return f.Category == nodeCategoryBranch
+func (n *mailFolderNode) isBranch() bool {
+	return n.Category == nodeCategoryBranch
 }
 
-func (f mailFolderNode) icon() fyne.Resource {
-	switch f.Type {
+func (n *mailFolderNode) icon() fyne.Resource {
+	switch n.Type {
 	case folderNodeInbox:
 		return theme.DownloadIcon()
 	case folderNodeSent:
@@ -79,6 +79,10 @@ func (f mailFolderNode) icon() fyne.Resource {
 		return theme.DeleteIcon()
 	}
 	return theme.FolderIcon()
+}
+
+func (n mailFolderNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.Type, n.ObjID)
 }
 
 type Mails struct {

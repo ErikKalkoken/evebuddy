@@ -38,15 +38,12 @@ type characterCloneNode struct {
 	systemSecurityValue    float32
 }
 
-func (n characterCloneNode) isTop() bool {
+func (n *characterCloneNode) isTop() bool {
 	return n.implantTypeID == 0
 }
 
 func (n characterCloneNode) UID() widget.TreeNodeID {
-	if n.jumpCloneID == 0 {
-		panic("some IDs are not set")
-	}
-	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
+	return fmt.Sprintf("%d-%d-%d", n.characterID, n.jumpCloneID, n.implantTypeID)
 }
 
 type CharacterClones struct {

@@ -47,21 +47,25 @@ type baseUI interface {
 	Signals() *app.Signals
 }
 
-type resultNode struct {
+type searchResultNode struct {
 	category app.SearchCategory
 	count    int
 	ee       *app.EveEntity
 }
 
-func (sn resultNode) isCategory() bool {
-	return sn.ee == nil
+func (r *searchResultNode) isCategory() bool {
+	return r.ee == nil
 }
 
-func (sn resultNode) String() string {
-	if sn.isCategory() {
-		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
+func (r searchResultNode) String() string {
+	if r.isCategory() {
+		return fmt.Sprintf("%s (%d)", r.category.String(), r.count)
 	}
-	return sn.ee.Name
+	return r.ee.Name
+}
+
+func (r searchResultNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%s-%d", r.category, r.ee.IDOrZero())
 }
 
 type GameSearch struct {
@@ -76,7 +80,7 @@ type GameSearch struct {
 	recentItems         []*app.EveEntity
 	recentPage          *fyne.Container
 	resultCount         *widget.Label
-	results             *xwidget.Tree[resultNode]
+	results             *xwidget.Tree[searchResultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
@@ -295,7 +299,7 @@ func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.R
 	}
 }
 
-func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
+func (a *GameSearch) makeResults() *xwidget.Tree[searchResultNode] {
 	t := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
@@ -303,7 +307,7 @@ func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
 			}
 			return newSearchResult(a.loadIconFunc(), a.supportedCategories)
 		},
-		func(n *resultNode, isBranch bool, co fyne.CanvasObject) {
+		func(n *searchResultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
 				co.(*widget.Label).SetText(n.String())
 				return
@@ -311,7 +315,7 @@ func (a *GameSearch) makeResults() *xwidget.Tree[resultNode] {
 			co.(*searchResult).set(n.ee)
 		},
 	)
-	t.OnSelectedNode = func(n *resultNode) {
+	t.OnSelectedNode = func(n *searchResultNode) {
 		defer t.UnselectAll()
 		if n.isCategory() {
 			t.ToggleBranchNode(n)
@@ -440,7 +444,7 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 	if total == 0 {
 		return
 	}
-	td := xwidget.NewTreeData[resultNode]()
+	td := xwidget.NewTreeData[searchResultNode]()
 	var categoriesFound int
 	for _, c := range categories {
 		items, ok := results[c]
@@ -449,15 +453,19 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 		}
 		categoriesFound++
 		itemsCount := len(items)
-		category := &resultNode{category: c, count: itemsCount}
+		category := &searchResultNode{category: c, count: itemsCount}
 		err := td.Add(nil, category, itemsCount > 0)
 		if err != nil {
-			slog.Error("game search: adding node", "node", category)
+			slog.Error("game search: adding category node", "node", category)
 			continue
 		}
 		for _, o := range items {
-			entity := &resultNode{ee: o}
-			td.Add(category, entity, false)
+			entity := &searchResultNode{ee: o}
+			err := td.Add(category, entity, false)
+			if err != nil {
+				slog.Error("game search: adding item node", "node", category)
+				continue
+			}
 		}
 	}
 	fyne.Do(func() {

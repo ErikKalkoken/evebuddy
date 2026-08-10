@@ -220,6 +220,13 @@ func (n containerNode) String() string {
 	return n.node.String()
 }
 
+func (n containerNode) UID() widget.TreeNodeID {
+	if n.node == nil {
+		return ""
+	}
+	return n.node.UID()
+}
+
 type filteredTree struct {
 	td         *xwidget.TreeData[containerNode]
 	nodeLookup map[*asset.Node]*containerNode

@@ -34,8 +34,12 @@ type augmentationNode struct {
 	tags                   set.Set[string]
 }
 
-func (n augmentationNode) IsTop() bool {
+func (n *augmentationNode) IsTop() bool {
 	return n.implantTypeID == 0
+}
+
+func (n augmentationNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%d-%d", n.characterID, n.implantTypeID)
 }
 
 const (

@@ -34,10 +34,11 @@ type loyaltyPointsNode struct {
 	searchTarget    string
 	totalPoints     int64
 	tags            set.Set[string]
+	isCorporation   bool
 }
 
-func (n loyaltyPointsNode) IsTop() bool {
-	return n.characterID == 0
+func (n loyaltyPointsNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%v-%d-%d", n.isCorporation, n.characterID, n.corporationID)
 }
 
 type LoyaltyPoints struct {
@@ -166,7 +167,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 		},
 		func(n *loyaltyPointsNode, _ bool, co fyne.CanvasObject) {
 			x := co.(*loyaltyPointsListItem)
-			if n.IsTop() {
+			if n.isCorporation {
 				o := &app.EveEntity{
 					Category: app.EveEntityCorporation,
 					ID:       n.corporationID,
@@ -185,7 +186,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	)
 	t.OnSelectedNode = func(n *loyaltyPointsNode) {
 		defer t.UnselectAll()
-		if n.IsTop() {
+		if n.isCorporation {
 			t.ToggleBranchNode(n)
 		}
 	}
@@ -331,6 +332,7 @@ func (a *LoyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][
 		k := o.Corporation.ID
 		if corporationEntries[k] == nil {
 			c := &loyaltyPointsNode{
+				isCorporation:   true,
 				corporationID:   o.Corporation.ID,
 				corporationName: o.Corporation.Name,
 				searchTarget:    strings.ToLower(o.Corporation.Name),
@@ -347,6 +349,8 @@ func (a *LoyaltyPoints) fetchData(ctx context.Context) (map[*loyaltyPointsNode][
 	for _, c := range corporations {
 		for _, o := range corporationEntries[c.corporationID] {
 			character := &loyaltyPointsNode{
+				isCorporation: false,
+				corporationID: o.Corporation.ID,
 				characterID:   o.CharacterID,
 				characterName: characterNames[o.CharacterID],
 				points:        o.LoyaltyPoints,
