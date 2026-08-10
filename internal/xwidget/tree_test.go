@@ -373,7 +373,7 @@ func TestTreeData_Parent(t *testing.T) {
 }
 
 func TestTreeData_Path(t *testing.T) {
-	t.Run("should return path for an existing node2", func(t *testing.T) {
+	t.Run("should return path to root and not include root", func(t *testing.T) {
 		td := iwidget.NewTreeData[Node]()
 		a := &Node{"Alpha"}
 		td.Add(nil, a, true)
@@ -383,6 +383,39 @@ func TestTreeData_Path(t *testing.T) {
 		td.Add(b, c, false)
 		p := td.Path(nil, c)
 		assert.Equal(t, []*Node{a, b, c}, p)
+	})
+	t.Run("should return path when parent is ancestor", func(t *testing.T) {
+		td := iwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(b, c, false)
+		p := td.Path(a, c)
+		assert.Equal(t, []*Node{a, b, c}, p)
+	})
+	t.Run("should return nil when parent is not ancestor 1", func(t *testing.T) {
+		td := iwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(b, c, false)
+		p := td.Path(c, b)
+		assert.Empty(t, p)
+	})
+	t.Run("should return nil when parent is not ancestor 2", func(t *testing.T) {
+		td := iwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(a, c, false)
+		p := td.Path(b, c)
+		assert.Empty(t, p)
 	})
 	t.Run("should return empty slice for root node", func(t *testing.T) {
 		td := iwidget.NewTreeData[Node]()
