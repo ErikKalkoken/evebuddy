@@ -42,7 +42,8 @@ type Communications struct {
 	Toolbar       *widget.Toolbar
 
 	character              atomic.Pointer[app.Character]
-	current                *app.CharacterNotification
+	currentNotification    *app.CharacterNotification
+	currentFolder          app.EveNotificationGroup
 	developerToolbarAction *widget.ToolbarAction
 	folderList             *widget.List
 	folders                []notificationFolder
@@ -185,13 +186,15 @@ func (a *Communications) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *Communications) setDetail(n *app.CharacterNotification) {
-	err := a.Detail.set(n, notificationRecipient(n, a.character.Load().NameOrZero()))
+func (a *Communications) setDetail(cn *app.CharacterNotification) {
+	if v, ok := cn.IsRead.Value(); ok && !v {
+		cn.IsRead.Set(true)
+		go a.setNotificationRead(context.Background(), cn.CharacterID, cn.NotificationID)
+	}
+	err := a.Detail.set(cn, notificationRecipient(cn, a.character.Load().NameOrZero()))
 	if err != nil {
 		slog.Warn("Failed to set notification detail", "err", err)
-		fyne.Do(func() {
-			a.Detail.setError(a.u.ErrorDisplay(err))
-		})
+		a.Detail.setError(a.u.ErrorDisplay(err))
 		return
 	}
 	if a.u.IsDeveloperMode() {
@@ -199,19 +202,58 @@ func (a *Communications) setDetail(n *app.CharacterNotification) {
 	} else {
 		a.developerToolbarAction.ToolbarObject().Hide()
 	}
-	a.current = n
+	a.currentNotification = cn
 	a.Toolbar.Show()
 	a.Detail.Show()
+}
+
+func (a *Communications) setNotificationRead(ctx context.Context, characterID, notificationID int64) {
+	err := a.u.Character().SetNotificationRead(ctx, characterID, notificationID)
+	if err != nil {
+		slog.Error("Failed to set notification as read", "characterID", characterID, "notificationID", notificationID)
+		return
+	}
+	fyne.Do(func() {
+		var totalUnread optional.Optional[int]
+		unreadIdx, currentIdx, allIdx := -1, -1, -1
+		for i, f := range a.folders {
+			if f.group == app.GroupUnread {
+				unreadIdx = i
+				totalUnread = f.Unread
+			}
+			if f.group == a.currentFolder {
+				currentIdx = i
+			}
+			if f.group == app.GroupAll {
+				allIdx = i
+			}
+		}
+		a.folders[currentIdx].Unread.Set(a.folders[currentIdx].Unread.ValueOrZero() - 1)
+		a.folders[unreadIdx].Unread.Set(totalUnread.ValueOrZero() - 1)
+		a.folders[allIdx].Unread = a.folders[unreadIdx].Unread
+		a.folderList.Refresh()
+		if a.OnUpdate != nil {
+			a.OnUpdate(a.folders[unreadIdx].Unread)
+		}
+	})
+	fyne.Do(func() {
+		for _, n := range a.notifications {
+			if characterID == n.CharacterID && notificationID == n.NotificationID {
+				n.IsRead.Set(true)
+			}
+		}
+		a.headerList.Refresh()
+	})
 }
 
 func (a *Communications) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			if a.current == nil {
+			if a.currentNotification == nil {
 				return
 			}
 
-			cn := a.current
+			cn := a.currentNotification
 			recipient := notificationRecipient(cn, a.character.Load().NameOrZero())
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
@@ -244,21 +286,21 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 		fyne.NewMenuItem(
 			"Send test notification",
 			func() {
-				if a.current == nil {
+				if a.currentNotification == nil {
 					return
 				}
 				if a.character.Load() == nil {
 					return
 				}
-				go a.u.Character().SendDesktopNotification(context.Background(), a.current)
+				go a.u.Character().SendDesktopNotification(context.Background(), a.currentNotification)
 			},
 		),
 		fyne.NewMenuItem(
 			"Copy notification object to clipboard",
 			func() {
-				b, err := a.current.ToJSON()
+				b, err := a.currentNotification.ToJSON()
 				if err != nil {
-					slog.Error("Failed to convert notification to JSON", "characterID", a.current.CharacterID, "notificationID", a.current.NotificationID, "error", err)
+					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
 					a.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
 					return
 				}
@@ -285,6 +327,7 @@ func (a *Communications) update(ctx context.Context) {
 			a.folders = xslices.Reset(a.folders)
 			a.folderList.Refresh()
 			a.folderList.UnselectAll()
+			a.folderList.Select(0)
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[int]{})
 			}
@@ -332,6 +375,7 @@ func (a *Communications) update(ctx context.Context) {
 		a.folders = folders
 		a.folderList.Refresh()
 		a.folderList.UnselectAll()
+		a.folderList.Select(0)
 		if a.OnUpdate != nil {
 			a.OnUpdate(unreadCount)
 		}
@@ -387,7 +431,7 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 	})
 }
 
-func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotificationGroup) {
+func (a *Communications) setCurrentFolder(ctx context.Context, ng app.EveNotificationGroup) {
 	reset := func() {
 		fyne.Do(func() {
 			a.notifications = xslices.Reset(a.notifications)
@@ -396,6 +440,7 @@ func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotific
 		})
 
 	}
+
 	character := a.character.Load()
 	if character == nil {
 		reset()
@@ -421,7 +466,7 @@ func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotific
 		})
 	}
 
-	notifications, err := a.fetchNotifications(ctx, nc, character)
+	notifications, err := a.fetchNotifications(ctx, ng, character)
 	if err != nil {
 		reset()
 		fyne.Do(func() {
@@ -431,7 +476,8 @@ func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotific
 	}
 
 	fyne.Do(func() {
-		a.headersTop.set(nc.String(), len(notifications))
+		a.currentFolder = ng
+		a.headersTop.set(ng.String(), len(notifications))
 		a.notifications = notifications
 		a.headerList.Refresh()
 		a.headerList.ScrollToTop()
@@ -476,7 +522,7 @@ func (a *Communications) fetchNotifications(ctx context.Context, nc app.EveNotif
 func (a *Communications) clearDetail() {
 	a.Detail.Hide()
 	a.Toolbar.Hide()
-	a.current = nil
+	a.currentNotification = nil
 }
 
 type folderItemWidget struct {
@@ -501,7 +547,6 @@ func (w *folderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *folderItemWidget) set(r notificationFolder) {
-	text := r.Name
 	if r.Unread.ValueOrZero() > 0 {
 		w.name.TextStyle.Bold = true
 		w.unread.SetText(ihumanize.OptionalWithComma(r.Unread, "?"))
@@ -510,7 +555,7 @@ func (w *folderItemWidget) set(r notificationFolder) {
 		w.name.TextStyle.Bold = false
 		w.unread.Hide()
 	}
-	w.name.Text = text
+	w.name.Text = r.Name
 	w.name.Refresh()
 }
 

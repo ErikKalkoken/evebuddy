@@ -91,23 +91,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 
 	mailMenu := fyne.NewMenu("")
-	// u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-	// 	page := characters.NewSendMail(u, c, mode, mail)
-	// 	if mode != app.SendMailNew {
-	// 		characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
-	// 	}
-	// 	characterNav.PushAndHideNavBar(
-	// 		xwidget.NewAppBar(
-	// 			"Send Mail",
-	// 			page,
-	// 			kxwidget.NewIconButton(theme.MailSendIcon(), func() {
-	// 				if page.SendAction() {
-	// 					characterNav.Pop()
-	// 				}
-	// 			}),
-	// 		),
-	// 	)
-	// }
 
 	var mailPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
@@ -209,6 +192,10 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemMail.Supporting = strings.Join(s, " • ")
 		navItemMail.Refresh()
+
+		mailMenu.Items = u.characterMails.MakeFolderMenu()
+		mailMenu.Refresh()
+
 		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
 			characterNav.Pop()
 		}
@@ -223,6 +210,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemCommunications.Supporting = s
 		navItemCommunications.Refresh()
+
+		communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
+		communicationsMenu.Refresh()
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
@@ -576,10 +566,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		fyne.Do(func() {
-			mailMenu.Items = u.characterMails.MakeFolderMenu()
-			mailMenu.Refresh()
-			communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
-			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
 				navBar.Disable(1)
