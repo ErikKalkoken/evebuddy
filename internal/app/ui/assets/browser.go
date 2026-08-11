@@ -220,8 +220,15 @@ func (n containerNode) String() string {
 	return n.node.String()
 }
 
+func (n containerNode) UID() widget.TreeNodeID {
+	if n.node == nil {
+		return ""
+	}
+	return n.node.UID()
+}
+
 type filteredTree struct {
-	td         xwidget.TreeData[containerNode]
+	td         *xwidget.TreeData[containerNode]
 	nodeLookup map[*asset.Node]*containerNode
 }
 
@@ -398,10 +405,9 @@ func (w *navItem) set(name string, count optional.Optional[int]) {
 	w.count.SetText(s)
 }
 
-func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) xwidget.TreeData[containerNode] {
-	var td xwidget.TreeData[containerNode]
-
-	addNodes(&td, nil, trees, filter, isCorporation)
+func generateTreeData(trees []*asset.Node, filter assetFilter, isCorporation bool) *xwidget.TreeData[containerNode] {
+	td := xwidget.NewTreeData[containerNode]()
+	addNodes(td, nil, trees, filter, isCorporation)
 	updateItemCounts(td)
 	return td
 }
@@ -493,7 +499,7 @@ func addNodes(td *xwidget.TreeData[containerNode], parent *containerNode, nodes 
 	}
 }
 
-func updateItemCounts(td xwidget.TreeData[containerNode]) {
+func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
 			n.itemCount.Set(k)
@@ -545,7 +551,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	search := strings.ToLower(a.search.Text)
 
 	go func() {
-		var td xwidget.TreeData[containerNode]
+		var td *xwidget.TreeData[containerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {

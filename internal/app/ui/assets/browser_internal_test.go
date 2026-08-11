@@ -527,7 +527,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeCountsPath(ac asset.Tree, td iwidget.TreeData[containerNode], it asset.Item) []int {
+func makeCountsPath(ac asset.Tree, td *iwidget.TreeData[containerNode], it asset.Item) []int {
 	n, ok := ac.Node(it.ID())
 	if !ok {
 		return nil
@@ -541,7 +541,7 @@ func makeCountsPath(ac asset.Tree, td iwidget.TreeData[containerNode], it asset.
 	})
 }
 
-func findContainer(td iwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
+func findContainer(td *iwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
 	var found *containerNode
 	td.Walk(nil, func(n *containerNode) bool {
 		if n.node == node {
@@ -671,7 +671,7 @@ func createAsset(arg assetParams) app.Asset {
 // 	})
 // }
 
-func allPaths(td iwidget.TreeData[containerNode]) [][]string {
+func allPaths(td *iwidget.TreeData[containerNode]) [][]string {
 	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
 	})

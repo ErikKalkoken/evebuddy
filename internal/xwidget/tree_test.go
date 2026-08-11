@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type Node struct {
@@ -22,11 +22,44 @@ func (n Node) String() string {
 	return n.Text
 }
 
+func (n Node) UID() widget.TreeNodeID {
+	return n.Text
+}
+
+func ExampleTree() {
+	a := app.New()
+	w := a.NewWindow("Tree Example")
+
+	// Create tree widget
+	tree := xwidget.NewTree(
+		func(_ bool) fyne.CanvasObject {
+			return widget.NewLabel("Template")
+		},
+		func(n *Node, _ bool, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(n.Text)
+		},
+	)
+
+	// Create tree data
+	td := xwidget.NewTreeData[Node]()
+	top := &Node{"Top"}
+	td.Add(nil, top, true) // adds to root
+	td.Add(top, &Node{"Alpha"}, false)
+	td.Add(top, &Node{"Bravo"}, false)
+
+	// Update tree
+	tree.Set(td)
+
+	w.SetContent(tree)
+	w.Resize(fyne.NewSize(600, 400))
+	w.ShowAndRun()
+}
+
 func TestTree_CanCreate(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	tree := iwidget.NewTree(
+	tree := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
@@ -34,7 +67,7 @@ func TestTree_CanCreate(t *testing.T) {
 			co.(*widget.Label).SetText(n.Text)
 		},
 	)
-	var nodes iwidget.TreeData[Node]
+	nodes := xwidget.NewTreeData[Node]()
 	root := &Node{"Root"}
 	nodes.Add(nil, root, true)
 	nodes.Add(root, &Node{"Alpha"}, false)
@@ -51,7 +84,7 @@ func TestTree_CanCreate(t *testing.T) {
 func TestTree_CanReturnNodes(t *testing.T) {
 	test.NewTempApp(t)
 
-	tree := iwidget.NewTree(
+	tree := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
@@ -59,20 +92,20 @@ func TestTree_CanReturnNodes(t *testing.T) {
 			co.(*widget.Label).SetText(n.Text)
 		},
 	)
-	var nodes iwidget.TreeData[Node]
+	nodes := xwidget.NewTreeData[Node]()
 	root := &Node{"Root"}
 	nodes.Add(nil, root, true)
 	nodes.Add(root, &Node{"Alpha"}, false)
 	nodes.Add(root, &Node{"Bravo"}, false)
 	tree.Set(nodes)
 
-	assert.IsType(t, iwidget.TreeData[Node]{}, tree.Data())
+	assert.IsType(t, &xwidget.TreeData[Node]{}, tree.Data())
 }
 
 func TestTree_CanClear(t *testing.T) {
 	test.NewTempApp(t)
 
-	tree := iwidget.NewTree(
+	tree := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
@@ -80,7 +113,7 @@ func TestTree_CanClear(t *testing.T) {
 			co.(*widget.Label).SetText(n.Text)
 		},
 	)
-	var nodes iwidget.TreeData[Node]
+	nodes := xwidget.NewTreeData[Node]()
 	root := &Node{"Root"}
 	nodes.Add(nil, root, true)
 	nodes.Add(root, &Node{"Alpha"}, false)
@@ -97,7 +130,7 @@ func TestTree_OnSelectedNode(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	tree := iwidget.NewTree(
+	tree := xwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
@@ -109,7 +142,7 @@ func TestTree_OnSelectedNode(t *testing.T) {
 	tree.OnSelectedNode = func(n *Node) {
 		selected = n
 	}
-	var nodes iwidget.TreeData[Node]
+	nodes := xwidget.NewTreeData[Node]()
 	root := &Node{"Root"}
 	nodes.Add(nil, root, true)
 	alpha := &Node{"Alpha"}
@@ -124,7 +157,7 @@ func TestTree_OnSelectedNode(t *testing.T) {
 
 func TestTreeData_Add(t *testing.T) {
 	t.Run("can add a leaf node to root", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		n := &Node{"Alpha"}
 		err := td.Add(nil, n, false)
 		require.NoError(t, err)
@@ -132,7 +165,7 @@ func TestTreeData_Add(t *testing.T) {
 		assert.False(t, td.IsBranch(n))
 	})
 	t.Run("can add a branch node to root", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		n := &Node{"Alpha"}
 		err := td.Add(nil, n, true)
 		require.NoError(t, err)
@@ -140,7 +173,7 @@ func TestTreeData_Add(t *testing.T) {
 		assert.True(t, td.IsBranch(n))
 	})
 	t.Run("can add a node to another node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		a := &Node{"Alpha"}
 		b := &Node{"Bravo"}
 		err := td.Add(nil, a, true)
@@ -150,30 +183,38 @@ func TestTreeData_Add(t *testing.T) {
 		assert.True(t, td.Exists(b))
 	})
 	t.Run("should return error when parent does not exist", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		invalid := &Node{}
 		err := td.Add(invalid, &Node{"Alpha"}, false)
-		assert.ErrorIs(t, err, iwidget.ErrNotFound)
+		assert.ErrorIs(t, err, xwidget.ErrNotFound)
 	})
 	t.Run("should return error when trying to add a nil node", func(t *testing.T) {
-		var td *iwidget.TreeData[Node]
+		var td *xwidget.TreeData[Node]
 		err := td.Add(nil, nil, true)
-		assert.ErrorIs(t, err, iwidget.ErrInvalid)
+		assert.ErrorIs(t, err, xwidget.ErrInvalid)
 	})
 	t.Run("should return error when trying to add a node to a non-branch", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		a := &Node{"Alpha"}
 		b := &Node{"Bravo"}
 		err := td.Add(nil, a, false)
 		require.NoError(t, err)
 		err = td.Add(a, b, false)
-		assert.ErrorIs(t, err, iwidget.ErrInvalid)
+		assert.ErrorIs(t, err, xwidget.ErrInvalid)
+	})
+	t.Run("should return error when trying to add the same node again", func(t *testing.T) {
+		td := xwidget.NewTreeData[Node]()
+		n := &Node{"Alpha"}
+		err := td.Add(nil, n, true)
+		require.NoError(t, err)
+		err2 := td.Add(nil, n, true)
+		assert.ErrorIs(t, err2, xwidget.ErrAlreadyExists)
 	})
 }
 
 func TestTreeData_Children(t *testing.T) {
 	t.Run("can return children of a node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		top := &Node{"Top"}
 		td.Add(nil, top, true)
 		td.Add(top, &Node{"Alpha"}, false)
@@ -183,7 +224,7 @@ func TestTreeData_Children(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 	t.Run("can return children of root", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		top := &Node{"Top"}
 		td.Add(nil, top, true)
 		td.Add(top, &Node{"Alpha"}, false)
@@ -193,19 +234,19 @@ func TestTreeData_Children(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 	t.Run("returns empty when a node has no children", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		top := &Node{"Top"}
 		td.Add(nil, top, true)
 		got := td.Children(top)
 		assert.Len(t, got, 0)
 	})
 	t.Run("the root always exists", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		got := td.Children(nil)
 		assert.Len(t, got, 0)
 	})
 	t.Run("should return empty slice when node was not found", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		invalid := &Node{}
 		got := td.Children(invalid)
 		assert.Len(t, got, 0)
@@ -214,7 +255,7 @@ func TestTreeData_Children(t *testing.T) {
 
 func TestTreeData_ChildrenCount(t *testing.T) {
 	t.Run("can return count for a node2", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		branch1 := &Node{"Branch1"}
 		td.Add(nil, branch1, true)
 		td.Add(branch1, &Node{"Alpha"}, false)
@@ -227,7 +268,7 @@ func TestTreeData_ChildrenCount(t *testing.T) {
 		assert.Equal(t, 2, got)
 	})
 	t.Run("can return count for a root node2", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		branch1 := &Node{"Branch1"}
 		td.Add(nil, branch1, true)
 		td.Add(branch1, &Node{"Alpha"}, false)
@@ -238,12 +279,12 @@ func TestTreeData_ChildrenCount(t *testing.T) {
 		assert.Equal(t, 2, got)
 	})
 	t.Run("can return the count for of an empty td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		got := td.ChildrenCount(nil)
 		assert.Equal(t, 0, got)
 	})
 	t.Run("should return error when node was not found", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		invalid := &Node{}
 		got := td.ChildrenCount(invalid)
 		assert.Equal(t, 0, got)
@@ -252,7 +293,7 @@ func TestTreeData_ChildrenCount(t *testing.T) {
 
 func TestTreeData_Delete(t *testing.T) {
 	t.Run("can remove a node from a simple td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		alpha := &Node{"Alpha"}
 		td.Add(nil, alpha, true)
 		n2 := &Node{"Bravo"}
@@ -267,7 +308,7 @@ func TestTreeData_Delete(t *testing.T) {
 		assert.ElementsMatch(t, want, []*Node{alpha})
 	})
 	t.Run("can remove node from a complex td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		n1 := &Node{"Branch1"}
 		td.Add(nil, n1, true)
 		td.Add(n1, &Node{"Alpha"}, false)
@@ -291,39 +332,39 @@ func TestTreeData_Delete(t *testing.T) {
 		// t.Fail()
 	})
 	t.Run("can not remove the root node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		err := td.Delete(nil)
-		assert.ErrorIs(t, err, iwidget.ErrInvalid)
+		assert.ErrorIs(t, err, xwidget.ErrInvalid)
 	})
 	t.Run("can not remove a node from an empty td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		err := td.Delete(&Node{})
-		assert.ErrorIs(t, err, iwidget.ErrNotFound)
+		assert.ErrorIs(t, err, xwidget.ErrNotFound)
 	})
 	t.Run("return error when trying to remove non-existing node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		td.Add(nil, &Node{"Alpha"}, true)
 		invalid := &Node{}
 		err := td.Delete(invalid)
-		assert.ErrorIs(t, err, iwidget.ErrNotFound)
+		assert.ErrorIs(t, err, xwidget.ErrNotFound)
 	})
 }
 
 func TestTreeData_IsEmpty(t *testing.T) {
 	t.Run("can report non-empty td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		td.Add(nil, &Node{"Root1"}, true)
 		assert.Equal(t, false, td.IsEmpty())
 	})
 	t.Run("can report empty td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		assert.Equal(t, true, td.IsEmpty())
 	})
 }
 
 func TestTreeData_Node(t *testing.T) {
 	t.Run("should return node2 when it exists", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		n1 := &Node{"Alpha"}
 		td.Add(nil, n1, true)
 		uid, ok := td.UID(n1)
@@ -334,7 +375,7 @@ func TestTreeData_Node(t *testing.T) {
 
 	})
 	t.Run("should report when node does not exist", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		_, ok := td.Node("invalid")
 		assert.False(t, ok)
 	})
@@ -342,7 +383,7 @@ func TestTreeData_Node(t *testing.T) {
 
 func TestTreeData_Parent(t *testing.T) {
 	t.Run("can return parent of a node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		alpha := &Node{"Alpha"}
 		td.Add(nil, alpha, true)
 		bravo := &Node{"Bravo"}
@@ -352,7 +393,7 @@ func TestTreeData_Parent(t *testing.T) {
 		assert.Equal(t, alpha, p)
 	})
 	t.Run("the parent of a top node is the root node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		alpha := &Node{"Alpha"}
 		td.Add(nil, alpha, true)
 		p, ok := td.Parent(alpha)
@@ -360,21 +401,21 @@ func TestTreeData_Parent(t *testing.T) {
 		assert.Nil(t, p)
 	})
 	t.Run("can report when a parent does not exist", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		invalid := &Node{}
 		_, ok := td.Parent(invalid)
 		assert.False(t, ok)
 	})
 	t.Run("the root node has no parents", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		_, ok := td.Parent(nil)
 		assert.False(t, ok)
 	})
 }
 
 func TestTreeData_Path(t *testing.T) {
-	t.Run("should return path for an existing node2", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+	t.Run("should return path to root and not include root", func(t *testing.T) {
+		td := xwidget.NewTreeData[Node]()
 		a := &Node{"Alpha"}
 		td.Add(nil, a, true)
 		b := &Node{"Bravo"}
@@ -384,15 +425,48 @@ func TestTreeData_Path(t *testing.T) {
 		p := td.Path(nil, c)
 		assert.Equal(t, []*Node{a, b, c}, p)
 	})
+	t.Run("should return path when parent is ancestor", func(t *testing.T) {
+		td := xwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(b, c, false)
+		p := td.Path(a, c)
+		assert.Equal(t, []*Node{a, b, c}, p)
+	})
+	t.Run("should return nil when parent is not ancestor 1", func(t *testing.T) {
+		td := xwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(b, c, false)
+		p := td.Path(c, b)
+		assert.Empty(t, p)
+	})
+	t.Run("should return nil when parent is not ancestor 2", func(t *testing.T) {
+		td := xwidget.NewTreeData[Node]()
+		a := &Node{"Alpha"}
+		td.Add(nil, a, true)
+		b := &Node{"Bravo"}
+		td.Add(a, b, true)
+		c := &Node{"Charlie"}
+		td.Add(a, c, false)
+		p := td.Path(b, c)
+		assert.Empty(t, p)
+	})
 	t.Run("should return empty slice for root node", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		p := td.Path(nil, nil)
 		assert.Empty(t, p)
 	})
 }
 
 func TestTreeData_Values(t *testing.T) {
-	var td iwidget.TreeData[Node]
+	td := xwidget.NewTreeData[Node]()
 	root := &Node{"Root"}
 	td.Add(nil, root, true)
 	alpha := &Node{"Alpha"}
@@ -411,38 +485,38 @@ func TestTreeData_Values(t *testing.T) {
 
 func TestTreeData_Clear(t *testing.T) {
 	t.Run("can clear td with nodes", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		td.Add(nil, &Node{"Alpha"}, true)
 		td.Clear()
 		assert.True(t, td.IsEmpty())
 	})
 	t.Run("can clear empty td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		td.Clear()
 		assert.True(t, td.IsEmpty())
 	})
 	t.Run("can clear nill td", func(t *testing.T) {
-		var td *iwidget.TreeData[Node]
+		var td *xwidget.TreeData[Node]
 		td.Clear()
 	})
 }
 
 func TestTreeData_Size(t *testing.T) {
 	t.Run("can return size of td with nodes", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		td.Add(nil, &Node{"Alpha"}, true)
 		got := td.Size()
 		assert.Equal(t, 1, got)
 	})
 	t.Run("can return size of zero td", func(t *testing.T) {
-		var td iwidget.TreeData[Node]
+		td := xwidget.NewTreeData[Node]()
 		got := td.Size()
 		assert.Equal(t, 0, got)
 	})
 }
 
 func TestTreeData_Walk(t *testing.T) {
-	var td iwidget.TreeData[Node]
+	td := xwidget.NewTreeData[Node]()
 	top := &Node{"Top"}
 	td.Add(nil, top, true)
 
@@ -465,7 +539,7 @@ func TestTreeData_Walk(t *testing.T) {
 }
 
 func TestTreeData_AllPaths(t *testing.T) {
-	var td iwidget.TreeData[Node]
+	td := xwidget.NewTreeData[Node]()
 	top := &Node{"Top"}
 	td.Add(nil, top, true)
 
@@ -497,7 +571,7 @@ func TestTreeData_AllPaths(t *testing.T) {
 }
 
 func TestTreeData_SortChildren(t *testing.T) {
-	var td iwidget.TreeData[Node]
+	td := xwidget.NewTreeData[Node]()
 	top := &Node{"Top"}
 	td.Add(nil, top, true)
 
@@ -516,7 +590,7 @@ func TestTreeData_SortChildren(t *testing.T) {
 }
 
 func TestTreeData_DeleteChildren(t *testing.T) {
-	var td iwidget.TreeData[Node]
+	td := xwidget.NewTreeData[Node]()
 	top := &Node{"Top"}
 	td.Add(nil, top, true)
 
@@ -532,33 +606,4 @@ func TestTreeData_DeleteChildren(t *testing.T) {
 	got := td.Children(top)
 	want := []*Node{b}
 	assert.ElementsMatch(t, want, got)
-}
-
-func ExampleTree() {
-	a := app.New()
-	w := a.NewWindow("Tree Example")
-
-	// Create tree widget
-	tree := iwidget.NewTree(
-		func(_ bool) fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(n *Node, _ bool, co fyne.CanvasObject) {
-			co.(*widget.Label).SetText(n.Text)
-		},
-	)
-
-	// Create tree data
-	var td iwidget.TreeData[Node]
-	top := &Node{"Top"}
-	td.Add(nil, top, true) // adds to root
-	td.Add(top, &Node{"Alpha"}, false)
-	td.Add(top, &Node{"Bravo"}, false)
-
-	// Update tree
-	tree.Set(td)
-
-	w.SetContent(tree)
-	w.Resize(fyne.NewSize(600, 400))
-	w.ShowAndRun()
 }

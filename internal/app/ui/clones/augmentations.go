@@ -34,8 +34,12 @@ type augmentationNode struct {
 	tags                   set.Set[string]
 }
 
-func (n augmentationNode) IsTop() bool {
+func (n *augmentationNode) IsTop() bool {
 	return n.implantTypeID == 0
+}
+
+func (n augmentationNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%d-%d", n.characterID, n.implantTypeID)
 }
 
 const (
@@ -51,7 +55,7 @@ type Augmentations struct {
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[augmentationNode]
-	treeData         xwidget.TreeData[augmentationNode]
+	treeData         *xwidget.TreeData[augmentationNode]
 	u                baseUI
 }
 
@@ -213,11 +217,10 @@ func (a *Augmentations) update(ctx context.Context) {
 	})
 }
 
-func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augmentationNode], error) {
-	var td xwidget.TreeData[augmentationNode]
+func (a *Augmentations) fetchData(ctx context.Context) (*xwidget.TreeData[augmentationNode], error) {
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
-		return td, err
+		return nil, err
 	}
 	characterImplants := make(map[int64][]*app.CharacterImplant)
 	for id := range characters {
@@ -225,7 +228,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augment
 	}
 	implants, err := a.u.Character().ListAllImplants(ctx)
 	if err != nil {
-		return td, err
+		return nil, err
 	}
 	for _, im := range implants {
 		characterImplants[im.CharacterID] = append(characterImplants[im.CharacterID], im)
@@ -236,6 +239,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (xwidget.TreeData[augment
 		})
 	}
 
+	td := xwidget.NewTreeData[augmentationNode]()
 	for characterID, implants := range characterImplants {
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, characterID)
 		if err != nil {

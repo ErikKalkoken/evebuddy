@@ -1,8 +1,10 @@
 package asset
 
 import (
+	"fmt"
 	"iter"
 	"slices"
+	"sync/atomic"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -74,11 +76,15 @@ func (c NodeCategory) String() string {
 	return "?"
 }
 
+// sequence provides a sequence of unique numbers for custom categories.
+var sequence atomic.Int64
+
 // Node is a node in an asset tree.
 // A node can represent an Eve asset, an Eve location or a custom node.
 type Node struct {
 	category    NodeCategory
 	children    []*Node
+	id          int64
 	isContainer bool
 	isExcluded  bool
 	isShip      bool
@@ -91,11 +97,13 @@ func newLocationNode(location *app.EveLocation) *Node {
 	if location == nil {
 		panic("must provide a location")
 	}
-	return &Node{
+	n := &Node{
 		category:    NodeLocation,
-		location:    location,
+		id:          location.ID,
 		isContainer: true,
+		location:    location,
 	}
+	return n
 }
 
 func newAssetNode(it Item) *Node {
@@ -108,8 +116,9 @@ func newAssetNode(it Item) *Node {
 	}
 	n := &Node{
 		category:    c,
-		item:        it,
+		id:          it.ID(),
 		isContainer: as.IsContainer(),
+		item:        it,
 	}
 	if as.Type != nil {
 		n.isShip = as.Type.IsShip()
@@ -122,10 +131,12 @@ func newCustomNode(category NodeCategory) *Node {
 	case NodeAsset, NodeLocation, NodeUndefined:
 		panic("invalid category for custom node: " + category.String())
 	}
-	return &Node{
+	n := &Node{
+		id:          sequence.Add(1),
 		category:    category,
 		isContainer: true,
 	}
+	return n
 }
 
 // All returns an iterator over all nodes of a sub tree.
@@ -246,19 +257,20 @@ func (n *Node) ChildrenCount() int {
 	return count
 }
 
-// ID returns the ID of the node. This is the item ID or the location ID.
-// Returns 0 when node has no ID.
+// ID returns the  ID of the node.
 func (n *Node) ID() int64 {
 	if n == nil {
 		return 0
 	}
-	if n.item != nil {
-		return n.item.ID()
+	return n.id
+}
+
+// UID returns the unique ID of the node. This is used by the tree widget.
+func (n *Node) UID() string {
+	if n == nil {
+		return ""
 	}
-	if n.location != nil {
-		return n.location.ID
-	}
-	return 0
+	return fmt.Sprintf("%d-%d", n.category, n.id)
 }
 
 // IsContainer reports whether this node is a container

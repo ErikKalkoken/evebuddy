@@ -61,16 +61,16 @@ type mailFolderNode struct {
 	UnreadCount int
 }
 
-func (f mailFolderNode) IsEmpty() bool {
-	return f.CharacterID == 0
+func (n *mailFolderNode) IsEmpty() bool {
+	return n.CharacterID == 0
 }
 
-func (f mailFolderNode) isBranch() bool {
-	return f.Category == nodeCategoryBranch
+func (n *mailFolderNode) isBranch() bool {
+	return n.Category == nodeCategoryBranch
 }
 
-func (f mailFolderNode) icon() fyne.Resource {
-	switch f.Type {
+func (n *mailFolderNode) icon() fyne.Resource {
+	switch n.Type {
 	case folderNodeInbox:
 		return theme.DownloadIcon()
 	case folderNodeSent:
@@ -79,6 +79,10 @@ func (f mailFolderNode) icon() fyne.Resource {
 		return theme.DeleteIcon()
 	}
 	return theme.FolderIcon()
+}
+
+func (n mailFolderNode) UID() widget.TreeNodeID {
+	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.Type, n.ObjID)
 }
 
 type Mails struct {
@@ -331,11 +335,12 @@ func (a *Mails) updateDownloaded(ctx context.Context) {
 	})
 }
 
-func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
-	var td xwidget.TreeData[mailFolderNode]
+func (a *Mails) fetchFolders(ctx context.Context, characterID int64) (*xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
 	if characterID == 0 {
-		return td, nil, nil
+		return nil, nil, nil
 	}
+
+	td := xwidget.NewTreeData[mailFolderNode]()
 
 	// Add unread folder
 	err := td.Add(nil, &mailFolderNode{
@@ -462,7 +467,7 @@ func (a *Mails) updateUnreadCounts(ctx context.Context) {
 	})
 }
 
-func (a *Mails) updateCountsInTree(ctx context.Context, characterID int64, td xwidget.TreeData[mailFolderNode]) (int, error) {
+func (a *Mails) updateCountsInTree(ctx context.Context, characterID int64, td *xwidget.TreeData[mailFolderNode]) (int, error) {
 	if td.IsEmpty() {
 		return 0, nil
 	}

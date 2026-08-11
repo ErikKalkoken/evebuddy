@@ -38,15 +38,12 @@ type characterCloneNode struct {
 	systemSecurityValue    float32
 }
 
-func (n characterCloneNode) isTop() bool {
+func (n *characterCloneNode) isTop() bool {
 	return n.implantTypeID == 0
 }
 
 func (n characterCloneNode) UID() widget.TreeNodeID {
-	if n.jumpCloneID == 0 {
-		panic("some IDs are not set")
-	}
-	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
+	return fmt.Sprintf("%d-%d-%d", n.characterID, n.jumpCloneID, n.implantTypeID)
 }
 
 type CharacterClones struct {
@@ -148,12 +145,13 @@ func (a *CharacterClones) update(ctx context.Context) {
 	})
 }
 
-func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (xwidget.TreeData[characterCloneNode], error) {
-	var td xwidget.TreeData[characterCloneNode]
+func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xwidget.TreeData[characterCloneNode], error) {
 	clones, err := a.u.Character().ListJumpClones(ctx, characterID)
 	if err != nil {
-		return td, err
+		return nil, err
 	}
+
+	td := xwidget.NewTreeData[characterCloneNode]()
 	for _, c := range clones {
 		clone := &characterCloneNode{
 			characterID:   characterID,

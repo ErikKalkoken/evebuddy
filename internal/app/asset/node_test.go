@@ -76,9 +76,9 @@ func TestNode_ID(t *testing.T) {
 		})
 		xassert.Equal(t, 123, n.ID())
 	})
-	t.Run("should return 0 of other nodes", func(t *testing.T) {
+	t.Run("should return non-zero ID for custom nodes", func(t *testing.T) {
 		n := newCustomNode(NodeItemHangar)
-		xassert.Equal(t, 0, n.ID())
+		assert.Greater(t, n.ID(), int64(0))
 	})
 }
 
@@ -121,8 +121,8 @@ func TestNode_CharacterAsset(t *testing.T) {
 
 			got, ok := n.CharacterAsset()
 
-		xassert.Equal(t, tt.wantOk, ok)
-		xassert.Equal(t, tt.wantAsset, got)
+			xassert.Equal(t, tt.wantOk, ok)
+			xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }
@@ -166,8 +166,8 @@ func TestNode_CorporationAsset(t *testing.T) {
 
 			got, ok := n.CorporationAsset()
 
-		xassert.Equal(t, tt.wantOk, ok)
-		xassert.Equal(t, tt.wantAsset, got)
+			xassert.Equal(t, tt.wantOk, ok)
+			xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }
