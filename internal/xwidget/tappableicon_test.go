@@ -7,14 +7,14 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestTappableIcon_CanCreate(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	icon := iwidget.NewTappableIcon(theme.HomeIcon(), nil)
+	icon := xwidget.NewTappableIcon(theme.HomeIcon(), nil)
 	w := test.NewWindow(icon)
 	defer w.Close()
 
@@ -25,7 +25,7 @@ func TestTappableIcon_CanTap(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	var tapped bool
-	icon := iwidget.NewTappableIcon(theme.HomeIcon(), func() {
+	icon := xwidget.NewTappableIcon(theme.HomeIcon(), func() {
 		tapped = true
 	})
 	w := test.NewWindow(icon)
@@ -38,7 +38,7 @@ func TestTappableIcon_CanTap(t *testing.T) {
 func TestTappableIcon_IgnoreTapWhenNoCallback(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	icon := iwidget.NewTappableIcon(theme.HomeIcon(), nil)
+	icon := xwidget.NewTappableIcon(theme.HomeIcon(), nil)
 	w := test.NewWindow(icon)
 	defer w.Close()
 

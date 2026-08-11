@@ -9,17 +9,17 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestNewRichTextSegmentFromText_CanCreateMinimal(t *testing.T) {
-	got := iwidget.RichTextSegmentsFromText("Test")
+	got := xwidget.RichTextSegmentsFromText("Test")
 	x := got[0].(*widget.TextSegment)
 	assert.Equal(t, "Test", x.Text)
 }
 
 func TestNewRichTextSegmentFromText_CanCreateWithStyle(t *testing.T) {
-	got := iwidget.RichTextSegmentsFromText("Test", widget.RichTextStyle{
+	got := xwidget.RichTextSegmentsFromText("Test", widget.RichTextStyle{
 		ColorName: theme.ColorNameError,
 	})
 	x := got[0].(*widget.TextSegment)
@@ -31,7 +31,7 @@ func TestRichText_CanCreateDefault(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	rt := iwidget.NewRichText(iwidget.RichTextSegmentsFromText("Test")...)
+	rt := xwidget.NewRichText(xwidget.RichTextSegmentsFromText("Test")...)
 	w := test.NewWindow(rt)
 	defer w.Close()
 
@@ -42,7 +42,7 @@ func TestRichText_CanCreateWithText(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	rt := iwidget.NewRichTextWithText("Test")
+	rt := xwidget.NewRichTextWithText("Test")
 	w := test.NewWindow(rt)
 	defer w.Close()
 
@@ -52,11 +52,11 @@ func TestRichText_CanCreateWithText(t *testing.T) {
 func TestRichText_CanSet(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	rt := iwidget.NewRichText(iwidget.RichTextSegmentsFromText("Test")...)
+	rt := xwidget.NewRichText(xwidget.RichTextSegmentsFromText("Test")...)
 	w := test.NewWindow(rt)
 	defer w.Close()
 
-	rt.Set(iwidget.RichTextSegmentsFromText("XXX"))
+	rt.Set(xwidget.RichTextSegmentsFromText("XXX"))
 
 	test.AssertImageMatches(t, "richtext/set_text.png", w.Canvas().Capture())
 }
@@ -64,7 +64,7 @@ func TestRichText_CanSet(t *testing.T) {
 func TestRichText_CanSetWithText(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	rt := iwidget.NewRichText(iwidget.RichTextSegmentsFromText("Test")...)
+	rt := xwidget.NewRichText(xwidget.RichTextSegmentsFromText("Test")...)
 	w := test.NewWindow(rt)
 	defer w.Close()
 
@@ -74,9 +74,9 @@ func TestRichText_CanSetWithText(t *testing.T) {
 }
 
 func TestInlineRichText_CanInline(t *testing.T) {
-	a := iwidget.RichTextSegmentsFromText("a")
-	b := iwidget.RichTextSegmentsFromText("b")
-	got := iwidget.InlineRichTextSegments(a, b)
+	a := xwidget.RichTextSegmentsFromText("a")
+	b := xwidget.RichTextSegmentsFromText("b")
+	got := xwidget.InlineRichTextSegments(a, b)
 	assert.Len(t, got, 2)
 	s1 := got[0].(*widget.TextSegment)
 	assert.Equal(t, "a", s1.Text)
@@ -87,9 +87,9 @@ func TestInlineRichText_CanInline(t *testing.T) {
 }
 
 func TestInlineRichText_CanInline2(t *testing.T) {
-	a := iwidget.RichTextSegmentsFromText("a", widget.RichTextStyle{Inline: true})
-	b := iwidget.RichTextSegmentsFromText("b")
-	got := iwidget.InlineRichTextSegments(a, b)
+	a := xwidget.RichTextSegmentsFromText("a", widget.RichTextStyle{Inline: true})
+	b := xwidget.RichTextSegmentsFromText("b")
+	got := xwidget.InlineRichTextSegments(a, b)
 	assert.Len(t, got, 2)
 	s1 := got[0].(*widget.TextSegment)
 	assert.Equal(t, "a", s1.Text)
@@ -100,10 +100,10 @@ func TestInlineRichText_CanInline2(t *testing.T) {
 }
 
 func TestInlineRichText_SkipNonInlinable(t *testing.T) {
-	a := iwidget.RichTextSegmentsFromText("a")
+	a := xwidget.RichTextSegmentsFromText("a")
 	x := []widget.RichTextSegment{&widget.ImageSegment{Title: "x"}}
-	b := iwidget.RichTextSegmentsFromText("b")
-	got := iwidget.InlineRichTextSegments(a, x, b)
+	b := xwidget.RichTextSegmentsFromText("b")
+	got := xwidget.InlineRichTextSegments(a, x, b)
 	assert.Len(t, got, 2)
 	s1 := got[0].(*widget.TextSegment)
 	assert.Equal(t, "a", s1.Text)
@@ -114,9 +114,9 @@ func TestInlineRichText_SkipNonInlinable(t *testing.T) {
 }
 
 func TestAlignRichTextSegments_CanAlign(t *testing.T) {
-	a := iwidget.RichTextSegmentsFromText("a")
-	b := iwidget.RichTextSegmentsFromText("b")
-	got := iwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, b)
+	a := xwidget.RichTextSegmentsFromText("a")
+	b := xwidget.RichTextSegmentsFromText("b")
+	got := xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, b)
 	assert.Len(t, got, 2)
 	s1 := got[0].(*widget.TextSegment)
 	assert.Equal(t, "a", s1.Text)
@@ -127,10 +127,10 @@ func TestAlignRichTextSegments_CanAlign(t *testing.T) {
 }
 
 func TestAlignRichTextSegments_SkipNonAlignable(t *testing.T) {
-	a := iwidget.RichTextSegmentsFromText("a")
+	a := xwidget.RichTextSegmentsFromText("a")
 	x := []widget.RichTextSegment{&widget.ImageSegment{Title: "x"}}
-	b := iwidget.RichTextSegmentsFromText("b")
-	got := iwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, x, b)
+	b := xwidget.RichTextSegmentsFromText("b")
+	got := xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, x, b)
 	assert.Len(t, got, 2)
 	s1 := got[0].(*widget.TextSegment)
 	assert.Equal(t, "a", s1.Text)

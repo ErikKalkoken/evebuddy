@@ -6,14 +6,14 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestTappableRichText_CanCreate(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), nil)
+	text := xwidget.NewTappableRichText(xwidget.RichTextSegmentsFromText("Test"), nil)
 	w := test.NewWindow(text)
 	defer w.Close()
 
@@ -24,7 +24,7 @@ func TestTappableRichText_CanCreateWithText(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	text := iwidget.NewTappableRichTextWithText("Test", nil)
+	text := xwidget.NewTappableRichTextWithText("Test", nil)
 	w := test.NewWindow(text)
 	defer w.Close()
 
@@ -35,7 +35,7 @@ func TestTappableRichText_CanTap(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	var tapped bool
-	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), func() {
+	text := xwidget.NewTappableRichText(xwidget.RichTextSegmentsFromText("Test"), func() {
 		tapped = true
 		test.ApplyTheme(t, test.Theme())
 	})
@@ -49,7 +49,7 @@ func TestTappableRichText_CanTap(t *testing.T) {
 func TestTappableRichText_IgnoreTapWhenNoCallback(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), nil)
+	text := xwidget.NewTappableRichText(xwidget.RichTextSegmentsFromText("Test"), nil)
 	w := test.NewWindow(text)
 	defer w.Close()
 
