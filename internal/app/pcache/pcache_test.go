@@ -2,6 +2,7 @@ package pcache_test
 
 import (
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -17,15 +18,21 @@ func TestPCache_Get(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 
-	t.Run("should return false when not found", func(t *testing.T) {
+	t.Run("should return value when found", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
+		key := "key"
+		value := []byte("value")
+		c.Set(key, value, 0)
 
 		// when
-		_, found := c.Get("key")
-		assert.False(t, found)
+		got, found := c.Get(key)
+
+		// then
+		assert.True(t, found)
+		xassert.Equal(t, value, got)
 	})
 
 	t.Run("should return value when found in storage and not memory", func(t *testing.T) {
@@ -44,10 +51,67 @@ func TestPCache_Get(t *testing.T) {
 
 		// when
 		got, found := c.Get(key)
+
+		// then
 		assert.True(t, found)
 		xassert.Equal(t, value, got)
 	})
 
+	t.Run("should return false when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+
+		// when
+		_, found := c.Get("key")
+		assert.False(t, found)
+	})
+
+	t.Run("should not return expired keys", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := pcache.New(st, 0)
+			defer c.Close()
+			key := "key"
+			value := []byte("value")
+			c.Set(key, value, 5*time.Second)
+			time.Sleep(6 * time.Second)
+			synctest.Wait()
+
+			// when
+			_, found := c.Get(key)
+
+			// then
+			assert.False(t, found)
+		})
+	})
+
+	t.Run("should not return expired keys from storage", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := pcache.New(st, 0)
+			defer c.Close()
+			key := "key"
+			value := []byte("value")
+			err := st.CacheSet(t.Context(), storage.CacheSetParams{
+				Key:       key,
+				Value:     value,
+				ExpiresAt: time.Now().Add(5 * time.Second),
+			})
+			require.NoError(t, err)
+			time.Sleep(6 * time.Second)
+			synctest.Wait()
+
+			// when
+			_, found := c.Get(key)
+
+			// then
+			assert.False(t, found)
+		})
+	})
 }
 
 func TestPCache_Set(t *testing.T) {
@@ -137,19 +201,24 @@ func TestPCache(t *testing.T) {
 	})
 
 	t.Run("can clear expired entries", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := pcache.New(st, 0)
-		defer c.Close()
-		c.Set("k1", []byte("dummy"), time.Millisecond)
-		c.Set("k2", []byte("dummy"), 0)
-		time.Sleep(50 * time.Millisecond)
-		// when
-		got := c.CleanUp()
-		// then
-		assert.False(t, c.Exists("k1"))
-		assert.True(t, c.Exists("k2"))
-		xassert.Equal(t, 1, got)
+		synctest.Test(t, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := pcache.New(st, 0)
+			defer c.Close()
+			c.Set("k1", []byte("dummy"), 10*time.Second)
+			c.Set("k2", []byte("dummy"), 0)
+			time.Sleep(15 * time.Second)
+			synctest.Wait()
+
+			// when
+			got := c.CleanUp()
+
+			// then
+			assert.False(t, c.Exists("k1"))
+			assert.True(t, c.Exists("k2"))
+			xassert.Equal(t, 1, got)
+		})
 	})
 
 	t.Run("can start with cleanup", func(t *testing.T) {
