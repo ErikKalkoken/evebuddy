@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,9 +28,19 @@ import (
 
 type notificationFolder struct {
 	group  app.EveNotificationGroup
-	Name   string
-	Unread optional.Optional[int]
-	Total  optional.Optional[int]
+	name   string
+	unread optional.Optional[int]
+	total  optional.Optional[int]
+}
+
+type notificationRow struct {
+	characterID    int64
+	isRead         bool
+	notificationID int64
+	searchTarget   string
+	sender         *app.EveEntity
+	subject        string
+	timestamp      time.Time
 }
 
 type Communications struct {
@@ -41,26 +52,45 @@ type Communications struct {
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
-	character              atomic.Pointer[app.Character]
-	currentNotification    *app.CharacterNotification
-	currentFolder          app.EveNotificationGroup
-	developerToolbarAction *widget.ToolbarAction
-	folderList             *widget.List
-	folders                []notificationFolder
-	foldersTop             *widget.Label
-	headerList             *widget.List
-	notifications          []*app.CharacterNotification
-	headersTop             *folderTitleWidget
-	u                      baseUI
+	character                atomic.Pointer[app.Character]
+	currentFolder            app.EveNotificationGroup
+	currentNotification      *app.CharacterNotification
+	developerToolbarAction   *widget.ToolbarAction
+	folderList               *widget.List
+	folders                  []notificationFolder
+	foldersTop               *widget.Label
+	headerList               *widget.List
+	headersFooter            *widget.Label
+	headersTop               *folderTopWidget
+	notificationRows         []notificationRow
+	notificationRowsFiltered []notificationRow
+	searchEntry              *widget.Entry
+	u                        baseUI
+}
+
+func (n notificationRow) IsZero() bool {
+	return n.notificationID == 0
 }
 
 func NewCommunications(u baseUI) *Communications {
 	a := &Communications{
-		headersTop: newFolderTitleWidget(),
-		foldersTop: widget.NewLabel(""),
-		u:          u,
+		foldersTop:    widget.NewLabel(""),
+		headersFooter: widget.NewLabel(""),
+		headersTop:    newFolderTopWidget(),
+		searchEntry:   widget.NewEntry(),
+		u:             u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.searchEntry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.searchEntry.SetText("")
+		a.filterRowsAsync(-1)
+	})
+	a.searchEntry.OnChanged = func(_ string) {
+		a.filterRowsAsync(-1)
+	}
+	a.searchEntry.PlaceHolder = "Search notifications"
+
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
@@ -68,7 +98,13 @@ func NewCommunications(u baseUI) *Communications {
 		u.InfoViewer().Show2(typeID, itemID, a.character.Load().IDOrZero())
 	})
 	a.headerList = a.makeNotificationList()
-	a.Notifications = container.NewBorder(a.headersTop, nil, nil, nil, a.headerList)
+	a.Notifications = container.NewBorder(
+		container.NewVBox(a.headersTop, a.searchEntry),
+		a.headersFooter,
+		nil,
+		nil,
+		a.headerList,
+	)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
@@ -109,9 +145,9 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
 	var items2 []*fyne.MenuItem
 	for _, f := range a.folders {
-		s := f.Name
-		if f.Unread.ValueOrZero() > 0 {
-			s += fmt.Sprintf(" (%s)", ihumanize.OptionalWithComma(f.Unread, "?"))
+		s := f.name
+		if f.unread.ValueOrZero() > 0 {
+			s += fmt.Sprintf(" (%s)", ihumanize.OptionalWithComma(f.unread, "?"))
 		}
 		it := fyne.NewMenuItem(s, func() {
 			go a.setCurrentFolder(context.Background(), f.group)
@@ -152,32 +188,32 @@ func (a *Communications) makeFolderList() *widget.List {
 func (a *Communications) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
-			return len(a.notifications)
+			return len(a.notificationRowsFiltered)
 		},
 		func() fyne.CanvasObject {
 			return NewMailHeaderItemWidget(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.notifications) {
+			if id >= len(a.notificationRowsFiltered) {
 				return
 			}
-			n := a.notifications[id]
+			r := a.notificationRowsFiltered[id]
 			item := co.(*MailHeaderItemWidget)
 			item.Set(
-				n.Sender,
-				n.TitleDisplay(),
-				n.Timestamp,
-				n.IsRead.ValueOrZero(),
+				r.sender,
+				r.subject,
+				r.timestamp,
+				r.isRead,
 			)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
-		if id >= len(a.notifications) {
+		if id >= len(a.notificationRowsFiltered) {
 			l.UnselectAll()
 			return
 		}
-		a.setDetail(a.notifications[id])
+		a.setDetail(a.notificationRowsFiltered[id])
 		if a.OnSelected != nil {
 			a.OnSelected()
 			l.UnselectAll()
@@ -186,25 +222,37 @@ func (a *Communications) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *Communications) setDetail(cn *app.CharacterNotification) {
-	if v, ok := cn.IsRead.Value(); ok && !v {
-		cn.IsRead.Set(true)
-		go a.setNotificationRead(context.Background(), cn.CharacterID, cn.NotificationID)
+func (a *Communications) setDetail(r notificationRow) {
+	ctx := context.Background()
+	if !r.isRead {
+		r.isRead = true
+		go a.setNotificationRead(ctx, r.characterID, r.notificationID)
 	}
-	err := a.Detail.set(cn, notificationRecipient(cn, a.character.Load().NameOrZero()))
-	if err != nil {
-		slog.Warn("Failed to set notification detail", "err", err)
-		a.Detail.setError(a.u.ErrorDisplay(err))
-		return
-	}
-	if a.u.IsDeveloperMode() {
-		a.developerToolbarAction.ToolbarObject().Show()
-	} else {
-		a.developerToolbarAction.ToolbarObject().Hide()
-	}
-	a.currentNotification = cn
-	a.Toolbar.Show()
-	a.Detail.Show()
+	go func() {
+		cn, err := a.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
+		if err != nil {
+			fyne.Do(func() {
+				ui.ShowErrorAndLog("Failed to load communication", err, a.u.IsDeveloperMode(), a.u.MainWindow())
+			})
+			return
+		}
+		fyne.Do(func() {
+			err := a.Detail.set(cn, a.notificationRecipient(cn))
+			if err != nil {
+				slog.Warn("Failed to set notification detail", "err", err)
+				a.Detail.setError(a.u.ErrorDisplay(err))
+				return
+			}
+			if a.u.IsDeveloperMode() {
+				a.developerToolbarAction.ToolbarObject().Show()
+			} else {
+				a.developerToolbarAction.ToolbarObject().Hide()
+			}
+			a.currentNotification = cn
+			a.Toolbar.Show()
+			a.Detail.Show()
+		})
+	}()
 }
 
 func (a *Communications) setNotificationRead(ctx context.Context, characterID, notificationID int64) {
@@ -219,7 +267,7 @@ func (a *Communications) setNotificationRead(ctx context.Context, characterID, n
 		for i, f := range a.folders {
 			if f.group == app.GroupUnread {
 				unreadIdx = i
-				totalUnread = f.Unread
+				totalUnread = f.unread
 			}
 			if f.group == a.currentFolder {
 				currentIdx = i
@@ -228,22 +276,31 @@ func (a *Communications) setNotificationRead(ctx context.Context, characterID, n
 				allIdx = i
 			}
 		}
-		a.folders[currentIdx].Unread.Set(a.folders[currentIdx].Unread.ValueOrZero() - 1)
-		a.folders[unreadIdx].Unread.Set(totalUnread.ValueOrZero() - 1)
-		a.folders[allIdx].Unread = a.folders[unreadIdx].Unread
+		a.folders[currentIdx].unread.Set(a.folders[currentIdx].unread.ValueOrZero() - 1)
+		a.folders[unreadIdx].unread.Set(totalUnread.ValueOrZero() - 1)
+		a.folders[allIdx].unread = a.folders[unreadIdx].unread
 		a.folderList.Refresh()
 		if a.OnUpdate != nil {
-			a.OnUpdate(a.folders[unreadIdx].Unread)
+			a.OnUpdate(a.folders[unreadIdx].unread)
 		}
 	})
 	fyne.Do(func() {
-		for _, n := range a.notifications {
-			if characterID == n.CharacterID && notificationID == n.NotificationID {
-				n.IsRead.Set(true)
+		for i, r := range a.notificationRows {
+			if characterID == r.characterID && notificationID == r.notificationID {
+				a.notificationRows[i].isRead = true
 			}
 		}
-		a.headerList.Refresh()
+		a.filterRowsAsync(-1)
 	})
+}
+
+func (a *Communications) notificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
+	o := &app.EveEntity{
+		ID:       cn.CharacterID,
+		Name:     a.character.Load().NameOrZero(),
+		Category: app.EveEntityCharacter,
+	}
+	return o
 }
 
 func (a *Communications) makeToolbar() *widget.Toolbar {
@@ -254,7 +311,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 			}
 
 			cn := a.currentNotification
-			recipient := notificationRecipient(cn, a.character.Load().NameOrZero())
+			recipient := a.notificationRecipient(cn)
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
@@ -292,7 +349,7 @@ func (a *Communications) makeToolbar() *widget.Toolbar {
 				if a.character.Load() == nil {
 					return
 				}
-				go a.u.Character().SendDesktopNotification(context.Background(), a.currentNotification)
+				// go a.u.Character().SendDesktopNotification(context.Background(), a.currentNotification)
 			},
 		),
 		fyne.NewMenuItem(
@@ -393,33 +450,33 @@ func (a *Communications) fetchFolders(ctx context.Context, characterID int64) ([
 	for _, g := range app.NotificationGroups() {
 		nf := notificationFolder{
 			group: g,
-			Name:  g.String(),
+			name:  g.String(),
 		}
 		gc, ok := groupCounts[g]
 		if ok {
-			nf.Total.Set(gc[0])
-			nf.Unread.Set(gc[1])
+			nf.total.Set(gc[0])
+			nf.unread.Set(gc[1])
 			totalCount.Set(totalCount.ValueOrZero() + gc[0])
 			unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
 		}
-		if nf.Total.ValueOrZero() > 0 {
+		if nf.total.ValueOrZero() > 0 {
 			folders = append(folders, nf)
 		}
 	}
 	slices.SortFunc(folders, func(a, b notificationFolder) int {
-		return cmp.Compare(a.Name, b.Name)
+		return cmp.Compare(a.name, b.name)
 	})
 	if unreadCount.ValueOrZero() > 0 {
 		folders = slices.Insert(folders, 0, notificationFolder{
 			group:  app.GroupUnread,
-			Name:   "Unread",
-			Unread: unreadCount,
+			name:   "Unread",
+			unread: unreadCount,
 		})
 	}
 	folders = append(folders, notificationFolder{
 		group:  app.GroupAll,
-		Name:   "All",
-		Unread: unreadCount,
+		name:   "All",
+		unread: unreadCount,
 	})
 	return folders, unreadCount, totalCount, err
 }
@@ -431,10 +488,57 @@ func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 	})
 }
 
+func (a *Communications) filterRowsAsync(sortCol int) {
+	totalRows := len(a.notificationRows)
+	rows := slices.Clone(a.notificationRows)
+	// selectStatus := a.selectStatus.Selected
+	// selectTag := a.selectTag.Selected
+	search := strings.ToLower(a.searchEntry.Text)
+	// sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+
+	go func() {
+		// filter
+		// if selectStatus != "" {
+		// 	rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+		// 		switch selectStatus {
+		// 		case trainingStatusActive:
+		// 			return !r.isActive
+		// 		case trainingStatusInActive:
+		// 			return r.isActive
+		// 		}
+		// 		return true
+		// 	})
+		// }
+		// if selectTag != "" {
+		// 	rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+		// 		return !r.tags.Contains(selectTag)
+		// 	})
+		// }
+		// search filter
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+				return !strings.Contains(r.searchTarget, search)
+			})
+		}
+		// a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+		// set data & refresh
+
+		footer := fmt.Sprintf("Showing %d / %d messages", len(rows), totalRows)
+
+		fyne.Do(func() {
+			a.headersFooter.Text = footer
+			a.headersFooter.Importance = widget.MediumImportance
+			a.headersFooter.Refresh()
+			a.notificationRowsFiltered = rows
+			a.headerList.Refresh()
+		})
+	}()
+}
+
 func (a *Communications) setCurrentFolder(ctx context.Context, ng app.EveNotificationGroup) {
 	reset := func() {
 		fyne.Do(func() {
-			a.notifications = xslices.Reset(a.notifications)
+			a.notificationRows = xslices.Reset(a.notificationRows)
 			a.headerList.Refresh()
 			a.headerList.ScrollToTop()
 		})
@@ -466,7 +570,7 @@ func (a *Communications) setCurrentFolder(ctx context.Context, ng app.EveNotific
 		})
 	}
 
-	notifications, err := a.fetchNotifications(ctx, ng, character)
+	notificationRows, err := a.fetchNotifications(ctx, ng, character)
 	if err != nil {
 		reset()
 		fyne.Do(func() {
@@ -477,14 +581,14 @@ func (a *Communications) setCurrentFolder(ctx context.Context, ng app.EveNotific
 
 	fyne.Do(func() {
 		a.currentFolder = ng
-		a.headersTop.set(ng.String(), len(notifications))
-		a.notifications = notifications
-		a.headerList.Refresh()
+		a.headersTop.set(ng.String(), len(notificationRows))
+		a.notificationRows = notificationRows
+		a.filterRowsAsync(-1)
 		a.headerList.ScrollToTop()
 	})
 }
 
-func (a *Communications) fetchNotifications(ctx context.Context, nc app.EveNotificationGroup, character *app.Character) ([]*app.CharacterNotification, error) {
+func (a *Communications) fetchNotifications(ctx context.Context, nc app.EveNotificationGroup, character *app.Character) ([]notificationRow, error) {
 	var err error
 	var oo []*app.CharacterNotification
 	switch nc {
@@ -500,23 +604,36 @@ func (a *Communications) fetchNotifications(ctx context.Context, nc app.EveNotif
 		return nil, err
 	}
 
-	// Replace generic corporations && alliances in notifications
+	var rows []notificationRow
+
 	for _, n := range oo {
-		if n.Sender == nil {
-			continue
-		}
+		// Replace generic corporations && alliances in notifications
+		var sender *app.EveEntity
 		switch n.Sender.ID {
 		case app.EveTypeAlliance:
-			n.Sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+			sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
 				ID:       1,
 				Name:     "Unknown",
 				Category: app.EveEntityCorporation,
 			})
 		case app.EveTypeCorporation:
-			n.Sender = character.EveCharacter.Corporation
+			sender = character.EveCharacter.Corporation
+		default:
+			sender = n.Sender
 		}
+		subject := n.TitleDisplay()
+		r := notificationRow{
+			characterID:    n.CharacterID,
+			notificationID: n.NotificationID,
+			sender:         sender,
+			subject:        subject,
+			timestamp:      n.Timestamp,
+			isRead:         n.IsRead.ValueOrZero(),
+			searchTarget:   strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
+		}
+		rows = append(rows, r)
 	}
-	return oo, nil
+	return rows, nil
 }
 
 func (a *Communications) clearDetail() {
@@ -547,25 +664,16 @@ func (w *folderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *folderItemWidget) set(r notificationFolder) {
-	if r.Unread.ValueOrZero() > 0 {
+	if r.unread.ValueOrZero() > 0 {
 		w.name.TextStyle.Bold = true
-		w.unread.SetText(ihumanize.OptionalWithComma(r.Unread, "?"))
+		w.unread.SetText(ihumanize.OptionalWithComma(r.unread, "?"))
 		w.unread.Show()
 	} else {
 		w.name.TextStyle.Bold = false
 		w.unread.Hide()
 	}
-	w.name.Text = r.Name
+	w.name.Text = r.name
 	w.name.Refresh()
-}
-
-// NotificationRecipient returns a valid recipient for a notification.
-func notificationRecipient(cn *app.CharacterNotification, characterName string) *app.EveEntity {
-	return cn.Recipient.ValueOrFallback(&app.EveEntity{
-		ID:       cn.CharacterID,
-		Name:     characterName,
-		Category: app.EveEntityCharacter,
-	})
 }
 
 // communicationDetailWidget shows the complete communication for a character.

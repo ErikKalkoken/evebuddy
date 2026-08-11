@@ -34,6 +34,10 @@ func (s *CharacterService) CountNotifications(ctx context.Context, characterID i
 	return values, nil
 }
 
+func (s *CharacterService) GetNotification(ctx context.Context, characterID, notificationID int64) (*app.CharacterNotification, error) {
+	return s.st.GetCharacterNotification(ctx, characterID, notificationID)
+}
+
 func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType]) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)

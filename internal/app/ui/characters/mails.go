@@ -104,7 +104,7 @@ type Mails struct {
 	headerList       *widget.List
 	headers          []*app.CharacterMailHeader
 	headerStatus     *widget.Label
-	headersTop       *folderTitleWidget
+	headersTop       *folderTopWidget
 	lastFolder       *mailFolderNode
 	lastSelected     widget.ListItemID
 	mail             *app.CharacterMail
@@ -123,7 +123,7 @@ func NewMails(u baseUI) *Mails {
 		folderStatus:     widget.NewLabel(""),
 		folderTotal:      widget.NewLabel("?"),
 		headerStatus:     widget.NewLabel(""),
-		headersTop:       newFolderTitleWidget(),
+		headersTop:       newFolderTopWidget(),
 		u:                u,
 		sig:              singleinstance.NewGroup(),
 	}

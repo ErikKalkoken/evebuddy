@@ -175,15 +175,15 @@ func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type folderTitleWidget struct {
+type folderTopWidget struct {
 	widget.BaseWidget
 
 	title    *widget.Label
 	messages *widget.Label
 }
 
-func newFolderTitleWidget() *folderTitleWidget {
-	w := &folderTitleWidget{
+func newFolderTopWidget() *folderTopWidget {
+	w := &folderTopWidget{
 		title:    widget.NewLabel(""),
 		messages: widget.NewLabel(""),
 	}
@@ -193,7 +193,7 @@ func newFolderTitleWidget() *folderTitleWidget {
 	return w
 }
 
-func (w *folderTitleWidget) CreateRenderer() fyne.WidgetRenderer {
+func (w *folderTopWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		nil,
 		nil,
@@ -204,19 +204,19 @@ func (w *folderTitleWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *folderTitleWidget) clear() {
+func (w *folderTopWidget) clear() {
 	w.title.SetText("")
 	w.messages.SetText("")
 }
 
-func (w *folderTitleWidget) set(title string, messages int) {
+func (w *folderTopWidget) set(title string, messages int) {
 	w.title.Text = title
 	w.title.Importance = widget.MediumImportance
 	w.title.Refresh()
 	w.messages.SetText(ihumanize.Comma(messages) + " Messages")
 }
 
-func (w *folderTitleWidget) setError(message string) {
+func (w *folderTopWidget) setError(message string) {
 	w.title.Text = "Error: " + message
 	w.title.Importance = widget.DangerImportance
 	w.title.Refresh()
