@@ -3,6 +3,7 @@ package evenotification
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -37,7 +38,7 @@ type billOutOfMoneyMsg struct {
 
 func (n billOutOfMoneyMsg) render(_ context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
-	var data goesi.CorpAllBillMsgV2
+	var data goesi.BillOutOfMoneyMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -93,11 +94,11 @@ func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, set.Set[
 		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CreditorID, data.DebtorID)
-	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
-		ids.Add(data.ExternalID)
+	if id := data.ExternalID; id != 0 && id != -1 && id == int64(int32(id)) {
+		ids.Add(id)
 	}
-	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
-		ids.Add(data.ExternalID2)
+	if id := data.ExternalID2; id != 0 && id != -1 && id == int64(int32(id)) {
+		ids.Add(id)
 	}
 	return data, ids, nil
 }
@@ -124,6 +125,20 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
 		external2Link = makeInfoLink(x)
 		external2Name = x.Name
+	} else if id := data.ExternalID2; id > 0 && int64(int32(id)) != id {
+		// this is most likely a structure ID
+		o, err := n.eus.GetOrCreateLocationESI(ctx, id)
+		if err != nil {
+			slog.Warn("Failed to fetch location when rendering notification", "notificationType", "CorpAllBillMsg", "locationID", id, "error", err)
+		}
+		if et, ok := o.Type.Value(); ok {
+			link := fmt.Sprintf("showinfo:%d//%d", et.ID, id)
+			external2Link = makeMarkDownLink(o.Name, link)
+			external2Name = o.Name
+		} else {
+			external2Link = "?"
+			external2Name = "?"
+		}
 	} else {
 		external2Link = "?"
 		external2Name = "?"
