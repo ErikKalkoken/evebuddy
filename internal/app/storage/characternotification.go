@@ -585,8 +585,12 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 }
 
 // UpdateCharacterNotificationsSetProcessed marks all notifications with the same notificationID as processed.
-func (st *Storage) UpdateCharacterNotificationsSetProcessed(ctx context.Context, notificationID int64) error {
-	if err := st.qRW.UpdateCharacterNotificationsSetProcessed(ctx, notificationID); err != nil {
+func (st *Storage) UpdateCharacterNotificationsSetProcessed(ctx context.Context, characterID, notificationID int64) error {
+	err := st.qRW.UpdateCharacterNotificationsSetProcessed(ctx, queries.UpdateCharacterNotificationsSetProcessedParams{
+		CharacterID:    characterID,
+		NotificationID: notificationID,
+	})
+	if err != nil {
 		return fmt.Errorf("UpdateCharacterNotificationsSetProcessed for notification ID %d: %w", notificationID, err)
 	}
 	return nil

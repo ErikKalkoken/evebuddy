@@ -607,10 +607,16 @@ UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    notification_id = ?
+    character_id = ?
+    AND notification_id = ?
 `
 
-func (q *Queries) UpdateCharacterNotificationsSetProcessed(ctx context.Context, notificationID int64) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetProcessed, notificationID)
+type UpdateCharacterNotificationsSetProcessedParams struct {
+	CharacterID    int64
+	NotificationID int64
+}
+
+func (q *Queries) UpdateCharacterNotificationsSetProcessed(ctx context.Context, arg UpdateCharacterNotificationsSetProcessedParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetProcessed, arg.CharacterID, arg.NotificationID)
 	return err
 }

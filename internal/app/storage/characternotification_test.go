@@ -196,7 +196,7 @@ func TestCharacterNotification(t *testing.T) {
 			NotificationID: 42,
 		})
 		// when
-		err := st.UpdateCharacterNotificationsSetProcessed(ctx, 42)
+		err := st.UpdateCharacterNotificationsSetProcessed(ctx, c1.ID, 42)
 		// then
 		require.NoError(t, err)
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c1.ID, time.Now().Add(-24*time.Hour))

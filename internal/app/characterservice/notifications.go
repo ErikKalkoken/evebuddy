@@ -50,7 +50,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 			if err := s.SendDesktopNotification(ctx, n); err != nil {
 				return nil, fmt.Errorf("notify communications: %w", err)
 			}
-			if err := s.st.UpdateCharacterNotificationsSetProcessed(ctx, n.NotificationID); err != nil {
+			if err := s.st.UpdateCharacterNotificationsSetProcessed(ctx, n.CharacterID, n.NotificationID); err != nil {
 				return nil, fmt.Errorf("notify communications: %w", err)
 			}
 		}
@@ -59,6 +59,10 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 	if err != nil {
 		return fmt.Errorf("NotifyCommunications for character %d: %w", characterID, err)
 	}
+	return nil
+}
+
+func (s *CharacterService) SetNotificationRead(ctx context.Context, characterID, notificationID int64) error {
 	return nil
 }
 

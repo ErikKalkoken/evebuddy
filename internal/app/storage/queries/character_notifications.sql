@@ -158,7 +158,9 @@ UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    notification_id = ?;
+    character_id = ?
+    AND notification_id = ?;
+
 
 -- name: CreateNotificationType :one
 INSERT INTO
