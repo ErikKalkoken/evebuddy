@@ -602,6 +602,26 @@ func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCha
 	return err
 }
 
+const updateCharacterNotificationsSetIsRead = `-- name: UpdateCharacterNotificationsSetIsRead :exec
+UPDATE character_notifications
+SET
+    is_read = ?
+WHERE
+    character_id = ?
+    AND notification_id = ?
+`
+
+type UpdateCharacterNotificationsSetIsReadParams struct {
+	IsRead         bool
+	CharacterID    int64
+	NotificationID int64
+}
+
+func (q *Queries) UpdateCharacterNotificationsSetIsRead(ctx context.Context, arg UpdateCharacterNotificationsSetIsReadParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetIsRead, arg.IsRead, arg.CharacterID, arg.NotificationID)
+	return err
+}
+
 const updateCharacterNotificationsSetProcessed = `-- name: UpdateCharacterNotificationsSetProcessed :exec
 UPDATE character_notifications
 SET

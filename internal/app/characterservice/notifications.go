@@ -63,7 +63,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 }
 
 func (s *CharacterService) SetNotificationRead(ctx context.Context, characterID, notificationID int64) error {
-	return nil
+	return s.st.UpdateCharacterNotificationsSetIsRead(ctx, characterID, notificationID, true)
 }
 
 func (s *CharacterService) SendDesktopNotification(ctx context.Context, n *app.CharacterNotification) error {

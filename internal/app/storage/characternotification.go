@@ -549,7 +549,7 @@ func characterNotificationFromDBModel(
 		Body:           optional.FromNullString(cn.Body),
 		CharacterID:    cn.CharacterID,
 		IsProcessed:    cn.IsProcessed,
-		IsRead:         optional.FromZeroValue(cn.IsRead),
+		IsRead:         optional.New(cn.IsRead),
 		NotificationID: cn.NotificationID,
 		Recipient:      eveEntityFromNullableDBModel(recipient),
 		Sender:         eveEntityFromDBModel(sender),
@@ -580,6 +580,19 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 	})
 	if err != nil {
 		return fmt.Errorf("update character notification %+v: %w", arg, err)
+	}
+	return nil
+}
+
+// UpdateCharacterNotificationsSetIsRead marks all notifications with the same notificationID as processed.
+func (st *Storage) UpdateCharacterNotificationsSetIsRead(ctx context.Context, characterID, notificationID int64, isRead bool) error {
+	err := st.qRW.UpdateCharacterNotificationsSetIsRead(ctx, queries.UpdateCharacterNotificationsSetIsReadParams{
+		IsRead:         isRead,
+		CharacterID:    characterID,
+		NotificationID: notificationID,
+	})
+	if err != nil {
+		return fmt.Errorf("UpdateCharacterNotificationsSetProcessed for notification ID %d: %w", notificationID, err)
 	}
 	return nil
 }
