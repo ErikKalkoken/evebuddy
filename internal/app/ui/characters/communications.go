@@ -35,7 +35,7 @@ type notificationFolder struct {
 type Communications struct {
 	widget.BaseWidget
 
-	Detail        *communicationDetail
+	Detail        *communicationDetailWidget
 	Notifications *fyne.Container
 	OnSelected    func()
 	OnUpdate      func(count optional.Optional[int])
@@ -43,13 +43,13 @@ type Communications struct {
 
 	character              atomic.Pointer[app.Character]
 	current                *app.CharacterNotification
+	developerToolbarAction *widget.ToolbarAction
 	folderList             *widget.List
 	folders                []notificationFolder
 	foldersTop             *widget.Label
 	notificationList       *widget.List
 	notifications          []*app.CharacterNotification
 	notificationsTop       *widget.Label
-	developerToolbarAction *widget.ToolbarAction
 	u                      baseUI
 }
 
@@ -63,7 +63,7 @@ func NewCommunications(u baseUI) *Communications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = newCommunicationDetail(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show, func(typeID, itemID int64) {
+	a.Detail = newCommunicationDetailWidget(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show, func(typeID, itemID int64) {
 		u.InfoViewer().Show2(typeID, itemID, a.character.Load().IDOrZero())
 	})
 	a.notificationList = a.makeNotificationList()
@@ -126,13 +126,13 @@ func (a *Communications) makeFolderList() *widget.List {
 			return len(a.folders)
 		},
 		func() fyne.CanvasObject {
-			return newFolderItem()
+			return newFolderItemWidget()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.folders) {
 				return
 			}
-			co.(*folderItem).set(a.folders[id])
+			co.(*folderItemWidget).set(a.folders[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -154,14 +154,14 @@ func (a *Communications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.EVEImage().EveEntityLogoAsync)
+			return NewMailHeaderItemWidget(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*MailHeaderItem)
+			item := co.(*MailHeaderItemWidget)
 			item.Set(
 				n.Sender,
 				n.TitleDisplay(),
@@ -479,15 +479,15 @@ func (a *Communications) clearDetail() {
 	a.current = nil
 }
 
-type folderItem struct {
+type folderItemWidget struct {
 	widget.BaseWidget
 
 	name   *widget.Label
 	unread *kxwidget.Badge
 }
 
-func newFolderItem() *folderItem {
-	w := &folderItem{
+func newFolderItemWidget() *folderItemWidget {
+	w := &folderItemWidget{
 		name:   widget.NewLabel(""),
 		unread: kxwidget.NewBadge(""),
 	}
@@ -495,12 +495,12 @@ func newFolderItem() *folderItem {
 	return w
 }
 
-func (w *folderItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *folderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, nil, w.unread, w.name)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *folderItem) set(r notificationFolder) {
+func (w *folderItemWidget) set(r notificationFolder) {
 	text := r.Name
 	if r.Unread.ValueOrZero() > 0 {
 		w.name.TextStyle.Bold = true
@@ -523,25 +523,25 @@ func notificationRecipient(cn *app.CharacterNotification, characterName string) 
 	})
 }
 
-// communicationDetail shows the complete communication for a character.
-type communicationDetail struct {
+// communicationDetailWidget shows the complete communication for a character.
+type communicationDetailWidget struct {
 	widget.BaseWidget
 
 	body    *xwidget.RichText
-	header  *MailHeader
+	header  *MailHeaderWidget
 	subject *widget.Label
 	show2   func(int64, int64)
 }
 
-func newCommunicationDetail(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity), show2 func(int64, int64)) *communicationDetail {
+func newCommunicationDetailWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity), show2 func(int64, int64)) *communicationDetailWidget {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
 	body := xwidget.NewRichText()
 	body.Wrapping = fyne.TextWrapWord
-	w := &communicationDetail{
+	w := &communicationDetailWidget{
 		body:    body,
-		header:  NewMailHeader(loadIcon, show),
+		header:  NewMailHeaderWidget(loadIcon, show),
 		subject: subject,
 		show2:   show2,
 	}
@@ -549,12 +549,12 @@ func newCommunicationDetail(loadIcon ui.EveEntityIconLoader, show func(*app.EveE
 	return w
 }
 
-func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
+func (w *communicationDetailWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(w.subject, w.header, w.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
+func (w *communicationDetailWidget) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
 	w.subject.SetText(n.TitleDisplay())
 	w.header.Set(n.Sender, n.Timestamp, recipient)
 	v, ok := n.Body.Value()
@@ -601,7 +601,7 @@ func parseIDs(input string) (int64, int64, error) {
 	return id1, id2, nil
 }
 
-func (w *communicationDetail) setError(text string) {
+func (w *communicationDetailWidget) setError(text string) {
 	w.subject.SetText("ERROR")
 	w.header.Clear()
 	w.body.SetWithText(text, widget.RichTextStyle{

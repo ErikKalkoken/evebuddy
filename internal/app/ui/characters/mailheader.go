@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type MailHeaderItem struct {
+type MailHeaderItemWidget struct {
 	widget.BaseWidget
 
 	FallbackIcon fyne.Resource
@@ -29,13 +29,12 @@ type MailHeaderItem struct {
 	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(loadIcon ui.EveEntityIconLoader) *MailHeaderItem {
+func NewMailHeaderItemWidget(loadIcon ui.EveEntityIconLoader) *MailHeaderItemWidget {
 	subject := widget.NewLabel("")
-	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis
-	w := &MailHeaderItem{
+	w := &MailHeaderItemWidget{
 		FallbackIcon: icons.Questionmark32Png,
 		from:         from,
 		loadIcon:     loadIcon,
@@ -48,7 +47,7 @@ func NewMailHeaderItem(loadIcon ui.EveEntityIconLoader) *MailHeaderItem {
 	return w
 }
 
-func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *MailHeaderItemWidget) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
@@ -62,7 +61,7 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.Refresh()
 }
 
-func (w *MailHeaderItem) Refresh() {
+func (w *MailHeaderItemWidget) Refresh() {
 	fyne.Do(func() {
 		w.from.Refresh()
 		w.subject.Refresh()
@@ -71,7 +70,7 @@ func (w *MailHeaderItem) Refresh() {
 	})
 }
 
-func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeaderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
@@ -83,7 +82,7 @@ func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type MailHeader struct {
+type MailHeaderWidget struct {
 	widget.BaseWidget
 
 	from       *kxwidget.TappableLabel
@@ -95,11 +94,11 @@ type MailHeader struct {
 	to         *widget.Label
 }
 
-func NewMailHeader(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
+func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeaderWidget {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
-	w := &MailHeader{
+	w := &MailHeaderWidget{
 		from:       from,
 		loadIcon:   loadIcon,
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
@@ -116,7 +115,7 @@ func NewMailHeader(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *
 	return w
 }
 
-func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
@@ -139,7 +138,7 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 	w.Refresh()
 }
 
-func (w *MailHeader) Clear() {
+func (w *MailHeaderWidget) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
 	w.recipients.RemoveAll()
@@ -150,14 +149,14 @@ func (w *MailHeader) Clear() {
 	w.Refresh()
 }
 
-func (w *MailHeader) Refresh() {
+func (w *MailHeaderWidget) Refresh() {
 	w.from.Refresh()
 	w.recipients.Refresh()
 	w.timestamp.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
