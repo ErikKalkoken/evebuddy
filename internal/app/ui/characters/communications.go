@@ -47,17 +47,17 @@ type Communications struct {
 	folderList             *widget.List
 	folders                []notificationFolder
 	foldersTop             *widget.Label
-	notificationList       *widget.List
+	headerList             *widget.List
 	notifications          []*app.CharacterNotification
-	notificationsTop       *widget.Label
+	headersTop             *folderTitleWidget
 	u                      baseUI
 }
 
 func NewCommunications(u baseUI) *Communications {
 	a := &Communications{
-		notificationsTop: widget.NewLabel(""),
-		foldersTop:       widget.NewLabel(""),
-		u:                u,
+		headersTop: newFolderTitleWidget(),
+		foldersTop: widget.NewLabel(""),
+		u:          u,
 	}
 	a.ExtendBaseWidget(a)
 	a.Toolbar = a.makeToolbar()
@@ -66,8 +66,8 @@ func NewCommunications(u baseUI) *Communications {
 	a.Detail = newCommunicationDetailWidget(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show, func(typeID, itemID int64) {
 		u.InfoViewer().Show2(typeID, itemID, a.character.Load().IDOrZero())
 	})
-	a.notificationList = a.makeNotificationList()
-	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
+	a.headerList = a.makeNotificationList()
+	a.Notifications = container.NewBorder(a.headersTop, nil, nil, nil, a.headerList)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
@@ -136,7 +136,7 @@ func (a *Communications) makeFolderList() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		a.notificationList.UnselectAll()
+		a.headerList.UnselectAll()
 		if id >= len(a.folders) {
 			l.UnselectAll()
 			return
@@ -383,7 +383,7 @@ func (a *Communications) fetchFolders(ctx context.Context, characterID int64) ([
 func (a *Communications) ResetCurrentFolder(ctx context.Context) {
 	a.setCurrentFolder(ctx, app.GroupUnread)
 	fyne.Do(func() {
-		a.notificationList.UnselectAll()
+		a.headerList.UnselectAll()
 	})
 }
 
@@ -391,50 +391,50 @@ func (a *Communications) setCurrentFolder(ctx context.Context, nc app.EveNotific
 	reset := func() {
 		fyne.Do(func() {
 			a.notifications = xslices.Reset(a.notifications)
-			a.notificationList.Refresh()
-			a.notificationList.ScrollToTop()
+			a.headerList.Refresh()
+			a.headerList.ScrollToTop()
 		})
 
-	}
-	setTop := func(s string, i widget.Importance) {
-		fyne.Do(func() {
-			a.notificationsTop.Text, a.notificationsTop.Importance = s, i
-			a.notificationsTop.Refresh()
-		})
 	}
 	character := a.character.Load()
 	if character == nil {
 		reset()
-		setTop("No character", widget.LowImportance)
+		fyne.Do(func() {
+			a.headersTop.setError("No character")
+		})
 		return
 	}
 
 	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterNotifications)
 	if err != nil {
 		reset()
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		fyne.Do(func() {
+			a.headersTop.setError(a.u.ErrorDisplay(err))
+		})
 		return
 	}
 
 	if !hasData {
 		reset()
-		setTop("No character", widget.WarningImportance)
+		fyne.Do(func() {
+			a.headersTop.setError("No data")
+		})
 	}
 
 	notifications, err := a.fetchNotifications(ctx, nc, character)
 	if err != nil {
 		reset()
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		fyne.Do(func() {
+			a.headersTop.setError(a.u.ErrorDisplay(err))
+		})
 		return
 	}
 
-	top := fmt.Sprintf("%s • %s messages", nc.String(), ihumanize.Comma(len(notifications)))
-	setTop(top, widget.MediumImportance)
-
 	fyne.Do(func() {
+		a.headersTop.set(nc.String(), len(notifications))
 		a.notifications = notifications
-		a.notificationList.Refresh()
-		a.notificationList.ScrollToTop()
+		a.headerList.Refresh()
+		a.headerList.ScrollToTop()
 	})
 }
 
