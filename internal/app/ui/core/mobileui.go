@@ -83,7 +83,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			characterNav.Push(
 				newCharacterAppBar(
 					"Communications",
-					u.characterCommunications.Notifications,
+					u.characterCommunications.Headers,
 					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
 				),
 			)

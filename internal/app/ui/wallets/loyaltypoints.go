@@ -30,11 +30,11 @@ type loyaltyPointsNode struct {
 	corporationName string
 	factionID       int64
 	factionName     string
+	isCorporation   bool
 	points          int64
 	searchTarget    string
-	totalPoints     int64
 	tags            set.Set[string]
-	isCorporation   bool
+	totalPoints     int64
 }
 
 func (n loyaltyPointsNode) UID() widget.TreeNodeID {
