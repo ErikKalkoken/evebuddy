@@ -271,7 +271,7 @@ func TestStorage_UpdateCharacterNotificationsSetIsRead(t *testing.T) {
 			})
 
 			// when
-			err := st.UpdateCharacterNotificationsSetIsRead(t.Context(), c.ID, n.NotificationID, tc.want)
+			err := st.UpdateCharacterNotificationsSetIsRead(t.Context(), set.Of(n.ID), tc.want)
 
 			// then
 			require.NoError(t, err)

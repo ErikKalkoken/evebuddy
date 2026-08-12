@@ -594,7 +594,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})
 		ctx := context.Background()
 		go u.characterMails.ResetCurrentFolder(ctx)
-		go u.characterCommunications.ResetCurrentFolder(ctx)
+		go u.characterCommunications.ResetHeaders(ctx)
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {

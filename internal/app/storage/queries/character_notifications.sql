@@ -153,14 +153,6 @@ SET
 WHERE
     id = ?1;
 
--- name: UpdateCharacterNotificationsSetIsRead :exec
-UPDATE character_notifications
-SET
-    is_read = ?
-WHERE
-    character_id = ?
-    AND notification_id = ?;
-
 -- name: UpdateCharacterNotificationsSetProcessed :exec
 UPDATE character_notifications
 SET
@@ -169,6 +161,12 @@ WHERE
     character_id = ?
     AND notification_id = ?;
 
+-- name: UpdateCharacterNotificationsSetIsRead :exec
+UPDATE character_notifications
+SET
+    is_read = ?
+WHERE
+    id IN (sqlc.slice('ids'));
 
 -- name: CreateNotificationType :one
 INSERT INTO

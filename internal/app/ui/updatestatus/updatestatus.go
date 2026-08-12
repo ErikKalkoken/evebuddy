@@ -123,11 +123,11 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 
 	a.entityList = a.makeEntityList()
 	a.sectionList = a.makeSectionList()
-	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
-	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), fyne.NewMenu(""))
+	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
+	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
 
 	menu := fyne.NewMenu("",
-		fyne.NewMenuItem("Update all characters", func() {
+		fyne.NewMenuItem("Reload all characters", func() {
 			go func() {
 				err := a.u.Character().UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
@@ -136,9 +136,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					return
 				}
 			}()
-			a.sb.Show("Started updating characters")
+			a.sb.Show("Started reloading characters")
 		}),
-		fyne.NewMenuItem("Update all corporations", func() {
+		fyne.NewMenuItem("Reload all corporations", func() {
 			go func() {
 				err := a.u.Corporation().UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
@@ -147,15 +147,15 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					return
 				}
 			}()
-			a.sb.Show("Started updating corporations")
+			a.sb.Show("Started reloading corporations")
 
 		}),
-		fyne.NewMenuItem("Update all general entities", func() {
+		fyne.NewMenuItem("Reload all general entities", func() {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
-			a.sb.Show("Started updating all general entities")
+			a.sb.Show("Started reloading all general entities")
 		}),
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("Update notifications for all characters", func() {
+		fyne.NewMenuItem("Reload notifications for all characters", func() {
 			var characterIDs []int64
 			for _, x := range a.entities {
 				if x.category != sectionCharacter {
@@ -173,10 +173,10 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					)
 				}
 			}()
-			a.sb.Show("Started updating notifications")
+			a.sb.Show("Started reloading notifications")
 		}),
 	)
-	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreVerticalIcon(), menu)
+	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
 	if a.u.IsOffline() {
 		moreButton.Disable()
 	}
@@ -282,9 +282,9 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
-		a.sb.Show("Started updating sections")
+		a.sb.Show("Started reloading sections")
 	}
-	item := fyne.NewMenuItem("Update all sections", action)
+	item := fyne.NewMenuItem("Reload all sections", action)
 	return []*fyne.MenuItem{item}
 }
 
@@ -422,9 +422,9 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
-		a.sb.Show("Started updating section")
+		a.sb.Show("Started reloading section")
 	}
-	item1 := fyne.NewMenuItem("Update section", action)
+	item1 := fyne.NewMenuItem("Reload section", action)
 	if a.u.IsOffline() {
 		item1.Disabled = true
 	}

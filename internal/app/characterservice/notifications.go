@@ -38,7 +38,7 @@ func (s *CharacterService) GetNotification(ctx context.Context, characterID, not
 	return s.st.GetCharacterNotification(ctx, characterID, notificationID)
 }
 
-func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType]) error {
+func (s *CharacterService) NotifyNotifications(ctx context.Context, characterID int64, earliest time.Time, typesEnabled set.Set[app.EveNotificationType]) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
 		if err != nil {
@@ -66,8 +66,8 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 	return nil
 }
 
-func (s *CharacterService) SetNotificationRead(ctx context.Context, characterID, notificationID int64) error {
-	return s.st.UpdateCharacterNotificationsSetIsRead(ctx, characterID, notificationID, true)
+func (s *CharacterService) SetNotificationsAsRead(ctx context.Context, ids set.Set[int64]) error {
+	return s.st.UpdateCharacterNotificationsSetIsRead(ctx, ids, true)
 }
 
 func (s *CharacterService) SendDesktopNotification(ctx context.Context, n *app.CharacterNotification) error {

@@ -607,18 +607,27 @@ UPDATE character_notifications
 SET
     is_read = ?
 WHERE
-    character_id = ?
-    AND notification_id = ?
+    id IN (/*SLICE:ids*/?)
 `
 
 type UpdateCharacterNotificationsSetIsReadParams struct {
-	IsRead         bool
-	CharacterID    int64
-	NotificationID int64
+	IsRead bool
+	Ids    []int64
 }
 
 func (q *Queries) UpdateCharacterNotificationsSetIsRead(ctx context.Context, arg UpdateCharacterNotificationsSetIsReadParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetIsRead, arg.IsRead, arg.CharacterID, arg.NotificationID)
+	query := updateCharacterNotificationsSetIsRead
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.IsRead)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
