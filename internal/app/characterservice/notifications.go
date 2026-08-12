@@ -17,23 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-func (s *CharacterService) CountNotifications(ctx context.Context, characterID int64) (map[app.EveNotificationGroup][]int, error) {
-	types, err := s.st.CountCharacterNotifications(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	values := make(map[app.EveNotificationGroup][]int)
-	for name, v := range types {
-		g := app.EveNotificationType(name).Group()
-		if _, ok := values[g]; !ok {
-			values[g] = make([]int, 2)
-		}
-		values[g][0] += v[0]
-		values[g][1] += v[1]
-	}
-	return values, nil
-}
-
 func (s *CharacterService) GetNotification(ctx context.Context, characterID, notificationID int64) (*app.CharacterNotification, error) {
 	return s.st.GetCharacterNotification(ctx, characterID, notificationID)
 }
@@ -88,16 +71,8 @@ func (s *CharacterService) SendDesktopNotification(ctx context.Context, n *app.C
 	return nil
 }
 
-func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int64, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotificationsForTypes(ctx, characterID, app.NotificationGroupTypes(ng))
-}
-
-func (s *CharacterService) ListNotificationsAll(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotificationsAll(ctx, characterID)
-}
-
-func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
+func (s *CharacterService) ListCharacterNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotifications(ctx, characterID)
 }
 
 func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {

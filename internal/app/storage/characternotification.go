@@ -282,28 +282,6 @@ func EveNotificationTypeToESIString(nt app.EveNotificationType) (string, bool) {
 	return s, true
 }
 
-func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int64) (map[app.EveNotificationType][]int, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("CountCharacterNotifications: %d: %w", characterID, err)
-	}
-	if characterID == 0 {
-		return nil, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.CountCharacterNotifications(ctx, characterID)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	m := make(map[app.EveNotificationType][]int)
-	for _, r := range rows {
-		nt, found := EveNotificationTypeFromESIString(r.Name)
-		if !found {
-			nt = app.UnknownNotification
-		}
-		m[nt] = []int{int(r.TotalCount), int(r.UnreadCount.Float64)}
-	}
-	return m, nil
-}
-
 type CreateCharacterNotificationParams struct {
 	Body           optional.Optional[string]
 	CharacterID    int64
@@ -447,91 +425,14 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	return set.Collect(slices.Values(ids)), nil
 }
 
-func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, characterID int64, types set.Set[app.EveNotificationType]) ([]*app.CharacterNotification, error) {
+func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("ListCharacterNotificationsForTypes: %d %v: %w", characterID, types, err)
+		return fmt.Errorf("ListCharacterNotifications: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	var names []string
-	for t := range types.All() {
-		s, ok := EveNotificationTypeToESIString(t)
-		if !ok {
-			continue
-		}
-		names = append(names, s)
-	}
-	if len(names) == 0 {
-		return []*app.CharacterNotification{}, nil
-	}
-	rows, err := st.qRO.ListCharacterNotificationsTypes(ctx, queries.ListCharacterNotificationsTypesParams{
-		CharacterID: characterID,
-		Names:       names,
-	})
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	ee := make([]*app.CharacterNotification, len(rows))
-	for i, r := range rows {
-		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
-		if !found {
-			nt = app.UnknownNotification
-		}
-		ee[i] = characterNotificationFromDBModel(
-			r.CharacterNotification,
-			r.EveEntity,
-			nt,
-			nullEveEntity{
-				category: r.RecipientCategory,
-				id:       r.CharacterNotification.RecipientID,
-				name:     r.RecipientName,
-			},
-		)
-
-	}
-	return ee, nil
-}
-
-func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("ListCharacterNotificationsAll: %d: %w", characterID, err)
-	}
-	if characterID == 0 {
-		return nil, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.ListCharacterNotificationsAll(ctx, characterID)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	ee := make([]*app.CharacterNotification, len(rows))
-	for i, r := range rows {
-		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
-		if !found {
-			nt = app.UnknownNotification
-		}
-		ee[i] = characterNotificationFromDBModel(
-			r.CharacterNotification,
-			r.EveEntity,
-			nt,
-			nullEveEntity{
-				category: r.RecipientCategory,
-				id:       r.CharacterNotification.RecipientID,
-				name:     r.RecipientName,
-			},
-		)
-	}
-	return ee, nil
-}
-
-func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("ListCharacterNotificationsUnread: %d: %w", characterID, err)
-	}
-	if characterID == 0 {
-		return nil, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.ListCharacterNotificationsUnread(ctx, characterID)
+	rows, err := st.qRO.ListCharacterNotifications(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

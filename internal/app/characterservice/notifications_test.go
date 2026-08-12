@@ -1,7 +1,6 @@
 package characterservice_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -61,37 +59,5 @@ func TestNotifyCommunications(t *testing.T) {
 				xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
-	}
-}
-
-func TestCountNotifications(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	// given
-	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	ctx := context.Background()
-	c := factory.CreateCharacterFull()
-	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-		CharacterID: c.ID,
-		Type:        "StructureDestroyed",
-	})
-	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-		CharacterID: c.ID,
-		Type:        "MoonminingExtractionStarted",
-	})
-	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-		CharacterID: c.ID,
-		Type:        "MoonminingExtractionStarted",
-		IsRead:      true,
-	})
-	factory.CreateCharacterNotification()
-	// when
-	got, err := cs.CountNotifications(ctx, c.ID)
-	if assert.NoError(t, err) {
-		want := map[app.EveNotificationGroup][]int{
-			app.GroupStructure:  {1, 1},
-			app.GroupMoonMining: {2, 1},
-		}
-		xassert.Equal(t, want, got)
 	}
 }

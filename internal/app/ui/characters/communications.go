@@ -154,7 +154,7 @@ func (a *Communications) update(ctx context.Context) {
 }
 
 func (a *Communications) fetchRows(ctx context.Context, character *app.Character) ([]notificationRow, int, error) {
-	oo, err := a.u.Character().ListNotificationsAll(ctx, character.ID)
+	oo, err := a.u.Character().ListCharacterNotifications(ctx, character.ID)
 	if err != nil {
 		return nil, 0, err
 	}

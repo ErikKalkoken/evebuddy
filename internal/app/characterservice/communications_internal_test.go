@@ -348,32 +348,3 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		xassert.EqualOptional(t, corporation, o.Recipient)
 	})
 }
-
-func TestListCharacterNotifications(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := NewFake(Params{Storage: st})
-
-	t.Run("can list existing entries", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
-		})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
-		})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "alpha",
-		})
-		// when
-		tt, err := s.ListNotificationsForGroup(t.Context(), c.ID, app.GroupStructure)
-		// then
-		require.NoError(t, err)
-		assert.Len(t, tt, 2)
-	})
-}

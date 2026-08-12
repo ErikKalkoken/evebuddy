@@ -199,35 +199,6 @@ func TestCharacterNotification(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 
-	t.Run("can calculate counts", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := f.CreateCharacter()
-		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
-		})
-		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureUnderAttack",
-		})
-		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureUnderAttack",
-			IsRead:      true,
-		})
-		f.CreateCharacterNotification()
-		// when
-		x, err := st.CountCharacterNotifications(t.Context(), c.ID)
-		// then
-		require.NoError(t, err)
-		want := map[app.EveNotificationType][]int{
-			app.StructureUnderAttack: {2, 1},
-			app.StructureDestroyed:   {1, 1},
-		}
-		xassert.Equal(t, want, x)
-	})
-
 	t.Run("can delete notifications", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -302,10 +273,6 @@ func TestCharacterNotification_List(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacter()
-		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureUnderAttack",
-		})
 		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
 			Type:        "StructureDestroyed",
@@ -315,40 +282,13 @@ func TestCharacterNotification_List(t *testing.T) {
 			Type:        "StructureDestroyed",
 		})
 		// when
-		ee, err := st.ListCharacterNotificationsForTypes(t.Context(), c.ID, set.Of(app.StructureDestroyed))
+		ee, err := st.ListCharacterNotifications(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		want := set.Of(n1.NotificationID, n2.NotificationID)
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.NotificationID
 		}))
-		xassert.Equal(t, want, got)
-	})
-	t.Run("can list unread notifs", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := f.CreateCharacter()
-		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "bravo",
-		})
-		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "alpha",
-		})
-		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "alpha",
-			IsRead:      true,
-		})
-		// when
-		ee, err := st.ListCharacterNotificationsUnread(t.Context(), c.ID)
-		// then
-		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
-			return x.ID
-		}))
-		want := set.Of(n1.ID, n2.ID)
 		xassert.Equal(t, want, got)
 	})
 }

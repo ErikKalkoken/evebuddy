@@ -12,57 +12,6 @@ import (
 	"time"
 )
 
-const countCharacterNotifications = `-- name: CountCharacterNotifications :many
-SELECT
-    cn.type_id,
-    nt.name,
-    SUM(NOT cn.is_read) AS unread_count,
-    COUNT(*) AS total_count
-FROM
-    character_notifications cn
-    JOIN notification_types nt ON nt.id = cn.type_id
-WHERE
-    character_id = ?
-GROUP BY
-    cn.type_id,
-    nt.name
-`
-
-type CountCharacterNotificationsRow struct {
-	TypeID      int64
-	Name        string
-	UnreadCount sql.NullFloat64
-	TotalCount  int64
-}
-
-func (q *Queries) CountCharacterNotifications(ctx context.Context, characterID int64) ([]CountCharacterNotificationsRow, error) {
-	rows, err := q.db.QueryContext(ctx, countCharacterNotifications, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []CountCharacterNotificationsRow
-	for rows.Next() {
-		var i CountCharacterNotificationsRow
-		if err := rows.Scan(
-			&i.TypeID,
-			&i.Name,
-			&i.UnreadCount,
-			&i.TotalCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const createCharacterNotification = `-- name: CreateCharacterNotification :exec
 INSERT INTO
     character_notifications (
@@ -262,7 +211,7 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 	return items, nil
 }
 
-const listCharacterNotificationsAll = `-- name: ListCharacterNotificationsAll :many
+const listCharacterNotifications = `-- name: ListCharacterNotifications :many
 SELECT
     cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
     sender.id, sender.category, sender.name,
@@ -280,7 +229,7 @@ ORDER BY
     timestamp DESC
 `
 
-type ListCharacterNotificationsAllRow struct {
+type ListCharacterNotificationsRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
@@ -288,101 +237,15 @@ type ListCharacterNotificationsAllRow struct {
 	RecipientCategory     sql.NullString
 }
 
-func (q *Queries) ListCharacterNotificationsAll(ctx context.Context, characterID int64) ([]ListCharacterNotificationsAllRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsAll, characterID)
+func (q *Queries) ListCharacterNotifications(ctx context.Context, characterID int64) ([]ListCharacterNotificationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterNotifications, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCharacterNotificationsAllRow
+	var items []ListCharacterNotificationsRow
 	for rows.Next() {
-		var i ListCharacterNotificationsAllRow
-		if err := rows.Scan(
-			&i.CharacterNotification.ID,
-			&i.CharacterNotification.Body,
-			&i.CharacterNotification.CharacterID,
-			&i.CharacterNotification.IsProcessed,
-			&i.CharacterNotification.IsRead,
-			&i.CharacterNotification.NotificationID,
-			&i.CharacterNotification.SenderID,
-			&i.CharacterNotification.Text,
-			&i.CharacterNotification.Timestamp,
-			&i.CharacterNotification.Title,
-			&i.CharacterNotification.TypeID,
-			&i.CharacterNotification.RecipientID,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-			&i.NotificationType.ID,
-			&i.NotificationType.Name,
-			&i.RecipientName,
-			&i.RecipientCategory,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterNotificationsTypes = `-- name: ListCharacterNotificationsTypes :many
-SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
-    sender.id, sender.category, sender.name,
-    nt.id, nt.name,
-    recipient.name as recipient_name,
-    recipient.category as recipient_category
-FROM
-    character_notifications cn
-    JOIN eve_entities sender ON sender.id = cn.sender_id
-    JOIN notification_types nt ON nt.id = cn.type_id
-    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
-WHERE
-    character_id = ?
-    AND nt.name IN (/*SLICE:names*/?)
-ORDER BY
-    timestamp DESC
-`
-
-type ListCharacterNotificationsTypesParams struct {
-	CharacterID int64
-	Names       []string
-}
-
-type ListCharacterNotificationsTypesRow struct {
-	CharacterNotification CharacterNotification
-	EveEntity             EveEntity
-	NotificationType      NotificationType
-	RecipientName         sql.NullString
-	RecipientCategory     sql.NullString
-}
-
-func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListCharacterNotificationsTypesParams) ([]ListCharacterNotificationsTypesRow, error) {
-	query := listCharacterNotificationsTypes
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.CharacterID)
-	if len(arg.Names) > 0 {
-		for _, v := range arg.Names {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(arg.Names))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterNotificationsTypesRow
-	for rows.Next() {
-		var i ListCharacterNotificationsTypesRow
+		var i ListCharacterNotificationsRow
 		if err := rows.Scan(
 			&i.CharacterNotification.ID,
 			&i.CharacterNotification.Body,
@@ -471,76 +334,6 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg
 	var items []ListCharacterNotificationsUnprocessedRow
 	for rows.Next() {
 		var i ListCharacterNotificationsUnprocessedRow
-		if err := rows.Scan(
-			&i.CharacterNotification.ID,
-			&i.CharacterNotification.Body,
-			&i.CharacterNotification.CharacterID,
-			&i.CharacterNotification.IsProcessed,
-			&i.CharacterNotification.IsRead,
-			&i.CharacterNotification.NotificationID,
-			&i.CharacterNotification.SenderID,
-			&i.CharacterNotification.Text,
-			&i.CharacterNotification.Timestamp,
-			&i.CharacterNotification.Title,
-			&i.CharacterNotification.TypeID,
-			&i.CharacterNotification.RecipientID,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-			&i.NotificationType.ID,
-			&i.NotificationType.Name,
-			&i.RecipientName,
-			&i.RecipientCategory,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterNotificationsUnread = `-- name: ListCharacterNotificationsUnread :many
-SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
-    sender.id, sender.category, sender.name,
-    nt.id, nt.name,
-    recipient.name as recipient_name,
-    recipient.category as recipient_category
-FROM
-    character_notifications cn
-    JOIN eve_entities sender ON sender.id = cn.sender_id
-    JOIN notification_types nt ON nt.id = cn.type_id
-    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
-WHERE
-    character_id = ?
-    AND cn.is_read IS FALSE
-ORDER BY
-    timestamp DESC
-`
-
-type ListCharacterNotificationsUnreadRow struct {
-	CharacterNotification CharacterNotification
-	EveEntity             EveEntity
-	NotificationType      NotificationType
-	RecipientName         sql.NullString
-	RecipientCategory     sql.NullString
-}
-
-func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characterID int64) ([]ListCharacterNotificationsUnreadRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnread, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterNotificationsUnreadRow
-	for rows.Next() {
-		var i ListCharacterNotificationsUnreadRow
 		if err := rows.Scan(
 			&i.CharacterNotification.ID,
 			&i.CharacterNotification.Body,
