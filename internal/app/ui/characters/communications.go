@@ -37,6 +37,7 @@ type notificationFolder struct {
 type notificationHeaderRow struct {
 	id             int64
 	characterID    int64
+	isRead2        bool // updated by user, can be newer then isRead
 	isRead         bool
 	notificationID int64
 	searchTarget   string
@@ -72,6 +73,7 @@ type Communications struct {
 	toolbar                *widget.Toolbar
 	u                      baseUI
 	moreButton             *kxwidget.IconButton
+	unreadChip             *kxwidget.FilterChip
 }
 
 func (n notificationHeaderRow) IsZero() bool {
@@ -126,15 +128,29 @@ func NewCommunications(u baseUI) *Communications {
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterHeadersAsync()
 	}, a.u.MainWindow())
+	a.unreadChip = kxwidget.NewFilterChip("Unread", func(on bool) {
+		if on {
+			for i := range a.headerRows {
+				a.headerRows[i].isRead = a.headerRows[i].isRead2
+			}
+		}
+		a.filterHeadersAsync()
+	})
 	a.moreButton = kxwidget.NewIconButtonWithMenu(
 		theme.MoreHorizontalIcon(),
-		fyne.NewMenu("", fyne.NewMenuItem("Mark folder as read", a.MarkCurrentFolderRead)),
+		fyne.NewMenu("", fyne.NewMenuItem("Mark folder as read", a.markCurrentFolderRead)),
 	)
 	a.headerList = a.makeHeaderList()
 	a.Headers = container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(a.headersTop, layout.NewSpacer(), a.moreButton),
-			container.NewBorder(nil, nil, nil, a.sortButton, a.searchEntry),
+			container.NewBorder(
+				nil,
+				nil,
+				nil,
+				container.NewHBox(a.unreadChip, a.sortButton),
+				a.searchEntry,
+			),
 		),
 		a.headersFooter,
 		nil,
@@ -338,11 +354,6 @@ func (a *Communications) fetchFolders(ctx context.Context) ([]notificationFolder
 		return cmp.Compare(a.name, b.name)
 	})
 	folders = slices.Insert(folders, 0, notificationFolder{
-		folder: app.GroupUnread,
-		name:   "Unread",
-		unread: unreadCount,
-	})
-	folders = append(folders, notificationFolder{
 		folder: app.GroupAll,
 		name:   "All",
 		unread: unreadCount,
@@ -370,13 +381,13 @@ func (a *Communications) makeHeaderList() *widget.List {
 				r.sender,
 				r.subject,
 				r.timestamp,
-				r.isRead,
+				r.isRead2,
 			)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		a.clearDetail()
 		if id >= len(a.headerRowsFiltered) {
+			a.clearDetail()
 			l.UnselectAll()
 			return
 		}
@@ -390,16 +401,16 @@ func (a *Communications) makeHeaderList() *widget.List {
 }
 
 func (a *Communications) ResetHeaders(ctx context.Context) {
-	a.updateHeaders(ctx, app.GroupUnread)
+	a.updateHeaders(ctx, app.GroupAll)
 	fyne.Do(func() {
 		a.headerList.UnselectAll()
 	})
 }
 
-func (a *Communications) MarkCurrentFolderRead() {
+func (a *Communications) markCurrentFolderRead() {
 	var ids set.Set[int64]
 	for _, h := range a.headerRows {
-		if !h.isRead {
+		if !h.isRead2 {
 			ids.Add(h.id)
 		}
 	}
@@ -423,8 +434,8 @@ func (a *Communications) MarkCurrentFolderRead() {
 		}
 		fyne.Do(func() {
 			for i, h := range a.headerRows {
-				if !h.isRead {
-					a.headerRows[i].isRead = true
+				if !h.isRead2 {
+					a.headerRows[i].isRead2 = true
 				}
 			}
 			a.filterHeadersAsync()
@@ -437,48 +448,81 @@ func (a *Communications) MarkCurrentFolderRead() {
 	}()
 }
 
+func (a *Communications) setNotificationRead(ctx context.Context, id int64) {
+	err := a.u.Character().SetNotificationsAsRead(ctx, set.Of(id))
+	if err != nil {
+		slog.Error("Failed to set notification as read", "ID", id)
+		return
+	}
+	fyne.Do(func() {
+		currentIdx, allIdx := -1, -1
+		for i, f := range a.folders {
+			if f.folder == a.currentFolder {
+				currentIdx = i
+			}
+			if f.folder == app.GroupAll {
+				allIdx = i
+			}
+		}
+		a.folders[currentIdx].unread.Set(a.folders[currentIdx].unread.ValueOrZero() - 1)
+		a.folders[allIdx].unread.Set(a.folders[allIdx].unread.ValueOrZero() - 1)
+		a.folderList.Refresh()
+		if a.OnUpdate != nil {
+			a.OnUpdate(a.folders[allIdx].unread)
+		}
+	})
+	fyne.Do(func() {
+		for i, r := range a.headerRows {
+			if id == r.id {
+				a.headerRows[i].isRead2 = true
+			}
+		}
+		a.filterHeadersAsync()
+	})
+}
+
 func (a *Communications) filterHeadersAsync() {
 	totalRows := len(a.headerRows)
 	rows := slices.Clone(a.headerRows)
-	// selectStatus := a.selectStatus.Selected
-	// selectTag := a.selectTag.Selected
+	unread := a.unreadChip.On
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
-
 	go func() {
 		// filter
-		// if selectStatus != "" {
-		// 	rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
-		// 		switch selectStatus {
-		// 		case trainingStatusActive:
-		// 			return !r.isActive
-		// 		case trainingStatusInActive:
-		// 			return r.isActive
-		// 		}
-		// 		return true
-		// 	})
-		// }
-		// if selectTag != "" {
-		// 	rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
-		// 		return !r.tags.Contains(selectTag)
-		// 	})
-		// }
-		// search filter
+		if unread {
+			rows = slices.DeleteFunc(rows, func(r notificationHeaderRow) bool {
+				return r.isRead
+			})
+		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r notificationHeaderRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
+
+		// sort
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		// set data & refresh
+
+		// refresh
+		id2idx := make(map[int64]int)
+		for i, r := range rows {
+			id2idx[r.id] = i
+		}
 
 		footer := fmt.Sprintf("Showing %d / %d messages", len(rows), totalRows)
-
 		fyne.Do(func() {
 			a.headersFooter.Text = footer
 			a.headersFooter.Importance = widget.MediumImportance
 			a.headersFooter.Refresh()
 			a.headerRowsFiltered = rows
+			if a.currentNotification != nil {
+				a.headerList.UnselectAll()
+				// update selection if the message is still in the header
+				if idx, ok := id2idx[a.currentNotification.ID]; ok {
+					a.headerList.Select(idx)
+					a.headerList.ScrollTo(idx)
+				}
+			}
 			a.headerList.Refresh()
 		})
 	}()
@@ -488,7 +532,7 @@ func (a *Communications) updateHeaders(ctx context.Context, ng app.EveNotificati
 	reset := func() {
 		fyne.Do(func() {
 			a.headerRows = xslices.Reset(a.headerRows)
-			a.headerList.Refresh()
+			a.filterHeadersAsync()
 			a.headerList.ScrollToTop()
 		})
 
@@ -581,6 +625,7 @@ func (a *Communications) fetchHeaders(ctx context.Context, nc app.EveNotificatio
 			isRead:         n.IsRead.ValueOrZero(),
 			searchTarget:   strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
 		}
+		r.isRead2 = r.isRead
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -590,8 +635,8 @@ func (a *Communications) fetchHeaders(ctx context.Context, nc app.EveNotificatio
 
 func (a *Communications) setDetail(r notificationHeaderRow) {
 	ctx := context.Background()
-	if !r.isRead {
-		r.isRead = true
+	if !r.isRead2 {
+		r.isRead2 = true
 		go a.setNotificationRead(ctx, r.id)
 	}
 	go func() {
@@ -619,45 +664,6 @@ func (a *Communications) setDetail(r notificationHeaderRow) {
 			a.notificationDetail.Show()
 		})
 	}()
-}
-
-func (a *Communications) setNotificationRead(ctx context.Context, id int64) {
-	err := a.u.Character().SetNotificationsAsRead(ctx, set.Of(id))
-	if err != nil {
-		slog.Error("Failed to set notification as read", "ID", id)
-		return
-	}
-	fyne.Do(func() {
-		var totalUnread optional.Optional[int]
-		unreadIdx, currentIdx, allIdx := -1, -1, -1
-		for i, f := range a.folders {
-			if f.folder == app.GroupUnread {
-				unreadIdx = i
-				totalUnread = f.unread
-			}
-			if f.folder == a.currentFolder {
-				currentIdx = i
-			}
-			if f.folder == app.GroupAll {
-				allIdx = i
-			}
-		}
-		a.folders[currentIdx].unread.Set(a.folders[currentIdx].unread.ValueOrZero() - 1)
-		a.folders[unreadIdx].unread.Set(totalUnread.ValueOrZero() - 1)
-		a.folders[allIdx].unread = a.folders[unreadIdx].unread
-		a.folderList.Refresh()
-		if a.OnUpdate != nil {
-			a.OnUpdate(a.folders[unreadIdx].unread)
-		}
-	})
-	fyne.Do(func() {
-		for i, r := range a.headerRows {
-			if id == r.id {
-				a.headerRows[i].isRead = true
-			}
-		}
-		a.filterHeadersAsync()
-	})
 }
 
 func (a *Communications) notificationRecipient(cn *app.CharacterNotification) *app.EveEntity {

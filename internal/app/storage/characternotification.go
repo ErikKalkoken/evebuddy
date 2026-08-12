@@ -283,9 +283,15 @@ func EveNotificationTypeToESIString(nt app.EveNotificationType) (string, bool) {
 }
 
 func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int64) (map[app.EveNotificationType][]int, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CountCharacterNotifications: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	rows, err := st.qRO.CountCharacterNotifications(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("count notifications for character %d: %w", characterID, err)
+		return nil, wrapErr(err)
 	}
 	m := make(map[app.EveNotificationType][]int)
 	for _, r := range rows {
@@ -312,15 +318,11 @@ type CreateCharacterNotificationParams struct {
 	Type           string
 }
 
-func (arg CreateCharacterNotificationParams) isValid() bool {
-	return arg.CharacterID != 0 && arg.NotificationID != 0 && arg.SenderID != 0
-}
-
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, err)
 	}
-	if !arg.isValid() {
+	if arg.CharacterID == 0 || arg.NotificationID == 0 || arg.SenderID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
@@ -349,20 +351,38 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 }
 
 func (st *Storage) DeleteCharacterNotifications(ctx context.Context, characterID int64, notificationIDs set.Set[int64]) error {
-	return st.qRW.DeleteCharacterNotifications(ctx, queries.DeleteCharacterNotificationsParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterNotifications: %d %s: %w", characterID, notificationIDs, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if notificationIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCharacterNotifications(ctx, queries.DeleteCharacterNotificationsParams{
 		CharacterID:     characterID,
 		NotificationIds: slices.Collect(notificationIDs.All()),
 	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int64, notificationID int64) (*app.CharacterNotification, error) {
-	arg := queries.GetCharacterNotificationParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterNotification: %d %d: %w", characterID, notificationID, err)
+	}
+	if characterID == 0 || notificationID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRO.GetCharacterNotification(ctx, queries.GetCharacterNotificationParams{
 		CharacterID:    characterID,
 		NotificationID: notificationID,
-	}
-	r, err := st.qRO.GetCharacterNotification(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get character notification %+v: %w", arg, convertGetError(err))
+		return nil, wrapErr(err)
 	}
 	nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 	if !found {
@@ -382,6 +402,12 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 }
 
 func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetOrCreateNotificationType: %s: %w", name, err)
+	}
+	if name == "" {
+		return 0, wrapErr(app.ErrInvalid)
+	}
 	id, err := func() (int64, error) {
 		tx, err := st.dbRW.Begin()
 		if err != nil {
@@ -402,20 +428,32 @@ func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string)
 		return id, nil
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("get or create notification type %s: %w", name, err)
+		return 0, wrapErr(err)
 	}
 	return id, nil
 }
 
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationIDs: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
+	}
 	ids, err := st.qRO.ListCharacterNotificationIDs(ctx, characterID)
 	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, characterID int64, types set.Set[app.EveNotificationType]) ([]*app.CharacterNotification, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationsForTypes: %d %v: %w", characterID, types, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	var names []string
 	for t := range types.All() {
 		s, ok := EveNotificationTypeToESIString(t)
@@ -432,7 +470,7 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 		Names:       names,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list notification types: %d %v: %w", characterID, types, err)
+		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
@@ -456,9 +494,15 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 }
 
 func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationsAll: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	rows, err := st.qRO.ListCharacterNotificationsAll(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("list all notifications for character %d: %w", characterID, err)
+		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
@@ -481,9 +525,15 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 }
 
 func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationsUnread: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	rows, err := st.qRO.ListCharacterNotificationsUnread(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("list unread notification for character %d: %w", characterID, err)
+		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
@@ -509,13 +559,18 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 // Notifications older then earliest are ignored or which have no body or title are ignored.
 // Notifications which are duplicates of already processed ones are ignored too.
 func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int64, earliest time.Time) ([]*app.CharacterNotification, error) {
-	arg := queries.ListCharacterNotificationsUnprocessedParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationsUnprocessed: %d %v: %w", characterID, earliest, err)
+	}
+	if characterID == 0 || earliest.IsZero() {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterNotificationsUnprocessed(ctx, queries.ListCharacterNotificationsUnprocessedParams{
 		CharacterID: characterID,
 		Timestamp:   earliest,
-	}
-	rows, err := st.qRO.ListCharacterNotificationsUnprocessed(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("list unprocessed notifications %+v: %w", arg, err)
+		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
@@ -568,8 +623,11 @@ type UpdateCharacterNotificationParams struct {
 }
 
 func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterNotification: %+v: %w", arg, err)
+	}
 	if arg.ID == 0 {
-		return fmt.Errorf("UpdateCharacterNotification: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
 		ID:     arg.ID,
@@ -578,19 +636,25 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 		Title:  optional.ToNullString(arg.Title),
 	})
 	if err != nil {
-		return fmt.Errorf("update character notification %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
 // UpdateCharacterNotificationsSetProcessed marks all notifications with the same notificationID as processed.
 func (st *Storage) UpdateCharacterNotificationsSetProcessed(ctx context.Context, characterID, notificationID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterNotificationsSetProcessed: %d %d: %w", characterID, notificationID, err)
+	}
+	if characterID == 0 || notificationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
 	err := st.qRW.UpdateCharacterNotificationsSetProcessed(ctx, queries.UpdateCharacterNotificationsSetProcessedParams{
 		CharacterID:    characterID,
 		NotificationID: notificationID,
 	})
 	if err != nil {
-		return fmt.Errorf("UpdateCharacterNotificationsSetProcessed for notification ID %d: %w", notificationID, err)
+		return wrapErr(err)
 	}
 	return nil
 }
