@@ -216,9 +216,9 @@ func (w *folderTopWidget) set(title string, messages int) {
 	w.messages.SetText(ihumanize.Comma(messages) + " Messages")
 }
 
-func (w *folderTopWidget) setError(message string) {
-	w.title.Text = "Error: " + message
-	w.title.Importance = widget.DangerImportance
-	w.title.Refresh()
-	w.messages.SetText("")
-}
+// func (w *folderTopWidget) setError(message string) {
+// 	w.title.Text = "Error: " + message
+// 	w.title.Importance = widget.DangerImportance
+// 	w.title.Refresh()
+// 	w.messages.SetText("")
+// }

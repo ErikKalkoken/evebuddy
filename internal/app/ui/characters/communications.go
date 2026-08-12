@@ -52,14 +52,17 @@ func NewCommunications(u baseUI) *Communications {
 	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
-		a.Navigation.updateFolders(ctx)
+		fyne.Do(func() {
+			a.Detail.clearDetail()
+		})
+		a.Navigation.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
 		if arg.Section == app.SectionCharacterNotifications {
-			a.Navigation.updateFolders(ctx)
+			a.Navigation.update(ctx)
 		}
 	})
 
@@ -122,7 +125,7 @@ func (a *communicationsNavigation) MakeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%s)", ihumanize.OptionalWithComma(f.unread, "?"))
 		}
 		it := fyne.NewMenuItem(s, func() {
-			go a.co.Headers.updateHeaders(context.Background(), f.folder)
+			go a.co.Headers.update(context.Background(), f.folder)
 		})
 		items2 = append(items2, it)
 	}
@@ -150,17 +153,15 @@ func (a *communicationsNavigation) makeFolderList() *widget.List {
 			return
 		}
 		o := a.folders[id]
-		a.co.Detail.clearDetail()
-		go a.co.Headers.updateHeaders(context.Background(), o.folder)
+		go a.co.Headers.update(context.Background(), o.folder)
 	}
 	return l
 }
 
-func (a *communicationsNavigation) updateFolders(ctx context.Context) {
+func (a *communicationsNavigation) update(ctx context.Context) {
 	reset := func() {
 		a.co.Headers.ResetHeaders(ctx)
 		fyne.Do(func() {
-			a.co.Detail.clearDetail()
 			a.folders = xslices.Reset(a.folders)
 			a.folderList.Refresh()
 			a.folderList.UnselectAll()
@@ -208,7 +209,6 @@ func (a *communicationsNavigation) updateFolders(ctx context.Context) {
 	a.co.Headers.ResetHeaders(ctx)
 
 	fyne.Do(func() {
-		a.co.Detail.clearDetail()
 		a.folders = folders
 		a.folderList.Refresh()
 		a.folderList.UnselectAll()
@@ -219,7 +219,7 @@ func (a *communicationsNavigation) updateFolders(ctx context.Context) {
 	})
 }
 
-func (a *communicationsNavigation) updateFoldersUnread(current app.EveNotificationGroup) {
+func (a *communicationsNavigation) setFoldersUnread(current app.EveNotificationGroup) {
 	currentIdx, allIdx := -1, -1
 	for i, f := range a.folders {
 		if f.folder == current {
@@ -315,18 +315,20 @@ func (w *folderItemWidget) set(r notificationFolder) {
 const (
 	communicationsColTimestamp = iota + 1
 	communicationsColSender
+	communicationsColType
 )
 
 type notificationHeaderRow struct {
-	id             int64
-	characterID    int64
-	isRead2        bool // updated by user, can be newer then isRead
-	isRead         bool
-	notificationID int64
-	searchTarget   string
-	sender         *app.EveEntity
-	subject        string
-	timestamp      time.Time
+	characterID      int64
+	id               int64
+	isRead           bool
+	isRead2          bool // updated by user, can be newer then isRead
+	notificationID   int64
+	notificationType string
+	searchTarget     string
+	sender           *app.EveEntity
+	subject          string
+	timestamp        time.Time
 }
 
 func (n notificationHeaderRow) IsZero() bool {
@@ -365,6 +367,12 @@ func newCommunicationsHeaders(co *Communications) *communicationsHeaders {
 		Sort: func(a, b notificationHeaderRow) int {
 			return strings.Compare(a.sender.Name, b.sender.Name)
 		},
+	}, {
+		ID:    communicationsColType,
+		Label: "Type",
+		Sort: func(a, b notificationHeaderRow) int {
+			return strings.Compare(a.notificationType, b.notificationType)
+		},
 	}}),
 		communicationsColTimestamp,
 		xwidget.SortDesc,
@@ -386,7 +394,7 @@ func newCommunicationsHeaders(co *Communications) *communicationsHeaders {
 	a.searchEntry.OnChanged = func(_ string) {
 		a.filterHeadersAsync()
 	}
-	a.searchEntry.PlaceHolder = "Search notifications"
+	a.searchEntry.PlaceHolder = "Search communications"
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterHeadersAsync()
 	}, a.co.u.MainWindow())
@@ -463,7 +471,7 @@ func (a *communicationsHeaders) makeHeaderList() *widget.List {
 }
 
 func (a *communicationsHeaders) ResetHeaders(ctx context.Context) {
-	a.updateHeaders(ctx, app.GroupAll)
+	a.update(ctx, app.GroupAll)
 }
 
 func (a *communicationsHeaders) markCurrentFolderRead() {
@@ -514,7 +522,7 @@ func (a *communicationsHeaders) setNotificationRead(ctx context.Context, id int6
 		return
 	}
 	fyne.DoAndWait(func() {
-		a.co.Navigation.updateFoldersUnread(a.currentFolder)
+		a.co.Navigation.setFoldersUnread(a.currentFolder)
 	})
 	fyne.Do(func() {
 		for i, r := range a.headerRows {
@@ -575,7 +583,7 @@ func (a *communicationsHeaders) filterHeadersAsync() {
 	}()
 }
 
-func (a *communicationsHeaders) updateHeaders(ctx context.Context, ng app.EveNotificationGroup) {
+func (a *communicationsHeaders) update(ctx context.Context, ng app.EveNotificationGroup) {
 	reset := func() {
 		fyne.Do(func() {
 			a.headerRows = xslices.Reset(a.headerRows)
@@ -661,14 +669,15 @@ func (a *communicationsHeaders) fetchHeaders(ctx context.Context, nc app.EveNoti
 		}
 		subject := n.TitleDisplay()
 		r := notificationHeaderRow{
-			id:             n.ID,
-			characterID:    n.CharacterID,
-			notificationID: n.NotificationID,
-			sender:         sender,
-			subject:        subject,
-			timestamp:      n.Timestamp,
-			isRead:         n.IsRead.ValueOrZero(),
-			searchTarget:   strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
+			characterID:      n.CharacterID,
+			id:               n.ID,
+			isRead:           n.IsRead.ValueOrZero(),
+			notificationID:   n.NotificationID,
+			notificationType: n.Type.Display(),
+			searchTarget:     strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
+			sender:           sender,
+			subject:          subject,
+			timestamp:        n.Timestamp,
 		}
 		r.isRead2 = r.isRead
 		rows = append(rows, r)
