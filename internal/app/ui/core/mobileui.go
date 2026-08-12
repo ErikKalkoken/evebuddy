@@ -75,7 +75,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		func() {
-			u.characterCommunications.OnSelected = func() {
+			u.characterCommunications.Headers.OnSelected = func() {
 				characterNav.PushAndHideNavBar(
 					newCharacterAppBar("Communications", u.characterCommunications.Detail),
 				)
@@ -201,7 +201,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 	}
 
-	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
+	u.characterCommunications.Navigation.OnUpdate = func(count optional.Optional[int]) {
 		var s string
 		if v, ok := count.Value(); ok {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
@@ -211,7 +211,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemCommunications.Supporting = s
 		navItemCommunications.Refresh()
 
-		communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
+		communicationsMenu.Items = u.characterCommunications.Navigation.MakeFolderMenu()
 		communicationsMenu.Refresh()
 	}
 
@@ -594,7 +594,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})
 		ctx := context.Background()
 		go u.characterMails.ResetCurrentFolder(ctx)
-		go u.characterCommunications.ResetHeaders(ctx)
+		go u.characterCommunications.Headers.ResetHeaders(ctx)
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {
