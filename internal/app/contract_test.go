@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestContractStatusString(t *testing.T) {
@@ -36,7 +36,7 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
 			got := tc.status.DisplayRichText()
-			want := iwidget.RichTextSegmentsFromText(tc.wantText,
+			want := xwidget.RichTextSegmentsFromText(tc.wantText,
 				widget.RichTextStyle{
 					ColorName: tc.wantColor,
 				},

@@ -45,12 +45,13 @@ func create(cleanUpTimeout time.Duration) *Cache {
 	}
 	if cleanUpTimeout > 0 {
 		go func() {
+			ticker := time.NewTicker(cleanUpTimeout)
 			for {
 				select {
 				case <-c.closeC:
 					slog.Debug("cache closed")
 					return
-				case <-time.After(cleanUpTimeout):
+				case <-ticker.C:
 				}
 				c.CleanUp()
 			}
@@ -63,9 +64,10 @@ func create(cleanUpTimeout time.Duration) *Cache {
 func (c *Cache) CleanUp() {
 	slog.Debug("cache clean-up: started")
 	n := 0
-	c.items.Range(func(key, _ any) bool {
-		_, found := c.Get(key.(string))
-		if !found {
+	now := time.Now()
+	c.items.Range(func(key, value any) bool {
+		i := value.(item)
+		if !i.ExpiresAt.IsZero() && now.After(i.ExpiresAt) {
 			c.Delete(key.(string))
 			n++
 		}
@@ -107,6 +109,7 @@ func (c *Cache) Get(key string) (any, bool) {
 	}
 	i := value.(item)
 	if !i.ExpiresAt.IsZero() && time.Until(i.ExpiresAt) < 0 {
+		c.Delete(key)
 		return nil, false
 	}
 	return i.Value, ok

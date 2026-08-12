@@ -602,15 +602,50 @@ func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCha
 	return err
 }
 
+const updateCharacterNotificationsSetIsRead = `-- name: UpdateCharacterNotificationsSetIsRead :exec
+UPDATE character_notifications
+SET
+    is_read = ?
+WHERE
+    id IN (/*SLICE:ids*/?)
+`
+
+type UpdateCharacterNotificationsSetIsReadParams struct {
+	IsRead bool
+	Ids    []int64
+}
+
+func (q *Queries) UpdateCharacterNotificationsSetIsRead(ctx context.Context, arg UpdateCharacterNotificationsSetIsReadParams) error {
+	query := updateCharacterNotificationsSetIsRead
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.IsRead)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const updateCharacterNotificationsSetProcessed = `-- name: UpdateCharacterNotificationsSetProcessed :exec
 UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    notification_id = ?
+    character_id = ?
+    AND notification_id = ?
 `
 
-func (q *Queries) UpdateCharacterNotificationsSetProcessed(ctx context.Context, notificationID int64) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetProcessed, notificationID)
+type UpdateCharacterNotificationsSetProcessedParams struct {
+	CharacterID    int64
+	NotificationID int64
+}
+
+func (q *Queries) UpdateCharacterNotificationsSetProcessed(ctx context.Context, arg UpdateCharacterNotificationsSetProcessedParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetProcessed, arg.CharacterID, arg.NotificationID)
 	return err
 }

@@ -11,8 +11,9 @@ import (
 
 func TestMemcache(t *testing.T) {
 	t.Parallel()
-	c := memcache.New()
 	t.Run("can set a key", func(t *testing.T) {
+		// given
+		c := memcache.New()
 		// when
 		c.Set("k1", "xxx", time.Second*100)
 		// then
@@ -20,6 +21,7 @@ func TestMemcache(t *testing.T) {
 	})
 	t.Run("can get a key", func(t *testing.T) {
 		// given
+		c := memcache.New()
 		c.Set("k2", "xxx", time.Second*100)
 		// when
 		o, ok := c.Get("k2")
@@ -30,6 +32,7 @@ func TestMemcache(t *testing.T) {
 	})
 	t.Run("can check if a key exists", func(t *testing.T) {
 		// given
+		c := memcache.New()
 		c.Set("k6", "xxx", time.Second*100)
 		// when/then
 		assert.True(t, c.Exists("k6"))
@@ -37,12 +40,14 @@ func TestMemcache(t *testing.T) {
 	})
 	t.Run("can set key that never expires", func(t *testing.T) {
 		// given
+		c := memcache.New()
 		c.Set("k7", "xxx", 0)
 		// when/then
 		assert.True(t, c.Exists("k7"))
 	})
 	t.Run("should report when key is expired", func(t *testing.T) {
 		// given
+		c := memcache.New()
 		c.Set("k3", "xxx", time.Millisecond*10)
 		// when
 		time.Sleep(time.Millisecond * 50)
@@ -53,6 +58,7 @@ func TestMemcache(t *testing.T) {
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
+		c := memcache.New()
 		c.Set("k4", "xxx", time.Second*100)
 		// when
 		c.Delete("k4")

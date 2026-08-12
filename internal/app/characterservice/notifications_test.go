@@ -39,7 +39,7 @@ func TestNotifyCommunications(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			testutil.MustTruncateTables(db)
-			s, _ := st.EveNotificationTypeToESIString(tc.typ)
+			s, _ := storage.EveNotificationTypeToESIString(tc.typ)
 			n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 				IsProcessed: tc.isProcessed,
 				Title:       optional.New("title"),
@@ -55,7 +55,7 @@ func TestNotifyCommunications(t *testing.T) {
 				Storage: st,
 			})
 			// when
-			err := cs.NotifyCommunications(t.Context(), n.CharacterID, earliest, typesEnabled)
+			err := cs.NotifyNotifications(t.Context(), n.CharacterID, earliest, typesEnabled)
 			// then
 			if assert.NoError(t, err) {
 				xassert.Equal(t, tc.shouldNotify, sendCount == 1)

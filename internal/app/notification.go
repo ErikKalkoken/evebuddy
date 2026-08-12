@@ -777,7 +777,8 @@ func NotificationGroupTypes(g EveNotificationGroup) set.Set[EveNotificationType]
 type EveNotificationGroup uint
 
 const (
-	GroupBills EveNotificationGroup = iota + 1
+	GroupUndefined EveNotificationGroup = iota
+	GroupBills
 	GroupFactionWarfare
 	GroupContacts
 	GroupCorporate

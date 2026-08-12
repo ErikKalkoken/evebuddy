@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type myRow struct {
@@ -21,7 +21,7 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 		ID:    1,
 		Label: "ID",
 		Width: 100,
@@ -39,13 +39,13 @@ func TestDataTable_CreateBasic(t *testing.T) {
 		},
 	}})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
-	x := iwidget.MakeDataTable(
+	x := xwidget.MakeDataTable(
 		columns,
 		&data,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
-		iwidget.NewColumnSorter(columns, 1, iwidget.SortAsc),
+		xwidget.NewColumnSorter(columns, 1, xwidget.SortAsc),
 		func(i int) {},
 		nil,
 	)
@@ -58,7 +58,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 
 func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
-		columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 			ID:    1,
 			Label: "Alpha",
 		}})
@@ -68,7 +68,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when col ID is negativ", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 				ID:    0,
 				Label: "Alpha",
 			}})
@@ -76,7 +76,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 				ID:    1,
 				Label: "Alpha",
 			}, {
@@ -87,7 +87,7 @@ func TestNewDataColumns(t *testing.T) {
 	})
 	t.Run("should panic when no cols defined", func(t *testing.T) {
 		assert.Panics(t, func() {
-			iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{})
+			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{})
 		})
 	})
 }
@@ -98,7 +98,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		id2 = 5
 		id3 = 21
 	)
-	columns := iwidget.NewDataColumns([]iwidget.DataColumn[myRow]{{
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 		ID:    id1,
 		Label: "Alpha",
 		Sort: func(a, b myRow) int {
@@ -117,75 +117,75 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 	cases := []struct {
 		name       string
 		initialID  int
-		initialDir iwidget.SortDir
+		initialDir xwidget.SortDir
 		sortID     int
 		wantID     int
-		wantDir    iwidget.SortDir
+		wantDir    xwidget.SortDir
 		wantSort   bool
 	}{
 		{
 			name:       "initial sort, asc->desc",
 			initialID:  id1,
-			initialDir: iwidget.SortAsc,
+			initialDir: xwidget.SortAsc,
 			sortID:     id1,
 			wantID:     id1,
-			wantDir:    iwidget.SortDesc,
+			wantDir:    xwidget.SortDesc,
 			wantSort:   true,
 		},
 		{
 			name:       "initial sort, desc->asc",
 			initialID:  id1,
-			initialDir: iwidget.SortDesc,
+			initialDir: xwidget.SortDesc,
 			sortID:     id1,
 			wantID:     id1,
-			wantDir:    iwidget.SortAsc,
+			wantDir:    xwidget.SortAsc,
 			wantSort:   true,
 		},
 		{
 			name:       "initial sort, none->asc",
 			initialID:  id1,
-			initialDir: iwidget.SortOff,
+			initialDir: xwidget.SortOff,
 			sortID:     id1,
 			wantID:     id1,
-			wantDir:    iwidget.SortAsc,
+			wantDir:    xwidget.SortAsc,
 			wantSort:   true,
 		},
 		{
 			name:       "initial sort, don't sort",
 			initialID:  id1,
-			initialDir: iwidget.SortOff,
+			initialDir: xwidget.SortOff,
 			sortID:     -1,
 			wantSort:   false,
 		},
 		{
 			name:       "initial sort, sort diabled",
 			initialID:  id1,
-			initialDir: iwidget.SortOff,
+			initialDir: xwidget.SortOff,
 			sortID:     id3,
 			wantSort:   false,
 		},
 		{
 			name:       "initial sort 2, asc->desc",
 			initialID:  id2,
-			initialDir: iwidget.SortAsc,
+			initialDir: xwidget.SortAsc,
 			sortID:     id2,
 			wantID:     id2,
-			wantDir:    iwidget.SortDesc,
+			wantDir:    xwidget.SortDesc,
 			wantSort:   true,
 		},
 		{
 			name:       "initial no sort, asc->desc",
 			initialID:  0,
-			initialDir: iwidget.SortOff,
+			initialDir: xwidget.SortOff,
 			sortID:     id2,
 			wantID:     id2,
-			wantDir:    iwidget.SortAsc,
+			wantDir:    xwidget.SortAsc,
 			wantSort:   true,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			sc := iwidget.NewColumnSorter(columns, tc.initialID, tc.initialDir)
+			sc := xwidget.NewColumnSorter(columns, tc.initialID, tc.initialDir)
 			gotID, gotDir, gotSort := sc.CalcSort(tc.sortID)
 			assert.Equal(t, tc.wantSort, gotSort)
 			if tc.wantSort {

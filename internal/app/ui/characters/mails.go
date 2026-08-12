@@ -88,7 +88,7 @@ func (n mailFolderNode) UID() widget.TreeNodeID {
 type Mails struct {
 	widget.BaseWidget
 
-	Detail     *mailDetail
+	Detail     *mailDetailWidget
 	Headers    *fyne.Container
 	OnUpdate   func(unread, missing int)
 	OnSelected func()
@@ -104,7 +104,7 @@ type Mails struct {
 	headerList       *widget.List
 	headers          []*app.CharacterMailHeader
 	headerStatus     *widget.Label
-	headerTop        *widget.Label
+	headersTop       *folderTopWidget
 	lastFolder       *mailFolderNode
 	lastSelected     widget.ListItemID
 	mail             *app.CharacterMail
@@ -118,12 +118,12 @@ type Mails struct {
 
 func NewMails(u baseUI) *Mails {
 	a := &Mails{
-		Detail:           newMailDetail(u),
+		Detail:           newMailDetailWidget(u),
 		folderDownloaded: ttwidget.NewLabel(""),
 		folderStatus:     widget.NewLabel(""),
 		folderTotal:      widget.NewLabel("?"),
 		headerStatus:     widget.NewLabel(""),
-		headerTop:        widget.NewLabel(""),
+		headersTop:       newFolderTopWidget(),
 		u:                u,
 		sig:              singleinstance.NewGroup(),
 	}
@@ -142,7 +142,7 @@ func NewMails(u baseUI) *Mails {
 	a.headerList = a.makeHeaderList()
 	a.Headers = container.NewBorder(
 		container.NewVBox(
-			a.headerTop,
+			a.headersTop,
 			a.headerStatus,
 		),
 		nil,
@@ -207,10 +207,10 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 func (a *Mails) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 	t := xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
-			return NewMailFolderItem()
+			return newMailFolderItemWidget()
 		},
 		func(n *mailFolderNode, _ bool, co fyne.CanvasObject) {
-			co.(*mailFolderItem).set(n)
+			co.(*mailFolderItemWidget).set(n)
 		},
 	)
 	t.OnSelectedNode = func(n *mailFolderNode) {
@@ -232,7 +232,7 @@ func (a *Mails) update(ctx context.Context) {
 			a.currentFolder.Store(nil)
 			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
-			a.headerTop.SetText("")
+			a.headersTop.clear()
 			a.clearMail()
 			a.folderTotal.SetText("?")
 			a.folderDownloaded.SetText("")
@@ -546,7 +546,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.EVEImage().EveEntityLogoAsync)
+			return NewMailHeaderItemWidget(a.u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -556,7 +556,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			if a.character.Load() == nil {
 				return
 			}
-			item := co.(*MailHeaderItem)
+			item := co.(*MailHeaderItemWidget)
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -594,7 +594,7 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 		fyne.Do(func() {
 			a.headers = xslices.Reset(a.headers)
 			a.headerList.Refresh()
-			a.headerTop.SetText("")
+			a.headersTop.clear()
 			a.clearMail()
 		})
 	}
@@ -632,11 +632,9 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 		return
 	}
 
-	p := message.NewPrinter(language.English)
-	s := p.Sprintf("%s • %d mails", folder.Name, len(headers))
 	fyne.Do(func() {
 		a.headerStatus.Hide()
-		a.headerTop.SetText(s)
+		a.headersTop.set(folder.Name, len(headers))
 		a.headers = headers
 		a.headerList.Refresh()
 	})
@@ -824,7 +822,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 	}
 }
 
-type mailFolderItem struct {
+type mailFolderItemWidget struct {
 	widget.BaseWidget
 
 	icon   *widget.Icon
@@ -832,8 +830,8 @@ type mailFolderItem struct {
 	unread *kxwidget.Badge
 }
 
-func NewMailFolderItem() *mailFolderItem {
-	w := &mailFolderItem{
+func newMailFolderItemWidget() *mailFolderItemWidget {
+	w := &mailFolderItemWidget{
 		name:   widget.NewLabel(""),
 		icon:   widget.NewIcon(icons.BlankSvg),
 		unread: kxwidget.NewBadge("999"),
@@ -843,12 +841,12 @@ func NewMailFolderItem() *mailFolderItem {
 	return w
 }
 
-func (w *mailFolderItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *mailFolderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, w.icon, w.unread, w.name)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *mailFolderItem) set(n *mailFolderNode) {
+func (w *mailFolderItemWidget) set(n *mailFolderNode) {
 	w.icon.SetResource(n.icon())
 	if n.UnreadCount == 0 {
 		w.name.TextStyle.Bold = false
@@ -863,18 +861,18 @@ func (w *mailFolderItem) set(n *mailFolderNode) {
 
 }
 
-type mailDetail struct {
+type mailDetailWidget struct {
 	widget.BaseWidget
 
 	body    *widget.Label
-	header  *MailHeader
+	header  *MailHeaderWidget
 	subject *widget.Label
 }
 
-func newMailDetail(u baseUI) *mailDetail {
-	w := &mailDetail{
+func newMailDetailWidget(u baseUI) *mailDetailWidget {
+	w := &mailDetailWidget{
 		body:    widget.NewLabel(""),
-		header:  NewMailHeader(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show),
+		header:  NewMailHeaderWidget(u.EVEImage().EveEntityLogoAsync, u.InfoViewer().Show),
 		subject: widget.NewLabel(""),
 	}
 	w.subject.SizeName = theme.SizeNameSubHeadingText
@@ -886,7 +884,7 @@ func newMailDetail(u baseUI) *mailDetail {
 	return w
 }
 
-func (w *mailDetail) CreateRenderer() fyne.WidgetRenderer {
+func (w *mailDetailWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(w.subject, w.header),
 		nil,
@@ -897,19 +895,19 @@ func (w *mailDetail) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *mailDetail) clear() {
+func (w *mailDetailWidget) clear() {
 	w.subject.SetText("")
 	w.header.Clear()
 	w.body.SetText("")
 }
 
-func (w *mailDetail) SetMail(m *app.CharacterMail) {
+func (w *mailDetailWidget) SetMail(m *app.CharacterMail) {
 	w.subject.SetText(m.Subject.ValueOrZero())
 	w.SetBody(m.BodyPlain())
 	w.header.Set(m.From, m.Timestamp, m.Recipients...)
 }
 
-func (w *mailDetail) SetBody(s string) {
+func (w *mailDetailWidget) SetBody(s string) {
 	var i widget.Importance
 	if s == "" {
 		i = widget.LowImportance
@@ -920,7 +918,7 @@ func (w *mailDetail) SetBody(s string) {
 	w.body.Refresh()
 }
 
-func (w *mailDetail) SetError(s string) {
+func (w *mailDetailWidget) SetError(s string) {
 	w.body.Importance = widget.DangerImportance
 	w.body.Text = s
 	w.body.Refresh()

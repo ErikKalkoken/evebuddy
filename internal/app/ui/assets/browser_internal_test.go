@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestSplitLines(t *testing.T) {
@@ -527,7 +527,7 @@ func TestGenerateTreeData_Corporation(t *testing.T) {
 
 var sequence atomic.Int64
 
-func makeCountsPath(ac asset.Tree, td *iwidget.TreeData[containerNode], it asset.Item) []int {
+func makeCountsPath(ac asset.Tree, td *xwidget.TreeData[containerNode], it asset.Item) []int {
 	n, ok := ac.Node(it.ID())
 	if !ok {
 		return nil
@@ -541,7 +541,7 @@ func makeCountsPath(ac asset.Tree, td *iwidget.TreeData[containerNode], it asset
 	})
 }
 
-func findContainer(td *iwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
+func findContainer(td *xwidget.TreeData[containerNode], node *asset.Node) (*containerNode, bool) {
 	var found *containerNode
 	td.Walk(nil, func(n *containerNode) bool {
 		if n.node == node {
@@ -665,13 +665,7 @@ func createAsset(arg assetParams) app.Asset {
 	}
 }
 
-// func printTree(td iwidget.TreeData[assetContainerNode]) {
-// 	td.Print(nil, func(n *assetContainerNode) string {
-// 		return n.String()
-// 	})
-// }
-
-func allPaths(td *iwidget.TreeData[containerNode]) [][]string {
+func allPaths(td *xwidget.TreeData[containerNode]) [][]string {
 	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
 	})

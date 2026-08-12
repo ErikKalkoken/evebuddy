@@ -13,11 +13,12 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type MailHeaderItem struct {
+type MailHeaderItemWidget struct {
 	widget.BaseWidget
 
 	FallbackIcon fyne.Resource
@@ -29,13 +30,12 @@ type MailHeaderItem struct {
 	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(loadIcon ui.EveEntityIconLoader) *MailHeaderItem {
+func NewMailHeaderItemWidget(loadIcon ui.EveEntityIconLoader) *MailHeaderItemWidget {
 	subject := widget.NewLabel("")
-	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis
-	w := &MailHeaderItem{
+	w := &MailHeaderItemWidget{
 		FallbackIcon: icons.Questionmark32Png,
 		from:         from,
 		loadIcon:     loadIcon,
@@ -48,7 +48,7 @@ func NewMailHeaderItem(loadIcon ui.EveEntityIconLoader) *MailHeaderItem {
 	return w
 }
 
-func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *MailHeaderItemWidget) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
@@ -62,7 +62,7 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.Refresh()
 }
 
-func (w *MailHeaderItem) Refresh() {
+func (w *MailHeaderItemWidget) Refresh() {
 	fyne.Do(func() {
 		w.from.Refresh()
 		w.subject.Refresh()
@@ -71,7 +71,7 @@ func (w *MailHeaderItem) Refresh() {
 	})
 }
 
-func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeaderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
@@ -83,7 +83,7 @@ func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type MailHeader struct {
+type MailHeaderWidget struct {
 	widget.BaseWidget
 
 	from       *kxwidget.TappableLabel
@@ -95,11 +95,11 @@ type MailHeader struct {
 	to         *widget.Label
 }
 
-func NewMailHeader(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeader {
+func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeaderWidget {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()
-	w := &MailHeader{
+	w := &MailHeaderWidget{
 		from:       from,
 		loadIcon:   loadIcon,
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
@@ -116,7 +116,7 @@ func NewMailHeader(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *
 	return w
 }
 
-func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
@@ -139,7 +139,7 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 	w.Refresh()
 }
 
-func (w *MailHeader) Clear() {
+func (w *MailHeaderWidget) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
 	w.recipients.RemoveAll()
@@ -150,14 +150,14 @@ func (w *MailHeader) Clear() {
 	w.Refresh()
 }
 
-func (w *MailHeader) Refresh() {
+func (w *MailHeaderWidget) Refresh() {
 	w.from.Refresh()
 	w.recipients.Refresh()
 	w.timestamp.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
+func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
@@ -174,3 +174,51 @@ func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)
 }
+
+type folderTopWidget struct {
+	widget.BaseWidget
+
+	title    *widget.Label
+	messages *widget.Label
+}
+
+func newFolderTopWidget() *folderTopWidget {
+	w := &folderTopWidget{
+		title:    widget.NewLabel(""),
+		messages: widget.NewLabel(""),
+	}
+	w.title.Truncation = fyne.TextTruncateEllipsis
+	w.title.SizeName = theme.SizeNameSubHeadingText
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *folderTopWidget) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewVBox(layout.NewSpacer(), w.messages, layout.NewSpacer()),
+		w.title,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *folderTopWidget) clear() {
+	w.title.SetText("")
+	w.messages.SetText("")
+}
+
+func (w *folderTopWidget) set(title string, messages int) {
+	w.title.Text = title
+	w.title.Importance = widget.MediumImportance
+	w.title.Refresh()
+	w.messages.SetText(ihumanize.Comma(messages) + " Messages")
+}
+
+// func (w *folderTopWidget) setError(message string) {
+// 	w.title.Text = "Error: " + message
+// 	w.title.Importance = widget.DangerImportance
+// 	w.title.Refresh()
+// 	w.messages.SetText("")
+// }
