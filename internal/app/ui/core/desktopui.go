@@ -232,7 +232,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		theme.NewThemedResource(icons.MessageSvg),
 		newContentPage("Communications", u.characterCommunications),
 	)
-	u.characterCommunications.NavigationPane.OnUpdate = func(count optional.Optional[int]) {
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
 		if v, ok := count.Value(); !ok {
 			s = "?"

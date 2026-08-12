@@ -308,7 +308,7 @@ type CreateCharacterNotificationParams struct {
 	Body           optional.Optional[string]
 	CharacterID    int64
 	IsProcessed    bool
-	IsRead         optional.Optional[bool]
+	IsRead         bool
 	NotificationID int64
 	RecipientID    optional.Optional[int64]
 	SenderID       int64
@@ -332,7 +332,7 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 	err = st.qRW.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
 		Body:           optional.ToNullString(arg.Body),
 		CharacterID:    arg.CharacterID,
-		IsRead:         arg.IsRead.ValueOrZero(),
+		IsRead:         arg.IsRead,
 		IsProcessed:    arg.IsProcessed,
 		NotificationID: arg.NotificationID,
 		RecipientID:    optional.ToNullInt64(arg.RecipientID),
@@ -603,7 +603,7 @@ func characterNotificationFromDBModel(
 		Body:           optional.FromNullString(cn.Body),
 		CharacterID:    cn.CharacterID,
 		IsProcessed:    cn.IsProcessed,
-		IsRead:         optional.New(cn.IsRead),
+		IsRead:         cn.IsRead,
 		NotificationID: cn.NotificationID,
 		Recipient:      eveEntityFromNullableDBModel(recipient),
 		Sender:         eveEntityFromDBModel(sender),
@@ -618,7 +618,7 @@ func characterNotificationFromDBModel(
 type UpdateCharacterNotificationParams struct {
 	Body   optional.Optional[string]
 	ID     int64
-	IsRead optional.Optional[bool]
+	IsRead bool
 	Title  optional.Optional[string]
 }
 
@@ -632,7 +632,7 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 	err := st.qRW.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
 		ID:     arg.ID,
 		Body:   optional.ToNullString(arg.Body),
-		IsRead: arg.IsRead.ValueOrZero(),
+		IsRead: arg.IsRead,
 		Title:  optional.ToNullString(arg.Title),
 	})
 	if err != nil {

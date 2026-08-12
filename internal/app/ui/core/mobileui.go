@@ -201,7 +201,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 	}
 
-	u.characterCommunications.NavigationPane.OnUpdate = func(count optional.Optional[int]) {
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
 		if v, ok := count.Value(); ok {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
@@ -594,7 +594,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})
 		ctx := context.Background()
 		go u.characterMails.ResetCurrentFolder(ctx)
-		go u.characterCommunications.MessagePane.ResetHeaders(ctx)
+		go func() {
+			fyne.Do(func() {
+				u.characterCommunications.MessagePane.ResetHeaders()
+			})
+		}()
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {

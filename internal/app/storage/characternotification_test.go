@@ -28,7 +28,7 @@ func TestCharacterNotification(t *testing.T) {
 		sender := f.CreateEveEntityCharacter()
 		arg := storage.CreateCharacterNotificationParams{
 			CharacterID:    c.ID,
-			IsRead:         optional.New(true),
+			IsRead:         true,
 			NotificationID: 42,
 			SenderID:       sender.ID,
 			Text:           optional.New("text"),
@@ -42,7 +42,7 @@ func TestCharacterNotification(t *testing.T) {
 		o, err := st.GetCharacterNotification(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		xassert.Equal(t, c.ID, o.CharacterID)
-		assert.True(t, o.IsRead.ValueOrZero())
+		assert.True(t, o.IsRead)
 		xassert.Equal(t, 42, o.NotificationID)
 		xassert.Equal(t, sender, o.Sender)
 		xassert.EqualOptional(t, "text", o.Text)
@@ -60,7 +60,7 @@ func TestCharacterNotification(t *testing.T) {
 		arg := storage.CreateCharacterNotificationParams{
 			Body:           optional.New("body"),
 			CharacterID:    c.ID,
-			IsRead:         optional.New(true),
+			IsRead:         true,
 			NotificationID: 42,
 			RecipientID:    optional.New(recipient.ID),
 			SenderID:       sender.ID,
@@ -76,7 +76,7 @@ func TestCharacterNotification(t *testing.T) {
 		o, err := st.GetCharacterNotification(t.Context(), c.ID, 42)
 		require.NoError(t, err)
 		xassert.Equal(t, c.ID, o.CharacterID)
-		assert.True(t, o.IsRead.ValueOrZero())
+		assert.True(t, o.IsRead)
 		xassert.Equal(t, 42, o.NotificationID)
 		xassert.Equal(t, sender, o.Sender)
 		xassert.EqualOptional(t, "text", o.Text)
@@ -94,7 +94,7 @@ func TestCharacterNotification(t *testing.T) {
 		sender := f.CreateEveEntityCharacter()
 		arg := storage.CreateCharacterNotificationParams{
 			CharacterID:    c.ID,
-			IsRead:         optional.New(true),
+			IsRead:         true,
 			NotificationID: 42,
 			SenderID:       sender.ID,
 			Text:           optional.New("text"),
@@ -116,19 +116,19 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
 			ID:     n.ID,
-			IsRead: optional.New(true),
+			IsRead: true,
 		})
 		// then
 		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
 		require.NoError(t, err)
-		assert.True(t, o.IsRead.ValueOrZero())
+		assert.True(t, o.IsRead)
 	})
 	t.Run("can updates IsRead 2", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			IsRead: optional.New(true),
+			IsRead: true,
 		})
 		// when
 		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
@@ -138,7 +138,7 @@ func TestCharacterNotification(t *testing.T) {
 		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
 		require.NoError(t, err)
-		assert.False(t, o.IsRead.ValueOrZero())
+		assert.False(t, o.IsRead)
 	})
 	t.Run("can update title", func(t *testing.T) {
 		// given
@@ -214,7 +214,7 @@ func TestCharacterNotification(t *testing.T) {
 		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
 			Type:        "StructureUnderAttack",
-			IsRead:      optional.New(true),
+			IsRead:      true,
 		})
 		f.CreateCharacterNotification()
 		// when
@@ -252,13 +252,11 @@ func TestStorage_UpdateCharacterNotificationsSetIsRead(t *testing.T) {
 
 	cases := []struct {
 		name    string
-		initial optional.Optional[bool]
+		initial bool
 		want    bool
 	}{
-		{"can set read when unread", optional.New(false), true},
-		{"can set unread when read", optional.New(true), false},
-		{"can set read when empty", optional.Optional[bool]{}, true},
-		{"can set unread when empty", optional.Optional[bool]{}, false},
+		{"can set read when unread", false, true},
+		{"can set unread when read", true, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -277,7 +275,7 @@ func TestStorage_UpdateCharacterNotificationsSetIsRead(t *testing.T) {
 			require.NoError(t, err)
 			n2, err := st.GetCharacterNotification(t.Context(), c.ID, n.ID)
 			require.NoError(t, err)
-			xassert.EqualOptional(t, tc.want, n2.IsRead)
+			xassert.Equal(t, tc.want, n2.IsRead)
 		})
 	}
 }
@@ -341,7 +339,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
 			Type:        "alpha",
-			IsRead:      optional.New(true),
+			IsRead:      true,
 		})
 		// when
 		ee, err := st.ListCharacterNotificationsUnread(t.Context(), c.ID)

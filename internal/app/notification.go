@@ -859,7 +859,7 @@ type CharacterNotification struct {
 	Body           optional.Optional[string] // generated body text in markdown
 	CharacterID    int64
 	IsProcessed    bool
-	IsRead         optional.Optional[bool]
+	IsRead         bool
 	NotificationID int64
 	Recipient      optional.Optional[*EveEntity]
 	Sender         *EveEntity

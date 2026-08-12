@@ -82,7 +82,7 @@ func TestCountNotifications(t *testing.T) {
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
 		Type:        "MoonminingExtractionStarted",
-		IsRead:      optional.New(true),
+		IsRead:      true,
 	})
 	factory.CreateCharacterNotification()
 	// when

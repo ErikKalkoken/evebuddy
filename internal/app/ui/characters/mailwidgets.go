@@ -23,50 +23,48 @@ type MailHeaderItemWidget struct {
 
 	FallbackIcon fyne.Resource
 
-	from      *widget.Label
-	icon      *canvas.Image
-	loadIcon  ui.EveEntityIconLoader
-	subject   *widget.Label
-	timestamp *widget.Label
+	fromLabel      *widget.Label
+	iconImage      *canvas.Image
+	iconLoader     ui.EveEntityIconLoader
+	subjectLabel   *widget.Label
+	timestampLabel *widget.Label
 }
 
-func NewMailHeaderItemWidget(loadIcon ui.EveEntityIconLoader) *MailHeaderItemWidget {
-	subject := widget.NewLabel("")
-	subject.Truncation = fyne.TextTruncateEllipsis
-	from := widget.NewLabel("")
-	from.Truncation = fyne.TextTruncateEllipsis
+func NewMailHeaderItemWidget(iconLoader ui.EveEntityIconLoader) *MailHeaderItemWidget {
 	w := &MailHeaderItemWidget{
-		FallbackIcon: icons.Questionmark32Png,
-		from:         from,
-		loadIcon:     loadIcon,
-		subject:      subject,
-		timestamp:    widget.NewLabel(""),
+		FallbackIcon:   icons.Questionmark32Png,
+		fromLabel:      widget.NewLabel(""),
+		iconLoader:     iconLoader,
+		subjectLabel:   widget.NewLabel(""),
+		timestampLabel: widget.NewLabel(""),
 	}
-	w.icon = xwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(ui.IconUnitSize))
-	w.icon.CornerRadius = ui.IconUnitSize / 2
+	w.fromLabel.Truncation = fyne.TextTruncateEllipsis
+	w.iconImage = xwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(ui.IconUnitSize))
+	w.iconImage.CornerRadius = ui.IconUnitSize / 2
+	w.subjectLabel.Truncation = fyne.TextTruncateEllipsis
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *MailHeaderItemWidget) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
-	w.from.Text = from.Name
-	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
-	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.subject.Text = subject
-	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.loadIcon(from, ui.IconPixelSize, func(r fyne.Resource) {
-		w.icon.Resource = r
-		w.icon.Refresh()
+	w.fromLabel.Text = from.NameOrZero()
+	w.fromLabel.TextStyle = fyne.TextStyle{Bold: !isRead}
+	w.timestampLabel.Text = timestamp.Format(app.VariableDateFormat(timestamp))
+	w.timestampLabel.TextStyle = fyne.TextStyle{Bold: !isRead}
+	w.subjectLabel.Text = subject
+	w.subjectLabel.TextStyle = fyne.TextStyle{Bold: !isRead}
+	w.iconLoader(from, ui.IconPixelSize, func(r fyne.Resource) {
+		w.iconImage.Resource = r
+		w.iconImage.Refresh()
 	})
 	w.Refresh()
 }
 
 func (w *MailHeaderItemWidget) Refresh() {
 	fyne.Do(func() {
-		w.from.Refresh()
-		w.subject.Refresh()
-		w.timestamp.Refresh()
+		w.fromLabel.Refresh()
+		w.subjectLabel.Refresh()
+		w.timestampLabel.Refresh()
 		w.BaseWidget.Refresh()
 	})
 }
@@ -75,11 +73,11 @@ func (w *MailHeaderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
-		container.NewBorder(nil, nil, nil, w.timestamp, w.from),
+		container.NewBorder(nil, nil, nil, w.timestampLabel, w.fromLabel),
 	)
-	second := container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.subject)
+	second := container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.subjectLabel)
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
-	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
+	c := container.NewBorder(nil, nil, container.NewPadded(w.iconImage), nil, main)
 	return widget.NewSimpleRenderer(c)
 }
 

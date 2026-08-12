@@ -162,7 +162,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 				}
 				arg2 := storage.UpdateCharacterNotificationParams{
 					ID:     o.ID,
-					IsRead: optional.FromPtr(n.IsRead),
+					IsRead: optional.FromPtr(n.IsRead).ValueOrZero(),
 				}
 				title, body, err := s.ens.RenderESI(ctx, o.Type, o.Text, o.Timestamp)
 				if errors.Is(err, app.ErrNotFound) {
@@ -205,7 +205,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 				g.Go(func() error {
 					arg := storage.CreateCharacterNotificationParams{
 						CharacterID:    characterID,
-						IsRead:         optional.FromPtr(n.IsRead),
+						IsRead:         optional.FromPtr(n.IsRead).ValueOrZero(),
 						NotificationID: n.NotificationId,
 						SenderID:       n.SenderId,
 						Text:           optional.FromPtr(n.Text),
