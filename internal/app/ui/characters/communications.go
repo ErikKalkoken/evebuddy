@@ -689,6 +689,7 @@ type communicationsReadingPane struct {
 	co                  *Communications
 	currentNotification *app.CharacterNotification
 	developerAction     *widget.ToolbarAction
+	copyAction          *widget.ToolbarAction
 	headerWidget        *MailHeaderWidget
 	subjectLabel        *widget.Label
 	toolbar             *widget.Toolbar
@@ -697,17 +698,20 @@ type communicationsReadingPane struct {
 func newCommunicationsReadingPane(co *Communications) *communicationsReadingPane {
 	header := NewMailHeaderWidget(co.u.EVEImage().EveEntityLogoAsync, co.u.InfoViewer().Show)
 	a := &communicationsReadingPane{
-		subjectLabel: widget.NewLabel(""),
 		bodyText:     xwidget.NewRichText(),
-		headerWidget: header,
 		co:           co,
+		headerWidget: header,
+		subjectLabel: widget.NewLabel(""),
 	}
 	a.ExtendBaseWidget(a)
+	a.bodyText.Wrapping = fyne.TextWrapWord
 	a.subjectLabel.SizeName = theme.SizeNameSubHeadingText
 	a.subjectLabel.Wrapping = fyne.TextWrapWord
-	a.bodyText.Wrapping = fyne.TextWrapWord
 
-	a.toolbar = a.makeToolbar()
+	a.copyAction = widget.NewToolbarAction(theme.ContentCopyIcon(), nil)
+	a.developerAction = xwidget.NewToolbarActionMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
+	a.developerAction.ToolbarObject().Hide()
+	a.toolbar = widget.NewToolbar(a.copyAction, widget.NewToolbarSpacer(), a.developerAction)
 	a.toolbar.Hide()
 	return a
 }
@@ -721,83 +725,6 @@ func (a *communicationsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(a.subjectLabel, a.headerWidget, a.bodyText),
 	)
 	return widget.NewSimpleRenderer(c)
-}
-
-func (a *communicationsReadingPane) makeToolbar() *widget.Toolbar {
-	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			if a.currentNotification == nil {
-				return
-			}
-			cn := a.currentNotification
-
-			var recipient string
-			for _, r := range a.co.rows {
-				if r.id == cn.ID {
-					recipient = r.recipient.Name
-					break
-				}
-			}
-
-			header := fmt.Sprintf(
-				"From: %s\nSent: %s\nTo: %s",
-				cn.Sender.Name,
-				cn.Timestamp.Format(app.DateTimeFormat),
-				recipient,
-			)
-			s := cn.TitleDisplay() + "\n" + header
-			b, err := cn.BodyPlain()
-			if err != nil {
-				ui.ShowErrorAndLog(
-					"Failed to copy notification to clipboard",
-					err,
-					a.co.u.IsDeveloperMode(),
-					a.co.u.MainWindow(),
-				)
-				return
-			}
-			s += "\n\n"
-			if v, ok := b.Value(); ok {
-				s += v
-			} else {
-				s += "(no body)"
-			}
-			fyne.CurrentApp().Clipboard().SetContent(s)
-			a.co.u.ShowSnackbar("Communication copied to clipboard")
-		}),
-	)
-	items := []*fyne.MenuItem{
-		fyne.NewMenuItem(
-			"Send test notification",
-			func() {
-				if a.currentNotification == nil {
-					return
-				}
-				go a.co.u.Character().SendDesktopNotification(context.Background(), a.currentNotification)
-			},
-		),
-		fyne.NewMenuItem(
-			"Copy notification object to clipboard",
-			func() {
-				b, err := a.currentNotification.ToJSON()
-				if err != nil {
-					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
-					a.co.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
-					return
-				}
-				if len(b) == 0 {
-					return
-				}
-				fyne.CurrentApp().Clipboard().SetContent(string(b))
-				a.co.u.ShowSnackbar("Notification object copied to clipboard")
-			},
-		),
-	}
-	a.developerAction = kxwidget.NewToolbarActionMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("", items...))
-	a.developerAction.ToolbarObject().Hide()
-	toolbar.Append(widget.NewToolbarSpacer())
-	toolbar.Append(a.developerAction)
-	return toolbar
 }
 
 func (a *communicationsReadingPane) clear() {
@@ -861,10 +788,14 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 				}
 			}
 			if a.co.u.IsDeveloperMode() {
+				items := a.makeMenuItems(cn)
+				xwidget.SetToolbarActionMenu(a.developerAction, fyne.NewMenu("", items...))
 				a.developerAction.ToolbarObject().Show()
 			} else {
 				a.developerAction.ToolbarObject().Hide()
 			}
+
+			a.copyAction.OnActivated = a.makeCopyAction(cn, r.recipient.NameOrZero())
 
 			a.currentNotification = cn
 			a.bodyText.Show()
@@ -873,6 +804,73 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 			a.toolbar.Show()
 		})
 	}()
+}
+
+func (a *communicationsReadingPane) makeCopyAction(cn *app.CharacterNotification, recipientName string) func() {
+	f := func() {
+		if cn == nil {
+			return
+		}
+
+		header := fmt.Sprintf(
+			"From: %s\nSent: %s\nTo: %s",
+			cn.Sender.Name,
+			cn.Timestamp.Format(app.DateTimeFormat),
+			recipientName,
+		)
+		s := cn.TitleDisplay() + "\n" + header
+		b, err := cn.BodyPlain()
+		if err != nil {
+			ui.ShowErrorAndLog(
+				"Failed to copy notification to clipboard",
+				err,
+				a.co.u.IsDeveloperMode(),
+				a.co.u.MainWindow(),
+			)
+			return
+		}
+		s += "\n\n"
+		if v, ok := b.Value(); ok {
+			s += v
+		} else {
+			s += "(no body)"
+		}
+		fyne.CurrentApp().Clipboard().SetContent(s)
+		a.co.u.ShowSnackbar("Communication copied to clipboard")
+	}
+	return f
+}
+
+func (a *communicationsReadingPane) makeMenuItems(cn *app.CharacterNotification) []*fyne.MenuItem {
+	typeItem := fyne.NewMenuItem(cn.Type.Display(), nil)
+	typeItem.Disabled = true
+	items := []*fyne.MenuItem{
+		typeItem,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem(
+			"Send test notification",
+			func() {
+				go a.co.u.Character().SendDesktopNotification(context.Background(), cn)
+			},
+		),
+		fyne.NewMenuItem(
+			"Copy notification object to clipboard",
+			func() {
+				b, err := cn.ToJSON()
+				if err != nil {
+					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
+					a.co.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
+					return
+				}
+				if len(b) == 0 {
+					return
+				}
+				fyne.CurrentApp().Clipboard().SetContent(string(b))
+				a.co.u.ShowSnackbar("Notification object copied to clipboard")
+			},
+		),
+	}
+	return items
 }
 
 func parseIDs(input string) (int64, int64, error) {
