@@ -91,7 +91,10 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received notifications from ESI", "characterID", characterID, "count", len(notifications))
+			slog.Debug("Received notifications from ESI",
+				slog.Any("characterID", characterID),
+				slog.Any("count", len(notifications)),
+			)
 			return notifications, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
@@ -125,7 +128,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 
 			var updatedCount int
 			for _, n := range existingNotifs {
-				o, err := s.st.GetCharacterNotification(ctx, characterID, n.NotificationId)
+				current, err := s.st.GetCharacterNotification(ctx, characterID, n.NotificationId)
 				if err != nil {
 					slog.Error("Failed to get existing character notification",
 						slog.Any("characterID", characterID),
@@ -133,38 +136,56 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 						slog.Any("error", err))
 					continue
 				}
-				arg1 := storage.UpdateCharacterNotificationParams{
-					ID:     o.ID,
-					IsRead: o.IsRead,
-					Title:  o.Title,
-					Body:   o.Body,
-				}
-				arg2 := storage.UpdateCharacterNotificationParams{
-					ID:     o.ID,
-					IsRead: optional.FromPtr(n.IsRead).ValueOrZero(),
-				}
-				title, body, err := s.ens.RenderESI(ctx, o.Type, o.Text, o.Timestamp)
+				var title2, body2 optional.Optional[string]
+				t, b, err := s.ens.RenderESI(ctx, current.Type, optional.FromPtr(n.Text), n.Timestamp)
 				if errors.Is(err, app.ErrNotFound) {
 					// do nothing
 				} else if err != nil {
-					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+					slog.Error("Failed to render character notification",
+						slog.Any("characterID", characterID),
+						slog.Any("NotificationID", n.NotificationId),
+						slog.Any("error", err),
+					)
+					continue
 				} else {
-					arg2.Title.Set(title)
-					arg2.Body.Set(body)
+					title2.Set(t)
+					body2.Set(b)
 				}
-				if arg2 != arg1 {
-					if err := s.st.UpdateCharacterNotification(ctx, arg2); err != nil {
+				isRead2 := optional.FromPtr(n.IsRead).ValueOrZero()
+				if !arg.forceUpdate {
+					isRead2 = isRead2 || current.IsRead
+				}
+				var needsUpdate bool
+				if arg.forceUpdate ||
+					body2 != current.Body ||
+					title2 != current.Title ||
+					(isRead2 && !current.IsRead) {
+					needsUpdate = true
+				}
+				if needsUpdate {
+					err := s.st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+						Body:   body2,
+						ID:     current.ID,
+						IsRead: isRead2,
+						Title:  title2,
+					})
+					if err != nil {
 						return false, err
 					}
 					updatedCount++
 				}
 			}
+			var changed bool
 			if updatedCount > 0 {
-				slog.Info("Updated notifications", "characterID", characterID, "count", updatedCount)
+				slog.Info("Updated notifications",
+					slog.Any("characterID", characterID),
+					slog.Any("count", updatedCount),
+				)
+				changed = true
 			}
 			if len(newNotifs) == 0 {
 				slog.Info("No new notifications", "characterID", characterID)
-				return true, nil
+				return changed, nil
 			}
 
 			if err := s.loadEntitiesForNotifications(ctx, characterID, newNotifs); err != nil {

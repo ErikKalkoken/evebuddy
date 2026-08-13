@@ -858,6 +858,8 @@ func EveNotificationTypeFromString(s string) (EveNotificationType, bool) {
 	return nt, true
 }
 
+// TODO: Set recipient from parsed data, e.g. for corp messages
+
 type CharacterNotification struct {
 	ID             int64
 	Body           optional.Optional[string] // generated body text in markdown

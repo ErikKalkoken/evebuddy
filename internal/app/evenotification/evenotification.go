@@ -1,7 +1,6 @@
 // Package evenotification contains the business logic for dealing with EVE Online notifications.
 //
-// It defines the notification types and related categories
-// and provides a service for rendering notifications titles and bodies.
+// It provides a service for rendering notifications titles and bodies.
 package evenotification
 
 import (
