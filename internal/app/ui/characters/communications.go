@@ -375,9 +375,7 @@ func (a *communicationsNavigationPane) makeFolders() ([]notificationFolder, opti
 			nf.unread.Set(gc.unread)
 			unreadCount.Set(unreadCount.ValueOrZero() + gc.unread)
 		}
-		if nf.total.ValueOrZero() > 0 {
-			folders = append(folders, nf)
-		}
+		folders = append(folders, nf)
 	}
 	slices.SortFunc(folders, func(a, b notificationFolder) int {
 		return cmp.Compare(a.name, b.name)
