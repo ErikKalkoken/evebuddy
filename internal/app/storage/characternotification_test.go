@@ -262,27 +262,49 @@ func TestCharacterNotification_List(t *testing.T) {
 		e1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e3 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+
 		// when
 		got, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can list existing entries", func(t *testing.T) {
+
+	t.Run("can list notifications for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacter()
 		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
 		})
 		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
 		})
+		f.CreateCharacterNotification()
+
 		// when
 		ee, err := st.ListCharacterNotifications(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		want := set.Of(n1.NotificationID, n2.NotificationID)
+		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+			return x.NotificationID
+		}))
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("can list notifications for all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n1 := f.CreateCharacterNotification()
+		n2 := f.CreateCharacterNotification()
+
+		// when
+		ee, err := st.ListAllCharacterNotifications(t.Context())
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(n1.NotificationID, n2.NotificationID)

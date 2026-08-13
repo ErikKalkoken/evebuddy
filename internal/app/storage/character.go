@@ -161,6 +161,8 @@ func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (option
 	return optional.FromNullFloat64(v), nil
 }
 
+// TODO: Try to make this operation more efficient
+
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.qRO.ListCharacters(ctx)
 	if err != nil {

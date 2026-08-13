@@ -59,9 +59,20 @@ FROM
     JOIN notification_types nt ON nt.id = cn.type_id
     LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
-    character_id = ?
-ORDER BY
-    timestamp DESC;
+    character_id = ?;
+
+-- name: ListAllCharacterNotifications :many
+SELECT
+    sqlc.embed(cn),
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
+FROM
+    character_notifications cn
+    JOIN eve_entities sender ON sender.id = cn.sender_id
+    JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id;
 
 -- name: ListCharacterNotificationsUnprocessed :many
 SELECT

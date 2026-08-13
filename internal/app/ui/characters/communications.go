@@ -32,9 +32,10 @@ type notificationRow struct {
 	id                      int64
 	isRead                  bool
 	isRead2                 bool // updated by user, can be newer then isRead
+	notificationGroup       app.EveNotificationGroup
 	notificationID          int64
 	notificationTypeDisplay string
-	notificationGroup       app.EveNotificationGroup
+	recipient               *app.EveEntity
 	searchTarget            string
 	sender                  *app.EveEntity
 	subject                 string
@@ -53,38 +54,63 @@ type Communications struct {
 	NavigationPane *communicationsNavigationPane
 	ReadingPane    *communicationsReadingPane
 
-	character atomic.Pointer[app.Character]
-	rows      []notificationRow
-	u         baseUI
+	character    atomic.Pointer[app.Character]
+	forCharacter atomic.Bool
+	rows         []notificationRow
+	u            baseUI
 }
 
-func NewCommunications(u baseUI) *Communications {
+func NewCommunicationsForCharacter(u baseUI) *Communications {
+	return newCommunications(u, true)
+}
+
+func NewUnifiedCommunications(u baseUI) *Communications {
+	return newCommunications(u, false)
+}
+
+func newCommunications(u baseUI, forCharacter bool) *Communications {
 	a := &Communications{
 		u: u,
 	}
 	a.ExtendBaseWidget(a)
-
+	a.forCharacter.Store(forCharacter)
 	a.MessagePane = newCommunicationsMessagePane(a)
 	a.NavigationPane = newCommunicationsNavigationPane(a)
 	a.ReadingPane = newCommunicationsReadingPane(a)
 
 	// Signals
-	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		a.character.Store(c)
-		fyne.Do(func() {
-			a.ReadingPane.clear()
-		})
-		a.update(ctx)
-	})
-	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDOrZero() != arg.CharacterID {
-			return
-		}
-		if arg.Section == app.SectionCharacterNotifications {
+	if forCharacter {
+		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+			a.character.Store(c)
+			fyne.Do(func() {
+				a.ReadingPane.clear()
+			})
 			a.update(ctx)
-		}
-	})
-
+		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if a.character.Load().IDOrZero() != arg.CharacterID {
+				return
+			}
+			if arg.Section == app.SectionCharacterNotifications {
+				a.update(ctx)
+			}
+		})
+	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if arg.Section == app.SectionCharacterNotifications {
+				a.update(ctx)
+			}
+		})
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
+	}
 	return a
 }
 
@@ -121,26 +147,27 @@ func (a *Communications) update(ctx context.Context) {
 		})
 	}
 
-	character := a.character.Load()
-	if character == nil {
-		reset()
-		setFooter("No character", widget.LowImportance)
-		return
+	var characterID int64
+	if a.forCharacter.Load() {
+		characterID = a.character.Load().IDOrZero()
+		if characterID == 0 {
+			reset()
+			setFooter("No character", widget.LowImportance)
+			return
+		}
+		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
+		if err != nil {
+			reset()
+			setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			return
+		}
+		if !hasData {
+			reset()
+			setFooter("No data", widget.WarningImportance)
+			return
+		}
 	}
-
-	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterNotifications)
-	if err != nil {
-		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		return
-	}
-	if !hasData {
-		reset()
-		setFooter("No data", widget.WarningImportance)
-		return
-	}
-
-	rows, _, err := a.fetchRows(ctx, character)
+	rows, _, err := a.fetchRows(ctx, characterID)
 	if err != nil {
 		reset()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -153,8 +180,21 @@ func (a *Communications) update(ctx context.Context) {
 	})
 }
 
-func (a *Communications) fetchRows(ctx context.Context, character *app.Character) ([]notificationRow, int, error) {
-	oo, err := a.u.Character().ListCharacterNotifications(ctx, character.ID)
+func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]notificationRow, int, error) {
+	characters, err := a.u.Character().ListCharacters(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	characterMap := make(map[int64]*app.Character)
+	for _, c := range characters {
+		characterMap[c.ID] = c
+	}
+	var oo []*app.CharacterNotification
+	if characterID != 0 {
+		oo, err = a.u.Character().ListNotifications(ctx, characterID)
+	} else {
+		oo, err = a.u.Character().ListAllNotifications(ctx)
+	}
 	if err != nil {
 		return nil, 0, err
 	}
@@ -163,16 +203,26 @@ func (a *Communications) fetchRows(ctx context.Context, character *app.Character
 	for i, o := range oo {
 		// Replace generic corporations && alliances in notifications
 		var sender *app.EveEntity
-		switch o.Sender.ID {
-		case app.EveTypeAlliance:
-			sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
-				ID:       1,
-				Name:     "Unknown",
-				Category: app.EveEntityCorporation,
-			})
-		case app.EveTypeCorporation:
-			sender = character.EveCharacter.Corporation
-		default:
+		character, ok := characterMap[o.CharacterID]
+		if ok {
+			switch o.Sender.ID {
+			case app.EveTypeAlliance:
+				sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+					ID:       1,
+					Name:     "Unknown",
+					Category: app.EveEntityCorporation,
+				})
+			case app.EveTypeCorporation:
+				sender = character.EveCharacter.Corporation
+			default:
+				sender = o.Sender
+			}
+		} else {
+			slog.Warn(
+				"Failed to map character to notification in communications UI",
+				slog.Int64("characterID", o.CharacterID),
+				slog.Int64("notificationID", o.NotificationID),
+			)
 			sender = o.Sender
 		}
 		subject := o.TitleDisplay()
@@ -187,6 +237,11 @@ func (a *Communications) fetchRows(ctx context.Context, character *app.Character
 			sender:                  sender,
 			subject:                 subject,
 			timestamp:               o.Timestamp,
+			recipient: o.Recipient.ValueOrFallback(&app.EveEntity{
+				ID:       character.EveCharacter.ID,
+				Name:     character.EveCharacter.Name,
+				Category: app.EveEntityCharacter,
+			}),
 		}
 		r.isRead2 = r.isRead
 		rows[i] = r
@@ -308,7 +363,7 @@ func (a *communicationsNavigationPane) makeFolders() ([]notificationFolder, opti
 	}
 
 	var folders []notificationFolder
-	var unreadCount, totalCount optional.Optional[int]
+	var unreadCount optional.Optional[int]
 	for _, g := range app.NotificationGroups() {
 		nf := notificationFolder{
 			folder: g,
@@ -318,7 +373,6 @@ func (a *communicationsNavigationPane) makeFolders() ([]notificationFolder, opti
 		if ok {
 			nf.total.Set(gc.total)
 			nf.unread.Set(gc.unread)
-			totalCount.Set(totalCount.ValueOrZero() + gc.total)
 			unreadCount.Set(unreadCount.ValueOrZero() + gc.unread)
 		}
 		if nf.total.ValueOrZero() > 0 {
@@ -333,6 +387,7 @@ func (a *communicationsNavigationPane) makeFolders() ([]notificationFolder, opti
 		name:   "All",
 		unread: unreadCount,
 	})
+	totalCount := optional.New(len(a.co.rows))
 	return folders, totalCount, unreadCount
 }
 
@@ -596,7 +651,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			id2idx[r.id] = i
 		}
 
-		footer := fmt.Sprintf("Showing %d / %d messages", len(rows), totalRows)
+		footer := fmt.Sprintf("Showing %s / %s messages", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 		fyne.Do(func() {
 			a.footerLabel.Text = footer
 			a.footerLabel.Importance = widget.MediumImportance
@@ -676,14 +731,21 @@ func (a *communicationsReadingPane) makeToolbar() *widget.Toolbar {
 			if a.currentNotification == nil {
 				return
 			}
-
 			cn := a.currentNotification
-			recipient := a.notificationRecipient(cn)
+
+			var recipient string
+			for _, r := range a.co.rows {
+				if r.id == cn.ID {
+					recipient = r.recipient.Name
+					break
+				}
+			}
+
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
 				cn.Timestamp.Format(app.DateTimeFormat),
-				recipient.Name,
+				recipient,
 			)
 			s := cn.TitleDisplay() + "\n" + header
 			b, err := cn.BodyPlain()
@@ -711,9 +773,6 @@ func (a *communicationsReadingPane) makeToolbar() *widget.Toolbar {
 			"Send test notification",
 			func() {
 				if a.currentNotification == nil {
-					return
-				}
-				if a.co.character.Load() == nil {
 					return
 				}
 				go a.co.u.Character().SendDesktopNotification(context.Background(), a.currentNotification)
@@ -778,7 +837,7 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 		}
 		fyne.Do(func() {
 			a.subjectLabel.SetText(cn.TitleDisplay())
-			a.headerWidget.Set(cn.Sender, cn.Timestamp, a.notificationRecipient(cn))
+			a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
 			if v, ok := cn.Body.Value(); !ok {
 				a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
 					ColorName: theme.ColorNameDisabled,
@@ -816,15 +875,6 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 			a.toolbar.Show()
 		})
 	}()
-}
-
-func (a *communicationsReadingPane) notificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
-	o := &app.EveEntity{
-		ID:       cn.CharacterID,
-		Name:     a.co.character.Load().NameOrZero(),
-		Category: app.EveEntityCharacter,
-	}
-	return o
 }
 
 func parseIDs(input string) (int64, int64, error) {

@@ -106,6 +106,21 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage(assetsTitle, u.assetSearchAll),
 	)
 
+	unifiedCommunications := xwidget.NewNavPage(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		newContentPage("Communications", u.unifiedCommunications),
+	)
+	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if v, ok := count.Value(); !ok {
+			s = "?"
+		} else if v > 0 {
+			s = formatBadge(count.ValueOrZero(), 999)
+		}
+		homeNav.SetItemBadge(unifiedCommunications, s)
+	}
+
 	contracts := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
@@ -193,6 +208,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				container.NewTabItem("Jump Clones", u.clones),
 			)),
 		),
+		unifiedCommunications,
 		contracts,
 		overviewColonies,
 		industry,

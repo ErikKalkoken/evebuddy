@@ -425,6 +425,34 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	return set.Collect(slices.Values(ids)), nil
 }
 
+func (st *Storage) ListAllCharacterNotifications(ctx context.Context) ([]*app.CharacterNotification, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListAllCharacterNotifications: %w", err)
+	}
+	rows, err := st.qRO.ListAllCharacterNotifications(ctx)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	ee := make([]*app.CharacterNotification, len(rows))
+	for i, r := range rows {
+		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		ee[i] = characterNotificationFromDBModel(
+			r.CharacterNotification,
+			r.EveEntity,
+			nt,
+			nullEveEntity{
+				category: r.RecipientCategory,
+				id:       r.CharacterNotification.RecipientID,
+				name:     r.RecipientName,
+			},
+		)
+	}
+	return ee, nil
+}
+
 func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterNotifications: %d: %w", characterID, err)

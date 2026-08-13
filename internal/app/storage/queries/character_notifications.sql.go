@@ -179,6 +179,71 @@ func (q *Queries) GetNotificationTypeID(ctx context.Context, name string) (int64
 	return id, err
 }
 
+const listAllCharacterNotifications = `-- name: ListAllCharacterNotifications :many
+SELECT
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
+FROM
+    character_notifications cn
+    JOIN eve_entities sender ON sender.id = cn.sender_id
+    JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
+`
+
+type ListAllCharacterNotificationsRow struct {
+	CharacterNotification CharacterNotification
+	EveEntity             EveEntity
+	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
+}
+
+func (q *Queries) ListAllCharacterNotifications(ctx context.Context) ([]ListAllCharacterNotificationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterNotifications)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterNotificationsRow
+	for rows.Next() {
+		var i ListAllCharacterNotificationsRow
+		if err := rows.Scan(
+			&i.CharacterNotification.ID,
+			&i.CharacterNotification.Body,
+			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsProcessed,
+			&i.CharacterNotification.IsRead,
+			&i.CharacterNotification.NotificationID,
+			&i.CharacterNotification.SenderID,
+			&i.CharacterNotification.Text,
+			&i.CharacterNotification.Timestamp,
+			&i.CharacterNotification.Title,
+			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.RecipientID,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.NotificationType.ID,
+			&i.NotificationType.Name,
+			&i.RecipientName,
+			&i.RecipientCategory,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterNotificationIDs = `-- name: ListCharacterNotificationIDs :many
 SELECT
     notification_id
@@ -225,8 +290,6 @@ FROM
     LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
-ORDER BY
-    timestamp DESC
 `
 
 type ListCharacterNotificationsRow struct {

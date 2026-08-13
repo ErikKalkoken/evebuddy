@@ -71,7 +71,11 @@ func (s *CharacterService) SendDesktopNotification(ctx context.Context, n *app.C
 	return nil
 }
 
-func (s *CharacterService) ListCharacterNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListAllNotifications(ctx context.Context) ([]*app.CharacterNotification, error) {
+	return s.st.ListAllCharacterNotifications(ctx)
+}
+
+func (s *CharacterService) ListNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotifications(ctx, characterID)
 }
 

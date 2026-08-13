@@ -833,6 +833,7 @@ func NotificationGroups() []EveNotificationGroup {
 		GroupSovereignty,
 		GroupStructure,
 		GroupWar,
+		GroupUnknown,
 	}
 }
 
