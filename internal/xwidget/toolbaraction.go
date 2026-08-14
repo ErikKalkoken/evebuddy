@@ -16,8 +16,6 @@ func NewToolbarActionMenu(icon fyne.Resource, menu *fyne.Menu) *widget.ToolbarAc
 func SetToolbarActionMenu(a *widget.ToolbarAction, menu *fyne.Menu) {
 	o := a.ToolbarObject()
 	a.OnActivated = func() {
-		c := fyne.CurrentApp().Driver().CanvasForObject(o)
-		m := widget.NewPopUpMenu(menu, c)
-		m.ShowAtRelativePosition(fyne.Position{}, o)
+		ShowPopUpMenuBelowLeading(o, menu)
 	}
 }
