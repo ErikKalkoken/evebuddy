@@ -5,6 +5,7 @@ package xwidget
 
 import (
 	_ "embed"
+
 	"fyne.io/fyne/v2"
 )
 
@@ -13,6 +14,20 @@ var iconBlankSvgData []byte
 var iconBlankSvg = &fyne.StaticResource{
 	StaticName:    "resources/blank.svg",
 	StaticContent: iconBlankSvgData,
+}
+
+//go:embed resources/filter-menu-outline.svg
+var iconFilterMenuOutlineSvgData []byte
+var iconFilterMenuOutlineSvg = &fyne.StaticResource{
+	StaticName:    "resources/filter-menu-outline.svg",
+	StaticContent: iconFilterMenuOutlineSvgData,
+}
+
+//go:embed resources/filter-menu.svg
+var iconFilterMenuSvgData []byte
+var iconFilterMenuSvg = &fyne.StaticResource{
+	StaticName:    "resources/filter-menu.svg",
+	StaticContent: iconFilterMenuSvgData,
 }
 
 //go:embed resources/sort-ascending.svg

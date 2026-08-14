@@ -28,18 +28,20 @@ import (
 )
 
 type notificationRow struct {
-	characterID             int64
-	id                      int64
-	isRead                  bool
-	isRead2                 bool // updated by user, can be newer then isRead
-	notificationGroup       app.EveNotificationGroup
-	notificationID          int64
-	notificationTypeDisplay string
-	recipient               *app.EveEntity
-	searchTarget            string
-	sender                  *app.EveEntity
-	subject                 string
-	timestamp               time.Time
+	characterID              int64
+	characterName            string
+	id                       int64
+	isRead                   bool
+	isRead2                  bool // updated by user, can be newer then isRead
+	notificationGroup        app.EveNotificationGroup
+	notificationGroupDisplay string
+	notificationID           int64
+	notificationTypeDisplay  string
+	recipient                *app.EveEntity
+	searchTarget             string
+	sender                   *app.EveEntity
+	subject                  string
+	timestamp                time.Time
 }
 
 func (n notificationRow) isGroup(g app.EveNotificationGroup) bool {
@@ -227,19 +229,21 @@ func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]no
 		}
 		subject := o.TitleDisplay()
 		r := notificationRow{
-			characterID:             o.CharacterID,
-			id:                      o.ID,
-			isRead:                  o.IsRead,
-			notificationGroup:       o.Type.Group(),
-			notificationID:          o.NotificationID,
-			notificationTypeDisplay: o.Type.Display(),
-			searchTarget:            strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
-			sender:                  sender,
-			subject:                 subject,
-			timestamp:               o.Timestamp,
+			characterID:              o.CharacterID,
+			characterName:            character.NameOrZero(),
+			id:                       o.ID,
+			isRead:                   o.IsRead,
+			notificationGroup:        o.Type.Group(),
+			notificationGroupDisplay: o.Type.Group().String(),
+			notificationID:           o.NotificationID,
+			notificationTypeDisplay:  o.Type.Display(),
+			searchTarget:             strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
+			sender:                   sender,
+			subject:                  subject,
+			timestamp:                o.Timestamp,
 			recipient: o.Recipient.ValueOrFallback(&app.EveEntity{
-				ID:       character.EveCharacter.ID,
-				Name:     character.EveCharacter.Name,
+				ID:       o.CharacterID,
+				Name:     character.NameOrZero(),
 				Category: app.EveEntityCharacter,
 			}),
 		}
@@ -423,10 +427,20 @@ func (w *folderItemWidget) set(r notificationFolder) {
 	w.name.Refresh()
 }
 
+// Columns for sorting
 const (
 	communicationsColTimestamp = iota + 1
 	communicationsColSender
 	communicationsColType
+)
+
+// Filter options
+const (
+	communicationsFilterCharacter = "Character"
+	communicationsFilterGroup     = "Group"
+	communicationsFilterRecipient = "Recipient"
+	communicationsFilterType      = "Type"
+	communicationsFilterUnread    = "Unread"
 )
 
 type communicationsMessagePane struct {
@@ -437,6 +451,7 @@ type communicationsMessagePane struct {
 	co            *Communications
 	columnSorter  *xwidget.ColumnSorter[notificationRow]
 	currentFolder app.EveNotificationGroup
+	filterChip    *xwidget.FilterChipCompact
 	footerLabel   *widget.Label
 	messageList   *widget.List
 	moreButton    *kxwidget.IconButton
@@ -444,7 +459,6 @@ type communicationsMessagePane struct {
 	searchEntry   *widget.Entry
 	sortButton    *xwidget.SortButton
 	topLabel      *widget.Label
-	unreadChip    *kxwidget.FilterChip
 }
 
 func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane {
@@ -491,8 +505,8 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
 	}, a.co.u.MainWindow())
-	a.unreadChip = kxwidget.NewFilterChip("Unread", func(on bool) {
-		if on {
+	a.filterChip = xwidget.NewFilterChipCompact(func(state map[string]string) {
+		if state[communicationsFilterUnread] != "" {
 			a.co.updateIsRead(a.currentFolder)
 		}
 		a.filterRowsAsync()
@@ -512,7 +526,7 @@ func (a *communicationsMessagePane) CreateRenderer() fyne.WidgetRenderer {
 				nil,
 				nil,
 				nil,
-				container.NewHBox(a.unreadChip, a.sortButton),
+				container.NewHBox(a.filterChip, a.sortButton),
 				a.searchEntry,
 			),
 		),
@@ -624,16 +638,36 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 		})
 	}
 	totalRows := len(rows)
-	unread := a.unreadChip.On
+	filter := a.filterChip.Selected
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 	go func() {
 		// filter
-		if unread {
+		if filter[communicationsFilterUnread] != "" {
 			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
 				return r.isRead
 			})
 		}
+		if x := filter[communicationsFilterCharacter]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+				return r.characterName != x
+			})
+		}
+		if x := filter[communicationsFilterGroup]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+				return r.notificationGroupDisplay != x
+			})
+		}
+		if x := filter[communicationsFilterRecipient]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+				return r.recipient.Name != x
+			})
+		}
+		// if x := filter[communicationsFilterType]; x != "" {
+		// 	rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+		// 		return r.notificationTypeDisplay != x
+		// 	})
+		// }
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -643,6 +677,20 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 		// sort
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
+		// collect options
+		// typesOptions := xslices.Map(rows, func(r notificationRow) string {
+		// 	return r.notificationTypeDisplay
+		// })
+		characterOptions := xslices.Map(rows, func(r notificationRow) string {
+			return r.characterName
+		})
+		groupOptions := xslices.Map(rows, func(r notificationRow) string {
+			return r.notificationGroupDisplay
+		})
+		recipientOptions := xslices.Map(rows, func(r notificationRow) string {
+			return r.recipient.Name
+		})
+
 		// refresh
 		id2idx := make(map[int64]int)
 		for i, r := range rows {
@@ -651,9 +699,21 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 
 		footer := fmt.Sprintf("Showing %s / %s messages", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 		fyne.Do(func() {
+			options := []xwidget.FilterOption{
+				xwidget.NewToogleFilterOption(communicationsFilterUnread),
+				xwidget.NewSeparatorFilterOption(),
+			}
+			if !a.co.forCharacter.Load() {
+				options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterCharacter, characterOptions))
+			}
+			if a.currentFolder.IsContainer() {
+				options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterGroup, groupOptions))
+			}
+			options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterRecipient, recipientOptions))
 			a.footerLabel.Text = footer
 			a.footerLabel.Importance = widget.MediumImportance
 			a.footerLabel.Refresh()
+			a.filterChip.SetOptions(options...)
 			a.rowsFiltered = rows
 			a.messageList.Refresh()
 			a.messageList.UnselectAll()
@@ -679,6 +739,9 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.co.ReadingPane.clear()
 	a.currentFolder = ng
 	a.topLabel.SetText(ng.String())
+	a.searchEntry.Text = ""
+	a.searchEntry.Refresh()
+	a.filterChip.Reset()
 	a.filterRowsAsync()
 }
 

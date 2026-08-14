@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -260,6 +261,10 @@ const (
 	WarRetractedByConcord
 	WarSurrenderDeclinedMsg
 	WarSurrenderOfferMsg
+
+	// numEveNotificationType must always remain at the end of the iota block.
+	// It represents the total count of valid status enums.
+	numEveNotificationType
 )
 
 // notificationCategories maps types to their recipient category.
@@ -513,6 +518,11 @@ var supportedTypes = []EveNotificationType{
 // NotificationTypesSupported returns all supported notification types.
 func NotificationTypesSupported() set.Set[EveNotificationType] {
 	return set.Collect(slices.Values(supportedTypes))
+}
+
+// EveNotificationTypes returns all known types.
+func EveNotificationTypes() []EveNotificationType {
+	return slices.Collect(maps.Keys(notificationGroups))
 }
 
 // notificationGroups maps all known types to their group.
@@ -788,14 +798,23 @@ const (
 	GroupMiscellaneous
 	GroupMoonMining
 	GroupOld
+	GroupOther
 	GroupSovereignty
 	GroupStructure
 	GroupWar
 
-	GroupOther
 	GroupUnread
 	GroupAll
 )
+
+// IsContainer reports whether a group can contain multiple other groups.
+func (ng EveNotificationGroup) IsContainer() bool {
+	switch ng {
+	case GroupUndefined, GroupAll, GroupUnread:
+		return true
+	}
+	return false
+}
 
 var group2Name = map[EveNotificationGroup]string{
 	GroupAll:            "All",
@@ -816,8 +835,8 @@ var group2Name = map[EveNotificationGroup]string{
 	GroupWar:            "War",
 }
 
-func (c EveNotificationGroup) String() string {
-	return group2Name[c]
+func (ng EveNotificationGroup) String() string {
+	return group2Name[ng]
 }
 
 // NotificationGroups returns a slice of all regular groups in alphabetical order.
