@@ -1,8 +1,11 @@
 package xwidget
 
 import (
+	"fmt"
 	"image/color"
+	"maps"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,6 +18,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+// TODO: Add tests
+
 type filterOptionKind uint
 
 const (
@@ -25,27 +30,27 @@ const (
 )
 
 type FilterOption struct {
-	name    string
-	options []string
 	kind    filterOptionKind
+	name    string
+	choices []string
 }
 
 // NewToogleFilterOption creates a toogle option for [FilterChipCompact].
 func NewToogleFilterOption(name string) FilterOption {
 	return FilterOption{
-		name: name,
 		kind: optionKindToggle,
+		name: name,
 	}
 }
 
 // NewMultiChoiceFilterOption creates a multi-choice option for [FilterChipCompact].
-// Options are sorted alphabetically and deduplicated.
-// Empty option strings will be ignored.
-func NewMultiChoiceFilterOption(name string, options []string) FilterOption {
+// Choices are sorted alphabetically and deduplicated.
+// Empty choice strings will be ignored.
+func NewMultiChoiceFilterOption(name string, choices []string) FilterOption {
 	return FilterOption{
-		name:    name,
-		options: options,
 		kind:    optionKindMultiChoice,
+		name:    name,
+		choices: choices,
 	}
 }
 
@@ -60,11 +65,8 @@ type FilterChipCompact struct {
 	widget.DisableableWidget
 
 	// OnChanged is a callback that is called when the selection state changed.
-	// It provides the current state as a map of option names and their selected value.
-	// A blank value means the option is not selected.
-	// A single value option will have the option name as value when selected.
+	// It passes the current selection.
 	OnChanged func(selected map[string]string)
-	Selected  map[string]string
 
 	background           *canvas.Rectangle
 	blankResource        fyne.Resource
@@ -79,6 +81,7 @@ type FilterChipCompact struct {
 	menu                 *fyne.Menu
 	minSize              fyne.Size // cached for hover/top pos calcs
 	resetText            string
+	selected             map[string]string
 }
 
 var _ desktop.Hoverable = (*FilterChipCompact)(nil)
@@ -90,15 +93,15 @@ var _ fyne.Widget = (*FilterChipCompact)(nil)
 // NewFilterChipCompact creates and returns a new [FilterChipCompact].
 func NewFilterChipCompact(changed func(map[string]string)) *FilterChipCompact {
 	w := &FilterChipCompact{
-		iconOnResource:       theme.NewThemedResource(iconFilterMenuSvg),
-		blankResource:        iconBlankSvg,
-		menu:                 fyne.NewMenu(""),
-		iconOffResource:      theme.NewThemedResource(iconFilterMenuOutlineSvg),
-		OnChanged:            changed,
-		itemSelectedResource: theme.ConfirmIcon(),
-		Selected:             make(map[string]string),
 		background:           canvas.NewRectangle(color.Transparent),
+		blankResource:        iconBlankSvg,
+		iconOffResource:      theme.NewThemedResource(iconFilterMenuOutlineSvg),
+		iconOnResource:       theme.NewThemedResource(iconFilterMenuSvg),
+		itemSelectedResource: theme.ConfirmIcon(),
+		menu:                 fyne.NewMenu(""),
+		OnChanged:            changed,
 		resetText:            "Reset",
+		selected:             make(map[string]string),
 	}
 	w.icon = widget.NewIcon(w.iconOffResource)
 	w.background.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
@@ -114,31 +117,32 @@ func NewFilterChipCompact(changed func(map[string]string)) *FilterChipCompact {
 //
 // The order of filter options is preserved.
 func (w *FilterChipCompact) SetOptions(opts ...FilterOption) {
-	// TODO: Check that option names are unique
+	w.removeOutdatedSelections(opts)
+	opts2 := w.removeDuplicateOptions(opts)
 
 	var items1 []*fyne.MenuItem
 
-	for _, fo := range opts {
+	for _, fo := range opts2 {
 		if fo.kind == optionKindSeparator {
 			items1 = append(items1, fyne.NewMenuItemSeparator())
 			continue
 		}
 
 		it1 := fyne.NewMenuItem(fo.name, nil)
-		if w.Selected[fo.name] != "" {
-			it1.Icon = w.itemSelectedResource
-		} else {
-			it1.Icon = w.blankResource
-		}
 
 		switch fo.kind {
 		case optionKindToggle:
+			if w.selected[fo.name] != "" {
+				it1.Icon = w.itemSelectedResource
+			} else {
+				it1.Icon = w.blankResource
+			}
 			it1.Action = func() {
-				if w.Selected[fo.name] == "" {
-					w.Selected[fo.name] = fo.name
+				if w.selected[fo.name] == "" {
+					w.selected[fo.name] = fo.name
 					it1.Icon = w.itemSelectedResource
 				} else {
-					w.Selected[fo.name] = ""
+					w.selected[fo.name] = ""
 					it1.Icon = w.blankResource
 				}
 				w.processChanged()
@@ -146,34 +150,37 @@ func (w *FilterChipCompact) SetOptions(opts ...FilterOption) {
 			}
 
 		case optionKindMultiChoice:
-			var items2 []*fyne.MenuItem
-			s := xslices.Deduplicate(fo.options)
-			s = slices.DeleteFunc(s, func(x string) bool {
-				return x == ""
-			})
-			slices.Sort(s)
-			if w.Selected[fo.name] != "" {
-				it1.Label = w.Selected[fo.name]
+			it1.Icon = w.blankResource
+			if w.selected[fo.name] != "" {
+				it1.Label = fmt.Sprintf("%s: %s", fo.name, w.selected[fo.name])
 			} else {
 				it1.Label = fo.name
 			}
-			for _, v := range s {
-				it2 := fyne.NewMenuItem(v, nil)
-				if w.Selected[fo.name] == v {
+
+			var items2 []*fyne.MenuItem
+			choices := xslices.Deduplicate(fo.choices)
+			choices = slices.DeleteFunc(choices, func(x string) bool {
+				return x == ""
+			})
+			slices.Sort(choices)
+
+			for _, c := range choices {
+				it2 := fyne.NewMenuItem(c, nil)
+				if w.selected[fo.name] == c {
 					it2.Icon = w.itemSelectedResource
 				} else {
 					it2.Icon = w.blankResource
 				}
 				it2.Action = func() {
-					if w.Selected[fo.name] == v {
-						w.Selected[fo.name] = ""
-						it1.Icon = w.blankResource
+					if w.selected[fo.name] == c {
+						w.selected[fo.name] = ""
+						it1.Label = fo.name
 					} else {
-						w.Selected[fo.name] = v
-						it1.Icon = w.itemSelectedResource
+						w.selected[fo.name] = c
+						it1.Label = fmt.Sprintf("%s: %s", fo.name, c)
 					}
 					for _, it := range items2 {
-						if it.Label == w.Selected[fo.name] {
+						if it.Label == w.selected[fo.name] {
 							it.Icon = w.itemSelectedResource
 						} else {
 							it.Icon = w.blankResource
@@ -201,10 +208,40 @@ func (w *FilterChipCompact) SetOptions(opts ...FilterOption) {
 	w.Refresh()
 }
 
+func (w *FilterChipCompact) removeOutdatedSelections(opts []FilterOption) {
+	optionNames := make(map[string]bool)
+	for _, fo := range opts {
+		if fo.kind != optionKindSeparator {
+			optionNames[fo.name] = true
+		}
+	}
+	for name := range w.selected {
+		if !optionNames[name] {
+			delete(w.selected, name)
+		}
+	}
+}
+
+func (w *FilterChipCompact) removeDuplicateOptions(opts []FilterOption) []FilterOption {
+	var opts2 []FilterOption
+	optionNames := make(map[string]bool)
+	for _, fo := range opts {
+		if fo.kind == optionKindSeparator {
+			continue
+		}
+		if optionNames[fo.name] {
+			continue // ignoring duplicate option
+		}
+		optionNames[fo.name] = true
+		opts2 = append(opts2, fo)
+	}
+	return opts2
+}
+
 func (w *FilterChipCompact) processChanged() {
 	w.Refresh()
 	if w.OnChanged != nil {
-		w.OnChanged(w.Selected)
+		w.OnChanged(w.Selected())
 	}
 }
 
@@ -215,27 +252,32 @@ func (w *FilterChipCompact) Reset() {
 			continue
 		}
 		it1.Icon = w.blankResource
+
+		if idx := strings.Index(it1.Label, ": "); idx != -1 {
+			it1.Label = it1.Label[:idx]
+		}
+
 		if m := it1.ChildMenu; m != nil {
 			for _, it2 := range m.Items {
 				it2.Icon = w.blankResource
 			}
 		}
 	}
-	for name := range w.Selected {
-		w.Selected[name] = ""
+	for name := range w.selected {
+		w.selected[name] = ""
 	}
 	w.menu.Refresh()
 	w.processChanged()
 }
 
-func (w *FilterChipCompact) showMenu() {
-	pos := fyne.NewPos(0, w.minSize.Height)
-	widget.ShowPopUpMenuAtRelativePosition(
-		w.menu,
-		fyne.CurrentApp().Driver().CanvasForObject(w),
-		pos,
-		w,
-	)
+// Selected returns the current selection.
+//
+// The selection is a map of option names and choices.
+// A toggle option has the option name as choice when selected.
+// A multi choice option has the selected choice when selected.
+// A blank choice means the option is not selected.
+func (w *FilterChipCompact) Selected() map[string]string {
+	return maps.Clone(w.selected)
 }
 
 func (w *FilterChipCompact) CreateRenderer() fyne.WidgetRenderer {
@@ -262,7 +304,7 @@ func (w *FilterChipCompact) updateState() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
 	var isOn bool
-	for _, v := range w.Selected {
+	for _, v := range w.selected {
 		if v != "" {
 			isOn = true
 		}
@@ -382,3 +424,7 @@ func (w *FilterChipCompact) TypedRune(r rune) {
 
 // TypedKey receives key input events when the Check is focused.
 func (w *FilterChipCompact) TypedKey(key *fyne.KeyEvent) {}
+
+func (w *FilterChipCompact) showMenu() {
+	ShowPopUpMenuBelowLeading(w, w.menu)
+}

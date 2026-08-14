@@ -427,6 +427,8 @@ func (w *folderItemWidget) set(r notificationFolder) {
 	w.name.Refresh()
 }
 
+// TODO: Consider keeping the available options stable when filtering
+
 // Columns for sorting
 const (
 	communicationsColTimestamp = iota + 1
@@ -439,8 +441,10 @@ const (
 	communicationsFilterCharacter = "Character"
 	communicationsFilterGroup     = "Group"
 	communicationsFilterRecipient = "Recipient"
-	communicationsFilterType      = "Type"
-	communicationsFilterUnread    = "Unread"
+	// communicationsFilterType      = "Type"
+	communicationsFilterStatus       = "Status"
+	communicationsFilterStatusRead   = "Read"
+	communicationsFilterStatusUnread = "Unread"
 )
 
 type communicationsMessagePane struct {
@@ -494,11 +498,12 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	a.ExtendBaseWidget(a)
 	a.messageList = a.makeMessageList()
 	a.topLabel.SizeName = theme.SizeNameSubHeadingText
-	a.searchEntry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+	clearSearchButton := kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.searchEntry.SetText("")
 		a.filterRowsAsync()
 	})
-	a.searchEntry.OnChanged = func(_ string) {
+	a.searchEntry.ActionItem = clearSearchButton
+	a.searchEntry.OnChanged = func(s string) {
 		a.filterRowsAsync()
 	}
 	a.searchEntry.PlaceHolder = "Search communications"
@@ -506,7 +511,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 		a.filterRowsAsync()
 	}, a.co.u.MainWindow())
 	a.filterChip = xwidget.NewFilterChipCompact(func(state map[string]string) {
-		if state[communicationsFilterUnread] != "" {
+		if state[communicationsFilterStatus] != "" {
 			a.co.updateIsRead(a.currentFolder)
 		}
 		a.filterRowsAsync()
@@ -638,15 +643,22 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 		})
 	}
 	totalRows := len(rows)
-	filter := a.filterChip.Selected
+	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 	go func() {
 		// filter
-		if filter[communicationsFilterUnread] != "" {
-			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
-				return r.isRead
-			})
+		if x := filter[communicationsFilterStatus]; x != "" {
+			switch x {
+			case communicationsFilterStatusUnread:
+				rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+					return r.isRead
+				})
+			case communicationsFilterStatusRead:
+				rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
+					return !r.isRead
+				})
+			}
 		}
 		if x := filter[communicationsFilterCharacter]; x != "" {
 			rows = slices.DeleteFunc(rows, func(r notificationRow) bool {
@@ -697,19 +709,34 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			id2idx[r.id] = i
 		}
 
-		footer := fmt.Sprintf("Showing %s / %s messages", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
+		footer := fmt.Sprintf(
+			"Showing %s / %s messages",
+			ihumanize.Comma(len(rows)),
+			ihumanize.Comma(totalRows),
+		)
 		fyne.Do(func() {
 			options := []xwidget.FilterOption{
-				xwidget.NewToogleFilterOption(communicationsFilterUnread),
-				xwidget.NewSeparatorFilterOption(),
+				xwidget.NewMultiChoiceFilterOption(communicationsFilterStatus, []string{
+					communicationsFilterStatusRead,
+					communicationsFilterStatusUnread,
+				}),
 			}
 			if !a.co.forCharacter.Load() {
-				options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterCharacter, characterOptions))
+				options = append(options, xwidget.NewMultiChoiceFilterOption(
+					communicationsFilterCharacter,
+					characterOptions,
+				))
 			}
 			if a.currentFolder.IsContainer() {
-				options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterGroup, groupOptions))
+				options = append(options, xwidget.NewMultiChoiceFilterOption(
+					communicationsFilterGroup,
+					groupOptions,
+				))
 			}
-			options = append(options, xwidget.NewMultiChoiceFilterOption(communicationsFilterRecipient, recipientOptions))
+			options = append(options, xwidget.NewMultiChoiceFilterOption(
+				communicationsFilterRecipient,
+				recipientOptions,
+			))
 			a.footerLabel.Text = footer
 			a.footerLabel.Importance = widget.MediumImportance
 			a.footerLabel.Refresh()
