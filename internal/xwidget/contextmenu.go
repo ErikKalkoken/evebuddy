@@ -37,7 +37,7 @@ func (w *ContextMenuButton) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (w *ContextMenuButton) Tapped(e *fyne.PointEvent) {
-	ShowPopUpMenuBelowLeading(w, w.menu)
+	ShowPopUpMenuBelowTrailing(w, w.menu)
 }
 
 // SetMenuItems replaces the menu items.

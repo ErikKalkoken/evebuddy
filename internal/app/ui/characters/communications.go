@@ -427,8 +427,6 @@ func (w *folderItemWidget) set(r notificationFolder) {
 	w.name.Refresh()
 }
 
-// TODO: Consider keeping the available options stable when filtering
-
 // Columns for sorting
 const (
 	communicationsColTimestamp = iota + 1
@@ -501,7 +499,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	clearSearchButton := kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.searchEntry.SetText("")
 		a.filterRowsAsync()
-	})
+	}) // TODO: Consider showing the clear button only when the entry has text. Also make this a widget maybe?
 	a.searchEntry.ActionItem = clearSearchButton
 	a.searchEntry.OnChanged = func(s string) {
 		a.filterRowsAsync()
@@ -510,7 +508,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
 	}, a.co.u.MainWindow())
-	a.filterChip = xwidget.NewFilterChipCompact(func(state map[string]string) {
+	a.filterChip = xwidget.NewFilterChipCompact(nil, func(state map[string]string) {
 		if state[communicationsFilterStatus] != "" {
 			a.co.updateIsRead(a.currentFolder)
 		}
@@ -702,6 +700,12 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 		recipientOptions := xslices.Map(rows, func(r notificationRow) string {
 			return r.recipient.Name
 		})
+		unreadOptions := xslices.Map(rows, func(r notificationRow) string {
+			if r.isRead2 {
+				return communicationsFilterStatusRead
+			}
+			return communicationsFilterStatusUnread
+		})
 
 		// refresh
 		id2idx := make(map[int64]int)
@@ -716,24 +720,24 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 		)
 		fyne.Do(func() {
 			options := []xwidget.FilterOption{
-				xwidget.NewMultiChoiceFilterOption(communicationsFilterStatus, []string{
-					communicationsFilterStatusRead,
-					communicationsFilterStatusUnread,
-				}),
+				xwidget.NewFilterOptionMultiChoice(
+					communicationsFilterStatus,
+					unreadOptions,
+				),
 			}
 			if !a.co.forCharacter.Load() {
-				options = append(options, xwidget.NewMultiChoiceFilterOption(
+				options = append(options, xwidget.NewFilterOptionMultiChoice(
 					communicationsFilterCharacter,
 					characterOptions,
 				))
 			}
 			if a.currentFolder.IsContainer() {
-				options = append(options, xwidget.NewMultiChoiceFilterOption(
+				options = append(options, xwidget.NewFilterOptionMultiChoice(
 					communicationsFilterGroup,
 					groupOptions,
 				))
 			}
-			options = append(options, xwidget.NewMultiChoiceFilterOption(
+			options = append(options, xwidget.NewFilterOptionMultiChoice(
 				communicationsFilterRecipient,
 				recipientOptions,
 			))

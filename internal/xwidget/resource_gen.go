@@ -16,18 +16,11 @@ var iconBlankSvg = &fyne.StaticResource{
 	StaticContent: iconBlankSvgData,
 }
 
-//go:embed resources/filter-menu-outline.svg
-var iconFilterMenuOutlineSvgData []byte
-var iconFilterMenuOutlineSvg = &fyne.StaticResource{
-	StaticName:    "resources/filter-menu-outline.svg",
-	StaticContent: iconFilterMenuOutlineSvgData,
-}
-
-//go:embed resources/filter-menu.svg
-var iconFilterMenuSvgData []byte
-var iconFilterMenuSvg = &fyne.StaticResource{
-	StaticName:    "resources/filter-menu.svg",
-	StaticContent: iconFilterMenuSvgData,
+//go:embed resources/filter-variant.svg
+var iconFilterVariantSvgData []byte
+var iconFilterVariantSvg = &fyne.StaticResource{
+	StaticName:    "resources/filter-variant.svg",
+	StaticContent: iconFilterVariantSvgData,
 }
 
 //go:embed resources/sort-ascending.svg
