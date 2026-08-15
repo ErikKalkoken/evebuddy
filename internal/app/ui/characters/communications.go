@@ -136,7 +136,10 @@ func (a *Communications) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
-			a.NavigationPane.updateAndReset()
+			a.NavigationPane.update()
+			a.NavigationPane.folderList.UnselectAll()
+			a.NavigationPane.folderList.Select(0)
+
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[int]{})
 			}
@@ -178,7 +181,7 @@ func (a *Communications) update(ctx context.Context) {
 
 	fyne.Do(func() {
 		a.rows = rows
-		a.NavigationPane.updateAndReset() // TODO: is a reset really needed here?
+		a.NavigationPane.update()
 	})
 }
 
@@ -335,18 +338,18 @@ func (a *communicationsNavigationPane) makeFolderList() *widget.List {
 	return l
 }
 
-func (a *communicationsNavigationPane) updateAndReset() {
-	a.update()
-	a.folderList.UnselectAll()
-	a.folderList.Select(0)
-}
-
 func (a *communicationsNavigationPane) update() {
 	folders, totalCount, unreadCount := a.makeFolders()
 	a.footerLabel.Text = fmt.Sprintf("%s total", ihumanize.OptionalWithComma(totalCount, "?"))
 	a.footerLabel.Refresh()
 	a.folders = folders
 	a.folderList.Refresh()
+	if a.co.MessagePane.currentFolder == app.GroupUndefined {
+		a.folderList.UnselectAll()
+		a.folderList.Select(0)
+	} else {
+		a.co.MessagePane.update()
+	}
 	if a.co.OnUpdate != nil {
 		a.co.OnUpdate(unreadCount)
 	}
@@ -773,6 +776,10 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.searchEntry.Text = ""
 	a.searchEntry.Refresh()
 	a.filterChip.Reset()
+	a.filterRowsAsync()
+}
+
+func (a *communicationsMessagePane) update() {
 	a.filterRowsAsync()
 }
 
