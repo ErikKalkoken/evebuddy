@@ -341,7 +341,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectActivity.Selected = ""
 				a.selectInstaller.Selected = ""
 				a.selectOwner.Selected = ""

@@ -97,7 +97,7 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		fyne.Do(func() {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.selectFaction.Selected = ""
 		})
 		a.Update(ctx)

@@ -294,11 +294,13 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 type SortButton[T any] struct {
 	widget.Button
 
-	sortColumns []string
+	// OnChanged is called when the sorting changed.
+	OnChanged func()
+
 	cs          *ColumnSorter[T]
-	ignored     set.Set[int]
-	onChanged   func()
 	field2Col   map[string]int
+	ignored     set.Set[int]
+	sortColumns []string
 }
 
 // NewSortButton returns a new sortButton.
@@ -310,11 +312,11 @@ func (cs *ColumnSorter[T]) NewSortButton(changed func(), ignoredColumns ...int) 
 		return h.Label
 	}))
 	w := &SortButton[T]{
-		sortColumns: sortColumns,
 		cs:          cs,
-		ignored:     set.Of(ignoredColumns...),
-		onChanged:   changed,
 		field2Col:   make(map[string]int),
+		ignored:     set.Of(ignoredColumns...),
+		OnChanged:   changed,
+		sortColumns: sortColumns,
 	}
 	w.ExtendBaseWidget(w)
 	w.Text = "???"
@@ -347,8 +349,8 @@ func (w *SortButton[T]) showMenu() {
 		}
 		w.cs.setIdx(col, dir2)
 		w.set(col, dir2)
-		if w.onChanged != nil {
-			w.onChanged()
+		if w.OnChanged != nil {
+			w.OnChanged()
 		}
 	}
 
@@ -399,8 +401,8 @@ func (w *SortButton[T]) showMenu() {
 		w.cs.reset()
 		col, dir := w.cs.current()
 		w.set(col, dir)
-		if w.onChanged != nil {
-			w.onChanged()
+		if w.OnChanged != nil {
+			w.OnChanged()
 		}
 	})
 	reset.Icon = theme.DeleteIcon()
@@ -425,6 +427,13 @@ func (w *SortButton[T]) set(idx int, dir SortDir) {
 		w.Text = "Sort"
 	}
 	w.Refresh()
+}
+
+// ResetSilent resets the sorting to default without calling OnChanged.
+func (w *SortButton[T]) ResetSilent() {
+	w.cs.reset()
+	col, dir := w.cs.current()
+	w.set(col, dir)
 }
 
 func MakeDataTable[S ~[]E, E any](

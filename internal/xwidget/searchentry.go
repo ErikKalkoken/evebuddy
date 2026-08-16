@@ -29,8 +29,8 @@ func NewSearchEntry(placeholder string, changed func(string)) *SearchEntry {
 	return w
 }
 
-// Clear clears the entry without calling the changed callback.
-func (w *SearchEntry) Clear() {
+// ClearSilent clears the entry without calling OnChanged.
+func (w *SearchEntry) ClearSilent() {
 	w.updateClearButton("")
 	w.Text = ""
 	w.Refresh()

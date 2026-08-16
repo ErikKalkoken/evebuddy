@@ -431,7 +431,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectCategory.Selected = ""
 				a.selectGroup.Selected = ""
 				a.selectLocation.Selected = ""

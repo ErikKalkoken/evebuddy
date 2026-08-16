@@ -766,7 +766,7 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.co.ReadingPane.clear()
 	a.currentFolder = ng
 	a.topLabel.SetText(ng.String())
-	a.searchEntry.Clear()
+	a.searchEntry.ClearSilent()
 	a.filterChip.Reset()
 	a.filterRowsAsync()
 }

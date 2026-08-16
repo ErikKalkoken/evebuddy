@@ -110,7 +110,7 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 		func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectFlyable.Selected = ""
 				a.selectGroup.Selected = ""
 			})
