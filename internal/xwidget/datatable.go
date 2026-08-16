@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -29,6 +28,20 @@ const (
 	SortAsc
 	SortDesc
 )
+
+func (s SortDir) String() string {
+	switch s {
+	case sortNone:
+		return "Undefined"
+	case SortOff:
+		return "No sort"
+	case SortAsc:
+		return "Ascending"
+	case SortDesc:
+		return "Descending"
+	}
+	panic("not reachable")
+}
 
 func (s SortDir) isSorting() bool {
 	return s == SortAsc || s == SortDesc
@@ -276,8 +289,6 @@ type SortButton struct {
 	sortColumns []string
 }
 
-// TODO: Convert sort dialog to drop down menu
-
 // NewSortButton returns a new sortButton.
 func (cs *ColumnSorter[T]) NewSortButton(changed func(), window fyne.Window, ignoredColumns ...int) *SortButton {
 	sortColumns := slices.Collect(xiter.Map(cs.columns.values(), func(h DataColumn[T]) string {
@@ -301,68 +312,71 @@ func (cs *ColumnSorter[T]) NewSortButton(changed func(), window fyne.Window, ign
 				fields = append(fields, h.Label)
 			}
 		}
-		radioCols := widget.NewRadioGroup(fields, nil)
-		if col != -1 {
-			radioCols.Selected = sortColumns[col]
-		} else {
-			radioCols.Selected = sortColumns[0] // default to first column
-		}
-		radioDir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
-		switch dir {
-		case SortDesc:
-			radioDir.Selected = "Descending"
-		default:
-			radioDir.Selected = "Ascending"
-		}
-		var d dialog.Dialog
-		okButton := widget.NewButtonWithIcon("Sort", theme.ConfirmIcon(), func() {
-			col := slices.Index(sortColumns, radioCols.Selected)
+
+		sort := func(field string, dir2 SortDir) {
+			col := slices.Index(sortColumns, field)
 			if col == -1 {
 				return
 			}
-			switch radioDir.Selected {
-			case "Ascending":
-				dir = SortAsc
-			case "Descending":
-				dir = SortDesc
-			}
-			cs.setIdx(col, dir)
+			cs.setIdx(col, dir2)
+			w.set(col, dir2)
 			changed()
-			w.set(col, dir)
-			d.Hide()
-		})
-		okButton.Importance = widget.HighImportance
-		p := theme.Padding()
-		c := container.NewBorder(
-			nil,
-			container.New(layout.NewCustomPaddedLayout(3*p, 0, p, p), container.NewHBox(
-				layout.NewSpacer(),
-				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-					d.Hide()
-				}),
-				widget.NewButtonWithIcon("Reset", theme.DeleteIcon(), func() {
-					cs.reset()
-					changed()
-					d.Hide()
-				}),
-				okButton,
-				layout.NewSpacer(),
-			)),
-			nil,
-			nil,
-			container.NewVBox(
-				widget.NewLabel("Field"),
-				radioCols,
-				widget.NewLabel("Direction"),
-				radioDir,
-			),
-		)
-		d = dialog.NewCustomWithoutButtons("Sort By", c, window)
-		if cs.isMobile {
-			_, s := window.Canvas().InteractiveArea()
-			d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
 		}
-		d.Show()
+
+		var selected string
+		if col != -1 {
+			selected = sortColumns[col]
+		} else {
+			selected = sortColumns[0] // default to first column
+		}
+
+		var items []*fyne.MenuItem
+
+		sortTitle := fyne.NewMenuItem("Sort by ", nil)
+		sortTitle.Disabled = true
+		items = append(items, sortTitle)
+
+		for _, f := range fields {
+			it := fyne.NewMenuItem(f, func() {
+				sort(f, dir)
+			})
+			if f == selected {
+				it.Icon = theme.ConfirmIcon()
+			} else {
+				it.Icon = iconBlankSvg
+			}
+			items = append(items, it)
+		}
+
+		orderTitle := fyne.NewMenuItem("Order", nil)
+		orderTitle.Disabled = true
+		items = append(items, orderTitle)
+
+		for _, d := range []SortDir{SortAsc, SortDesc} {
+			it := fyne.NewMenuItem(d.String(), func() {
+				sort(selected, d)
+			})
+			if d == dir {
+				it.Icon = theme.ConfirmIcon()
+			} else {
+				it.Icon = iconBlankSvg
+			}
+			items = append(items, it)
+		}
+
+		items = append(items, fyne.NewMenuItemSeparator())
+		reset := fyne.NewMenuItem("Reset", func() {
+			cs.reset()
+			col, dir := cs.current()
+			w.set(col, dir)
+			changed()
+		})
+		reset.Icon = theme.DeleteIcon()
+		items = append(items, reset)
+
+		menu := fyne.NewMenu("", items...)
+
+		ShowPopUpMenuBelowLeading(w, menu)
 	}
 	w.set(cs.current())
 	cs.sortButton = w
