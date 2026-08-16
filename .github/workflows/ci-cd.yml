@@ -5,7 +5,7 @@ name: CI/CD
 
 env:
   GO_VERSION: "1.26.1"
-  FYNE_TOOL_VERSION: "v1.72"
+  FYNE_TOOL_VERSION: "v1.7.2"
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
   FULLNAME2: "EVE_Buddy" # for AppImage file, e.g. with spaces replaced by underscores
