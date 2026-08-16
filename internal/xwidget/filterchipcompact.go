@@ -46,7 +46,7 @@ func NewFilterOptionToogle(name string) FilterOption {
 
 // NewFilterOptionMultiChoice creates a multi-choice option for [FilterChipCompact].
 // Choices are sorted alphabetically and deduplicated.
-// Empty choice strings will be ignored.
+// Empty choice strings are ignored.
 func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
 	return FilterOption{
 		kind:    optionKindMultiChoice,
@@ -117,12 +117,48 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 	return w
 }
 
+// IsOn reports whether the filter is active.
+func (w *FilterChipCompact) IsOn() bool {
+	return w.isOn
+}
+
+func (w *FilterChipCompact) updateOn() {
+	var isOn bool
+	for _, v := range w.selected {
+		if v != "" {
+			isOn = true
+			break
+		}
+	}
+	w.isOn = isOn
+}
+
+// Reset resets the selection.
+func (w *FilterChipCompact) Reset() {
+	for name := range w.selected {
+		w.selected[name] = ""
+	}
+	w.setMenu()
+	w.processChanged()
+}
+
+// Selected returns the current selection.
+//
+// The selection is a map of option names and choices.
+// A toggle option has the option name as choice when selected.
+// A multi choice option has the selected choice when selected.
+// A blank choice means the option is not selected.
+func (w *FilterChipCompact) Selected() map[string]string {
+	return maps.Clone(w.selected)
+}
+
 // SetOptions sets new filter options.
 //
 // The order of filter options is preserved.
 func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
 	w.options = removeDuplicateOptions(options)
 	w.updateSelectedFromOptions()
+	w.updateOn()
 	w.setMenu()
 }
 
@@ -163,9 +199,14 @@ func (w *FilterChipCompact) updateSelectedFromOptions() {
 	}
 }
 
+// SetSelected sets the selection.
+//
+// Invalid option names are ignored.
 func (w *FilterChipCompact) SetSelected(selected map[string]string) {
 	w.selected = sanitizeSelected(w.options, selected)
+	w.updateOn()
 	w.setMenu()
+	w.Refresh()
 }
 
 func sanitizeSelected(options []FilterOption, selected map[string]string) map[string]string {
@@ -284,7 +325,7 @@ func (w *FilterChipCompact) setMenu() {
 	}
 
 	items1 = append(items1, fyne.NewMenuItemSeparator())
-	w.clearItem.Disabled = true
+	w.clearItem.Disabled = !w.isOn
 	items1 = append(items1, w.clearItem)
 
 	w.menu.Items = items1
@@ -292,33 +333,16 @@ func (w *FilterChipCompact) setMenu() {
 }
 
 func (w *FilterChipCompact) processChanged() {
+	w.updateOn()
+	w.clearItem.Disabled = !w.isOn
 	w.Refresh()
 	if w.OnChanged != nil {
 		w.OnChanged(w.Selected())
 	}
 }
 
-// Reset resets all options.
-func (w *FilterChipCompact) Reset() {
-	for name := range w.selected {
-		w.selected[name] = ""
-	}
-	w.setMenu()
-	w.processChanged()
-}
-
-// Selected returns the current selection.
-//
-// The selection is a map of option names and choices.
-// A toggle option has the option name as choice when selected.
-// A multi choice option has the selected choice when selected.
-// A blank choice means the option is not selected.
-func (w *FilterChipCompact) Selected() map[string]string {
-	return maps.Clone(w.selected)
-}
-
 func (w *FilterChipCompact) CreateRenderer() fyne.WidgetRenderer {
-	w.updateState()
+	w.updateStyling()
 	p := theme.Padding()
 	return widget.NewSimpleRenderer(
 		container.NewStack(
@@ -329,26 +353,18 @@ func (w *FilterChipCompact) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *FilterChipCompact) Refresh() {
-	w.updateState()
+	w.updateStyling()
 	w.background.Refresh()
 	w.icon.Refresh()
 	w.menu.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *FilterChipCompact) updateState() {
+func (w *FilterChipCompact) updateStyling() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
-	var isOn bool
-	for _, v := range w.selected {
-		if v != "" {
-			isOn = true
-		}
-	}
-	w.isOn = isOn
-
-	if isOn {
+	if w.isOn {
 		if w.disabled {
 			w.icon.SetResource(theme.NewDisabledResource(w.iconResource))
 			w.background.FillColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -358,7 +374,6 @@ func (w *FilterChipCompact) updateState() {
 			w.background.FillColor = th.Color(theme.ColorNameSelection, v)
 			w.background.StrokeColor = th.Color(theme.ColorNameSelection, v)
 		}
-		w.clearItem.Disabled = false
 	} else {
 		if w.disabled {
 			w.icon.SetResource(theme.NewDisabledResource(w.iconResource))
@@ -367,7 +382,6 @@ func (w *FilterChipCompact) updateState() {
 		}
 		w.background.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 		w.background.FillColor = color.Transparent
-		w.clearItem.Disabled = true
 	}
 
 	if w.focused {
