@@ -52,7 +52,7 @@ type LoyaltyPoints struct {
 	selectCharacter  *kxwidget.FilterChipSelect
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	sortButton       *xwidget.SortButton
+	sortButton       *xwidget.SortButton[*loyaltyPointsNode]
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
 	u                baseUI
@@ -102,7 +102,7 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	a.collapseBranches.SetToolTip("Collapse branches")
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterTreeAsync()
-	}, a.u.MainWindow())
+	})
 
 	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(s string) {
 		if len(s) == 1 {

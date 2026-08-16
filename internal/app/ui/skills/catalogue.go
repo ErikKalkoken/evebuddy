@@ -66,7 +66,7 @@ type Catalogue struct {
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
-	sortButton     *xwidget.SortButton
+	sortButton     *xwidget.SortButton[skillRow]
 	top            *widget.Label
 	u              baseUI
 }
@@ -126,7 +126,7 @@ func NewCatalogue(u baseUI) *Catalogue {
 	a.selectMain.SortDisabled = true
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.MainWindow())
+	})
 
 	a.moreButton = xwidget.NewIconButtonWithMenu(
 		theme.MoreHorizontalIcon(),

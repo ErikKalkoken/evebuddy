@@ -65,7 +65,7 @@ type colonyDetails struct {
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
-	sortButton    *xwidget.SortButton
+	sortButton    *xwidget.SortButton[colonyDetailsRow]
 	status        *xwidget.RichText
 	u             baseUI
 }
@@ -193,7 +193,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, w)
+	})
 
 	a.searchEntry = xwidget.NewSearchEntry("Search pins and products", func(_ string) {
 		a.filterRowsAsync()

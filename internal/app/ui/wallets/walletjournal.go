@@ -68,7 +68,7 @@ type WalletJournal struct {
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton
+	sortButton   *xwidget.SortButton[walletJournalRow]
 	top          *widget.Label
 	u            baseUI
 }
@@ -204,7 +204,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	}, a.u.MainWindow())
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 	return a
 }
 

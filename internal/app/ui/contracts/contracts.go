@@ -218,7 +218,7 @@ type Contracts struct {
 	selectStatus   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton
+	sortButton     *xwidget.SortButton[contractRow]
 	u              baseUI
 }
 
@@ -380,7 +380,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

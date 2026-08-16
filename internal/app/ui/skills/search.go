@@ -82,7 +82,7 @@ type Search struct {
 	selectGroup     *kxwidget.FilterChipSelect
 	selectSkill     *kxwidget.FilterChipSelect
 	selectType      *kxwidget.FilterChipSelect
-	sortButton      *xwidget.SortButton
+	sortButton      *xwidget.SortButton[searchRow]
 	top             *widget.Label
 	u               baseUI
 }
@@ -213,7 +213,7 @@ func NewSearch(u baseUI) *Search {
 	}, a.u.MainWindow())
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

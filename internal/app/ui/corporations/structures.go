@@ -86,7 +86,7 @@ type Structures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton
+	sortButton        *xwidget.SortButton[structureRow]
 	u                 baseUI
 }
 
@@ -212,7 +212,7 @@ func NewStructures(u baseUI) *Structures {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,

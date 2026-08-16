@@ -120,7 +120,7 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton
+	sortButton        *xwidget.SortButton[colonyRow]
 	u                 baseUI
 }
 
@@ -262,7 +262,7 @@ func NewColonies(u baseUI) *Colonies {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	a.searchEntry = xwidget.NewSearchEntry("Search systems & output", func(_ string) {
 		a.filterRowsAsync(-1)
