@@ -73,7 +73,7 @@ type GameSearch struct {
 
 	categories          *kxwidget.FilterChipGroup
 	defaultCategories   []string
-	entry               *widget.Entry
+	searchEntry         *widget.Entry
 	iconCache           xsync.Map[int64, fyne.Resource]
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
@@ -92,7 +92,7 @@ type GameSearch struct {
 func NewGameSearch(u baseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
-		entry:               widget.NewEntry(),
+		searchEntry:         widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
 		supportedCategories: infoviewer.SupportedCategories(),
@@ -114,11 +114,11 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
 	a.results = a.makeResults()
-	a.entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.searchEntry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.Reset()
 	})
-	a.entry.PlaceHolder = "Search New Eden"
-	a.entry.OnSubmitted = func(s string) {
+	a.searchEntry.PlaceHolder = "Search New Eden"
+	a.searchEntry.OnSubmitted = func(s string) {
 		go a.DoSearch(context.Background(), s)
 	}
 	a.indicator.Hide()
@@ -240,7 +240,7 @@ func (a *GameSearch) storeRecentItems() {
 func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(
-			a.entry,
+			a.searchEntry,
 			a.searchOptions,
 			widget.NewSeparator(),
 		),
@@ -253,11 +253,11 @@ func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *GameSearch) Focus() {
-	a.w.Canvas().Focus(a.entry)
+	a.w.Canvas().Focus(a.searchEntry)
 }
 
 func (a *GameSearch) Reset() {
-	a.entry.SetText("")
+	a.searchEntry.SetText("")
 	a.clearResults()
 }
 
@@ -379,7 +379,7 @@ func (a *GameSearch) showRecent() {
 }
 
 func (a *GameSearch) SetEntry(s string) {
-	a.entry.SetText(s)
+	a.searchEntry.SetText(s)
 }
 
 func (a *GameSearch) DoSearch(ctx context.Context, search string) {

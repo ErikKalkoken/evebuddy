@@ -77,7 +77,7 @@ type Search struct {
 	footer          *widget.Label
 	rows            []searchRow
 	rowsFiltered    []searchRow
-	search          *widget.Entry
+	searchEntry     *xwidget.SearchEntry
 	selectCharacter *kxwidget.FilterChipSelect
 	selectGroup     *kxwidget.FilterChipSelect
 	selectSkill     *kxwidget.FilterChipSelect
@@ -166,7 +166,6 @@ func NewSearch(u baseUI) *Search {
 	a := &Search{
 		columnSorter: xwidget.NewColumnSorter(columns, searchColSkill, xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
-		search:       widget.NewEntry(),
 		top:          ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
@@ -189,14 +188,10 @@ func NewSearch(u baseUI) *Search {
 	}
 
 	// filters
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search skills"
+
 	a.selectSkill = kxwidget.NewFilterChipSelect("", []string{
 		searchSkillActive,
 		searchSkillRestricted,
@@ -249,10 +244,10 @@ func (a *Search) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
 		filters.Add(a.sortButton)
-		topBox.Add(a.search)
+		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(filters))
 	} else {
-		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.search))
+		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
 	}
 	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -287,7 +282,7 @@ func (a *Search) makeDataList() *xwidget.StripedList {
 }
 
 func (a *Search) Focus() {
-	a.u.MainWindow().Canvas().Focus(a.search)
+	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
 func (a *Search) filterRowsAsync(sortCol int) {
@@ -296,7 +291,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 	group := a.selectGroup.Selected
 	character := a.selectCharacter.Selected
 	type_ := a.selectType.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

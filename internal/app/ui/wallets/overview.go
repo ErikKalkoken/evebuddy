@@ -62,7 +62,7 @@ type Overview struct {
 	main         fyne.CanvasObject
 	rows         []overviewRow
 	rowsFiltered []overviewRow
-	search       *widget.Entry
+	searchEntry  *xwidget.SearchEntry
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
 	u            baseUI
@@ -202,18 +202,13 @@ func NewOverview(u baseUI) *Overview {
 	a := &Overview{
 		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
-		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+
+	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search characters"
 
 	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
 		showHelpPopUp(overviewHelpText, a.u.IsMobile(), a.showHelp)
@@ -317,11 +312,11 @@ func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
-			a.search,
+			a.searchEntry,
 			container.NewHScroll(filter),
 		)
 	} else {
-		topBox = container.NewBorder(nil, nil, filter, nil, a.search)
+		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -337,7 +332,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectTag := a.selectTag.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

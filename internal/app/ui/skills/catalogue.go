@@ -62,7 +62,7 @@ type Catalogue struct {
 	moreButton     *xwidget.IconButton
 	rows           []skillRow
 	rowsFiltered   []skillRow
-	search         *widget.Entry
+	searchEntry    *xwidget.SearchEntry
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
@@ -100,21 +100,15 @@ func NewCatalogue(u baseUI) *Catalogue {
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
-		search:         widget.NewEntry(),
 		top:            ui.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 	a.skills = a.makeSkillsGrid()
 
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync()
-	}
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
 		a.filterRowsAsync()
 	})
-	a.search.PlaceHolder = "Search skills"
 
 	a.selectGroup = kxwidget.NewFilterChipSelect("Group", []string{}, func(string) {
 		a.filterRowsAsync()
@@ -176,12 +170,12 @@ func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox()
 	if a.u.IsMobile() {
 		topBox.Add(a.top)
-		topBox.Add(a.search)
+		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
 		topAligned := container.NewVBox(layout.NewSpacer(), a.top, layout.NewSpacer())
 		topBox.Add(container.NewBorder(nil, nil, nil, a.moreButton, topAligned))
-		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.search))
+		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.searchEntry))
 	}
 	c := container.NewBorder(
 		topBox,
@@ -258,7 +252,7 @@ func (a *Catalogue) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
 	main := a.selectMain.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {

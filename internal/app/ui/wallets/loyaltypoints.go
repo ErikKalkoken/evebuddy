@@ -48,7 +48,7 @@ type LoyaltyPoints struct {
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
 	data             map[*loyaltyPointsNode][]*loyaltyPointsNode
-	searchBox        *widget.Entry
+	searchEntry      *xwidget.SearchEntry
 	selectCharacter  *kxwidget.FilterChipSelect
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
@@ -103,17 +103,14 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterTreeAsync()
 	}, a.u.MainWindow())
-	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Search corporations")
-	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchBox.SetText("")
-	})
-	a.searchBox.OnChanged = func(s string) {
+
+	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(s string) {
 		if len(s) == 1 {
 			return
 		}
 		a.filterTreeAsync()
-	}
+	})
+
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTreeAsync()
 	})
@@ -148,7 +145,7 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 		a.sortButton,
 	))
 	c := container.NewBorder(
-		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchBox)),
+		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchEntry)),
 		a.footer,
 		nil,
 		nil,
@@ -198,7 +195,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
 	tag := a.selectTag.Selected
-	search := strings.ToLower(a.searchBox.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {

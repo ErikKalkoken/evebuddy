@@ -461,7 +461,7 @@ type communicationsMessagePane struct {
 	messageList   *widget.List
 	moreButton    *kxwidget.IconButton
 	rowsFiltered  []notificationRow
-	searchEntry   *widget.Entry
+	searchEntry   *xwidget.SearchEntry
 	sortButton    *xwidget.SortButton
 	topLabel      *widget.Label
 }
@@ -493,21 +493,14 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 		columnSorter: columnSorter,
 		footerLabel:  widget.NewLabel(""),
 		topLabel:     widget.NewLabel(""),
-		searchEntry:  widget.NewEntry(),
 		co:           co,
 	}
 	a.ExtendBaseWidget(a)
 	a.messageList = a.makeMessageList()
 	a.topLabel.SizeName = theme.SizeNameSubHeadingText
-	clearSearchButton := kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchEntry.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search communications", func(_ string) {
 		a.filterRowsAsync()
-	}) // TODO: Consider showing the clear button only when the entry has text. Also make this a widget maybe?
-	a.searchEntry.ActionItem = clearSearchButton
-	a.searchEntry.OnChanged = func(s string) {
-		a.filterRowsAsync()
-	}
-	a.searchEntry.PlaceHolder = "Search communications"
+	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
 	}, a.co.u.MainWindow())
@@ -773,8 +766,7 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.co.ReadingPane.clear()
 	a.currentFolder = ng
 	a.topLabel.SetText(ng.String())
-	a.searchEntry.Text = ""
-	a.searchEntry.Refresh()
+	a.searchEntry.Clear()
 	a.filterChip.Reset()
 	a.filterRowsAsync()
 }

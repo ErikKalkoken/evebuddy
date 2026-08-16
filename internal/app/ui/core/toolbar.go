@@ -20,28 +20,22 @@ const (
 type toolbar struct {
 	widget.BaseWidget
 
-	searchBar  *widget.Entry
-	searchIcon *xwidget.IconButton
-	hamburger  *xwidget.IconButton
-	u          *DesktopUI
+	searchEntry *xwidget.SearchEntry
+	searchIcon  *xwidget.IconButton
+	hamburger   *xwidget.IconButton
+	u           *DesktopUI
 }
 
 func newToolbar(u *DesktopUI) *toolbar {
-	searchBar := widget.NewEntry()
-	searchBar.PlaceHolder = searchPlaceholderEnabled
-	searchBar.Scroll = container.ScrollNone
-	searchBar.Wrapping = fyne.TextWrapOff
-	searchBar.OnSubmitted = func(s string) {
+	searchEntry := xwidget.NewSearchEntry(searchPlaceholderEnabled, nil)
+	searchEntry.Scroll = container.ScrollNone
+	searchEntry.Wrapping = fyne.TextWrapOff
+	searchEntry.OnSubmitted = func(s string) {
 		u.PerformSearch(s)
 	}
-	clearSearch := xwidget.NewTappableIcon(theme.CancelIcon(), func() {
-		searchBar.SetText("")
-	})
-	clearSearch.SetToolTip("Clear search bar")
-	searchBar.ActionItem = container.NewPadded(clearSearch)
 
 	searchIcon := xwidget.NewIconButton(theme.SearchIcon(), func() {
-		u.showAdvancedSearch(searchBar.Text)
+		u.showAdvancedSearch(searchEntry.Text)
 	})
 	searchIcon.SetToolTip("Advanced search")
 
@@ -79,10 +73,10 @@ func newToolbar(u *DesktopUI) *toolbar {
 	hamburger := xwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu)
 	hamburger.SetToolTip("Main menu")
 	a := &toolbar{
-		hamburger:  hamburger,
-		searchBar:  searchBar,
-		searchIcon: searchIcon,
-		u:          u,
+		hamburger:   hamburger,
+		searchEntry: searchEntry,
+		searchIcon:  searchIcon,
+		u:           u,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -90,11 +84,11 @@ func newToolbar(u *DesktopUI) *toolbar {
 
 func (a *toolbar) ToogleSearchBar(enabled bool) {
 	if enabled {
-		a.searchBar.PlaceHolder = searchPlaceholderEnabled
-		a.searchBar.Enable()
+		a.searchEntry.PlaceHolder = searchPlaceholderEnabled
+		a.searchEntry.Enable()
 	} else {
-		a.searchBar.PlaceHolder = searchPlaceholderDisabled
-		a.searchBar.Disable()
+		a.searchEntry.PlaceHolder = searchPlaceholderDisabled
+		a.searchEntry.Disable()
 	}
 }
 
@@ -103,9 +97,7 @@ func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
 	x := container.NewGridWithColumns(
 		3,
 		container.NewHBox(),
-		container.NewBorder(nil, nil, nil, a.searchIcon,
-			a.searchBar,
-		),
+		container.NewBorder(nil, nil, nil, a.searchIcon, a.searchEntry),
 		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),
 	)
 	c := container.NewVBox(x, widget.NewSeparator())

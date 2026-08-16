@@ -86,16 +86,21 @@ func (w *EveEntityListItem) Set(o *app.EveEntity) {
 		w.iconImage.Resource = icons.BlankSvg
 		w.iconImage.Refresh()
 		w.nameLabel.Text = "?"
-		w.nameLabel.TextStyle.Bold = true
 		w.nameLabel.Refresh()
 		return
 	}
-	w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
-		w.iconImage.Resource = r
+	if o.ID == 0 {
+		w.nameLabel.TextStyle.Bold = true
+		w.iconImage.Resource = icons.BlankSvg
 		w.iconImage.Refresh()
-	})
+	} else {
+		w.nameLabel.TextStyle.Bold = false
+		w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
+			w.iconImage.Resource = r
+			w.iconImage.Refresh()
+		})
+	}
 	w.nameLabel.Text = o.NameOrZero()
-	w.nameLabel.TextStyle.Bold = false
 	w.nameLabel.Refresh()
 }
 

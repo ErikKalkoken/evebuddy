@@ -242,7 +242,7 @@ type browserNavigation struct {
 	filteredTrees  map[assetFilter]filteredTree
 	filters        []assetFilter
 	locations      *xwidget.Tree[containerNode]
-	search         *widget.Entry
+	searchEntry    *xwidget.SearchEntry
 	selectCategory *kxwidget.FilterChipSelect
 	footer         *widget.Label
 }
@@ -251,10 +251,13 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 	a := &browserNavigation{
 		b:             b,
 		filteredTrees: make(map[assetFilter]filteredTree),
-		search:        widget.NewEntry(),
 		footer:        ui.NewLabelWithWrapping(""),
 	}
 	a.ExtendBaseWidget(a)
+
+	a.searchEntry = xwidget.NewSearchEntry("Search locations", func(_ string) {
+		a.filterLocationsAsync()
+	})
 
 	a.locations = xwidget.NewTree(
 		func(_ bool) fyne.CanvasObject {
@@ -292,6 +295,7 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			categoryOther,
 			categoryAll,
 		}, func(string) {
+			a.searchEntry.Clear()
 			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = categoryOffice
@@ -311,6 +315,7 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			categorySafety,
 			categoryAll,
 		}, func(string) {
+			a.searchEntry.Clear()
 			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = categoryPersonal
@@ -321,14 +326,6 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 	})
 	a.collapseAll.SetToolTip("Collapse branches")
 
-	a.search.OnChanged = func(_ string) {
-		a.filterLocationsAsync()
-	}
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
-		a.filterLocationsAsync()
-	})
-	a.search.PlaceHolder = "Search locations"
 	return a
 }
 
@@ -339,7 +336,7 @@ func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			nil,
-			a.search,
+			a.searchEntry,
 		),
 		a.footer,
 		nil,
@@ -352,6 +349,7 @@ func (a *browserNavigation) clear() {
 	a.locations.Clear()
 	a.locations.UnselectAll()
 	a.footer.SetText("")
+	a.searchEntry.Clear()
 }
 
 func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
@@ -548,7 +546,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft := a.filteredTrees[filter]
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 
 	go func() {
 		var td *xwidget.TreeData[containerNode]
@@ -614,28 +612,22 @@ type browserContainer struct {
 	items         []containerItem
 	itemsFiltered []containerItem
 	location      *browserLocation
-	search        *widget.Entry
+	searchEntry   *xwidget.SearchEntry
 }
 
 func newBrowserContainer(ab *Browser) *browserContainer {
 	a := &browserContainer{
 		ab:     ab,
 		footer: ui.NewLabelWithTruncation(""),
-		search: widget.NewEntry(),
 	}
 	a.ExtendBaseWidget(a)
 	a.grid = a.makeAssetGrid()
 	a.location = newBrowserLocation(a)
 
-	a.search.OnChanged = func(_ string) {
-		a.filterItemsAsync()
-	}
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search items", func(_ string) {
 		a.filterItemsAsync()
 	})
-	a.search.PlaceHolder = "Search items"
-	a.search.Hide()
+	a.searchEntry.Hide()
 	return a
 }
 
@@ -646,7 +638,7 @@ func (a *browserContainer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			nil,
-			a.search,
+			a.searchEntry,
 		),
 		a.footer,
 		nil,
@@ -725,7 +717,8 @@ func (a *browserContainer) set(cn *containerNode) {
 		fyne.Do(func() {
 			a.items = items
 			a.location.set(cn)
-			a.search.Show()
+			a.searchEntry.Show()
+			a.searchEntry.Clear()
 			a.Refresh()
 			a.filterItemsAsync()
 		})
@@ -734,7 +727,7 @@ func (a *browserContainer) set(cn *containerNode) {
 
 func (a *browserContainer) clear() {
 	a.location.clear()
-	a.search.Hide()
+	a.searchEntry.Hide()
 	a.footer.SetText("")
 	a.items = xslices.Reset(a.items)
 	a.itemsFiltered = xslices.Reset(a.itemsFiltered)
@@ -744,7 +737,7 @@ func (a *browserContainer) clear() {
 func (a *browserContainer) filterItemsAsync() {
 	totalItems := len(a.items)
 	items := slices.Clone(a.items)
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 
 	go func() {
 		if len(search) > 1 {

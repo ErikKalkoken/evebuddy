@@ -61,7 +61,7 @@ type colonyDetails struct {
 	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
-	search        *widget.Entry
+	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
@@ -153,7 +153,6 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 		planet:       planet,
 		planetType:   makeHyperLink(),
 		region:       widget.NewLabel(""),
-		search:       widget.NewEntry(),
 		security:     xwidget.NewRichText(),
 		signalKey:    u.Signals().UniqueKey(),
 		status:       xwidget.NewRichText(),
@@ -195,14 +194,10 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
 	}, w)
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+
+	a.searchEntry = xwidget.NewSearchEntry("Search pins and products", func(_ string) {
 		a.filterRowsAsync()
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync()
-	}
-	a.search.PlaceHolder = "Search"
 
 	// signals
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -247,7 +242,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.NewHBox(a.selectType2, a.sortButton),
 		nil,
-		a.search,
+		a.searchEntry,
 	)
 
 	installations := container.NewBorder(
@@ -292,7 +287,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	type2 := a.selectType2.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {
