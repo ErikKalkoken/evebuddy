@@ -34,14 +34,7 @@ func NewTappableIconWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableIcon {
 		if w.menu == nil || len(w.menu.Items) == 0 {
 			return
 		}
-		m := widget.NewPopUpMenu(w.menu, fyne.CurrentApp().Driver().CanvasForObject(w))
-		m.ShowAtRelativePosition(
-			fyne.NewPos(
-				-m.Size().Width+w.Size().Width,
-				w.Size().Height,
-			),
-			w,
-		)
+		ShowPopUpMenuBelowTrailing(w, menu)
 	}
 	return w
 }

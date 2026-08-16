@@ -276,6 +276,8 @@ type SortButton struct {
 	sortColumns []string
 }
 
+// TODO: Convert sort dialog to drop down menu
+
 // NewSortButton returns a new sortButton.
 func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
 	sortColumns := slices.Collect(xiter.Map(cs.columns.values(), func(h DataColumn[T]) string {

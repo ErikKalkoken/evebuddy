@@ -35,9 +35,7 @@ func NewTappableImageWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableImage
 		if len(w.menu.Items) == 0 {
 			return
 		}
-		c := fyne.CurrentApp().Driver().CanvasForObject(w)
-		m := widget.NewPopUpMenu(w.menu, c)
-		m.ShowAtPosition(w.pos)
+		ShowPopUpMenuBelowLeading(w, menu)
 	}
 	return w
 }

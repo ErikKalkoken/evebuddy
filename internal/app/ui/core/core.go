@@ -149,6 +149,7 @@ type baseUI struct {
 	snackbar                *xwidget.Snackbar
 	statusText              *statusText
 	training                *skills.Training
+	unifiedCommunications   *characters.Communications
 	wealth                  *wallets.Wealth
 
 	// Services
@@ -408,13 +409,14 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.iw = infoviewer.New(u)
 
 	u.assetSearchAll = assets.NewSearchForAll(u)
+	u.unifiedCommunications = characters.NewUnifiedCommunications(u)
 	u.augmentations = clones.NewAugmentations(u)
 	u.characterAssetBrowser = assets.NewCharacterBrowser(u)
 	u.characterAttributes = skills.NewAttributes(u)
 	u.characterAugmentations = clones.NewCharacterAugmentations(u)
 	u.characterBiography = characters.NewBiography(u)
 	u.characterContacts = characters.NewContacts(u)
-	u.characterCommunications = characters.NewCommunications(u)
+	u.characterCommunications = characters.NewCommunicationsForCharacter(u)
 	u.characterCorporation = corporations.NewCorporationSheet(u, false)
 	u.characterJumpClones = clones.NewCharacterClones(u)
 	u.characterMails = characters.NewMails(u)

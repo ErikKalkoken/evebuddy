@@ -70,7 +70,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
-	communicationsMenu := fyne.NewMenu("")
+	characterCommunicationsMenu := fyne.NewMenu("")
 	navItemCommunications := xwidget.NewNavListItem(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
@@ -84,7 +84,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 				newCharacterAppBar(
 					"Communications",
 					u.characterCommunications.MessagePane,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), characterCommunicationsMenu),
 				),
 			)
 		},
@@ -201,7 +201,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 	}
 
-	u.characterCommunications.NavigationPane.OnUpdate = func(count optional.Optional[int]) {
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
 		if v, ok := count.Value(); ok {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
@@ -211,8 +211,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemCommunications.Supporting = s
 		navItemCommunications.Refresh()
 
-		communicationsMenu.Items = u.characterCommunications.NavigationPane.MakeFolderMenu()
-		communicationsMenu.Refresh()
+		characterCommunicationsMenu.Items = u.characterCommunications.NavigationPane.MakeFolderMenu()
+		characterCommunicationsMenu.Refresh()
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
@@ -594,7 +594,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})
 		ctx := context.Background()
 		go u.characterMails.ResetCurrentFolder(ctx)
-		go u.characterCommunications.MessagePane.ResetHeaders(ctx)
+		go func() {
+			fyne.Do(func() {
+				u.characterCommunications.MessagePane.ResetHeaders()
+			})
+		}()
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {
@@ -859,6 +863,39 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemCharacters.Refresh()
 	}
 
+	unifiedCommunicationsMenu := fyne.NewMenu("")
+	navItemUnifiedCommunications := xwidget.NewNavListItem(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		func() {
+			u.unifiedCommunications.MessagePane.OnSelected = func() {
+				homeNav.PushAndHideNavBar(
+					xwidget.NewAppBar("Communications", u.unifiedCommunications.ReadingPane),
+				)
+			}
+			homeNav.Push(
+				xwidget.NewAppBar(
+					"Communications",
+					u.unifiedCommunications.MessagePane,
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedCommunicationsMenu),
+				),
+			)
+		},
+	)
+	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if v, ok := count.Value(); ok {
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		} else if count.ValueOrZero() > 0 {
+			s = "?"
+		}
+		navItemUnifiedCommunications.Supporting = s
+		navItemUnifiedCommunications.Refresh()
+
+		unifiedCommunicationsMenu.Items = u.unifiedCommunications.NavigationPane.MakeFolderMenu()
+		unifiedCommunicationsMenu.Refresh()
+	}
+
 	navItemSkills := xwidget.NewNavListItem(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
@@ -890,6 +927,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				)))
 			},
 		),
+		navItemUnifiedCommunications,
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
