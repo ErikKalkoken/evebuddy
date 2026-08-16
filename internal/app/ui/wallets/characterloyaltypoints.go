@@ -43,7 +43,7 @@ type CharacterLoyaltyPoints struct {
 	rowsFiltered  []characterLoyaltyPointsRow
 	searchEntry   *xwidget.SearchEntry
 	selectFaction *kxwidget.FilterChipSelect
-	sortButton    *xwidget.SortButton
+	sortButton    *xwidget.SortButton[characterLoyaltyPointsRow]
 	u             baseUI
 }
 
@@ -91,13 +91,13 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.MainWindow())
+	})
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		fyne.Do(func() {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.selectFaction.Selected = ""
 		})
 		a.Update(ctx)

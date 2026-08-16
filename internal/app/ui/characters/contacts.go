@@ -62,7 +62,7 @@ type Contacts struct {
 	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton
+	sortButton     *xwidget.SortButton[contactRow]
 	u              baseUI
 }
 
@@ -124,13 +124,13 @@ func NewContacts(u baseUI) *Contacts {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.MainWindow())
+	})
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		fyne.Do(func() {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.selectBlocked.Selected = ""
 			a.selectCategory.Selected = ""
 			a.selectLabel.Selected = ""

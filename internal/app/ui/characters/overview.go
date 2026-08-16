@@ -86,7 +86,7 @@ type Overview struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton
+	sortButton        *xwidget.SortButton[characterOverviewRow]
 	u                 baseUI
 }
 
@@ -190,7 +190,7 @@ func NewOverview(u baseUI) *Overview {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

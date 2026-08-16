@@ -133,7 +133,7 @@ type MarketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton
+	sortButton   *xwidget.SortButton[marketOrderRow]
 	u            baseUI
 }
 
@@ -275,7 +275,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

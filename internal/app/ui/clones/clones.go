@@ -68,7 +68,7 @@ type Clones struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton
+	sortButton        *xwidget.SortButton[cloneRow]
 	u                 baseUI
 }
 
@@ -206,7 +206,7 @@ func NewClones(u baseUI) *Clones {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

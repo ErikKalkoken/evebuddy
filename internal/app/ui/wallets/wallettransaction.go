@@ -77,7 +77,7 @@ type WalletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton
+	sortButton     *xwidget.SortButton[walletTransactionRow]
 	u              baseUI
 }
 
@@ -274,7 +274,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	)
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 	return a
 }
 

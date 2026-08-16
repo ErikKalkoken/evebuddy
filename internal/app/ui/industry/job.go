@@ -133,7 +133,7 @@ type Jobs struct {
 	selectOwner     *kxwidget.FilterChipSelect
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
-	sortButton      *xwidget.SortButton
+	sortButton      *xwidget.SortButton[industryJobRow]
 	u               baseUI
 }
 
@@ -330,7 +330,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow(), 6, 7)
+	}, 6, 7)
 
 	// signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -341,7 +341,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectActivity.Selected = ""
 				a.selectInstaller.Selected = ""
 				a.selectOwner.Selected = ""

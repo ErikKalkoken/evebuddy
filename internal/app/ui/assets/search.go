@@ -218,7 +218,7 @@ type Search struct {
 	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton
+	sortButton     *xwidget.SortButton[assetRow]
 	top            *widget.Label
 	u              baseUI
 }
@@ -420,7 +420,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -431,7 +431,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectCategory.Selected = ""
 				a.selectGroup.Selected = ""
 				a.selectLocation.Selected = ""

@@ -59,7 +59,7 @@ type FlyableShips struct {
 	searchEntry   *xwidget.SearchEntry
 	selectFlyable *kxwidget.FilterChipSelect
 	selectGroup   *kxwidget.FilterChipSelect
-	sortButton    *xwidget.SortButton
+	sortButton    *xwidget.SortButton[flyableShipRow]
 	top           *widget.Label
 	u             baseUI
 }
@@ -102,7 +102,7 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.u.MainWindow())
+	})
 	a.grid = a.makeShipsGrid()
 
 	// Signals
@@ -110,7 +110,7 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 		func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
 			fyne.Do(func() {
-				a.searchEntry.Clear()
+				a.searchEntry.ClearSilent()
 				a.selectFlyable.Selected = ""
 				a.selectGroup.Selected = ""
 			})

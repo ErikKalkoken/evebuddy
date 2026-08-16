@@ -62,7 +62,7 @@ func NewMembers(s baseUI) *Members {
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		fyne.Do(func() {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 		})
 		a.update(ctx)
 	})

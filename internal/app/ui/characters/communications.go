@@ -462,7 +462,7 @@ type communicationsMessagePane struct {
 	moreButton    *kxwidget.IconButton
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
-	sortButton    *xwidget.SortButton
+	sortButton    *xwidget.SortButton[notificationRow]
 	topLabel      *widget.Label
 }
 
@@ -503,7 +503,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync()
-	}, a.co.u.MainWindow())
+	})
 	a.filterChip = xwidget.NewFilterChipCompact(nil, func(state map[string]string) {
 		if state[communicationsFilterStatus] != "" {
 			a.co.updateIsRead(a.currentFolder)
@@ -766,7 +766,7 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.co.ReadingPane.clear()
 	a.currentFolder = ng
 	a.topLabel.SetText(ng.String())
-	a.searchEntry.Clear()
+	a.searchEntry.ClearSilent()
 	a.filterChip.Reset()
 	a.filterRowsAsync()
 }

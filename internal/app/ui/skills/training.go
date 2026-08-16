@@ -128,7 +128,7 @@ type Training struct {
 	searchEntry  *xwidget.SearchEntry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton
+	sortButton   *xwidget.SortButton[trainingRow]
 	u            baseUI
 }
 
@@ -300,7 +300,7 @@ func NewTraining(u baseUI) *Training {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

@@ -295,7 +295,7 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			categoryOther,
 			categoryAll,
 		}, func(string) {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = categoryOffice
@@ -315,7 +315,7 @@ func newBrowserNavigation(b *Browser) *browserNavigation {
 			categorySafety,
 			categoryAll,
 		}, func(string) {
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.filterLocationsAsync()
 		})
 		a.selectCategory.Selected = categoryPersonal
@@ -349,7 +349,7 @@ func (a *browserNavigation) clear() {
 	a.locations.Clear()
 	a.locations.UnselectAll()
 	a.footer.SetText("")
-	a.searchEntry.Clear()
+	a.searchEntry.ClearSilent()
 }
 
 func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
@@ -718,7 +718,7 @@ func (a *browserContainer) set(cn *containerNode) {
 			a.items = items
 			a.location.set(cn)
 			a.searchEntry.Show()
-			a.searchEntry.Clear()
+			a.searchEntry.ClearSilent()
 			a.Refresh()
 			a.filterItemsAsync()
 		})

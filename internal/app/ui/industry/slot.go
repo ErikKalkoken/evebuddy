@@ -95,7 +95,7 @@ type Slots struct {
 	selectFreeSlots *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
-	sortButton      *xwidget.SortButton
+	sortButton      *xwidget.SortButton[industrySlotRow]
 	u               baseUI
 }
 
@@ -245,7 +245,7 @@ func NewSlots(u baseUI, slotType app.IndustryJobType) *Slots {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
-	}, a.u.MainWindow())
+	})
 
 	// signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
