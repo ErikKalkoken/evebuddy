@@ -1,15 +1,16 @@
 package xwidget
 
 import (
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // SearchEntry is a Fyne widget that shows a search entry.
 type SearchEntry struct {
 	widget.Entry
-	clearButton *kxwidget.IconButton
+	clearButton *TappableIcon
 }
 
 // NewSearchEntry returns a new SearchEntry widget.
@@ -17,19 +18,30 @@ func NewSearchEntry(placeholder string, changed func(string)) *SearchEntry {
 	w := &SearchEntry{}
 	w.ExtendBaseWidget(w)
 	w.PlaceHolder = placeholder
-	w.clearButton = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+	w.clearButton = NewTappableIcon(theme.CancelIcon(), func() {
 		w.SetText("")
 	})
+	w.clearButton.SetToolTip("Clear search")
 	w.clearButton.Hide()
-	w.ActionItem = w.clearButton
+	p := theme.Padding()
+	w.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), w.clearButton)
 	w.SetOnChanged(changed)
 	return w
+}
+
+// Clear clears the entry without calling the changed callback.
+func (w *SearchEntry) Clear() {
+	w.updateClearButton("")
+	w.Text = ""
+	w.Refresh()
 }
 
 func (w *SearchEntry) SetOnChanged(changed func(s string)) {
 	w.OnChanged = func(s string) {
 		w.updateClearButton(s)
-		changed(s)
+		if changed != nil {
+			changed(s)
+		}
 	}
 }
 

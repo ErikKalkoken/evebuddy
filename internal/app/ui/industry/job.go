@@ -127,7 +127,7 @@ type Jobs struct {
 	forCorporation  bool
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
-	search          *widget.Entry
+	searchEntry     *xwidget.SearchEntry
 	selectActivity  *kxwidget.FilterChipSelect
 	selectInstaller *kxwidget.FilterChipSelect
 	selectOwner     *kxwidget.FilterChipSelect
@@ -284,14 +284,10 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 			})
 	}
 
-	a.search = widget.NewEntry()
-	a.search.PlaceHolder = "Search Blueprints"
-	a.search.OnChanged = func(_ string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search blueprints", func(_ string) {
 		a.filterRowsAsync(-1)
-	}
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
 	})
+
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
@@ -344,6 +340,14 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 	if forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				a.searchEntry.Clear()
+				a.selectActivity.Selected = ""
+				a.selectInstaller.Selected = ""
+				a.selectOwner.Selected = ""
+				a.selectStatus.Selected = ""
+				a.selectTag.Selected = ""
+			})
 			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -397,7 +401,7 @@ func (a *Jobs) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
-			a.search,
+			a.searchEntry,
 			container.NewHScroll(filter),
 		)
 	} else {
@@ -406,7 +410,7 @@ func (a *Jobs) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			filter,
 			nil,
-			a.search,
+			a.searchEntry,
 		)
 	}
 	c := container.NewBorder(
@@ -526,7 +530,7 @@ func (a *Jobs) filterRowsAsync(sortCol int) {
 	activity := a.selectActivity.Selected
 	owner := a.selectOwner.Selected
 	tag := a.selectTag.Selected
-	search := a.search.Text
+	search := a.searchEntry.Text
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

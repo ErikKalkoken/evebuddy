@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type memberRow struct {
@@ -39,7 +39,7 @@ type Members struct {
 	list         *widget.List
 	rows         []memberRow
 	rowsFiltered []memberRow
-	searchBox    *widget.Entry
+	searchEntry  *xwidget.SearchEntry
 	u            baseUI
 }
 
@@ -51,20 +51,19 @@ func NewMembers(s baseUI) *Members {
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
 
-	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Search members")
-	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchBox.SetText("")
-	})
-	a.searchBox.OnChanged = func(s string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search members", func(s string) {
 		if len(s) == 1 {
 			return
 		}
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
-	}
+	})
+
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
+		fyne.Do(func() {
+			a.searchEntry.Clear()
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -81,7 +80,7 @@ func NewMembers(s baseUI) *Members {
 
 func (a *Members) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		a.searchBox,
+		a.searchEntry,
 		a.footer,
 		nil,
 		nil,
@@ -119,7 +118,7 @@ func (a *Members) makeList() *widget.List {
 func (a *Members) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	search := strings.ToLower(a.searchBox.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 
 	go func() {
 		if len(search) > 1 {
@@ -148,7 +147,7 @@ func (a *Members) update(ctx context.Context) {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
 			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
-			a.searchBox.SetText("")
+			a.searchEntry.SetText("")
 			a.list.Refresh()
 		})
 	}

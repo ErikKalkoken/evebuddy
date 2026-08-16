@@ -41,7 +41,7 @@ type CharacterLoyaltyPoints struct {
 	list          *widget.List
 	rows          []characterLoyaltyPointsRow
 	rowsFiltered  []characterLoyaltyPointsRow
-	searchBox     *widget.Entry
+	searchEntry   *xwidget.SearchEntry
 	selectFaction *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	u             baseUI
@@ -77,18 +77,15 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
 
-	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Search corporations")
-	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchBox.SetText("")
-	})
-	a.searchBox.OnChanged = func(s string) {
+	// filters
+	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(s string) {
 		if len(s) == 1 {
 			return
 		}
 		a.filterRowsAsync()
 		a.list.ScrollToTop()
-	}
+	})
+
 	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
@@ -99,6 +96,10 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.searchEntry.Clear()
+			a.selectFaction.Selected = ""
+		})
 		a.Update(ctx)
 	},
 	)
@@ -119,7 +120,7 @@ func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
 			container.NewHBox(a.selectFaction, a.sortButton),
-			a.searchBox,
+			a.searchEntry,
 		)
 	} else {
 		topBox = container.NewBorder(
@@ -127,7 +128,7 @@ func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(a.selectFaction, a.sortButton),
 			nil,
-			a.searchBox,
+			a.searchEntry,
 		)
 	}
 	c := container.NewBorder(
@@ -174,7 +175,7 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	search := strings.ToLower(a.searchBox.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	faction := a.selectFaction.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 

@@ -209,7 +209,7 @@ type Search struct {
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
 	rowsFiltered   []assetRow
-	search         *widget.Entry
+	searchEntry    *xwidget.SearchEntry
 	selectCategory *kxwidget.FilterChipSelect
 	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
@@ -362,7 +362,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 		columnSorter:   xwidget.NewColumnSorter(columns, searchColItem, xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         ui.NewLabelWithTruncation(""),
-		search:         widget.NewEntry(),
 		top:            ui.NewLabelWithWrapping(""),
 		u:              u,
 	}
@@ -385,14 +384,10 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 	}
 
 	// filters
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search items", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search items"
+
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -435,6 +430,17 @@ func newAssetSearch(u baseUI, forCorporation bool) *Search {
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				a.searchEntry.Clear()
+				a.selectCategory.Selected = ""
+				a.selectGroup.Selected = ""
+				a.selectLocation.Selected = ""
+				a.selectOwner.Selected = ""
+				a.selectRegion.Selected = ""
+				a.selectState.Selected = ""
+				a.selectTag.Selected = ""
+				a.selectTotal.Selected = ""
+			})
 			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -491,10 +497,10 @@ func (a *Search) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
 		filters.Add(a.sortButton)
-		topBox.Add(a.search)
+		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(filters))
 	} else {
-		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.search))
+		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
 	}
 	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -551,7 +557,7 @@ func (a *Search) makeDataList() *xwidget.StripedList {
 }
 
 func (a *Search) Focus() {
-	a.u.MainWindow().Canvas().Focus(a.search)
+	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
 func (a *Search) filterRowsAsync(sortCol int) {
@@ -565,7 +571,7 @@ func (a *Search) filterRowsAsync(sortCol int) {
 	state := a.selectState.Selected
 	tag := a.selectTag.Selected
 	total := a.selectTotal.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

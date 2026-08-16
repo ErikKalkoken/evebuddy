@@ -125,7 +125,7 @@ type Training struct {
 	main         fyne.CanvasObject
 	rows         []trainingRow
 	rowsFiltered []trainingRow
-	search       *widget.Entry
+	searchEntry  *xwidget.SearchEntry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *xwidget.SortButton
@@ -260,18 +260,14 @@ func NewTraining(u baseUI) *Training {
 	a := &Training{
 		columnSorter: xwidget.NewColumnSorter(columns, trainingColCharacter, xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
-		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+
+	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search characters"
+
 	if a.u.IsMobile() {
 		a.main = a.makeDataList()
 	} else {
@@ -344,11 +340,11 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
-			a.search,
+			a.searchEntry,
 			container.NewHScroll(filter),
 		)
 	} else {
-		topBox = container.NewBorder(nil, nil, filter, nil, a.search)
+		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -520,7 +516,7 @@ func (a *Training) filterRowsAsync(sortCol int) {
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
 	selectTag := a.selectTag.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

@@ -111,7 +111,7 @@ type Colonies struct {
 	footer            *widget.Label
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
-	search            *widget.Entry
+	searchEntry       *xwidget.SearchEntry
 	selectExtracting  *kxwidget.FilterChipSelect
 	selectOwner       *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
@@ -212,7 +212,6 @@ func NewColonies(u baseUI) *Colonies {
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
 		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
-		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -264,14 +263,10 @@ func NewColonies(u baseUI) *Colonies {
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+
+	a.searchEntry = xwidget.NewSearchEntry("Search systems & output", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search systems & output"
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -319,11 +314,11 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	var top *fyne.Container
 	if a.u.IsMobile() {
 		top = container.NewVBox(
-			a.search,
+			a.searchEntry,
 			container.NewHScroll(filter),
 		)
 	} else {
-		top = container.NewBorder(nil, nil, filter, nil, a.search)
+		top = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		top,
@@ -446,7 +441,7 @@ func (a *Colonies) filterRowsAsync(sortCol int) {
 	status := a.selectStatus.Selected
 	planetType := a.selectPlanetType.Selected
 	tag := a.selectTag.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {

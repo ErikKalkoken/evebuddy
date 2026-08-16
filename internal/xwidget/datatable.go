@@ -279,7 +279,7 @@ type SortButton struct {
 // TODO: Convert sort dialog to drop down menu
 
 // NewSortButton returns a new sortButton.
-func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
+func (cs *ColumnSorter[T]) NewSortButton(changed func(), window fyne.Window, ignoredColumns ...int) *SortButton {
 	sortColumns := slices.Collect(xiter.Map(cs.columns.values(), func(h DataColumn[T]) string {
 		return h.Label
 	}))
@@ -327,7 +327,7 @@ func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ign
 				dir = SortDesc
 			}
 			cs.setIdx(col, dir)
-			process()
+			changed()
 			w.set(col, dir)
 			d.Hide()
 		})
@@ -342,7 +342,7 @@ func (cs *ColumnSorter[T]) NewSortButton(process func(), window fyne.Window, ign
 				}),
 				widget.NewButtonWithIcon("Reset", theme.DeleteIcon(), func() {
 					cs.reset()
-					process()
+					changed()
 					d.Hide()
 				}),
 				okButton,

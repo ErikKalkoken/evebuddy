@@ -49,19 +49,19 @@ type flyableShipRow struct {
 type FlyableShips struct {
 	widget.BaseWidget
 
-	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
+	footer        *widget.Label
 	grid          *widget.GridWrap
+	imageCache    xsync.Map[string, *image.RGBA]
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
-	search        *widget.Entry
+	searchEntry   *xwidget.SearchEntry
 	selectFlyable *kxwidget.FilterChipSelect
 	selectGroup   *kxwidget.FilterChipSelect
 	sortButton    *xwidget.SortButton
 	top           *widget.Label
 	u             baseUI
-	imageCache    xsync.Map[string, *image.RGBA]
 }
 
 func NewFlyableShips(u baseUI) *FlyableShips {
@@ -89,15 +89,9 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.search = widget.NewEntry()
-	a.search.SetPlaceHolder("Search type and class names")
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search type and class names", func(_ string) {
 		a.filterRowsAsync()
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync()
-	}
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(_ string) {
 		a.filterRowsAsync()
@@ -115,6 +109,11 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 	a.u.Signals().CurrentCharacterExchanged.AddListener(
 		func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
+			fyne.Do(func() {
+				a.searchEntry.Clear()
+				a.selectFlyable.Selected = ""
+				a.selectGroup.Selected = ""
+			})
 			a.update(ctx)
 		},
 	)
@@ -143,10 +142,10 @@ func (a *FlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortButton)
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		topBox.Add(a.search)
+		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(buttons))
 	} else {
-		topBox.Add(container.NewBorder(nil, nil, buttons, nil, a.search))
+		topBox.Add(container.NewBorder(nil, nil, buttons, nil, a.searchEntry))
 	}
 	c := container.NewBorder(
 		topBox,
@@ -194,7 +193,7 @@ func (a *FlyableShips) filterRowsAsync() {
 	total := len(rows)
 	group := a.selectGroup.Selected
 	flyable := a.selectFlyable.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {
@@ -248,8 +247,8 @@ func (a *FlyableShips) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			a.rows = xslices.Reset(a.rows)
-			a.search.Disable()
-			a.search.SetText("")
+			a.searchEntry.Disable()
+			a.searchEntry.SetText("")
 			a.selectGroup.SetOptions([]string{})
 			a.selectFlyable.SetOptions([]string{})
 			a.filterRowsAsync()
@@ -329,7 +328,7 @@ func (a *FlyableShips) update(ctx context.Context) {
 
 	fyne.Do(func() {
 		a.rows = rows
-		a.search.Enable()
+		a.searchEntry.Enable()
 		a.filterRowsAsync()
 	})
 }

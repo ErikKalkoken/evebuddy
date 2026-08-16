@@ -55,7 +55,7 @@ type Contacts struct {
 	list           fyne.CanvasObject
 	rows           []contactRow
 	rowsFiltered   []contactRow
-	searchBox      *widget.Entry
+	searchEntry    *xwidget.SearchEntry
 	selectBlocked  *kxwidget.FilterChipSelect
 	selectCategory *kxwidget.FilterChipSelect
 	selectLabel    *kxwidget.FilterChipSelect
@@ -92,12 +92,7 @@ func NewContacts(u baseUI) *Contacts {
 	a.ExtendBaseWidget(a)
 
 	// filters
-	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Search")
-	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.searchBox.SetText("")
-	})
-	a.searchBox.OnChanged = func(s string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search contacts", func(s string) {
 		if len(s) == 1 {
 			return
 		}
@@ -108,7 +103,7 @@ func NewContacts(u baseUI) *Contacts {
 		case *xwidget.StripedList:
 			x.ScrollToTop()
 		}
-	}
+	})
 	a.selectBlocked = kxwidget.NewFilterChipSelect("Blocked", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
@@ -134,6 +129,15 @@ func NewContacts(u baseUI) *Contacts {
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.searchEntry.Clear()
+			a.selectBlocked.Selected = ""
+			a.selectCategory.Selected = ""
+			a.selectLabel.Selected = ""
+			a.selectNPC.Selected = ""
+			a.selectStanding.Selected = ""
+			a.selectWatched.Selected = ""
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -162,7 +166,7 @@ func (a *Contacts) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
 			container.NewHScroll(filter),
-			a.searchBox,
+			a.searchEntry,
 		)
 	} else {
 		topBox = container.NewBorder(
@@ -170,7 +174,7 @@ func (a *Contacts) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			filter,
 			nil,
-			a.searchBox,
+			a.searchEntry,
 		)
 	}
 	c := container.NewBorder(
@@ -245,7 +249,7 @@ func (a *Contacts) filterRowsAsync() {
 	npc := a.selectNPC.Selected
 	standing := a.selectStanding.Selected
 	watched := a.selectWatched.Selected
-	search := strings.ToLower(a.searchBox.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
 
 	go func() {

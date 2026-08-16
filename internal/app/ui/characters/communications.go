@@ -498,7 +498,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	a.ExtendBaseWidget(a)
 	a.messageList = a.makeMessageList()
 	a.topLabel.SizeName = theme.SizeNameSubHeadingText
-	a.searchEntry = xwidget.NewSearchEntry("Search communications", func(s string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search communications", func(_ string) {
 		a.filterRowsAsync()
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
@@ -766,7 +766,7 @@ func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
 	a.co.ReadingPane.clear()
 	a.currentFolder = ng
 	a.topLabel.SetText(ng.String())
-	a.searchEntry.SetText("")
+	a.searchEntry.Clear()
 	a.filterChip.Reset()
 	a.filterRowsAsync()
 }

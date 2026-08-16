@@ -80,7 +80,7 @@ type Overview struct {
 	main              fyne.CanvasObject
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
-	search            *widget.Entry
+	searchEntry       *xwidget.SearchEntry
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
@@ -159,19 +159,14 @@ func NewOverview(u baseUI) *Overview {
 		footer:       ui.NewLabelWithTruncation(""),
 		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
 		loadInfo:     info,
-		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
-	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.search.SetText("")
+	a.searchEntry = xwidget.NewSearchEntry("Search characters and systems", func(_ string) {
 		a.filterRowsAsync(-1)
 	})
-	a.search.OnChanged = func(_ string) {
-		a.filterRowsAsync(-1)
-	}
-	a.search.PlaceHolder = "Search characters and systems"
+
 	if !a.u.IsMobile() {
 		a.main = a.makeGrid()
 	} else {
@@ -255,9 +250,9 @@ func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.search, container.NewHScroll(filters))
+		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filters))
 	} else {
-		topBox = container.NewBorder(nil, nil, filters, nil, a.search)
+		topBox = container.NewBorder(nil, nil, filters, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -345,7 +340,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
 	tag := a.selectTag.Selected
-	search := strings.ToLower(a.search.Text)
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
