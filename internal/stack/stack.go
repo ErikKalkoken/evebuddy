@@ -14,18 +14,24 @@ type Stack[T any] struct {
 
 // Clear removes all items.
 func (s *Stack[T]) Clear() {
+	if s == nil {
+		return
+	}
 	clear(s.s)
-	s.s = s.s[0:0]
+	s.s = s.s[:0]
 }
 
 // Push adds an item on top.
 func (s *Stack[T]) Push(v T) {
+	if s == nil {
+		return
+	}
 	s.s = append(s.s, v)
 }
 
 // Peek tries to return the top element and reports whether it exists.
-func (s Stack[T]) Peek() (T, bool) {
-	if len(s.s) == 0 {
+func (s *Stack[T]) Peek() (T, bool) {
+	if s == nil || len(s.s) == 0 {
 		var z T
 		return z, false
 	}
@@ -34,21 +40,29 @@ func (s Stack[T]) Peek() (T, bool) {
 
 // Pop tries to return the top element and reports whether it exists.
 func (s *Stack[T]) Pop() (T, bool) {
-	v, ok := s.Peek()
-	if !ok {
-		var z T
+	var z T
+	if s == nil || len(s.s) == 0 {
 		return z, false
 	}
-	s.s = s.s[:(len(s.s) - 1)]
+	idx := len(s.s) - 1
+	v := s.s[idx]
+	s.s[idx] = z // Zero out to allow GC
+	s.s = s.s[:idx]
 	return v, true
 }
 
 // Size returns the number of items.
-func (s Stack[T]) Size() int {
+func (s *Stack[T]) Size() int {
+	if s == nil {
+		return 0
+	}
 	return len(s.s)
 }
 
 // String returns a string representation.
-func (s Stack[T]) String() string {
+func (s *Stack[T]) String() string {
+	if s == nil {
+		return ""
+	}
 	return fmt.Sprint(s.s)
 }
