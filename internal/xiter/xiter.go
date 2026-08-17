@@ -3,7 +3,6 @@ package xiter
 
 import (
 	"iter"
-	"maps"
 	"slices"
 )
 
@@ -37,10 +36,8 @@ func Count[T any](seq iter.Seq[T], start int) iter.Seq2[int, T] {
 func Filter[T any](seq iter.Seq[T], f func(T) bool) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		for v := range seq {
-			if f(v) {
-				if !yield(v) {
-					return
-				}
+			if f(v) && !yield(v) {
+				return
 			}
 		}
 	}
@@ -68,7 +65,7 @@ func MapSlice[S ~[]X, X any, Y any](s S, f func(X) Y) iter.Seq[Y] {
 }
 
 // MapSlice2 returns an iterator that maps each element of slice s to elements K, V through applying f.
-func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
+func MapSlice2[S ~[]X, X, K, V any](s S, f func(X) (K, V)) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for _, v := range s {
 			if !yield(f(v)) {
@@ -78,27 +75,33 @@ func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
 	}
 }
 
-// Reduce applies f cumulatively to the elements of seq, from left to right,
-// so as to reduce the sequence to a single value.
-// If seq is empty it will return the zero value of T.
+// Reduce applies f cumulatively to the elements of seq, from left to right.
+// Returns zero value of T if seq is empty.
 func Reduce[T any](seq iter.Seq[T], f func(T, T) T) T {
-	var x T
-	for i, v := range Count(seq, 0) {
-		if i == 0 {
-			x = v
-			continue
+	var accumulator T
+	first := true
+	for v := range seq {
+		if first {
+			accumulator = v
+			first = false
+		} else {
+			accumulator = f(accumulator, v)
 		}
-		x = f(x, v)
 	}
-	return x
+	return accumulator
 }
 
-// Unique returns an iterator over a unique subset of the items of sequence seq.
-// The order of the returned items is undefined.
+// Unique returns a lazy iterator yielding only unique elements in order of appearance.
 func Unique[T comparable](seq iter.Seq[T]) iter.Seq[T] {
-	m := make(map[T]struct{})
-	for v := range seq {
-		m[v] = struct{}{}
+	return func(yield func(T) bool) {
+		seen := make(map[T]struct{})
+		for v := range seq {
+			if _, exists := seen[v]; !exists {
+				seen[v] = struct{}{}
+				if !yield(v) {
+					return
+				}
+			}
+		}
 	}
-	return maps.Keys(m)
 }

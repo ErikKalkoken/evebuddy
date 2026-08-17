@@ -7,8 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestChain(t *testing.T) {
@@ -162,14 +163,26 @@ func TestMapSlice2(t *testing.T) {
 }
 
 func TestUnique(t *testing.T) {
-	s := []int{1, 1, 2}
-	got := slices.Collect(xiter.Unique(slices.Values(s)))
-	want := []int{1, 2}
-	assert.ElementsMatch(t, want, got)
+	t.Run("should return unique values", func(t *testing.T) {
+		s := []int{1, 1, 2}
+		got := slices.Collect(xiter.Unique(slices.Values(s)))
+		want := []int{1, 2}
+		assert.ElementsMatch(t, want, got)
+	})
+
+	t.Run("should terminate early", func(t *testing.T) {
+		s := []int{1, 2, 2, 3, 4}
+		next, stop := iter.Pull(xiter.Unique(slices.Values(s)))
+		defer stop()
+
+		v, ok := next()
+		assert.True(t, ok)
+		assert.Equal(t, 1, v)
+	})
 }
 
 func TestReduce(t *testing.T) {
-	t.Run("should return result when there are multple items", func(t *testing.T) {
+	t.Run("should return result when there are multiple items", func(t *testing.T) {
 		s := []int{1, 2, 3, 4}
 		got := xiter.Reduce(slices.Values(s), func(x, y int) int {
 			return x + y

@@ -63,7 +63,7 @@ func TestStack(t *testing.T) {
 	t.Run("can print stack", func(t *testing.T) {
 		var s stack.Stack[int]
 		s.Push(99)
-		x := fmt.Sprint(s)
+		x := fmt.Sprint(&s)
 		assert.Equal(t, "[99]", x)
 	})
 }
