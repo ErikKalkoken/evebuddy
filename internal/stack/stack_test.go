@@ -53,10 +53,17 @@ func TestStack(t *testing.T) {
 		_, ok := s.Peek()
 		assert.False(t, ok)
 	})
+	t.Run("pop on cleared stack", func(t *testing.T) {
+		var s stack.Stack[int]
+		s.Push(10)
+		s.Clear()
+		_, ok := s.Pop()
+		assert.False(t, ok)
+	})
 	t.Run("can print stack", func(t *testing.T) {
 		var s stack.Stack[int]
 		s.Push(99)
-		x := fmt.Sprint(s)
+		x := fmt.Sprint(&s)
 		assert.Equal(t, "[99]", x)
 	})
 }
