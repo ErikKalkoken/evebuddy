@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -34,38 +34,38 @@ func New(httpClient *http.Client, apiKey string) *JaniceService {
 	return s
 }
 
-// PricerItem represents a responce from the Pricer endpoint of the Janice API.
+// PricerItem represents a response from the Pricer endpoint of the Janice API.
 type PricerItem struct {
-	Date   time.Time
+	Date   time.Time `json:"date"`
 	Market struct {
-		ID   int
-		Name string
-	}
-	BuyOrderCount     int64
-	BuyVolume         int64
-	SellOrderCount    int64
-	SellVolume        int64
-	ImmediatePrices   PricerItemValues
-	Top5AveragePrices PricerItemValues
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"market"`
+	BuyOrderCount     int64            `json:"buyOrderCount"`
+	BuyVolume         int64            `json:"buyVolume"`
+	SellOrderCount    int64            `json:"sellOrderCount"`
+	SellVolume        int64            `json:"sellVolume"`
+	ImmediatePrices   PricerItemValues `json:"immediatePrices"`
+	Top5AveragePrices PricerItemValues `json:"top5AveragePrices"`
 	ItemType          struct {
-		EID            int64
-		Name           string
-		Volume         float64
-		PackagedVolume float64
-	}
+		EID            int64   `json:"eid"`
+		Name           string  `json:"name"`
+		Volume         float64 `json:"volume"`
+		PackagedVolume float64 `json:"packagedVolume"`
+	} `json:"itemType"`
 }
 
 // PricerItemValues represents a prices object within a PricerResponse.
 type PricerItemValues struct {
-	BuyPrice                 float64
-	SplitPrice               float64
-	SellPrice                float64
-	BuyPrice5DayMedian       float64
-	SplitPrice5DayMedianrice float64
-	SellPrice5DayMedian      float64
-	BuyPrice30DayMedian      float64
-	SplitPrice30DayMedian    float64
-	SellPrice30DayMedian     float64
+	BuyPrice              float64 `json:"buyPrice"`
+	SplitPrice            float64 `json:"splitPrice"`
+	SellPrice             float64 `json:"sellPrice"`
+	BuyPrice5DayMedian    float64 `json:"buyPrice5DayMedian"`
+	SplitPrice5DayMedian  float64 `json:"splitPrice5DayMedian"`
+	SellPrice5DayMedian   float64 `json:"sellPrice5DayMedian"`
+	BuyPrice30DayMedian   float64 `json:"buyPrice30DayMedian"`
+	SplitPrice30DayMedian float64 `json:"splitPrice30DayMedian"`
+	SellPrice30DayMedian  float64 `json:"sellPrice30DayMedian"`
 }
 
 func (s *JaniceService) FetchPrices(ctx context.Context, typeID int64) (PricerItem, error) {
@@ -80,23 +80,25 @@ func (s *JaniceService) FetchPrices(ctx context.Context, typeID int64) (PricerIt
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/rest/v2/pricer/%d", baseURL, typeID), nil)
 	if err != nil {
-		return info, nil
+		return info, err
 	}
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("X-ApiKey", s.apiKey)
 	r, err := s.httpClient.Do(req)
 	if err != nil {
-		return info, nil
-	}
-	defer r.Body.Close()
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
 		return info, err
 	}
+	defer r.Body.Close()
 	if r.StatusCode >= 400 {
+		var data any
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			slog.Warn("Error response from Janice was not JSON", "error", err)
+		} else {
+			slog.Warn("Error response from Janice", "typeID", typeID, "response", data)
+		}
 		return info, fmt.Errorf("%s: %w", r.Status, ErrHTTPError)
 	}
-	if err := json.Unmarshal(data, &info); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
 		return info, err
 	}
 	return info, nil
