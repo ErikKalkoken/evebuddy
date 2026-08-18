@@ -1,27 +1,25 @@
-package main
+package pcache
 
 import (
 	"encoding/binary"
 	"time"
 
 	"github.com/gohugoio/httpcache"
-
-	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 )
 
 // httpCacheAdapter adopts pcache to be used with httpcache.
 type httpCacheAdapter struct {
-	c       *pcache.PCache
+	c       *PCache
 	prefix  string
 	timeout time.Duration
 }
 
 var _ httpcache.Cache = (*httpCacheAdapter)(nil)
 
-// newHTTPCacheAdapter returns a new cacheAdapter.
+// NewHTTPCacheAdapter returns a new cacheAdapter.
 // The prefix is added to all cache keys to prevent conflicts.
 // Keys are stored with the given cache timeout. A timeout of 0 means that keys never expire.
-func newHTTPCacheAdapter(c *pcache.PCache, prefix string, timeout time.Duration) *httpCacheAdapter {
+func NewHTTPCacheAdapter(c *PCache, prefix string, timeout time.Duration) *httpCacheAdapter {
 	ca := &httpCacheAdapter{c: c, prefix: prefix, timeout: timeout}
 	return ca
 }
@@ -44,13 +42,13 @@ func (ca *httpCacheAdapter) makeKey(key string) string {
 
 // serviceCacheAdapter adopts pcache to be used with services.
 type serviceCacheAdapter struct {
-	cache  *pcache.PCache
+	cache  *PCache
 	prefix string
 }
 
-// newServiceCacheAdapter returns a new cacheAdapter2.
+// NewServiceCacheAdapter returns a new cacheAdapter2.
 // The prefix is added to all cache keys to prevent conflicts.
-func newServiceCacheAdapter(c *pcache.PCache, prefix string) *serviceCacheAdapter {
+func NewServiceCacheAdapter(c *PCache, prefix string) *serviceCacheAdapter {
 	a := &serviceCacheAdapter{cache: c, prefix: prefix}
 	return a
 }

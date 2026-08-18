@@ -1,4 +1,4 @@
-package main
+package pcache_test
 
 import (
 	"testing"
@@ -9,23 +9,29 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
-func TestCacheAdapter2(t *testing.T) {
+func TestHTTPCacheAdapter(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	pc := pcache.New(st, 0)
-	ca := newServiceCacheAdapter(pc, "prefix")
+	ca := pcache.NewHTTPCacheAdapter(pc, "prefix", 0)
 	t.Run("get existing key", func(t *testing.T) {
 		pc.Clear()
-		v := int64(42)
-		ca.SetInt64("a", v, 0)
-		got, ok := ca.GetInt64("a")
+		ca.Set("a", []byte("alpha"))
+		got, ok := ca.Get("a")
 		if assert.True(t, ok) {
-			assert.Equal(t, v, got)
+			assert.Equal(t, []byte("alpha"), got)
 		}
 	})
 	t.Run("get non existing key", func(t *testing.T) {
 		pc.Clear()
-		_, ok := ca.GetInt64("a")
+		_, ok := ca.Get("a")
+		assert.False(t, ok)
+	})
+	t.Run("delete existing key", func(t *testing.T) {
+		pc.Clear()
+		ca.Set("a", []byte("alpha"))
+		ca.Delete("a")
+		_, ok := ca.Get("a")
 		assert.False(t, ok)
 	})
 }

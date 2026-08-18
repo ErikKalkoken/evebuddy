@@ -285,7 +285,7 @@ func main() {
 	rhc1.CheckRetry = customCheckRetry // also retry on 420s
 	rhc1.Backoff = customBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
 		Transport: &xgoesi.RateLimiter{
 			Transport: &xgoesi.DowntimeBlocker{},
@@ -304,7 +304,7 @@ func main() {
 	rhc2.RetryWaitMax = 30 * time.Second
 	rhc2.RetryMax = 4
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
 	rhc2.Logger = slog.Default()
@@ -351,7 +351,7 @@ func main() {
 	}
 	cs := characterservice.New(characterservice.Params{
 		AuthClient:             authClient,
-		Cache:                  newServiceCacheAdapter(pc, "characterservice-"),
+		Cache:                  pcache.NewServiceCacheAdapter(pc, "characterservice-"),
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
@@ -369,7 +369,7 @@ func main() {
 
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
-		Cache:              newServiceCacheAdapter(pc, "corporationservice-"),
+		Cache:              pcache.NewServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
 		ESIClient:          esiClient,
