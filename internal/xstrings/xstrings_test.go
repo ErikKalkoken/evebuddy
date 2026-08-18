@@ -69,7 +69,7 @@ func TestObfuscate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := xstrings.Obfuscate(tc.s, tc.n, "X")
+			got := xstrings.Obfuscate(tc.s, tc.n, 'X')
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -88,7 +88,7 @@ func TestTruncateWithSuffix(t *testing.T) {
 			input:     "november",
 			limit:     7,
 			suffixLen: 1,
-			expected:  "novem...r",
+			expected:  "nov...r",
 		},
 		{
 			name:      "Trailing space removal",
@@ -101,8 +101,8 @@ func TestTruncateWithSuffix(t *testing.T) {
 			name:      "Suffix ends in space",
 			input:     "open space ",
 			limit:     9,
-			suffixLen: 2,             // "e "
-			expected:  "open s...ce", // Space trimmed
+			suffixLen: 2,           // "e "
+			expected:  "open...ce", // Space trimmed
 		},
 		{
 			name:      "String within limit",
@@ -116,7 +116,21 @@ func TestTruncateWithSuffix(t *testing.T) {
 			input:     "november",
 			limit:     7,
 			suffixLen: 0,
-			expected:  "novemb...",
+			expected:  "nove...",
+		},
+		{
+			name:      "suffixLen larger then input",
+			input:     "november",
+			limit:     7,
+			suffixLen: 9,
+			expected:  "...mber",
+		},
+		{
+			name:      "empty when limit below 3",
+			input:     "november",
+			limit:     2,
+			suffixLen: 0,
+			expected:  "",
 		},
 	}
 
@@ -124,6 +138,47 @@ func TestTruncateWithSuffix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := xstrings.TruncateWithSuffix(tt.input, tt.limit, tt.suffixLen)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestRemoveMultiByte(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "ASCII only",
+			input:    "Hello, World! 123",
+			expected: "Hello, World! 123",
+		},
+		{
+			name:     "Mixed ASCII and multi-byte UTF-8",
+			input:    "Hello 世界! 🚀 Test",
+			expected: "Hello !  Test",
+		},
+		{
+			name:     "Only multi-byte UTF-8",
+			input:    "こんにちは世界",
+			expected: "",
+		},
+		{
+			name:     "Empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "Accented characters",
+			input:    "Café & Naïve",
+			expected: "Caf & Nave",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := xstrings.RemoveMultiByte(tt.input)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }

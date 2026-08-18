@@ -382,7 +382,7 @@ func (a *Contacts) filterRowsAsync() {
 func (a *Contacts) update(ctx context.Context) {
 	rest := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
 	}

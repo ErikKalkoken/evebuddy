@@ -1,11 +1,13 @@
 // Package xslices contains helper functions for slices.
 package xslices
 
+import "slices"
+
 // Deduplicate returns a new slice where all duplicate elements have been removed.
 // The order of the elements is not changed, but the new slice can be shorter.
 func Deduplicate[S ~[]E, E comparable](s S) []E {
-	seen := make(map[E]bool)
-	var s2 []E
+	seen := make(map[E]bool, len(s))
+	s2 := make([]E, 0, len(s))
 	for _, v := range s {
 		if seen[v] {
 			continue
@@ -13,18 +15,18 @@ func Deduplicate[S ~[]E, E comparable](s S) []E {
 		s2 = append(s2, v)
 		seen[v] = true
 	}
-	return s2
+	return slices.Clip(s2)
 }
 
 // Filter returns a new slice containing the elements where applied function f returned true.
 func Filter[S ~[]E, E any](s S, f func(E) bool) []E {
-	var s2 []E
+	s2 := make([]E, 0, len(s))
 	for _, v := range s {
 		if f(v) {
 			s2 = append(s2, v)
 		}
 	}
-	return s2
+	return slices.Clip(s2)
 }
 
 // Map returns a new slice with the results of function f applied to each element.
@@ -37,13 +39,14 @@ func Map[S ~[]X, X any, Y any](s S, f func(X) Y) []Y {
 }
 
 // Pop returns and removes the last element of a slice s and reports whether an element was returned.
-func Pop[T any](s *[]T) (T, bool) {
+func Pop[S ~[]E, E any](s *S) (E, bool) {
+	var zero E
 	if s == nil || len(*s) == 0 {
-		var zero T
 		return zero, false
 	}
 	lastIndex := len(*s) - 1
 	value := (*s)[lastIndex]
+	(*s)[lastIndex] = zero
 	*s = (*s)[:lastIndex]
 	return value, true
 }
@@ -63,10 +66,12 @@ func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
 	return x
 }
 
-// Reset returns a slice that have been reset to length 0
-// and has all it's elements cleared.
-func Reset[S ~[]E, E any](s S) []E {
-	clear(s)
-	s = s[:0]
-	return s
+// Clear zeroes all elements in the slice and resets its length to 0,
+// retaining its original capacity for memory reuse.
+func Clear[S ~[]E, E any](s *S) {
+	if s == nil {
+		return
+	}
+	clear(*s)
+	*s = (*s)[:0]
 }

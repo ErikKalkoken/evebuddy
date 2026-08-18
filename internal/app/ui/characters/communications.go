@@ -135,7 +135,7 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 func (a *Communications) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.NavigationPane.update()
 			a.NavigationPane.folderList.UnselectAll()
 			a.NavigationPane.folderList.Select(0)

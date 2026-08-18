@@ -246,7 +246,7 @@ func (a *FlyableShips) filterRowsAsync() {
 func (a *FlyableShips) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.searchEntry.Disable()
 			a.searchEntry.SetText("")
 			a.selectGroup.SetOptions([]string{})

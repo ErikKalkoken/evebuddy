@@ -12,18 +12,29 @@ import (
 func TestClear(t *testing.T) {
 	t.Run("normal slice", func(t *testing.T) {
 		s := []int{1, 2}
-		s = xslices.Reset(s)
-		assert.Len(t, s, 0)
+		xslices.Clear(&s)
+		assert.Empty(t, s)
 	})
 	t.Run("empty slice", func(t *testing.T) {
 		s := []int{}
-		s = xslices.Reset(s)
-		assert.Len(t, s, 0)
+		xslices.Clear(&s)
+		assert.Empty(t, s)
 	})
 	t.Run("nil slice", func(t *testing.T) {
 		var s []int
-		s = xslices.Reset(s)
+		xslices.Clear(&s)
+		assert.Empty(t, s)
+	})
+	t.Run("nil pointer", func(t *testing.T) {
+		var s *[]int
+		xslices.Clear(s)
+		assert.Nil(t, s)
+	})
+	t.Run("normal slice retains capacity", func(t *testing.T) {
+		s := make([]int, 2, 10)
+		xslices.Clear(&s)
 		assert.Len(t, s, 0)
+		assert.Equal(t, 10, cap(s))
 	})
 }
 
@@ -40,7 +51,7 @@ func TestDeduplicate(t *testing.T) {
 		want := []string{"b", "a"}
 		assert.Equal(t, want, got)
 	})
-	t.Run("can processs empty slice", func(t *testing.T) {
+	t.Run("can process empty slice", func(t *testing.T) {
 		s := []string{}
 		got := xslices.Deduplicate(s)
 		want := []string{}
@@ -120,10 +131,17 @@ func TestPop(t *testing.T) {
 		assert.Equal(t, zero, popped)
 		// The original pointer remains nil, and the function does not panic.
 	})
+
+	t.Run("Pop zeroes truncated element in underlying array", func(t *testing.T) {
+		s := []string{"a", "b"}
+		sPtr := &s
+		xslices.Pop(sPtr)
+		assert.Equal(t, "", s[:2][1]) // inspect underlying array beyond slice length
+	})
 }
 
 func TestReduce(t *testing.T) {
-	t.Run("should return result when there are multple items", func(t *testing.T) {
+	t.Run("should return result when there are multiple items", func(t *testing.T) {
 		s := []int{1, 2, 3, 4}
 		got := xslices.Reduce(s, func(x, y int) int {
 			return x + y

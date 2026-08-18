@@ -154,7 +154,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 	)
 	clearRecent := widget.NewHyperlink("Clear", nil)
 	clearRecent.OnTapped = func() {
-		a.recentItems = xslices.Reset(a.recentItems)
+		xslices.Clear(&a.recentItems)
 		a.recent.Refresh()
 		a.storeRecentItems()
 	}
@@ -181,7 +181,7 @@ func (a *GameSearch) init(ctx context.Context) {
 	ee, err := a.u.EVEUniverse().ListEntitiesForIDs(ctx, ids)
 	if errors.Is(err, app.ErrNotFound) {
 		fyne.Do(func() {
-			a.recentItems = xslices.Reset(a.recentItems)
+			xslices.Clear(&a.recentItems)
 			a.recent.Refresh()
 		})
 		return

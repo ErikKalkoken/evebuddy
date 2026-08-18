@@ -413,7 +413,7 @@ func (a *Overview) filterRowsAsync(sortCol int) {
 func (a *Overview) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}

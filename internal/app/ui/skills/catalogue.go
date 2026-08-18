@@ -315,8 +315,8 @@ func (a *Catalogue) update(ctx context.Context) {
 
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
-			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
+			xslices.Clear(&a.rows)
+			xslices.Clear(&a.rowsFiltered)
 		})
 	}
 

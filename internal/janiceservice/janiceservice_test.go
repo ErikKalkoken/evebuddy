@@ -1,7 +1,7 @@
 package janiceservice_test
 
 import (
-	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -71,7 +71,7 @@ func TestPricer(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		s := janiceservice.New(http.DefaultClient, "api-key")
-		x, err := s.FetchPrices(context.Background(), 34)
+		x, err := s.FetchPrices(t.Context(), 34)
 		if assert.NoError(t, err) {
 			assert.Equal(t, time.Date(2025, 4, 25, 1, 2, 3, 0, time.UTC), x.Date)
 			xassert.Equal(t, 2, x.Market.ID)
@@ -91,20 +91,41 @@ func TestPricer(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://janice.e-351.com/api/rest/v2/pricer/34",
-			httpmock.NewJsonResponderOrPanic(404, map[string]any{}),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{
+				"type":            "string",
+				"title":           "not found",
+				"status":          0,
+				"detail":          "some",
+				"instance":        "string",
+				"additionalProp1": "string",
+				"additionalProp2": "string",
+				"additionalProp3": "string",
+			}),
 		)
 		s := janiceservice.New(http.DefaultClient, "api-key")
-		_, err := s.FetchPrices(context.Background(), 34)
+		_, err := s.FetchPrices(t.Context(), 34)
 		assert.ErrorIs(t, err, janiceservice.ErrHTTPError)
+	})
+	t.Run("should return request error", func(t *testing.T) {
+		httpmock.Reset()
+		someErr := fmt.Errorf("some error")
+		httpmock.RegisterResponder(
+			"GET",
+			"https://janice.e-351.com/api/rest/v2/pricer/34",
+			httpmock.NewErrorResponder(someErr),
+		)
+		s := janiceservice.New(http.DefaultClient, "api-key")
+		_, err := s.FetchPrices(t.Context(), 34)
+		assert.ErrorIs(t, err, someErr)
 	})
 	t.Run("should return error when called with invalid type ID", func(t *testing.T) {
 		s := janiceservice.New(http.DefaultClient, "api-key")
-		_, err := s.FetchPrices(context.Background(), 0)
+		_, err := s.FetchPrices(t.Context(), 0)
 		assert.Error(t, err)
 	})
 	t.Run("should return error when no API key", func(t *testing.T) {
 		s := janiceservice.New(http.DefaultClient, "")
-		_, err := s.FetchPrices(context.Background(), 34)
+		_, err := s.FetchPrices(t.Context(), 34)
 		assert.Error(t, err)
 	})
 }

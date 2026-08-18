@@ -404,7 +404,7 @@ func main() {
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
-	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, "X"))
+	slog.Info("Janice API key", "value", xstrings.Obfuscate(key, 4, 'X'))
 	params := core.UIParams{
 		App:              fyneApp,
 		Character:        cs,
