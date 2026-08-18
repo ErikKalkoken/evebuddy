@@ -145,8 +145,8 @@ func (a *Members) filterRowsAsync() {
 func (a *Members) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
-			a.rowsFiltered = xslices.Reset(a.rowsFiltered)
+			xslices.Clear(&a.rows)
+			xslices.Clear(&a.rowsFiltered)
 			a.searchEntry.SetText("")
 			a.list.Refresh()
 		})

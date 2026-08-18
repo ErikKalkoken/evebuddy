@@ -333,7 +333,7 @@ func (a *Clones) update(ctx context.Context) {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.filterRowsAsync(-1)
 		})
 		return

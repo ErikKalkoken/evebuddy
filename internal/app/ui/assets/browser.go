@@ -729,8 +729,8 @@ func (a *browserContainer) clear() {
 	a.location.clear()
 	a.searchEntry.Hide()
 	a.footer.SetText("")
-	a.items = xslices.Reset(a.items)
-	a.itemsFiltered = xslices.Reset(a.itemsFiltered)
+	xslices.Clear(&a.items)
+	xslices.Clear(&a.itemsFiltered)
 	a.grid.Refresh()
 }
 

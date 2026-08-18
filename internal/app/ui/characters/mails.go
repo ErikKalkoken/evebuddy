@@ -230,7 +230,7 @@ func (a *Mails) update(ctx context.Context) {
 		fyne.Do(func() {
 			a.folders.Clear()
 			a.currentFolder.Store(nil)
-			a.headers = xslices.Reset(a.headers)
+			xslices.Clear(&a.headers)
 			a.headerList.Refresh()
 			a.headersTop.clear()
 			a.clearMail()
@@ -592,7 +592,7 @@ func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 func (a *Mails) headerUpdate(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
-			a.headers = xslices.Reset(a.headers)
+			xslices.Clear(&a.headers)
 			a.headerList.Refresh()
 			a.headersTop.clear()
 			a.clearMail()

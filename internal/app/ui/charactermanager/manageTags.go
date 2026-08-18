@@ -359,7 +359,7 @@ func (a *manageTags) makeTagList() *widget.List {
 							}
 							a.tagList.UnselectAll()
 							a.selectedTag = nil
-							a.characters = xslices.Reset(a.characters)
+							xslices.Clear(&a.characters)
 							a.addCharactersButton.Disable()
 							a.characterList.Refresh()
 							a.addCharactersButton.Disable()
@@ -437,7 +437,7 @@ func (a *manageTags) makeCharacterList() *widget.List {
 func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
 	if tag == nil {
-		a.characters = xslices.Reset(a.characters)
+		xslices.Clear(&a.characters)
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -518,7 +518,7 @@ func (a *manageTags) update(ctx context.Context) {
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to list tags", err)
-		a.tags = xslices.Reset(a.tags)
+		xslices.Clear(&a.tags)
 		return
 	}
 	fyne.Do(func() {

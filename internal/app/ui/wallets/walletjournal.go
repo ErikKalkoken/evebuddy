@@ -332,7 +332,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	}
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
@@ -412,7 +412,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	}
 	reset := func() {
 		fyne.Do(func() {
-			a.rows = xslices.Reset(a.rows)
+			xslices.Clear(&a.rows)
 			a.filterRowsAsync(-1)
 		})
 	}
