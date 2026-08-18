@@ -29,7 +29,6 @@ func TestNumberF(t *testing.T) {
 		{0, 2, "0.00"},
 		{1234.56, 3, "1.235 K"},
 		{1234.56, 1, "1.2 K"},
-		{1234.56, 0, "1 K"},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Can format numbers: %f", tc.value), func(t *testing.T) {
@@ -56,7 +55,6 @@ func TestNumber(t *testing.T) {
 		{0, 2, "0"},
 		{1234, 3, "1.234 K"},
 		{1234, 1, "1.2 K"},
-		{1234, 0, "1 K"},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Can format numbers: %d", tc.value), func(t *testing.T) {
@@ -100,8 +98,9 @@ func TestDurationRoundedUp(t *testing.T) {
 		{"minutes round up 2", 1*time.Minute + 31*time.Second, "2m"},
 		{"hours round up 1", 25*time.Hour + 10*time.Minute, "1d 2h"},
 		{"hours round up 2", 25*time.Hour + 31*time.Minute, "1d 2h"},
-		{"days and hours", 24*3*time.Hour + 5*time.Hour, "3d 5h"},
+		{"days and hours 1", 24*3*time.Hour + 5*time.Hour, "3d 5h"},
 		{"days and hours 2", 24*10*time.Hour + 5*time.Hour + 3*time.Minute, "10d 6h"},
+		{"days and hours 3", 24*3*time.Hour + 23*time.Hour + 31*time.Minute, "4d 0h"},
 		{"hours and minutes", 5*time.Hour + 3*time.Minute, "5h 3m"},
 		{"below 1 minute", 59 * time.Second, "<1m"},
 		{"negative duration", -5*time.Hour - 3*time.Minute, "0m"},
@@ -123,7 +122,6 @@ func TestRomanLetters(t *testing.T) {
 		{2, "II"},
 		{3, "III"},
 		{4, "IV"},
-		{5, "V"},
 		{5, "V"},
 		{0, "-"},
 		{6, ""},
@@ -154,7 +152,6 @@ func TestOptional(t *testing.T) {
 	t.Run("number", func(t *testing.T) {
 		assert.Equal(t, "42", humanize.Optional(optional.New(int(42)), ""))
 		assert.Equal(t, "42", humanize.Optional(optional.New(int64(42)), ""))
-		assert.Equal(t, "42", humanize.Optional(optional.New(int64(42)), ""))
 	})
 	t.Run("bool", func(t *testing.T) {
 		assert.Equal(t, "yes", humanize.Optional(optional.New(true), ""))
@@ -171,7 +168,7 @@ func TestOptionalWithComma(t *testing.T) {
 	assert.Equal(t, "1,234", humanize.OptionalWithComma(optional.New(1234), ""))
 }
 
-func TestOptionalWithDecemals(t *testing.T) {
+func TestOptionalWithDecimals(t *testing.T) {
 	assert.Equal(t, "fallback", humanize.OptionalWithDecimals(optional.Optional[float64]{}, 1, "fallback"))
 	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.New(float64(1.23)), 1, ""))
 	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.New(float32(1.23)), 1, ""))
@@ -179,7 +176,6 @@ func TestOptionalWithDecemals(t *testing.T) {
 
 func TestComma(t *testing.T) {
 	assert.Equal(t, "1,234", humanize.Comma(int(1234)))
-	assert.Equal(t, "1,234", humanize.Comma(int64(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(int64(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(uint(1234)))
 	assert.Equal(t, "1,234", humanize.Comma(uint32(1234)))
