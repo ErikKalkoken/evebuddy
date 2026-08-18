@@ -1,4 +1,4 @@
-package main
+package xgoesi
 
 import (
 	"bytes"
@@ -22,9 +22,9 @@ const (
 // Responses from these URLs will never be logged.
 var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
-// logResponse is a callback for retryablehttp.
+// LogResponse is a callback for retryablehttp.
 // It logs all HTTP errors and also the complete response when log level is DEBUG.
-func logResponse(_ retryablehttp.Logger, r *http.Response) {
+func LogResponse(_ retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
 	isHTTPError := r.StatusCode >= 400
 	if !isDebug && !isHTTPError {
@@ -116,7 +116,7 @@ func copyResponseBody(r *http.Response) ([]byte, error) {
 // statusText returns the status code of a response with adding information.
 func statusText(r *http.Response) string {
 	var s string
-	if r.StatusCode == 420 {
+	if r.StatusCode == StatusTooManyErrors {
 		s = "Error Limited"
 	} else {
 		s = http.StatusText(r.StatusCode)
