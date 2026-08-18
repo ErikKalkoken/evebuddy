@@ -282,17 +282,17 @@ func main() {
 	rhc1 := retryablehttp.NewClient()
 	rhc1.RetryWaitMax = 30 * time.Second // overruled by retry-after and error-reset header
 	rhc1.RetryMax = 3
-	rhc1.CheckRetry = customCheckRetry // also retry on 420s
-	rhc1.Backoff = customBackoff       // also retry on 420s
+	rhc1.CheckRetry = xgoesi.CustomCheckRetry // also retry on 420s
+	rhc1.Backoff = xgoesi.CustomBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
 		Transport: &xgoesi.RateLimiter{
 			Transport: &xgoesi.DowntimeBlocker{},
 		},
 	}
 	rhc1.Logger = slog.Default()
-	rhc1.ResponseLogHook = logResponse
+	rhc1.ResponseLogHook = xgoesi.LogResponse
 	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
 	esiClient := goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
 		UserAgent: userAgent,
@@ -304,11 +304,11 @@ func main() {
 	rhc2.RetryWaitMax = 30 * time.Second
 	rhc2.RetryMax = 4
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
 	rhc2.Logger = slog.Default()
-	rhc2.ResponseLogHook = logResponse
+	rhc2.ResponseLogHook = xgoesi.LogResponse
 
 	// init shared objects
 	signals := app.NewSignals()
@@ -351,7 +351,7 @@ func main() {
 	}
 	cs := characterservice.New(characterservice.Params{
 		AuthClient:             authClient,
-		Cache:                  newServiceCacheAdapter(pc, "characterservice-"),
+		Cache:                  pcache.NewServiceCacheAdapter(pc, "characterservice-"),
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
@@ -369,7 +369,7 @@ func main() {
 
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
-		Cache:              newServiceCacheAdapter(pc, "corporationservice-"),
+		Cache:              pcache.NewServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
 		ESIClient:          esiClient,
@@ -489,35 +489,4 @@ func setupCrashFile(path string) error {
 	}
 	crashFile.Close()
 	return nil
-}
-
-// customCheckRetry is a custom retry policy for a retryablehttp client
-// that adds retry for 420s and removes retries for 520s.
-func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
-	shouldRetry, checkErr := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
-	if checkErr != nil {
-		return false, checkErr
-	}
-	if resp != nil && resp.StatusCode == xgoesi.StatusUnknownError {
-		return false, nil // Don't retry on 520
-	}
-	if shouldRetry {
-		return true, nil
-	}
-	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
-		return true, nil // Retry on 420
-	}
-	return false, nil
-}
-
-// customBackoff is a custom backoff policy for a retryablehttp client
-// that adds backoff for 420s.
-func customBackoff(minimum time.Duration, maximum time.Duration, attemptNum int, resp *http.Response) time.Duration {
-	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
-		if sleep, ok := xgoesi.ParseErrorLimitResetHeader(resp); ok {
-			return sleep
-		}
-		return xgoesi.ErrorLimitResetFallback
-	}
-	return retryablehttp.DefaultBackoff(minimum, maximum, attemptNum, resp)
 }
