@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
 	"slices"
 	"strings"
@@ -25,7 +26,17 @@ var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 // LogResponse is a callback for retryablehttp.
 // It logs all HTTP errors and also the complete response when log level is DEBUG.
 func LogResponse(_ retryablehttp.Logger, r *http.Response) {
-	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
+	if r == nil {
+		return
+	}
+	var ctx context.Context
+	if r.Request != nil {
+		ctx = r.Request.Context()
+	} else {
+		ctx = context.Background()
+	}
+
+	isDebug := slog.Default().Enabled(ctx, slog.LevelDebug)
 	isHTTPError := r.StatusCode >= 400
 	if !isDebug && !isHTTPError {
 		return
@@ -46,37 +57,40 @@ func LogResponse(_ retryablehttp.Logger, r *http.Response) {
 	}
 
 	status := statusText(r)
-	var args []any
-	if isDebug {
-		args = []any{
-			"method", r.Request.Method,
-			"url", r.Request.URL,
-			"status", status,
-			"header", r.Header,
-			"body", data,
-		}
-	} else {
-		args = []any{
-			"method", r.Request.Method,
-			"url", r.Request.URL,
-			"status", status,
-			"body", data,
+	reqMethod := ""
+	reqURL := ""
+	if r.Request != nil {
+		reqMethod = r.Request.Method
+		if r.Request.URL != nil {
+			reqURL = r.Request.URL.String()
 		}
 	}
+	args := []any{
+		"method", reqMethod,
+		"url", reqURL,
+		"status", status,
+	}
+	if isDebug {
+		args = append(args, "header", r.Header)
+	}
+	args = append(args, "body", data)
 
-	slog.Log(context.Background(), level, "HTTP response", args...)
+	slog.Log(ctx, level, "HTTP response", args...)
 }
 
 func extractBodyForLog(r *http.Response) (any, error) {
-	x := r.Header.Get(headerContentTypeKey)
-	var parts []string
-	for s := range strings.SplitSeq(x, ";") {
-		parts = append(parts, strings.Trim(s, " "))
+	ct := r.Header.Get(headerContentTypeKey)
+	mediaType, _, _ := mime.ParseMediaType(ct)
+	isJSON := mediaType == headerContentTypeJSON
+
+	var reqURL string
+	if r.Request != nil && r.Request.URL != nil {
+		reqURL = r.Request.URL.String()
 	}
-	isJSON := slices.Contains(parts, headerContentTypeJSON)
 	hasBlacklistedURL := slices.ContainsFunc(blacklistedURLs, func(x string) bool {
-		return strings.Contains(r.Request.URL.String(), x)
+		return reqURL != "" && strings.Contains(reqURL, x)
 	})
+
 	if hasBlacklistedURL {
 		if !isJSON {
 			return "xxxxx", nil

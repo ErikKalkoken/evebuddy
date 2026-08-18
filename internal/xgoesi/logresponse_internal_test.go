@@ -52,7 +52,7 @@ func TestExtractBodyForLog(t *testing.T) {
 			assert.Nil(t, x)
 		}
 	})
-	t.Run("should redact blocked URL", func(t *testing.T) {
+	t.Run("should redact blocked URL with text content-type", func(t *testing.T) {
 		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
 		r := &http.Response{
 			Body: io.NopCloser(strings.NewReader("test")),
@@ -65,7 +65,7 @@ func TestExtractBodyForLog(t *testing.T) {
 			assert.Equal(t, "xxxxx", x)
 		}
 	})
-	t.Run("should redact blocked URL", func(t *testing.T) {
+	t.Run("should redact blocked URL with JSON content-type", func(t *testing.T) {
 		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
 		r := &http.Response{
 			Body: io.NopCloser(strings.NewReader("test")),
@@ -76,7 +76,7 @@ func TestExtractBodyForLog(t *testing.T) {
 		}
 		x, err := extractBodyForLog(r)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]bool(map[string]bool{"redacted": true}), x)
+			assert.Equal(t, map[string]bool{"redacted": true}, x)
 		}
 	})
 	t.Run("should return error", func(t *testing.T) {
