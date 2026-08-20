@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"golang.org/x/oauth2"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -139,8 +139,9 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 type tokenSource struct {
 	refresher func(context.Context, *app.CharacterToken) (bool, error)
 
-	ctx   context.Context
-	sfg   singleflight.Group
+	ctx context.Context
+
+	mu    sync.Mutex
 	token *app.CharacterToken
 }
 
@@ -163,14 +164,20 @@ func newTokenSource(ctx context.Context, token *app.CharacterToken, refresher fu
 }
 
 func (ts *tokenSource) Token() (*oauth2.Token, error) {
-	o, err, _ := xsingleflight.Do(&ts.sfg, "refresh-token", func() (*oauth2.Token, error) {
-		if !ts.token.RemainsValid(tokenTimeout) {
-			_, err := ts.refresher(ts.ctx, ts.token)
-			if err != nil {
-				return nil, err
-			}
-		}
+	ts.mu.Lock()
+	if ts.token.RemainsValid(tokenTimeout) {
+		defer ts.mu.Unlock()
 		return ts.token.OauthToken(), nil
-	})
-	return o, err
+	}
+	ts.mu.Unlock()
+
+	_, err := ts.refresher(ts.ctx, ts.token)
+	if err != nil {
+		return nil, err
+	}
+
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+
+	return ts.token.OauthToken(), nil
 }
