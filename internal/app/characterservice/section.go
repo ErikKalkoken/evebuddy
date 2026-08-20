@@ -366,7 +366,9 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg charac
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.section, arg.characterID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
-		return f(ctx, arg)
+		return xgoesi.RetryOn401(1, key, func() (bool, error) {
+			return f(ctx, arg)
+		})
 	})
 	if err != nil {
 		s.recordUpdateFailed(ctx, arg, err)
@@ -374,10 +376,10 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg charac
 	}
 	slog.Info(
 		"Character section update completed",
-		"characterID", arg.characterID,
-		"section", arg.section,
-		"forced", arg.forceUpdate,
-		"hasChanged", hasChanged,
+		slog.Any("characterID", arg.characterID),
+		slog.Any("section", arg.section),
+		slog.Any("forced", arg.forceUpdate),
+		slog.Any("hasChanged", hasChanged),
 	)
 	return hasChanged, err
 }

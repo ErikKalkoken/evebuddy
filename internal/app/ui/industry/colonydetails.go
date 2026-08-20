@@ -80,7 +80,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 		return
 	}
 
-	b := newColonyDetails(u, r.characterID, r.planetID, w)
+	b := newColonyDetails(u, r.characterID, r.planetID)
 	err := b.Update(context.Background())
 	if err != nil {
 		slog.Error(
@@ -110,7 +110,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	w.Show()
 }
 
-func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *colonyDetails {
+func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	if characterID == 0 || planetID == 0 {
 		panic(app.ErrInvalid)
 	}

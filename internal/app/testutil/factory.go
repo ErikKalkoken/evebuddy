@@ -967,8 +967,8 @@ func (f Factory) CreateCharacterToken(args ...storage.UpdateOrCreateCharacterTok
 	if arg.ExpiresAt.IsZero() {
 		arg.ExpiresAt = time.Now().Add(time.Minute * 20).UTC()
 	}
-	if arg.TokenType == "" {
-		arg.TokenType = "Bearer"
+	if arg.Type == "" {
+		arg.Type = "Bearer"
 	}
 	if arg.Scopes.Size() == 0 {
 		arg.Scopes = app.Scopes()

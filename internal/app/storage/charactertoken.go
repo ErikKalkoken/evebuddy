@@ -37,7 +37,7 @@ type UpdateOrCreateCharacterTokenParams struct {
 	ExpiresAt    time.Time
 	RefreshToken string
 	Scopes       set.Set[string]
-	TokenType    string
+	Type    string
 }
 
 func UpdateOrCreateCharacterTokenParamsFromToken(o *app.CharacterToken) UpdateOrCreateCharacterTokenParams {
@@ -47,7 +47,7 @@ func UpdateOrCreateCharacterTokenParamsFromToken(o *app.CharacterToken) UpdateOr
 		ExpiresAt:    o.ExpiresAt,
 		RefreshToken: o.RefreshToken,
 		Scopes:       o.Scopes,
-		TokenType:    o.TokenType,
+		Type:    o.Type,
 	}
 }
 
@@ -60,7 +60,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 		CharacterID:  arg.CharacterID,
 		ExpiresAt:    arg.ExpiresAt,
 		RefreshToken: arg.RefreshToken,
-		TokenType:    arg.TokenType,
+		TokenType:    arg.Type,
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -172,6 +172,6 @@ func characterTokenFromDBModel(o queries.CharacterToken, scopes set.Set[string])
 		ID:           o.ID,
 		RefreshToken: o.RefreshToken,
 		Scopes:       scopes,
-		TokenType:    o.TokenType,
+		Type:    o.TokenType,
 	}
 }

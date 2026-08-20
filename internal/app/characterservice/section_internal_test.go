@@ -18,12 +18,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-// TODO: Add tests for UpdateSectionIfNeeded()
-
 func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
+
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -34,7 +32,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		var tokenSource oauth2.TokenSource
 		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg, false,
+		changed, err := s.updateSectionIfChanged(t.Context(), arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				tokenSource = ctx.Value(goesi.ContextOAuth2).(oauth2.TokenSource)
 				return "any", nil
@@ -50,7 +48,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			require.NoError(t, err)
 			xassert.Equal(t, tok.AccessToken, token.AccessToken)
 			assert.True(t, hasUpdated)
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 				assert.False(t, x.HasError())
@@ -72,7 +70,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		var hasUpdated bool
 		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg, false,
+		changed, err := s.updateSectionIfChanged(t.Context(), arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "any", nil
 			},
@@ -84,7 +82,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
 			assert.True(t, hasUpdated)
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			x2, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.False(t, x2.HasError())
@@ -106,7 +104,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		hasUpdated := false
 		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg, false,
+		changed, err := s.updateSectionIfChanged(t.Context(), arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
@@ -118,7 +116,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
 			assert.False(t, hasUpdated)
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			x2, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.False(t, x2.HasError())
@@ -144,7 +142,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			forceUpdate: true,
 		}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg, false,
+		changed, err := s.updateSectionIfChanged(t.Context(), arg, false,
 			func(ctx context.Context, characterID int64) (any, error) {
 				return "old", nil
 			},
@@ -163,7 +161,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 func TestHasSectionChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
+
 	t.Run("report true when section has changed", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -173,7 +171,7 @@ func TestHasSectionChanged(t *testing.T) {
 			Section:     app.SectionCharacterAssets,
 		})
 		// when
-		got, err := s.hasSectionChanged(ctx, characterSectionUpdateParams{
+		got, err := s.hasSectionChanged(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterAssets,
 		}, "changed",
@@ -189,7 +187,7 @@ func TestHasSectionChanged(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		got, err := s.hasSectionChanged(ctx, characterSectionUpdateParams{
+		got, err := s.hasSectionChanged(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterAssets,
 		}, "changed",
@@ -209,7 +207,7 @@ func TestHasSectionChanged(t *testing.T) {
 			Section:     app.SectionCharacterAssets,
 		})
 		// when
-		got, err := s.hasSectionChanged(ctx, characterSectionUpdateParams{
+		got, err := s.hasSectionChanged(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterAssets,
 		}, status.ContentHash,
@@ -228,7 +226,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
+
 	const section = app.SectionCharacterAssets
 	t.Run("should report true when changed", func(t *testing.T) {
 		// given
@@ -253,14 +251,14 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
 		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+		x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 		require.NoError(t, err)
 		assert.False(t, x.HasError())
 	})
@@ -295,19 +293,19 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
 		// then
 		require.NoError(t, err)
 		assert.False(t, changed)
-		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+		x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
 	})
@@ -339,7 +337,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -347,7 +345,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, changed)
 		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
 	})
@@ -362,13 +360,13 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
 		// then
 		require.Error(t, err)
-		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+		x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 		require.NoError(t, err)
 		assert.True(t, x.HasError())
 		xassert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
@@ -401,7 +399,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 			forceUpdate: true,
@@ -409,7 +407,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
 	})
@@ -442,18 +440,18 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 			forceUpdate: true,
 		})
 		// then
 		require.NoError(t, err)
-		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+		x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
 	})
@@ -488,17 +486,17 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
 		// then
 		require.NoError(t, err)
-		x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+		x, err := st.GetCharacterSectionStatus(t.Context(), c.ID, section)
 		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
 	})
@@ -533,7 +531,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.UpdateSectionIfNeeded(t.Context(), characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -541,8 +539,9 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, changed)
 		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		ids, err := st.ListCharacterAssetIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
 	})
+
 }

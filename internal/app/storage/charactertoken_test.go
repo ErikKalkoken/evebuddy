@@ -30,7 +30,7 @@ func TestToken(t *testing.T) {
 			ExpiresAt:    now,
 			RefreshToken: "refresh",
 			Scopes:       set.Of("alpha", "bravo"),
-			TokenType:    "xxx",
+			Type:    "xxx",
 		}
 		// when
 		err := st.UpdateOrCreateCharacterToken(ctx, arg)
@@ -42,7 +42,7 @@ func TestToken(t *testing.T) {
 				xassert.Equal(t, c.ID, x.CharacterID)
 				xassert.Equal(t, arg.ExpiresAt.UTC(), x.ExpiresAt.UTC())
 				assert.True(t, x.Scopes.Equal(arg.Scopes), "got %q, wanted %q", x.Scopes, arg.Scopes)
-				xassert.Equal(t, arg.TokenType, x.TokenType)
+				xassert.Equal(t, arg.Type, x.Type)
 			}
 		}
 	})
@@ -58,7 +58,7 @@ func TestToken(t *testing.T) {
 			xassert.Equal(t, c.CharacterID, r.CharacterID)
 			xassert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
 			xassert.Equal(t, c.RefreshToken, r.RefreshToken)
-			xassert.Equal(t, c.TokenType, r.TokenType)
+			xassert.Equal(t, c.Type, r.Type)
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestToken(t *testing.T) {
 			xassert.Equal(t, c.ID, o2.CharacterID)
 			xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
 			xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
-			xassert.Equal(t, o1.TokenType, o2.TokenType)
+			xassert.Equal(t, o1.Type, o2.Type)
 		}
 	})
 

@@ -119,7 +119,7 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 			ExpiresAt:    at.ExpiresAt,
 			RefreshToken: at.RefreshToken,
 			Scopes:       set.Of(at.Scopes...),
-			TokenType:    at.TokenType,
+			Type:    at.TokenType,
 		}); err != nil {
 			return nil, err
 		}

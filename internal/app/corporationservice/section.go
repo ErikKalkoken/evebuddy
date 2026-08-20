@@ -294,7 +294,9 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.section, arg.corporationID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
-		return f(ctx, arg)
+		return xgoesi.RetryOn401(1, key, func() (bool, error) {
+			return f(ctx, arg)
+		})
 	})
 	if err != nil {
 		slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)

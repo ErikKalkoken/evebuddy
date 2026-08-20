@@ -17,7 +17,7 @@ type CharacterToken struct {
 	ID           int64
 	RefreshToken string
 	Scopes       set.Set[string]
-	TokenType    string
+	Type         string
 }
 
 // RemainsValid reports whether a token remains valid within a duration.
@@ -44,7 +44,7 @@ func (t CharacterToken) AuthToken() *eveauth.Token {
 		ExpiresAt:    t.ExpiresAt,
 		RefreshToken: t.RefreshToken,
 		Scopes:       slices.Collect(t.Scopes.All()),
-		TokenType:    t.TokenType,
+		TokenType:    t.Type,
 	}
 	return token2
 }

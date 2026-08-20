@@ -153,7 +153,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
 		Scopes:       set.Of(ssoToken.Scopes...),
-		TokenType:    ssoToken.TokenType,
+		Type:    ssoToken.TokenType,
 	}
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
 		return nil, err
