@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 	"time"
@@ -115,6 +116,126 @@ func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.Charact
 
 func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
 	return s.st.ListCharacterContractItems(ctx, contractID)
+}
+
+func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Context) ([]app.CharacterContractSlots, error) {
+	slots := make(map[int64]app.CharacterContractSlots)
+	characters, err := s.ListCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	characterCorporations := make(map[int64]int64) // TODO: Should be calculated when character are created from API
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.CharacterID = c.ID
+		x.CharacterName = c.EveCharacter.Name
+		x.CorporationID = c.EveCharacter.Corporation.ID
+		x.CorporationName = c.EveCharacter.Corporation.Name
+		x.Total = 1 // capacity at level 0
+		slots[c.ID] = x
+		characterCorporations[c.ID] = c.EveCharacter.Corporation.ID
+	}
+	oo, err := s.st.ListAllCharacterContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range oo {
+		if o.Issuer.ID != o.CharacterID || o.ForCorporation || o.Status != app.ContractStatusOutstanding {
+			continue
+		}
+		if v, ok := o.Assignee.Value(); ok && v.ID == characterCorporations[o.CharacterID] {
+			continue
+		}
+		x := slots[o.CharacterID]
+		x.Used++
+		slots[o.CharacterID] = x
+	}
+
+	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range contracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 4
+			slots[r.CharacterID] = x
+		}
+	}
+
+	advancedContracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range advancedContracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 4
+			slots[r.CharacterID] = x
+		}
+	}
+
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.Free = x.Total - x.Used
+		slots[c.ID] = x
+	}
+
+	slots2 := slices.Collect(maps.Values(slots))
+	return slots2, nil
+}
+
+func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.Context) ([]app.CharacterContractSlots, error) {
+	slots := make(map[int64]app.CharacterContractSlots)
+	characters, err := s.ListCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.CharacterID = c.ID
+		x.CharacterName = c.EveCharacter.Name
+		x.CorporationID = c.EveCharacter.Corporation.ID
+		x.CorporationName = c.EveCharacter.Corporation.Name
+		x.IsCorporation = true
+		x.Total = 10 // capacity at level 0
+		slots[c.ID] = x
+	}
+	oo, err := s.st.ListAllCharacterContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range oo {
+		if o.Issuer.ID != o.CharacterID ||
+			!o.ForCorporation ||
+			o.Status != app.ContractStatusOutstanding {
+			continue
+		}
+		x := slots[o.CharacterID]
+		x.Used++
+		slots[o.CharacterID] = x
+	}
+
+	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeCorporationContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range contracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 10
+			slots[r.CharacterID] = x
+		}
+	}
+
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.Free = x.Total - x.Used
+		slots[c.ID] = x
+	}
+
+	slots2 := slices.Collect(maps.Values(slots))
+	return slots2, nil
 }
 
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{

@@ -327,12 +327,11 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		if err != nil {
 			panic(err)
 		}
-		arg2 := storage.CreateEveEntityParams{
+		_, err = f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       c.ID,
 			Name:     c.EveCharacter.Name,
 			Category: app.EveEntityCharacter,
-		}
-		_, err = f.st.GetOrCreateEveEntity(ctx, arg2)
+		})
 		if err != nil {
 			panic(err)
 		}
