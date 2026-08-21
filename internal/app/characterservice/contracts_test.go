@@ -206,12 +206,14 @@ func TestListAllCharacterContractSlotsPersonal(t *testing.T) {
 			require.Len(t, oo, 1)
 			got := oo[0]
 			want := app.CharacterContractSlots{
-				CharacterID:   c.ID,
-				CharacterName: c.EveCharacter.Name,
-				Free:          tc.wantFree,
-				Used:          tc.wantUsed,
-				Total:         tc.wantTotal,
-				IsCorporation: false,
+				CharacterID:     c.ID,
+				CharacterName:   c.EveCharacter.Name,
+				CorporationID:   c.EveCharacter.Corporation.ID,
+				CorporationName: c.EveCharacter.Corporation.Name,
+				Free:            tc.wantFree,
+				Used:            tc.wantUsed,
+				Total:           tc.wantTotal,
+				IsCorporation:   false,
 			}
 			xassert.Equal(t, want, got)
 		})
@@ -314,12 +316,14 @@ func TestListAllCharacterContractSlotsCorporation(t *testing.T) {
 			require.Len(t, oo, 1)
 			got := oo[0]
 			want := app.CharacterContractSlots{
-				CharacterID:   c.ID,
-				CharacterName: c.EveCharacter.Name,
-				Free:          tc.wantFree,
-				Used:          tc.wantUsed,
-				Total:         tc.wantTotal,
-				IsCorporation: true,
+				CharacterID:     c.ID,
+				CharacterName:   c.EveCharacter.Name,
+				CorporationID:   c.EveCharacter.Corporation.ID,
+				CorporationName: c.EveCharacter.Corporation.Name,
+				Free:            tc.wantFree,
+				Used:            tc.wantUsed,
+				Total:           tc.wantTotal,
+				IsCorporation:   true,
 			}
 			xassert.Equal(t, want, got)
 		})

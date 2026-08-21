@@ -135,7 +135,7 @@ func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Con
 		slots[c.ID] = x
 		characterCorporations[c.ID] = c.EveCharacter.Corporation.ID
 	}
-	oo, err := s.st.ListAllCharacterContracts(ctx)
+	oo, err := s.st.ListAllCharacterContracts(ctx) // TODO: Optimize with custom query
 	if err != nil {
 		return nil, err
 	}
@@ -201,14 +201,12 @@ func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.
 		x.Total = 10 // capacity at level 0
 		slots[c.ID] = x
 	}
-	oo, err := s.st.ListAllCharacterContracts(ctx)
+	oo, err := s.st.ListAllCharacterContracts(ctx) // TODO: Optimize with custom query
 	if err != nil {
 		return nil, err
 	}
 	for _, o := range oo {
-		if o.Issuer.ID != o.CharacterID ||
-			!o.ForCorporation ||
-			o.Status != app.ContractStatusOutstanding {
+		if o.Issuer.ID != o.CharacterID || !o.ForCorporation || o.Status != app.ContractStatusOutstanding {
 			continue
 		}
 		x := slots[o.CharacterID]

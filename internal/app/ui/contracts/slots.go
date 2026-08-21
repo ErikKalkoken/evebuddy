@@ -116,7 +116,7 @@ func NewSlots(u baseUI, corporationSlots bool) *Slots {
 			Label:    "Character",
 		}), {
 			ID:    overviewColPersonal,
-			Label: "Personal",
+			Label: "Used",
 			Width: columnWidth,
 			Sort: func(a, b slotRow) int {
 				return cmp.Compare(a.used, b.used)
