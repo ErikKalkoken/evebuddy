@@ -105,7 +105,7 @@ func TestListAllCharacterContractSlotsPersonal(t *testing.T) {
 			wantTotal:         13,
 		},
 		{
-			name:              "no skills",
+			name:              "no skills ",
 			contractingLevel:  0,
 			advancedLevel:     0,
 			personalContracts: 1,

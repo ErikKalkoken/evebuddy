@@ -423,32 +423,32 @@ func (a *Overview) fetchRows(ctx context.Context) ([]overviewRow, error) {
 		return nil, err
 	}
 	var rows []overviewRow
-	for _, o := range cc {
-		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.ID)
+	for _, c := range cc {
+		tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
 			return rows, err
 		}
 
-		combinedAssets := o.CombinedAssetsValue()
-		total := optional.Sum(combinedAssets, o.WalletBalance, o.ContractsEscrow, o.OrdersEscrow)
+		combinedAssets := c.CombinedAssetsValue()
+		total := optional.Sum(combinedAssets, c.WalletBalance, c.ContractsEscrow, c.OrdersEscrow)
 		rows = append(rows, overviewRow{
-			characterID:            o.ID,
-			characterName:          o.EveCharacter.Name,
+			characterID:            c.ID,
+			characterName:          c.EveCharacter.Name,
 			combinedAssetsDisplay:  formatISKValue(combinedAssets),
 			combinedAssetsValue:    combinedAssets,
-			contractsEscrow:        o.ContractsEscrow,
-			contractsEscrowDisplay: formatISKValue(o.ContractsEscrow),
-			ordersEscrow:           o.OrdersEscrow,
-			ordersEscrowDisplay:    formatISKValue(o.OrdersEscrow),
-			searchTarget:           strings.ToLower(o.EveCharacter.Name),
-			skillPoints:            o.SkillPointsValue,
-			skillPointsDisplay:     formatISKValue(o.SkillPointsValue),
+			contractsEscrow:        c.ContractsEscrow,
+			contractsEscrowDisplay: formatISKValue(c.ContractsEscrow),
+			ordersEscrow:           c.OrdersEscrow,
+			ordersEscrowDisplay:    formatISKValue(c.OrdersEscrow),
+			searchTarget:           strings.ToLower(c.EveCharacter.Name),
+			skillPoints:            c.SkillPointsValue,
+			skillPointsDisplay:     formatISKValue(c.SkillPointsValue),
 			tags:                   tags,
 			tagsDisplay:            strings.Join(slices.Sorted(tags.All()), ", "),
 			totalNetWorth:          total,
 			totalNetWorthDisplay:   formatISKValue(total),
-			walletBalance:          o.WalletBalance,
-			walletDisplay:          formatISKValue(o.WalletBalance),
+			walletBalance:          c.WalletBalance,
+			walletDisplay:          formatISKValue(c.WalletBalance),
 		})
 	}
 	return rows, nil

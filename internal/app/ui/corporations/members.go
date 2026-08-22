@@ -189,13 +189,13 @@ func (a *Members) update(ctx context.Context) {
 }
 
 func (a *Members) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]memberRow, error) {
-	cc, err := a.u.Character().ListCharacters(ctx)
+	cc, err := a.u.Character().ListEveCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var owned set.Set[int64]
 	for _, c := range cc {
-		if c.EveCharacter.Corporation.ID == corporationID {
+		if c.Corporation.ID == corporationID {
 			owned.Add(c.ID)
 		}
 	}
