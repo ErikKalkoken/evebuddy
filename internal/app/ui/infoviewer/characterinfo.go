@@ -287,10 +287,10 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 		if err != nil {
 			return nil, err
 		}
-		if v, ok := c.Home.Value(); ok {
+		if v, ok := c.HomeLocationID.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Home", v))
 		}
-		if v, ok := c.Location.Value(); ok {
+		if v, ok := c.LocationID.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Location", v))
 		}
 		if v, ok := c.LastLoginAt.Value(); ok {

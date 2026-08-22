@@ -21,15 +21,15 @@ type Character struct {
 	ContractItemsValue optional.Optional[float64]
 	ContractsEscrow    optional.Optional[float64]
 	EveCharacter       *EveCharacter
-	Home               optional.Optional[*EveLocation]
+	HomeLocationID     optional.Optional[int64]
 	ID                 int64
 	IsTrainingWatched  bool
 	LastCloneJumpAt    optional.Optional[time.Time]
 	LastLoginAt        optional.Optional[time.Time]
-	Location           optional.Optional[*EveLocation]
+	LocationID         optional.Optional[int64]
 	OrderItemsValue    optional.Optional[float64]
 	OrdersEscrow       optional.Optional[float64]
-	Ship               optional.Optional[*EveType]
+	ShipTypeID         optional.Optional[int64]
 	SkillPointsValue   optional.Optional[float64]
 	TrainedSP          optional.Optional[int64]
 	UnallocatedSP      optional.Optional[int64]
