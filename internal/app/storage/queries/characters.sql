@@ -111,6 +111,28 @@ SELECT
 FROM
     characters;
 
+-- name: ListCharacterEveCharacters :many
+SELECT
+    sqlc.embed(ec),
+    sqlc.embed(eec),
+    sqlc.embed(er),
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
+    eb.id as bloodline_id,
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
+FROM
+    characters c
+    JOIN eve_characters ec ON ec.id = c.id
+    JOIN eve_entities eec ON eec.id = ec.corporation_id
+    JOIN eve_races er ON er.id = ec.race_id
+    LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id;
+
 -- name: ListCharacterCorporations :many
 SELECT DISTINCT
     ee.id,
