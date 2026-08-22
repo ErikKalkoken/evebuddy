@@ -124,7 +124,7 @@ func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	characterCorporations := make(map[int64]int64) // TODO: Should be calculated when character are created from API
+	characterCorporations := make(map[int64]int64)
 	for _, c := range characters {
 		x := slots[c.ID]
 		x.CharacterID = c.ID
@@ -135,20 +135,14 @@ func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Con
 		slots[c.ID] = x
 		characterCorporations[c.ID] = c.EveCharacter.Corporation.ID
 	}
-	oo, err := s.st.ListAllCharacterContracts(ctx) // TODO: Optimize with custom query
+	counts, err := s.st.CountCharactersOutstandingPersonalContracts(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for _, o := range oo {
-		if o.Issuer.ID != o.CharacterID || o.ForCorporation || o.Status != app.ContractStatusOutstanding {
-			continue
-		}
-		if v, ok := o.Assignee.Value(); ok && v.ID == characterCorporations[o.CharacterID] {
-			continue
-		}
-		x := slots[o.CharacterID]
-		x.Used++
-		slots[o.CharacterID] = x
+	for characterID, used := range counts {
+		x := slots[characterID]
+		x.Used = used
+		slots[characterID] = x
 	}
 
 	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeContracting)
@@ -201,17 +195,14 @@ func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.
 		x.Total = 10 // capacity at level 0
 		slots[c.ID] = x
 	}
-	oo, err := s.st.ListAllCharacterContracts(ctx) // TODO: Optimize with custom query
+	counts, err := s.st.CountCharactersOutstandingCorporationContracts(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for _, o := range oo {
-		if o.Issuer.ID != o.CharacterID || !o.ForCorporation || o.Status != app.ContractStatusOutstanding {
-			continue
-		}
-		x := slots[o.CharacterID]
-		x.Used++
-		slots[o.CharacterID] = x
+	for characterID, used := range counts {
+		x := slots[characterID]
+		x.Used = used
+		slots[characterID] = x
 	}
 
 	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeCorporationContracting)

@@ -675,3 +675,123 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 		assert.Equal(t, 0.0, got)
 	})
 }
+
+func TestCountCharactersOutstandingPersonalContracts(t *testing.T) {
+	db, st, f := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	// given
+	testutil.MustTruncateTables(db)
+	c1 := f.CreateCharacter()
+	for range 2 {
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID:    c1.ID,
+			ForCorporation: false,
+			Status:         app.ContractStatusOutstanding,
+		})
+	}
+	c2 := f.CreateCharacter()
+	for range 3 {
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID:    c2.ID,
+			ForCorporation: false,
+			Status:         app.ContractStatusOutstanding,
+		})
+	}
+	// given - contracts to ignore
+	issuer := f.CreateEveEntityCharacter()
+	issuerCorporation := f.CreateEveEntityCorporation()
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:         c1.ID,
+		IssuerID:            issuer.ID,
+		IssuerCorporationID: issuerCorporation.ID,
+		ForCorporation:      false,
+		Status:              app.ContractStatusOutstanding,
+	})
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:    c1.ID,
+		ForCorporation: true,
+		Status:         app.ContractStatusOutstanding,
+	})
+	acceptor := f.CreateEveEntityCharacter()
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:    c1.ID,
+		Status:         app.ContractStatusInProgress,
+		AcceptorID:     acceptor.ID,
+		ForCorporation: false,
+	})
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		AssigneeID:     c1.EveCharacter.Corporation.ID,
+		CharacterID:    c1.ID,
+		ForCorporation: false,
+		Status:         app.ContractStatusOutstanding,
+	})
+
+	// when
+	got, err := st.CountCharactersOutstandingPersonalContracts(t.Context())
+
+	// then
+	require.NoError(t, err)
+	want := map[int64]int{
+		c1.ID: 2,
+		c2.ID: 3,
+	}
+	xassert.Equal(t, want, got)
+}
+
+func TestCountCharactersOutstandingCorporationContracts(t *testing.T) {
+	db, st, f := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	// given
+	testutil.MustTruncateTables(db)
+	c1 := f.CreateCharacter()
+	for range 2 {
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID:    c1.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+		})
+	}
+	c2 := f.CreateCharacter()
+	for range 3 {
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID:    c2.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+		})
+	}
+	// given - contracts to ignore
+	issuer := f.CreateEveEntityCharacter()
+	issuerCorporation := f.CreateEveEntityCorporation()
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:         c1.ID,
+		IssuerID:            issuer.ID,
+		IssuerCorporationID: issuerCorporation.ID,
+		ForCorporation:      true,
+		Status:              app.ContractStatusOutstanding,
+	})
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:    c1.ID,
+		ForCorporation: false,
+		Status:         app.ContractStatusOutstanding,
+	})
+	acceptor := f.CreateEveEntityCharacter()
+	f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+		CharacterID:    c1.ID,
+		Status:         app.ContractStatusInProgress,
+		AcceptorID:     acceptor.ID,
+		ForCorporation: true,
+	})
+
+	// when
+	got, err := st.CountCharactersOutstandingCorporationContracts(t.Context())
+
+	// then
+	require.NoError(t, err)
+	want := map[int64]int{
+		c1.ID: 2,
+		c2.ID: 3,
+	}
+	xassert.Equal(t, want, got)
+}

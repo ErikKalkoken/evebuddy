@@ -67,17 +67,23 @@ const calculateCharacterContractsAuctionEscrow = `-- name: CalculateCharacterCon
 SELECT
     bidder_id,
     SUM(amount) AS total_winning_bids
-FROM character_contract_bids AS main_bids
-JOIN character_contracts cc ON cc.id = main_bids.contract_id
-WHERE amount = (
-    SELECT MAX(amount)
-    FROM character_contract_bids
-    WHERE contract_id = main_bids.contract_id
-)
-AND main_bids.bidder_id = cc.character_id
-AND cc.character_id = ?
-AND cc.status IN (/*SLICE:status*/?)
-GROUP BY main_bids.bidder_id
+FROM
+    character_contract_bids AS main_bids
+    JOIN character_contracts cc ON cc.id = main_bids.contract_id
+WHERE
+    amount = (
+        SELECT
+            MAX(amount)
+        FROM
+            character_contract_bids
+        WHERE
+            contract_id = main_bids.contract_id
+    )
+    AND main_bids.bidder_id = cc.character_id
+    AND cc.character_id = ?
+    AND cc.status IN (/*SLICE:status*/?)
+GROUP BY
+    main_bids.bidder_id
 `
 
 type CalculateCharacterContractsAuctionEscrowParams struct {
@@ -143,6 +149,92 @@ func (q *Queries) CalculateCharacterContractsCourierEscrow(ctx context.Context, 
 	var sum sql.NullFloat64
 	err := row.Scan(&sum)
 	return sum, err
+}
+
+const countCharactersOutstandingCorporationContracts = `-- name: CountCharactersOutstandingCorporationContracts :many
+SELECT
+    character_id,
+    count(id) as number
+FROM
+    character_contracts
+WHERE
+    issuer_id = character_id
+    AND status = ?
+    AND for_corporation IS TRUE
+GROUP BY
+    character_id
+`
+
+type CountCharactersOutstandingCorporationContractsRow struct {
+	CharacterID int64
+	Number      int64
+}
+
+func (q *Queries) CountCharactersOutstandingCorporationContracts(ctx context.Context, status string) ([]CountCharactersOutstandingCorporationContractsRow, error) {
+	rows, err := q.db.QueryContext(ctx, countCharactersOutstandingCorporationContracts, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountCharactersOutstandingCorporationContractsRow
+	for rows.Next() {
+		var i CountCharactersOutstandingCorporationContractsRow
+		if err := rows.Scan(&i.CharacterID, &i.Number); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countCharactersOutstandingPersonalContracts = `-- name: CountCharactersOutstandingPersonalContracts :many
+SELECT
+    cc.character_id,
+    count(cc.id) as number
+FROM
+    character_contracts cc
+    JOIN eve_characters ec ON ec.ID = cc.character_id
+WHERE
+    cc.issuer_id = cc.character_id
+    AND cc.status = ?
+    AND COALESCE(cc.assignee_id, 0) != ec.corporation_id
+    AND cc.for_corporation IS FALSE
+GROUP BY
+    cc.character_id
+`
+
+type CountCharactersOutstandingPersonalContractsRow struct {
+	CharacterID int64
+	Number      int64
+}
+
+func (q *Queries) CountCharactersOutstandingPersonalContracts(ctx context.Context, status string) ([]CountCharactersOutstandingPersonalContractsRow, error) {
+	rows, err := q.db.QueryContext(ctx, countCharactersOutstandingPersonalContracts, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountCharactersOutstandingPersonalContractsRow
+	for rows.Next() {
+		var i CountCharactersOutstandingPersonalContractsRow
+		if err := rows.Scan(&i.CharacterID, &i.Number); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const createCharacterContract = `-- name: CreateCharacterContract :one
