@@ -240,7 +240,7 @@ func NewOverview(u baseUI) *Overview {
 }
 
 func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(
+	filter := container.NewHBox(
 		a.selectAlliance,
 		a.selectCorporation,
 		a.selectRegion,
@@ -250,9 +250,9 @@ func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filters))
+		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
 	} else {
-		topBox = container.NewBorder(nil, nil, filters, nil, a.searchEntry)
+		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,

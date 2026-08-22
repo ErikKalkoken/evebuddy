@@ -797,9 +797,9 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				container.NewAppTabs(
 					container.NewTabItem("Jobs", u.industryJobs),
 					container.NewTabItem("Slots", container.NewAppTabs(
-						container.NewTabItem("Manufacturing", u.slotsManufacturing),
-						container.NewTabItem("Science", u.slotsResearch),
-						container.NewTabItem("Reactions", u.slotsReactions),
+						container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+						container.NewTabItem("Science", u.industrySlotsResearch),
+						container.NewTabItem("Reactions", u.industrySlotsReactions),
 					)),
 				),
 			))
@@ -818,10 +818,18 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Contracts", u.contracts))
+			homeNav.Push(xwidget.NewAppBar("Contracts",
+				container.NewAppTabs(
+					container.NewTabItem("Contracts", u.contractList),
+					container.NewTabItem("Slots", container.NewAppTabs(
+						container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+						container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+					)),
+				),
+			))
 		},
 	)
-	u.contracts.OnUpdate = func(count int) {
+	u.contractList.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
 			badge = fmt.Sprintf("%d contracts active", count)

@@ -124,9 +124,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	contracts := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		newContentPage("Contracts", u.contracts),
+		newContentPage("Contracts", container.NewAppTabs(
+			container.NewTabItem("Contracts", u.contractList),
+			container.NewTabItem("Slots", container.NewAppTabs(
+				container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+				container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+			)),
+		)),
 	)
-	u.contracts.OnUpdate = func(count int) {
+	u.contractList.OnUpdate = func(count int) {
 		var s string
 		if count > 0 {
 			s += ihumanize.Comma(count)
@@ -153,9 +159,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Industry", container.NewAppTabs(
 			container.NewTabItem("Jobs", u.industryJobs),
 			container.NewTabItem("Slots", container.NewAppTabs(
-				container.NewTabItem("Manufacturing", u.slotsManufacturing),
-				container.NewTabItem("Science", u.slotsResearch),
-				container.NewTabItem("Reactions", u.slotsReactions),
+				container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+				container.NewTabItem("Science", u.industrySlotsResearch),
+				container.NewTabItem("Reactions", u.industrySlotsReactions),
 			))),
 		),
 	)

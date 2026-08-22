@@ -29,17 +29,51 @@ WHERE
 SELECT
     bidder_id,
     SUM(amount) AS total_winning_bids
-FROM character_contract_bids AS main_bids
-JOIN character_contracts cc ON cc.id = main_bids.contract_id
-WHERE amount = (
-    SELECT MAX(amount)
-    FROM character_contract_bids
-    WHERE contract_id = main_bids.contract_id
-)
-AND main_bids.bidder_id = cc.character_id
-AND cc.character_id = ?
-AND cc.status IN (sqlc.slice('status'))
-GROUP BY main_bids.bidder_id;
+FROM
+    character_contract_bids AS main_bids
+    JOIN character_contracts cc ON cc.id = main_bids.contract_id
+WHERE
+    amount = (
+        SELECT
+            MAX(amount)
+        FROM
+            character_contract_bids
+        WHERE
+            contract_id = main_bids.contract_id
+    )
+    AND main_bids.bidder_id = cc.character_id
+    AND cc.character_id = ?
+    AND cc.status IN (sqlc.slice('status'))
+GROUP BY
+    main_bids.bidder_id;
+
+-- name: CountCharactersOutstandingPersonalContracts :many
+SELECT
+    cc.character_id,
+    count(cc.id) as number
+FROM
+    character_contracts cc
+    JOIN eve_characters ec ON ec.ID = cc.character_id
+WHERE
+    cc.issuer_id = cc.character_id
+    AND cc.status = ?
+    AND COALESCE(cc.assignee_id, 0) != ec.corporation_id
+    AND cc.for_corporation IS FALSE
+GROUP BY
+    cc.character_id;
+
+-- name: CountCharactersOutstandingCorporationContracts :many
+SELECT
+    character_id,
+    count(id) as number
+FROM
+    character_contracts
+WHERE
+    issuer_id = character_id
+    AND status = ?
+    AND for_corporation IS TRUE
+GROUP BY
+    character_id;
 
 -- name: CreateCharacterContract :one
 INSERT INTO

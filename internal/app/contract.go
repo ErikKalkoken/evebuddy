@@ -362,3 +362,15 @@ func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntitySh
 	}
 	return "[Empty]"
 }
+
+// CharacterContractSlots represents counts of contract slots for a character.
+type CharacterContractSlots struct {
+	CharacterID     int64
+	CharacterName   string
+	CorporationID   int64
+	CorporationName string
+	Free            int
+	IsCorporation   bool
+	Total           int
+	Used            int
+}

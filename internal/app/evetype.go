@@ -72,15 +72,19 @@ type EveSkillGroup struct {
 }
 
 const (
+	EveTypeAdvancedContracting         = 73912
 	EveTypeAdvancedLaboratoryOperation = 24624
 	EveTypeAdvancedMassProduction      = 24625
 	EveTypeAdvancedMassReactions       = 45749
 	EveTypeAlliance                    = 16159
 	EveTypeAssetSafetyWrap             = 60
 	EveTypeAstroidBelt                 = 9
+	EveTypeCaldariLogisticsStation     = 54
 	EveTypeCharacter                   = 1373
 	EveTypeConstellation               = 4
+	EveTypeContracting                 = 25235
 	EveTypeCorporation                 = 2
+	EveTypeCorporationContracting      = 25233
 	EveTypeCustomsOffice               = 2233
 	EveTypeFaction                     = 19
 	EveTypeIHUB                        = 32458
@@ -98,7 +102,6 @@ const (
 	EveTypeSkillExtractor              = 40519
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
-	EveTypeCaldariLogisticsStation     = 54
 )
 
 // EveType is a type in EVE Online.

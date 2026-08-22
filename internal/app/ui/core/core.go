@@ -108,49 +108,51 @@ type baseUI struct {
 	showManageCharacters            func()
 
 	// UI elements
-	assetSearchAll          *assets.Search
-	augmentations           *clones.Augmentations
-	characterAssetBrowser   *assets.Browser
-	characterAttributes     *skills.Attributes
-	characterAugmentations  *clones.CharacterAugmentations
-	characterBiography      *characters.Biography
-	characterCommunications *characters.Communications
-	characterContacts       *characters.Contacts
-	characterCorporation    *corporations.CorporationSheet
-	characterJumpClones     *clones.CharacterClones
-	characterMails          *characters.Mails
-	characterOverview       *characters.Overview
-	characterSheet          *characters.CharacterSheet
-	characterShips          *skills.FlyableShips
-	characterSkillCatalogue *skills.Catalogue
-	characterSkillQueue     *skills.Queue
-	characterWallet         *wallets.CharacterWallet
-	clones                  *clones.Clones
-	colonies                *industry.Colonies
-	contracts               *contracts.Contracts
-	corporationAssetBrowser *assets.Browser
-	corporationAssetSearch  *assets.Search
-	corporationContracts    *contracts.Contracts
-	corporationIndyJobs     *industry.Jobs
-	corporationMember       *corporations.Members
-	corporationSheet        *corporations.CorporationSheet
-	corporationStructures   *corporations.Structures
-	corporationWallets      map[app.Division]*wallets.CorporationWallet
-	gameSearch              *gamesearch.GameSearch
-	industryJobs            *industry.Jobs
-	iw                      *infoviewer.InfoViewer
-	loyaltyPoints           *wallets.LoyaltyPoints
-	marketOrdersBuy         *industry.MarketOrders
-	marketOrdersSell        *industry.MarketOrders
-	skillSearch             *skills.Search
-	slotsManufacturing      *industry.Slots
-	slotsReactions          *industry.Slots
-	slotsResearch           *industry.Slots
-	snackbar                *xwidget.Snackbar
-	statusText              *statusText
-	training                *skills.Training
-	unifiedCommunications   *characters.Communications
-	wealth                  *wallets.Wealth
+	assetSearchAll           *assets.Search
+	augmentations            *clones.Augmentations
+	characterAssetBrowser    *assets.Browser
+	characterAttributes      *skills.Attributes
+	characterAugmentations   *clones.CharacterAugmentations
+	characterBiography       *characters.Biography
+	characterCommunications  *characters.Communications
+	characterContacts        *characters.Contacts
+	characterCorporation     *corporations.CorporationSheet
+	characterJumpClones      *clones.CharacterClones
+	characterMails           *characters.Mails
+	characterOverview        *characters.Overview
+	characterSheet           *characters.CharacterSheet
+	characterShips           *skills.FlyableShips
+	characterSkillCatalogue  *skills.Catalogue
+	characterSkillQueue      *skills.Queue
+	characterWallet          *wallets.CharacterWallet
+	clones                   *clones.Clones
+	colonies                 *industry.Colonies
+	contractList             *contracts.Contracts
+	contractSlotsPersonal    *contracts.Slots
+	contractSlotsCorporation *contracts.Slots
+	corporationAssetBrowser  *assets.Browser
+	corporationAssetSearch   *assets.Search
+	corporationContracts     *contracts.Contracts
+	corporationIndyJobs      *industry.Jobs
+	corporationMember        *corporations.Members
+	corporationSheet         *corporations.CorporationSheet
+	corporationStructures    *corporations.Structures
+	corporationWallets       map[app.Division]*wallets.CorporationWallet
+	gameSearch               *gamesearch.GameSearch
+	industryJobs             *industry.Jobs
+	iw                       *infoviewer.InfoViewer
+	loyaltyPoints            *wallets.LoyaltyPoints
+	marketOrdersBuy          *industry.MarketOrders
+	marketOrdersSell         *industry.MarketOrders
+	skillSearch              *skills.Search
+	industrySlotsManufacturing       *industry.Slots
+	industrySlotsReactions           *industry.Slots
+	industrySlotsResearch            *industry.Slots
+	snackbar                 *xwidget.Snackbar
+	statusText               *statusText
+	training                 *skills.Training
+	unifiedCommunications    *characters.Communications
+	wealth                   *wallets.Wealth
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -428,7 +430,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.characterWallet = wallets.NewCharacterWallet(u)
 	u.clones = clones.NewClones(u)
 	u.colonies = industry.NewColonies(u)
-	u.contracts = contracts.NewContractsForCharacters(u)
+	u.contractList = contracts.NewContractsForCharacters(u)
+	u.contractSlotsPersonal = contracts.NewSlots(u, false)
+	u.contractSlotsCorporation = contracts.NewSlots(u, true)
 	u.corporationAssetBrowser = assets.NewCorporationBrowser(u)
 	u.corporationAssetSearch = assets.NewSearchForCorporation(u)
 	u.corporationContracts = contracts.NewContractsForCorporation(u)
@@ -445,9 +449,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.loyaltyPoints = wallets.NewLoyaltyPoints(u)
 	u.marketOrdersBuy = industry.NewMarketOrders(u, true)
 	u.marketOrdersSell = industry.NewMarketOrders(u, false)
-	u.slotsManufacturing = industry.NewSlots(u, app.ManufacturingJob)
-	u.slotsReactions = industry.NewSlots(u, app.ReactionJob)
-	u.slotsResearch = industry.NewSlots(u, app.ScienceJob)
+	u.industrySlotsManufacturing = industry.NewSlots(u, app.ManufacturingJob)
+	u.industrySlotsReactions = industry.NewSlots(u, app.ReactionJob)
+	u.industrySlotsResearch = industry.NewSlots(u, app.ScienceJob)
 	u.snackbar = xwidget.NewSnackbar(u.window.Canvas())
 	u.skillSearch = skills.NewSearch(u)
 	u.training = skills.NewTraining(u)

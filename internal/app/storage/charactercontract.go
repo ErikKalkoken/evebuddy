@@ -141,6 +141,36 @@ func (st *Storage) CalculateCharacterContractsAuctionEscrow(ctx context.Context,
 	return v2.ValueOrZero(), nil
 }
 
+func (st *Storage) CountCharactersOutstandingPersonalContracts(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.CountCharactersOutstandingPersonalContracts(
+		ctx,
+		characterContractStatusToDBValue[app.ContractStatusOutstanding],
+	)
+	if err != nil {
+		return nil, fmt.Errorf("CountCharactersOutstandingPersonalContracts: %w", err)
+	}
+	m := make(map[int64]int)
+	for _, r := range rows {
+		m[r.CharacterID] = int(r.Number)
+	}
+	return m, nil
+}
+
+func (st *Storage) CountCharactersOutstandingCorporationContracts(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.CountCharactersOutstandingCorporationContracts(
+		ctx,
+		characterContractStatusToDBValue[app.ContractStatusOutstanding],
+	)
+	if err != nil {
+		return nil, fmt.Errorf("CountCharactersOutstandingCorporationContracts: %w", err)
+	}
+	m := make(map[int64]int)
+	for _, r := range rows {
+		m[r.CharacterID] = int(r.Number)
+	}
+	return m, nil
+}
+
 type CreateCharacterContractParams struct {
 	AcceptorID          int64
 	AssigneeID          int64

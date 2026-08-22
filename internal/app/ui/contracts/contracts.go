@@ -82,6 +82,7 @@ type contractRow struct {
 	ownerName          string
 	price              optional.Optional[float64]
 	reward             optional.Optional[float64]
+	searchTarget       string
 	startLocation      optional.Optional[*app.EveLocationShort]
 	status             app.ContractStatus
 	statusText         string
@@ -95,108 +96,112 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	r := contractRow{
-		acceptor:       o.Acceptor,
-		assignee:       o.Assignee,
-		assigneeName:   assigneeName,
-		availability:   o.Availability,
-		buyout:         o.Buyout,
-		collateral:     o.Collateral,
-		contractID:     o.ContractID,
-		contractType:   o.Type,
-		dateAccepted:   o.DateAccepted,
-		dateCompleted:  o.DateCompleted,
-		dateExpired:    o.DateExpired,
-		dateIssued:     o.DateIssued,
-		daysToComplete: o.DaysToComplete,
-		endLocation:    o.EndLocation,
-		hasIssue:       o.HasIssue(),
-		isActive:       o.Status.IsActive(),
-		isCorporation:  false,
-		isExpired:      o.IsExpired(),
-		isHistory:      o.Status.IsHistory(),
-		issuer:         o.IssuerEffective(),
-		issuerName:     o.IssuerEffective().Name,
-		name:           o.NameDisplay(),
-		objectID:       o.ID,
-		ownerID:        o.CharacterID,
-		ownerName:      characterName(o.CharacterID),
-		price:          o.Price,
-		reward:         o.Reward,
-		startLocation:  o.StartLocation,
-		status:         o.Status,
-		statusText:     o.Status.Display(),
-		title:          o.Title.ValueOrFallback("-"),
-		typeName:       o.Type.Display(),
-		volume:         o.Volume,
+	return contractRow{
+		acceptor:           o.Acceptor,
+		assignee:           o.Assignee,
+		assigneeName:       assigneeName,
+		availability:       o.Availability,
+		buyout:             o.Buyout,
+		collateral:         o.Collateral,
+		contractID:         o.ContractID,
+		contractType:       o.Type,
+		dateAccepted:       o.DateAccepted,
+		dateCompleted:      o.DateCompleted,
+		dateExpired:        o.DateExpired,
+		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
+		dateIssued:         o.DateIssued,
+		daysToComplete:     o.DaysToComplete,
+		endLocation:        o.EndLocation,
+		hasIssue:           o.HasIssue(),
+		isActive:           o.Status.IsActive(),
+		isCorporation:      false,
+		isExpired:          o.IsExpired(),
+		isHistory:          o.Status.IsHistory(),
+		issuer:             o.IssuerEffective(),
+		issuerName:         o.IssuerEffective().Name,
+		name:               o.NameDisplay(),
+		objectID:           o.ID,
+		ownerID:            o.CharacterID,
+		ownerName:          characterName(o.CharacterID),
+		price:              o.Price,
+		reward:             o.Reward,
+		searchTarget:       makeSearchTarget(o.Items, o.Title),
+		startLocation:      o.StartLocation,
+		status:             o.Status,
+		statusText:         o.Status.Display(),
+		title:              o.Title.ValueOrFallback("-"),
+		typeName:           o.Type.Display(),
+		volume:             o.Volume,
 	}
-	var text string
-	var color fyne.ThemeColorName
-	if r.isExpired {
-		text = "EXPIRED"
-		color = theme.ColorNameError
-	} else {
-		text = ihumanize.RelTime(r.dateExpired)
-		color = theme.ColorNameForeground
-	}
-	r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-		ColorName: color,
-	})
-	return r
 }
 
 func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	r := contractRow{
-		acceptor:       o.Acceptor,
-		assignee:       o.Assignee,
-		assigneeName:   assigneeName,
-		availability:   o.Availability,
-		buyout:         o.Buyout,
-		collateral:     o.Collateral,
-		contractID:     o.ContractID,
-		contractType:   o.Type,
-		dateAccepted:   o.DateAccepted,
-		dateCompleted:  o.DateCompleted,
-		dateExpired:    o.DateExpired,
-		dateIssued:     o.DateIssued,
-		daysToComplete: o.DaysToComplete,
-		endLocation:    o.EndLocation,
-		hasIssue:       o.HasIssue(),
-		isActive:       o.Status.IsActive(),
-		isCorporation:  true,
-		isExpired:      o.IsExpired(),
-		isHistory:      o.Status.IsHistory(),
-		issuer:         o.IssuerEffective(),
-		issuerName:     o.IssuerEffective().Name,
-		name:           o.NameDisplay(),
-		objectID:       o.ID,
-		ownerID:        corporation.ID,
-		ownerName:      corporation.NameOrZero(),
-		price:          o.Price,
-		reward:         o.Reward,
-		startLocation:  o.StartLocation,
-		status:         o.Status,
-		statusText:     o.Status.Display(),
-		title:          o.Title.ValueOrFallback("-"),
-		typeName:       o.Type.Display(),
-		volume:         o.Volume,
+	return contractRow{
+		acceptor:           o.Acceptor,
+		assignee:           o.Assignee,
+		assigneeName:       assigneeName,
+		availability:       o.Availability,
+		buyout:             o.Buyout,
+		collateral:         o.Collateral,
+		contractID:         o.ContractID,
+		contractType:       o.Type,
+		dateAccepted:       o.DateAccepted,
+		dateCompleted:      o.DateCompleted,
+		dateExpired:        o.DateExpired,
+		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
+		dateIssued:         o.DateIssued,
+		daysToComplete:     o.DaysToComplete,
+		endLocation:        o.EndLocation,
+		hasIssue:           o.HasIssue(),
+		isActive:           o.Status.IsActive(),
+		isCorporation:      true,
+		isExpired:          o.IsExpired(),
+		isHistory:          o.Status.IsHistory(),
+		issuer:             o.IssuerEffective(),
+		issuerName:         o.IssuerEffective().Name,
+		name:               o.NameDisplay(),
+		objectID:           o.ID,
+		ownerID:            corporation.ID,
+		ownerName:          corporation.NameOrZero(),
+		price:              o.Price,
+		reward:             o.Reward,
+		searchTarget:       makeSearchTarget(o.Items, o.Title),
+		startLocation:      o.StartLocation,
+		status:             o.Status,
+		statusText:         o.Status.Display(),
+		title:              o.Title.ValueOrFallback("-"),
+		typeName:           o.Type.Display(),
+		volume:             o.Volume,
 	}
+}
+
+func makeSearchTarget(items []string, title optional.Optional[string]) string {
+	var token []string
+	for _, it := range items {
+		token = append(token, strings.ToLower(it))
+	}
+	if v, ok := title.Value(); ok {
+		token = append(token, strings.ToLower(v))
+	}
+	return strings.Join(token, "~")
+}
+
+func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.RichTextSegment {
 	var text string
 	var color fyne.ThemeColorName
-	if r.isExpired {
+	if isExpired {
 		text = "EXPIRED"
 		color = theme.ColorNameError
 	} else {
-		text = ihumanize.RelTime(r.dateExpired)
+		text = ihumanize.RelTime(dateExpired)
 		color = theme.ColorNameForeground
 	}
-	r.dateExpiredDisplay = xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: color,
 	})
-	return r
 }
 
 // Contracts is a UI element for showing Contracts.
@@ -207,12 +212,13 @@ type Contracts struct {
 	OnUpdate func(active int)
 
 	body           fyne.CanvasObject
-	footer         *widget.Label
 	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
+	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
+	searchEntry    *xwidget.SearchEntry
 	selectAssignee *kxwidget.FilterChipSelect
 	selectIssuer   *kxwidget.FilterChipSelect
 	selectStatus   *kxwidget.FilterChipSelect
@@ -354,6 +360,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		)
 	}
 
+	a.searchEntry = xwidget.NewSearchEntry("Search items and descriptions", func(_ string) {
+		a.filterRowsAsync(-1)
+	})
+
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
@@ -433,8 +443,15 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsMobile() {
 		filter.Add(a.sortButton)
 	}
+	var topBox *fyne.Container
+	if a.u.IsMobile() {
+		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
+	} else {
+		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
+	}
+
 	c := container.NewBorder(
-		container.NewVBox(container.NewHScroll(filter)),
+		topBox,
 		a.footer,
 		nil,
 		nil,
@@ -512,6 +529,7 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 	assignee := a.selectAssignee.Selected
 	et := a.selectType.Selected
 	tag := a.selectTag.Selected
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
@@ -549,6 +567,11 @@ func (a *Contracts) filterRowsAsync(sortCol int) {
 		if tag != "" {
 			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
 				return !r.tags.Contains(tag)
+			})
+		}
+		if len(search) > 1 {
+			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
+				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
