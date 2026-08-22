@@ -366,7 +366,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg charac
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.section, arg.characterID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
-		return xgoesi.RetryOn401(1, key, func() (bool, error) {
+		// retrying on 401s to refresh tokens when resumed after longer suspension (see also #494)
+		return xgoesi.RetryOn401(ctx, 2, key, func() (bool, error) {
 			return f(ctx, arg)
 		})
 	})

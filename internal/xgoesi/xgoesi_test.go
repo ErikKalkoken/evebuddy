@@ -38,7 +38,7 @@ func TestRetryOn401(t *testing.T) {
 		var count int
 
 		// when
-		hasChanged, err := xgoesi.RetryOn401(1, "info", func() (bool, error) {
+		hasChanged, err := xgoesi.RetryOn401(t.Context(), 1, "info", func() (bool, error) {
 			count++
 			return true, nil
 		})
@@ -55,7 +55,7 @@ func TestRetryOn401(t *testing.T) {
 		myErr := fmt.Errorf("my error")
 
 		// when
-		_, err := xgoesi.RetryOn401(1, "info", func() (bool, error) {
+		_, err := xgoesi.RetryOn401(t.Context(), 1, "info", func() (bool, error) {
 			count++
 			return false, myErr
 		})
@@ -70,7 +70,7 @@ func TestRetryOn401(t *testing.T) {
 		var count int
 
 		// when
-		hasChanged, err := xgoesi.RetryOn401(1, "info", func() (bool, error) {
+		hasChanged, err := xgoesi.RetryOn401(t.Context(), 1, "info", func() (bool, error) {
 			count++
 			if count == 1 {
 				return false, generate401error()
@@ -90,11 +90,10 @@ func TestRetryOn401(t *testing.T) {
 		err401 := generate401error()
 
 		// when
-		_, err := xgoesi.RetryOn401(2, "info", func() (bool, error) {
+		_, err := xgoesi.RetryOn401(t.Context(), 2, "info", func() (bool, error) {
 			count++
 			return false, err401
 		})
-
 		// then
 		assert.ErrorIs(t, err, err401)
 		xassert.Equal(t, 1+2, count)
