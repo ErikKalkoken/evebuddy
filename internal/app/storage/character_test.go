@@ -21,7 +21,7 @@ func TestCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 
-	t.Run("can fetch a character", func(t *testing.T) {
+	t.Run("can fetch a character with all fields", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
@@ -42,14 +42,14 @@ func TestCharacter(t *testing.T) {
 		xassert.Equal(t, c1.ContractItemsValue, c2.ContractItemsValue)
 		xassert.Equal(t, c1.ContractsEscrow, c2.ContractsEscrow)
 		xassert.Equal(t, ec, c2.EveCharacter)
-		xassert.Equal(t, c1.Home, c2.Home)
+		xassert.Equal(t, c1.HomeLocationID, c2.HomeLocationID)
 		xassert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
 		xassert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
 		xassert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
-		xassert.Equal(t, c1.Location, c2.Location)
+		xassert.Equal(t, c1.LocationID, c2.LocationID)
 		xassert.Equal(t, c1.OrderItemsValue, c2.OrderItemsValue)
 		xassert.Equal(t, c1.OrdersEscrow, c2.OrdersEscrow)
-		xassert.Equal(t, c1.Ship, c2.Ship)
+		xassert.Equal(t, c1.ShipTypeID, c2.ShipTypeID)
 		xassert.Equal(t, c1.SkillPointsValue, c2.SkillPointsValue)
 		xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
 		xassert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
@@ -86,7 +86,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, c1.ID, c2.ID)
-		xassert.Equal(t, c1.Location, c2.Location)
+		xassert.Equal(t, c1.LocationID, c2.LocationID)
 	})
 }
 
@@ -144,7 +144,7 @@ func TestCharacter_Create(t *testing.T) {
 		ec := factory.CreateEveCharacter()
 		home := factory.CreateEveLocationStructure()
 		location := factory.CreateEveLocationStructure()
-		ship := factory.CreateEveType()
+		shipType := factory.CreateEveType()
 		login := time.Now()
 		cloneJump := time.Now()
 		arg := storage.CreateCharacterParams{
@@ -159,7 +159,7 @@ func TestCharacter_Create(t *testing.T) {
 			LocationID:         optional.New(location.ID),
 			OrderItemsValue:    optional.New(4.0),
 			OrdersEscrow:       optional.New(5.0),
-			ShipID:             optional.New(ship.ID),
+			ShipID:             optional.New(shipType.ID),
 			SkillPointsValue:   optional.New(6.0),
 			TotalSP:            optional.New(123),
 			UnallocatedSP:      optional.New(42),
@@ -183,10 +183,10 @@ func TestCharacter_Create(t *testing.T) {
 		xassert.EqualOptional(t, 5.0, o.OrdersEscrow)
 		xassert.EqualOptional(t, 6.0, o.SkillPointsValue)
 		xassert.EqualOptional(t, cloneJump, o.LastCloneJumpAt)
-		xassert.EqualOptional(t, home, o.Home)
-		xassert.EqualOptional(t, location, o.Location)
+		xassert.EqualOptional(t, home.ID, o.HomeLocationID)
+		xassert.EqualOptional(t, location.ID, o.LocationID)
 		xassert.EqualOptional(t, login, o.LastLoginAt)
-		xassert.EqualOptional(t, ship, o.Ship)
+		xassert.EqualOptional(t, shipType.ID, o.ShipTypeID)
 		xassert.Equal(t, true, o.IsTrainingWatched)
 		xassert.Equal(t, ec, o.EveCharacter)
 	})
@@ -253,8 +253,8 @@ func TestListCharacters(t *testing.T) {
 		if assert.NotNil(t, c2) {
 			xassert.Equal(t, c1.ID, c2.ID)
 			xassert.EqualOptional(t, c1.LastLoginAt.ValueOrZero(), c2.LastLoginAt)
-			xassert.Equal(t, c1.Ship, c2.Ship)
-			xassert.Equal(t, c1.Location, c2.Location)
+			xassert.Equal(t, c1.ShipTypeID, c2.ShipTypeID)
+			xassert.Equal(t, c1.LocationID, c2.LocationID)
 			xassert.Equal(t, c1.TrainedSP, c2.TrainedSP)
 			xassert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 			xassert.Equal(t, c1.EveCharacter, c2.EveCharacter)
@@ -343,7 +343,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.EqualOptional(t, home, c2.Home)
+		xassert.EqualOptional(t, home.ID, c2.HomeLocationID)
 	})
 
 	t.Run("can update last clone jump with a time", func(t *testing.T) {
@@ -420,7 +420,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.EqualOptional(t, location, c2.Location)
+		xassert.EqualOptional(t, location.ID, c2.LocationID)
 	})
 
 	t.Run("can update ship", func(t *testing.T) {
@@ -436,7 +436,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
-		xassert.EqualOptional(t, x, c2.Ship)
+		xassert.EqualOptional(t, x.ID, c2.ShipTypeID)
 	})
 
 	t.Run("can update is training watched", func(t *testing.T) {

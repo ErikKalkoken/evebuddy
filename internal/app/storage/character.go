@@ -3,7 +3,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
 	"time"
@@ -110,17 +109,13 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		category: NewNullString(eveEntityFaction),
 		name:     r.RaceFactionName,
 	}
-	c, err := st.characterFromDBModel(
-		ctx,
+	c, err := characterFromDBModel(
 		r.Character,
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
 		eea,
 		eef,
-		nullHomeID(r.HomeID),
-		nullLocationID(r.LocationID),
-		nullShipID(r.ShipID),
 		eb,
 		eer,
 	)
@@ -161,8 +156,6 @@ func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (option
 	return optional.FromNullFloat64(v), nil
 }
 
-// TODO: Try to make this operation more efficient
-
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.qRO.ListCharacters(ctx)
 	if err != nil {
@@ -189,17 +182,13 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			category: NewNullString(eveEntityFaction),
 			name:     r.RaceFactionName,
 		}
-		c, err := st.characterFromDBModel(
-			ctx,
+		c, err := characterFromDBModel(
 			r.Character,
 			r.EveCharacter,
 			r.EveEntity,
 			r.EveRace,
 			eea,
 			eef,
-			nullHomeID(r.HomeID),
-			nullLocationID(r.LocationID),
-			nullShipID(r.ShipID),
 			eb,
 			eer,
 		)
@@ -452,23 +441,13 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 	return nil
 }
 
-type nullHomeID sql.NullInt64
-type nullLocationID sql.NullInt64
-type nullShipID sql.NullInt64
-
-// TODO: Optimize so additional queries are not needed
-
-func (st *Storage) characterFromDBModel(
-	ctx context.Context,
+func characterFromDBModel(
 	character queries.Character,
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
 	eea nullAlliance,
 	eef nullFaction,
-	homeID nullHomeID,
-	locationID nullLocationID,
-	shipID nullShipID,
 	eb nullEntity,
 	eer nullRaceFaction,
 ) (*app.Character, error) {
@@ -495,27 +474,9 @@ func (st *Storage) characterFromDBModel(
 		TrainedSP:         optional.FromNullInt64(character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
 		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
-	}
-	if homeID.Valid {
-		x, err := st.GetLocation(ctx, homeID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Home = optional.New(x)
-	}
-	if locationID.Valid {
-		x, err := st.GetLocation(ctx, locationID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Location = optional.New(x)
-	}
-	if shipID.Valid {
-		x, err := st.GetEveType(ctx, shipID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Ship = optional.New(x)
+		HomeLocationID:    optional.FromNullInt64(character.HomeID),
+		LocationID:        optional.FromNullInt64(character.LocationID),
+		ShipTypeID:        optional.FromNullInt64(character.ShipID),
 	}
 	return &o, nil
 }

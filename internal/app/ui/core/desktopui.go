@@ -758,12 +758,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				el, ok := c.Location.Value()
+				id, ok := c.LocationID.Value()
 				if !ok {
 					u.ShowSnackbar("ERROR: Missing location for current character.")
 					return
 				}
-				u.InfoViewer().ShowLocation(el.ID)
+				u.InfoViewer().ShowLocation(id)
 			}},
 		"currentShip": {
 			&desktop.CustomShortcut{
@@ -776,12 +776,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				ship, ok := c.Ship.Value()
+				shipTypeID, ok := c.ShipTypeID.Value()
 				if !ok {
 					u.ShowSnackbar("ERROR: Missing ship for current character.")
 					return
 				}
-				u.InfoViewer().ShowType(ship.ID, 0)
+				u.InfoViewer().ShowType(shipTypeID, 0)
 			}},
 		"search": {
 			&desktop.CustomShortcut{

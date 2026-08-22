@@ -184,6 +184,33 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		clearAll()
 		return
 	}
+	var home *app.EveLocation
+	if v, ok := c.HomeLocationID.Value(); ok {
+		el, err := a.u.EVEUniverse().GetLocation(ctx, v)
+		if err != nil {
+			slog.Error("Failed to fetch home for character", "characterID", c.ID, "err", err)
+		} else {
+			home = el
+		}
+	}
+	var location *app.EveLocation
+	if v, ok := c.LocationID.Value(); ok {
+		el, err := a.u.EVEUniverse().GetLocation(ctx, v)
+		if err != nil {
+			slog.Error("Failed to fetch location for character", "characterID", c.ID, "err", err)
+		} else {
+			location = el
+		}
+	}
+	var shipType *app.EveType
+	if v, ok := c.ShipTypeID.Value(); ok {
+		et, err := a.u.EVEUniverse().GetType(ctx, v)
+		if err != nil {
+			slog.Error("Failed to fetch ship type for character", "characterID", c.ID, "err", err)
+		} else {
+			shipType = et
+		}
+	}
 	a.character.Store(c2)
 	c = c2
 
@@ -206,12 +233,11 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		a.u.EVEImage().CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
 			a.portrait.SetResource(r)
 		})
-		el, ok := c.Location.Value()
-		if !ok {
+		if location == nil {
 			a.location.Clear()
 			return
 		}
-		a.location.SetLocation(el)
+		a.location.SetLocation(location)
 	})
 	fyne.Do(func() {
 		v, ok := c.EveCharacter.Bloodline.Value()
@@ -222,16 +248,14 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		a.bloodline.SetBloodline(v)
 	})
 	fyne.Do(func() {
-		ship, ok := c.Ship.Value()
-		if !ok {
+		if shipType == nil {
 			a.ship.Clear()
 			return
 		}
-		a.ship.Set(ship.ToEveEntity())
+		a.ship.Set(shipType.ToEveEntity())
 	})
 	fyne.Do(func() {
-		home, ok := c.Home.Value()
-		if !ok {
+		if home == nil {
 			a.home.Clear()
 			return
 		}

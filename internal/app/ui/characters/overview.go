@@ -497,18 +497,29 @@ func (a *Overview) fetchRow(ctx context.Context, c *app.Character) (characterOve
 		corporation:   c.EveCharacter.Corporation,
 		faction:       c.EveCharacter.Faction,
 		isWatched:     c.IsTrainingWatched,
-		location:      c.Location,
 		searchTarget:  strings.ToLower(c.EveCharacter.Name),
-		ship:          c.Ship,
 		skillpoints:   c.TrainedSP,
 		walletBalance: c.WalletBalance,
 	}
-	if el, ok := c.Location.Value(); ok {
+	if id, ok := c.LocationID.Value(); ok {
+		el, err := a.u.EVEUniverse().GetLocation(ctx, id)
+		if err != nil {
+			slog.Error("Failed to load location for character in overview", "characterID", c.ID, "error", err)
+		} else {
+			r.location.Set(el)
+		}
 		if es, ok := el.SolarSystem.Value(); ok {
 			r.regionName = es.Constellation.Region.Name
 			r.solarSystemName = es.Name
 			r.searchTarget += "~" + strings.ToLower(es.Name)
 		}
+	}
+	if id, ok := c.ShipTypeID.Value(); ok {
+		et, err := a.u.EVEUniverse().GetType(ctx, id)
+		if err != nil {
+			slog.Error("Failed to load ship for character in overview", "characterID", c.ID, "error", err)
+		}
+		r.ship.Set(et)
 	}
 	total, unread, err := a.u.Character().GetMailCounts(ctx, c.ID)
 	if err != nil {

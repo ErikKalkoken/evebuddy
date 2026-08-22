@@ -92,6 +92,8 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	return oo, nil
 }
 
+// TODO: Consider removing the additional DB call
+
 func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanetPinRow) (*app.PlanetPin, error) {
 	o := &app.PlanetPin{
 		ID:             r.PlanetPin.PinID,
