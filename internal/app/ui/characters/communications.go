@@ -186,11 +186,11 @@ func (a *Communications) update(ctx context.Context) {
 }
 
 func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]notificationRow, int, error) {
-	characters, err := a.u.Character().ListCharacters(ctx)
+	characters, err := a.u.Character().ListEveCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-	characterMap := make(map[int64]*app.Character)
+	characterMap := make(map[int64]*app.EveCharacter)
 	for _, c := range characters {
 		characterMap[c.ID] = c
 	}
@@ -212,13 +212,13 @@ func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]no
 		if ok {
 			switch o.Sender.ID {
 			case app.EveTypeAlliance:
-				sender = character.EveCharacter.Alliance.ValueOrFallback(&app.EveEntity{
+				sender = character.Alliance.ValueOrFallback(&app.EveEntity{
 					ID:       1,
 					Name:     "Unknown",
 					Category: app.EveEntityCorporation,
 				})
 			case app.EveTypeCorporation:
-				sender = character.EveCharacter.Corporation
+				sender = character.Corporation
 			default:
 				sender = o.Sender
 			}
@@ -233,7 +233,7 @@ func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]no
 		subject := o.TitleDisplay()
 		r := notificationRow{
 			characterID:              o.CharacterID,
-			characterName:            character.NameOrZero(),
+			characterName:            character.Name,
 			id:                       o.ID,
 			isRead:                   o.IsRead,
 			notificationGroup:        o.Type.Group(),
@@ -246,7 +246,7 @@ func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]no
 			timestamp:                o.Timestamp,
 			recipient: o.Recipient.ValueOrFallback(&app.EveEntity{
 				ID:       o.CharacterID,
-				Name:     character.NameOrZero(),
+				Name:     character.Name,
 				Category: app.EveEntityCharacter,
 			}),
 		}

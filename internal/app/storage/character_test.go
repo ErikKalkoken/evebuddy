@@ -234,22 +234,23 @@ func TestListCharactersShort(t *testing.T) {
 }
 
 func TestListCharacters(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
 
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c1 := factory.CreateCharacterFull()
+		c1 := f.CreateCharacterFull()
 
 		// when
 		cc, err := st.ListCharacters(t.Context())
 
 		// then
 		require.NoError(t, err)
+		require.Len(t, cc, 1)
+
 		c2 := cc[0]
 		if assert.NotNil(t, c2) {
-			assert.Len(t, cc, 1)
 			xassert.Equal(t, c1.ID, c2.ID)
 			xassert.EqualOptional(t, c1.LastLoginAt.ValueOrZero(), c2.LastLoginAt)
 			xassert.Equal(t, c1.Ship, c2.Ship)
@@ -259,11 +260,12 @@ func TestListCharacters(t *testing.T) {
 			xassert.Equal(t, c1.EveCharacter, c2.EveCharacter)
 		}
 	})
+
 	t.Run("can list character IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c1 := factory.CreateCharacter()
-		c2 := factory.CreateCharacter()
+		c1 := f.CreateCharacter()
+		c2 := f.CreateCharacter()
 		// when
 		got, err := st.ListCharacterIDs(t.Context())
 		// then
@@ -271,15 +273,16 @@ func TestListCharacters(t *testing.T) {
 		want := set.Of(c1.ID, c2.ID)
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can list character corporations", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		ec1 := factory.CreateEveCharacter()
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
-		factory.CreateCorporation(ec1.Corporation.ID)
-		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
-		factory.CreateCharacter()
+		ec1 := f.CreateEveCharacter()
+		f.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
+		f.CreateCorporation(ec1.Corporation.ID)
+		ec2 := f.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
+		f.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
+		f.CreateCharacter()
 		// when
 		cc, err := st.ListCharacterCorporations(t.Context())
 		// then
@@ -290,20 +293,36 @@ func TestListCharacters(t *testing.T) {
 		want := set.Of(ec1.Corporation.ID)
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can list character corporation IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		ec1 := factory.CreateEveCharacter()
-		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
-		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
-		c2 := factory.CreateCharacter()
+		ec1 := f.CreateEveCharacter()
+		c1 := f.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
+		ec2 := f.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
+		f.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
+		c2 := f.CreateCharacter()
 		// when
 		got, err := st.ListCharacterCorporationIDs(t.Context())
 		// then
 		require.NoError(t, err)
 		want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("can list as eve characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateEveCharacter() // should be ignored
+
+		// when
+		got, err := st.ListCharacterEveCharacters(t.Context())
+
+		// then
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, c.EveCharacter, got[0])
 	})
 }
 

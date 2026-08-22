@@ -283,6 +283,92 @@ func (q *Queries) ListCharacterCorporations(ctx context.Context) ([]ListCharacte
 	return items, nil
 }
 
+const listCharacterEveCharacters = `-- name: ListCharacterEveCharacters :many
+SELECT
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title, ec.bloodline_id,
+    eec.id, eec.category, eec.name,
+    er.id, er.description, er.name, er.faction_id,
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
+    eb.id as bloodline_id,
+    eb.name as bloodline_name,
+    eer.name as race_faction_name
+FROM
+    characters c
+    JOIN eve_characters ec ON ec.id = c.id
+    JOIN eve_entities eec ON eec.id = ec.corporation_id
+    JOIN eve_races er ON er.id = ec.race_id
+    LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_bloodlines eb ON eb.id = ec.bloodline_id
+    LEFT JOIN eve_entities eer ON eer.id = er.faction_id
+`
+
+type ListCharacterEveCharactersRow struct {
+	EveCharacter     EveCharacter
+	EveEntity        EveEntity
+	EveRace          EveRace
+	AllianceName     sql.NullString
+	AllianceCategory sql.NullString
+	FactionName      sql.NullString
+	FactionCategory  sql.NullString
+	BloodlineID      sql.NullInt64
+	BloodlineName    sql.NullString
+	RaceFactionName  sql.NullString
+}
+
+func (q *Queries) ListCharacterEveCharacters(ctx context.Context) ([]ListCharacterEveCharactersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterEveCharacters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterEveCharactersRow
+	for rows.Next() {
+		var i ListCharacterEveCharactersRow
+		if err := rows.Scan(
+			&i.EveCharacter.AllianceID,
+			&i.EveCharacter.Birthday,
+			&i.EveCharacter.CorporationID,
+			&i.EveCharacter.Description,
+			&i.EveCharacter.Gender,
+			&i.EveCharacter.FactionID,
+			&i.EveCharacter.ID,
+			&i.EveCharacter.Name,
+			&i.EveCharacter.RaceID,
+			&i.EveCharacter.SecurityStatus,
+			&i.EveCharacter.Title,
+			&i.EveCharacter.BloodlineID,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.EveRace.ID,
+			&i.EveRace.Description,
+			&i.EveRace.Name,
+			&i.EveRace.FactionID,
+			&i.AllianceName,
+			&i.AllianceCategory,
+			&i.FactionName,
+			&i.FactionCategory,
+			&i.BloodlineID,
+			&i.BloodlineName,
+			&i.RaceFactionName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterIDs = `-- name: ListCharacterIDs :many
 SELECT
     id

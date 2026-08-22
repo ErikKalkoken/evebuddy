@@ -225,6 +225,45 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort,
 	return cc, nil
 }
 
+func (st *Storage) ListCharacterEveCharacters(ctx context.Context) ([]*app.EveCharacter, error) {
+	rows, err := st.qRO.ListCharacterEveCharacters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListCharacterEveCharacters: %w", err)
+	}
+	oo := make([]*app.EveCharacter, len(rows))
+	for i, r := range rows {
+		eea := nullAlliance{
+			id:       r.EveCharacter.AllianceID,
+			name:     r.AllianceName,
+			category: r.AllianceCategory,
+		}
+		eef := nullFaction{
+			id:       r.EveCharacter.FactionID,
+			name:     r.FactionName,
+			category: r.FactionCategory,
+		}
+		eb := nullEntity{
+			id:   r.BloodlineID,
+			name: r.BloodlineName,
+		}
+		eer := nullRaceFaction{
+			id:       r.EveRace.FactionID,
+			category: NewNullString(eveEntityFaction),
+			name:     r.RaceFactionName,
+		}
+		oo[i] = eveCharacterFromDBModel(
+			r.EveCharacter,
+			r.EveEntity,
+			r.EveRace,
+			eea,
+			eef,
+			eb,
+			eer,
+		)
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListCharacterCorporations(ctx)
 	if err != nil {

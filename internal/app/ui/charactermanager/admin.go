@@ -105,7 +105,7 @@ func (a *admin) update(ctx context.Context) {
 
 func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
 	var rows []adminRow
-	cc, err := a.cw.u.Character().ListCharacters(ctx)
+	cc, err := a.cw.u.Character().ListEveCharacters(ctx)
 	if err != nil {
 		return rows, err
 	}
@@ -116,8 +116,8 @@ func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
 		}
 		r := adminRow{
 			characterID:   c.ID,
-			corporationID: c.EveCharacter.Corporation.ID,
-			characterName: c.EveCharacter.Name,
+			corporationID: c.Corporation.ID,
+			characterName: c.Name,
 			missingScopes: missing,
 		}
 		rows = append(rows, r)

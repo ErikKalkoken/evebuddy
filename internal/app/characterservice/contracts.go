@@ -120,7 +120,7 @@ func (s *CharacterService) ListContractItems(ctx context.Context, contractID int
 
 func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Context) ([]app.CharacterContractSlots, error) {
 	slots := make(map[int64]app.CharacterContractSlots)
-	characters, err := s.ListCharacters(ctx)
+	characters, err := s.st.ListCharacterEveCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +128,12 @@ func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Con
 	for _, c := range characters {
 		x := slots[c.ID]
 		x.CharacterID = c.ID
-		x.CharacterName = c.EveCharacter.Name
-		x.CorporationID = c.EveCharacter.Corporation.ID
-		x.CorporationName = c.EveCharacter.Corporation.Name
+		x.CharacterName = c.Name
+		x.CorporationID = c.Corporation.ID
+		x.CorporationName = c.Corporation.Name
 		x.Total = 1 // capacity at level 0
 		slots[c.ID] = x
-		characterCorporations[c.ID] = c.EveCharacter.Corporation.ID
+		characterCorporations[c.ID] = c.Corporation.ID
 	}
 	counts, err := s.st.CountCharactersOutstandingPersonalContracts(ctx)
 	if err != nil {
@@ -181,16 +181,16 @@ func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Con
 
 func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.Context) ([]app.CharacterContractSlots, error) {
 	slots := make(map[int64]app.CharacterContractSlots)
-	characters, err := s.ListCharacters(ctx)
+	characters, err := s.st.ListCharacterEveCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, c := range characters {
 		x := slots[c.ID]
 		x.CharacterID = c.ID
-		x.CharacterName = c.EveCharacter.Name
-		x.CorporationID = c.EveCharacter.Corporation.ID
-		x.CorporationName = c.EveCharacter.Corporation.Name
+		x.CharacterName = c.Name
+		x.CorporationID = c.Corporation.ID
+		x.CorporationName = c.Corporation.Name
 		x.IsCorporation = true
 		x.Total = 10 // capacity at level 0
 		slots[c.ID] = x

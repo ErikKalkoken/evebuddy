@@ -81,6 +81,10 @@ func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int64]
 	return s.st.ListCharacterIDs(ctx)
 }
 
+func (s *CharacterService) ListEveCharacters(ctx context.Context) ([]*app.EveCharacter, error) {
+	return s.st.ListCharacterEveCharacters(ctx)
+}
+
 // CharacterNames returns an ID to name map for all existing characters.
 func (s *CharacterService) CharacterNames(ctx context.Context) (map[int64]string, error) {
 	oo, err := s.st.ListCharactersShort(ctx)
