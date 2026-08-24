@@ -10,6 +10,8 @@ github.com/ErikKalkoken/eveauth v0.2.0 h1:2S2x7/OencDR+d1d4J68ex/K2o4yq5+mMXBpD1
 github.com/ErikKalkoken/eveauth v0.2.0/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
 github.com/ErikKalkoken/fyne-kx v0.7.2 h1:KD2F4FBFcAUpHlGQ1bpfvw2NRYTVIBVDo9DjdwYmaes=
 github.com/ErikKalkoken/fyne-kx v0.7.2/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
+github.com/ErikKalkoken/fyne-kx v0.8.0 h1:X6Mf53lF5TSXsABUABkt9sJTX0wjHklJyY18ZX8BDO0=
+github.com/ErikKalkoken/fyne-kx v0.8.0/go.mod h1:Sjy+bWFSr2xOwyHP6O3d3XEZEqrhVCFL9ciNz4uZIyQ=
 github.com/ErikKalkoken/go-set v0.3.0 h1:yJxMD/7UfVB4+wEJ9PD0A+pODy0vreyo72szy1UcgZQ=
 github.com/ErikKalkoken/go-set v0.3.0/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
 github.com/FyshOS/fancyfs v0.0.1 h1:kgvm7VvwOMLkYTqSflplp62SlMVWQ2uAoHw9CXwXHYg=
