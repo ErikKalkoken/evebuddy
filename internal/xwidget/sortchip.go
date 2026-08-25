@@ -1,7 +1,9 @@
 package xwidget
 
 import (
+	"example/fyne-playground/xslices"
 	"image/color"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,20 +17,21 @@ import (
 type SortChip struct {
 	widget.DisableableWidget
 
-	Text string
-	On   bool
+	OnChanged func(column string, dir SortDir)
 
-	// OnChanged is called when the state changed
-	OnChanged func(on bool)
-
-	bg                   *canvas.Rectangle
-	focused              bool
-	hovered              bool
-	icon                 *widget.Icon
-	iconPadded           *fyne.Container
-	label                *widget.Label
-	resourceIcon         fyne.Resource
-	resourceIconDisabled fyne.Resource
+	ascResource  fyne.Resource
+	bg           *canvas.Rectangle
+	col          string
+	colDefault   string
+	columns      []string
+	descResource fyne.Resource
+	dir          SortDir
+	dirDefault   SortDir
+	focused      bool
+	hovered      bool
+	icon         *widget.Icon
+	label        *widget.Label
+	offResource  fyne.Resource
 }
 
 var _ desktop.Hoverable = (*SortChip)(nil)
@@ -38,35 +41,52 @@ var _ fyne.Tappable = (*SortChip)(nil)
 var _ fyne.Widget = (*SortChip)(nil)
 
 // NewSortChip returns a new [SortChip] object.
-func NewSortChip(text string, changed func(on bool)) *SortChip {
-	bg := canvas.NewRectangle(color.Transparent)
-	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
-	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+func NewSortChip(changed func(col string, dir SortDir)) *SortChip {
 	w := &SortChip{
-		bg:                   bg,
-		icon:                 widget.NewIcon(theme.ConfirmIcon()),
-		label:                widget.NewLabel(text),
-		OnChanged:            changed,
-		resourceIcon:         theme.ConfirmIcon(),
-		resourceIconDisabled: theme.NewDisabledResource(theme.ConfirmIcon()),
-		Text:                 text,
+		bg:           canvas.NewRectangle(color.Transparent),
+		icon:         widget.NewIcon(iconBlankSvg),
+		label:        widget.NewLabel(""),
+		OnChanged:    changed,
+		ascResource:  theme.NewThemedResource(iconSortAscendingSvg),
+		descResource: theme.NewThemedResource(iconSortDescendingSvg),
+		offResource:  theme.NewThemedResource(iconSortSvg),
 	}
 	w.ExtendBaseWidget(w)
-	p := theme.Padding()
-	w.iconPadded = container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, -p), w.icon)
-	w.iconPadded.Hide()
+	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
+	w.bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	return w
 }
 
-// SetState sets the state.
-func (w *SortChip) SetState(v bool) {
-	if w.On == v {
-		return
+func (w *SortChip) Set(columns []string, col string, dir SortDir) {
+	if !slices.Contains(columns, col) {
+		col = ""
 	}
-	w.On = v
-	if w.OnChanged != nil {
-		w.OnChanged(v)
+	if len(columns) == 0 {
+		col = ""
+		dir = SortOff
+		clear(w.columns)
+	} else {
+		columns2 := xslices.Deduplicate(columns)
+		slices.Sort(columns2)
+		w.columns = columns2
+		if col == "" {
+			col = columns2[0]
+		}
+		if dir != SortAsc && dir != SortDesc {
+			dir = SortAsc
+		}
 	}
+	w.col = col
+	w.colDefault = col
+	w.dir = dir
+	w.dirDefault = dir
+	w.Refresh()
+}
+
+// ResetSilent resets the sorting to default without calling OnChanged.
+func (w *SortChip) ResetSilent() {
+	w.col = w.colDefault
+	w.dir = w.dirDefault
 	w.Refresh()
 }
 
@@ -82,19 +102,33 @@ func (w *SortChip) updateState() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
-	w.label.Text = w.Text
+	if w.col == "" || w.dir == SortOff {
+		w.label.Text = "(no sort)"
+	} else {
+		w.label.Text = w.col
+	}
+	var iconResource fyne.Resource
+	switch w.dir {
+	case SortAsc:
+		iconResource = w.ascResource
+	case SortDesc:
+		iconResource = w.descResource
+	case SortOff:
+		iconResource = w.offResource
+	default:
+		iconResource = iconBlankSvg
+	}
 
 	if w.Disabled() {
 		w.label.Importance = widget.LowImportance
-		w.icon.SetResource(theme.NewDisabledResource(theme.ConfirmIcon()))
+		w.icon.Resource = theme.NewDisabledResource(iconResource)
 		w.bg.StrokeColor = th.Color(theme.ColorNameDisabled, v)
 	} else {
 		w.label.Importance = widget.MediumImportance
-		w.icon.SetResource(theme.ConfirmIcon())
+		w.icon.Resource = iconResource
 		w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	}
-	if w.On {
-		w.iconPadded.Show()
+	if w.dir != SortOff {
 		if w.Disabled() {
 			w.bg.FillColor = th.Color(theme.ColorNameDisabledButton, v)
 			w.bg.StrokeColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -103,7 +137,6 @@ func (w *SortChip) updateState() {
 			w.bg.StrokeColor = th.Color(theme.ColorNameSelection, v)
 		}
 	} else {
-		w.iconPadded.Hide()
 		w.bg.FillColor = color.Transparent
 	}
 
@@ -116,7 +149,69 @@ func (w *SortChip) Tapped(pe *fyne.PointEvent) {
 	if w.Disabled() {
 		return
 	}
-	w.SetState(!w.On)
+	w.showMenu()
+}
+
+func (w *SortChip) showMenu() {
+	oldColum := w.col
+	oldDirection := w.dir
+
+	onChanged := func(column string, dir SortDir) {
+		w.col = column
+		w.dir = dir
+		if oldColum == w.col && oldDirection == w.dir {
+			return
+		}
+		w.updateState()
+		w.Refresh()
+		if w.OnChanged != nil {
+			w.OnChanged(w.col, w.dir)
+		}
+	}
+
+	var items []*fyne.MenuItem
+
+	sortTitle := fyne.NewMenuItem("Sort by ", nil)
+	sortTitle.Disabled = true
+	items = append(items, sortTitle)
+
+	for _, c := range w.columns {
+		it := fyne.NewMenuItem(c, func() {
+			onChanged(c, w.dir)
+		})
+		if c == w.col {
+			it.Icon = theme.ConfirmIcon()
+		} else {
+			it.Icon = iconBlankSvg
+		}
+		items = append(items, it)
+	}
+
+	orderTitle := fyne.NewMenuItem("Order", nil)
+	orderTitle.Disabled = true
+	items = append(items, orderTitle)
+
+	for _, d := range []SortDir{SortAsc, SortDesc} {
+		it := fyne.NewMenuItem(d.String(), func() {
+			onChanged(w.col, d)
+		})
+		if d == w.dir {
+			it.Icon = theme.ConfirmIcon()
+		} else {
+			it.Icon = iconBlankSvg
+		}
+		items = append(items, it)
+	}
+
+	items = append(items, fyne.NewMenuItemSeparator())
+	reset := fyne.NewMenuItem("Reset", func() {
+		onChanged(w.colDefault, w.dirDefault)
+	})
+	reset.Icon = theme.DeleteIcon()
+	items = append(items, reset)
+
+	menu := fyne.NewMenu("", items...)
+	ShowPopUpMenuBelowLeading(w, menu)
 }
 
 func (w *SortChip) Cursor() desktop.Cursor {
@@ -162,7 +257,7 @@ func (w *SortChip) TypedRune(r rune) {
 		return
 	}
 	if r == ' ' {
-		w.SetState(!w.On)
+		w.showMenu()
 	}
 }
 
@@ -171,11 +266,12 @@ func (w *SortChip) TypedKey(key *fyne.KeyEvent) {}
 
 func (w *SortChip) CreateRenderer() fyne.WidgetRenderer {
 	w.updateState()
+	p := theme.Padding()
 	c := container.NewStack(
 		w.bg,
 		container.NewCenter(container.New(
 			layout.NewCustomPaddedHBoxLayout(0),
-			w.iconPadded,
+			container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, -p), w.icon),
 			w.label,
 		),
 		))

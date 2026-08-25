@@ -86,7 +86,7 @@ type Overview struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton[characterOverviewRow]
+	sortChip          *xwidget.SortChip
 	u                 baseUI
 }
 
@@ -188,7 +188,7 @@ func NewOverview(u baseUI) *Overview {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -246,7 +246,7 @@ func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 		a.selectRegion,
 		a.selectSolarSystem,
 		a.selectTag,
-		a.sortButton,
+		a.sortChip,
 	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

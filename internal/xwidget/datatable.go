@@ -289,8 +289,32 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 	})
 }
 
+func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *SortChip {
+	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
+		return h.Label
+	}))
+
+	field2Col := make(map[string]int)
+	for col, field := range columns {
+		field2Col[field] = col
+	}
+	ignored := set.Of(ignoredColumns...)
+	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
+		return ignored.Contains(field2Col[c])
+	})
+	w := NewSortChip(func(col string, dir SortDir) {
+		cs.setIdx(field2Col[col], dir)
+		if changed != nil {
+			changed()
+		}
+	})
+	col, dir := cs.current() // TODO: Hack, replace with defaults
+	w.Set(sortColumns, cs.columns.cols[col].Label, dir)
+	return w
+}
+
 // A SortButton represents a button for sorting a data table.
-// It is supposed to be used in mobile views.
+// It is supposed to be used in views without a data table, e.g on mobile.
 type SortButton[T any] struct {
 	widget.Button
 
@@ -303,7 +327,7 @@ type SortButton[T any] struct {
 	sortColumns []string
 }
 
-// NewSortButton returns a new sortButton.
+// NewSortButton returns a new [SortButton].
 func (cs *ColumnSorter[T]) NewSortButton(changed func(), ignoredColumns ...int) *SortButton[T] {
 	if cs.columns.Size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.columns.Size() {
 		panic("NewSortButton called with invalid parameters")
