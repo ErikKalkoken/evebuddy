@@ -224,7 +224,7 @@ type Contracts struct {
 	selectStatus   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton[contractRow]
+	sortChip *xwidget.SortChip
 	u              baseUI
 }
 
@@ -388,7 +388,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -441,7 +441,7 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 		filter.Add(a.selectTag)
 	}
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

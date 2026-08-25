@@ -66,7 +66,7 @@ type Catalogue struct {
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
-	sortButton     *xwidget.SortButton[skillRow]
+	sortChip *xwidget.SortChip
 	top            *widget.Label
 	u              baseUI
 }
@@ -124,7 +124,7 @@ func NewCatalogue(u baseUI) *Catalogue {
 	})
 	a.selectMain.Selected = skillsAllSkill
 	a.selectMain.SortDisabled = true
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 
@@ -166,7 +166,7 @@ func NewCatalogue(u baseUI) *Catalogue {
 }
 
 func (a *Catalogue) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortButton)
+	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortChip)
 	topBox := container.NewVBox()
 	if a.u.IsMobile() {
 		topBox.Add(a.top)

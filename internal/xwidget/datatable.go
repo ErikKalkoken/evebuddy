@@ -157,7 +157,6 @@ type ColumnSorter[T any] struct {
 	initialDir SortDir
 	initialID  int
 	isMobile   bool
-	sortButton *SortButton[T]
 }
 
 // NewColumnSorter returns a new ColumSorter.
@@ -230,9 +229,6 @@ func (cs *ColumnSorter[T]) Set(id int, dir SortDir) {
 func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
 	cs.init()
 	cs.cols[idx] = dir
-	if cs.sortButton != nil {
-		cs.sortButton.set(idx, dir)
-	}
 }
 
 func (cs *ColumnSorter[T]) size() int {
@@ -289,6 +285,7 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 	})
 }
 
+// NewSortChip creates a [SortChip] for a [ColumnSorter].
 func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *SortChip {
 	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
 		return h.Label
@@ -313,152 +310,152 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *S
 	return w
 }
 
-// A SortButton represents a button for sorting a data table.
-// It is supposed to be used in views without a data table, e.g on mobile.
-type SortButton[T any] struct {
-	widget.Button
+// // A SortButton represents a button for sorting a data table.
+// // It is supposed to be used in views without a data table, e.g on mobile.
+// type SortButton[T any] struct {
+// 	widget.Button
 
-	// OnChanged is called when the sorting changed.
-	OnChanged func()
+// 	// OnChanged is called when the sorting changed.
+// 	OnChanged func()
 
-	cs          *ColumnSorter[T]
-	field2Col   map[string]int
-	ignored     set.Set[int]
-	sortColumns []string
-}
+// 	cs          *ColumnSorter[T]
+// 	field2Col   map[string]int
+// 	ignored     set.Set[int]
+// 	sortColumns []string
+// }
 
-// NewSortButton returns a new [SortButton].
-func (cs *ColumnSorter[T]) NewSortButton(changed func(), ignoredColumns ...int) *SortButton[T] {
-	if cs.columns.Size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.columns.Size() {
-		panic("NewSortButton called with invalid parameters")
-	}
-	sortColumns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
-		return h.Label
-	}))
-	w := &SortButton[T]{
-		cs:          cs,
-		field2Col:   make(map[string]int),
-		ignored:     set.Of(ignoredColumns...),
-		OnChanged:   changed,
-		sortColumns: sortColumns,
-	}
-	w.ExtendBaseWidget(w)
-	w.Text = "???"
-	w.Icon = iconBlankSvg
-	w.OnTapped = func() {
-		w.showMenu()
-	}
+// // NewSortButton returns a new [SortButton].
+// func (cs *ColumnSorter[T]) NewSortButton(changed func(), ignoredColumns ...int) *SortButton[T] {
+// 	if cs.columns.Size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.columns.Size() {
+// 		panic("NewSortButton called with invalid parameters")
+// 	}
+// 	sortColumns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
+// 		return h.Label
+// 	}))
+// 	w := &SortButton[T]{
+// 		cs:          cs,
+// 		field2Col:   make(map[string]int),
+// 		ignored:     set.Of(ignoredColumns...),
+// 		OnChanged:   changed,
+// 		sortColumns: sortColumns,
+// 	}
+// 	w.ExtendBaseWidget(w)
+// 	w.Text = "???"
+// 	w.Icon = iconBlankSvg
+// 	w.OnTapped = func() {
+// 		w.showMenu()
+// 	}
 
-	for col, field := range sortColumns {
-		w.field2Col[field] = col
-	}
+// 	for col, field := range sortColumns {
+// 		w.field2Col[field] = col
+// 	}
 
-	w.set(cs.current())
-	cs.sortButton = w
-	return w
-}
+// 	w.set(cs.current())
+// 	cs.sortButton = w
+// 	return w
+// }
 
-func (w *SortButton[T]) showMenu() {
-	var fields []string
-	for i, h := range w.cs.columns.All() {
-		if h.Sort != nil && !w.ignored.Contains(i) {
-			fields = append(fields, h.Label)
-		}
-	}
+// func (w *SortButton[T]) showMenu() {
+// 	var fields []string
+// 	for i, h := range w.cs.columns.All() {
+// 		if h.Sort != nil && !w.ignored.Contains(i) {
+// 			fields = append(fields, h.Label)
+// 		}
+// 	}
 
-	sort := func(field string, dir2 SortDir) {
-		col, ok := w.field2Col[field]
-		if !ok {
-			return
-		}
-		w.cs.setIdx(col, dir2)
-		w.set(col, dir2)
-		if w.OnChanged != nil {
-			w.OnChanged()
-		}
-	}
+// 	sort := func(field string, dir2 SortDir) {
+// 		col, ok := w.field2Col[field]
+// 		if !ok {
+// 			return
+// 		}
+// 		w.cs.setIdx(col, dir2)
+// 		w.set(col, dir2)
+// 		if w.OnChanged != nil {
+// 			w.OnChanged()
+// 		}
+// 	}
 
-	col, dir := w.cs.current()
-	var selected string
-	if col != -1 {
-		selected = w.sortColumns[col]
-	} else {
-		selected = w.sortColumns[0] // default to first column
-	}
+// 	col, dir := w.cs.current()
+// 	var selected string
+// 	if col != -1 {
+// 		selected = w.sortColumns[col]
+// 	} else {
+// 		selected = w.sortColumns[0] // default to first column
+// 	}
 
-	var items []*fyne.MenuItem
+// 	var items []*fyne.MenuItem
 
-	sortTitle := fyne.NewMenuItem("Sort by ", nil)
-	sortTitle.Disabled = true
-	items = append(items, sortTitle)
+// 	sortTitle := fyne.NewMenuItem("Sort by ", nil)
+// 	sortTitle.Disabled = true
+// 	items = append(items, sortTitle)
 
-	for _, f := range fields {
-		it := fyne.NewMenuItem(f, func() {
-			sort(f, dir)
-		})
-		if f == selected {
-			it.Icon = theme.ConfirmIcon()
-		} else {
-			it.Icon = iconBlankSvg
-		}
-		items = append(items, it)
-	}
+// 	for _, f := range fields {
+// 		it := fyne.NewMenuItem(f, func() {
+// 			sort(f, dir)
+// 		})
+// 		if f == selected {
+// 			it.Icon = theme.ConfirmIcon()
+// 		} else {
+// 			it.Icon = iconBlankSvg
+// 		}
+// 		items = append(items, it)
+// 	}
 
-	orderTitle := fyne.NewMenuItem("Order", nil)
-	orderTitle.Disabled = true
-	items = append(items, orderTitle)
+// 	orderTitle := fyne.NewMenuItem("Order", nil)
+// 	orderTitle.Disabled = true
+// 	items = append(items, orderTitle)
 
-	for _, d := range []SortDir{SortAsc, SortDesc} {
-		it := fyne.NewMenuItem(d.String(), func() {
-			sort(selected, d)
-		})
-		if d == dir {
-			it.Icon = theme.ConfirmIcon()
-		} else {
-			it.Icon = iconBlankSvg
-		}
-		items = append(items, it)
-	}
+// 	for _, d := range []SortDir{SortAsc, SortDesc} {
+// 		it := fyne.NewMenuItem(d.String(), func() {
+// 			sort(selected, d)
+// 		})
+// 		if d == dir {
+// 			it.Icon = theme.ConfirmIcon()
+// 		} else {
+// 			it.Icon = iconBlankSvg
+// 		}
+// 		items = append(items, it)
+// 	}
 
-	items = append(items, fyne.NewMenuItemSeparator())
-	reset := fyne.NewMenuItem("Reset", func() {
-		w.cs.reset()
-		col, dir := w.cs.current()
-		w.set(col, dir)
-		if w.OnChanged != nil {
-			w.OnChanged()
-		}
-	})
-	reset.Icon = theme.DeleteIcon()
-	items = append(items, reset)
+// 	items = append(items, fyne.NewMenuItemSeparator())
+// 	reset := fyne.NewMenuItem("Reset", func() {
+// 		w.cs.reset()
+// 		col, dir := w.cs.current()
+// 		w.set(col, dir)
+// 		if w.OnChanged != nil {
+// 			w.OnChanged()
+// 		}
+// 	})
+// 	reset.Icon = theme.DeleteIcon()
+// 	items = append(items, reset)
 
-	menu := fyne.NewMenu("", items...)
-	ShowPopUpMenuBelowLeading(w, menu)
-}
+// 	menu := fyne.NewMenu("", items...)
+// 	ShowPopUpMenuBelowLeading(w, menu)
+// }
 
-func (w *SortButton[T]) set(idx int, dir SortDir) {
-	switch dir {
-	case SortAsc:
-		w.Icon = theme.NewThemedResource(iconSortAscendingSvg)
-	case SortDesc:
-		w.Icon = theme.NewThemedResource(iconSortDescendingSvg)
-	default:
-		w.Icon = theme.NewThemedResource(iconSortSvg)
-	}
-	if idx != -1 {
-		w.Text = w.sortColumns[idx]
-	} else {
-		w.Text = "Sort"
-	}
-	w.Refresh()
-}
+// func (w *SortButton[T]) set(idx int, dir SortDir) {
+// 	switch dir {
+// 	case SortAsc:
+// 		w.Icon = theme.NewThemedResource(iconSortAscendingSvg)
+// 	case SortDesc:
+// 		w.Icon = theme.NewThemedResource(iconSortDescendingSvg)
+// 	default:
+// 		w.Icon = theme.NewThemedResource(iconSortSvg)
+// 	}
+// 	if idx != -1 {
+// 		w.Text = w.sortColumns[idx]
+// 	} else {
+// 		w.Text = "Sort"
+// 	}
+// 	w.Refresh()
+// }
 
-// ResetSilent resets the sorting to default without calling OnChanged.
-func (w *SortButton[T]) ResetSilent() {
-	w.cs.reset()
-	col, dir := w.cs.current()
-	w.set(col, dir)
-}
+// // ResetSilent resets the sorting to default without calling OnChanged.
+// func (w *SortButton[T]) ResetSilent() {
+// 	w.cs.reset()
+// 	col, dir := w.cs.current()
+// 	w.set(col, dir)
+// }
 
 func MakeDataTable[S ~[]E, E any](
 	columns DataColumns[E],

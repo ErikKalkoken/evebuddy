@@ -87,7 +87,7 @@ type Slots struct {
 	selectCorporation *kxwidget.FilterChipSelect
 	selectFreeSlots   *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton[slotRow]
+	sortChip *xwidget.SortChip
 	u                 baseUI
 }
 
@@ -218,7 +218,7 @@ func NewSlots(u baseUI, corporationSlots bool) *Slots {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -247,7 +247,7 @@ func NewSlots(u baseUI, corporationSlots bool) *Slots {
 func (a *Slots) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectCorporation, a.selectFreeSlots, a.selectTag)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)

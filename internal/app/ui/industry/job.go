@@ -133,7 +133,7 @@ type Jobs struct {
 	selectOwner     *kxwidget.FilterChipSelect
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
-	sortButton      *xwidget.SortButton[industryJobRow]
+	sortChip *xwidget.SortChip
 	u               baseUI
 }
 
@@ -328,7 +328,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 		a.filterRowsAsync(-1)
 	})
 
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	}, 6, 7)
 
@@ -396,7 +396,7 @@ func (a *Jobs) CreateRenderer() fyne.WidgetRenderer {
 		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
 	}
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

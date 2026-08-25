@@ -65,7 +65,7 @@ type colonyDetails struct {
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
-	sortButton    *xwidget.SortButton[colonyDetailsRow]
+	sortChip *xwidget.SortChip
 	status        *xwidget.RichText
 	u             baseUI
 }
@@ -191,7 +191,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64, w fyne.Window) *col
 	a.selectType2 = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 
@@ -240,7 +240,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewBorder(
 		nil,
 		nil,
-		container.NewHBox(a.selectType2, a.sortButton),
+		container.NewHBox(a.selectType2, a.sortChip),
 		nil,
 		a.searchEntry,
 	)

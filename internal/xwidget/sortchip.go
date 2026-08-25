@@ -1,7 +1,6 @@
 package xwidget
 
 import (
-	"example/fyne-playground/xslices"
 	"image/color"
 	"slices"
 
@@ -12,6 +11,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type SortChip struct {

@@ -62,7 +62,7 @@ type Contacts struct {
 	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton[contactRow]
+	sortChip *xwidget.SortChip
 	u              baseUI
 }
 
@@ -122,7 +122,7 @@ func NewContacts(u baseUI) *Contacts {
 	a.selectWatched = kxwidget.NewFilterChipSelect("Watched", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 
@@ -160,7 +160,7 @@ func (a *Contacts) CreateRenderer() fyne.WidgetRenderer {
 		a.selectWatched,
 		a.selectLabel,
 		a.selectNPC,
-		a.sortButton,
+		a.sortChip,
 	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

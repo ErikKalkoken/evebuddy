@@ -128,7 +128,7 @@ type Training struct {
 	searchEntry  *xwidget.SearchEntry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton[trainingRow]
+	sortChip *xwidget.SortChip
 	u            baseUI
 }
 
@@ -298,7 +298,7 @@ func NewTraining(u baseUI) *Training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -335,7 +335,7 @@ func NewTraining(u baseUI) *Training {
 func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus, a.selectTag)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

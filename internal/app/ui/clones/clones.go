@@ -68,7 +68,7 @@ type Clones struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton[cloneRow]
+	sortChip *xwidget.SortChip
 	u                 baseUI
 }
 
@@ -204,7 +204,7 @@ func NewClones(u baseUI) *Clones {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -245,7 +245,7 @@ func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTag,
 	)
 	if a.u.IsMobile() {
-		filters.Add(a.sortButton)
+		filters.Add(a.sortChip)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

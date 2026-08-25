@@ -86,7 +86,7 @@ type Structures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton[structureRow]
+	sortChip *xwidget.SortChip
 	u                 baseUI
 }
 
@@ -210,7 +210,7 @@ func NewStructures(u baseUI) *Structures {
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
@@ -245,7 +245,7 @@ func NewStructures(u baseUI) *Structures {
 func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)

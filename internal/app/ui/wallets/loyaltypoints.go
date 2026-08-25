@@ -52,7 +52,7 @@ type LoyaltyPoints struct {
 	selectCharacter  *kxwidget.FilterChipSelect
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	sortButton       *xwidget.SortButton[*loyaltyPointsNode]
+	sortChip         *xwidget.SortChip
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
 	u                baseUI
@@ -100,7 +100,7 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 		a.tree.CloseAllBranches()
 	})
 	a.collapseBranches.SetToolTip("Collapse branches")
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterTreeAsync()
 	})
 
@@ -142,7 +142,7 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 		a.selectFaction,
 		a.selectCharacter,
 		a.selectTag,
-		a.sortButton,
+		a.sortChip,
 	))
 	c := container.NewBorder(
 		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchEntry)),

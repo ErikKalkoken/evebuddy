@@ -64,7 +64,7 @@ type Overview struct {
 	rowsFiltered []overviewRow
 	searchEntry  *xwidget.SearchEntry
 	selectTag    *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton[overviewRow]
+	sortChip *xwidget.SortChip
 	u            baseUI
 	showHelp     *xwidget.IconButton
 }
@@ -270,7 +270,7 @@ func NewOverview(u baseUI) *Overview {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -307,7 +307,7 @@ func NewOverview(u baseUI) *Overview {
 func (a *Overview) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectTag)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {

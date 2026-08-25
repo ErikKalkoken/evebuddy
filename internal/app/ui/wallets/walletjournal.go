@@ -68,7 +68,7 @@ type WalletJournal struct {
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton[walletJournalRow]
+	sortChip *xwidget.SortChip
 	top          *widget.Label
 	u            baseUI
 }
@@ -202,7 +202,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 	return a
@@ -211,7 +211,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),
