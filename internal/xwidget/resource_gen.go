@@ -23,6 +23,13 @@ var iconFilterVariantSvg = &fyne.StaticResource{
 	StaticContent: iconFilterVariantSvgData,
 }
 
+//go:embed resources/restore.svg
+var iconRestoreSvgData []byte
+var iconRestoreSvg = &fyne.StaticResource{
+	StaticName:    "resources/restore.svg",
+	StaticContent: iconRestoreSvgData,
+}
+
 //go:embed resources/sort-ascending.svg
 var iconSortAscendingSvgData []byte
 var iconSortAscendingSvg = &fyne.StaticResource{
