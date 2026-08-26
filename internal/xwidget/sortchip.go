@@ -15,24 +15,30 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+// SortChip represents a widget for sorting.
+//
+// It shows the currently selected column and order for sorting.
+// When clicked it will show the sorting options in a drop down menu.
+// The chip is shown in normal state when default sorting is selected.
+// Otherwise it is shown in active state.
 type SortChip struct {
 	widget.DisableableWidget
 
 	OnChanged func(column string, dir SortDir)
 
-	ascResource  fyne.Resource
-	bg           *canvas.Rectangle
-	col          string
-	colDefault   string
-	columns      []string
-	descResource fyne.Resource
-	dir          SortDir
-	dirDefault   SortDir
-	focused      bool
-	hovered      bool
-	icon         *widget.Icon
-	label        *widget.Label
-	offResource  fyne.Resource
+	ascResource      fyne.Resource
+	bg               *canvas.Rectangle
+	column           string
+	columns          []string
+	defaultColumn    string
+	defaultDirection SortDir
+	descResource     fyne.Resource
+	direction        SortDir
+	focused          bool
+	hovered          bool
+	icon             *widget.Icon
+	label            *widget.Label
+	offResource      fyne.Resource
 }
 
 var _ desktop.Hoverable = (*SortChip)(nil)
@@ -44,13 +50,13 @@ var _ fyne.Widget = (*SortChip)(nil)
 // NewSortChip returns a new [SortChip] object.
 func NewSortChip(changed func(col string, dir SortDir)) *SortChip {
 	w := &SortChip{
+		ascResource:  theme.NewThemedResource(iconSortAscendingSvg),
 		bg:           canvas.NewRectangle(color.Transparent),
+		descResource: theme.NewThemedResource(iconSortDescendingSvg),
 		icon:         widget.NewIcon(iconBlankSvg),
 		label:        widget.NewLabel(""),
-		OnChanged:    changed,
-		ascResource:  theme.NewThemedResource(iconSortAscendingSvg),
-		descResource: theme.NewThemedResource(iconSortDescendingSvg),
 		offResource:  theme.NewThemedResource(iconSortSvg),
+		OnChanged:    changed,
 	}
 	w.ExtendBaseWidget(w)
 	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -58,36 +64,37 @@ func NewSortChip(changed func(col string, dir SortDir)) *SortChip {
 	return w
 }
 
-func (w *SortChip) Set(columns []string, col string, dir SortDir) {
-	if !slices.Contains(columns, col) {
-		col = ""
+// Set defines the columns for sorting and the default column and direction.
+func (w *SortChip) Set(columns []string, defaultColumn string, defaultDirection SortDir) {
+	if !slices.Contains(columns, defaultColumn) {
+		defaultColumn = ""
 	}
 	if len(columns) == 0 {
-		col = ""
-		dir = SortOff
+		defaultColumn = ""
+		defaultDirection = SortOff
 		clear(w.columns)
 	} else {
 		columns2 := xslices.Deduplicate(columns)
 		slices.Sort(columns2)
 		w.columns = columns2
-		if col == "" {
-			col = columns2[0]
+		if defaultColumn == "" {
+			defaultColumn = columns2[0]
 		}
-		if dir != SortAsc && dir != SortDesc {
-			dir = SortAsc
+		if defaultDirection != SortAsc && defaultDirection != SortDesc {
+			defaultDirection = SortAsc
 		}
 	}
-	w.col = col
-	w.colDefault = col
-	w.dir = dir
-	w.dirDefault = dir
+	w.column = defaultColumn
+	w.defaultColumn = defaultColumn
+	w.defaultDirection = defaultDirection
+	w.direction = defaultDirection
 	w.Refresh()
 }
 
 // ResetSilent resets the sorting to default without calling OnChanged.
 func (w *SortChip) ResetSilent() {
-	w.col = w.colDefault
-	w.dir = w.dirDefault
+	w.column = w.defaultColumn
+	w.direction = w.defaultDirection
 	w.Refresh()
 }
 
@@ -103,13 +110,13 @@ func (w *SortChip) updateState() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
-	if w.col == "" || w.dir == SortOff {
+	if w.column == "" || w.direction == SortOff {
 		w.label.Text = "(no sort)"
 	} else {
-		w.label.Text = w.col
+		w.label.Text = w.column
 	}
 	var iconResource fyne.Resource
-	switch w.dir {
+	switch w.direction {
 	case SortAsc:
 		iconResource = w.ascResource
 	case SortDesc:
@@ -129,7 +136,9 @@ func (w *SortChip) updateState() {
 		w.icon.Resource = iconResource
 		w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	}
-	if w.dir != SortOff {
+
+	isDefault := w.direction == w.defaultDirection && w.column == w.defaultColumn
+	if !isDefault {
 		if w.Disabled() {
 			w.bg.FillColor = th.Color(theme.ColorNameDisabledButton, v)
 			w.bg.StrokeColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -154,19 +163,19 @@ func (w *SortChip) Tapped(pe *fyne.PointEvent) {
 }
 
 func (w *SortChip) showMenu() {
-	oldColum := w.col
-	oldDirection := w.dir
+	oldColum := w.column
+	oldDirection := w.direction
 
 	onChanged := func(column string, dir SortDir) {
-		w.col = column
-		w.dir = dir
-		if oldColum == w.col && oldDirection == w.dir {
+		w.column = column
+		w.direction = dir
+		if oldColum == w.column && oldDirection == w.direction {
 			return
 		}
 		w.updateState()
 		w.Refresh()
 		if w.OnChanged != nil {
-			w.OnChanged(w.col, w.dir)
+			w.OnChanged(w.column, w.direction)
 		}
 	}
 
@@ -178,9 +187,9 @@ func (w *SortChip) showMenu() {
 
 	for _, c := range w.columns {
 		it := fyne.NewMenuItem(c, func() {
-			onChanged(c, w.dir)
+			onChanged(c, w.direction)
 		})
-		if c == w.col {
+		if c == w.column {
 			it.Icon = theme.ConfirmIcon()
 		} else {
 			it.Icon = iconBlankSvg
@@ -194,9 +203,9 @@ func (w *SortChip) showMenu() {
 
 	for _, d := range []SortDir{SortAsc, SortDesc} {
 		it := fyne.NewMenuItem(d.String(), func() {
-			onChanged(w.col, d)
+			onChanged(w.column, d)
 		})
-		if d == w.dir {
+		if d == w.direction {
 			it.Icon = theme.ConfirmIcon()
 		} else {
 			it.Icon = iconBlankSvg
@@ -206,9 +215,10 @@ func (w *SortChip) showMenu() {
 
 	items = append(items, fyne.NewMenuItemSeparator())
 	reset := fyne.NewMenuItem("Reset", func() {
-		onChanged(w.colDefault, w.dirDefault)
+		onChanged(w.defaultColumn, w.defaultDirection)
 	})
 	reset.Icon = theme.DeleteIcon()
+	reset.Disabled = w.column == w.defaultColumn && w.direction == w.defaultDirection
 	items = append(items, reset)
 
 	menu := fyne.NewMenu("", items...)
