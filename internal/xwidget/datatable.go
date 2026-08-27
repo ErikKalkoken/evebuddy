@@ -299,14 +299,20 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *S
 	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
 		return ignored.Contains(field2Col[c])
 	})
-	w := NewSortChip(func(col string, dir SortDir) {
+	w := NewSortChip(func(col string, descending bool) {
+		var dir SortDir
+		if descending {
+			dir = SortDesc
+		} else {
+			dir = SortAsc
+		}
 		cs.setIdx(field2Col[col], dir)
 		if changed != nil {
 			changed()
 		}
 	})
 	col, dir := cs.current() // TODO: Hack, replace with defaults
-	w.Set(sortColumns, cs.columns.cols[col].Label, dir)
+	w.Set(sortColumns, cs.columns.cols[col].Label, dir == SortDesc)
 	return w
 }
 
