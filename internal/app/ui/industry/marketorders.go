@@ -133,7 +133,7 @@ type MarketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *xwidget.SortButton[marketOrderRow]
+	sortChip *kxwidget.SortChip
 	u            baseUI
 }
 
@@ -273,7 +273,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -307,7 +307,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 func (a *MarketOrders) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	p := theme.Padding()
 	c := container.NewBorder(

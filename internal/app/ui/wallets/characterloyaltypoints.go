@@ -43,7 +43,7 @@ type CharacterLoyaltyPoints struct {
 	rowsFiltered  []characterLoyaltyPointsRow
 	searchEntry   *xwidget.SearchEntry
 	selectFaction *kxwidget.FilterChipSelect
-	sortButton    *xwidget.SortButton[characterLoyaltyPointsRow]
+	sortChip *kxwidget.SortChip
 	u             baseUI
 }
 
@@ -89,7 +89,7 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
 		a.filterRowsAsync()
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 
@@ -119,14 +119,14 @@ func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
-			container.NewHBox(a.selectFaction, a.sortButton),
+			container.NewHBox(a.selectFaction, a.sortChip),
 			a.searchEntry,
 		)
 	} else {
 		topBox = container.NewBorder(
 			nil,
 			nil,
-			container.NewHBox(a.selectFaction, a.sortButton),
+			container.NewHBox(a.selectFaction, a.sortChip),
 			nil,
 			a.searchEntry,
 		)

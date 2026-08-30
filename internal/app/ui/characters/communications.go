@@ -462,7 +462,7 @@ type communicationsMessagePane struct {
 	moreButton    *kxwidget.IconButton
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
-	sortButton    *xwidget.SortButton[notificationRow]
+	sortButton    *kxwidget.SortChip
 	topLabel      *widget.Label
 }
 
@@ -501,7 +501,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	a.searchEntry = xwidget.NewSearchEntry("Search communications", func(_ string) {
 		a.filterRowsAsync()
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortButton = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 	a.filterChip = xwidget.NewFilterChipCompact(nil, func(state map[string]string) {

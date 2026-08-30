@@ -77,7 +77,7 @@ type WalletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *xwidget.SortButton[walletTransactionRow]
+	sortChip *kxwidget.SortChip
 	u              baseUI
 }
 
@@ -272,7 +272,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		},
 		a.u.MainWindow(),
 	)
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 	return a
@@ -281,7 +281,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),

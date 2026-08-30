@@ -82,7 +82,7 @@ type Search struct {
 	selectGroup     *kxwidget.FilterChipSelect
 	selectSkill     *kxwidget.FilterChipSelect
 	selectType      *kxwidget.FilterChipSelect
-	sortButton      *xwidget.SortButton[searchRow]
+	sortChip *kxwidget.SortChip
 	top             *widget.Label
 	u               baseUI
 }
@@ -211,7 +211,7 @@ func NewSearch(u baseUI) *Search {
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	}, a.u.MainWindow())
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -243,7 +243,7 @@ func (a *Search) CreateRenderer() fyne.WidgetRenderer {
 	)
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		filters.Add(a.sortButton)
+		filters.Add(a.sortChip)
 		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(filters))
 	} else {

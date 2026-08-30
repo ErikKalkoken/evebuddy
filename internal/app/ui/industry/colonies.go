@@ -120,7 +120,7 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *xwidget.SortButton[colonyRow]
+	sortChip *kxwidget.SortChip
 	u                 baseUI
 }
 
@@ -260,7 +260,7 @@ func NewColonies(u baseUI) *Colonies {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	})
 
@@ -309,7 +309,7 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.selectTag,
 	)
 	if a.u.IsMobile() {
-		filter.Add(a.sortButton)
+		filter.Add(a.sortChip)
 	}
 	var top *fyne.Container
 	if a.u.IsMobile() {
