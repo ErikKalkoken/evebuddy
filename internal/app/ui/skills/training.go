@@ -128,7 +128,7 @@ type Training struct {
 	searchEntry  *xwidget.SearchEntry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u            baseUI
 }
 

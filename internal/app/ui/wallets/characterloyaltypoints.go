@@ -43,7 +43,7 @@ type CharacterLoyaltyPoints struct {
 	rowsFiltered  []characterLoyaltyPointsRow
 	searchEntry   *xwidget.SearchEntry
 	selectFaction *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u             baseUI
 }
 

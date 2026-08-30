@@ -77,7 +77,7 @@ type WalletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u              baseUI
 }
 

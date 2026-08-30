@@ -87,7 +87,7 @@ type Slots struct {
 	selectCorporation *kxwidget.FilterChipSelect
 	selectFreeSlots   *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u                 baseUI
 }
 

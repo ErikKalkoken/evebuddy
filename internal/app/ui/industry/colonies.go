@@ -120,7 +120,7 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u                 baseUI
 }
 

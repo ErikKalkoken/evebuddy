@@ -62,7 +62,7 @@ type Contacts struct {
 	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u              baseUI
 }
 

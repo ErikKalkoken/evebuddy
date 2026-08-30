@@ -52,7 +52,7 @@ type LoyaltyPoints struct {
 	selectCharacter  *kxwidget.FilterChipSelect
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
-	sortChip         *xwidget.SortChip
+	sortChip         *kxwidget.SortChip
 	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
 	u                baseUI

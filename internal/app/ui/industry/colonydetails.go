@@ -65,7 +65,7 @@ type colonyDetails struct {
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
 	signalKey     string
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	status        *xwidget.RichText
 	u             baseUI
 }

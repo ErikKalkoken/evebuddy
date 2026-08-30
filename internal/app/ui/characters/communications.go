@@ -462,7 +462,7 @@ type communicationsMessagePane struct {
 	moreButton    *kxwidget.IconButton
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
-	sortButton    *xwidget.SortChip
+	sortButton    *kxwidget.SortChip
 	topLabel      *widget.Label
 }
 

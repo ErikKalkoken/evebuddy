@@ -218,7 +218,7 @@ type Search struct {
 	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
-	sortChip       *xwidget.SortChip
+	sortChip       *kxwidget.SortChip
 	top            *widget.Label
 	u              baseUI
 }

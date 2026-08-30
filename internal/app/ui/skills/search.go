@@ -82,7 +82,7 @@ type Search struct {
 	selectGroup     *kxwidget.FilterChipSelect
 	selectSkill     *kxwidget.FilterChipSelect
 	selectType      *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	top             *widget.Label
 	u               baseUI
 }

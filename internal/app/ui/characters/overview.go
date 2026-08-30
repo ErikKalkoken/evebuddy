@@ -86,7 +86,7 @@ type Overview struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortChip          *xwidget.SortChip
+	sortChip          *kxwidget.SortChip
 	u                 baseUI
 }
 

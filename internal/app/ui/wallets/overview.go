@@ -64,7 +64,7 @@ type Overview struct {
 	rowsFiltered []overviewRow
 	searchEntry  *xwidget.SearchEntry
 	selectTag    *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	u            baseUI
 	showHelp     *xwidget.IconButton
 }

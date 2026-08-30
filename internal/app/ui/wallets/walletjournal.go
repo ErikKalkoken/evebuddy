@@ -68,7 +68,7 @@ type WalletJournal struct {
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	top          *widget.Label
 	u            baseUI
 }

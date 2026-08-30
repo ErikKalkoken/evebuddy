@@ -59,7 +59,7 @@ type FlyableShips struct {
 	searchEntry   *xwidget.SearchEntry
 	selectFlyable *kxwidget.FilterChipSelect
 	selectGroup   *kxwidget.FilterChipSelect
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	top           *widget.Label
 	u             baseUI
 }

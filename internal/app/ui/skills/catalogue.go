@@ -66,7 +66,7 @@ type Catalogue struct {
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
 	skills         fyne.CanvasObject
-	sortChip *xwidget.SortChip
+	sortChip *kxwidget.SortChip
 	top            *widget.Label
 	u              baseUI
 }
