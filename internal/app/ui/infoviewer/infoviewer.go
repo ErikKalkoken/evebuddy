@@ -525,6 +525,7 @@ type baseInfo struct {
 func (b *baseInfo) initBase(iw *InfoViewer) {
 	b.iw = iw
 	b.name = newLabelWithWrapAndSelectable("Loading...")
+	b.name.TextStyle.Bold = true
 }
 
 func (b *baseInfo) setError(s string) {
@@ -532,6 +533,7 @@ func (b *baseInfo) setError(s string) {
 	b.name.Importance = widget.DangerImportance
 	b.name.Refresh()
 }
+
 func boolIconResource(ok bool) fyne.Resource {
 	if ok {
 		return theme.NewSuccessThemedResource(theme.ConfirmIcon())

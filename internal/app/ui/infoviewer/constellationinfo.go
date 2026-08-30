@@ -53,7 +53,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			a.name,
-			widget.NewLabel("Region"),
+			widget.NewLabel("Constellation"),
 		),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			container.New(columns, widget.NewLabel("Region"), a.region),
