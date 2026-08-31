@@ -113,15 +113,14 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	if err != nil {
 		return title, body, err
 	}
-	var external1Link, external1Name string
+	external1Link := "?"
+	external1Name := "?"
 	if x, ok := entities[data.ExternalID]; ok && x.Name != "" {
 		external1Link = makeInfoLink(x)
 		external1Name = x.Name
-	} else {
-		external1Link = "?"
-		external1Name = "?"
 	}
-	var external2Link, external2Name string
+	external2Link := "?"
+	external2Name := "?"
 	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
 		external2Link = makeInfoLink(x)
 		external2Name = x.Name
@@ -130,18 +129,11 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 		o, err := n.eus.GetOrCreateLocationESI(ctx, id)
 		if err != nil {
 			slog.Warn("Failed to fetch location when rendering notification", "notificationType", "CorpAllBillMsg", "locationID", id, "error", err)
-		}
-		if et, ok := o.Type.Value(); ok {
+		} else if et, ok := o.Type.Value(); ok {
 			link := fmt.Sprintf("showinfo:%d//%d", et.ID, id)
 			external2Link = makeMarkDownLink(o.Name, link)
 			external2Name = o.Name
-		} else {
-			external2Link = "?"
-			external2Name = "?"
 		}
-	} else {
-		external2Link = "?"
-		external2Name = "?"
 	}
 	var purposeShort, purposeLong string
 	switch data.BillTypeID {
