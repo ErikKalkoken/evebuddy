@@ -31,7 +31,7 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 		{app.ContractStatusInProgress, "In Progress", theme.ColorNameForeground},
 		{app.ContractStatusFinished, "Finished", theme.ColorNameSuccess},
 		{app.ContractStatusFailed, "Failed", theme.ColorNameError},
-		{app.ContractStatusReversed, "Reversed", theme.ColorNameForeground},
+		{app.ContractStatusReversed, "Reversed", theme.ColorNameSuccess},
 	}
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
@@ -42,6 +42,34 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 				},
 			)
 			xassert.Equal(t, want, got)
+		})
+	}
+}
+
+func TestContractStatusPredicates(t *testing.T) {
+	cases := []struct {
+		status       app.ContractStatus
+		wantActive   bool
+		wantHistory  bool
+		wantFinished bool
+	}{
+		{app.ContractStatusUndefined, false, false, false},
+		{app.ContractStatusOutstanding, true, false, false},
+		{app.ContractStatusInProgress, true, false, false},
+		{app.ContractStatusDeleted, false, true, false},
+		{app.ContractStatusCancelled, false, true, false},
+		{app.ContractStatusFinished, false, true, true},
+		{app.ContractStatusFinishedContractor, false, true, true},
+		{app.ContractStatusFinishedIssuer, false, true, true},
+		{app.ContractStatusReversed, false, true, true},
+		{app.ContractStatusFailed, false, false, false},
+		{app.ContractStatusRejected, false, false, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.status.String(), func(t *testing.T) {
+			xassert.Equal(t, tc.wantActive, tc.status.IsActive())
+			xassert.Equal(t, tc.wantHistory, tc.status.IsHistory())
+			xassert.Equal(t, tc.wantFinished, tc.status.IsFinished())
 		})
 	}
 }

@@ -107,7 +107,8 @@ func (cs ContractStatus) IsFinished() bool {
 	case
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer:
+		ContractStatusFinishedIssuer,
+		ContractStatusReversed:
 		return true
 	}
 	return false
@@ -147,7 +148,8 @@ func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 		ContractStatusCancelled,
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer:
+		ContractStatusFinishedIssuer,
+		ContractStatusReversed:
 		return contractConsolidatedHistory
 	case
 		ContractStatusFailed,
