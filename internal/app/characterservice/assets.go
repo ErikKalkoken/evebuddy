@@ -244,23 +244,25 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 					names[a.ItemID] = a.Name
 				}
 			}
-			names2, _ := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
+			names2, ok := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
 			slog.Debug("Received character asset names from ESI", "count", len(names2), "characterID", characterID)
 
-			var changed set.Set[int64]
-			for id, name := range names {
-				if names2[id] != name {
-					changed.Add(id)
+			if ok {
+				var changed set.Set[int64]
+				for id, name := range names {
+					if names2[id] != name {
+						changed.Add(id)
+					}
 				}
-			}
-			for id := range changed.All() {
-				err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
-					CharacterID: characterID,
-					ItemID:      id,
-					Name:        names2[id],
-				})
-				if err != nil {
-					return false, err
+				for id := range changed.All() {
+					err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
+						CharacterID: characterID,
+						ItemID:      id,
+						Name:        names2[id],
+					})
+					if err != nil {
+						return false, err
+					}
 				}
 			}
 
