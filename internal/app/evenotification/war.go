@@ -189,7 +189,7 @@ func (n warAdopted) render(ctx context.Context, text string, _ time.Time) (strin
 		against,
 		alliance,
 		declaredBy,
-		alliance,
+		against,
 	)
 	body = out
 	return title, body, nil

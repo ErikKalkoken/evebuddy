@@ -48,8 +48,8 @@ func (n charAppAcceptMsg) render(ctx context.Context, text string, _ time.Time) 
 	)
 	out := fmt.Sprintf(
 		"%s is now a member of %s.",
-		makeInfoLink(entities[data.CorpID]),
 		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 	)
 	body = out
 	return title, body, nil
@@ -261,8 +261,8 @@ func (n charAppWithdrawMsg) render(ctx context.Context, text string, _ time.Time
 	title = fmt.Sprintf("%s withdrew application", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has withdrawn application to join %s:\n\n>%s",
-		makeInfoLink(entities[data.CorpID]),
 		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
 	body = out
@@ -306,8 +306,8 @@ func (n charLeftCorpMsg) render(ctx context.Context, text string, _ time.Time) (
 	)
 	out := fmt.Sprintf(
 		"%s is no longer a member of %s.",
-		makeInfoLink(entities[data.CorpID]),
 		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 	)
 	body = out
 	return title, body, nil
