@@ -51,25 +51,6 @@ func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 	return o, nil
 }
 
-// func extractErrorMessage(err esi.GenericOpenAPIError) string {
-// 	var detail string
-// 	switch t2 := err.Model().(type) {
-// 	case esi.model:
-// 		detail = t2.Error_
-// 	case esi.ErrorLimited:
-// 		detail = t2.Error_
-// 	case esi.GatewayTimeout:
-// 		detail = t2.Error_
-// 	case esi.InternalServerError:
-// 		detail = t2.Error_
-// 	case esi.ServiceUnavailable:
-// 		detail = t2.Error_
-// 	default:
-// 		detail = "general swagger error"
-// 	}
-// 	return fmt.Sprintf("%s: %s", err.Error(), detail)
-// }
-
 // DailyDowntime returns the daily downtime as string.
 func (s *ESIStatusService) DailyDowntime() string {
 	const timeOnly = "15:04"
