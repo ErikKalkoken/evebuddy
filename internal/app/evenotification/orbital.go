@@ -109,9 +109,10 @@ func (n orbitalReinforced) render(ctx context.Context, text string, _ time.Time)
 		o.structureType.Name,
 		o.planet.Name,
 	)
-	t := fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
+	t := fmt.Sprintf("%s has been reinforced and will come out at %s.\n\n"+
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
+		o.intro,
 		fromLDAPTime(data.ReinforceExitTime).Format(app.DateTimeFormat),
 		makeInfoLink(entities[data.AggressorID]),
 		makeInfoLink(entities[data.AggressorCorpID]),
