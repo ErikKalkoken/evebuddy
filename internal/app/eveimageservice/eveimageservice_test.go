@@ -7,12 +7,14 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
 func TestImageFetchingAsync(t *testing.T) {
@@ -277,7 +279,7 @@ func TestImageFetching(t *testing.T) {
 		r, err := m.AllianceLogo(99, 64)
 		// then
 		if assert.NoError(t, err) {
-			assert.Contains(t, r.Name(), "question")
+			assert.Contains(t, r.Name(), "broken")
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
@@ -296,4 +298,176 @@ func TestOffline(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotEmpty(t, x.Content())
 	}
+}
+
+func TestEveEntityLogo(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	t.Run("simple icon categories bypass the network", func(t *testing.T) {
+		cases := []struct {
+			category app.EveEntityCategory
+			want     fyne.Resource
+		}{
+			{app.EveEntityConstellation, icons.Constellation64Png},
+			{app.EveEntityMailList, theme.MailComposeIcon()},
+			{app.EveEntityRegion, icons.Region64Png},
+			{app.EveEntitySolarSystem, theme.NewThemedResource(icons.SolarSystemSvg)},
+			{app.EveEntityStation, theme.NewThemedResource(icons.SpaceStationSvg)},
+			{app.EveEntityUnknown, theme.QuestionIcon()},
+		}
+		for _, tc := range cases {
+			t.Run(tc.category.String(), func(t *testing.T) {
+				// given
+				c := testutil.NewCacheFake()
+				httpmock.Reset()
+				m := eveimageservice.New(c, http.DefaultClient, false)
+				o := &app.EveEntity{ID: 99, Category: tc.category}
+				// when
+				got, err := m.EveEntityLogo(o, 64)
+				// then
+				if assert.NoError(t, err) {
+					assert.Equal(t, tc.want, got)
+					assert.Equal(t, 0, httpmock.GetTotalCallCount())
+				}
+			})
+		}
+	})
+	t.Run("network-backed categories fetch the image", func(t *testing.T) {
+		cases := []struct {
+			name     string
+			category app.EveEntityCategory
+			url      string
+			file     string
+		}{
+			{"alliance", app.EveEntityAlliance, "https://images.evetech.net/alliances/99/logo?size=64", "testdata/alliance.png"},
+			{"character", app.EveEntityCharacter, "https://images.evetech.net/characters/99/portrait?size=64", "testdata/character.jpeg"},
+			{"corporation", app.EveEntityCorporation, "https://images.evetech.net/corporations/99/logo?size=64", "testdata/corporation.png"},
+			{"faction", app.EveEntityFaction, "https://images.evetech.net/corporations/99/logo?size=64", "testdata/faction.png"},
+			{"inventory type", app.EveEntityInventoryType, "https://images.evetech.net/types/99/icon?size=64", "testdata/type.jpeg"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				c := testutil.NewCacheFake()
+				dat, err := os.ReadFile(tc.file)
+				if err != nil {
+					t.Fatal(err)
+				}
+				httpmock.Reset()
+				httpmock.RegisterResponder("GET", tc.url, httpmock.NewBytesResponder(200, dat))
+				m := eveimageservice.New(c, http.DefaultClient, false)
+				o := &app.EveEntity{ID: 99, Category: tc.category}
+				// when
+				got, err := m.EveEntityLogo(o, 64)
+				// then
+				if assert.NoError(t, err) {
+					assert.Equal(t, dat, got.Content())
+				}
+			})
+		}
+	})
+	t.Run("should return broken image icon for unsupported category", func(t *testing.T) {
+		// given
+		c := testutil.NewCacheFake()
+		httpmock.Reset()
+		m := eveimageservice.New(c, http.DefaultClient, false)
+		o := &app.EveEntity{ID: 99, Category: app.EveEntityUndefined}
+		// when
+		got, err := m.EveEntityLogo(o, 64)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, theme.BrokenImageIcon(), got)
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+}
+
+func TestEveEntityLogoAsync(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	t.Run("simple icon categories bypass the network", func(t *testing.T) {
+		cases := []struct {
+			category app.EveEntityCategory
+			want     fyne.Resource
+		}{
+			{app.EveEntityConstellation, icons.Constellation64Png},
+			{app.EveEntityMailList, theme.MailComposeIcon()},
+			{app.EveEntityRegion, icons.Region64Png},
+			{app.EveEntitySolarSystem, theme.NewThemedResource(icons.SolarSystemSvg)},
+			{app.EveEntityStation, theme.NewThemedResource(icons.SpaceStationSvg)},
+			{app.EveEntityUnknown, theme.QuestionIcon()},
+		}
+		for _, tc := range cases {
+			t.Run(tc.category.String(), func(t *testing.T) {
+				// given
+				test.NewTempApp(t)
+				c := testutil.NewCacheFake()
+				httpmock.Reset()
+				m := eveimageservice.New(c, http.DefaultClient, false)
+				o := &app.EveEntity{ID: 99, Category: tc.category}
+				var got fyne.Resource
+				// when
+				m.EveEntityLogoAsync(o, 64, func(r fyne.Resource) {
+					got = r
+				})
+				// then
+				assert.Equal(t, tc.want, got)
+				assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			})
+		}
+	})
+	t.Run("network-backed categories fetch the image", func(t *testing.T) {
+		cases := []struct {
+			name     string
+			category app.EveEntityCategory
+			url      string
+			file     string
+		}{
+			{"alliance", app.EveEntityAlliance, "https://images.evetech.net/alliances/99/logo?size=64", "testdata/alliance.png"},
+			{"character", app.EveEntityCharacter, "https://images.evetech.net/characters/99/portrait?size=64", "testdata/character.jpeg"},
+			{"corporation", app.EveEntityCorporation, "https://images.evetech.net/corporations/99/logo?size=64", "testdata/corporation.png"},
+			{"faction", app.EveEntityFaction, "https://images.evetech.net/corporations/99/logo?size=64", "testdata/faction.png"},
+			{"inventory type", app.EveEntityInventoryType, "https://images.evetech.net/types/99/icon?size=64", "testdata/type.jpeg"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				test.NewTempApp(t)
+				c := testutil.NewCacheFake()
+				dat, err := os.ReadFile(tc.file)
+				if err != nil {
+					t.Fatal(err)
+				}
+				httpmock.Reset()
+				httpmock.RegisterResponder("GET", tc.url, httpmock.NewBytesResponder(200, dat))
+				m := eveimageservice.New(c, http.DefaultClient, false)
+				o := &app.EveEntity{ID: 99, Category: tc.category}
+				result := make(chan fyne.Resource, 2)
+				// when
+				m.EveEntityLogoAsync(o, 64, func(r fyne.Resource) {
+					result <- r
+				})
+				// then
+				<-result
+				final := <-result
+				assert.Equal(t, dat, final.Content())
+			})
+		}
+	})
+	t.Run("should return broken image icon for unsupported category", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		httpmock.Reset()
+		m := eveimageservice.New(c, http.DefaultClient, false)
+		o := &app.EveEntity{ID: 99, Category: app.EveEntityUndefined}
+		var got fyne.Resource
+		// when
+		m.EveEntityLogoAsync(o, 64, func(r fyne.Resource) {
+			got = r
+		})
+		// then
+		assert.Equal(t, theme.BrokenImageIcon(), got)
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
 }
