@@ -885,6 +885,7 @@ func TestCharacterSectionSummary(t *testing.T) {
 		Current:   1,
 		Errors:    1,
 		IsRunning: true,
+		Missing:   len(app.CharacterSections) - 2,
 		Total:     len(app.CharacterSections),
 	}
 	xassert.Equal(t, want, got)
@@ -944,6 +945,7 @@ func TestGeneralSectionSummary(t *testing.T) {
 		Current:   1,
 		Errors:    1,
 		IsRunning: true,
+		Missing:   len(app.EveUniverseSections) - 2,
 		Total:     5,
 	}
 	xassert.Equal(t, want, got)

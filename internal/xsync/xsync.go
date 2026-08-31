@@ -20,7 +20,7 @@ func (m *Map[K, V]) Delete(key K) {
 	m.m.Delete(key)
 }
 
-// Load returns the value stored in the map for a key, or nil if no value is present.
+// Load returns the value stored in the map for a key, or the zero value of V if no value is present.
 // The ok result indicates whether the value was found in the map.
 func (m *Map[K, V]) Load(key K) (V, bool) {
 	v, ok := m.m.Load(key)

@@ -68,6 +68,10 @@ type StatusCache struct {
 // Clear removes all items.
 func (sc *StatusCache) Clear() {
 	sc.sections.Clear()
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.characters = nil
+	sc.corporations = nil
 }
 
 // Init initializes the internal state from local storage.
@@ -210,6 +214,8 @@ func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSumm
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
 		Total:     total,
 	}
 	return s
@@ -217,10 +223,13 @@ func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSumm
 
 func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSummary {
 	var ss statusSummary
-	csl := sc.ListCharacterSections(characterID)
-	for _, o := range csl {
+	for _, o := range sc.ListCharacterSections(characterID) {
 		if o.HasError() {
 			ss.errors++
+		} else if o.IsMissing() {
+			ss.missing++
+		} else if o.HasComment() {
+			ss.skipped++
 		} else if o.IsCurrent() {
 			ss.current++
 		}
@@ -253,11 +262,9 @@ func (sc *StatusCache) CharacterName(characterID int64) string {
 	if sc == nil || characterID == 0 {
 		return ""
 	}
-	cc := sc.ListCharacters()
-	if len(cc) == 0 {
-		return ""
-	}
-	for _, c := range cc {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	for _, c := range sc.characters {
 		if c.ID == characterID {
 			return c.Name
 		}
@@ -381,8 +388,7 @@ func (sc *StatusCache) CorporationSectionSummary(corporationID int64) app.Status
 
 func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) statusSummary {
 	var ss statusSummary
-	csl := sc.ListCorporationSections(corporationID)
-	for _, o := range csl {
+	for _, o := range sc.ListCorporationSections(corporationID) {
 		if o.HasError() {
 			ss.errors++
 		} else if o.IsMissing() {
@@ -421,11 +427,9 @@ func (sc *StatusCache) CorporationName(corporationID int64) string {
 	if sc == nil || corporationID == 0 {
 		return ""
 	}
-	cc := sc.ListCorporations()
-	if len(cc) == 0 {
-		return ""
-	}
-	for _, c := range cc {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	for _, c := range sc.corporations {
 		if c.ID == corporationID {
 			return c.Name
 		}
@@ -542,6 +546,8 @@ func (sc *StatusCache) EveUniverseSectionSummary() app.StatusSummary {
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
 		Total:     len(app.EveUniverseSections),
 	}
 	return s
@@ -553,6 +559,10 @@ func (sc *StatusCache) calcEveUniverseSectionSummary() statusSummary {
 	for _, o := range gsl {
 		if o.HasError() {
 			ss.errors++
+		} else if o.IsMissing() {
+			ss.missing++
+		} else if o.HasComment() {
+			ss.skipped++
 		} else if o.IsCurrent() {
 			ss.current++
 		}
