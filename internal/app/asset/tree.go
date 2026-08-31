@@ -10,6 +10,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
+// TODO: Consider changing Tree into pointer receivers for API consistency with Node
+
 // Item represents a asset item.
 type Item interface {
 	ID() int64
@@ -237,7 +239,7 @@ var locationFlag2CategoryCorp = map[app.LocationFlag]NodeCategory{
 
 func insertCustomNodes(locations map[int64]*Node, isCorporation bool) {
 	for _, location := range locations {
-		for _, n := range location.all() {
+		for _, n := range slices.Collect(location.All()) { // needed because locations are muted in the loop
 			asset, ok := n.Asset()
 			if !ok {
 				continue
@@ -296,11 +298,10 @@ func addToCustomNode(n *Node, category NodeCategory) bool {
 		parent.addChild(p2)
 		isCreated = true
 	}
-	p2.children = append(p2.children, n)
+	p2.addChild(n)
 	parent.children = slices.DeleteFunc(parent.children, func(x *Node) bool {
 		return x == n
 	})
-	n.parent = p2
 	return isCreated
 }
 
@@ -343,7 +344,7 @@ func addMissingHangars(locations map[int64]*Node) {
 		if current.Contains(NodeItemHangar) && !current.Contains(NodeShipHangar) {
 			missing.Add(NodeShipHangar)
 		} else if current.Contains(NodeShipHangar) && !current.Contains(NodeItemHangar) {
-			missing.Add(NodeShipHangar)
+			missing.Add(NodeItemHangar)
 		}
 		for c := range missing.All() {
 			n2 := newCustomNode(c)
