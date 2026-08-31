@@ -110,7 +110,7 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 			if !status.HasError() && !status.IsExpired() {
 				return zero, nil
 			}
-			if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
+			if status.HasError() && status.WasUpdatedWithinErrorTimedOut() {
 				return zero, nil
 			}
 		}

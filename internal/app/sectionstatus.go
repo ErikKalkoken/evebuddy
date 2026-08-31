@@ -25,8 +25,7 @@ func (s SectionStatus) HasError() bool {
 
 // WasUpdatedWithinErrorTimedOut reports whether the last update was within the error timeout.
 func (s SectionStatus) WasUpdatedWithinErrorTimedOut() bool {
-	x := time.Since(s.UpdatedAt)
-	return x > sectionErrorTimeout
+	return time.Since(s.UpdatedAt) <= sectionErrorTimeout
 }
 
 // IsMissing reports whether this section has ever been successfully updated.
