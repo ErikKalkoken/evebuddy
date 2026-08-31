@@ -66,8 +66,12 @@ func (s *EVEUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 			if !ok {
 				continue
 			}
+			prereqType, ok := types[int64(typeID)]
+			if !ok {
+				continue
+			}
 			skill.Requirements[rank] = &app.EveRequiredSkill{
-				Type:  types[int64(typeID)],
+				Type:  prereqType,
 				Level: int(level),
 			}
 		}
