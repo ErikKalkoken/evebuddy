@@ -82,31 +82,36 @@ func ErrorDisplay(err error) string {
 	if errors.Is(err, ErrTokenError) {
 		return "token error"
 	}
-	switch x := err.(type) {
-	case sqlite3.Error:
+	if _, ok := errors.AsType[sqlite3.Error](err); ok {
 		return "database error"
-	case *esi.GenericOpenAPIError:
-		msg := x.Error()
-		if x, ok := x.Model().(esi.Error); ok {
+	}
+	if esiErr, ok := errors.AsType[*esi.GenericOpenAPIError](err); ok {
+		msg := esiErr.Error()
+		if x, ok := esiErr.Model().(esi.Error); ok {
 			msg += ": " + x.Error
 		}
 		return msg
-	case *net.OpError:
-		switch x.Op {
+	}
+	if opErr, ok := errors.AsType[*net.OpError](err); ok {
+		switch opErr.Op {
 		case "dial":
 			return "unknown host"
 		case "read":
 			return "connection refused"
 		}
 		return "network error"
-	case syscall.Errno:
-		if x == syscall.ECONNREFUSED {
+	}
+	if errno, ok := errors.AsType[syscall.Errno](err); ok {
+		if errno == syscall.ECONNREFUSED {
 			return "connection refused"
 		}
-	case *url.Error:
+		return "general error"
+	}
+	if _, ok := errors.AsType[*url.Error](err); ok {
 		return "network error"
-	case net.Error:
-		if x.Timeout() {
+	}
+	if netErr, ok := errors.AsType[net.Error](err); ok {
+		if netErr.Timeout() {
 			return "timeout"
 		}
 		return "network error"
