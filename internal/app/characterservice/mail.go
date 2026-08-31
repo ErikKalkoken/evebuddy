@@ -454,7 +454,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg charact
 			// if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 			// 	return err
 			// }
-			return false, nil
+			return true, nil
 		})
 }
 
