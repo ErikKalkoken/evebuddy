@@ -419,7 +419,7 @@ func main() {
 		IsMobile:         *mobileFlag || fyne.CurrentDevice().IsMobile(),
 		IsOfflineMode:    *offlineFlag,
 		IsUpdateDisabled: *disableUpdatesFlag,
-		Janice:           janiceservice.New(rhc1.StandardClient(), key),
+		Janice:           janiceservice.New(rhc2.StandardClient(), key),
 		Settings:         settings,
 		Signals:          signals,
 		StatusCache:      scs,
