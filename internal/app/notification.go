@@ -905,16 +905,7 @@ func (cn *CharacterNotification) TitleDisplay() string {
 
 // TitleFake returns a title for output made from the name of the type.
 func (cn *CharacterNotification) TitleFake() string {
-	var b strings.Builder
-	var last rune
-	for _, r := range cn.Type.String() {
-		if unicode.IsUpper(r) && unicode.IsLower(last) {
-			b.WriteRune(' ')
-		}
-		b.WriteRune(r)
-		last = r
-	}
-	return b.String()
+	return cn.Type.Display()
 }
 
 // BodyPlain returns the body of a notification as plain text.
