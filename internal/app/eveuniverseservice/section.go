@@ -128,7 +128,7 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 	case app.SectionEveEntities:
 		f = s.UpdateAllEntitiesESI
 	default:
-		slog.Warn("encountered unknown section", "section", arg.section)
+		return zero, fmt.Errorf("eveuniverseservice: unknown section: %s", arg.section)
 	}
 	changed, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("update-general-section-%s", arg.section), func() (set.Set[int64], error) {
 		slog.Debug("Started updating eveuniverse section", "section", arg.section)
