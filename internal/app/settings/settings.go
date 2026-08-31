@@ -484,18 +484,6 @@ func (s *Settings) SetNotifyTrainingEarliest(t time.Time) {
 	s.setEarliest(settingNotifyTrainingEarliest, t)
 }
 
-// func (s AppSettings) getEarliest(key string) time.Time {
-// 	x := s.p.String(key)
-// 	t, ok := string2time(x)
-// 	if !ok {
-// 		// Recording the earliest when enabling a switch was added later for mails and communications
-// 		// This workaround avoids a potential notification spam from older items.
-// 		t = time.Now().UTC().Add(-notifyEarliestFallback)
-// 		s.setEarliest(key, t)
-// 	}
-// 	return t
-// }
-
 func (s *Settings) setEarliest(key string, t time.Time) {
 	s.p.SetString(key, timeToString(t))
 }
