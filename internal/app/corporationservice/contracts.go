@@ -45,6 +45,7 @@ func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID i
 	for _, b := range bids {
 		if top == nil || b.Amount > maximum {
 			top = b
+			maximum = b.Amount
 		}
 	}
 	return top, nil
