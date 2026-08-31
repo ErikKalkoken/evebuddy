@@ -33,10 +33,6 @@ func (t CharacterToken) HasScopes(scopes set.Set[string]) bool {
 	return t.Scopes.ContainsAll(scopes.All())
 }
 
-func (t CharacterToken) MissingScopes(scopes set.Set[string]) bool {
-	return t.Scopes.ContainsAll(scopes.All())
-}
-
 func (t CharacterToken) AuthToken() *eveauth.Token {
 	token2 := &eveauth.Token{
 		AccessToken:  t.AccessToken,
