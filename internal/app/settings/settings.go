@@ -799,8 +799,16 @@ func (s *Settings) ResetUI() {
 // Keys returns all setting keys. Mostly to know what to delete.
 func Keys() []string {
 	return []string{
+		settingApprovedContactCost,
+		settingColorTheme,
 		settingDeveloperMode,
+		settingDisableDPIDetection,
+		settingFyneScale,
+		settingHideLimitedCorporations,
 		settingLastCharacterID,
+		settingLastCorporationID,
+		settingLogLevel,
+		settingMarketOrdersRetentionDays,
 		settingMaxMails,
 		settingMaxWalletTransactions,
 		settingNotificationTypesEnabled,
@@ -815,6 +823,7 @@ func Keys() []string {
 		settingNotifyTimeoutHours,
 		settingNotifyTrainingEarliest,
 		settingNotifyTrainingEnabled,
+		settingPreferMarketTab,
 		settingRecentSearches,
 		settingSysTrayEnabled,
 		settingTabsMainID,
