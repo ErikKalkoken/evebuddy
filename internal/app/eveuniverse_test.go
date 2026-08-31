@@ -75,6 +75,10 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 		x2.ID = 3
 		assert.False(t, x1.Equal(x2))
 	})
+	t.Run("should not panic when other is nil", func(t *testing.T) {
+		x1 := &app.EveCharacter{ID: 4}
+		assert.False(t, x1.Equal(nil))
+	})
 }
 
 func TestEveCorporation_EveEntity(t *testing.T) {
@@ -131,6 +135,10 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 			ID: 4,
 		}
 		assert.False(t, x1.Equal(x2))
+	})
+	t.Run("should not panic when other is nil", func(t *testing.T) {
+		x1 := &app.EveCorporation{ID: 6}
+		assert.False(t, x1.Equal(nil))
 	})
 }
 
