@@ -211,8 +211,8 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 	})
 	fyne.Do(func() {
-		v, ok := o.CorporationTitle.Value()
-		if !ok {
+		v := o.CorporationTitlePlain()
+		if v == "" {
 			a.title.Hide()
 			return
 		}

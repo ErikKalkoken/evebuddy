@@ -94,6 +94,10 @@ type EveCharacter struct {
 	SecurityStatus   optional.Optional[float64]
 }
 
+func (ec EveCharacter) CorporationTitlePlain() string {
+	return evehtml.ToPlain(ec.CorporationTitle.ValueOrZero())
+}
+
 func (ec EveCharacter) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description.ValueOrZero())
 }
