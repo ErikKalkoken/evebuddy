@@ -147,10 +147,8 @@ func (a *admin) showAddCharacterDialog() {
 		a.cw.w,
 	)
 	xdesktop.DisableShortcutsForDialog(d1, a.cw.w)
-	done := make(chan struct{})
 	d1.SetOnClosed(func() {
 		cancel()
-		<-done
 	})
 	d1.Show()
 	go func() {
@@ -202,18 +200,14 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			return nil
 		}()
+		fyne.Do(func() {
+			d1.Hide()
+		})
 		if err != nil {
 			fyne.Do(func() {
-				d1.Hide()
 				ui.ShowErrorAndLog("Failed to add a new character", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
-		} else {
-			fyne.Do(func() {
-				d1.Hide()
-			})
-
 		}
-		close(done)
 	}()
 }
 
