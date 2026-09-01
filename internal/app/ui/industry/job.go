@@ -574,7 +574,7 @@ func (a *Jobs) filterRowsAsync(sortCol int) {
 				case industryActivityMaterialResearch:
 					return r.activity != app.MaterialEfficiencyResearch
 				case industryActivityReaction:
-					return r.activity != app.Reactions1 || r.activity == app.Reactions2
+					return r.activity != app.Reactions1 && r.activity != app.Reactions2
 				case industryActivityTimeResearch:
 					return r.activity != app.TimeEfficiencyResearch
 				}
