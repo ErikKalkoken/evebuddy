@@ -181,7 +181,7 @@ func (a *CorporationWallet) updateName(ctx context.Context) {
 		})
 	} else {
 		fyne.Do(func() {
-			a.name.SetText(a.division.DefaultWalletName())
+			a.name.SetText(name)
 			a.name.Show()
 		})
 	}
