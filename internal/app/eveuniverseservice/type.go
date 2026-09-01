@@ -207,7 +207,7 @@ func (s *EVEUniverseService) ListTypeIDs(ctx context.Context) (set.Set[int64], e
 func (s *EVEUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
-	if ids.Size() == 0 {
+	if ids2.Size() == 0 {
 		return nil
 	}
 	missing, err := s.st.MissingEveTypes(ctx, ids2)

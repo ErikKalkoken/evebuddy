@@ -27,6 +27,29 @@ func TestEveEntity_IsCharacter(t *testing.T) {
 	assert.False(t, x2.IsCharacter())
 }
 
+func TestEveEntity_Compare(t *testing.T) {
+	t.Run("should order by name", func(t *testing.T) {
+		x1 := &app.EveEntity{Name: "Alpha"}
+		x2 := &app.EveEntity{Name: "Bravo"}
+		assert.Negative(t, x1.Compare(x2))
+		assert.Positive(t, x2.Compare(x1))
+		assert.Zero(t, x1.Compare(x1))
+	})
+	t.Run("should not panic when other is nil", func(t *testing.T) {
+		x1 := &app.EveEntity{Name: "Alpha"}
+		assert.Zero(t, x1.Compare(nil))
+	})
+	t.Run("should not panic when receiver is nil", func(t *testing.T) {
+		var x1 *app.EveEntity
+		x2 := &app.EveEntity{Name: "Bravo"}
+		assert.Zero(t, x1.Compare(x2))
+	})
+	t.Run("should not panic when both are nil", func(t *testing.T) {
+		var x1 *app.EveEntity
+		assert.Zero(t, x1.Compare(nil))
+	})
+}
+
 func TestEveEntity_IsNPC(t *testing.T) {
 	cases := []struct {
 		name     string

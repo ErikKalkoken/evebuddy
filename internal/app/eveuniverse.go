@@ -94,6 +94,10 @@ type EveCharacter struct {
 	SecurityStatus   optional.Optional[float64]
 }
 
+func (ec EveCharacter) CorporationTitlePlain() string {
+	return evehtml.ToPlain(ec.CorporationTitle.ValueOrZero())
+}
+
 func (ec EveCharacter) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description.ValueOrZero())
 }
@@ -113,6 +117,9 @@ func (ec EveCharacter) EntityIDs() set.Set[int64] {
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
 func (ec EveCharacter) Equal(other *EveCharacter) bool {
+	if other == nil {
+		return false
+	}
 	return ec.ID == other.ID && ec.Hash() == other.Hash()
 }
 
@@ -186,6 +193,9 @@ func (ec EveCorporation) ToEveEntity() *EveEntity {
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
 func (ec EveCorporation) Equal(other *EveCorporation) bool {
+	if other == nil {
+		return false
+	}
 	return ec.ID == other.ID && ec.Hash() == other.Hash()
 }
 

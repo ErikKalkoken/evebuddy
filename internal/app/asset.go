@@ -192,6 +192,9 @@ func (ca Asset) CanHaveName() bool {
 	if !ca.IsSingleton {
 		return false
 	}
+	if ca.Type == nil {
+		return false
+	}
 	switch ca.Type.Group.Category.ID {
 	case
 		EveCategoryDeployable,
@@ -247,10 +250,16 @@ func (ca Asset) DisplayName3() string {
 }
 
 func (ca Asset) IsBPO() bool {
+	if ca.Type == nil {
+		return false
+	}
 	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy.ValueOrZero()
 }
 
 func (ca Asset) IsSKIN() bool {
+	if ca.Type == nil {
+		return false
+	}
 	return ca.Type.Group.Category.ID == EveCategorySKINs
 }
 

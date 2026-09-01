@@ -40,12 +40,12 @@ func TestTree(t *testing.T) {
 
 		_, ok := tree.Location(loc1.ID)
 		require.True(t, ok)
-	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
-	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
+		xassert.Equal(t, []string{"Alpha", "Item Hangar", "Container", "Container", "Container", "Tritanium"}, makeNamesPath(tree, a4))
+		xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(tree, a5))
 
 		_, ok = tree.Location(loc2.ID)
 		require.True(t, ok)
-	xassert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
+		xassert.Equal(t, []string{"Bravo", "Item Hangar", "Container", "Tritanium"}, makeNamesPath(tree, b2))
 
 		printTrees(tree)
 		// t.Fail()
@@ -61,7 +61,7 @@ func TestTree(t *testing.T) {
 		}
 		for _, tc := range cases {
 			got := makeNamesPath(tree, tc.item)
-		xassert.Equal(t, tc.want, got)
+			xassert.Equal(t, tc.want, got)
 		}
 	})
 	t.Run("can return asset nodes by item IDs", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestTree(t *testing.T) {
 			got, found := tree.Node(tc.itemID)
 			if tc.found {
 				assert.True(t, found)
-			xassert.Equal(t, tc.itemID, got.ID())
+				xassert.Equal(t, tc.itemID, got.ID())
 			} else {
 				assert.False(t, found)
 				assert.Nil(t, got)
@@ -174,16 +174,16 @@ func TestTree_CustomNodes(t *testing.T) {
 	}
 	ac := asset.NewFromCharacterAssets(assets, locations)
 
-xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral1))
-xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay", "Hobgoblin I"}, makeNamesPath(ac, drone))
-xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship2))
+	xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
+	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral1))
+	xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Drone Bay", "Hobgoblin I"}, makeNamesPath(ac, drone))
+	xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship2))
 
-xassert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
-xassert.Equal(t, []string{"Bravo", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral2))
+	xassert.Equal(t, 2, mustLocation(ac, bravoID).ChildrenCount())
+	xassert.Equal(t, []string{"Bravo", "Item Hangar", "Tritanium"}, makeNamesPath(ac, mineral2))
 
-xassert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
-xassert.Equal(t, []string{"Charlie", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship3))
+	xassert.Equal(t, 2, mustLocation(ac, charlieID).ChildrenCount())
+	xassert.Equal(t, []string{"Charlie", "Ship Hangar", "Merlin"}, makeNamesPath(ac, ship3))
 
 	printTrees(ac)
 	// t.Fail()
@@ -210,7 +210,7 @@ func TestTree_Impounded(t *testing.T) {
 	assets := []*app.CorporationAsset{office, item1}
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-xassert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
+	xassert.Equal(t, []string{"Alpha", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	printTrees(ac)
 	// t.Fail()
@@ -245,7 +245,7 @@ func TestTree_Offices(t *testing.T) {
 
 	ac := asset.NewFromCorporationAssets(assets, locations)
 
-xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
+	xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, item1))
 
 	officeNode := mustNode(ac, office.ItemID)
 	offices := xslices.Map(officeNode.Children(), func(x *asset.Node) string {
@@ -366,17 +366,17 @@ func TestTree_Character(t *testing.T) {
 		assert.Len(t, ac.Locations(), 3)
 
 		alpha := mustLocation(ac, alphaID)
-	xassert.Equal(t, 3, alpha.ChildrenCount())
-	xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, item1))
-	xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
+		xassert.Equal(t, 3, alpha.ChildrenCount())
+		xassert.Equal(t, []string{"Alpha", "Item Hangar", "Tritanium"}, makeNamesPath(ac, item1))
+		xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
 		bravo := mustLocation(ac, bravoID)
-	xassert.Equal(t, 1, bravo.ChildrenCount())
-	xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
+		xassert.Equal(t, 1, bravo.ChildrenCount())
+		xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
 		delta := mustLocation(ac, charlieID)
-	xassert.Equal(t, 1, delta.ChildrenCount())
-	xassert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap", "Tritanium"}, makeNamesPath(ac, safetyItem1))
+		xassert.Equal(t, 1, delta.ChildrenCount())
+		xassert.Equal(t, []string{"Charlie", "Asset Safety", "Asset Safety Wrap", "Tritanium"}, makeNamesPath(ac, safetyItem1))
 
 		printTrees(ac)
 		// assert.Fail(t, "STOP")
@@ -542,24 +542,78 @@ func TestTree_Corporation(t *testing.T) {
 
 		assert.Len(t, ac.Locations(), 5)
 
-	xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
-	xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
-	xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
+		xassert.Equal(t, 2, mustLocation(ac, alphaID).ChildrenCount())
+		xassert.Equal(t, []string{"Alpha", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, officeItem1))
+		xassert.Equal(t, []string{"Alpha", "Deliveries", "Tritanium"}, makeNamesPath(ac, deliveryItem1))
 
-	xassert.Equal(t, 1, mustLocation(ac, bravoID).ChildrenCount())
-	xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
+		xassert.Equal(t, 1, mustLocation(ac, bravoID).ChildrenCount())
+		xassert.Equal(t, []string{"Bravo", "In Space", "Customs Office"}, makeNamesPath(ac, spaceItem1))
 
-	xassert.Equal(t, 1, mustLocation(ac, charlieID).ChildrenCount())
-	xassert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, impoundedItem1))
+		xassert.Equal(t, 1, mustLocation(ac, charlieID).ChildrenCount())
+		xassert.Equal(t, []string{"Charlie", "Impounded", "Office", "1st Division", "Tritanium"}, makeNamesPath(ac, impoundedItem1))
 
-	xassert.Equal(t, 1, mustLocation(ac, deltaID).ChildrenCount())
-	xassert.Equal(t, []string{"Delta", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, structureCargoItem))
+		xassert.Equal(t, 1, mustLocation(ac, deltaID).ChildrenCount())
+		xassert.Equal(t, []string{"Delta", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, structureCargoItem))
 
-	xassert.Equal(t, 1, mustLocation(ac, echoID).ChildrenCount())
-	xassert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries", "Tritanium"}, makeNamesPath(ac, safetyItem3))
+		xassert.Equal(t, 1, mustLocation(ac, echoID).ChildrenCount())
+		xassert.Equal(t, []string{"Echo", "Asset Safety", "Asset Safety Wrap", "Deliveries", "Tritanium"}, makeNamesPath(ac, safetyItem3))
 
 		printTrees(ac)
 		// assert.Fail(t, "STOP")
+	})
+}
+
+func TestTree_AddMissingHangars(t *testing.T) {
+	t.Run("adds missing ship hangar when only item hangar present", func(t *testing.T) {
+		const locationID = 60000001
+		item1 := createCharacterAsset(assetParams{LocationID: locationID})
+		locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
+		assets := []*app.CharacterAsset{item1}
+
+		ac := asset.NewFromCharacterAssets(assets, locations)
+
+		alpha := mustLocation(ac, locationID)
+		names := xslices.Map(alpha.Children(), func(x *asset.Node) string {
+			return x.String()
+		})
+		assert.ElementsMatch(t, []string{"Item Hangar", "Ship Hangar"}, names)
+	})
+
+	t.Run("adds missing item hangar when only ship hangar present", func(t *testing.T) {
+		const locationID = 60000002
+		ship1 := createCharacterAsset(assetParams{
+			LocationID: locationID,
+			Type:       shipType(),
+		})
+		locations := []*app.EveLocation{{ID: locationID, Name: "Bravo"}}
+		assets := []*app.CharacterAsset{ship1}
+
+		ac := asset.NewFromCharacterAssets(assets, locations)
+
+		bravo := mustLocation(ac, locationID)
+		names := xslices.Map(bravo.Children(), func(x *asset.Node) string {
+			return x.String()
+		})
+		assert.ElementsMatch(t, []string{"Item Hangar", "Ship Hangar"}, names)
+	})
+
+	t.Run("adds no hangars when neither is warranted", func(t *testing.T) {
+		const locationID = 60000003
+		cargoItem := createCharacterAsset(assetParams{
+			LocationID:   locationID,
+			LocationFlag: app.FlagCargo,
+		})
+		locations := []*app.EveLocation{{ID: locationID, Name: "Charlie"}}
+		assets := []*app.CharacterAsset{cargoItem}
+
+		ac := asset.NewFromCharacterAssets(assets, locations)
+
+		charlie := mustLocation(ac, locationID)
+		names := xslices.Map(charlie.Children(), func(x *asset.Node) string {
+			return x.String()
+		})
+		assert.NotContains(t, names, "Item Hangar")
+		assert.NotContains(t, names, "Ship Hangar")
 	})
 }
 

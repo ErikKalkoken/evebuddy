@@ -199,6 +199,9 @@ func (w *NavListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *NavListItem) Tapped(_ *fyne.PointEvent) {
+	if w.IsDisabled {
+		return
+	}
 	w.tapAnim.Stop()
 	w.isAnimating = true
 	w.tapAnim.Start()

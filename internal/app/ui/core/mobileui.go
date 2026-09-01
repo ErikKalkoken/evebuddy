@@ -973,9 +973,5 @@ func formatISKValueLong(value optional.Optional[float64], format string) string 
 	if !ok {
 		return "? ISK"
 	}
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(format, v))
-	if v > 1000 {
-		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 1))
-	}
-	return s
+	return ui.FormatISKAmountLong(v, format)
 }

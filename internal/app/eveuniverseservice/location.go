@@ -114,6 +114,9 @@ func (s *EVEUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			structure, r, err := s.esiClient.UniverseAPI.GetUniverseStructuresStructureId(ctx2, id).Execute()
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
+					if existing, err2 := s.st.GetLocation(ctx, id); err2 == nil {
+						return existing, nil
+					}
 					arg = storage.UpdateOrCreateLocationParams{ID: id}
 					break
 				}

@@ -166,7 +166,7 @@ func (s *EVEImageService) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resour
 	}
 	makeURL, timeout, ok := eveEntityLoadParams(o.Category)
 	if !ok {
-		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
+		slog.Warn("EveEntityLogo called for unsupported category", "entity", o)
 		return theme.BrokenImageIcon(), nil
 
 	}
@@ -405,7 +405,7 @@ func (s *EVEImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	dat, found := s.cache.Get(key)
 	if !found {
 		if s.isOffline {
-			return resourceQuestionmark32Png, nil
+			return resourceBrokenimage64Png, nil
 		}
 		v, err, _ := xsingleflight.Do(&s.sfg, key, func() ([]byte, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)

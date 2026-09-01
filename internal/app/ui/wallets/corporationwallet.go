@@ -3,7 +3,6 @@ package wallets
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -11,11 +10,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -143,10 +140,7 @@ func (a *CorporationWallet) updateBalance(ctx context.Context) {
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(ui.FloatFormatISK, balance))
-	if balance > 1000 {
-		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(balance, 1))
-	}
+	s := ui.FormatISKAmountLong(balance, ui.FloatFormatISK)
 	setBalance(s, widget.MediumImportance)
 	fyne.Do(func() {
 		if a.OnBalanceUpdate != nil {
@@ -181,7 +175,7 @@ func (a *CorporationWallet) updateName(ctx context.Context) {
 		})
 	} else {
 		fyne.Do(func() {
-			a.name.SetText(a.division.DefaultWalletName())
+			a.name.SetText(name)
 			a.name.Show()
 		})
 	}

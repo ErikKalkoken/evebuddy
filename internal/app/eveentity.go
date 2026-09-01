@@ -88,7 +88,7 @@ func (ee *EveEntity) IsNPC() optional.Optional[bool] {
 }
 
 func (ee *EveEntity) Compare(other *EveEntity) int {
-	if ee == nil {
+	if ee == nil || other == nil {
 		return 0
 	}
 	return cmp.Compare(ee.Name, other.Name)

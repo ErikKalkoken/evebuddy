@@ -31,7 +31,7 @@ func TestNode_AllPaths(t *testing.T) {
 	assert.ElementsMatch(t, want, got)
 }
 
-func TestNode_AnchestorCount(t *testing.T) {
+func TestNode_AncestorCount(t *testing.T) {
 	top := newCustomNode(NodeItemHangar)
 	a := newCustomNode(NodeCargoBay)
 	top.addChild(a)
@@ -59,6 +59,23 @@ func TestNode_Path(t *testing.T) {
 
 	want := []*Node{top, a, b}
 	xassert.Equal(t, want, got)
+}
+
+func TestNode_Parent(t *testing.T) {
+	t.Run("should return nil for nil node", func(t *testing.T) {
+		var n *Node
+		xassert.Equal(t, (*Node)(nil), n.Parent())
+	})
+	t.Run("should return nil for root node", func(t *testing.T) {
+		top := newCustomNode(NodeItemHangar)
+		xassert.Equal(t, (*Node)(nil), top.Parent())
+	})
+	t.Run("should return parent for non-root node", func(t *testing.T) {
+		top := newCustomNode(NodeItemHangar)
+		a := newCustomNode(NodeCargoBay)
+		top.addChild(a)
+		xassert.Equal(t, top, a.Parent())
+	})
 }
 
 func TestNode_ID(t *testing.T) {

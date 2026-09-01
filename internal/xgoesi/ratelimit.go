@@ -304,6 +304,9 @@ func determineRateLimit(ctx context.Context) (string, rateLimitGroup, bool, erro
 // waitRateLimit will wait until the next request can be made to implement a steady request rate
 // in accordance with the effective rate limit for the API operation.
 func (rl *RateLimiter) waitRateLimit(ctx context.Context, bucket string, rlg rateLimitGroup) error {
+	if rlg.maxTokens <= 0 {
+		return fmt.Errorf("ratelimiter: invalid maxTokens for rate limit group %s: %d", rlg.name, rlg.maxTokens)
+	}
 	rl.muBuckets.Lock()
 	if rl.limiterBuckets == nil {
 		rl.limiterBuckets = make(map[string]*rate.Limiter)
@@ -311,7 +314,7 @@ func (rl *RateLimiter) waitRateLimit(ctx context.Context, bucket string, rlg rat
 	lim, ok := rl.limiterBuckets[bucket]
 	if !ok {
 		// calculate the duration to wait for a steady rate assuming each request consumes 2 tokens
-		d := rlg.windowSize / (time.Duration(rlg.maxTokens) / 2)
+		d := rlg.windowSize * 2 / time.Duration(rlg.maxTokens)
 		// add contingency to cover potentially occurring 50x errors which consume additional tokens
 		d = time.Duration(float64(d) * (1.1))
 		lim = rate.NewLimiter(rate.Every(d), 1)

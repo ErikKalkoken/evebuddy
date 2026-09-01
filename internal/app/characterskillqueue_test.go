@@ -70,6 +70,30 @@ func TestCharacterSkillqueue(t *testing.T) {
 			assert.True(t, sq.RemainingCount().IsEmpty())
 		}
 	})
+	t.Run("should exclude completed skills from remaining count", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item0 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(-6 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(-3 * time.Hour)),
+			QueuePosition: 1,
+		})
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(-3 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(3 * time.Hour)),
+			QueuePosition: 2,
+		})
+		item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(3 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(7 * time.Hour)),
+			QueuePosition: 3,
+		})
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item0, item1, item2}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.True(t, sq.IsActive())
+			xassert.EqualOptional(t, 2, sq.RemainingCount())
+		}
+	})
 	t.Run("can return information about an completed skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{

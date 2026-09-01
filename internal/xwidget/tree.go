@@ -99,6 +99,8 @@ func (w *Tree[T]) Clear() {
 	if w == nil {
 		return
 	}
+	w.UnselectAll()
+	w.CloseAllBranches()
 	w.td.Clear()
 	w.Refresh()
 }

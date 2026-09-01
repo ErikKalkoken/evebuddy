@@ -47,6 +47,7 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 	for _, b := range bids {
 		if top == nil || b.Amount > maximum {
 			top = b
+			maximum = b.Amount
 		}
 	}
 	return top, nil
@@ -289,8 +290,11 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			var locationIDs set.Set[int64]
 			for _, c := range contracts {
 				entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-				if c.StartLocationId != nil && c.EndLocationId != nil {
-					locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+				if c.StartLocationId != nil {
+					locationIDs.Add(*c.StartLocationId)
+				}
+				if c.EndLocationId != nil {
+					locationIDs.Add(*c.EndLocationId)
 				}
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
@@ -392,8 +396,11 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
 	var locationIDs set.Set[int64]
-	if c.StartLocationId != nil && c.EndLocationId != nil {
-		locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+	if c.StartLocationId != nil {
+		locationIDs.Add(*c.StartLocationId)
+	}
+	if c.EndLocationId != nil {
+		locationIDs.Add(*c.EndLocationId)
 	}
 	err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 	if err != nil {

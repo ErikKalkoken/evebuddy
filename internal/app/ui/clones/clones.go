@@ -450,19 +450,25 @@ func (a *Clones) setOrigin(w fyne.Window) {
 			return
 		}
 		r := results[id]
-		s, err := a.u.EVEUniverse().GetOrCreateSolarSystemESI(context.Background(), r.ID)
-		if err != nil {
-			showErrorDialog("Could not load solar system", err)
-			return
-		}
-		a.origin = s
-		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-		a.originLabel.Set(xwidget.InlineRichTextSegments(
-			s.DisplayRichTextWithRegion(),
-			xwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-		))
-		a.updateRoutesAsync()
-		d.Hide()
+		go func() {
+			s, err := a.u.EVEUniverse().GetOrCreateSolarSystemESI(context.Background(), r.ID)
+			if err != nil {
+				fyne.Do(func() {
+					showErrorDialog("Could not load solar system", err)
+				})
+				return
+			}
+			fyne.Do(func() {
+				a.origin = s
+				a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
+				a.originLabel.Set(xwidget.InlineRichTextSegments(
+					s.DisplayRichTextWithRegion(),
+					xwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
+				))
+				a.updateRoutesAsync()
+				d.Hide()
+			})
+		}()
 	}
 	list.HideSeparators = true
 	entry := widget.NewEntry()

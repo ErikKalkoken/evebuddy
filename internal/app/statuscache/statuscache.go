@@ -13,11 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-)
-
-const (
-	keyCharacters   = "statuscacheservice-characters"
-	keyCorporations = "statuscacheservice-corporations"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type statusSummary struct {
@@ -28,7 +24,7 @@ type statusSummary struct {
 	skipped   int
 }
 
-// add ads the content of another statusSummary (Mutating).
+// add adds the content of another statusSummary (Mutating).
 func (ss *statusSummary) add(other statusSummary) {
 	ss.current += other.current
 	ss.errors += other.errors
@@ -40,10 +36,6 @@ func (ss *statusSummary) add(other statusSummary) {
 type cacheKey struct {
 	id      int64
 	section string
-}
-
-func (ck cacheKey) String() string {
-	return fmt.Sprintf("%d-%s", ck.id, ck.section)
 }
 
 type cacheValue struct {
@@ -66,12 +58,20 @@ type Storage interface {
 // The zero value is ready to use.
 // The struct is save for concurrent use.
 type StatusCache struct {
-	cache sync.Map
+	sections xsync.Map[cacheKey, cacheValue]
+
+	mu           sync.RWMutex
+	characters   []*app.EntityShort
+	corporations []*app.EntityShort
 }
 
 // Clear removes all items.
 func (sc *StatusCache) Clear() {
-	sc.cache.Clear()
+	sc.sections.Clear()
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.characters = nil
+	sc.corporations = nil
 }
 
 // Init initializes the internal state from local storage.
@@ -171,9 +171,8 @@ func (sc *StatusCache) CharacterSection(characterID int64, section app.Character
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: characterID, section: section.String()}
-	x, ok := sc.cache.Load(k.String())
+	v, ok := sc.sections.Load(k)
 	if ok {
-		v := x.(cacheValue)
 		o.CompletedAt = v.CompletedAt
 		o.ErrorMessage = v.ErrorMessage
 		o.StartedAt = v.StartedAt
@@ -215,6 +214,8 @@ func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSumm
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
 		Total:     total,
 	}
 	return s
@@ -222,10 +223,13 @@ func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSumm
 
 func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSummary {
 	var ss statusSummary
-	csl := sc.ListCharacterSections(characterID)
-	for _, o := range csl {
+	for _, o := range sc.ListCharacterSections(characterID) {
 		if o.HasError() {
 			ss.errors++
+		} else if o.IsMissing() {
+			ss.missing++
+		} else if o.HasComment() {
+			ss.skipped++
 		} else if o.IsCurrent() {
 			ss.current++
 		}
@@ -250,7 +254,7 @@ func (sc *StatusCache) SetCharacterSection(o *app.CharacterSectionStatus) {
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Store(k.String(), v)
+	sc.sections.Store(k, v)
 }
 
 // CharacterName returns the name of a character by ID or an empty string if not found.
@@ -258,11 +262,9 @@ func (sc *StatusCache) CharacterName(characterID int64) string {
 	if sc == nil || characterID == 0 {
 		return ""
 	}
-	cc := sc.ListCharacters()
-	if len(cc) == 0 {
-		return ""
-	}
-	for _, c := range cc {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	for _, c := range sc.characters {
 		if c.ID == characterID {
 			return c.Name
 		}
@@ -285,11 +287,9 @@ func (sc *StatusCache) ListCharacters() []*app.EntityShort {
 	if sc == nil {
 		return nil
 	}
-	x, ok := sc.cache.Load(keyCharacters)
-	if !ok {
-		return nil
-	}
-	return x.([]*app.EntityShort)
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	return slices.Clone(sc.characters)
 }
 
 // UpdateCharacters updates all characters from storage.
@@ -306,7 +306,9 @@ func (sc *StatusCache) updateCharacters(ctx context.Context, st Storage) ([]*app
 	if err != nil {
 		return nil, err
 	}
-	sc.cache.Store(keyCharacters, cc)
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.characters = cc
 	return cc, nil
 }
 
@@ -336,9 +338,8 @@ func (sc *StatusCache) CorporationSection(corporationID int64, section app.Corpo
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: corporationID, section: section.String()}
-	x, ok := sc.cache.Load(k.String())
+	v, ok := sc.sections.Load(k)
 	if ok {
-		v := x.(cacheValue)
 		o.Comment = v.Comment
 		o.CompletedAt = v.CompletedAt
 		o.ErrorMessage = v.ErrorMessage
@@ -387,8 +388,7 @@ func (sc *StatusCache) CorporationSectionSummary(corporationID int64) app.Status
 
 func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) statusSummary {
 	var ss statusSummary
-	csl := sc.ListCorporationSections(corporationID)
-	for _, o := range csl {
+	for _, o := range sc.ListCorporationSections(corporationID) {
 		if o.HasError() {
 			ss.errors++
 		} else if o.IsMissing() {
@@ -419,7 +419,7 @@ func (sc *StatusCache) SetCorporationSection(o *app.CorporationSectionStatus) {
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Store(k.String(), v)
+	sc.sections.Store(k, v)
 }
 
 // CorporationName return the name of a corporation by ID or an empty string if not found.
@@ -427,11 +427,9 @@ func (sc *StatusCache) CorporationName(corporationID int64) string {
 	if sc == nil || corporationID == 0 {
 		return ""
 	}
-	cc := sc.ListCorporations()
-	if len(cc) == 0 {
-		return ""
-	}
-	for _, c := range cc {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	for _, c := range sc.corporations {
 		if c.ID == corporationID {
 			return c.Name
 		}
@@ -444,11 +442,9 @@ func (sc *StatusCache) ListCorporations() []*app.EntityShort {
 	if sc == nil {
 		return nil
 	}
-	x, ok := sc.cache.Load(keyCorporations)
-	if !ok {
-		return nil
-	}
-	return x.([]*app.EntityShort)
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	return slices.Clone(sc.corporations)
 }
 
 func (sc *StatusCache) UpdateCorporations(ctx context.Context, st Storage) error {
@@ -464,7 +460,9 @@ func (sc *StatusCache) updateCorporations(ctx context.Context, st Storage) ([]*a
 	if err != nil {
 		return nil, err
 	}
-	sc.cache.Store(keyCorporations, cc)
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.corporations = cc
 	return cc, nil
 }
 
@@ -493,9 +491,8 @@ func (sc *StatusCache) EveUniverseSection(section app.EveUniverseSection) (app.C
 		Timeout:     section.Timeout(),
 	}
 	k := cacheKey{id: app.EveUniverseSectionEntityID, section: section.String()}
-	x, ok := sc.cache.Load(k.String())
+	v, ok := sc.sections.Load(k)
 	if ok {
-		v := x.(cacheValue)
 		o.CompletedAt = v.CompletedAt
 		o.ErrorMessage = v.ErrorMessage
 		o.StartedAt = v.StartedAt
@@ -537,7 +534,7 @@ func (sc *StatusCache) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Store(k.String(), v)
+	sc.sections.Store(k, v)
 }
 
 func (sc *StatusCache) EveUniverseSectionSummary() app.StatusSummary {
@@ -549,6 +546,8 @@ func (sc *StatusCache) EveUniverseSectionSummary() app.StatusSummary {
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
 		Total:     len(app.EveUniverseSections),
 	}
 	return s
@@ -560,6 +559,10 @@ func (sc *StatusCache) calcEveUniverseSectionSummary() statusSummary {
 	for _, o := range gsl {
 		if o.HasError() {
 			ss.errors++
+		} else if o.IsMissing() {
+			ss.missing++
+		} else if o.HasComment() {
+			ss.skipped++
 		} else if o.IsCurrent() {
 			ss.current++
 		}

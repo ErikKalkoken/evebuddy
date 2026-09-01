@@ -398,7 +398,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol int) {
 			case marketOrderStateActive:
 				return s != app.OrderOpen
 			case marketOrderStateHistory:
-				return s != app.OrderCancelled || s == app.OrderExpired
+				return s != app.OrderCancelled && s != app.OrderExpired
 			}
 			return true
 		})

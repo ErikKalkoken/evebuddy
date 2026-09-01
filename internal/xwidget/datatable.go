@@ -295,9 +295,14 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *k
 	for col, field := range columns {
 		field2Col[field] = col
 	}
-	ignored := set.Of(ignoredColumns...)
+	var ignoredIdx set.Set[int]
+	for _, id := range ignoredColumns {
+		if idx, ok := cs.columns.idxLookup[id]; ok {
+			ignoredIdx.Add(idx)
+		}
+	}
 	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
-		return ignored.Contains(field2Col[c])
+		return ignoredIdx.Contains(field2Col[c])
 	})
 	col, dir := cs.current() // TODO: Hack, replace with defaults
 	defaultColumn := cs.columns.cols[col].Label

@@ -109,7 +109,7 @@ func (cs CorporationStructure) NameShort() string {
 	if cs.System == nil {
 		return cs.Name.ValueOrZero()
 	}
-	return strings.TrimPrefix(cs.Name.ValueOrZero(), fmt.Sprintf("%s -", cs.System.Name))
+	return strings.TrimPrefix(cs.Name.ValueOrZero(), fmt.Sprintf("%s - ", cs.System.Name))
 }
 
 type StructureServiceState uint

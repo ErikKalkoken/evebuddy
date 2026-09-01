@@ -672,13 +672,18 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	}
 	var rows []contractRow
 	var activeCount int
+	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
 			return characters[id]
 		})
-		tags, err := a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
-		if err != nil {
-			return nil, 0, err
+		tags, ok := tagsByCharacter[c.CharacterID]
+		if !ok {
+			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
+			if err != nil {
+				return nil, 0, err
+			}
+			tagsByCharacter[c.CharacterID] = tags
 		}
 		r.tags = tags
 		rows = append(rows, r)

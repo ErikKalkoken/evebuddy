@@ -118,7 +118,7 @@ func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
 	defer sq.mu.RUnlock()
 	var count int
 	for _, item := range sq.items {
-		if !item.Remaining().IsEmpty() {
+		if !item.IsCompleted() {
 			count++
 		}
 	}

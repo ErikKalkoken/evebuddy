@@ -70,10 +70,16 @@ func NewSnackbar(c fyne.Canvas) *Snackbar {
 		sb.hide()
 	})
 	sb.popup.Hide()
+	// TODO: Once on Fyne >= 2.9, set sb.popup.OnDismiss = sb.hide instead of/in
+	// addition to the popUp2 tapped callback above. Currently, tapping outside the
+	// snackbar dismisses it via widget.PopUp's own Hide() without notifying sb.hide(),
+	// so itemCtx isn't canceled and showMessage keeps blocking until its timeout,
+	// stalling any queued messages. OnDismiss fixes this since it's invoked from
+	// Hide() itself. See https://github.com/fyne-io/fyne/issues/6468.
 	return sb
 }
 
-// Show displays a SnackBar with a message and the the default timeout.
+// Show displays a SnackBar with a message and the default timeout.
 // Show can be used concurrently.
 // When a snackbar receives several texts at the same time,
 // it will queue them and display them one after the other.
@@ -101,7 +107,7 @@ func (sb *Snackbar) Start() {
 	go func() {
 		defer func() {
 			sb.isRunning.Store(false)
-			sb.parentCancel()
+			parentCancel()
 			slog.Debug("Snackbar stopped")
 		}()
 		for {

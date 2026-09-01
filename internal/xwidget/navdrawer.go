@@ -209,22 +209,28 @@ func (w *NavDrawer) Disable() {
 	if w.Disabled() {
 		return
 	}
+	w.DisableableWidget.Disable()
+	if len(w.items) == 0 {
+		return
+	}
 	w.Select(w.items[0])
 	w.ScrollToTop()
 	for _, it := range w.items {
 		it.isDisabled = true
 	}
-	w.DisableableWidget.Disable()
 }
 
 func (w *NavDrawer) Enable() {
 	if !w.Disabled() {
 		return
 	}
+	w.DisableableWidget.Enable()
+	if len(w.items) == 0 {
+		return
+	}
 	for _, it := range w.items {
 		it.isDisabled = false
 	}
-	w.DisableableWidget.Enable()
 	w.Select(w.items[0])
 	w.ScrollToTop()
 }

@@ -56,6 +56,25 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 	}
 }
 
+func TestSectionStatus_WasUpdatedWithinErrorTimedOut(t *testing.T) {
+	now := time.Now()
+	cases := []struct {
+		name      string
+		updatedAt time.Time
+		want      bool
+	}{
+		{"just updated", now, true},
+		{"updated 30s ago, within the timeout", now.Add(-30 * time.Second), true},
+		{"updated 5 minutes ago, past the timeout", now.Add(-5 * time.Minute), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o := app.SectionStatus{UpdatedAt: tc.updatedAt}
+			xassert.Equal(t, tc.want, o.WasUpdatedWithinErrorTimedOut())
+		})
+	}
+}
+
 func TestCharacterUpdateStatusIsMissing(t *testing.T) {
 	cases := []struct {
 		completedAt time.Time

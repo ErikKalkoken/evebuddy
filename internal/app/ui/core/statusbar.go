@@ -302,6 +302,7 @@ func (a *statusBar) showClockDialog() {
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
+		defer timer.Stop()
 		for {
 			s := time.Now().UTC().Format("15:04:05")
 			fyne.Do(func() {

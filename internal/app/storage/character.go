@@ -109,7 +109,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		category: NewNullString(eveEntityFaction),
 		name:     r.RaceFactionName,
 	}
-	c, err := characterFromDBModel(
+	c := characterFromDBModel(
 		r.Character,
 		r.EveCharacter,
 		r.EveEntity,
@@ -119,9 +119,6 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 		eb,
 		eer,
 	)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
 	return c, nil
 }
 
@@ -182,7 +179,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			category: NewNullString(eveEntityFaction),
 			name:     r.RaceFactionName,
 		}
-		c, err := characterFromDBModel(
+		c := characterFromDBModel(
 			r.Character,
 			r.EveCharacter,
 			r.EveEntity,
@@ -192,9 +189,6 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			eb,
 			eer,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("list characters: %w", err)
-		}
 		cc[i] = c
 	}
 	return cc, nil
@@ -450,7 +444,7 @@ func characterFromDBModel(
 	eef nullFaction,
 	eb nullEntity,
 	eer nullRaceFaction,
-) (*app.Character, error) {
+) *app.Character {
 	o := app.Character{
 		AssetValue:         optional.FromNullFloat64(character.AssetValue),
 		ContractItemsValue: optional.FromNullFloat64(character.ContractItemsValue),
@@ -478,5 +472,5 @@ func characterFromDBModel(
 		LocationID:        optional.FromNullInt64(character.LocationID),
 		ShipTypeID:        optional.FromNullInt64(character.ShipID),
 	}
-	return &o, nil
+	return &o
 }

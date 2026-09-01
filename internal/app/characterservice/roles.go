@@ -117,11 +117,12 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg characterSect
 			r := data.(*esi.CharactersCharacterIdRolesGet)
 			var incoming set.Set[app.Role]
 			for _, n := range r.Roles {
-				r, ok := roleMap[n]
+				role, ok := roleMap[n]
 				if !ok {
 					slog.Warn("received unknown role from ESI", "characterID", characterID, "role", n)
+					continue
 				}
-				incoming.Add(r)
+				incoming.Add(role)
 			}
 			current, err := s.st.ListCharacterRoles(ctx, characterID)
 			if err != nil {
