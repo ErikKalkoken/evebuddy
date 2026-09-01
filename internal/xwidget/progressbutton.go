@@ -67,6 +67,7 @@ func NewProgressButton(label string, icon fyne.Resource, action func()) *Progres
 					w.button.Refresh()
 					if w.disabledTemp {
 						w.button.Disable()
+						w.disabledTemp = false
 					}
 					w.spacer.SetMinSize(fyne.Size{})
 					// hide progress
@@ -115,7 +116,7 @@ func (w *ProgressButton) SetIcon(icon fyne.Resource) {
 
 // Disabled reports whether this widget is disabled.
 func (w *ProgressButton) Disabled() bool {
-	return w.button.Disabled()
+	return w.disabledTemp || w.button.Disabled()
 }
 
 // Disable disables this widget.
