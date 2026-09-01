@@ -164,7 +164,7 @@ func NewStructures(u baseUI) *Structures {
 			},
 			a.columnSorter,
 			a.filterRowsAsync, func(_ int, r structureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
+				showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	} else {
@@ -189,7 +189,7 @@ func NewStructures(u baseUI) *Structures {
 				return xwidget.RichTextSegmentsFromText("?")
 			},
 			func(r structureRow) {
-				go showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
+				showCorporationStructureWindowAsync(context.Background(), u, r.corporationID, r.structureID, r.solarSystemName)
 			},
 		)
 	}
