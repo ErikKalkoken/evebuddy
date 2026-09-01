@@ -30,6 +30,10 @@ var _ desktop.Hoverable = (*TappableImage)(nil)
 // NewTappableImageWithMenu returns a new instance of a [TappableImage] widget with a context menu.
 func NewTappableImageWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableImage {
 	w := newTappableImage(res, nil)
+	if menu == nil {
+		fyne.LogError("TappableImage misconfigured: missing menu", nil)
+		return w
+	}
 	w.menu = menu
 	w.OnTapped = func() {
 		if len(w.menu.Items) == 0 {
