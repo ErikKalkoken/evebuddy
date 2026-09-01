@@ -20,3 +20,4 @@ playground/
 test.db
 ratelimits.md
 **/temp.*/
+.gitconfig
