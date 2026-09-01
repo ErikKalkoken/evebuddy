@@ -698,6 +698,7 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 						slog.Any("err", err),
 					)
 					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
+					return
 				}
 				a.headerUpdate(ctx)
 				if onSuccess != nil {
