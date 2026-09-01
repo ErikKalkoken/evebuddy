@@ -581,7 +581,7 @@ func (a *Mails) ResetCurrentFolder(ctx context.Context) {
 func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 	a.currentFolder.Store(folder)
 
-	a.headerUpdate(ctx)
+	a.headerUpdate(ctx, folder)
 	fyne.Do(func() {
 		a.headerList.ScrollToTop()
 		a.headerList.UnselectAll()
@@ -589,7 +589,7 @@ func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 	})
 }
 
-func (a *Mails) headerUpdate(ctx context.Context) {
+func (a *Mails) headerUpdate(ctx context.Context, folder *mailFolderNode) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.headers)
@@ -606,7 +606,6 @@ func (a *Mails) headerUpdate(ctx context.Context) {
 			a.headerStatus.Show()
 		})
 	}
-	folder := a.currentFolder.Load()
 	if folder == nil {
 		reset()
 		return
@@ -700,7 +699,7 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
 					return
 				}
-				a.headerUpdate(ctx)
+				a.headerUpdate(ctx, a.currentFolder.Load())
 				if onSuccess != nil {
 					onSuccess()
 				}
@@ -808,7 +807,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 					return nil, nil
 				}
 				a.updateUnreadCounts(ctx)
-				a.headerUpdate(ctx)
+				a.headerUpdate(ctx, a.currentFolder.Load())
 				go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
 				a.u.UpdateMailIndicator(ctx)
 				fyne.Do(func() {
