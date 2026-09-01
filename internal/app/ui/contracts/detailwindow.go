@@ -30,23 +30,30 @@ type contractItem struct {
 }
 
 // ShowCharacterContract2 shows the details of a character contract in a window.
-func ShowCharacterContract2(ctx context.Context, u baseUI, characterID, contractID int64) {
+func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 	reportError := func(err error) {
-		ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+		fyne.Do(func() {
+			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+		})
 	}
-	o, err := u.Character().GetContract(ctx, characterID, contractID)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	c, err := u.Character().GetCharacter(ctx, characterID)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
-		return c.NameOrZero()
-	}))
+	go func() {
+		ctx := context.Background()
+		o, err := u.Character().GetContract(ctx, characterID, contractID)
+		if err != nil {
+			reportError(err)
+			return
+		}
+		c, err := u.Character().GetCharacter(ctx, characterID)
+		if err != nil {
+			reportError(err)
+			return
+		}
+		fyne.Do(func() {
+			ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
+				return c.NameOrZero()
+			}))
+		})
+	}()
 }
 
 // ShowCharacterContract shows the details of a character contract in a window.

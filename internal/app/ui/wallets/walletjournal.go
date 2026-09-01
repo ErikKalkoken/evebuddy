@@ -553,7 +553,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 						fyne.Do(func() {
 							contextItem.Text = "Related contract"
 							contextItem.Widget = ui.MakeLinkLabelWithWrap(c.NameDisplay(), func() {
-								go contracts.ShowCharacterContract2(context.Background(), u, c.CharacterID, c.ContractID)
+								contracts.ShowCharacterContract2(u, c.CharacterID, c.ContractID)
 							})
 							f.Refresh()
 						})
