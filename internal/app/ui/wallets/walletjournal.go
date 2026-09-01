@@ -68,7 +68,7 @@ type WalletJournal struct {
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip     *kxwidget.SortChip
 	top          *widget.Label
 	u            baseUI
 }
@@ -523,7 +523,9 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 					slog.Any("contextID", o.ContextID),
 					slog.Any("error", err),
 				)
-				contextDefaultWidget.SetText("Failed to load related item: " + u.ErrorDisplay(err))
+				fyne.Do(func() {
+					contextDefaultWidget.SetText("Failed to load related item: " + u.ErrorDisplay(err))
+				})
 			}
 			// TODO: Add support for industry jobs
 			if v, ok := o.ContextIDType.Value(); ok {
@@ -739,13 +741,13 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
-			if v, ok := o.FirstParty.Value(); ok {
+			if v, ok := o.SecondParty.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Second Party",
 					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
 				))
 			}
-			if v, ok := o.FirstParty.Value(); ok {
+			if v, ok := o.TaxReceiver.Value(); ok {
 				items = append(items, widget.NewFormItem(
 					"Tax",
 					widget.NewLabel(o.Tax.StringFunc("?", ui.FormatISKAmount)),
