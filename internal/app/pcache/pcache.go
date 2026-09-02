@@ -104,7 +104,7 @@ func (c *PCache) Exists(key string) bool {
 		slog.Error("cache failure", "error", err)
 		return false
 	}
-	if d := timeoutFromExpiresAt(expiresAt); d >= 0 {
+	if d, ok := timeoutFromExpiresAt(expiresAt); ok {
 		c.mc.Set(key, v, d)
 	}
 	return true
@@ -130,7 +130,7 @@ func (c *PCache) Get(key string) ([]byte, bool) {
 		if err != nil {
 			return result{nil, false}, err
 		}
-		if d := timeoutFromExpiresAt(expiresAt); d >= 0 {
+		if d, ok := timeoutFromExpiresAt(expiresAt); ok {
 			c.mc.Set(key, v, d)
 		}
 		return result{v, true}, nil
@@ -142,12 +142,14 @@ func (c *PCache) Get(key string) ([]byte, bool) {
 	return r.value, r.found
 }
 
-func timeoutFromExpiresAt(expiresAt time.Time) time.Duration {
-	var d time.Duration
-	if !expiresAt.IsZero() {
-		d = time.Until(expiresAt)
+// timeoutFromExpiresAt returns the memcache timeout for expiresAt
+// and reports whether the item should be cached at all.
+func timeoutFromExpiresAt(expiresAt time.Time) (time.Duration, bool) {
+	if expiresAt.IsZero() {
+		return 0, true
 	}
-	return d
+	d := time.Until(expiresAt)
+	return d, d > 0
 }
 
 // Set stores an item in the cache.
