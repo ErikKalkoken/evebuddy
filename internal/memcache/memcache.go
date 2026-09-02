@@ -68,8 +68,9 @@ func (c *Cache) CleanUp() {
 	c.items.Range(func(key, value any) bool {
 		i := value.(item)
 		if !i.ExpiresAt.IsZero() && now.After(i.ExpiresAt) {
-			c.Delete(key.(string))
-			n++
+			if c.items.CompareAndDelete(key, value) {
+				n++
+			}
 		}
 		return true
 	})
@@ -118,8 +119,12 @@ func (c *Cache) Get(key string) (any, bool) {
 // Set stores an item in the cache.
 //
 // If an item with the same key already exists it will be overwritten.
-// An item with timeout = 0 never expires
+// An item with timeout = 0 never expires. A negative timeout deletes any existing item and stores nothing.
 func (c *Cache) Set(key string, value any, timeout time.Duration) {
+	if timeout < 0 {
+		c.items.Delete(key)
+		return
+	}
 	var at time.Time
 	if timeout > 0 {
 		at = time.Now().Add(timeout)
