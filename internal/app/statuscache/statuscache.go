@@ -60,9 +60,11 @@ type Storage interface {
 type StatusCache struct {
 	sections xsync.Map[cacheKey, cacheValue]
 
-	mu           sync.RWMutex
-	characters   []*app.EntityShort
-	corporations []*app.EntityShort
+	mu               sync.RWMutex
+	characters       []*app.EntityShort
+	charactersByID   map[int64]*app.EntityShort
+	corporations     []*app.EntityShort
+	corporationsByID map[int64]*app.EntityShort
 }
 
 // Clear removes all items.
@@ -71,7 +73,9 @@ func (sc *StatusCache) Clear() {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	sc.characters = nil
+	sc.charactersByID = nil
 	sc.corporations = nil
+	sc.corporationsByID = nil
 }
 
 // Init initializes the internal state from local storage.
@@ -274,12 +278,11 @@ func (sc *StatusCache) CharacterName(characterID int64) string {
 	}
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
-	for _, c := range sc.characters {
-		if c.ID == characterID {
-			return c.Name
-		}
+	c, ok := sc.charactersByID[characterID]
+	if !ok {
+		return ""
 	}
-	return ""
+	return c.Name
 }
 
 // ListCharacterIDs returns the user's character IDs.
@@ -316,9 +319,14 @@ func (sc *StatusCache) updateCharacters(ctx context.Context, st Storage) ([]*app
 	if err != nil {
 		return nil, err
 	}
+	byID := make(map[int64]*app.EntityShort, len(cc))
+	for _, c := range cc {
+		byID[c.ID] = c
+	}
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	sc.characters = cc
+	sc.charactersByID = byID
 	return cc, nil
 }
 
@@ -449,12 +457,11 @@ func (sc *StatusCache) CorporationName(corporationID int64) string {
 	}
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
-	for _, c := range sc.corporations {
-		if c.ID == corporationID {
-			return c.Name
-		}
+	c, ok := sc.corporationsByID[corporationID]
+	if !ok {
+		return ""
 	}
-	return ""
+	return c.Name
 }
 
 // ListCorporations returns the user's corporations in alphabetical order.
@@ -480,9 +487,14 @@ func (sc *StatusCache) updateCorporations(ctx context.Context, st Storage) ([]*a
 	if err != nil {
 		return nil, err
 	}
+	byID := make(map[int64]*app.EntityShort, len(cc))
+	for _, c := range cc {
+		byID[c.ID] = c
+	}
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	sc.corporations = cc
+	sc.corporationsByID = byID
 	return cc, nil
 }
 
