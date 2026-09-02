@@ -36,12 +36,13 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	}
 	if cleanUpTimeout > 0 {
 		go func() {
+			ticker := time.NewTicker(cleanUpTimeout)
 			for {
 				select {
 				case <-c.closeC:
 					slog.Debug("cache closed")
 					return
-				case <-time.After(cleanUpTimeout):
+				case <-ticker.C:
 				}
 				c.CleanUp()
 			}
