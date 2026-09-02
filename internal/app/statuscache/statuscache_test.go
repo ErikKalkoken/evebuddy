@@ -686,6 +686,23 @@ func TestCharacterSections(t *testing.T) {
 		xassert.Equal(t, want, got)
 		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
+	t.Run("delete character removes its cached section status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		c := factory.CreateCharacterFull()
+		section := app.SectionCharacterImplants
+		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+		})
+		sc.SetCharacterSection(x1)
+		// when
+		sc.DeleteCharacter(c.ID)
+		// then
+		_, ok := sc.CharacterSection(c.ID, section)
+		assert.False(t, ok)
+	})
 }
 
 func TestCorporationSections(t *testing.T) {
@@ -777,6 +794,23 @@ func TestCorporationSections(t *testing.T) {
 		want := set.Of(app.CorporationSections...)
 		xassert.Equal(t, want, got)
 		assert.True(t, m[app.SectionCorporationIndustryJobs].IsMissing())
+	})
+	t.Run("delete corporation removes its cached section status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		c := factory.CreateCorporation()
+		section := app.SectionCorporationIndustryJobs
+		x1 := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       section,
+		})
+		sc.SetCorporationSection(x1)
+		// when
+		sc.DeleteCorporation(c.ID)
+		// then
+		_, ok := sc.CorporationSection(c.ID, section)
+		assert.False(t, ok)
 	})
 }
 

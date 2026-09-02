@@ -240,6 +240,16 @@ func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSumm
 	return ss
 }
 
+// DeleteCharacter removes all cached section status for a character.
+func (sc *StatusCache) DeleteCharacter(characterID int64) {
+	if sc == nil || characterID == 0 {
+		return
+	}
+	for _, section := range app.CharacterSections {
+		sc.sections.Delete(cacheKey{id: characterID, section: section.String()})
+	}
+}
+
 // SetCharacterSection updates a character section.
 func (sc *StatusCache) SetCharacterSection(o *app.CharacterSectionStatus) {
 	if sc == nil || o == nil {
@@ -403,6 +413,16 @@ func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) status
 		}
 	}
 	return ss
+}
+
+// DeleteCorporation removes all cached section status for a corporation.
+func (sc *StatusCache) DeleteCorporation(corporationID int64) {
+	if sc == nil || corporationID == 0 {
+		return
+	}
+	for _, section := range app.CorporationSections {
+		sc.sections.Delete(cacheKey{id: corporationID, section: section.String()})
+	}
 }
 
 func (sc *StatusCache) SetCorporationSection(o *app.CorporationSectionStatus) {
