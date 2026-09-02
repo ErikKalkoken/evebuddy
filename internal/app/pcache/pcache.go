@@ -69,9 +69,9 @@ func (c *PCache) CleanUp() int {
 
 // Clear removes all items.
 func (c *PCache) Clear() {
-	err := c.st.CacheClear(context.Background())
-	if err != nil {
+	if err := c.st.CacheClear(context.Background()); err != nil {
 		slog.Error("cache failure", "error", err)
+		return
 	}
 	c.mc.Clear()
 }
@@ -84,9 +84,9 @@ func (c *PCache) Close() {
 
 // Delete deletes an item.
 func (c *PCache) Delete(key string) {
-	err := c.st.CacheDelete(context.Background(), key)
-	if err != nil {
+	if err := c.st.CacheDelete(context.Background(), key); err != nil {
 		slog.Error("cache failure", "error", err)
+		return
 	}
 	c.mc.Delete(key)
 }
