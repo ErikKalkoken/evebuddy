@@ -93,6 +93,11 @@ func TestMemcache2(t *testing.T) {
 		c := memcache.New()
 		c.Close()
 	})
+	t.Run("can close cache more than once", func(_ *testing.T) {
+		c := memcache.New()
+		c.Close()
+		c.Close()
+	})
 	t.Run("can start cache without automatic clean-up", func(_ *testing.T) {
 		c := memcache.NewWithTimeout(0)
 		c.Close()

@@ -13,8 +13,9 @@ const (
 
 // Cache represents an in-memory cache.
 type Cache struct {
-	items  sync.Map
-	closeC chan struct{}
+	items     sync.Map
+	closeC    chan struct{}
+	closeOnce sync.Once
 }
 
 type item struct {
@@ -84,8 +85,12 @@ func (c *Cache) Clear() {
 }
 
 // Close closes the cache and frees allocated resources.
+//
+// Close is safe to call more than once.
 func (c *Cache) Close() {
-	close(c.closeC)
+	c.closeOnce.Do(func() {
+		close(c.closeC)
+	})
 }
 
 // Delete deletes an item.
