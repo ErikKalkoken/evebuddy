@@ -1052,7 +1052,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		arg.CharacterID = x.ID
 	}
 	if arg.RefID == 0 {
-		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
+		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "ref_id", arg.CharacterID))
 	}
 	if arg.Amount.IsEmpty() {
 		var f float64
@@ -1143,7 +1143,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		x := f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID: arg.CharacterID,
 		})
-		arg.JournalRefID = x.ID
+		arg.JournalRefID = x.RefID
 	}
 	err := f.st.CreateCharacterWalletTransaction(ctx, arg)
 	if err != nil {
