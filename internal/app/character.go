@@ -362,7 +362,6 @@ type CharacterWalletJournalEntry struct {
 	Date          time.Time
 	Description   string
 	FirstParty    optional.Optional[*EveEntity]
-	ID            int64
 	Reason        optional.Optional[string]
 	RefID         int64
 	RefType       string

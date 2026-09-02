@@ -27,6 +27,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+const (
+	unreadNotificationsUpdated = "unreadNotificationsUpdated"
+)
+
 type notificationRow struct {
 	characterID              int64
 	characterName            string
@@ -111,6 +115,11 @@ func newCommunications(u baseUI, forCharacter bool) *Communications {
 		})
 		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			a.update(ctx)
+		})
+		a.u.Signals().DataUpdated.AddListener(func(ctx context.Context, s string) {
+			if s == unreadNotificationsUpdated {
+				a.update(ctx)
+			}
 		})
 	}
 	return a
@@ -598,6 +607,7 @@ func (a *communicationsMessagePane) markCurrentFolderRead() {
 			reportError(err)
 			return
 		}
+		go a.co.u.Signals().DataUpdated.Emit(ctx, unreadNotificationsUpdated)
 		fyne.Do(func() {
 			for i, r := range a.co.rows {
 				if ids.Contains(r.id) && !r.isRead2 {
@@ -616,6 +626,7 @@ func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id 
 		slog.Error("Failed to set notification as read", "ID", id)
 		return
 	}
+	go a.co.u.Signals().DataUpdated.Emit(ctx, unreadNotificationsUpdated)
 	fyne.Do(func() {
 		for i, r := range a.co.rows {
 			if id == r.id {

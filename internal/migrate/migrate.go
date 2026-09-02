@@ -51,11 +51,6 @@ func createMigrationTracking(db *sql.DB) error {
 	return err
 }
 
-func recordMigration(db *sql.DB, name string) error {
-	_, err := db.Exec(`INSERT INTO migrations(name) VALUES(?);`, name)
-	return err
-}
-
 func listMigrationNames(db *sql.DB) ([]string, error) {
 	rows, err := db.Query(`SELECT name FROM migrations;`)
 	if err != nil {
@@ -118,19 +113,25 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	slices.SortFunc(unapplied, func(a migration, b migration) int {
 		return cmp.Compare(a.name, b.name)
 	})
-	var count int
 	for _, m := range unapplied {
 		p := fmt.Sprintf("migrations/%s", m.filename) // FS uses slashes on all platforms incl. Windows
 		data, err := migrations.ReadFile(p)
 		if err != nil {
 			return err
 		}
-		_, err = db.Exec(string(data))
+		tx, err := db.Begin()
 		if err != nil {
 			return err
 		}
-		count++
-		if err := recordMigration(db, m.name); err != nil {
+		if _, err := tx.Exec(string(data)); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if _, err := tx.Exec(`INSERT INTO migrations(name) VALUES(?);`, m.name); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if err := tx.Commit(); err != nil {
 			return err
 		}
 		slog.Info("Successfully applied new migration", "name", m.name)

@@ -98,6 +98,11 @@ func (s *EVEImageService) AllianceLogoAsync(id int64, size int, setter func(r fy
 
 func (s *EVEImageService) AssetIconAsync(id int64, variant app.InventoryTypeVariant, size int, setter func(r fyne.Resource)) {
 	if variant == app.VariantSKIN {
+		if size != 64 {
+			slog.Error("eveimageservice: url", "error", app.ErrInvalid)
+			setter(resourceBrokenimage64Png)
+			return
+		}
 		setter(resourceSkinicon64pxPng)
 		return
 	}
@@ -434,6 +439,7 @@ func loadDataFromURL(url string, client *http.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
 	if r.StatusCode >= 400 {
 		err := HTTPError{StatusCode: r.StatusCode, Status: r.Status}
 		return nil, err

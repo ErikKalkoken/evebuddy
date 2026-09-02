@@ -13,8 +13,9 @@ const (
 
 // Cache represents an in-memory cache.
 type Cache struct {
-	items  sync.Map
-	closeC chan struct{}
+	items     sync.Map
+	closeC    chan struct{}
+	closeOnce sync.Once
 }
 
 type item struct {
@@ -46,6 +47,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 	if cleanUpTimeout > 0 {
 		go func() {
 			ticker := time.NewTicker(cleanUpTimeout)
+			defer ticker.Stop()
 			for {
 				select {
 				case <-c.closeC:
@@ -66,10 +68,11 @@ func (c *Cache) CleanUp() {
 	n := 0
 	now := time.Now()
 	c.items.Range(func(key, value any) bool {
-		i := value.(item)
+		i := value.(*item)
 		if !i.ExpiresAt.IsZero() && now.After(i.ExpiresAt) {
-			c.Delete(key.(string))
-			n++
+			if c.items.CompareAndDelete(key, value) {
+				n++
+			}
 		}
 		return true
 	})
@@ -78,15 +81,16 @@ func (c *Cache) CleanUp() {
 
 // Clear removes all items.
 func (c *Cache) Clear() {
-	c.items.Range(func(key, _ any) bool {
-		c.items.Delete(key)
-		return true
-	})
+	c.items.Clear()
 }
 
 // Close closes the cache and frees allocated resources.
+//
+// Close is safe to call more than once.
 func (c *Cache) Close() {
-	close(c.closeC)
+	c.closeOnce.Do(func() {
+		close(c.closeC)
+	})
 }
 
 // Delete deletes an item.
@@ -107,7 +111,7 @@ func (c *Cache) Get(key string) (any, bool) {
 	if !ok {
 		return nil, false
 	}
-	i := value.(item)
+	i := value.(*item)
 	if !i.ExpiresAt.IsZero() && time.Until(i.ExpiresAt) < 0 {
 		c.Delete(key)
 		return nil, false
@@ -118,12 +122,16 @@ func (c *Cache) Get(key string) (any, bool) {
 // Set stores an item in the cache.
 //
 // If an item with the same key already exists it will be overwritten.
-// An item with timeout = 0 never expires
+// An item with timeout = 0 never expires. A negative timeout deletes any existing item and stores nothing.
 func (c *Cache) Set(key string, value any, timeout time.Duration) {
+	if timeout < 0 {
+		c.items.Delete(key)
+		return
+	}
 	var at time.Time
 	if timeout > 0 {
 		at = time.Now().Add(timeout)
 	}
-	i := item{Value: value, ExpiresAt: at}
+	i := &item{Value: value, ExpiresAt: at}
 	c.items.Store(key, i)
 }

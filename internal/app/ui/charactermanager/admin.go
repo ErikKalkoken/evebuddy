@@ -122,6 +122,9 @@ func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
 		}
 		rows = append(rows, r)
 	}
+	slices.SortFunc(rows, func(a, b adminRow) int {
+		return strings.Compare(a.characterName, b.characterName)
+	})
 	return rows, nil
 }
 

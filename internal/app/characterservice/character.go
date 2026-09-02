@@ -19,6 +19,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool,
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return false, err
 	}
+	s.scs.DeleteCharacter(id)
 	slog.Info("Character deleted", "characterID", id)
 	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
 		return false, err
@@ -35,6 +36,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool,
 		if err != nil {
 			return false, err
 		}
+		s.scs.DeleteCorporation(id)
 		slog.Info("Corporation deleted", "corporationID", id)
 	}
 	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {

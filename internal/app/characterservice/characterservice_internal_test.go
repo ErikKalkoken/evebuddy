@@ -18,6 +18,12 @@ import (
 
 type StatusCacheStub struct{}
 
+func (c *StatusCacheStub) DeleteCharacter(characterID int64) {
+}
+
+func (c *StatusCacheStub) DeleteCorporation(corporationID int64) {
+}
+
 func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {
 }
 

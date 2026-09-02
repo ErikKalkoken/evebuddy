@@ -45,6 +45,14 @@ func TestMemcache(t *testing.T) {
 		// when/then
 		assert.True(t, c.Exists("k7"))
 	})
+	t.Run("negative timeout expires key immediately", func(t *testing.T) {
+		// given
+		c := memcache.New()
+		// when
+		c.Set("k8", "xxx", -time.Second)
+		// then
+		assert.False(t, c.Exists("k8"))
+	})
 	t.Run("should report when key is expired", func(t *testing.T) {
 		// given
 		c := memcache.New()
@@ -83,6 +91,11 @@ func TestMemcache2(t *testing.T) {
 	})
 	t.Run("can close cache", func(_ *testing.T) {
 		c := memcache.New()
+		c.Close()
+	})
+	t.Run("can close cache more than once", func(_ *testing.T) {
+		c := memcache.New()
+		c.Close()
 		c.Close()
 	})
 	t.Run("can start cache without automatic clean-up", func(_ *testing.T) {

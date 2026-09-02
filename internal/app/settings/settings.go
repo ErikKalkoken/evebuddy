@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"log/slog"
 	"slices"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -299,7 +300,14 @@ func (s *Settings) LastCharacterID() int64 {
 	if s == nil {
 		return 0
 	}
-	return int64(s.p.Int(settingLastCharacterID))
+	// Stored as a string rather than via Preferences' int API: that API is backed by the
+	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE character IDs above math.MaxInt32.
+	v, err := strconv.ParseInt(s.p.String(settingLastCharacterID), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
 func (s *Settings) ResetLastCharacterID() {
@@ -313,14 +321,22 @@ func (s *Settings) SetLastCharacterID(id int64) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingLastCharacterID, int(id))
+	// Stored as a string; see LastCharacterID for why.
+	s.p.SetString(settingLastCharacterID, strconv.FormatInt(id, 10))
 }
 
 func (s *Settings) LastCorporationID() int64 {
 	if s == nil {
 		return 0
 	}
-	return int64(s.p.Int(settingLastCorporationID))
+	// Stored as a string rather than via Preferences' int API: that API is backed by the
+	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE corporation IDs above math.MaxInt32.
+	v, err := strconv.ParseInt(s.p.String(settingLastCorporationID), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
 func (s *Settings) ResetLastCorporationID() {
@@ -334,7 +350,8 @@ func (s *Settings) SetLastCorporationID(id int64) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingLastCorporationID, int(id))
+	// Stored as a string; see LastCorporationID for why.
+	s.p.SetString(settingLastCorporationID, strconv.FormatInt(id, 10))
 }
 
 func (s *Settings) MaxWalletTransactions() int {
@@ -638,17 +655,28 @@ func (s *Settings) RecentSearches() []int64 {
 	if s == nil {
 		return nil
 	}
-	return xslices.Map(s.p.IntList(settingRecentSearches), func(x int) int64 {
-		return int64(x)
-	})
+	// Stored as strings rather than via Preferences' IntList API: that API is backed by
+	// the platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE IDs above math.MaxInt32.
+	raw := s.p.StringList(settingRecentSearches)
+	out := make([]int64, 0, len(raw))
+	for _, x := range raw {
+		v, err := strconv.ParseInt(x, 10, 64)
+		if err != nil {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }
 
 func (s *Settings) SetRecentSearches(v []int64) {
 	if s == nil {
 		return
 	}
-	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int64) int {
-		return int(x)
+	// Stored as strings; see RecentSearches for why.
+	s.p.SetStringList(settingRecentSearches, xslices.Map(v, func(x int64) string {
+		return strconv.FormatInt(x, 10)
 	}))
 }
 

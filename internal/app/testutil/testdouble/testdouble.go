@@ -139,7 +139,7 @@ type CharacterServiceFake struct {
 
 func (s *CharacterServiceFake) TokenSourceForCorporation(_ context.Context, _ int64, _ set.Set[app.Role], scopes set.Set[string]) (oauth2.TokenSource, int64, error) {
 	if s.Error != nil {
-		return &testutil.TokenSourceStub{CharacterToken: s.Token, Error: s.Error}, 0, nil
+		return nil, 0, s.Error
 	}
 	return &testutil.TokenSourceStub{CharacterToken: s.Token, Error: nil}, s.Token.CharacterID, nil
 }
@@ -193,6 +193,10 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 
 type StatusCacheStub struct{}
 
+func (c *StatusCacheStub) DeleteCharacter(characterID int64) {}
+
+func (c *StatusCacheStub) DeleteCorporation(corporationID int64) {}
+
 func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {}
 
 func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {}
@@ -219,6 +223,7 @@ type UIFake struct {
 	signals           *app.Signals
 	showCharacterFunc func(ctx context.Context, characterID int64)
 	showSnackbarFunc  func(text string)
+	windows           map[string]fyne.Window
 }
 
 type UIParams struct {
@@ -286,7 +291,9 @@ func NewUIFake(args ...UIParams) *UIFake {
 		showSnackbarFunc:  arg.ShowSnackbarFunc,
 		signals:           arg.Signals,
 		settings:          arg.Settings,
+		windows:           make(map[string]fyne.Window),
 	}
+	u.iw = infoviewer.New(u)
 	return u
 }
 
@@ -314,11 +321,30 @@ func (u *UIFake) EVEUniverse() *eveuniverseservice.EVEUniverseService {
 }
 
 func (u *UIFake) GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
-	return u.app.NewWindow("Dummy"), true
+	w, ok, f := u.GetOrCreateWindowWithOnClosed(id, titles...)
+	if f != nil {
+		w.SetOnClosed(f)
+	}
+	return w, ok
 }
 
 func (u *UIFake) GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
-	return u.app.NewWindow("Dummy"), true, func() {}
+	if id != "" {
+		if w, ok := u.windows[id]; ok {
+			return w, false, nil
+		}
+	}
+	w := u.app.NewWindow("Dummy")
+	var f func()
+	if id != "" {
+		u.windows[id] = w
+		f = func() {
+			delete(u.windows, id)
+		}
+	} else {
+		f = func() {}
+	}
+	return w, true, f
 }
 
 func (u *UIFake) InfoViewer() ui.InfoViewer {

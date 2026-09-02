@@ -230,3 +230,47 @@ func TestPCache(t *testing.T) {
 		// then
 	})
 }
+
+func TestPCache_Delete_StorageFailure(t *testing.T) {
+	t.Run("should not remove entry from memory cache when storage delete fails", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBInMemory()
+		c := pcache.New(st, 0)
+		defer c.Close()
+		key := "key"
+		value := []byte("dummy")
+		c.Set(key, value, 0)
+		require.NoError(t, db.Close()) // force subsequent storage operations to fail
+
+		// when
+		c.Delete(key)
+
+		// then
+		got, found := c.Get(key)
+		if assert.True(t, found, "expected entry to still be served from memory cache after failed storage delete") {
+			xassert.Equal(t, value, got)
+		}
+	})
+}
+
+func TestPCache_Clear_StorageFailure(t *testing.T) {
+	t.Run("should not remove entries from memory cache when storage clear fails", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBInMemory()
+		c := pcache.New(st, 0)
+		defer c.Close()
+		key := "key"
+		value := []byte("dummy")
+		c.Set(key, value, 0)
+		require.NoError(t, db.Close()) // force subsequent storage operations to fail
+
+		// when
+		c.Clear()
+
+		// then
+		got, found := c.Get(key)
+		if assert.True(t, found, "expected entry to still be served from memory cache after failed storage clear") {
+			xassert.Equal(t, value, got)
+		}
+	})
+}

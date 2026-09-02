@@ -133,7 +133,7 @@ type Jobs struct {
 	selectOwner     *kxwidget.FilterChipSelect
 	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip        *kxwidget.SortChip
 	u               baseUI
 }
 
@@ -327,16 +327,15 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 	}, func(_ string) {
 		a.filterRowsAsync(-1)
 	})
+	if !forCorporation {
+		a.selectInstaller.Selected = industryInstallerMe
+	}
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
 	}, 6, 7)
 
 	// signals
-	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
-		a.update(ctx)
-	})
-
 	if forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
@@ -359,7 +358,10 @@ func newIndustryJobs(u baseUI, forCorporation bool) *Jobs {
 			}
 		})
 	} else {
-		a.selectInstaller.Selected = industryInstallerMe
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
+
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterIndustryJobs {
 				a.update(ctx)
