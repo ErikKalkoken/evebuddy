@@ -434,6 +434,7 @@ func loadDataFromURL(url string, client *http.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
 	if r.StatusCode >= 400 {
 		err := HTTPError{StatusCode: r.StatusCode, Status: r.Status}
 		return nil, err
