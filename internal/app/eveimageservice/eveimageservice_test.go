@@ -77,6 +77,39 @@ func TestImageFetchingAsync(t *testing.T) {
 	})
 }
 
+func TestAssetIconAsyncSKIN(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	t.Run("returns the SKIN icon for the expected size", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		c := testutil.NewCacheFake()
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		// when
+		var result fyne.Resource
+		s.AssetIconAsync(99, app.VariantSKIN, 64, func(r fyne.Resource) {
+			result = r
+		})
+		// then
+		assert.Equal(t, "skin_icon_64px.png", result.Name())
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+	t.Run("returns a broken image placeholder for an unsupported size", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		c := testutil.NewCacheFake()
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		// when
+		var result fyne.Resource
+		s.AssetIconAsync(99, app.VariantSKIN, 32, func(r fyne.Resource) {
+			result = r
+		})
+		// then
+		assert.Contains(t, result.Name(), "broken")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+}
+
 func TestImageFetching(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
