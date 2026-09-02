@@ -34,6 +34,11 @@ func New[T any](v T) Optional[T] {
 
 // FromZeroValue returns an optional from a value
 // where it's zero value is interpreted as empty.
+//
+// TODO: Zero is ambiguous with "no data" for callers whose underlying storage
+// can't distinguish the two (e.g. NOT NULL DB columns backing a genuinely
+// optional upstream field). Affected callers should migrate to nullable
+// storage + FromPtr/FromNullX instead of FromZeroValue.
 func FromZeroValue[T comparable](v T) Optional[T] {
 	var z T
 	if v == z {

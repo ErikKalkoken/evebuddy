@@ -177,9 +177,7 @@ func (a *Attributes) fetchData(ctx context.Context, characterID int64) (int64, [
 		points: ca.Charisma,
 	}
 	attributes[5] = characterAttributeRow{
-		name: fmt.Sprintf("Bonus Remaps Available: %s", ca.BonusRemaps.StringFunc("?", func(v int64) string {
-			return fmt.Sprint(v)
-		})),
+		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps.ValueOrZero()),
 	}
 	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
 	return total, attributes, nil
