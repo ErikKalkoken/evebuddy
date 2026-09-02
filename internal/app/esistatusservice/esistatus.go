@@ -30,8 +30,8 @@ func New(client *esi.APIClient) *ESIStatusService {
 // Fetch retrieves an update from ESI and returns it.
 func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
-		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-		status, _, err := s.esiClient.StatusAPI.GetStatus(ctx).Execute()
+		fetchCtx := xgoesi.NewContextWithOperationID(ctx, "GetStatus")
+		status, _, err := s.esiClient.StatusAPI.GetStatus(fetchCtx).Execute()
 		if err != nil {
 			if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
 				msg := swaggerErr.Error()
