@@ -65,6 +65,9 @@ type Signals struct {
 	// The current corporation was exchanged with another corporation or reset.
 	CurrentCorporationExchanged signals.Signal[*Corporation]
 
+	// Application data has has been updated.
+	DataUpdated signals.Signal[string]
+
 	// An EveUniverse section has changed after an update from ESI.
 	EveUniverseSectionChanged signals.Signal[EveUniverseSectionUpdated]
 
@@ -99,6 +102,7 @@ func NewSignals() *Signals {
 		CorporationSectionUpdated:   signals.New[CorporationSectionUpdated](),
 		CurrentCharacterExchanged:   signals.New[*Character](),
 		CurrentCorporationExchanged: signals.New[*Corporation](),
+		DataUpdated:                 signals.New[string](),
 		EveUniverseSectionChanged:   signals.New[EveUniverseSectionUpdated](),
 		EveUniverseSectionUpdated:   signals.New[EveUniverseSectionUpdated](),
 		RefreshTickerExpired:        signals.New[struct{}](),
