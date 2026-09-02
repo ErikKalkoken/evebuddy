@@ -846,7 +846,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		arg.TrainedSkillLevel = rand.Int64N(5) + 1
 	}
 	if arg.ActiveSkillLevel == 0 {
-		arg.TrainedSkillLevel = rand.Int64N(arg.TrainedSkillLevel) + 1
+		arg.ActiveSkillLevel = rand.Int64N(arg.TrainedSkillLevel) + 1
 	}
 	if arg.SkillPointsInSkill == 0 {
 		arg.SkillPointsInSkill = rand.Int64N(1_000_000)
@@ -1010,7 +1010,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -1027,12 +1027,14 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		Section:      arg.Section,
 		ErrorMessage: &arg.ErrorMessage,
 		CompletedAt:  &t,
 		ContentHash:  &hash,
+		StartedAt:    &startedAt,
 		UpdatedAt:    &arg.UpdatedAt,
 	})
 	if err != nil {
@@ -1226,7 +1228,7 @@ func (f Factory) CreateCharacterMarketOrder(args ...storage.UpdateOrCreateCharac
 		arg.VolumeTotal = rand.Int64N(100_000) + 1
 	}
 	if arg.VolumeRemains == 0 {
-		arg.VolumeTotal = max(rand.Int64N(arg.VolumeTotal), 1)
+		arg.VolumeRemains = max(rand.Int64N(arg.VolumeTotal), 1)
 	}
 	err := f.st.UpdateOrCreateCharacterMarketOrder(ctx, arg)
 	if err != nil {
@@ -1697,7 +1699,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -1711,6 +1713,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
 		Comment:       &arg.Comment,
 		CorporationID: arg.CorporationID,
@@ -1718,6 +1721,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		ErrorMessage:  &arg.ErrorMessage,
 		CompletedAt:   &t,
 		ContentHash:   &hash,
+		StartedAt:     &startedAt,
 	}
 	o, err := f.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {
@@ -1981,7 +1985,7 @@ func (f Factory) CreateEveBloodline(args ...storage.CreateEveBloodlineParams) *a
 		arg.CorporationID = x.ID
 	}
 	if arg.Description == "" {
-		arg.Name = fake.Paragraph()
+		arg.Description = fake.Paragraph()
 	}
 	if arg.Name == "" {
 		arg.Name = fake.ProductName()
@@ -2112,7 +2116,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%s-%s", arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -2126,11 +2130,13 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section:     arg.Section,
 		Error:       &arg.ErrorMessage,
 		CompletedAt: &t,
 		ContentHash: &hash,
+		StartedAt:   &startedAt,
 	}
 	o, err := f.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
 	if err != nil {
@@ -2247,7 +2253,7 @@ func (f Factory) CreateEveFaction(args ...storage.CreateEveFactionParams) *app.E
 		arg.CorporationID.Set(x.ID)
 	}
 	if arg.Description == "" {
-		arg.Name = fake.Paragraph()
+		arg.Description = fake.Paragraph()
 	}
 	if arg.Name == "" {
 		arg.Name = fake.ProductName()
