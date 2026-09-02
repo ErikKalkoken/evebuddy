@@ -1,4 +1,12 @@
-// Package ui provides globals for UI packages.
+// Package ui contains the UI components.
+//
+// This root package provides globals for all sub packages.
+//
+// # Each window has it's own package
+//
+// Two special packages:
+//   - core: core components for constructing the UI on desktop and mobile
+//   - screens: various feature screens or characters & corporations
 package ui
 
 import (
