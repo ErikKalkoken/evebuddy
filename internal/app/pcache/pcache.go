@@ -7,12 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	"golang.org/x/sync/singleflight"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
 // PCache is a persistent cache.
@@ -21,7 +18,6 @@ import (
 type PCache struct {
 	closeC chan struct{}
 	mc     *memcache.Cache
-	sfg    singleflight.Group
 	st     *storage.Storage
 }
 
@@ -110,36 +106,24 @@ func (c *PCache) Exists(key string) bool {
 	return true
 }
 
-type result struct {
-	value []byte
-	found bool
-}
-
 // Get returns an item that exists and is not expired.
 // It also reports whether the item was found.
 func (c *PCache) Get(key string) ([]byte, bool) {
-	r, err, _ := xsingleflight.Do(&c.sfg, key, func() (result, error) {
-		x, found := c.mc.Get(key)
-		if found {
-			return result{x.([]byte), true}, nil
-		}
-		v, expiresAt, err := c.st.CacheGet(context.Background(), key)
-		if errors.Is(err, app.ErrNotFound) {
-			return result{nil, false}, nil
-		}
-		if err != nil {
-			return result{nil, false}, err
-		}
-		if d, ok := timeoutFromExpiresAt(expiresAt); ok {
-			c.mc.Set(key, v, d)
-		}
-		return result{v, true}, nil
-	})
+	if x, found := c.mc.Get(key); found {
+		return x.([]byte), true
+	}
+	v, expiresAt, err := c.st.CacheGet(context.Background(), key)
+	if errors.Is(err, app.ErrNotFound) {
+		return nil, false
+	}
 	if err != nil {
 		slog.Error("Failed to fetch from pcache", "key", key, "error", err)
 		return nil, false
 	}
-	return r.value, r.found
+	if d, ok := timeoutFromExpiresAt(expiresAt); ok {
+		c.mc.Set(key, v, d)
+	}
+	return v, true
 }
 
 // timeoutFromExpiresAt returns the memcache timeout for expiresAt
