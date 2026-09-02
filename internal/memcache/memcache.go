@@ -46,6 +46,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 	if cleanUpTimeout > 0 {
 		go func() {
 			ticker := time.NewTicker(cleanUpTimeout)
+			defer ticker.Stop()
 			for {
 				select {
 				case <-c.closeC:
@@ -79,10 +80,7 @@ func (c *Cache) CleanUp() {
 
 // Clear removes all items.
 func (c *Cache) Clear() {
-	c.items.Range(func(key, _ any) bool {
-		c.items.Delete(key)
-		return true
-	})
+	c.items.Clear()
 }
 
 // Close closes the cache and frees allocated resources.
