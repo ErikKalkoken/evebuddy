@@ -3,6 +3,8 @@ package statuscache_test
 import (
 	"context"
 	"maps"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -568,6 +570,25 @@ func TestCharacter(t *testing.T) {
 		want := set.Of(c1.ID, c2.ID)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("list characters in alphabetical order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		for _, name := range []string{"Charlie", "Alice", "Bob"} {
+			c := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: name})
+			factory.CreateCharacterFull(storage.CreateCharacterParams{ID: c.ID})
+		}
+		err := sc.UpdateCharacters(ctx, st)
+		require.NoError(t, err)
+		// when
+		got := sc.ListCharacters()
+		// then
+		names := make([]string, len(got))
+		for i, c := range got {
+			names[i] = c.Name
+		}
+		assert.Equal(t, []string{"Alice", "Bob", "Charlie"}, names)
+	})
 }
 
 func TestCorporations(t *testing.T) {
@@ -591,6 +612,25 @@ func TestCorporations(t *testing.T) {
 		assert.Len(t, xx, 1)
 		xassert.Equal(t, c.ID, xx[0].ID)
 		xassert.Equal(t, "Alpha", xx[0].Name)
+	})
+	t.Run("list corporations in alphabetical order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		for _, name := range []string{"Charlie Corp", "Alice Corp", "Bob Corp"} {
+			ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: name})
+			factory.CreateCorporation(ec.ID)
+		}
+		err := sc.UpdateCorporations(ctx, st)
+		require.NoError(t, err)
+		// when
+		got := sc.ListCorporations()
+		// then
+		names := make([]string, len(got))
+		for i, c := range got {
+			names[i] = c.Name
+		}
+		assert.Equal(t, []string{"Alice Corp", "Bob Corp", "Charlie Corp"}, names)
 	})
 }
 
@@ -881,6 +921,20 @@ func TestGeneralSections(t *testing.T) {
 		xassert.Equal(t, want, got)
 		assert.False(t, m[app.SectionEveTypes].IsMissing())
 		assert.True(t, m[app.SectionEveCharacters].IsMissing())
+	})
+	t.Run("list general sections in alphabetical order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		if err := sc.Init(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListEveUniverseSections()
+		// then
+		assert.True(t, slices.IsSortedFunc(x, func(a, b app.CacheSectionStatus) int {
+			return strings.Compare(a.SectionName, b.SectionName)
+		}))
 	})
 }
 

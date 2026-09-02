@@ -192,16 +192,7 @@ func (sc *StatusCache) ListCharacterSections(characterID int64) []app.CacheSecti
 
 	var list []app.CacheSectionStatus
 	for _, section := range app.CharacterSections {
-		v, ok := sc.CharacterSection(characterID, section)
-		if !ok {
-			v = app.CacheSectionStatus{
-				EntityID:    characterID,
-				EntityName:  sc.CharacterName(characterID),
-				SectionID:   section.String(),
-				SectionName: section.DisplayName(),
-				Timeout:     section.Timeout(),
-			}
-		}
+		v, _ := sc.CharacterSection(characterID, section)
 		list = append(list, v)
 	}
 	return list
@@ -226,22 +217,7 @@ func (sc *StatusCache) CharacterSectionSummary(characterID int64) app.StatusSumm
 }
 
 func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSummary {
-	var ss statusSummary
-	for _, o := range sc.ListCharacterSections(characterID) {
-		if o.HasError() {
-			ss.errors++
-		} else if o.IsMissing() {
-			ss.missing++
-		} else if o.HasComment() {
-			ss.skipped++
-		} else if o.IsCurrent() {
-			ss.current++
-		}
-		if o.IsRunning() {
-			ss.isRunning = true
-		}
-	}
-	return ss
+	return calcSectionSummary(sc.ListCharacterSections(characterID))
 }
 
 // DeleteCharacter removes all cached section status for a character.
@@ -372,16 +348,7 @@ func (sc *StatusCache) ListCorporationSections(corporationID int64) []app.CacheS
 	}
 	var list []app.CacheSectionStatus
 	for _, section := range app.CorporationSections {
-		v, ok := sc.CorporationSection(corporationID, section)
-		if !ok {
-			v = app.CacheSectionStatus{
-				EntityID:    corporationID,
-				EntityName:  sc.CorporationName(corporationID),
-				SectionID:   section.String(),
-				SectionName: section.DisplayName(),
-				Timeout:     section.Timeout(),
-			}
-		}
+		v, _ := sc.CorporationSection(corporationID, section)
 		list = append(list, v)
 	}
 	return list
@@ -405,22 +372,7 @@ func (sc *StatusCache) CorporationSectionSummary(corporationID int64) app.Status
 }
 
 func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) statusSummary {
-	var ss statusSummary
-	for _, o := range sc.ListCorporationSections(corporationID) {
-		if o.HasError() {
-			ss.errors++
-		} else if o.IsMissing() {
-			ss.missing++
-		} else if o.HasComment() {
-			ss.skipped++
-		} else if o.IsCurrent() {
-			ss.current++
-		}
-		if o.IsRunning() {
-			ss.isRunning = true
-		}
-	}
-	return ss
+	return calcSectionSummary(sc.ListCorporationSections(corporationID))
 }
 
 // DeleteCorporation removes all cached section status for a corporation.
@@ -538,16 +490,7 @@ func (sc *StatusCache) ListEveUniverseSections() []app.CacheSectionStatus {
 	}
 	var list []app.CacheSectionStatus
 	for _, section := range app.EveUniverseSections {
-		v, ok := sc.EveUniverseSection(section)
-		if !ok {
-			v = app.CacheSectionStatus{
-				EntityID:    app.EveUniverseSectionEntityID,
-				EntityName:  app.EveUniverseSectionEntityName,
-				SectionID:   section.String(),
-				SectionName: section.DisplayName(),
-				Timeout:     section.Timeout(),
-			}
-		}
+		v, _ := sc.EveUniverseSection(section)
 		list = append(list, v)
 	}
 	return list
@@ -586,9 +529,13 @@ func (sc *StatusCache) EveUniverseSectionSummary() app.StatusSummary {
 }
 
 func (sc *StatusCache) calcEveUniverseSectionSummary() statusSummary {
+	return calcSectionSummary(sc.ListEveUniverseSections())
+}
+
+// calcSectionSummary tallies a list of section statuses into a statusSummary.
+func calcSectionSummary(list []app.CacheSectionStatus) statusSummary {
 	var ss statusSummary
-	gsl := sc.ListEveUniverseSections()
-	for _, o := range gsl {
+	for _, o := range list {
 		if o.HasError() {
 			ss.errors++
 		} else if o.IsMissing() {
