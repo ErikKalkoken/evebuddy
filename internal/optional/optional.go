@@ -283,11 +283,9 @@ func Sum[T numeric](v ...Optional[T]) Optional[T] {
 func SumNonEmpty[T numeric](v ...Optional[T]) Optional[T] {
 	var s Optional[T]
 	for _, u := range v {
-		var v T
 		if u.isPresent {
-			v = u.value
 			s.isPresent = true
-			s.value += v
+			s.value += u.value
 		}
 	}
 	return s
