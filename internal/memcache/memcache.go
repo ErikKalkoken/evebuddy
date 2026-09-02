@@ -68,7 +68,7 @@ func (c *Cache) CleanUp() {
 	n := 0
 	now := time.Now()
 	c.items.Range(func(key, value any) bool {
-		i := value.(item)
+		i := value.(*item)
 		if !i.ExpiresAt.IsZero() && now.After(i.ExpiresAt) {
 			if c.items.CompareAndDelete(key, value) {
 				n++
@@ -111,7 +111,7 @@ func (c *Cache) Get(key string) (any, bool) {
 	if !ok {
 		return nil, false
 	}
-	i := value.(item)
+	i := value.(*item)
 	if !i.ExpiresAt.IsZero() && time.Until(i.ExpiresAt) < 0 {
 		c.Delete(key)
 		return nil, false
@@ -132,6 +132,6 @@ func (c *Cache) Set(key string, value any, timeout time.Duration) {
 	if timeout > 0 {
 		at = time.Now().Add(timeout)
 	}
-	i := item{Value: value, ExpiresAt: at}
+	i := &item{Value: value, ExpiresAt: at}
 	c.items.Store(key, i)
 }
