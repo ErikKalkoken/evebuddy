@@ -265,7 +265,6 @@ func FlatMap[X, Y any](o Optional[X], mapper func(v X) Optional[Y]) Optional[Y] 
 
 // Sum returns the sum of values v.
 // When any value is empty it returns an empty value.
-// The behavior is models after SQL's SUM of nullable values.
 func Sum[T numeric](v ...Optional[T]) Optional[T] {
 	var s Optional[T]
 	for _, u := range v {
@@ -278,9 +277,9 @@ func Sum[T numeric](v ...Optional[T]) Optional[T] {
 	return s
 }
 
-// SumNonEmpty returns the sum of non-empty values v.
-// Empty values are ignored.
+// SumNonEmpty returns the sum of non-empty values v, ignoring empty ones.
 // When all values are empty it returns an empty value.
+// The behavior is modeled after SQL's SUM of nullable values.
 func SumNonEmpty[T numeric](v ...Optional[T]) Optional[T] {
 	var s Optional[T]
 	for _, u := range v {
