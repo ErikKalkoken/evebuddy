@@ -199,6 +199,15 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 		assert.Equal(t, kxwidget.SortOrderDescending, chip.Order)
 	})
 
+	t.Run("does not panic when no column is currently sorted", func(t *testing.T) {
+		sc := xwidget.NewColumnSorter(columns, "Nonexistent", xwidget.SortAsc)
+		var chip *kxwidget.SortChip
+		assert.NotPanics(t, func() {
+			chip = sc.NewSortChip(nil)
+		})
+		assert.Equal(t, "", chip.DefaultColumn)
+	})
+
 	t.Run("selecting a column updates the sorter and calls changed", func(t *testing.T) {
 		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
 		var called bool

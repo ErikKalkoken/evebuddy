@@ -283,7 +283,10 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string)
 		return ignored.Contains(c)
 	})
 	col, dir := cs.current() // TODO: Hack, replace with defaults
-	defaultColumn := cs.columns.cols[col].Label
+	var defaultColumn string
+	if col >= 0 {
+		defaultColumn = cs.columns.cols[col].Label
+	}
 	defaultOrder := sortOrderFromDir(dir)
 	w := kxwidget.NewSortChip(sortColumns, defaultColumn, defaultOrder, func(col string, order kxwidget.SortOrder) {
 		idx, ok := cs.columns.labelLookup[col]
