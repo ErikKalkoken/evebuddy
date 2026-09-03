@@ -366,26 +366,26 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 
 	// filters
 	a.searchEntry = xwidget.NewSearchEntry("Search items", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectOwner = kxwidget.NewFilterChipSelectWithSearch("Owner", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
@@ -393,14 +393,14 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			totalNo,
 		},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 	)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -541,7 +541,7 @@ func (a *AssetSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
-func (a *AssetSearch) filterRowsAsync(sortCol int) {
+func (a *AssetSearch) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -666,7 +666,7 @@ func (a *AssetSearch) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -707,7 +707,7 @@ func (a *AssetSearch) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.top.Hide()
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

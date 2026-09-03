@@ -173,7 +173,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 
 	// filters
 	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectSkill = kxwidget.NewFilterChipSelect("", []string{
@@ -181,22 +181,22 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 		searchSkillRestricted,
 		searchSkillAll,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSkill.Selected = searchSkillActive
 	a.selectSkill.SortDisabled = true
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -269,7 +269,7 @@ func (a *SkillSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
-func (a *SkillSearch) filterRowsAsync(sortCol int) {
+func (a *SkillSearch) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
@@ -349,7 +349,7 @@ func (a *SkillSearch) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -372,7 +372,7 @@ func (a *SkillSearch) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.top.Hide()
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

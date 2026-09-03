@@ -75,8 +75,6 @@ func (h DataColumn[T]) minWidth() float32 {
 }
 
 // DataColumns represents the columns of a data table.
-//
-// A column's ID is the index of its position in the cols slice passed to [NewDataColumns].
 type DataColumns[T any] struct {
 	cols           []DataColumn[T]
 	labelLookup    map[string]int // maps labels to their index in cols
@@ -225,16 +223,17 @@ func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
 // 	return len(cs.cols)
 // }
 
-// CalcSort calculates how and if to apply sorting to column idx.
-func (cs *ColumnSorter[T]) CalcSort(idx int) (int, SortDir, bool) {
-	if idx < 0 || idx >= len(cs.cols) {
+// CalcSort calculates how and if to apply sorting to the column identified by label.
+func (cs *ColumnSorter[T]) CalcSort(label string) (string, SortDir, bool) {
+	idx, ok := cs.columns.labelLookup[label]
+	if !ok {
 		idx = -1
 	}
 	var dir SortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
 		if dir == sortNone {
-			return 0, 0, false
+			return "", 0, false
 		}
 		dir++
 		if dir > SortDesc {
@@ -245,18 +244,22 @@ func (cs *ColumnSorter[T]) CalcSort(idx int) (int, SortDir, bool) {
 		idx, dir = cs.current()
 	}
 	doSort := idx >= 0 && dir.isSorting()
-	return idx, dir, doSort
+	if idx < 0 {
+		return "", dir, doSort
+	}
+	return cs.columns.cols[idx].Label, dir, doSort
 }
 
 // SortRows sorts the rows.
-func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort bool) {
+func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol string, dir SortDir, doSort bool) {
 	if !doSort {
 		return
 	}
-	if sortCol < 0 || sortCol >= len(cs.columns.cols) {
+	idx, ok := cs.columns.labelLookup[sortCol]
+	if !ok {
 		return
 	}
-	f := cs.columns.cols[sortCol].Sort
+	f := cs.columns.cols[idx].Sort
 	if f == nil {
 		return
 	}
@@ -318,7 +321,7 @@ func MakeDataTable[S ~[]E, E any](
 	data *S,
 	defaultCreate func() fyne.CanvasObject,
 	columnSorter *ColumnSorter[E],
-	filterRows func(id int),
+	filterRows func(label string),
 	onSelected func(int, E),
 ) *widget.Table {
 	if defaultCreate == nil {
@@ -423,7 +426,7 @@ func MakeDataTable[S ~[]E, E any](
 		}
 
 		onTapped := func() {
-			filterRows(tci.Col)
+			filterRows(h.Label)
 		}
 
 		headerWidget.Update(h.Label, dir, r, onTapped)

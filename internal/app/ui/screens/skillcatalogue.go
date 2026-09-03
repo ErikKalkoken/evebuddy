@@ -250,7 +250,7 @@ func (a *SkillCatalogue) filterRowsAsync() {
 	group := a.selectGroup.Selected
 	main := a.selectMain.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		switch main {

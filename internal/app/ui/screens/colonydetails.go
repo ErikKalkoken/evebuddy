@@ -285,7 +285,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	type2 := a.selectType2.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		if type2 != "" {

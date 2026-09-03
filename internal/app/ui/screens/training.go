@@ -244,7 +244,7 @@ func NewTraining(u baseUI) *Training {
 	a.ExtendBaseWidget(a)
 
 	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	if a.u.IsMobile() {
@@ -271,14 +271,14 @@ func NewTraining(u baseUI) *Training {
 			trainingStatusActive,
 			trainingStatusInActive,
 		}, func(string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 	)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -490,7 +490,7 @@ func (a *Training) saveTrainingAsCSV() {
 	d.Resize(winSize)
 }
 
-func (a *Training) filterRowsAsync(sortCol int) {
+func (a *Training) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
@@ -554,7 +554,7 @@ func (a *Training) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.refreshOnUpdate()
 	})
 }
@@ -581,7 +581,7 @@ func (a *Training) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.refreshOnUpdate()
 	})
 }

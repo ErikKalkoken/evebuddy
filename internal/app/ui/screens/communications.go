@@ -640,7 +640,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 	totalRows := len(rows)
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 	go func() {
 		// filter
 		if x := filter[communicationsFilterStatus]; x != "" {

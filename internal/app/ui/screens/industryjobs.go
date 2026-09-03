@@ -265,17 +265,17 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	}
 
 	a.searchEntry = xwidget.NewSearchEntry("Search blueprints", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -285,7 +285,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectStatus.Selected = industryStatusActive
 	a.selectStatus.SortDisabled = true
@@ -298,21 +298,21 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	if !forCorporation {
 		a.selectInstaller.Selected = industryInstallerMe
 	}
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, "Owner", "Installer")
 
 	// signals
@@ -505,7 +505,7 @@ func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
 
 // filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *IndustryJobs) filterRowsAsync(sortCol int) {
+func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
@@ -631,7 +631,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = jobs
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(readyCount)
 		}

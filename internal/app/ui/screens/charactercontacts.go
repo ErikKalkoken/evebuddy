@@ -248,7 +248,7 @@ func (a *CharacterContacts) filterRowsAsync() {
 	standing := a.selectStanding.Selected
 	watched := a.selectWatched.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		var hasNPC bool

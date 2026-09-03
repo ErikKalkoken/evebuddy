@@ -186,10 +186,10 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		)
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	return a
 }
@@ -272,7 +272,7 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *WalletJournal) filterRowsAsync(sortCol int) {
+func (a *WalletJournal) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	et := a.selectType.Selected
@@ -319,7 +319,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	character := a.character.Load()
@@ -347,7 +347,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 
@@ -399,7 +399,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporation := a.corporation.Load()
@@ -427,7 +427,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

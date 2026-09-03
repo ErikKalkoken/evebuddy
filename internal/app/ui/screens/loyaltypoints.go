@@ -189,7 +189,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	faction := a.selectFaction.Selected
 	tag := a.selectTag.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		// filter data

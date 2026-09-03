@@ -46,7 +46,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 			return widget.NewLabel("Template")
 		},
 		xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc),
-		func(i int) {},
+		func(label string) {},
 		nil,
 	)
 	w := test.NewWindow(x)
@@ -82,11 +82,6 @@ func TestNewDataColumns(t *testing.T) {
 }
 
 func TestColumsSorter_CalcSortIdx(t *testing.T) {
-	const (
-		id1 = 0
-		id2 = 1
-		id3 = 2
-	)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
 		Label: "Alpha",
 		Sort: func(a, b myRow) int {
@@ -104,8 +99,8 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		name         string
 		initialLabel string
 		initialDir   xwidget.SortDir
-		sortID       int
-		wantID       int
+		sortLabel    string
+		wantLabel    string
 		wantDir      xwidget.SortDir
 		wantSort     bool
 	}{
@@ -113,8 +108,8 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			name:         "initial sort, asc->desc",
 			initialLabel: "Alpha",
 			initialDir:   xwidget.SortAsc,
-			sortID:       id1,
-			wantID:       id1,
+			sortLabel:    "Alpha",
+			wantLabel:    "Alpha",
 			wantDir:      xwidget.SortDesc,
 			wantSort:     true,
 		},
@@ -122,8 +117,8 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			name:         "initial sort, desc->asc",
 			initialLabel: "Alpha",
 			initialDir:   xwidget.SortDesc,
-			sortID:       id1,
-			wantID:       id1,
+			sortLabel:    "Alpha",
+			wantLabel:    "Alpha",
 			wantDir:      xwidget.SortAsc,
 			wantSort:     true,
 		},
@@ -131,8 +126,8 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			name:         "initial sort, none->asc",
 			initialLabel: "Alpha",
 			initialDir:   xwidget.SortOff,
-			sortID:       id1,
-			wantID:       id1,
+			sortLabel:    "Alpha",
+			wantLabel:    "Alpha",
 			wantDir:      xwidget.SortAsc,
 			wantSort:     true,
 		},
@@ -140,22 +135,22 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			name:         "initial sort, don't sort",
 			initialLabel: "Alpha",
 			initialDir:   xwidget.SortOff,
-			sortID:       -1,
+			sortLabel:    "",
 			wantSort:     false,
 		},
 		{
 			name:         "initial sort, sort diabled",
 			initialLabel: "Alpha",
 			initialDir:   xwidget.SortOff,
-			sortID:       id3,
+			sortLabel:    "Charlie",
 			wantSort:     false,
 		},
 		{
 			name:         "initial sort 2, asc->desc",
 			initialLabel: "Bravo",
 			initialDir:   xwidget.SortAsc,
-			sortID:       id2,
-			wantID:       id2,
+			sortLabel:    "Bravo",
+			wantLabel:    "Bravo",
 			wantDir:      xwidget.SortDesc,
 			wantSort:     true,
 		},
@@ -163,8 +158,8 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			name:         "initial no sort, asc->desc",
 			initialLabel: "Nonexistent",
 			initialDir:   xwidget.SortOff,
-			sortID:       id2,
-			wantID:       id2,
+			sortLabel:    "Bravo",
+			wantLabel:    "Bravo",
 			wantDir:      xwidget.SortAsc,
 			wantSort:     true,
 		},
@@ -172,10 +167,10 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			sc := xwidget.NewColumnSorter(columns, tc.initialLabel, tc.initialDir)
-			gotID, gotDir, gotSort := sc.CalcSort(tc.sortID)
+			gotLabel, gotDir, gotSort := sc.CalcSort(tc.sortLabel)
 			assert.Equal(t, tc.wantSort, gotSort)
 			if tc.wantSort {
-				assert.Equal(t, tc.wantID, gotID)
+				assert.Equal(t, tc.wantLabel, gotLabel)
 				assert.Equal(t, tc.wantDir, gotDir)
 			}
 		})
@@ -209,9 +204,9 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 		var called bool
 		chip := sc.NewSortChip(func() { called = true })
 		chip.OnChanged("Charlie", kxwidget.SortOrderDescending)
-		gotID, gotDir, gotSort := sc.CalcSort(-1)
+		gotLabel, gotDir, gotSort := sc.CalcSort("")
 		assert.True(t, gotSort)
-		assert.Equal(t, 2, gotID)
+		assert.Equal(t, "Charlie", gotLabel)
 		assert.Equal(t, xwidget.SortDesc, gotDir)
 		assert.True(t, called)
 	})

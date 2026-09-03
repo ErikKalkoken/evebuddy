@@ -183,28 +183,28 @@ func NewStructures(u baseUI) *Structures {
 
 	// filter
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -238,7 +238,7 @@ func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Structures) filterRowsAsync(sortCol int) {
+func (a *Structures) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -326,7 +326,7 @@ func (a *Structures) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporationID := a.corporation.Load().IDOrZero()
@@ -353,7 +353,7 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(reinforceCount)
 		}

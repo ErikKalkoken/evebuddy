@@ -233,13 +233,13 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 		industrySlotsFreeSome,
 		industrySlotsFreeNone,
 	}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// signals
@@ -315,7 +315,7 @@ func (a *IndustrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRo
 	return w
 }
 
-func (a *IndustrySlots) filterRowsAsync(sortCol int) {
+func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
@@ -389,7 +389,7 @@ func (a *IndustrySlots) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

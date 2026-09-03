@@ -218,38 +218,38 @@ func NewColonies(u baseUI) *Colonies {
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusAllIdle,
 	}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.searchEntry = xwidget.NewSearchEntry("Search systems & output", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -414,7 +414,7 @@ func (w *colonyListItem) set(r colonyRow) {
 	w.status.Set(r.statusDisplay())
 }
 
-func (a *Colonies) filterRowsAsync(sortCol int) {
+func (a *Colonies) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
@@ -545,7 +545,7 @@ func (a *Colonies) Update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})
 }

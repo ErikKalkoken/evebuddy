@@ -178,21 +178,21 @@ func NewJumpClones(u baseUI) *JumpClones {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 
 	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// signals
@@ -250,7 +250,7 @@ func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *JumpClones) filterRowsAsync(sortCol int) {
+func (a *JumpClones) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	character := a.selectCharacter.Selected
@@ -321,13 +321,13 @@ func (a *JumpClones) update(ctx context.Context) {
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 		return
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if len(rows) > 0 && a.origin != nil {
 			a.updateRoutesAsync()
 		}
@@ -400,7 +400,7 @@ func (a *JumpClones) updateRoutesAsync() {
 				a.rows[i].route = m[solarSystem.ID]
 			}
 			a.columnSorter.Set("Jumps", xwidget.SortAsc)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}()
 }

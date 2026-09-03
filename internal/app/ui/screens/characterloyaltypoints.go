@@ -170,7 +170,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 	faction := a.selectFaction.Selected
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		if faction != "" {

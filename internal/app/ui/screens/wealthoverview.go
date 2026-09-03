@@ -188,7 +188,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 	a.ExtendBaseWidget(a)
 
 	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
@@ -249,10 +249,10 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		)
 	}
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -309,7 +309,7 @@ func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *WealthOverview) filterRowsAsync(sortCol int) {
+func (a *WealthOverview) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectTag := a.selectTag.Selected
@@ -394,7 +394,7 @@ func (a *WealthOverview) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

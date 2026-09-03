@@ -220,16 +220,16 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		marketTransactionActivityBuy,
 		marketTransactionActivitySell,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
 		"Client",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
@@ -237,7 +237,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		"Location",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
@@ -245,18 +245,18 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		"Type",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
 		[]string{}, func(string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	return a
 }
@@ -340,7 +340,7 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *WalletTransactions) filterRowsAsync(sortCol int) {
+func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -440,7 +440,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	character := a.character.Load()
@@ -468,7 +468,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 
@@ -527,7 +527,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporation := a.corporation.Load()
@@ -555,7 +555,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

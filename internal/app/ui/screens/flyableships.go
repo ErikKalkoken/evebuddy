@@ -187,7 +187,7 @@ func (a *FlyableShips) filterRowsAsync() {
 	group := a.selectGroup.Selected
 	flyable := a.selectFlyable.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		if group != "" {
