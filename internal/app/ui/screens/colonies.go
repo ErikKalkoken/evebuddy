@@ -124,15 +124,6 @@ type Colonies struct {
 	u                 baseUI
 }
 
-const (
-	coloniesColPlanet = iota
-	coloniesColStatus
-	coloniesColExtracting
-	coloniesColEndDate
-	coloniesColProducing
-	coloniesColCharacter
-)
-
 func NewColonies(u baseUI) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
 		Label: "Planet",
@@ -204,7 +195,7 @@ func NewColonies(u baseUI) *Colonies {
 	}})
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "End data", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

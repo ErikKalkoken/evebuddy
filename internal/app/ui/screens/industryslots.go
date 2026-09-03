@@ -175,7 +175,7 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 		}})
 	a := &IndustrySlots{
 		footer:       ui.NewLabelWithWrapping(""),
-		columnSorter: xwidget.NewColumnSorter(columns, industrySlotsColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		slotType:     slotType,
 		u:            u,
 	}

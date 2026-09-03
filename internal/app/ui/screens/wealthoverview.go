@@ -192,7 +192,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		},
 	})
 	a := &WealthOverview{
-		columnSorter: xwidget.NewColumnSorter(columns, wealthOverviewColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		u:            u,
 	}

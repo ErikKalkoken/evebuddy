@@ -72,7 +72,7 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 			return cmp.Compare(a.totalPoints, b.totalPoints)
 		},
 	}}),
-		0,
+		"Corporation",
 		xwidget.SortAsc,
 	)
 	a := &LoyaltyPoints{

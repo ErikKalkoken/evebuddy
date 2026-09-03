@@ -71,7 +71,7 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 			return strings.Compare(a.groupName, b.groupName)
 		},
 	}}),
-		0,
+		"Type",
 		xwidget.SortAsc,
 	)
 	a := &FlyableShips{

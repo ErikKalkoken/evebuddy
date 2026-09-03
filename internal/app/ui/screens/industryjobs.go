@@ -50,18 +50,6 @@ const (
 	industryStatusReady              = "Ready for delivery"
 )
 
-// Column number
-const (
-	industryJobsColBlueprint = iota
-	industryJobsColStatus
-	industryJobsColRuns
-	industryJobsColActivity
-	industryJobsColEndDate
-	industryJobsColLocation
-	industryJobsColOwner
-	industryJobsColInstaller
-)
-
 // industryJobRow represents a job row in the list widgets.
 // It combines character and corporation jobs and has precalculated fields for filters.
 type industryJobRow struct {
@@ -253,7 +241,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	}})
 	a := &IndustryJobs{
 		footer:         ui.NewLabelWithWrapping(""),
-		columnSorter:   xwidget.NewColumnSorter(columns, industryJobsColEndDate, xwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, "End date", xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,
 	}

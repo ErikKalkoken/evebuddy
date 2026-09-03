@@ -90,17 +90,6 @@ type CharacterOverview struct {
 	u                 baseUI
 }
 
-const (
-	overviewColAlliance = iota
-	overviewColCharacter
-	overviewColCorporation
-	overviewColMail
-	overviewColRegion
-	overviewColSkillpoints
-	overviewColSolarSystem
-	overviewColWallet
-)
-
 func NewCharacterOverview(u baseUI) *CharacterOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
 		Label: "Alliance",
@@ -149,7 +138,7 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 
 	a := &CharacterOverview{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		loadInfo:     info,
 		u:            u,
 	}

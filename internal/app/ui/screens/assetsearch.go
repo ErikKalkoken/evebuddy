@@ -340,7 +340,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	}
 	columns := xwidget.NewDataColumns(cols)
 	a := &AssetSearch{
-		columnSorter:   xwidget.NewColumnSorter(columns, 0, xwidget.SortAsc),
+		columnSorter:   xwidget.NewColumnSorter(columns, "Item", xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         ui.NewLabelWithTruncation(""),
 		top:            ui.NewLabelWithWrapping(""),

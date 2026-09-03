@@ -115,16 +115,6 @@ func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransacti
 	return a
 }
 
-const (
-	walletTransactionColDate = iota
-	walletTransactionColQuantity
-	walletTransactionColType
-	walletTransactionColPrice
-	walletTransactionColTotal
-	walletTransactionColClient
-	walletTransactionColLocation
-)
-
 func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
 		Label: "Date",
@@ -198,7 +188,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	}})
 	a := &WalletTransactions{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, walletTransactionColDate, xwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
 		division:     d,
 		u:            u,
 	}

@@ -152,7 +152,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 			},
 		}})
 	a := &ContractSlots{
-		columnSorter:     xwidget.NewColumnSorter(columns, contractSlotsCharacter, xwidget.SortAsc),
+		columnSorter:     xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		corporationSlots: corporationSlots,
 		footer:           ui.NewLabelWithWrapping(""),
 		u:                u,

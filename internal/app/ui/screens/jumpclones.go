@@ -134,7 +134,7 @@ func NewJumpClones(u baseUI) *JumpClones {
 		},
 	}})
 	a := &JumpClones{
-		columnSorter: xwidget.NewColumnSorter(columns, jumpClonesColLocation, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
 		originLabel:  xwidget.NewRichTextWithText("(not set)"),
 		footer:       ui.NewLabelWithTruncation(""),
 		u:            u,
@@ -407,7 +407,7 @@ func (a *JumpClones) updateRoutesAsync() {
 				}
 				a.rows[i].route = m[solarSystem.ID]
 			}
-			a.columnSorter.Set(jumpClonesColJumps, xwidget.SortAsc)
+			a.columnSorter.Set("Jumps", xwidget.SortAsc)
 			a.filterRowsAsync(-1)
 		})
 	}()

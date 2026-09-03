@@ -132,18 +132,6 @@ type Training struct {
 	u            baseUI
 }
 
-const (
-	trainingColCharacter = iota
-	trainingColTags
-	trainingColCurrentSkill
-	trainingColCurrentRemaining
-	trainingColQueuedCount
-	trainingColQueuedRemaining
-	trainingColTrainedSP
-	trainingColUnallocatedSP
-	trainingColTotalSP
-)
-
 func NewTraining(u baseUI) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[trainingRow]{
@@ -249,7 +237,7 @@ func NewTraining(u baseUI) *Training {
 			},
 		}})
 	a := &Training{
-		columnSorter: xwidget.NewColumnSorter(columns, trainingColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		u:            u,
 	}

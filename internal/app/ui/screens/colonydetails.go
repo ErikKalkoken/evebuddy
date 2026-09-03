@@ -137,7 +137,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 			})
 		},
 	}}),
-		0,
+		"Group",
 		xwidget.SortAsc,
 	)
 	planet := xwidget.NewTappableRichText(nil, nil)

@@ -130,6 +130,16 @@ func (dc DataColumns[T]) Values() iter.Seq[DataColumn[T]] {
 	return slices.Values(dc.cols)
 }
 
+// indexByLabel returns the index of the column with the given label.
+func (dc DataColumns[T]) indexByLabel(label string) (int, bool) {
+	for i, c := range dc.cols {
+		if c.Label == label {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
 // ColumnSorter represents an ordered list of columns which can be sorted.
 type ColumnSorter[T any] struct {
 	cols       []SortDir
@@ -140,10 +150,11 @@ type ColumnSorter[T any] struct {
 }
 
 // NewColumnSorter returns a new ColumSorter.
-// idx and dir defines the initially sorted column.
+// label and dir defines the initially sorted column.
 // It panics if semantic checks fail.
-func NewColumnSorter[T any](columns DataColumns[T], idx int, dir SortDir) *ColumnSorter[T] {
-	if idx < 0 || idx >= columns.Size() {
+func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *ColumnSorter[T] {
+	idx, ok := columns.indexByLabel(label)
+	if !ok {
 		dir = SortOff
 	}
 	if dir == SortOff {
@@ -157,7 +168,7 @@ func NewColumnSorter[T any](columns DataColumns[T], idx int, dir SortDir) *Colum
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	cs.init()
-	cs.Set(idx, dir)
+	cs.setIdx(idx, dir)
 	return cs
 }
 
@@ -197,9 +208,10 @@ func (cs *ColumnSorter[T]) current() (idx int, dir SortDir) {
 // 	cs.Set(cs.initialID, cs.initialDir)
 // }
 
-// Set sets the sort direction for a column.
-func (cs *ColumnSorter[T]) Set(idx int, dir SortDir) {
-	if idx < 0 || idx >= len(cs.cols) {
+// Set sets the sort direction for a column. Unknown labels are ignored.
+func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
+	idx, ok := cs.columns.indexByLabel(label)
+	if !ok {
 		return
 	}
 	cs.setIdx(idx, dir)

@@ -137,16 +137,6 @@ type MarketOrders struct {
 	u            baseUI
 }
 
-const (
-	marketOrdersColType = iota
-	marketOrdersColVolume
-	marketOrdersColPrice
-	marketOrdersColState
-	marketOrdersColLocation
-	marketOrdersColRegion
-	marketOrdersColOwner
-)
-
 func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[marketOrderRow]{
@@ -222,7 +212,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			},
 		}})
 	a := &MarketOrders{
-		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Type", xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
 		isBuyOrders:  isBuyOrders,
 		u:            u,

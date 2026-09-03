@@ -30,16 +30,6 @@ const (
 	searchSkillAll        = "All skills"
 )
 
-// Column number in search table
-const (
-	skillSearchColSkill = iota
-	skillSearchColActiveLevel
-	skillSearchColTrainedLevel
-	skillSearchColSkillPoints
-	skillSearchColGroup
-	skillSearchColCharacter
-)
-
 type skillSearchRow struct {
 	activeLevel        int64
 	activeLevelRoman   string
@@ -158,7 +148,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 
 	columns := xwidget.NewDataColumns(cols)
 	a := &SkillSearch{
-		columnSorter: xwidget.NewColumnSorter(columns, skillSearchColSkill, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Skill", xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
 		top:          ui.NewLabelWithWrapping(""),
 		u:            u,

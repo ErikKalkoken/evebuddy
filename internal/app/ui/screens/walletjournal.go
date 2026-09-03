@@ -108,14 +108,6 @@ func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 	return a
 }
 
-const (
-	walletJournalColDate = iota
-	walletJournalColType
-	walletJournalColAmount
-	walletJournalColBalance
-	walletJournalColDescription
-)
-
 func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		Label: "Date",
@@ -163,7 +155,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		},
 	}})
 	a := &WalletJournal{
-		columnSorter: xwidget.NewColumnSorter(columns, walletJournalColDate, xwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
 		division:     division,
 		footer:       ui.NewLabelWithTruncation(""),
 		top:          ui.NewLabelWithTruncation(""),

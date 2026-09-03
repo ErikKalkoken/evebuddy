@@ -88,7 +88,7 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 			return cmp.Compare(a.spTrained, b.spTrained)
 		},
 	}}),
-		0,
+		"Name",
 		xwidget.SortAsc,
 	)
 	a := &SkillCatalogue{

@@ -143,7 +143,7 @@ func NewStructures(u baseUI) *Structures {
 		},
 	}})
 	a := &Structures{
-		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
 		footer:       ui.NewLabelWithWrapping(""),
 		u:            u,
 	}

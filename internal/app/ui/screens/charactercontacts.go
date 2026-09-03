@@ -78,7 +78,7 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 			return cmp.Compare(a.standing, b.standing)
 		},
 	}}),
-		0,
+		"Name",
 		xwidget.SortAsc,
 	)
 	a := &CharacterContacts{

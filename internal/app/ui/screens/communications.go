@@ -439,13 +439,6 @@ func (w *folderItemWidget) set(r notificationFolder) {
 	w.name.Refresh()
 }
 
-// Columns for sorting
-const (
-	communicationsColTimestamp = iota
-	communicationsColSender
-	communicationsColType
-)
-
 // Filter options
 const (
 	communicationsFilterCharacter = "Character"
@@ -492,7 +485,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 			return strings.Compare(a.notificationTypeDisplay, b.notificationTypeDisplay)
 		},
 	}}),
-		communicationsColTimestamp,
+		"Date",
 		xwidget.SortDesc,
 	)
 	a := &communicationsMessagePane{

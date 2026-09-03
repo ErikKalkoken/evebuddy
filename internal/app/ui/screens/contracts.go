@@ -209,17 +209,6 @@ type Contracts struct {
 	u              baseUI
 }
 
-const (
-	contractsColName = iota
-	contractsColType
-	contractsColIssuer
-	contractsColAssignee
-	contractsColStatus
-	contractsColIssuedAt
-	contractsColExpiresAt
-	contractsColDescription
-)
-
 func NewContractsForCorporation(u baseUI) *Contracts {
 	return newContracts(u, true)
 }
@@ -304,7 +293,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	}})
 	a := &Contracts{
 		forCorporation: forCorporation,
-		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, "Date Issued", xwidget.SortDesc),
 		footer:         ui.NewLabelWithTruncation(""),
 		u:              u,
 	}
