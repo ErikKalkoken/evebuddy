@@ -72,14 +72,6 @@ type JumpClones struct {
 	u                 baseUI
 }
 
-const (
-	jumpClonesColLocation = iota
-	jumpClonesColRegion
-	jumpClonesColImplants
-	jumpClonesColCharacter
-	jumpClonesColJumps
-)
-
 func NewJumpClones(u baseUI) *JumpClones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[jumpCloneRow]{{
 		Label: "Location",
@@ -163,18 +155,18 @@ func NewJumpClones(u baseUI) *JumpClones {
 		a.body = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r jumpCloneRow) []widget.RichTextSegment {
+			func(col string, r jumpCloneRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
 				switch col {
-				case jumpClonesColLocation:
+				case "Location":
 					s = r.jc.Location.DisplayRichText()
-				case jumpClonesColRegion:
+				case "Region":
 					s = xwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-				case jumpClonesColImplants:
+				case "Impl.":
 					s = xwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-				case jumpClonesColCharacter:
+				case "Character":
 					s = xwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-				case jumpClonesColJumps:
+				case "Jumps":
 					s = xwidget.RichTextSegmentsFromText(r.jumps())
 				}
 				return s

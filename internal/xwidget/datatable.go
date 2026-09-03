@@ -493,7 +493,7 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 func MakeDataList[S ~[]E, E any](
 	def DataColumns[E],
 	data *S,
-	makeCell func(int, E) []widget.RichTextSegment,
+	makeCell func(string, E) []widget.RichTextSegment,
 	onSelected func(E),
 ) *widget.List {
 	var l *widget.List
@@ -539,12 +539,12 @@ type dataCardWidget[E any] struct {
 
 	border         *canvas.Rectangle
 	columns        DataColumns[E]
-	makeCell       func(int, E) []widget.RichTextSegment
+	makeCell       func(string, E) []widget.RichTextSegment
 	maxColumnWidth float32
 	rows           []*dataCardRowWidget
 }
 
-func newDataCardWidget[E any](columns DataColumns[E], makeCell func(int, E) []widget.RichTextSegment) *dataCardWidget[E] {
+func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) []widget.RichTextSegment) *dataCardWidget[E] {
 	border := canvas.NewRectangle(color.Transparent)
 	border.StrokeColor = theme.Color(dataCardBorderColor)
 	border.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -588,10 +588,10 @@ func (w *dataCardWidget[E]) Refresh() {
 
 func (w *dataCardWidget[E]) Update(r E) {
 	for col, item := range w.rows {
-		cell := w.makeCell(col, r)
+		label := w.columns.cols[col].Label
+		cell := w.makeCell(label, r)
 		isFirst := col == 0
 
-		label := w.columns.cols[col].Label
 		item.Update(label, cell, isFirst)
 	}
 }

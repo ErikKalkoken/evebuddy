@@ -69,17 +69,6 @@ type WealthOverview struct {
 	showHelp     *xwidget.IconButton
 }
 
-const (
-	wealthOverviewColCharacter = iota
-	wealthOverviewColTags
-	wealthOverviewColWalletBalance
-	wealthOverviewColCombinedAssetsValue
-	wealthOverviewColContractsEscrow
-	wealthOverviewColOrdersEscrow
-	wealthOverviewColTotalNetWorth
-	wealthOverviewColSkillPoints
-)
-
 const valueWidth = 125
 
 const overviewHelpText = `Wallet Balance: The balance of the wallet.
@@ -219,24 +208,24 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r wealthOverviewRow) []widget.RichTextSegment {
+			func(col string, r wealthOverviewRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
 				switch col {
-				case wealthOverviewColCharacter:
+				case "Character":
 					s = xwidget.RichTextSegmentsFromText(r.characterName)
-				case wealthOverviewColTags:
+				case "Tags":
 					s = xwidget.RichTextSegmentsFromText(r.tagsDisplay)
-				case wealthOverviewColWalletBalance:
+				case "Wallet Balance":
 					s = xwidget.RichTextSegmentsFromText(r.walletDisplay)
-				case wealthOverviewColCombinedAssetsValue:
+				case "Combined Assets":
 					s = xwidget.RichTextSegmentsFromText(r.combinedAssetsDisplay)
-				case wealthOverviewColContractsEscrow:
+				case "Contracts Escrow":
 					s = xwidget.RichTextSegmentsFromText(r.contractsEscrowDisplay)
-				case wealthOverviewColOrdersEscrow:
+				case "Orders Escrow":
 					s = xwidget.RichTextSegmentsFromText(r.ordersEscrowDisplay)
-				case wealthOverviewColTotalNetWorth:
+				case "Total Net Worth":
 					s = xwidget.RichTextSegmentsFromText(r.totalNetWorthDisplay)
-				case wealthOverviewColSkillPoints:
+				case "Skill Points":
 					s = xwidget.RichTextSegmentsFromText(r.skillPointsDisplay)
 				}
 				return s

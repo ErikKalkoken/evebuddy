@@ -90,14 +90,6 @@ type Structures struct {
 	u                 baseUI
 }
 
-const (
-	structuresColName = iota
-	structuresColType
-	structuresColFuelExpires
-	structuresColState
-	structuresColServices
-)
-
 func NewStructures(u baseUI) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
 		Label: "Name",
@@ -166,19 +158,19 @@ func NewStructures(u baseUI) *Structures {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r structureRow) []widget.RichTextSegment {
+			func(col string, r structureRow) []widget.RichTextSegment {
 				switch col {
-				case structuresColType:
+				case "Type":
 					return xwidget.RichTextSegmentsFromText(r.typeName)
-				case structuresColName:
+				case "Name":
 					return xwidget.RichTextSegmentsFromText(r.structureName)
-				case structuresColFuelExpires:
+				case "Fuel Expires":
 					return r.fuelExpiresDisplay()
-				case structuresColState:
+				case "State":
 					return xwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 						ColorName: r.stateColor,
 					})
-				case structuresColServices:
+				case "Services":
 					return xwidget.RichTextSegmentsFromText(r.servicesText)
 				}
 				return xwidget.RichTextSegmentsFromText("?")
