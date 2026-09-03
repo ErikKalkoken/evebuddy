@@ -82,23 +82,25 @@ func ShowProgressConfirm(
 
 // ShowErrorAndLog shows a error dialog and logs the error.
 func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyne.Window) {
-	slog.Error(message, "error", err)
-	var s string
-	if IsDeveloperMode {
-		s = err.Error()
-	} else {
-		s = app.ErrorDisplay(err)
+	errorText := "no error"
+	if err != nil {
+		slog.Error(message, "error", err)
+		if IsDeveloperMode {
+			errorText = err.Error()
+		} else {
+			errorText = app.ErrorDisplay(err)
+		}
 	}
-	errMessage := widget.NewLabel(s)
-	errMessage.TextStyle.Monospace = true
-	errMessage.Wrapping = fyne.TextWrapBreak
-	errMessage.Importance = widget.DangerImportance
+	errorLabel := widget.NewLabel(errorText)
+	errorLabel.TextStyle.Monospace = true
+	errorLabel.Wrapping = fyne.TextWrapBreak
+	errorLabel.Importance = widget.DangerImportance
 	c := container.NewVScroll(container.NewBorder(
 		widget.NewLabel(message),
 		nil,
 		nil,
 		nil,
-		errMessage,
+		errorLabel,
 	))
 	c.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", c, parent)

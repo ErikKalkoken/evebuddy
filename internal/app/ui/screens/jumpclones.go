@@ -406,6 +406,10 @@ func (a *JumpClones) updateRoutesAsync() {
 }
 
 func (a *JumpClones) setOrigin(w fyne.Window) {
+	if a.u.IsOffline() {
+		ui.ShowInformation("Offline", "Can't set origin while offline", w)
+		return
+	}
 	showErrorDialog := func(search string, err error) {
 		ui.ShowErrorAndLog("Failed to resolve search for "+search, err, a.u.IsDeveloperMode(), w)
 	}
