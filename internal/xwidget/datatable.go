@@ -122,11 +122,6 @@ func (dc DataColumns[T]) ColumnByIndex(idx int) (DataColumn[T], bool) {
 	return dc.cols[idx], true
 }
 
-// All returns all columns with their index.
-func (dc DataColumns[T]) All() iter.Seq2[int, DataColumn[T]] {
-	return slices.All(dc.cols)
-}
-
 // Size returns the number of columns.
 func (dc DataColumns[T]) Size() int {
 	return len(dc.cols)
@@ -139,11 +134,8 @@ func (dc DataColumns[T]) Values() iter.Seq[DataColumn[T]] {
 
 // ColumnSorter represents an ordered list of columns which can be sorted.
 type ColumnSorter[T any] struct {
-	cols       []SortDir
-	columns    DataColumns[T]
-	initialDir SortDir
-	initialIdx int
-	isMobile   bool
+	cols    []SortDir
+	columns DataColumns[T]
 }
 
 // NewColumnSorter returns a new ColumSorter.
@@ -158,11 +150,8 @@ func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *
 		idx = 0
 	}
 	cs := &ColumnSorter[T]{
-		cols:       make([]SortDir, columns.Size()),
-		columns:    columns,
-		initialDir: dir,
-		initialIdx: idx,
-		isMobile:   fyne.CurrentDevice().IsMobile(),
+		cols:    make([]SortDir, columns.Size()),
+		columns: columns,
 	}
 	cs.init()
 	cs.setIdx(idx, dir)
@@ -200,11 +189,6 @@ func (cs *ColumnSorter[T]) current() (idx int, dir SortDir) {
 	return -1, SortOff
 }
 
-// // reset sets the columns to their initial state.
-// func (cs *ColumnSorter[T]) reset() {
-// 	cs.Set(cs.initialID, cs.initialDir)
-// }
-
 // Set sets the sort direction for a column. Unknown labels are ignored.
 func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
 	idx, ok := cs.columns.labelLookup[label]
@@ -218,10 +202,6 @@ func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
 	cs.init()
 	cs.cols[idx] = dir
 }
-
-// func (cs *ColumnSorter[T]) size() int {
-// 	return len(cs.cols)
-// }
 
 // CalcSort calculates how and if to apply sorting to the column identified by label.
 func (cs *ColumnSorter[T]) CalcSort(label string) (string, SortDir, bool) {
@@ -345,6 +325,13 @@ func MakeDataTable[S ~[]E, E any](
 	}
 	if isCustom {
 		stackIdxLookup := make(map[int]int)
+		var stackIdx int
+		for idx, col := range columns.cols {
+			if col.Create != nil {
+				stackIdx++
+				stackIdxLookup[idx] = stackIdx
+			}
+		}
 		t = widget.NewTable(
 			func() (rows int, cols int) {
 				return len(*data), columns.Size()
@@ -352,14 +339,9 @@ func MakeDataTable[S ~[]E, E any](
 			func() fyne.CanvasObject {
 				c := container.NewStack()
 				c.Add(defaultCreate())
-				var stackIdx int
-				for idx, col := range columns.cols {
+				for _, col := range columns.cols {
 					if f := col.Create; f != nil {
 						c.Add(f())
-						stackIdx++
-						stackIdxLookup[idx] = stackIdx
-					} else {
-						stackIdxLookup[idx] = 0
 					}
 				}
 				return c
@@ -588,7 +570,6 @@ func (w *dataCardWidget[E]) Refresh() {
 	w.BaseWidget.Refresh()
 	w.border.StrokeColor = theme.Color(dataCardBorderColor)
 	w.border.Refresh()
-
 }
 
 func (w *dataCardWidget[E]) Update(r E) {
@@ -658,5 +639,4 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 		w.bg.Hide()
 	}
 	w.cell.Refresh()
-
 }
