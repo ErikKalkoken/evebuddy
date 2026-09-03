@@ -100,10 +100,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	const assetsTitle = "Assets"
-	allAssets := xwidget.NewNavPage(
+	assetSearch := xwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage(assetsTitle, u.assetSearchAll),
+		newContentPage(assetsTitle, u.assetSearchAll, xwidget.NewIconButtonWithMenu(
+			theme.MoreHorizontalIcon(),
+			fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
+		)),
 	)
 
 	unifiedCommunications := xwidget.NewNavPage(
@@ -205,7 +208,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	homeNav = xwidget.NewNavDrawer(
 		overview,
-		allAssets,
+		assetSearch,
 		xwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
@@ -228,7 +231,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		wealth,
 	)
 	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
-		if it == allAssets {
+		if it == assetSearch {
 			u.assetSearchAll.Focus()
 		}
 	}
@@ -326,6 +329,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Assets", container.NewAppTabs(
 			container.NewTabItem("Browse", u.corporationAssetBrowser),
 			container.NewTabItem("Search", u.corporationAssetSearch),
+		), xwidget.NewIconButtonWithMenu(
+			theme.MoreHorizontalIcon(),
+			fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
 		)),
 	)
 

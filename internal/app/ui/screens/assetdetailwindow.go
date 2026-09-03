@@ -104,7 +104,7 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 			}
 		},
 		MinSize: fyne.NewSize(500, 450),
-		Title:   r.name,
+		Title:   r.displayName,
 		Window:  w,
 	})
 	w.Show()
