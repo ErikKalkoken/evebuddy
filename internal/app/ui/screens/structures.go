@@ -91,7 +91,7 @@ type Structures struct {
 }
 
 const (
-	structuresColName = iota + 1
+	structuresColName = iota
 	structuresColType
 	structuresColFuelExpires
 	structuresColState
@@ -100,7 +100,6 @@ const (
 
 func NewStructures(u baseUI) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
-		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
 		Sort: func(a, b structureRow) int {
@@ -110,9 +109,8 @@ func NewStructures(u baseUI) *Structures {
 			co.(*xwidget.RichText).SetWithText(r.structureName)
 		},
 	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[structureRow]{
-		ColumnID: structuresColType,
-		EIS:      u.EVEImage(),
-		Label:    "Type",
+		EIS:   u.EVEImage(),
+		Label: "Type",
 		GetEntity: func(r structureRow) *app.EveEntity {
 			return &app.EveEntity{
 				Category: app.EveEntityInventoryType,
@@ -121,7 +119,6 @@ func NewStructures(u baseUI) *Structures {
 			}
 		},
 	}), {
-		ID:    structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
 		Sort: func(a, b structureRow) int {
@@ -131,7 +128,6 @@ func NewStructures(u baseUI) *Structures {
 			co.(*xwidget.RichText).Set(r.fuelExpiresDisplay())
 		},
 	}, {
-		ID:    structuresColState,
 		Label: "State",
 		Width: 150,
 		Update: func(r structureRow, co fyne.CanvasObject) {
@@ -140,7 +136,6 @@ func NewStructures(u baseUI) *Structures {
 			})
 		},
 	}, {
-		ID:    structuresColServices,
 		Label: "Services",
 		Width: 200,
 		Update: func(r structureRow, co fyne.CanvasObject) {

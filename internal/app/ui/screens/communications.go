@@ -441,7 +441,7 @@ func (w *folderItemWidget) set(r notificationFolder) {
 
 // Columns for sorting
 const (
-	communicationsColTimestamp = iota + 1
+	communicationsColTimestamp = iota
 	communicationsColSender
 	communicationsColType
 )
@@ -477,19 +477,16 @@ type communicationsMessagePane struct {
 
 func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[notificationRow]{{
-		ID:    communicationsColTimestamp,
 		Label: "Date",
 		Sort: func(a, b notificationRow) int {
 			return a.timestamp.Compare(b.timestamp)
 		},
 	}, {
-		ID:    communicationsColSender,
 		Label: "Sender",
 		Sort: func(a, b notificationRow) int {
 			return strings.Compare(a.sender.Name, b.sender.Name)
 		},
 	}, {
-		ID:    communicationsColType,
 		Label: "Type",
 		Sort: func(a, b notificationRow) int {
 			return strings.Compare(a.notificationTypeDisplay, b.notificationTypeDisplay)

@@ -133,7 +133,7 @@ type Training struct {
 }
 
 const (
-	trainingColCharacter = iota + 1
+	trainingColCharacter = iota
 	trainingColTags
 	trainingColCurrentSkill
 	trainingColCurrentRemaining
@@ -147,8 +147,7 @@ const (
 func NewTraining(u baseUI) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[trainingRow]{
-			ColumnID: trainingColCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r trainingRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -159,7 +158,6 @@ func NewTraining(u baseUI) *Training {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    trainingColTags,
 			Label: "Tags",
 			Width: 150,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -167,7 +165,6 @@ func NewTraining(u baseUI) *Training {
 				co.(*xwidget.RichText).SetWithText(s)
 			},
 		}, {
-			ID:    trainingColCurrentSkill,
 			Label: "Current Skill",
 			Width: 250,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -191,7 +188,6 @@ func NewTraining(u baseUI) *Training {
 				return strings.Compare(a.skillName, b.skillName)
 			},
 		}, {
-			ID:    trainingColCurrentRemaining,
 			Label: "Current Time",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.currentRemainingTimeString())
@@ -203,7 +199,6 @@ func NewTraining(u baseUI) *Training {
 				)
 			},
 		}, {
-			ID:    trainingColQueuedCount,
 			Label: "Queued",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
@@ -212,7 +207,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.totalRemainingCount, b.totalRemainingCount)
 			},
 		}, {
-			ID:    trainingColQueuedRemaining,
 			Label: "Queue Time",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalRemainingTimeString())
@@ -221,7 +215,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.totalRemainingTime(), b.totalRemainingTime())
 			},
 		}, {
-			ID:    trainingColTrainedSP,
 			Label: "Trained SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -233,7 +226,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.trainedSP, b.trainedSP)
 			},
 		}, {
-			ID:    trainingColUnallocatedSP,
 			Label: "Unall. SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -245,7 +237,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.unallocatedSP, b.unallocatedSP)
 			},
 		}, {
-			ID:    trainingColTotalSP,
 			Label: "Total SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {

@@ -52,7 +52,7 @@ const (
 
 // Column number
 const (
-	industryJobsColBlueprint = iota + 1
+	industryJobsColBlueprint = iota
 	industryJobsColStatus
 	industryJobsColRuns
 	industryJobsColActivity
@@ -148,7 +148,6 @@ func NewJobsForCorporation(u baseUI) *IndustryJobs {
 func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
-		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
 		Sort: func(a, b industryJobRow) int {
@@ -173,7 +172,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			})
 		},
 	}, {
-		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b industryJobRow) int {
@@ -183,7 +181,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		ID:    industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
 		Sort: func(a, b industryJobRow) int {
@@ -196,7 +193,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			)
 		},
 	}, {
-		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
 		Sort: func(a, b industryJobRow) int {
@@ -206,7 +202,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.activity.Display())
 		},
 	}, {
-		ID:    industryJobsColEndDate,
 		Label: "End date",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b industryJobRow) int {
@@ -216,7 +211,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
 		},
 	}, {
-		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b industryJobRow) int {
@@ -226,7 +220,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
 		},
 	}, {
-		ID:    industryJobsColOwner,
 		Label: "Owner",
 		Width: 250,
 		Sort: func(a, b industryJobRow) int {
@@ -249,7 +242,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			}
 		},
 	}, {
-		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b industryJobRow) int {

@@ -68,19 +68,17 @@ type CharacterContacts struct {
 
 func NewCharacterContacts(u baseUI) *CharacterContacts {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterContactRow]{{
-		ID:    1,
 		Label: "Name",
 		Sort: func(a, b characterContactRow) int {
 			return strings.Compare(a.contact.Name, b.contact.Name)
 		},
 	}, {
-		ID:    2,
 		Label: "Standing",
 		Sort: func(a, b characterContactRow) int {
 			return cmp.Compare(a.standing, b.standing)
 		},
 	}}),
-		1,
+		0,
 		xwidget.SortAsc,
 	)
 	a := &CharacterContacts{

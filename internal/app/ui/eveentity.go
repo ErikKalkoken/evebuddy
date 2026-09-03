@@ -118,7 +118,6 @@ func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCa
 
 // MakeEveEntityColumnParams represents the parameters for MakeEveEntityColumn()
 type MakeEveEntityColumnParams[T any] struct {
-	ColumnID  int
 	EIS       EVEImageService
 	GetEntity func(r T) *app.EveEntity
 	IsAvatar  bool
@@ -139,7 +138,6 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 		panic("must define eis")
 	}
 	c := xwidget.DataColumn[T]{
-		ID:    arg.ColumnID,
 		Label: arg.Label,
 		Width: float32(arg.Width),
 		Create: func() fyne.CanvasObject {

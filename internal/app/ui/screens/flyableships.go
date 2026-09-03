@@ -31,11 +31,6 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
-const (
-	flyableColType = iota + 1
-	flyableColGroup
-)
-
 type flyableShipRow struct {
 	canFly      bool
 	characterID int64
@@ -66,19 +61,17 @@ type FlyableShips struct {
 
 func NewFlyableShips(u baseUI) *FlyableShips {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[flyableShipRow]{{
-		ID:    flyableColType,
 		Label: "Type",
 		Sort: func(a, b flyableShipRow) int {
 			return strings.Compare(a.typeName, b.typeName)
 		},
 	}, {
-		ID:    flyableColGroup,
 		Label: "Class",
 		Sort: func(a, b flyableShipRow) int {
 			return strings.Compare(a.groupName, b.groupName)
 		},
 	}}),
-		flyableColType,
+		0,
 		xwidget.SortAsc,
 	)
 	a := &FlyableShips{

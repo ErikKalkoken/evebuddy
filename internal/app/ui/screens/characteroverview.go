@@ -91,61 +91,53 @@ type CharacterOverview struct {
 }
 
 const (
-	overviewColAlliance = iota + 1
+	overviewColAlliance = iota
 	overviewColCharacter
 	overviewColCorporation
 	overviewColMail
 	overviewColRegion
-	overviewColSolarSystem
 	overviewColSkillpoints
+	overviewColSolarSystem
 	overviewColWallet
 )
 
 func NewCharacterOverview(u baseUI) *CharacterOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
-		ID:    overviewColAlliance,
 		Label: "Alliance",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
 		},
 	}, {
-		ID:    overviewColCharacter,
 		Label: "Character",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
 	}, {
-		ID:    overviewColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
 		},
 	}, {
-		ID:    overviewColMail,
 		Label: "Unread",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.unreadCount, b.unreadCount)
 		},
 	}, {
-		ID:    overviewColRegion,
 		Label: "Region",
 		Sort: func(a, b characterOverviewRow) int {
 			return strings.Compare(a.regionName, b.regionName)
 		},
 	}, {
-		ID:    overviewColSkillpoints,
 		Label: "Skillpoints",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.skillpoints, b.skillpoints)
 		},
 	}, {
-		ID:    overviewColSolarSystem,
 		Label: "System",
 		Sort: func(a, b characterOverviewRow) int {
 			return strings.Compare(a.solarSystemName, b.solarSystemName)
 		},
 	}, {
-		ID:    overviewColWallet,
 		Label: "Wallet",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.walletBalance, b.walletBalance)

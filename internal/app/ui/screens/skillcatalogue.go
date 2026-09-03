@@ -73,25 +73,22 @@ type SkillCatalogue struct {
 
 func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillCatalogueRow]{{
-		ID:    1,
 		Label: "Name",
 		Sort: func(a, b skillCatalogueRow) int {
 			return strings.Compare(a.name, b.name)
 		},
 	}, {
-		ID:    2,
 		Label: "Level trained",
 		Sort: func(a, b skillCatalogueRow) int {
 			return cmp.Compare(a.levelTrained, b.levelTrained)
 		},
 	}, {
-		ID:    3,
 		Label: "Skillpoints trained",
 		Sort: func(a, b skillCatalogueRow) int {
 			return cmp.Compare(a.spTrained, b.spTrained)
 		},
 	}}),
-		1,
+		0,
 		xwidget.SortAsc,
 	)
 	a := &SkillCatalogue{

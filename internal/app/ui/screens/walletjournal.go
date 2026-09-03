@@ -109,7 +109,7 @@ func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 }
 
 const (
-	walletJournalColDate = iota + 1
+	walletJournalColDate = iota
 	walletJournalColType
 	walletJournalColAmount
 	walletJournalColBalance
@@ -118,7 +118,6 @@ const (
 
 func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
-		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
 		Sort: func(a, b walletJournalRow) int {
@@ -128,7 +127,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
-		ID:    walletJournalColType,
 		Label: "Type",
 		Width: 150,
 		Sort: func(a, b walletJournalRow) int {
@@ -138,7 +136,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).SetWithText(r.refTypeDisplay)
 		},
 	}, {
-		ID:    walletJournalColAmount,
 		Label: "Amount",
 		Width: 200,
 		Sort: func(a, b walletJournalRow) int {
@@ -148,7 +145,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).Set(r.amountDisplay)
 		},
 	}, {
-		ID:    walletJournalColBalance,
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
@@ -160,7 +156,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			)
 		},
 	}, {
-		ID:    walletJournalColDescription,
 		Label: "Description",
 		Width: 450,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {

@@ -100,7 +100,7 @@ type IndustrySlots struct {
 }
 
 const (
-	industrySlotsColCharacter = iota + 1
+	industrySlotsColCharacter = iota
 	industrySlotsColBusy
 	industrySlotsColReady
 	industrySlotsColFree
@@ -111,8 +111,7 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 	const columnWidthNumber = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industrySlotRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[industrySlotRow]{
-			ColumnID: industrySlotsColCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r industrySlotRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -123,7 +122,6 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    industrySlotsColBusy,
 			Label: "Busy",
 			Width: columnWidthNumber,
 			Sort: func(a, b industrySlotRow) int {
@@ -137,7 +135,6 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 				})
 			},
 		}, {
-			ID:    industrySlotsColReady,
 			Label: "Ready",
 			Width: columnWidthNumber,
 			Sort: func(a, b industrySlotRow) int {
@@ -151,7 +148,6 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 				})
 			},
 		}, {
-			ID:    industrySlotsColFree,
 			Label: "Free",
 			Width: columnWidthNumber,
 			Sort: func(a, b industrySlotRow) int {
@@ -165,7 +161,6 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 				})
 			},
 		}, {
-			ID:    industrySlotsColTotal,
 			Label: "Total",
 			Width: columnWidthNumber,
 			Sort: func(a, b industrySlotRow) int {
@@ -295,12 +290,8 @@ func (a *IndustrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRo
 			if tci.Row >= len(a.rowsFiltered) {
 				return
 			}
-			id, ok := headers.IDLookup(tci.Col)
-			if !ok {
-				return
-			}
 			r := a.rowsFiltered[tci.Row]
-			co.(*xwidget.RichText).Set(makeCell(id, r))
+			co.(*xwidget.RichText).Set(makeCell(tci.Col, r))
 		},
 	)
 	w.ShowHeaderRow = true

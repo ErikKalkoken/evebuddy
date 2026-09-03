@@ -47,26 +47,19 @@ type CharacterLoyaltyPoints struct {
 	u             baseUI
 }
 
-const (
-	characterLoyaltyPointsColCorporation = iota + 1
-	characterLoyaltyPointsColPoints
-)
-
 func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterLoyaltyPointsRow]{{
-		ID:    characterLoyaltyPointsColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b characterLoyaltyPointsRow) int {
 			return strings.Compare(a.corporationName, b.corporationName)
 		},
 	}, {
-		ID:    characterLoyaltyPointsColPoints,
 		Label: "Points",
 		Sort: func(a, b characterLoyaltyPointsRow) int {
 			return cmp.Compare(a.points, b.points)
 		},
 	}}),
-		characterLoyaltyPointsColCorporation,
+		0,
 		xwidget.SortAsc,
 	)
 	a := &CharacterLoyaltyPoints{

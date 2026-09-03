@@ -22,7 +22,6 @@ func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
-		ID:    1,
 		Label: "ID",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
@@ -30,7 +29,6 @@ func TestDataTable_CreateBasic(t *testing.T) {
 			co.(*widget.Label).SetText(fmt.Sprint(r.id))
 		},
 	}, {
-		ID:    2,
 		Label: "Planet",
 		Width: 100,
 		Sort:  func(a, b myRow) int { return 0 },
@@ -45,7 +43,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
-		xwidget.NewColumnSorter(columns, 1, xwidget.SortAsc),
+		xwidget.NewColumnSorter(columns, 0, xwidget.SortAsc),
 		func(i int) {},
 		nil,
 	)
@@ -59,31 +57,11 @@ func TestDataTable_CreateBasic(t *testing.T) {
 func TestNewDataColumns(t *testing.T) {
 	t.Run("can define column", func(t *testing.T) {
 		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
-			ID:    1,
 			Label: "Alpha",
 		}})
 		col, ok := columns.ColumnByIndex(0)
 		require.True(t, ok)
 		assert.Equal(t, "Alpha", col.Label)
-	})
-	t.Run("should panic when col ID is negativ", func(t *testing.T) {
-		assert.Panics(t, func() {
-			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
-				ID:    0,
-				Label: "Alpha",
-			}})
-		})
-	})
-	t.Run("should panic when col index is defined more then once", func(t *testing.T) {
-		assert.Panics(t, func() {
-			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
-				ID:    1,
-				Label: "Alpha",
-			}, {
-				ID:    1,
-				Label: "Bravo",
-			}})
-		})
 	})
 	t.Run("should panic when no cols defined", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -94,24 +72,21 @@ func TestNewDataColumns(t *testing.T) {
 
 func TestColumsSorter_CalcSortIdx(t *testing.T) {
 	const (
-		id1 = 99
-		id2 = 5
-		id3 = 21
+		id1 = 0
+		id2 = 1
+		id3 = 2
 	)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
-		ID:    id1,
 		Label: "Alpha",
 		Sort: func(a, b myRow) int {
 			return 0
 		},
 	}, {
-		ID:    id2,
 		Label: "Bravo",
 		Sort: func(a, b myRow) int {
 			return 0
 		},
 	}, {
-		ID:    id3,
 		Label: "Charlie",
 	}})
 	cases := []struct {
@@ -175,7 +150,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		},
 		{
 			name:       "initial no sort, asc->desc",
-			initialID:  0,
+			initialID:  -1,
 			initialDir: xwidget.SortOff,
 			sortID:     id2,
 			wantID:     id2,

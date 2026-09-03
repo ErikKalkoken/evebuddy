@@ -210,7 +210,7 @@ type Contracts struct {
 }
 
 const (
-	contractsColName = iota + 1
+	contractsColName = iota
 	contractsColType
 	contractsColIssuer
 	contractsColAssignee
@@ -230,7 +230,6 @@ func NewContractsForCharacters(u baseUI) *Contracts {
 
 func newContracts(u baseUI, forCorporation bool) *Contracts {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
-		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
 		Sort: func(a, b contractRow) int {
@@ -240,7 +239,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.name)
 		},
 	}, {
-		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
 		Sort: func(a, b contractRow) int {
@@ -250,7 +248,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    contractsColIssuer,
 		Label: "From",
 		Width: 150,
 		Sort: func(a, b contractRow) int {
@@ -260,7 +257,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.issuerName)
 		},
 	}, {
-		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
 		Sort: func(a, b contractRow) int {
@@ -270,7 +266,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.assigneeName)
 		},
 	}, {
-		ID:    contractsColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
@@ -280,7 +275,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).Set(r.status.DisplayRichText())
 		},
 	}, {
-		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b contractRow) int {
@@ -290,7 +284,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
 		},
 	}, {
-		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
@@ -300,7 +293,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
 		},
 	}, {
-		ID:    contractsColDescription,
 		Label: "Description",
 		Width: 300,
 		Sort: func(a, b contractRow) int {

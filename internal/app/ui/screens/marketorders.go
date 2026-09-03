@@ -138,7 +138,7 @@ type MarketOrders struct {
 }
 
 const (
-	marketOrdersColType = iota + 1
+	marketOrdersColType = iota
 	marketOrdersColVolume
 	marketOrdersColPrice
 	marketOrdersColState
@@ -150,8 +150,7 @@ const (
 func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[marketOrderRow]{
-			ColumnID: marketOrdersColType,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r marketOrderRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.typeID,
@@ -162,7 +161,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			IsAvatar: false,
 			Label:    "Type",
 		}), {
-			ID:    marketOrdersColVolume,
 			Label: "Quantity",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -174,7 +172,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColPrice,
 			Label: "Price",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -186,7 +183,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColState,
 			Label: "State",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -198,7 +194,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColLocation,
 			Label: "Location",
 			Width: ui.ColumnWidthLocation,
 			Sort: func(a, b marketOrderRow) int {
@@ -208,7 +203,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				co.(*xwidget.RichText).SetWithText(r.locationName)
 			},
 		}, {
-			ID:    marketOrdersColRegion,
 			Label: "Region",
 			Width: ui.ColumnWidthRegion,
 			Sort: func(a, b marketOrderRow) int {
@@ -218,7 +212,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				co.(*xwidget.RichText).SetWithText(r.regionName)
 			},
 		}, {
-			ID:    marketOrdersColOwner,
 			Label: "Owner",
 			Width: ui.ColumnWidthEntity,
 			Sort: func(a, b marketOrderRow) int {

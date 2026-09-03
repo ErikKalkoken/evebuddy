@@ -125,18 +125,16 @@ type Colonies struct {
 }
 
 const (
-	coloniesColPlanet = iota + 1
+	coloniesColPlanet = iota
 	coloniesColStatus
 	coloniesColExtracting
 	coloniesColEndDate
 	coloniesColProducing
-	coloniesColRegion
 	coloniesColCharacter
 )
 
 func NewColonies(u baseUI) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
-		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 200,
 		Sort: func(a, b colonyRow) int {
@@ -161,7 +159,6 @@ func NewColonies(u baseUI) *Colonies {
 			})
 		},
 	}, {
-		ID:    coloniesColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b colonyRow) int {
@@ -171,14 +168,12 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		ID:    coloniesColExtracting,
 		Label: "Extracting",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.extractingText)
 		},
 	}, {
-		ID:    coloniesColEndDate,
 		Label: "End data",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
@@ -192,14 +187,12 @@ func NewColonies(u baseUI) *Colonies {
 			}))
 		},
 	}, {
-		ID:    coloniesColProducing,
 		Label: "Producing",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.producingText)
 		},
 	}, {
-		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b colonyRow) int {

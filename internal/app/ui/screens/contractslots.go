@@ -92,9 +92,8 @@ type ContractSlots struct {
 }
 
 const (
-	contractSlotsCharacter = iota + 1
+	contractSlotsCharacter = iota
 	contractSlotsColUsed
-	contractSlotsCorporation
 	contractSlotsFree
 	contractSlotsTotal
 )
@@ -103,8 +102,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 	const columnWidth = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractSlotRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[contractSlotRow]{
-			ColumnID: contractSlotsCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r contractSlotRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -115,7 +113,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    contractSlotsColUsed,
 			Label: "Used",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -129,7 +126,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 				})
 			},
 		}, {
-			ID:    contractSlotsFree,
 			Label: "Free",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -143,7 +139,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 				})
 			},
 		}, {
-			ID:    contractSlotsTotal,
 			Label: "Total",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -265,12 +260,8 @@ func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRo
 			if tci.Row >= len(a.rowsFiltered) {
 				return
 			}
-			id, ok := headers.IDLookup(tci.Col)
-			if !ok {
-				return
-			}
 			r := a.rowsFiltered[tci.Row]
-			co.(*xwidget.RichText).Set(makeCell(id, r))
+			co.(*xwidget.RichText).Set(makeCell(tci.Col, r))
 		},
 	)
 	w.ShowHeaderRow = true

@@ -70,7 +70,7 @@ type WealthOverview struct {
 }
 
 const (
-	wealthOverviewColCharacter = iota + 1
+	wealthOverviewColCharacter = iota
 	wealthOverviewColTags
 	wealthOverviewColWalletBalance
 	wealthOverviewColCombinedAssetsValue
@@ -99,8 +99,7 @@ NOTE: Blueprints, PLEX in the account wallet are not included.`
 func NewWealthOverview(u baseUI) *WealthOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[wealthOverviewRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[wealthOverviewRow]{
-			ColumnID: wealthOverviewColCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r wealthOverviewRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -111,14 +110,12 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    wealthOverviewColTags,
 			Label: "Tags",
 			Width: 150,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
 			},
 		}, {
-			ID:    wealthOverviewColWalletBalance,
 			Label: "Wallet Balance",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -131,7 +128,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.walletBalance, b.walletBalance)
 			},
 		}, {
-			ID:    wealthOverviewColCombinedAssetsValue,
 			Label: "Combined Assets",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -145,7 +141,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			},
 		},
 		{
-			ID:    wealthOverviewColContractsEscrow,
 			Label: "Contracts Escrow",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -159,7 +154,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			},
 		},
 		{
-			ID:    wealthOverviewColOrdersEscrow,
 			Label: "Orders Escrow",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -172,7 +166,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
 			},
 		}, {
-			ID:    wealthOverviewColTotalNetWorth,
 			Label: "Total Net Worth",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -185,7 +178,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.totalNetWorth, b.totalNetWorth)
 			},
 		}, {
-			ID:    wealthOverviewColSkillPoints,
 			Label: "Skill Points",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {

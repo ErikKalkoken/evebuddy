@@ -116,7 +116,7 @@ func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransacti
 }
 
 const (
-	walletTransactionColDate = iota + 1
+	walletTransactionColDate = iota
 	walletTransactionColQuantity
 	walletTransactionColType
 	walletTransactionColPrice
@@ -127,7 +127,6 @@ const (
 
 func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
-		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b walletTransactionRow) int {
@@ -137,7 +136,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
-		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
 		Sort: func(a, b walletTransactionRow) int {
@@ -149,7 +147,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColType,
 		Label: "Type",
 		Width: 200,
 		Sort: func(a, b walletTransactionRow) int {
@@ -159,7 +156,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
 		Sort: func(a, b walletTransactionRow) int {
@@ -171,7 +167,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
 		Sort: func(a, b walletTransactionRow) int {
@@ -183,7 +178,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColClient,
 		Label: "Client",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b walletTransactionRow) int {
@@ -193,7 +187,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.clientName)
 		},
 	}, {
-		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b walletTransactionRow) int {

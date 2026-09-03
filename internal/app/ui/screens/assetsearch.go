@@ -223,17 +223,6 @@ type AssetSearch struct {
 	u              baseUI
 }
 
-const (
-	searchColItem = iota + 1
-	searchColGroup
-	searchColLocation
-	searchColState
-	searchColQuantity
-	searchColTotal
-	searchColOwner
-	searchColTags
-)
-
 func NewAssetSearchForAll(u baseUI) *AssetSearch {
 	return newAssetSearch(u, false)
 }
@@ -245,7 +234,6 @@ func NewAssetSearchForCorporation(u baseUI) *AssetSearch {
 func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	cols := []xwidget.DataColumn[assetRow]{{
-		ID:    searchColItem,
 		Label: "Item",
 		Width: 300,
 		Sort: func(a, b assetRow) int {
@@ -270,7 +258,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			})
 		},
 	}, {
-		ID:    searchColGroup,
 		Label: "Group",
 		Width: 200,
 		Sort: func(a, b assetRow) int {
@@ -280,7 +267,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).SetWithText(r.groupName)
 		},
 	}, {
-		ID:    searchColLocation,
 		Label: "Location",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b assetRow) int {
@@ -290,7 +276,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).Set(r.locationDisplay)
 		},
 	}, {
-		ID:    searchColState,
 		Label: "State",
 		Width: 90,
 		Sort: func(a, b assetRow) int {
@@ -300,7 +285,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			co.(*xwidget.RichText).SetWithText(r.state)
 		},
 	}, {
-		ID:    searchColQuantity,
 		Label: "Qty.",
 		Width: 100,
 		Sort: func(a, b assetRow) int {
@@ -312,7 +296,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			})
 		},
 	}, {
-		ID:    searchColTotal,
 		Label: "Total",
 		Width: 150,
 		Sort: func(a, b assetRow) int {
@@ -326,7 +309,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	}}
 	if !forCorporation {
 		cols = slices.Concat(cols, []xwidget.DataColumn[assetRow]{{
-			ID:    searchColOwner,
 			Label: "Owner",
 			Width: 250,
 			Sort: func(a, b assetRow) int {
@@ -349,7 +331,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 				}
 			},
 		}, {
-			ID:    searchColTags,
 			Label: "Tags",
 			Width: ui.ColumnWidthEntity,
 			Update: func(r assetRow, co fyne.CanvasObject) {
@@ -359,7 +340,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	}
 	columns := xwidget.NewDataColumns(cols)
 	a := &AssetSearch{
-		columnSorter:   xwidget.NewColumnSorter(columns, searchColItem, xwidget.SortAsc),
+		columnSorter:   xwidget.NewColumnSorter(columns, 0, xwidget.SortAsc),
 		forCorporation: forCorporation,
 		footer:         ui.NewLabelWithTruncation(""),
 		top:            ui.NewLabelWithWrapping(""),

@@ -73,7 +73,7 @@ type JumpClones struct {
 }
 
 const (
-	jumpClonesColLocation = iota + 1
+	jumpClonesColLocation = iota
 	jumpClonesColRegion
 	jumpClonesColImplants
 	jumpClonesColCharacter
@@ -82,7 +82,6 @@ const (
 
 func NewJumpClones(u baseUI) *JumpClones {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[jumpCloneRow]{{
-		ID:    jumpClonesColLocation,
 		Label: "Location",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b jumpCloneRow) int {
@@ -92,7 +91,6 @@ func NewJumpClones(u baseUI) *JumpClones {
 			co.(*xwidget.RichText).Set(r.jc.Location.DisplayRichText())
 		},
 	}, {
-		ID:    jumpClonesColRegion,
 		Label: "Region",
 		Width: ui.ColumnWidthRegion,
 		Sort: func(a, b jumpCloneRow) int {
@@ -102,7 +100,6 @@ func NewJumpClones(u baseUI) *JumpClones {
 			co.(*xwidget.RichText).SetWithText(r.jc.Location.RegionName())
 		},
 	}, {
-		ID:    jumpClonesColImplants,
 		Label: "Impl.",
 		Width: 100,
 		Sort: func(a, b jumpCloneRow) int {
@@ -114,8 +111,7 @@ func NewJumpClones(u baseUI) *JumpClones {
 			})
 		},
 	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[jumpCloneRow]{
-		ColumnID: jumpClonesColCharacter,
-		EIS:      u.EVEImage(),
+		EIS: u.EVEImage(),
 		GetEntity: func(r jumpCloneRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.jc.Character.ID,
@@ -126,7 +122,6 @@ func NewJumpClones(u baseUI) *JumpClones {
 		IsAvatar: true,
 		Label:    "Character",
 	}), {
-		ID:    jumpClonesColJumps,
 		Label: "Jumps",
 		Width: 100,
 		Sort: func(a, b jumpCloneRow) int {

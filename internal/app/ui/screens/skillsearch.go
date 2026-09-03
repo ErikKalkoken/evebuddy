@@ -32,7 +32,7 @@ const (
 
 // Column number in search table
 const (
-	skillSearchColSkill = iota + 1
+	skillSearchColSkill = iota
 	skillSearchColActiveLevel
 	skillSearchColTrainedLevel
 	skillSearchColSkillPoints
@@ -89,7 +89,6 @@ type SkillSearch struct {
 
 func NewSkillSearch(u baseUI) *SkillSearch {
 	cols := []xwidget.DataColumn[skillSearchRow]{{
-		ID:    skillSearchColSkill,
 		Label: "Skill",
 		Width: 275,
 		Sort: func(a, b skillSearchRow) int {
@@ -99,7 +98,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    skillSearchColActiveLevel,
 		Label: "Active",
 		Width: 70,
 		Sort: func(a, b skillSearchRow) int {
@@ -112,7 +110,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColTrainedLevel,
 		Label: "Trained",
 		Width: 70,
 		Sort: func(a, b skillSearchRow) int {
@@ -125,7 +122,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColSkillPoints,
 		Label: "Skill Points",
 		Width: 90,
 		Sort: func(a, b skillSearchRow) int {
@@ -138,7 +134,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColGroup,
 		Label: "Group",
 		Width: 180,
 		Sort: func(a, b skillSearchRow) int {
@@ -148,8 +143,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			co.(*xwidget.RichText).SetWithText(r.groupName)
 		},
 	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[skillSearchRow]{
-		ColumnID: skillSearchColCharacter,
-		EIS:      u.EVEImage(),
+		EIS: u.EVEImage(),
 		GetEntity: func(r skillSearchRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.characterID,
