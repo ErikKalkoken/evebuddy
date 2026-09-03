@@ -124,19 +124,8 @@ type Colonies struct {
 	u                 baseUI
 }
 
-const (
-	coloniesColPlanet = iota + 1
-	coloniesColStatus
-	coloniesColExtracting
-	coloniesColEndDate
-	coloniesColProducing
-	coloniesColRegion
-	coloniesColCharacter
-)
-
 func NewColonies(u baseUI) *Colonies {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[colonyRow]{{
-		ID:    coloniesColPlanet,
 		Label: "Planet",
 		Width: 200,
 		Sort: func(a, b colonyRow) int {
@@ -161,7 +150,6 @@ func NewColonies(u baseUI) *Colonies {
 			})
 		},
 	}, {
-		ID:    coloniesColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b colonyRow) int {
@@ -171,14 +159,12 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		ID:    coloniesColExtracting,
 		Label: "Extracting",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.extractingText)
 		},
 	}, {
-		ID:    coloniesColEndDate,
 		Label: "End data",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
@@ -192,14 +178,12 @@ func NewColonies(u baseUI) *Colonies {
 			}))
 		},
 	}, {
-		ID:    coloniesColProducing,
 		Label: "Producing",
 		Width: 200,
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.producingText)
 		},
 	}, {
-		ID:    coloniesColCharacter,
 		Label: "Character",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b colonyRow) int {
@@ -211,7 +195,7 @@ func NewColonies(u baseUI) *Colonies {
 	}})
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, coloniesColEndDate, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "End data", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -234,38 +218,38 @@ func NewColonies(u baseUI) *Colonies {
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusAllIdle,
 	}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.searchEntry = xwidget.NewSearchEntry("Search systems & output", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -430,7 +414,7 @@ func (w *colonyListItem) set(r colonyRow) {
 	w.status.Set(r.statusDisplay())
 }
 
-func (a *Colonies) filterRowsAsync(sortCol int) {
+func (a *Colonies) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
@@ -561,7 +545,7 @@ func (a *Colonies) Update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})
 }

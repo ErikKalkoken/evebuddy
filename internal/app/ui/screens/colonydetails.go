@@ -120,19 +120,16 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		return x
 	}
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[colonyDetailsRow]{{
-		ID:    1,
 		Label: "Group",
 		Sort: func(a, b colonyDetailsRow) int {
 			return strings.Compare(a.groupName, b.groupName)
 		},
 	}, {
-		ID:    2,
 		Label: "Type",
 		Sort: func(a, b colonyDetailsRow) int {
 			return strings.Compare(a.name, b.name)
 		},
 	}, {
-		ID:    3,
 		Label: "End date",
 		Sort: func(a, b colonyDetailsRow) int {
 			return optional.CompareFunc(a.expiryTime, b.expiryTime, func(a, b time.Time) int {
@@ -140,7 +137,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 			})
 		},
 	}}),
-		1,
+		"Group",
 		xwidget.SortAsc,
 	)
 	planet := xwidget.NewTappableRichText(nil, nil)
@@ -288,7 +285,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	type2 := a.selectType2.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		if type2 != "" {

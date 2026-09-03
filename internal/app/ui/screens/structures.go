@@ -90,17 +90,8 @@ type Structures struct {
 	u                 baseUI
 }
 
-const (
-	structuresColName = iota + 1
-	structuresColType
-	structuresColFuelExpires
-	structuresColState
-	structuresColServices
-)
-
 func NewStructures(u baseUI) *Structures {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
-		ID:    structuresColName,
 		Label: "Name",
 		Width: 250,
 		Sort: func(a, b structureRow) int {
@@ -110,9 +101,8 @@ func NewStructures(u baseUI) *Structures {
 			co.(*xwidget.RichText).SetWithText(r.structureName)
 		},
 	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[structureRow]{
-		ColumnID: structuresColType,
-		EIS:      u.EVEImage(),
-		Label:    "Type",
+		EIS:   u.EVEImage(),
+		Label: "Type",
 		GetEntity: func(r structureRow) *app.EveEntity {
 			return &app.EveEntity{
 				Category: app.EveEntityInventoryType,
@@ -121,7 +111,6 @@ func NewStructures(u baseUI) *Structures {
 			}
 		},
 	}), {
-		ID:    structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
 		Sort: func(a, b structureRow) int {
@@ -131,7 +120,6 @@ func NewStructures(u baseUI) *Structures {
 			co.(*xwidget.RichText).Set(r.fuelExpiresDisplay())
 		},
 	}, {
-		ID:    structuresColState,
 		Label: "State",
 		Width: 150,
 		Update: func(r structureRow, co fyne.CanvasObject) {
@@ -140,7 +128,6 @@ func NewStructures(u baseUI) *Structures {
 			})
 		},
 	}, {
-		ID:    structuresColServices,
 		Label: "Services",
 		Width: 200,
 		Update: func(r structureRow, co fyne.CanvasObject) {
@@ -148,7 +135,7 @@ func NewStructures(u baseUI) *Structures {
 		},
 	}})
 	a := &Structures{
-		columnSorter: xwidget.NewColumnSorter(columns, structuresColName, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
 		footer:       ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
@@ -171,19 +158,19 @@ func NewStructures(u baseUI) *Structures {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r structureRow) []widget.RichTextSegment {
+			func(col string, r structureRow) []widget.RichTextSegment {
 				switch col {
-				case structuresColType:
+				case "Type":
 					return xwidget.RichTextSegmentsFromText(r.typeName)
-				case structuresColName:
+				case "Name":
 					return xwidget.RichTextSegmentsFromText(r.structureName)
-				case structuresColFuelExpires:
+				case "Fuel Expires":
 					return r.fuelExpiresDisplay()
-				case structuresColState:
+				case "State":
 					return xwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 						ColorName: r.stateColor,
 					})
-				case structuresColServices:
+				case "Services":
 					return xwidget.RichTextSegmentsFromText(r.servicesText)
 				}
 				return xwidget.RichTextSegmentsFromText("?")
@@ -196,28 +183,28 @@ func NewStructures(u baseUI) *Structures {
 
 	// filter
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
 		structuresPowerHigh,
 		structuresPowerLow,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -251,7 +238,7 @@ func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Structures) filterRowsAsync(sortCol int) {
+func (a *Structures) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -339,7 +326,7 @@ func (a *Structures) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporationID := a.corporation.Load().IDOrZero()
@@ -366,7 +353,7 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(reinforceCount)
 		}

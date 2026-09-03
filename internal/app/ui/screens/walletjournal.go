@@ -108,17 +108,8 @@ func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 	return a
 }
 
-const (
-	walletJournalColDate = iota + 1
-	walletJournalColType
-	walletJournalColAmount
-	walletJournalColBalance
-	walletJournalColDescription
-)
-
 func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
-		ID:    walletJournalColDate,
 		Label: "Date",
 		Width: 150,
 		Sort: func(a, b walletJournalRow) int {
@@ -128,7 +119,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
-		ID:    walletJournalColType,
 		Label: "Type",
 		Width: 150,
 		Sort: func(a, b walletJournalRow) int {
@@ -138,7 +128,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).SetWithText(r.refTypeDisplay)
 		},
 	}, {
-		ID:    walletJournalColAmount,
 		Label: "Amount",
 		Width: 200,
 		Sort: func(a, b walletJournalRow) int {
@@ -148,7 +137,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			co.(*xwidget.RichText).Set(r.amountDisplay)
 		},
 	}, {
-		ID:    walletJournalColBalance,
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
@@ -160,7 +148,6 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			)
 		},
 	}, {
-		ID:    walletJournalColDescription,
 		Label: "Description",
 		Width: 450,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
@@ -168,7 +155,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		},
 	}})
 	a := &WalletJournal{
-		columnSorter: xwidget.NewColumnSorter(columns, walletJournalColDate, xwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
 		division:     division,
 		footer:       ui.NewLabelWithTruncation(""),
 		top:          ui.NewLabelWithTruncation(""),
@@ -199,10 +186,10 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		)
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	return a
 }
@@ -285,7 +272,7 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *WalletJournal) filterRowsAsync(sortCol int) {
+func (a *WalletJournal) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	et := a.selectType.Selected
@@ -332,7 +319,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	character := a.character.Load()
@@ -360,7 +347,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 
@@ -412,7 +399,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporation := a.corporation.Load()
@@ -440,7 +427,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

@@ -58,28 +58,21 @@ type LoyaltyPoints struct {
 	u                baseUI
 }
 
-const (
-	loyaltyPointsColCorporation = iota + 1
-	loyaltyPointsColPoints
-)
-
 func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	top := widget.NewLabel("")
 	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{
-		ID:    loyaltyPointsColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b *loyaltyPointsNode) int {
 			return strings.Compare(a.corporationName, b.corporationName)
 		},
 	}, {
-		ID:    loyaltyPointsColPoints,
 		Label: "Points",
 		Sort: func(a, b *loyaltyPointsNode) int {
 			return cmp.Compare(a.totalPoints, b.totalPoints)
 		},
 	}}),
-		loyaltyPointsColCorporation,
+		"Corporation",
 		xwidget.SortAsc,
 	)
 	a := &LoyaltyPoints{
@@ -196,7 +189,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	faction := a.selectFaction.Selected
 	tag := a.selectTag.Selected
 	search := strings.ToLower(a.searchEntry.Text)
-	sortCol, dir, doSort := a.columnSorter.CalcSort(-1)
+	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	go func() {
 		// filter data

@@ -92,9 +92,8 @@ type ContractSlots struct {
 }
 
 const (
-	contractSlotsCharacter = iota + 1
+	contractSlotsCharacter = iota
 	contractSlotsColUsed
-	contractSlotsCorporation
 	contractSlotsFree
 	contractSlotsTotal
 )
@@ -103,8 +102,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 	const columnWidth = 75
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractSlotRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[contractSlotRow]{
-			ColumnID: contractSlotsCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r contractSlotRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -115,7 +113,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    contractSlotsColUsed,
 			Label: "Used",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -129,7 +126,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 				})
 			},
 		}, {
-			ID:    contractSlotsFree,
 			Label: "Free",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -143,7 +139,6 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 				})
 			},
 		}, {
-			ID:    contractSlotsTotal,
 			Label: "Total",
 			Width: columnWidth,
 			Sort: func(a, b contractSlotRow) int {
@@ -157,7 +152,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 			},
 		}})
 	a := &ContractSlots{
-		columnSorter:     xwidget.NewColumnSorter(columns, contractSlotsCharacter, xwidget.SortAsc),
+		columnSorter:     xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		corporationSlots: corporationSlots,
 		footer:           ui.NewLabelWithWrapping(""),
 		u:                u,
@@ -207,19 +202,19 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 	}
 
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
 		contractSlotsFreeSome,
 		contractSlotsFreeNone,
 	}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// signals
@@ -265,12 +260,8 @@ func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRo
 			if tci.Row >= len(a.rowsFiltered) {
 				return
 			}
-			id, ok := headers.IDLookup(tci.Col)
-			if !ok {
-				return
-			}
 			r := a.rowsFiltered[tci.Row]
-			co.(*xwidget.RichText).Set(makeCell(id, r))
+			co.(*xwidget.RichText).Set(makeCell(tci.Col, r))
 		},
 	)
 	w.ShowHeaderRow = true
@@ -294,7 +285,7 @@ func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRo
 	return w
 }
 
-func (a *ContractSlots) filterRowsAsync(sortCol int) {
+func (a *ContractSlots) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	corporation := a.selectCorporation.Selected
@@ -376,7 +367,7 @@ func (a *ContractSlots) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

@@ -49,10 +49,7 @@ func (s SortDir) isSorting() bool {
 
 // DataColumn represents a column in a data table.
 type DataColumn[T any] struct {
-	// Column ID. Must be unique and > 0.
-	ID int
-
-	// Label of a column displayed to the user.
+	// Label of a column displayed to the user. Must be unique.
 	Label string
 
 	// Width of a column in Fyne units. Will auto size to header width when omitted.
@@ -80,7 +77,7 @@ func (h DataColumn[T]) minWidth() float32 {
 // DataColumns represents the columns of a data table.
 type DataColumns[T any] struct {
 	cols           []DataColumn[T]
-	idxLookup      map[int]int // maps IDs to index on the cols slice
+	labelLookup    map[string]int // maps labels to their index in cols
 	maxColumnWidth float32
 }
 
@@ -92,20 +89,17 @@ func NewDataColumns[T any](cols []DataColumn[T]) DataColumns[T] {
 	if len(cols) == 0 {
 		panic("must define at least 1 column")
 	}
-	lookup := make(map[int]int)
-	for idx, c := range cols {
-		if c.ID < 1 {
-			panic("IDs must be > 0")
-		}
-		if _, found := lookup[c.ID]; found {
-			panic(fmt.Sprintf("%s: col %d duplicate", c.Label, c.ID))
-		}
-		lookup[c.ID] = idx
-	}
 	cols2 := slices.Clone(cols)
+	labelLookup := make(map[string]int)
+	for i, c := range cols2 {
+		if _, found := labelLookup[c.Label]; found {
+			panic(fmt.Sprintf("duplicate label: %q", c.Label))
+		}
+		labelLookup[c.Label] = i
+	}
 	dc := DataColumns[T]{
 		cols:           cols2,
-		idxLookup:      lookup,
+		labelLookup:    labelLookup,
 		maxColumnWidth: maxColumnWidth(cols2),
 	}
 	return dc
@@ -120,24 +114,12 @@ func maxColumnWidth[T any](cols []DataColumn[T]) float32 {
 	return m
 }
 
-func (dc DataColumns[T]) IDLookup(idx int) (int, bool) {
-	if idx < 0 || idx >= len(dc.cols) {
-		return 0, false
-	}
-	return dc.cols[idx].ID, true
-}
-
 // ColumnByIndex return the definition of a column. n is the slice index of the column.
 func (dc DataColumns[T]) ColumnByIndex(idx int) (DataColumn[T], bool) {
 	if idx < 0 || idx >= len(dc.cols) {
 		return DataColumn[T]{}, false
 	}
 	return dc.cols[idx], true
-}
-
-// All returns all columns with their index.
-func (dc DataColumns[T]) All() iter.Seq2[int, DataColumn[T]] {
-	return slices.All(dc.cols)
 }
 
 // Size returns the number of columns.
@@ -152,32 +134,27 @@ func (dc DataColumns[T]) Values() iter.Seq[DataColumn[T]] {
 
 // ColumnSorter represents an ordered list of columns which can be sorted.
 type ColumnSorter[T any] struct {
-	cols       []SortDir
-	columns    DataColumns[T]
-	initialDir SortDir
-	initialID  int
-	isMobile   bool
+	cols    []SortDir
+	columns DataColumns[T]
 }
 
 // NewColumnSorter returns a new ColumSorter.
-// idx and dir defines the initially sorted column.
+// label and dir defines the initially sorted column.
 // It panics if semantic checks fail.
-func NewColumnSorter[T any](columns DataColumns[T], id int, dir SortDir) *ColumnSorter[T] {
-	if _, found := columns.idxLookup[id]; !found {
+func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *ColumnSorter[T] {
+	idx, ok := columns.labelLookup[label]
+	if !ok {
 		dir = SortOff
 	}
 	if dir == SortOff {
-		id = columns.cols[0].ID
+		idx = 0
 	}
 	cs := &ColumnSorter[T]{
-		cols:       make([]SortDir, columns.Size()),
-		columns:    columns,
-		initialDir: dir,
-		initialID:  id,
-		isMobile:   fyne.CurrentDevice().IsMobile(),
+		cols:    make([]SortDir, columns.Size()),
+		columns: columns,
 	}
 	cs.init()
-	cs.Set(id, dir)
+	cs.setIdx(idx, dir)
 	return cs
 }
 
@@ -212,14 +189,9 @@ func (cs *ColumnSorter[T]) current() (idx int, dir SortDir) {
 	return -1, SortOff
 }
 
-// // reset sets the columns to their initial state.
-// func (cs *ColumnSorter[T]) reset() {
-// 	cs.Set(cs.initialID, cs.initialDir)
-// }
-
-// Set sets the sort direction for a column.
-func (cs *ColumnSorter[T]) Set(id int, dir SortDir) {
-	idx, ok := cs.columns.idxLookup[id]
+// Set sets the sort direction for a column. Unknown labels are ignored.
+func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
+	idx, ok := cs.columns.labelLookup[label]
 	if !ok {
 		return
 	}
@@ -231,13 +203,9 @@ func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
 	cs.cols[idx] = dir
 }
 
-// func (cs *ColumnSorter[T]) size() int {
-// 	return len(cs.cols)
-// }
-
-// CalcSort calculates how and if to apply sorting to column idx.
-func (cs *ColumnSorter[T]) CalcSort(id int) (int, SortDir, bool) {
-	idx, ok := cs.columns.idxLookup[id]
+// CalcSort calculates how and if to apply sorting to the column identified by label.
+func (cs *ColumnSorter[T]) CalcSort(label string) (string, SortDir, bool) {
+	idx, ok := cs.columns.labelLookup[label]
 	if !ok {
 		idx = -1
 	}
@@ -245,7 +213,7 @@ func (cs *ColumnSorter[T]) CalcSort(id int) (int, SortDir, bool) {
 	if idx >= 0 {
 		dir = cs.cols[idx]
 		if dir == sortNone {
-			return 0, 0, false
+			return "", 0, false
 		}
 		dir++
 		if dir > SortDesc {
@@ -256,19 +224,18 @@ func (cs *ColumnSorter[T]) CalcSort(id int) (int, SortDir, bool) {
 		idx, dir = cs.current()
 	}
 	doSort := idx >= 0 && dir.isSorting()
-	if doSort {
-		col := cs.columns.cols[idx]
-		id = col.ID
+	if idx < 0 {
+		return "", dir, doSort
 	}
-	return id, dir, doSort
+	return cs.columns.cols[idx].Label, dir, doSort
 }
 
 // SortRows sorts the rows.
-func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort bool) {
+func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol string, dir SortDir, doSort bool) {
 	if !doSort {
 		return
 	}
-	idx, ok := cs.columns.idxLookup[sortCol]
+	idx, ok := cs.columns.labelLookup[sortCol]
 	if !ok {
 		return
 	}
@@ -286,29 +253,27 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 }
 
 // NewSortChip creates a [SortChip] for a [ColumnSorter].
-func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *kxwidget.SortChip {
+func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string) *kxwidget.SortChip {
 	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
 		return h.Label
 	}))
 
-	field2Col := make(map[string]int)
-	for col, field := range columns {
-		field2Col[field] = col
-	}
-	var ignoredIdx set.Set[int]
-	for _, id := range ignoredColumns {
-		if idx, ok := cs.columns.idxLookup[id]; ok {
-			ignoredIdx.Add(idx)
-		}
-	}
+	ignored := set.Of(ignoredColumns...)
 	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
-		return ignoredIdx.Contains(field2Col[c])
+		return ignored.Contains(c)
 	})
 	col, dir := cs.current() // TODO: Hack, replace with defaults
-	defaultColumn := cs.columns.cols[col].Label
+	var defaultColumn string
+	if col >= 0 {
+		defaultColumn = cs.columns.cols[col].Label
+	}
 	defaultOrder := sortOrderFromDir(dir)
 	w := kxwidget.NewSortChip(sortColumns, defaultColumn, defaultOrder, func(col string, order kxwidget.SortOrder) {
-		cs.setIdx(field2Col[col], sortDirFromOrder(order))
+		idx, ok := cs.columns.labelLookup[col]
+		if !ok {
+			return
+		}
+		cs.setIdx(idx, sortDirFromOrder(order))
 		if changed != nil {
 			changed()
 		}
@@ -339,15 +304,15 @@ func MakeDataTable[S ~[]E, E any](
 	data *S,
 	defaultCreate func() fyne.CanvasObject,
 	columnSorter *ColumnSorter[E],
-	filterRows func(id int),
+	filterRows func(label string),
 	onSelected func(int, E),
 ) *widget.Table {
 	if defaultCreate == nil {
 		panic("Must define default create")
 	}
-	for _, col := range columns.cols {
+	for idx, col := range columns.cols {
 		if col.Update == nil {
-			panic(fmt.Sprintf("Column missing update: %d", col.ID))
+			panic(fmt.Sprintf("Column missing update: %d", idx))
 		}
 	}
 	var t *widget.Table
@@ -360,6 +325,13 @@ func MakeDataTable[S ~[]E, E any](
 	}
 	if isCustom {
 		stackIdxLookup := make(map[int]int)
+		var stackIdx int
+		for idx, col := range columns.cols {
+			if col.Create != nil {
+				stackIdx++
+				stackIdxLookup[idx] = stackIdx
+			}
+		}
 		t = widget.NewTable(
 			func() (rows int, cols int) {
 				return len(*data), columns.Size()
@@ -367,14 +339,9 @@ func MakeDataTable[S ~[]E, E any](
 			func() fyne.CanvasObject {
 				c := container.NewStack()
 				c.Add(defaultCreate())
-				var stackIdx int
-				for idx, col := range columns.cols {
+				for _, col := range columns.cols {
 					if f := col.Create; f != nil {
 						c.Add(f())
-						stackIdx++
-						stackIdxLookup[idx] = stackIdx
-					} else {
-						stackIdxLookup[idx] = 0
 					}
 				}
 				return c
@@ -443,11 +410,8 @@ func MakeDataTable[S ~[]E, E any](
 			r = iconNone
 		}
 
-		var onTapped func()
-		if id, ok := columns.IDLookup(tci.Col); ok {
-			onTapped = func() {
-				filterRows(id)
-			}
+		onTapped := func() {
+			filterRows(h.Label)
 		}
 
 		headerWidget.Update(h.Label, dir, r, onTapped)
@@ -516,7 +480,7 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 func MakeDataList[S ~[]E, E any](
 	def DataColumns[E],
 	data *S,
-	makeCell func(int, E) []widget.RichTextSegment,
+	makeCell func(string, E) []widget.RichTextSegment,
 	onSelected func(E),
 ) *widget.List {
 	var l *widget.List
@@ -562,12 +526,12 @@ type dataCardWidget[E any] struct {
 
 	border         *canvas.Rectangle
 	columns        DataColumns[E]
-	makeCell       func(int, E) []widget.RichTextSegment
+	makeCell       func(string, E) []widget.RichTextSegment
 	maxColumnWidth float32
 	rows           []*dataCardRowWidget
 }
 
-func newDataCardWidget[E any](columns DataColumns[E], makeCell func(int, E) []widget.RichTextSegment) *dataCardWidget[E] {
+func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) []widget.RichTextSegment) *dataCardWidget[E] {
 	border := canvas.NewRectangle(color.Transparent)
 	border.StrokeColor = theme.Color(dataCardBorderColor)
 	border.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -606,20 +570,14 @@ func (w *dataCardWidget[E]) Refresh() {
 	w.BaseWidget.Refresh()
 	w.border.StrokeColor = theme.Color(dataCardBorderColor)
 	w.border.Refresh()
-
 }
 
 func (w *dataCardWidget[E]) Update(r E) {
 	for col, item := range w.rows {
-		id, ok := w.columns.IDLookup(col)
-		if !ok {
-			continue
-		}
-
-		cell := w.makeCell(id, r)
+		label := w.columns.cols[col].Label
+		cell := w.makeCell(label, r)
 		isFirst := col == 0
 
-		label := w.columns.cols[col].Label
 		item.Update(label, cell, isFirst)
 	}
 }
@@ -681,5 +639,4 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 		w.bg.Hide()
 	}
 	w.cell.Refresh()
-
 }

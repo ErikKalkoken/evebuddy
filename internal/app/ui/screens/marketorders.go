@@ -137,21 +137,10 @@ type MarketOrders struct {
 	u            baseUI
 }
 
-const (
-	marketOrdersColType = iota + 1
-	marketOrdersColVolume
-	marketOrdersColPrice
-	marketOrdersColState
-	marketOrdersColLocation
-	marketOrdersColRegion
-	marketOrdersColOwner
-)
-
 func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[marketOrderRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[marketOrderRow]{
-			ColumnID: marketOrdersColType,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r marketOrderRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.typeID,
@@ -162,7 +151,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			IsAvatar: false,
 			Label:    "Type",
 		}), {
-			ID:    marketOrdersColVolume,
 			Label: "Quantity",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -174,7 +162,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColPrice,
 			Label: "Price",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -186,7 +173,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColState,
 			Label: "State",
 			Width: 100,
 			Sort: func(a, b marketOrderRow) int {
@@ -198,7 +184,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				})
 			},
 		}, {
-			ID:    marketOrdersColLocation,
 			Label: "Location",
 			Width: ui.ColumnWidthLocation,
 			Sort: func(a, b marketOrderRow) int {
@@ -208,7 +193,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				co.(*xwidget.RichText).SetWithText(r.locationName)
 			},
 		}, {
-			ID:    marketOrdersColRegion,
 			Label: "Region",
 			Width: ui.ColumnWidthRegion,
 			Sort: func(a, b marketOrderRow) int {
@@ -218,7 +202,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 				co.(*xwidget.RichText).SetWithText(r.regionName)
 			},
 		}, {
-			ID:    marketOrdersColOwner,
 			Label: "Owner",
 			Width: ui.ColumnWidthEntity,
 			Sort: func(a, b marketOrderRow) int {
@@ -229,7 +212,7 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			},
 		}})
 	a := &MarketOrders{
-		columnSorter: xwidget.NewColumnSorter(columns, marketOrdersColType, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Type", xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
 		isBuyOrders:  isBuyOrders,
 		u:            u,
@@ -254,27 +237,27 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("", []string{
 		marketOrderStateActive,
 		marketOrderStateHistory,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectState.Selected = marketOrderStateActive
 	a.selectState.SortDisabled = true
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -381,7 +364,7 @@ func (a *MarketOrders) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *MarketOrders) filterRowsAsync(sortCol int) {
+func (a *MarketOrders) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -473,7 +456,7 @@ func (a *MarketOrders) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

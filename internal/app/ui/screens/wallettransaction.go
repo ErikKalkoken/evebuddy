@@ -115,19 +115,8 @@ func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransacti
 	return a
 }
 
-const (
-	walletTransactionColDate = iota + 1
-	walletTransactionColQuantity
-	walletTransactionColType
-	walletTransactionColPrice
-	walletTransactionColTotal
-	walletTransactionColClient
-	walletTransactionColLocation
-)
-
 func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletTransactionRow]{{
-		ID:    walletTransactionColDate,
 		Label: "Date",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b walletTransactionRow) int {
@@ -137,7 +126,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.dateFormatted)
 		},
 	}, {
-		ID:    walletTransactionColQuantity,
 		Label: "Qty.",
 		Width: 75,
 		Sort: func(a, b walletTransactionRow) int {
@@ -149,7 +137,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColType,
 		Label: "Type",
 		Width: 200,
 		Sort: func(a, b walletTransactionRow) int {
@@ -159,7 +146,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    walletTransactionColPrice,
 		Label: "Unit Price",
 		Width: 150,
 		Sort: func(a, b walletTransactionRow) int {
@@ -171,7 +157,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColTotal,
 		Label: "Total",
 		Width: 150,
 		Sort: func(a, b walletTransactionRow) int {
@@ -183,7 +168,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			})
 		},
 	}, {
-		ID:    walletTransactionColClient,
 		Label: "Client",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b walletTransactionRow) int {
@@ -193,7 +177,6 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 			co.(*xwidget.RichText).SetWithText(r.clientName)
 		},
 	}, {
-		ID:    walletTransactionColLocation,
 		Label: "Where",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b walletTransactionRow) int {
@@ -205,7 +188,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 	}})
 	a := &WalletTransactions{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, walletTransactionColDate, xwidget.SortDesc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
 		division:     d,
 		u:            u,
 	}
@@ -237,16 +220,16 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		marketTransactionActivityBuy,
 		marketTransactionActivitySell,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
 		"Client",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
@@ -254,7 +237,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		"Location",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
@@ -262,18 +245,18 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		"Type",
 		[]string{},
 		func(_ string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
 	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
 		[]string{}, func(string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 		a.u.MainWindow(),
 	)
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	return a
 }
@@ -357,7 +340,7 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *WalletTransactions) filterRowsAsync(sortCol int) {
+func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -457,7 +440,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	character := a.character.Load()
@@ -485,7 +468,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 
@@ -544,7 +527,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	corporation := a.corporation.Load()
@@ -572,7 +555,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

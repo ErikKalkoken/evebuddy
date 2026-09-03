@@ -209,17 +209,6 @@ type Contracts struct {
 	u              baseUI
 }
 
-const (
-	contractsColName = iota + 1
-	contractsColType
-	contractsColIssuer
-	contractsColAssignee
-	contractsColStatus
-	contractsColIssuedAt
-	contractsColExpiresAt
-	contractsColDescription
-)
-
 func NewContractsForCorporation(u baseUI) *Contracts {
 	return newContracts(u, true)
 }
@@ -230,7 +219,6 @@ func NewContractsForCharacters(u baseUI) *Contracts {
 
 func newContracts(u baseUI, forCorporation bool) *Contracts {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[contractRow]{{
-		ID:    contractsColName,
 		Label: "Contract",
 		Width: 300,
 		Sort: func(a, b contractRow) int {
@@ -240,7 +228,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.name)
 		},
 	}, {
-		ID:    contractsColType,
 		Label: "Type",
 		Width: 120,
 		Sort: func(a, b contractRow) int {
@@ -250,7 +237,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    contractsColIssuer,
 		Label: "From",
 		Width: 150,
 		Sort: func(a, b contractRow) int {
@@ -260,7 +246,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.issuerName)
 		},
 	}, {
-		ID:    contractsColAssignee,
 		Label: "To",
 		Width: 150,
 		Sort: func(a, b contractRow) int {
@@ -270,7 +255,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.assigneeName)
 		},
 	}, {
-		ID:    contractsColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
@@ -280,7 +264,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).Set(r.status.DisplayRichText())
 		},
 	}, {
-		ID:    contractsColIssuedAt,
 		Label: "Date Issued",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b contractRow) int {
@@ -290,7 +273,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).SetWithText(r.dateIssued.Format(app.DateTimeFormat))
 		},
 	}, {
-		ID:    contractsColExpiresAt,
 		Label: "Time Left",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
@@ -300,7 +282,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
 		},
 	}, {
-		ID:    contractsColDescription,
 		Label: "Description",
 		Width: 300,
 		Sort: func(a, b contractRow) int {
@@ -312,7 +293,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	}})
 	a := &Contracts{
 		forCorporation: forCorporation,
-		columnSorter:   xwidget.NewColumnSorter(columns, contractsColIssuedAt, xwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, "Date Issued", xwidget.SortDesc),
 		footer:         ui.NewLabelWithTruncation(""),
 		u:              u,
 	}
@@ -342,17 +323,17 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	}
 
 	a.searchEntry = xwidget.NewSearchEntry("Search items and descriptions", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -362,15 +343,15 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		contractStatusHasIssue,
 		contractStatusHistory,
 	}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectStatus.Selected = contractStatusAllActive
 	a.selectStatus.SortDisabled = true
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -503,7 +484,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *Contracts) filterRowsAsync(sortCol int) {
+func (a *Contracts) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
@@ -606,7 +587,7 @@ func (a *Contracts) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(activeCount)
 		}

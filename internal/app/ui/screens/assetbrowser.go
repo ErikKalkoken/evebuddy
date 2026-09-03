@@ -797,14 +797,14 @@ func (a *browserContainer) showNodeInfo(n *asset.Node) {
 			return
 		}
 		name := a.ab.corporation.Load().NameOrZero()
-		ShowDetails(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
+		ShowAssetDetails(a.ab.u, newCorporationAssetRow(ca, a.ab.at, name))
 		return
 	}
 	ca, ok := n.CharacterAsset()
 	if !ok {
 		return
 	}
-	ShowDetails(a.ab.u, newCharacterAssetRow(ca, a.ab.at, func(id int64) string {
+	ShowAssetDetails(a.ab.u, newCharacterAssetRow(ca, a.ab.at, func(id int64) string {
 		return a.ab.characterNames[id]
 	}))
 

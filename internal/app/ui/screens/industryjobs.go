@@ -50,18 +50,6 @@ const (
 	industryStatusReady              = "Ready for delivery"
 )
 
-// Column number
-const (
-	industryJobsColBlueprint = iota + 1
-	industryJobsColStatus
-	industryJobsColRuns
-	industryJobsColActivity
-	industryJobsColEndDate
-	industryJobsColLocation
-	industryJobsColOwner
-	industryJobsColInstaller
-)
-
 // industryJobRow represents a job row in the list widgets.
 // It combines character and corporation jobs and has precalculated fields for filters.
 type industryJobRow struct {
@@ -148,7 +136,6 @@ func NewJobsForCorporation(u baseUI) *IndustryJobs {
 func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	corporationIcon := theme.NewThemedResource(icons.StarCircleOutlineSvg)
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[industryJobRow]{{
-		ID:    industryJobsColBlueprint,
 		Label: "Blueprint",
 		Width: 250,
 		Sort: func(a, b industryJobRow) int {
@@ -173,7 +160,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			})
 		},
 	}, {
-		ID:    industryJobsColStatus,
 		Label: "Status",
 		Width: 100,
 		Sort: func(a, b industryJobRow) int {
@@ -183,7 +169,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		ID:    industryJobsColRuns,
 		Label: "Runs",
 		Width: 75,
 		Sort: func(a, b industryJobRow) int {
@@ -196,7 +181,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			)
 		},
 	}, {
-		ID:    industryJobsColActivity,
 		Label: "Activity",
 		Width: 200,
 		Sort: func(a, b industryJobRow) int {
@@ -206,7 +190,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.activity.Display())
 		},
 	}, {
-		ID:    industryJobsColEndDate,
 		Label: "End date",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b industryJobRow) int {
@@ -216,7 +199,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.endDate.Format(app.DateTimeFormat))
 		},
 	}, {
-		ID:    industryJobsColLocation,
 		Label: "Location",
 		Width: ui.ColumnWidthLocation,
 		Sort: func(a, b industryJobRow) int {
@@ -226,7 +208,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			co.(*xwidget.RichText).SetWithText(r.location.Name.ValueOrZero())
 		},
 	}, {
-		ID:    industryJobsColOwner,
 		Label: "Owner",
 		Width: 250,
 		Sort: func(a, b industryJobRow) int {
@@ -249,7 +230,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			}
 		},
 	}, {
-		ID:    industryJobsColInstaller,
 		Label: "Installer",
 		Width: ui.ColumnWidthEntity,
 		Sort: func(a, b industryJobRow) int {
@@ -261,7 +241,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	}})
 	a := &IndustryJobs{
 		footer:         ui.NewLabelWithWrapping(""),
-		columnSorter:   xwidget.NewColumnSorter(columns, industryJobsColEndDate, xwidget.SortDesc),
+		columnSorter:   xwidget.NewColumnSorter(columns, "End date", xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,
 	}
@@ -285,17 +265,17 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	}
 
 	a.searchEntry = xwidget.NewSearchEntry("Search blueprints", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
@@ -305,7 +285,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectStatus.Selected = industryStatusActive
 	a.selectStatus.SortDisabled = true
@@ -318,22 +298,22 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	if !forCorporation {
 		a.selectInstaller.Selected = industryInstallerMe
 	}
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
-	}, 6, 7)
+		a.filterRowsAsync("")
+	}, "Owner", "Installer")
 
 	// signals
 	if forCorporation {
@@ -525,7 +505,7 @@ func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
 
 // filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *IndustryJobs) filterRowsAsync(sortCol int) {
+func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
@@ -651,7 +631,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = jobs
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(readyCount)
 		}

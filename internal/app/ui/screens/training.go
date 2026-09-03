@@ -132,23 +132,10 @@ type Training struct {
 	u            baseUI
 }
 
-const (
-	trainingColCharacter = iota + 1
-	trainingColTags
-	trainingColCurrentSkill
-	trainingColCurrentRemaining
-	trainingColQueuedCount
-	trainingColQueuedRemaining
-	trainingColTrainedSP
-	trainingColUnallocatedSP
-	trainingColTotalSP
-)
-
 func NewTraining(u baseUI) *Training {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[trainingRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[trainingRow]{
-			ColumnID: trainingColCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r trainingRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -159,7 +146,6 @@ func NewTraining(u baseUI) *Training {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    trainingColTags,
 			Label: "Tags",
 			Width: 150,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -167,7 +153,6 @@ func NewTraining(u baseUI) *Training {
 				co.(*xwidget.RichText).SetWithText(s)
 			},
 		}, {
-			ID:    trainingColCurrentSkill,
 			Label: "Current Skill",
 			Width: 250,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -191,7 +176,6 @@ func NewTraining(u baseUI) *Training {
 				return strings.Compare(a.skillName, b.skillName)
 			},
 		}, {
-			ID:    trainingColCurrentRemaining,
 			Label: "Current Time",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.currentRemainingTimeString())
@@ -203,7 +187,6 @@ func NewTraining(u baseUI) *Training {
 				)
 			},
 		}, {
-			ID:    trainingColQueuedCount,
 			Label: "Queued",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalRemainingCountDisplay)
@@ -212,7 +195,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.totalRemainingCount, b.totalRemainingCount)
 			},
 		}, {
-			ID:    trainingColQueuedRemaining,
 			Label: "Queue Time",
 			Update: func(r trainingRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalRemainingTimeString())
@@ -221,7 +203,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.totalRemainingTime(), b.totalRemainingTime())
 			},
 		}, {
-			ID:    trainingColTrainedSP,
 			Label: "Trained SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -233,7 +214,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.trainedSP, b.trainedSP)
 			},
 		}, {
-			ID:    trainingColUnallocatedSP,
 			Label: "Unall. SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -245,7 +225,6 @@ func NewTraining(u baseUI) *Training {
 				return optional.Compare(a.unallocatedSP, b.unallocatedSP)
 			},
 		}, {
-			ID:    trainingColTotalSP,
 			Label: "Total SP",
 			Width: 100,
 			Update: func(r trainingRow, co fyne.CanvasObject) {
@@ -258,14 +237,14 @@ func NewTraining(u baseUI) *Training {
 			},
 		}})
 	a := &Training{
-		columnSorter: xwidget.NewColumnSorter(columns, trainingColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
 	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	if a.u.IsMobile() {
@@ -292,14 +271,14 @@ func NewTraining(u baseUI) *Training {
 			trainingStatusActive,
 			trainingStatusInActive,
 		}, func(string) {
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		},
 	)
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -511,7 +490,7 @@ func (a *Training) saveTrainingAsCSV() {
 	d.Resize(winSize)
 }
 
-func (a *Training) filterRowsAsync(sortCol int) {
+func (a *Training) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
@@ -575,7 +554,7 @@ func (a *Training) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.refreshOnUpdate()
 	})
 }
@@ -602,7 +581,7 @@ func (a *Training) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		a.refreshOnUpdate()
 	})
 }

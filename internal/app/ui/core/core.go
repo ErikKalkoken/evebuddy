@@ -118,7 +118,7 @@ type baseUI struct {
 	characterSkillCatalogue    *screens.SkillCatalogue
 	characterSkillQueue        *screens.SkillQueue
 	characterWallet            *screens.CharacterWallet
-	clones                     *screens.Clones
+	clones                     *screens.JumpClones
 	colonies                   *screens.Colonies
 	contractList               *screens.Contracts
 	contractSlotsPersonal      *screens.ContractSlots
@@ -421,7 +421,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.characterSkillCatalogue = screens.NewSkillCatalogue(u)
 	u.characterSkillQueue = screens.NewSkillQueue(u)
 	u.characterWallet = screens.NewCharacterWallet(u)
-	u.clones = screens.NewClones(u)
+	u.clones = screens.NewJumpClones(u)
 	u.colonies = screens.NewColonies(u)
 	u.contractList = screens.NewContractsForCharacters(u)
 	u.contractSlotsPersonal = screens.NewContractSlots(u, false)

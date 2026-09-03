@@ -69,17 +69,6 @@ type WealthOverview struct {
 	showHelp     *xwidget.IconButton
 }
 
-const (
-	wealthOverviewColCharacter = iota + 1
-	wealthOverviewColTags
-	wealthOverviewColWalletBalance
-	wealthOverviewColCombinedAssetsValue
-	wealthOverviewColContractsEscrow
-	wealthOverviewColOrdersEscrow
-	wealthOverviewColTotalNetWorth
-	wealthOverviewColSkillPoints
-)
-
 const valueWidth = 125
 
 const overviewHelpText = `Wallet Balance: The balance of the wallet.
@@ -99,8 +88,7 @@ NOTE: Blueprints, PLEX in the account wallet are not included.`
 func NewWealthOverview(u baseUI) *WealthOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[wealthOverviewRow]{
 		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[wealthOverviewRow]{
-			ColumnID: wealthOverviewColCharacter,
-			EIS:      u.EVEImage(),
+			EIS: u.EVEImage(),
 			GetEntity: func(r wealthOverviewRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
@@ -111,14 +99,12 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			IsAvatar: true,
 			Label:    "Character",
 		}), {
-			ID:    wealthOverviewColTags,
 			Label: "Tags",
 			Width: 150,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
 			},
 		}, {
-			ID:    wealthOverviewColWalletBalance,
 			Label: "Wallet Balance",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -131,7 +117,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.walletBalance, b.walletBalance)
 			},
 		}, {
-			ID:    wealthOverviewColCombinedAssetsValue,
 			Label: "Combined Assets",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -145,7 +130,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			},
 		},
 		{
-			ID:    wealthOverviewColContractsEscrow,
 			Label: "Contracts Escrow",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -159,7 +143,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			},
 		},
 		{
-			ID:    wealthOverviewColOrdersEscrow,
 			Label: "Orders Escrow",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -172,7 +155,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
 			},
 		}, {
-			ID:    wealthOverviewColTotalNetWorth,
 			Label: "Total Net Worth",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -185,7 +167,6 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 				return optional.Compare(a.totalNetWorth, b.totalNetWorth)
 			},
 		}, {
-			ID:    wealthOverviewColSkillPoints,
 			Label: "Skill Points",
 			Width: valueWidth,
 			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
@@ -200,14 +181,14 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		},
 	})
 	a := &WealthOverview{
-		columnSorter: xwidget.NewColumnSorter(columns, wealthOverviewColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
 	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
@@ -227,24 +208,24 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r wealthOverviewRow) []widget.RichTextSegment {
+			func(col string, r wealthOverviewRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
 				switch col {
-				case wealthOverviewColCharacter:
+				case "Character":
 					s = xwidget.RichTextSegmentsFromText(r.characterName)
-				case wealthOverviewColTags:
+				case "Tags":
 					s = xwidget.RichTextSegmentsFromText(r.tagsDisplay)
-				case wealthOverviewColWalletBalance:
+				case "Wallet Balance":
 					s = xwidget.RichTextSegmentsFromText(r.walletDisplay)
-				case wealthOverviewColCombinedAssetsValue:
+				case "Combined Assets":
 					s = xwidget.RichTextSegmentsFromText(r.combinedAssetsDisplay)
-				case wealthOverviewColContractsEscrow:
+				case "Contracts Escrow":
 					s = xwidget.RichTextSegmentsFromText(r.contractsEscrowDisplay)
-				case wealthOverviewColOrdersEscrow:
+				case "Orders Escrow":
 					s = xwidget.RichTextSegmentsFromText(r.ordersEscrowDisplay)
-				case wealthOverviewColTotalNetWorth:
+				case "Total Net Worth":
 					s = xwidget.RichTextSegmentsFromText(r.totalNetWorthDisplay)
-				case wealthOverviewColSkillPoints:
+				case "Skill Points":
 					s = xwidget.RichTextSegmentsFromText(r.skillPointsDisplay)
 				}
 				return s
@@ -268,10 +249,10 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		)
 	}
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -328,7 +309,7 @@ func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *WealthOverview) filterRowsAsync(sortCol int) {
+func (a *WealthOverview) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectTag := a.selectTag.Selected
@@ -413,7 +394,7 @@ func (a *WealthOverview) update(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

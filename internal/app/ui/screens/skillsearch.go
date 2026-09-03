@@ -30,16 +30,6 @@ const (
 	searchSkillAll        = "All skills"
 )
 
-// Column number in search table
-const (
-	skillSearchColSkill = iota + 1
-	skillSearchColActiveLevel
-	skillSearchColTrainedLevel
-	skillSearchColSkillPoints
-	skillSearchColGroup
-	skillSearchColCharacter
-)
-
 type skillSearchRow struct {
 	activeLevel        int64
 	activeLevelRoman   string
@@ -89,7 +79,6 @@ type SkillSearch struct {
 
 func NewSkillSearch(u baseUI) *SkillSearch {
 	cols := []xwidget.DataColumn[skillSearchRow]{{
-		ID:    skillSearchColSkill,
 		Label: "Skill",
 		Width: 275,
 		Sort: func(a, b skillSearchRow) int {
@@ -99,7 +88,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			co.(*xwidget.RichText).SetWithText(r.typeName)
 		},
 	}, {
-		ID:    skillSearchColActiveLevel,
 		Label: "Active",
 		Width: 70,
 		Sort: func(a, b skillSearchRow) int {
@@ -112,7 +100,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColTrainedLevel,
 		Label: "Trained",
 		Width: 70,
 		Sort: func(a, b skillSearchRow) int {
@@ -125,7 +112,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColSkillPoints,
 		Label: "Skill Points",
 		Width: 90,
 		Sort: func(a, b skillSearchRow) int {
@@ -138,7 +124,6 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			)
 		},
 	}, {
-		ID:    skillSearchColGroup,
 		Label: "Group",
 		Width: 180,
 		Sort: func(a, b skillSearchRow) int {
@@ -148,8 +133,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			co.(*xwidget.RichText).SetWithText(r.groupName)
 		},
 	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[skillSearchRow]{
-		ColumnID: skillSearchColCharacter,
-		EIS:      u.EVEImage(),
+		EIS: u.EVEImage(),
 		GetEntity: func(r skillSearchRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.characterID,
@@ -164,7 +148,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 
 	columns := xwidget.NewDataColumns(cols)
 	a := &SkillSearch{
-		columnSorter: xwidget.NewColumnSorter(columns, skillSearchColSkill, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Skill", xwidget.SortAsc),
 		footer:       ui.NewLabelWithTruncation(""),
 		top:          ui.NewLabelWithWrapping(""),
 		u:            u,
@@ -189,7 +173,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 
 	// filters
 	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	a.selectSkill = kxwidget.NewFilterChipSelect("", []string{
@@ -197,22 +181,22 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 		searchSkillRestricted,
 		searchSkillAll,
 	}, func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSkill.Selected = searchSkillActive
 	a.selectSkill.SortDisabled = true
 
 	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -285,7 +269,7 @@ func (a *SkillSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
-func (a *SkillSearch) filterRowsAsync(sortCol int) {
+func (a *SkillSearch) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
@@ -365,7 +349,7 @@ func (a *SkillSearch) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
@@ -388,7 +372,7 @@ func (a *SkillSearch) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.top.Hide()
 		a.rows = rows
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 

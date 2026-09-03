@@ -90,62 +90,43 @@ type CharacterOverview struct {
 	u                 baseUI
 }
 
-const (
-	overviewColAlliance = iota + 1
-	overviewColCharacter
-	overviewColCorporation
-	overviewColMail
-	overviewColRegion
-	overviewColSolarSystem
-	overviewColSkillpoints
-	overviewColWallet
-)
-
 func NewCharacterOverview(u baseUI) *CharacterOverview {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[characterOverviewRow]{{
-		ID:    overviewColAlliance,
 		Label: "Alliance",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
 		},
 	}, {
-		ID:    overviewColCharacter,
 		Label: "Character",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 		},
 	}, {
-		ID:    overviewColCorporation,
 		Label: "Corporation",
 		Sort: func(a, b characterOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
 		},
 	}, {
-		ID:    overviewColMail,
 		Label: "Unread",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.unreadCount, b.unreadCount)
 		},
 	}, {
-		ID:    overviewColRegion,
 		Label: "Region",
 		Sort: func(a, b characterOverviewRow) int {
 			return strings.Compare(a.regionName, b.regionName)
 		},
 	}, {
-		ID:    overviewColSkillpoints,
 		Label: "Skillpoints",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.skillpoints, b.skillpoints)
 		},
 	}, {
-		ID:    overviewColSolarSystem,
 		Label: "System",
 		Sort: func(a, b characterOverviewRow) int {
 			return strings.Compare(a.solarSystemName, b.solarSystemName)
 		},
 	}, {
-		ID:    overviewColWallet,
 		Label: "Wallet",
 		Sort: func(a, b characterOverviewRow) int {
 			return optional.Compare(a.walletBalance, b.walletBalance)
@@ -157,14 +138,14 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 
 	a := &CharacterOverview{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, overviewColCharacter, xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		loadInfo:     info,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
 	a.searchEntry = xwidget.NewSearchEntry("Search characters and systems", func(_ string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	if !a.u.IsMobile() {
@@ -174,22 +155,22 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 	}
 
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	}, a.u.MainWindow())
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 
 	// Signals
@@ -332,7 +313,7 @@ func (a *CharacterOverview) makeList() *widget.List {
 	return l
 }
 
-func (a *CharacterOverview) filterRowsAsync(sortCol int) {
+func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	alliance := a.selectAlliance.Selected
@@ -414,7 +395,7 @@ func (a *CharacterOverview) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync(-1)
+			a.filterRowsAsync("")
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
@@ -434,7 +415,7 @@ func (a *CharacterOverview) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.loadInfo.Hide()
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(len(rows))
 		}
@@ -463,7 +444,7 @@ func (a *CharacterOverview) updateItem(ctx context.Context, characterID int64) {
 			return
 		}
 		a.rows[id] = r
-		a.filterRowsAsync(-1)
+		a.filterRowsAsync("")
 	})
 }
 
