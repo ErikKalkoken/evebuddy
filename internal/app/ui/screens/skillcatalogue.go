@@ -168,7 +168,7 @@ func (a *SkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortChip)
 	topBox := container.NewVBox()
 	if a.u.IsMobile() {
-		topBox.Add(a.top)
+		topBox.Add(container.NewBorder(nil, nil, nil, a.moreButton, a.top))
 		topBox.Add(a.searchEntry)
 		topBox.Add(container.NewHScroll(filter))
 	} else {
