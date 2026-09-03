@@ -271,7 +271,7 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol int, dir SortDir, doSort b
 }
 
 // NewSortChip creates a [SortChip] for a [ColumnSorter].
-func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *kxwidget.SortChip {
+func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string) *kxwidget.SortChip {
 	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
 		return h.Label
 	}))
@@ -280,14 +280,9 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...int) *k
 	for col, field := range columns {
 		field2Col[field] = col
 	}
-	var ignoredIdx set.Set[int]
-	for _, idx := range ignoredColumns {
-		if idx >= 0 && idx < len(columns) {
-			ignoredIdx.Add(idx)
-		}
-	}
+	ignored := set.Of(ignoredColumns...)
 	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
-		return ignoredIdx.Contains(field2Col[c])
+		return ignored.Contains(c)
 	})
 	col, dir := cs.current() // TODO: Hack, replace with defaults
 	defaultColumn := cs.columns.cols[col].Label

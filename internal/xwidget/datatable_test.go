@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -169,4 +171,104 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestColumnSorter_NewSortChip(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+		Label: "Alpha",
+		Sort:  func(a, b myRow) int { return 0 },
+	}, {
+		Label: "Bravo",
+		Sort:  func(a, b myRow) int { return 0 },
+	}, {
+		Label: "Charlie",
+		Sort:  func(a, b myRow) int { return 0 },
+	}})
+
+	t.Run("sets default column and order from current sort", func(t *testing.T) {
+		sc := xwidget.NewColumnSorter(columns, "Bravo", xwidget.SortDesc)
+		chip := sc.NewSortChip(nil)
+		assert.Equal(t, "Bravo", chip.DefaultColumn)
+		assert.Equal(t, "Bravo", chip.Column)
+		assert.Equal(t, kxwidget.SortOrderDescending, chip.Order)
+	})
+
+	t.Run("selecting a column updates the sorter and calls changed", func(t *testing.T) {
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		var called bool
+		chip := sc.NewSortChip(func() { called = true })
+		chip.OnChanged("Charlie", kxwidget.SortOrderDescending)
+		gotID, gotDir, gotSort := sc.CalcSort(-1)
+		assert.True(t, gotSort)
+		assert.Equal(t, 2, gotID)
+		assert.Equal(t, xwidget.SortDesc, gotDir)
+		assert.True(t, called)
+	})
+
+	t.Run("offers all columns when none are ignored", func(t *testing.T) {
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		chip := sc.NewSortChip(nil)
+		w := test.NewWindow(chip)
+		defer w.Close()
+		w.Resize(fyne.NewSize(300, 400))
+
+		test.Tap(chip)
+
+		assert.NotNil(t, findMenuItem(w, "Alpha"))
+		assert.NotNil(t, findMenuItem(w, "Bravo"))
+		assert.NotNil(t, findMenuItem(w, "Charlie"))
+	})
+
+	t.Run("excludes ignored columns from the menu", func(t *testing.T) {
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		chip := sc.NewSortChip(nil, "Bravo", "Charlie")
+		w := test.NewWindow(chip)
+		defer w.Close()
+		w.Resize(fyne.NewSize(300, 400))
+
+		test.Tap(chip)
+
+		assert.NotNil(t, findMenuItem(w, "Alpha"))
+		assert.Nil(t, findMenuItem(w, "Bravo"))
+		assert.Nil(t, findMenuItem(w, "Charlie"))
+	})
+}
+
+// findMenuItem searches the topmost canvas overlay of w for a text object matching label.
+func findMenuItem(w fyne.Window, label string) fyne.CanvasObject {
+	overlay := w.Canvas().Overlays().Top()
+	if overlay == nil {
+		return nil
+	}
+	return findObjectByText(overlay, label)
+}
+
+func findObjectByText(obj fyne.CanvasObject, want string) fyne.CanvasObject {
+	switch v := obj.(type) {
+	case *widget.Label:
+		if v.Text == want {
+			return v
+		}
+	case *canvas.Text:
+		if v.Text == want {
+			return v
+		}
+	}
+	if c, ok := obj.(*fyne.Container); ok {
+		for _, child := range c.Objects {
+			if found := findObjectByText(child, want); found != nil {
+				return found
+			}
+		}
+	}
+	if wd, ok := obj.(fyne.Widget); ok {
+		for _, child := range test.WidgetRenderer(wd).Objects() {
+			if found := findObjectByText(child, want); found != nil {
+				return found
+			}
+		}
+	}
+	return nil
 }

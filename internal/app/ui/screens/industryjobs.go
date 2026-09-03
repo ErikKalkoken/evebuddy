@@ -313,7 +313,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync(-1)
-	}, 6, 7)
+	}, "Owner", "Installer")
 
 	// signals
 	if forCorporation {
