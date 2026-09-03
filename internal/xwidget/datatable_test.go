@@ -70,6 +70,15 @@ func TestNewDataColumns(t *testing.T) {
 			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{})
 		})
 	})
+	t.Run("should panic when a label is duplicated", func(t *testing.T) {
+		assert.Panics(t, func() {
+			xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+				Label: "Alpha",
+			}, {
+				Label: "Alpha",
+			}})
+		})
+	})
 }
 
 func TestColumsSorter_CalcSortIdx(t *testing.T) {

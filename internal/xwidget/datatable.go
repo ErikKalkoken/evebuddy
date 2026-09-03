@@ -49,7 +49,7 @@ func (s SortDir) isSorting() bool {
 
 // DataColumn represents a column in a data table.
 type DataColumn[T any] struct {
-	// Label of a column displayed to the user.
+	// Label of a column displayed to the user. Must be unique.
 	Label string
 
 	// Width of a column in Fyne units. Will auto size to header width when omitted.
@@ -79,6 +79,7 @@ func (h DataColumn[T]) minWidth() float32 {
 // A column's ID is the index of its position in the cols slice passed to [NewDataColumns].
 type DataColumns[T any] struct {
 	cols           []DataColumn[T]
+	labelLookup    map[string]int // maps labels to their index in cols
 	maxColumnWidth float32
 }
 
@@ -91,8 +92,16 @@ func NewDataColumns[T any](cols []DataColumn[T]) DataColumns[T] {
 		panic("must define at least 1 column")
 	}
 	cols2 := slices.Clone(cols)
+	labelLookup := make(map[string]int)
+	for i, c := range cols2 {
+		if _, found := labelLookup[c.Label]; found {
+			panic(fmt.Sprintf("duplicate label: %q", c.Label))
+		}
+		labelLookup[c.Label] = i
+	}
 	dc := DataColumns[T]{
 		cols:           cols2,
+		labelLookup:    labelLookup,
 		maxColumnWidth: maxColumnWidth(cols2),
 	}
 	return dc
@@ -130,16 +139,6 @@ func (dc DataColumns[T]) Values() iter.Seq[DataColumn[T]] {
 	return slices.Values(dc.cols)
 }
 
-// indexByLabel returns the index of the column with the given label.
-func (dc DataColumns[T]) indexByLabel(label string) (int, bool) {
-	for i, c := range dc.cols {
-		if c.Label == label {
-			return i, true
-		}
-	}
-	return 0, false
-}
-
 // ColumnSorter represents an ordered list of columns which can be sorted.
 type ColumnSorter[T any] struct {
 	cols       []SortDir
@@ -153,7 +152,7 @@ type ColumnSorter[T any] struct {
 // label and dir defines the initially sorted column.
 // It panics if semantic checks fail.
 func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *ColumnSorter[T] {
-	idx, ok := columns.indexByLabel(label)
+	idx, ok := columns.labelLookup[label]
 	if !ok {
 		dir = SortOff
 	}
@@ -210,7 +209,7 @@ func (cs *ColumnSorter[T]) current() (idx int, dir SortDir) {
 
 // Set sets the sort direction for a column. Unknown labels are ignored.
 func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
-	idx, ok := cs.columns.indexByLabel(label)
+	idx, ok := cs.columns.labelLookup[label]
 	if !ok {
 		return
 	}
@@ -276,10 +275,6 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string)
 		return h.Label
 	}))
 
-	field2Col := make(map[string]int)
-	for col, field := range columns {
-		field2Col[field] = col
-	}
 	ignored := set.Of(ignoredColumns...)
 	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
 		return ignored.Contains(c)
@@ -288,7 +283,11 @@ func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string)
 	defaultColumn := cs.columns.cols[col].Label
 	defaultOrder := sortOrderFromDir(dir)
 	w := kxwidget.NewSortChip(sortColumns, defaultColumn, defaultOrder, func(col string, order kxwidget.SortOrder) {
-		cs.setIdx(field2Col[col], sortDirFromOrder(order))
+		idx, ok := cs.columns.labelLookup[col]
+		if !ok {
+			return
+		}
+		cs.setIdx(idx, sortDirFromOrder(order))
 		if changed != nil {
 			changed()
 		}
