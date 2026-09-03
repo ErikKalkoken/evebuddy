@@ -14,9 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -128,7 +126,7 @@ type Training struct {
 	searchEntry  *xwidget.SearchEntry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip     *kxwidget.SortChip
 	u            baseUI
 }
 
@@ -335,15 +333,6 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-// MoreItems returns the list of menu items for the overflow menu.
-func (a *Training) MoreItems() []*fyne.MenuItem {
-	items := []*fyne.MenuItem{
-		fyne.NewMenuItem("Copy training data to clipboard", a.copyTrainingToClipboard),
-		fyne.NewMenuItem("Save training data as file", a.saveTrainingAsCSV),
-	}
-	return items
-}
-
 func (a *Training) makeDataList() *xwidget.StripedList {
 	p := theme.Padding()
 	l := xwidget.NewStripedList(
@@ -430,8 +419,30 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-func (a *Training) makeTrainingCSVString() string {
-	rows := a.rowsFiltered
+// MoreItems returns the list of menu items for the overflow menu.
+func (a *Training) MoreItems() []*fyne.MenuItem {
+	items := []*fyne.MenuItem{
+		fyne.NewMenuItem("Copy training to clipboard", a.copyTrainingToClipboard),
+		fyne.NewMenuItem("Export training as CSV", a.saveTrainingAsCSV),
+	}
+	return items
+}
+
+func (a *Training) copyTrainingToClipboard() {
+	copyRowsToClipboard(a.u, "training", a.rowsFiltered, func(rows []trainingRow) (string, error) {
+		b, err := makeTrainingCSVString(rows)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	})
+}
+
+func (a *Training) saveTrainingAsCSV() {
+	exportRowsAsCSV(a.u, "training", "training.csv", a.rowsFiltered, makeTrainingCSVString)
+}
+
+func makeTrainingCSVString(rows []trainingRow) ([]byte, error) {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
 	_ = w.Write([]string{
@@ -453,41 +464,7 @@ func (a *Training) makeTrainingCSVString() string {
 		})
 	}
 	w.Flush()
-	return buf.String()
-}
-
-func (a *Training) copyTrainingToClipboard() {
-	fyne.CurrentApp().Clipboard().SetContent(a.makeTrainingCSVString())
-	a.u.ShowSnackbar("Training data copied to clipboard")
-}
-
-func (a *Training) saveTrainingAsCSV() {
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if writer == nil {
-			return
-		}
-		defer writer.Close()
-		if err != nil {
-			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-			return
-		}
-		_, err = writer.Write([]byte(a.makeTrainingCSVString()))
-		if err != nil {
-			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-			return
-		}
-		slog.Info("Training data exported to file", "uri", writer.URI())
-		a.u.ShowSnackbar("Training data saved to file")
-	}, a.u.MainWindow())
-
-	d.SetFileName("training.csv")
-	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetTitleText("Save training data")
-	d.Show()
-
-	_, s := a.u.MainWindow().Canvas().InteractiveArea()
-	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-	d.Resize(winSize)
+	return buf.Bytes(), nil
 }
 
 func (a *Training) filterRowsAsync(sortCol string) {

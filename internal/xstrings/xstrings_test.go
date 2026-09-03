@@ -1,6 +1,7 @@
 package xstrings_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -140,6 +141,39 @@ func TestTruncateWithSuffix(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestSanitizeFilename(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"unchanged for a normal name", "report_2024.txt", "report_2024.txt"},
+		{"replaces windows-invalid characters", `a<b>c:d"e/f\g|h?i*j`, "a_b_c_d_e_f_g_h_i_j"},
+		{"replaces control characters", "a\x00b\x1fc", "a_b_c"},
+		{"trims trailing dots and spaces", "report.txt  ...", "report.txt"},
+		{"keeps a leading dot for hidden files", ".gitignore", ".gitignore"},
+		{"replaces reserved device name", "CON", "CON_"},
+		{"replaces reserved device name case-insensitively", "com1", "com1_"},
+		{"replaces reserved device name with extension", "NUL.txt", "NUL_.txt"},
+		{"leaves non-reserved name that contains a reserved one", "CONSOLE.txt", "CONSOLE.txt"},
+		{"returns fallback for empty string", "", "_"},
+		{"replaces path separators", "///", "___"},
+		{"returns fallback when only dots and spaces", " . . ", "_"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := xstrings.SanitizeFilename(tc.in)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+	t.Run("truncates overly long names", func(t *testing.T) {
+		in := strings.Repeat("a", 300)
+		got := xstrings.SanitizeFilename(in)
+		assert.LessOrEqual(t, len([]rune(got)), 255)
+		assert.Equal(t, strings.Repeat("a", 255), got)
+	})
 }
 
 func TestRemoveMultiByte(t *testing.T) {
