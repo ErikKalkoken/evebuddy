@@ -45,8 +45,7 @@ func TestCompileRowsForClipboard(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AssetSearch{}
-			got := a.consolidateRowsToString(tt.rows)
+			got, _ := consolidateAssetRows(tt.rows)
 			xassert.Equal(t, tt.want, got)
 		})
 	}
@@ -91,25 +90,25 @@ func TestMakeCSVFromRows(t *testing.T) {
 		},
 	}
 	t.Run("for character includes owner and tags", func(t *testing.T) {
-		a := &AssetSearch{forCorporation: false}
-		got := string(a.makeCSVFromRows(rows))
-		want := "item_id,type_id,type,name,group_id,group,category_id,category,location,location_flag,state,quantity,is_singleton,variant,solar_system_id,solar_system,region_id,region,price,total,owner_id,owner,tags\n" +
+		b, _ := makeCSVFromRows(false, rows)
+		got := string(b)
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne,PVE\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne,\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("for corporation includes owner but omits tags", func(t *testing.T) {
-		a := &AssetSearch{forCorporation: true}
-		got := string(a.makeCSVFromRows(rows))
-		want := "item_id,type_id,type,name,group_id,group,category_id,category,location,location_flag,state,quantity,is_singleton,variant,solar_system_id,solar_system,region_id,region,price,total,owner_id,owner\n" +
+		b, _ := makeCSVFromRows(true, rows)
+		got := string(b)
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("no rows returns only header", func(t *testing.T) {
-		a := &AssetSearch{forCorporation: false}
-		got := string(a.makeCSVFromRows(nil))
-		want := "item_id,type_id,type,name,group_id,group,category_id,category,location,location_flag,state,quantity,is_singleton,variant,solar_system_id,solar_system,region_id,region,price,total,owner_id,owner,tags\n"
+		b, _ := makeCSVFromRows(false, nil)
+		got := string(b)
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n"
 		xassert.Equal(t, want, got)
 	})
 }

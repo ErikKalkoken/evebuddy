@@ -16,9 +16,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -561,21 +559,16 @@ func (a *AssetSearch) Focus() {
 // MoreItems returns the list of menu items for the overflow menu.
 func (a *AssetSearch) MoreItems() []*fyne.MenuItem {
 	return []*fyne.MenuItem{
-		fyne.NewMenuItem("Consolidate to Clipboard", a.consolidateToClipboard),
-		fyne.NewMenuItem("Export as CSV", a.exportAsCSV),
+		fyne.NewMenuItem("Copy assets to clipboard", a.consolidateToClipboard),
+		fyne.NewMenuItem("Export assets as CSV", a.exportAsCSV),
 	}
 }
 
 func (a *AssetSearch) consolidateToClipboard() {
-	rows := slices.Clone(a.rowsFiltered)
-	go func() {
-		s := a.consolidateRowsToString(rows)
-		fyne.CurrentApp().Clipboard().SetContent(s)
-		a.u.ShowSnackbar("Assets copied to clipboard")
-	}()
+	copyRowsToClipboard(a.u, "assets", a.rowsFiltered, consolidateAssetRows)
 }
 
-func (*AssetSearch) consolidateRowsToString(rows []assetRow) string {
+func consolidateAssetRows(rows []assetRow) (string, error) {
 	type assetItem struct {
 		name     string
 		quantity int
@@ -600,67 +593,36 @@ func (*AssetSearch) consolidateRowsToString(rows []assetRow) string {
 	})
 	var b strings.Builder
 	for _, it := range items {
-		fmt.Fprintf(&b, "%s %d\n", it.name, it.quantity)
+		if _, err := fmt.Fprintf(&b, "%s %d\n", it.name, it.quantity); err != nil {
+			return "", err
+		}
 	}
-	return b.String()
+	return b.String(), nil
 }
 
 func (a *AssetSearch) exportAsCSV() {
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if writer == nil {
-			return
-		}
-		showError := func(err error) {
-			ui.ShowErrorAndLog("Failed to export assets", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-		}
-		if err != nil {
-			writer.Close()
-			showError(err)
-			return
-		}
-		rows := slices.Clone(a.rowsFiltered)
-		go func() {
-			defer writer.Close()
-			data := a.makeCSVFromRows(rows)
-			_, err := writer.Write(data)
-			if err != nil {
-				fyne.Do(func() {
-					showError(err)
-				})
-				return
-			}
-			a.u.ShowSnackbar("Assets exported to CSV")
-		}()
-	}, a.u.MainWindow())
-
 	var filename string
 	if a.forCorporation {
 		filename = fmt.Sprintf("assets_%d.csv", a.corporation.Load().IDOrZero())
 	} else {
 		filename = "assets.csv"
 	}
-
-	d.SetFileName(filename)
-	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetTitleText("Export as CSV")
-	d.Show()
-
-	_, s := a.u.MainWindow().Canvas().InteractiveArea()
-	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-	d.Resize(winSize)
+	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(rows []assetRow) ([]byte, error) {
+		return makeCSVFromRows(a.forCorporation, rows)
+	})
 }
 
-func (a *AssetSearch) makeCSVFromRows(rows []assetRow) []byte {
+func makeCSVFromRows(forCorporation bool, rows []assetRow) ([]byte, error) {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
 	header := []string{
-		"item_id", "type_id", "type", "name", "group_id", "group", "category_id", "category",
-		"location", "location_flag", "state", "quantity", "is_singleton", "variant",
-		"solar_system_id", "solar_system", "region_id", "region", "price", "total",
-		"owner_id", "owner",
+		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
+		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
+		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Price", "Total",
+		"Owner ID", "Owner Name",
 	}
-	if !a.forCorporation {
-		header = append(header, "tags")
+	if !forCorporation {
+		header = append(header, "Tags")
 	}
 	_ = w.Write(header)
 	for _, r := range rows {
@@ -700,13 +662,13 @@ func (a *AssetSearch) makeCSVFromRows(rows []assetRow) []byte {
 			strconv.FormatInt(r.owner.ID, 10),
 			r.owner.Name,
 		}
-		if !a.forCorporation {
+		if !forCorporation {
 			record = append(record, r.tagsDisplay)
 		}
 		_ = w.Write(record)
 	}
 	w.Flush()
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {
