@@ -2,6 +2,7 @@
 package xstrings
 
 import (
+	"regexp"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -9,6 +10,43 @@ import (
 )
 
 var folder = cases.Fold(cases.NoLower)
+
+// invalidFilenameChars are characters illegal on Windows / unsafe on Android FAT storage.
+var invalidFilenameChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1F]`)
+
+// reservedFilenames are Windows device names, reserved with or without an extension.
+var reservedFilenames = map[string]bool{
+	"CON": true, "PRN": true, "AUX": true, "NUL": true,
+	"COM1": true, "COM2": true, "COM3": true, "COM4": true, "COM5": true,
+	"COM6": true, "COM7": true, "COM8": true, "COM9": true,
+	"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true, "LPT5": true,
+	"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+}
+
+// maxFilenameLength keeps the result within the 255 byte limit most filesystems enforce.
+const maxFilenameLength = 255
+
+// SanitizeFilename returns a copy of s usable as a file name on Windows, Unix,
+// macOS and Android. Returns "_" if nothing usable remains.
+func SanitizeFilename(s string) string {
+	s = invalidFilenameChars.ReplaceAllString(s, "_")
+	s = strings.TrimRight(s, " .")
+	if runes := []rune(s); len(runes) > maxFilenameLength {
+		s = strings.TrimRight(string(runes[:maxFilenameLength]), " .")
+	}
+	if s == "" {
+		return "_"
+	}
+	name, ext, hasExt := strings.Cut(s, ".")
+	if reservedFilenames[strings.ToUpper(name)] {
+		if hasExt {
+			s = name + "_." + ext
+		} else {
+			s = name + "_"
+		}
+	}
+	return s
+}
 
 // CompareIgnoreCase works like [strings.Compare], but is case insensitive.
 func CompareIgnoreCase(a, b string) int {

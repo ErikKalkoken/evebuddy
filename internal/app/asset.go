@@ -165,6 +165,21 @@ const (
 	VariantSKIN
 )
 
+func (v InventoryTypeVariant) String() string {
+	switch v {
+	case VariantRegular:
+		return "Regular"
+	case VariantBPO:
+		return "BPO"
+	case VariantBPC:
+		return "BPC"
+	case VariantSKIN:
+		return "SKIN"
+	default:
+		return ""
+	}
+}
+
 // Asset represents a generic asset in EVE Online.
 type Asset struct {
 	IsBlueprintCopy optional.Optional[bool]

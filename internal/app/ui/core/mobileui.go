@@ -255,7 +255,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
+			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch,
+				kxwidget.NewIconButtonWithMenu(
+					theme.MoreHorizontalIcon(),
+					fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
+				),
+			))
 			u.corporationAssetSearch.Focus()
 		},
 	)
@@ -850,11 +855,16 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemWealth.Refresh()
 	}
 
-	navItemAssets := xwidget.NewNavListItem(
+	navItemAssetSearch := xwidget.NewNavListItem(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll))
+			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll,
+				kxwidget.NewIconButtonWithMenu(
+					theme.MoreHorizontalIcon(),
+					fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
+				),
+			))
 			u.assetSearchAll.Focus()
 		},
 	)
@@ -924,7 +934,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 
 	homeList = xwidget.NewNavList(
 		navItemCharacters,
-		navItemAssets,
+		navItemAssetSearch,
 		xwidget.NewNavListItem(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),

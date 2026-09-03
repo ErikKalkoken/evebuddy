@@ -3,10 +3,13 @@ package screens
 import (
 	"cmp"
 	"context"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"iter"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -34,12 +37,14 @@ import (
 )
 
 const (
-	totalYes = "Has total"
-	totalNo  = "Has no total"
+	assetSearchTotalYes = "Has total"
+	assetSearchTotalNo  = "Has no total"
 )
 
 type assetRow struct {
+	categoryID      int64
 	categoryName    string
+	displayName     string
 	groupID         int64
 	groupName       string
 	isSingleton     bool
@@ -58,6 +63,9 @@ type assetRow struct {
 	regionID        int64
 	regionName      string
 	searchTarget    string
+	solarSystemID   int64
+	solarSystemName string
+	state           string
 	tags            set.Set[string]
 	tagsDisplay     string
 	total           optional.Optional[float64]
@@ -65,25 +73,27 @@ type assetRow struct {
 	typeID          int64
 	typeName        string
 	variant         app.InventoryTypeVariant
-	state           string
 }
 
 func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int64) string) assetRow {
+	owner := &app.EveEntity{
+		ID:       ca.CharacterID,
+		Name:     characterName(ca.CharacterID),
+		Category: app.EveEntityCharacter,
+	}
 	r := assetRow{
+		categoryID:   ca.Type.Group.Category.ID,
 		categoryName: ca.Type.Group.Category.Name,
+		displayName:  ca.DisplayName2(),
 		groupID:      ca.Type.Group.ID,
 		groupName:    ca.Type.Group.Name,
 		isSingleton:  ca.IsSingleton,
 		itemID:       ca.ItemID,
+		name:         ca.Name,
+		owner:        owner,
 		typeID:       ca.Type.ID,
 		typeName:     ca.Type.Name,
-		name:         ca.DisplayName2(),
 		variant:      ca.Variant(),
-		owner: &app.EveEntity{
-			ID:       ca.CharacterID,
-			Name:     characterName(ca.CharacterID),
-			Category: app.EveEntityCharacter,
-		},
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
@@ -93,21 +103,24 @@ func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName f
 }
 
 func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Tree, corporationName string) assetRow {
+	owner := &app.EveEntity{
+		ID:       ca.CorporationID,
+		Name:     corporationName,
+		Category: app.EveEntityCorporation,
+	}
 	r := assetRow{
+		categoryID:   ca.Type.Group.Category.ID,
 		categoryName: ca.Type.Group.Category.Name,
+		displayName:  ca.DisplayName2(),
 		groupID:      ca.Type.Group.ID,
 		groupName:    ca.Type.Group.Name,
 		isSingleton:  ca.IsSingleton,
 		itemID:       ca.ItemID,
+		name:         ca.Name,
+		owner:        owner,
 		typeID:       ca.Type.ID,
 		typeName:     ca.Type.Name,
-		name:         ca.DisplayName2(),
 		variant:      ca.Variant(),
-		owner: &app.EveEntity{
-			ID:       ca.CorporationID,
-			Name:     corporationName,
-			Category: app.EveEntityCorporation,
-		},
 	}
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
@@ -169,6 +182,8 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 		}
 	}
 	if v, ok := el.SolarSystem.Value(); ok {
+		r.solarSystemID = v.ID
+		r.solarSystemName = v.Name
 		r.regionName = v.Constellation.Region.Name
 		r.regionID = v.Constellation.Region.ID
 	}
@@ -237,7 +252,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 		Label: "Item",
 		Width: 300,
 		Sort: func(a, b assetRow) int {
-			return strings.Compare(a.name, b.name)
+			return strings.Compare(a.displayName, b.displayName)
 		},
 		Create: func() fyne.CanvasObject {
 			icon := xwidget.NewImageFromResource(
@@ -389,8 +404,8 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	})
 	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
-			totalYes,
-			totalNo,
+			assetSearchTotalYes,
+			assetSearchTotalNo,
 		},
 		func(_ string) {
 			a.filterRowsAsync("")
@@ -516,9 +531,9 @@ func (a *AssetSearch) makeDataList() *xwidget.StripedList {
 			box := co.(*fyne.Container).Objects
 			var title string
 			if r.isSingleton {
-				title = r.name
+				title = r.displayName
 			} else {
-				title = fmt.Sprintf("%s x%s", r.name, r.quantityDisplay)
+				title = fmt.Sprintf("%s x%s", r.displayName, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
 			box[1].(*xwidget.RichText).Set(r.locationDisplay)
@@ -539,6 +554,128 @@ func (a *AssetSearch) makeDataList() *xwidget.StripedList {
 
 func (a *AssetSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.searchEntry)
+}
+
+// MoreItems returns the list of menu items for the overflow menu.
+func (a *AssetSearch) MoreItems() []*fyne.MenuItem {
+	return []*fyne.MenuItem{
+		fyne.NewMenuItem("Copy assets to clipboard", a.consolidateToClipboard),
+		fyne.NewMenuItem("Export assets as CSV", a.exportAsCSV),
+	}
+}
+
+func (a *AssetSearch) consolidateToClipboard() {
+	copyRowsToClipboard(a.u, "assets", a.rowsFiltered, consolidateAssetRows)
+}
+
+func consolidateAssetRows(rows []assetRow) (string, error) {
+	type assetItem struct {
+		name     string
+		quantity int
+	}
+	quantities := make(map[int64]int)
+	names := make(map[int64]string)
+	for _, r := range rows {
+		quantities[r.typeID] += r.quantity
+		if _, found := names[r.typeID]; !found {
+			names[r.typeID] = r.typeName
+		}
+	}
+	var items []assetItem
+	for id, name := range names {
+		items = append(items, assetItem{
+			name:     name,
+			quantity: quantities[id],
+		})
+	}
+	slices.SortFunc(items, func(a, b assetItem) int {
+		return strings.Compare(a.name, b.name)
+	})
+	var b strings.Builder
+	for _, it := range items {
+		if _, err := fmt.Fprintf(&b, "%s %d\n", it.name, it.quantity); err != nil {
+			return "", err
+		}
+	}
+	return b.String(), nil
+}
+
+func (a *AssetSearch) exportAsCSV() {
+	var filename string
+	if a.forCorporation {
+		filename = fmt.Sprintf("assets_%d.csv", a.corporation.Load().IDOrZero())
+	} else {
+		filename = "assets.csv"
+	}
+	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(w io.Writer, rows []assetRow) error {
+		return writeAssetRowsToCSV(w, rows, a.forCorporation)
+	})
+}
+
+func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) error {
+	cw := csv.NewWriter(w)
+	header := []string{
+		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
+		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
+		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Price", "Total",
+		"Owner ID", "Owner Name",
+	}
+	if !forCorporation {
+		header = append(header, "Tags")
+	}
+	if err := cw.Write(header); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		var price string
+		if v, ok := r.price.Value(); ok {
+			price = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var total string
+		if v, ok := r.total.Value(); ok {
+			total = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var variant string
+		if r.variant != app.VariantRegular {
+			variant = r.variant.String()
+		}
+		record := []string{
+			strconv.FormatInt(r.itemID, 10),
+			strconv.FormatInt(r.typeID, 10),
+			r.typeName,
+			r.name,
+			strconv.FormatInt(r.groupID, 10),
+			r.groupName,
+			strconv.FormatInt(r.categoryID, 10),
+			r.categoryName,
+			r.locationName,
+			r.locationFlag.String(),
+			r.state,
+			strconv.Itoa(r.quantity),
+			strconv.FormatBool(r.isSingleton),
+			variant,
+			strconv.FormatInt(r.solarSystemID, 10),
+			r.solarSystemName,
+			strconv.FormatInt(r.regionID, 10),
+			r.regionName,
+			price,
+			total,
+			strconv.FormatInt(r.owner.ID, 10),
+			r.owner.Name,
+		}
+		if !forCorporation {
+			record = append(record, r.tagsDisplay)
+		}
+		if err := cw.Write(record); err != nil {
+			return err
+		}
+
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {
@@ -589,9 +726,9 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 		if total != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				switch total {
-				case totalYes:
+				case assetSearchTotalYes:
 					return r.total.IsEmpty()
-				case totalNo:
+				case assetSearchTotalNo:
 					return !r.total.IsEmpty()
 				}
 				return true
@@ -753,7 +890,7 @@ func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 		r := newCharacterAssetRow(ca, ac, func(id int64) string {
 			return characters[id]
 		})
-		r.searchTarget = strings.ToLower(r.name)
+		r.searchTarget = strings.ToLower(r.displayName)
 		r.tags = tagsPerCharacter[ca.CharacterID]
 		r.tagsDisplay = strings.Join(slices.Sorted(r.tags.All()), ", ")
 		rows = append(rows, r)
@@ -805,7 +942,7 @@ func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 			continue // filter out office item
 		}
 		r := newCorporationAssetRow(ca, ac, corporationNames[ca.CorporationID])
-		r.searchTarget = strings.ToLower(r.name)
+		r.searchTarget = strings.ToLower(r.displayName)
 		rows = append(rows, r)
 		value += r.total.ValueOrZero()
 	}
