@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"slices"
 	"strings"
@@ -430,28 +431,29 @@ func (a *Training) MoreItems() []*fyne.MenuItem {
 
 func (a *Training) copyTrainingToClipboard() {
 	copyRowsToClipboard(a.u, "training", a.rowsFiltered, func(rows []trainingRow) (string, error) {
-		b, err := trainingRowsToCSV(rows)
-		if err != nil {
+		var buf bytes.Buffer
+		if err := writeTrainingRowsToCSV(&buf, rows); err != nil {
 			return "", err
 		}
-		return string(b), nil
+		return buf.String(), nil
 	})
 }
 
 func (a *Training) saveTrainingAsCSV() {
-	exportRowsAsCSV(a.u, "training", "training.csv", a.rowsFiltered, trainingRowsToCSV)
+	exportRowsAsCSV(a.u, "training", "training.csv", a.rowsFiltered, writeTrainingRowsToCSV)
 }
 
-func trainingRowsToCSV(rows []trainingRow) ([]byte, error) {
-	var buf bytes.Buffer
-	w := csv.NewWriter(&buf)
-	_ = w.Write([]string{
+func writeTrainingRowsToCSV(w io.Writer, rows []trainingRow) error {
+	cw := csv.NewWriter(w)
+	if err := cw.Write([]string{
 		"Character", "Tags", "Current Skill", "Current Remaining",
 		"Queued", "Queue Time", "Trained SP", "Unallocated SP", "Total SP",
-	})
+	}); err != nil {
+		return err
+	}
 	for _, r := range rows {
 		tags := strings.Join(slices.Sorted(r.tags.All()), ";")
-		_ = w.Write([]string{
+		if err := cw.Write([]string{
 			r.characterName,
 			tags,
 			r.skillName,
@@ -461,10 +463,12 @@ func trainingRowsToCSV(rows []trainingRow) ([]byte, error) {
 			r.trainedSPDisplay,
 			r.unallocatedSPDisplay,
 			r.totalSPDisplay,
-		})
+		}); err != nil {
+			return err
+		}
 	}
-	w.Flush()
-	return buf.Bytes(), nil
+	cw.Flush()
+	return cw.Error()
 }
 
 func (a *Training) filterRowsAsync(sortCol string) {

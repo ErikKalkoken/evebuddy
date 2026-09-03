@@ -1,7 +1,10 @@
 package screens
 
 import (
+	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -90,24 +93,30 @@ func TestMakeCSVFromRows(t *testing.T) {
 		},
 	}
 	t.Run("for character includes owner and tags", func(t *testing.T) {
-		b, _ := makeCSVFromRows(false, rows)
-		got := string(b)
+		var b bytes.Buffer
+		err := writeAssetRowsToCSV(&b, rows, false)
+		require.NoError(t, err)
+		got := b.String()
 		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne,PVE\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne,\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("for corporation includes owner but omits tags", func(t *testing.T) {
-		b, _ := makeCSVFromRows(true, rows)
-		got := string(b)
+		var b bytes.Buffer
+		err := writeAssetRowsToCSV(&b, rows, true)
+		require.NoError(t, err)
+		got := b.String()
 		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("no rows returns only header", func(t *testing.T) {
-		b, _ := makeCSVFromRows(false, nil)
-		got := string(b)
+		var b bytes.Buffer
+		err := writeAssetRowsToCSV(&b, nil, false)
+		require.NoError(t, err)
+		got := b.String()
 		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n"
 		xassert.Equal(t, want, got)
 	})

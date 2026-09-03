@@ -1,11 +1,11 @@
 package screens
 
 import (
-	"bytes"
 	"cmp"
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"iter"
 	"log/slog"
 	"slices"
@@ -607,14 +607,13 @@ func (a *AssetSearch) exportAsCSV() {
 	} else {
 		filename = "assets.csv"
 	}
-	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(rows []assetRow) ([]byte, error) {
-		return makeCSVFromRows(a.forCorporation, rows)
+	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(w io.Writer, rows []assetRow) error {
+		return writeAssetRowsToCSV(w, rows, a.forCorporation)
 	})
 }
 
-func makeCSVFromRows(forCorporation bool, rows []assetRow) ([]byte, error) {
-	var buf bytes.Buffer
-	w := csv.NewWriter(&buf)
+func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) error {
+	cw := csv.NewWriter(w)
 	header := []string{
 		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
 		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
@@ -624,7 +623,9 @@ func makeCSVFromRows(forCorporation bool, rows []assetRow) ([]byte, error) {
 	if !forCorporation {
 		header = append(header, "Tags")
 	}
-	_ = w.Write(header)
+	if err := cw.Write(header); err != nil {
+		return err
+	}
 	for _, r := range rows {
 		var price string
 		if v, ok := r.price.Value(); ok {
@@ -665,10 +666,16 @@ func makeCSVFromRows(forCorporation bool, rows []assetRow) ([]byte, error) {
 		if !forCorporation {
 			record = append(record, r.tagsDisplay)
 		}
-		_ = w.Write(record)
+		if err := cw.Write(record); err != nil {
+			return err
+		}
+
 	}
-	w.Flush()
-	return buf.Bytes(), nil
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {

@@ -1,11 +1,11 @@
 package screens
 
 import (
-	"bytes"
 	"cmp"
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"log/slog"
 	"slices"
 	"strings"
@@ -480,25 +480,24 @@ func (a *SkillCatalogue) exportAsCSV() {
 		return
 	}
 	fileName := xstrings.SanitizeFilename("skills_" + strings.ReplaceAll(character.NameOrZero(), " ", "") + ".csv")
-	exportRowsAsCSV(a.u, "skills", fileName, a.rowsFiltered, skillCatalogueRowsToCSV)
+	exportRowsAsCSV(a.u, "skills", fileName, a.rowsFiltered, writeSkillCatalogueRowsToCSV)
 }
 
-func skillCatalogueRowsToCSV(rows []skillCatalogueRow) ([]byte, error) {
-	var buf bytes.Buffer
-	cw := csv.NewWriter(&buf)
+func writeSkillCatalogueRowsToCSV(w io.Writer, rows []skillCatalogueRow) error {
+	cw := csv.NewWriter(w)
 	if err := cw.Write([]string{"Name", "Level"}); err != nil {
-		return nil, err
+		return err
 	}
 	for _, r := range skillCatalogueRowsToItems(rows) {
 		if err := cw.Write([]string{r.name, fmt.Sprintf("%d", r.level)}); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	cw.Flush()
 	if err := cw.Error(); err != nil {
-		return nil, err
+		return err
 	}
-	return buf.Bytes(), nil
+	return nil
 }
 
 // dialogFillLayout is a fyne.Layout that resizes a dialog to match its

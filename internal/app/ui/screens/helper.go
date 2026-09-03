@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"io"
 	"log/slog"
 	"slices"
 
@@ -13,7 +14,7 @@ import (
 
 // copyRowsToClipboard copies rows from a data table to clipboard.
 //
-// The function can be called within the Fyne draw thread.
+// The function can be called in the main thread.
 func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func([]T) (string, error)) {
 	rows2 := slices.Clone(rows)
 	go func() {
@@ -32,8 +33,8 @@ func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func
 
 // exportRowsAsCSV exports rows from a datatable to a CSV file.
 //
-// The function can be called within the Fyne draw thread.
-func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, transform func([]T) ([]byte, error)) {
+// The function can be called in the main thread.
+func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, writeRows func(io.Writer, []T) error) {
 	w := u.MainWindow()
 	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if writer == nil {
@@ -50,14 +51,7 @@ func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, t
 		rows2 := slices.Clone(rows)
 		go func() {
 			defer writer.Close()
-			data, err := transform(rows2)
-			if err != nil {
-				fyne.Do(func() {
-					showError(err)
-				})
-				return
-			}
-			_, err = writer.Write(data)
+			err := writeRows(writer, rows2)
 			if err != nil {
 				fyne.Do(func() {
 					showError(err)
