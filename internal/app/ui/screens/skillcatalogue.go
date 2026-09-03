@@ -1,8 +1,10 @@
 package screens
 
 import (
+	"bytes"
 	"cmp"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -13,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -24,6 +25,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -129,10 +131,10 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("",
 			fyne.NewMenuItem("Copy skills to clipboard", func() {
-				a.copySkillsToClipboard()
+				a.copyToClipboard()
 			}),
-			fyne.NewMenuItem("Save skills as CSV", func() {
-				a.exportSkillsToCSV()
+			fyne.NewMenuItem("Export skills as CSV", func() {
+				a.exportAsCSV()
 			}),
 		),
 	)
@@ -436,56 +438,67 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 	return w
 }
 
-func (a *SkillCatalogue) copySkillsToClipboard() {
-	characterID := a.character.Load().IDOrZero()
-	if characterID == 0 {
-		a.u.ShowSnackbar("No skills to copy")
-		return
-	}
-	text, err := a.u.Character().MakeSkillsExportLines(context.Background(), characterID)
-	if err != nil {
-		slog.Error("Failed to generate skill export lines", "characterID", characterID, "err", err)
-		a.u.ShowSnackbar("Failed to copy skills to clipboard")
-		return
-	}
-	fyne.CurrentApp().Clipboard().SetContent(text)
-	a.u.ShowSnackbar("Skills copied to clipboard")
+func (a *SkillCatalogue) copyToClipboard() {
+	copyRowsToClipboard(a.u, "skills", a.rowsFiltered, skillsForClipboard)
 }
 
-func (a *SkillCatalogue) exportSkillsToCSV() {
+type skillExportItem struct {
+	name  string
+	level int64
+}
+
+func skillsForClipboard(rows []skillCatalogueRow) (string, error) {
+	var sb strings.Builder
+	for _, s := range skillCatalogueRowsToItems(rows) {
+		_, _ = fmt.Fprintf(&sb, "%s %d\n", s.name, s.level)
+	}
+	return sb.String(), nil
+
+}
+
+func skillCatalogueRowsToItems(rows []skillCatalogueRow) []skillExportItem {
+	var skills []skillExportItem
+	for _, r := range rows {
+		if r.levelActive == 0 {
+			continue
+		}
+		skills = append(skills, skillExportItem{
+			name:  r.name,
+			level: r.levelActive,
+		})
+	}
+	slices.SortFunc(skills, func(a, b skillExportItem) int {
+		return strings.Compare(a.name, b.name)
+	})
+	return skills
+}
+
+func (a *SkillCatalogue) exportAsCSV() {
 	character := a.character.Load()
 	if character == nil {
-		a.u.ShowSnackbar("No skills to export")
+		a.u.ShowSnackbar("No character")
 		return
 	}
+	fileName := xstrings.SanitizeFilename("skills_" + strings.ReplaceAll(character.NameOrZero(), " ", "") + ".csv")
+	exportRowsAsCSV(a.u, "skills", fileName, a.rowsFiltered, skillCatalogueRowsToCSV)
+}
 
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if writer == nil {
-			return
+func skillCatalogueRowsToCSV(rows []skillCatalogueRow) ([]byte, error) {
+	var buf bytes.Buffer
+	cw := csv.NewWriter(&buf)
+	if err := cw.Write([]string{"Name", "Level"}); err != nil {
+		return nil, err
+	}
+	for _, r := range skillCatalogueRowsToItems(rows) {
+		if err := cw.Write([]string{r.name, fmt.Sprintf("%d", r.level)}); err != nil {
+			return nil, err
 		}
-		defer writer.Close()
-		if err != nil {
-			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-			return
-		}
-		if err := a.u.Character().WriteSkillsExportCSV(context.Background(), character.ID, writer); err != nil {
-			ui.ShowErrorAndLog("Failed to save file", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-			return
-		}
-		slog.Info("Skills exported to file", "uri", writer.URI())
-		a.u.ShowSnackbar("Skills saved")
-	}, a.u.MainWindow())
-
-	characterName := character.NameOrZero()
-	fileName := "skills_" + strings.ReplaceAll(characterName, " ", "") + ".csv"
-	d.SetFileName(fileName)
-	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetTitleText("Save skills as CSV - " + characterName)
-	d.Show()
-
-	_, s := a.u.MainWindow().Canvas().InteractiveArea()
-	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-	d.Resize(winSize)
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // dialogFillLayout is a fyne.Layout that resizes a dialog to match its

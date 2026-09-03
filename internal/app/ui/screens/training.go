@@ -430,7 +430,7 @@ func (a *Training) MoreItems() []*fyne.MenuItem {
 
 func (a *Training) copyTrainingToClipboard() {
 	copyRowsToClipboard(a.u, "training", a.rowsFiltered, func(rows []trainingRow) (string, error) {
-		b, err := makeTrainingCSVString(rows)
+		b, err := trainingRowsToCSV(rows)
 		if err != nil {
 			return "", err
 		}
@@ -439,10 +439,10 @@ func (a *Training) copyTrainingToClipboard() {
 }
 
 func (a *Training) saveTrainingAsCSV() {
-	exportRowsAsCSV(a.u, "training", "training.csv", a.rowsFiltered, makeTrainingCSVString)
+	exportRowsAsCSV(a.u, "training", "training.csv", a.rowsFiltered, trainingRowsToCSV)
 }
 
-func makeTrainingCSVString(rows []trainingRow) ([]byte, error) {
+func trainingRowsToCSV(rows []trainingRow) ([]byte, error) {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
 	_ = w.Write([]string{

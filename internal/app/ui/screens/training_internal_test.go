@@ -129,7 +129,7 @@ func TestTraining_MakeTrainingCSVString(t *testing.T) {
 			},
 		},
 	}
-	got, _ := makeTrainingCSVString(a.rowsFiltered)
+	got, _ := trainingRowsToCSV(a.rowsFiltered)
 	want := "Character,Tags,Current Skill,Current Remaining,Queued,Queue Time,Trained SP,Unallocated SP,Total SP\n" +
 		"Alpha,logistics;pilot,Gunnery V,N/A,3,N/A,10000000,1000000,11000000\n" +
 		"Bravo,,N/A,N/A,,N/A,5000000,0,5000000\n"
