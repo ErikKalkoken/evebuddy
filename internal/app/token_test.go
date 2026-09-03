@@ -22,6 +22,21 @@ func TestCharacterToken_RemainsValid(t *testing.T) {
 	})
 }
 
+func TestCharacterToken_OauthToken(t *testing.T) {
+	expiresAt := time.Now().Add(10 * time.Minute)
+	x := app.CharacterToken{
+		AccessToken:  "accessToken",
+		RefreshToken: "refreshToken",
+		TokenType:    "Bearer",
+		ExpiresAt:    expiresAt,
+	}
+	got := x.OauthToken()
+	xassert.Equal(t, "accessToken", got.AccessToken)
+	xassert.Equal(t, "refreshToken", got.RefreshToken)
+	xassert.Equal(t, "Bearer", got.TokenType)
+	xassert.Equal(t, expiresAt, got.Expiry)
+}
+
 func TestCharacterToken_HasScopes(t *testing.T) {
 	cases := []struct {
 		name            string

@@ -49,6 +49,7 @@ func (t CharacterToken) OauthToken() *oauth2.Token {
 	token2 := &oauth2.Token{
 		AccessToken:  t.AccessToken,
 		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
 		Expiry:       t.ExpiresAt,
 		ExpiresIn:    int64(time.Until(t.ExpiresAt).Seconds()),
 	}
