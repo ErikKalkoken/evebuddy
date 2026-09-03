@@ -28,14 +28,14 @@ import (
 )
 
 const (
-	skillsAllSkill          = "All skills"
-	skillsMySkill           = "My skills"
-	skillsHavePrerequisites = "Have prerequisites for"
-	skillsQueued            = "Queued"
-	skillsFullyTrained      = "Fully trained"
+	skillCatalogueAllSkill          = "All skills"
+	skillCatalogueMySkill           = "My skills"
+	skillCatalogueHavePrerequisites = "Have prerequisites for"
+	skillCatalogueQueued            = "Queued"
+	skillCatalogueFullyTrained      = "Fully trained"
 )
 
-type skillRow struct {
+type skillCatalogueRow struct {
 	description      string
 	groupID          int64
 	groupName        string
@@ -54,14 +54,14 @@ type SkillCatalogue struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
-	columnSorter   *xwidget.ColumnSorter[skillRow]
+	columnSorter   *xwidget.ColumnSorter[skillCatalogueRow]
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
 	moreButton     *xwidget.IconButton
-	rows           []skillRow
-	rowsFiltered   []skillRow
+	rows           []skillCatalogueRow
+	rowsFiltered   []skillCatalogueRow
 	searchEntry    *xwidget.SearchEntry
 	selectGroup    *kxwidget.FilterChipSelect
 	selectMain     *kxwidget.FilterChipSelect
@@ -72,22 +72,22 @@ type SkillCatalogue struct {
 }
 
 func NewSkillCatalogue(u baseUI) *SkillCatalogue {
-	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[skillCatalogueRow]{{
 		ID:    1,
 		Label: "Name",
-		Sort: func(a, b skillRow) int {
+		Sort: func(a, b skillCatalogueRow) int {
 			return strings.Compare(a.name, b.name)
 		},
 	}, {
 		ID:    2,
 		Label: "Level trained",
-		Sort: func(a, b skillRow) int {
+		Sort: func(a, b skillCatalogueRow) int {
 			return cmp.Compare(a.levelTrained, b.levelTrained)
 		},
 	}, {
 		ID:    3,
 		Label: "Skillpoints trained",
-		Sort: func(a, b skillRow) int {
+		Sort: func(a, b skillCatalogueRow) int {
 			return cmp.Compare(a.spTrained, b.spTrained)
 		},
 	}}),
@@ -114,15 +114,15 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 		a.filterRowsAsync()
 	})
 	a.selectMain = kxwidget.NewFilterChipSelect("", []string{
-		skillsAllSkill,
-		skillsMySkill,
-		skillsHavePrerequisites,
-		skillsQueued,
-		skillsFullyTrained,
+		skillCatalogueAllSkill,
+		skillCatalogueMySkill,
+		skillCatalogueHavePrerequisites,
+		skillCatalogueQueued,
+		skillCatalogueFullyTrained,
 	}, func(string) {
 		a.filterRowsAsync()
 	})
-	a.selectMain.Selected = skillsAllSkill
+	a.selectMain.Selected = skillCatalogueAllSkill
 	a.selectMain.SortDisabled = true
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
@@ -257,39 +257,39 @@ func (a *SkillCatalogue) filterRowsAsync() {
 
 	go func() {
 		switch main {
-		case skillsMySkill:
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+		case skillCatalogueMySkill:
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return r.levelTrained == 0
 			})
-		case skillsHavePrerequisites:
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+		case skillCatalogueHavePrerequisites:
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return !r.hasPrerequisites || r.levelActive == 5
 			})
-		case skillsQueued:
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+		case skillCatalogueQueued:
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return r.levelQueued == 0
 			})
-		case skillsFullyTrained:
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+		case skillCatalogueFullyTrained:
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return r.levelActive < 5
 			})
 		}
 		if group != "" {
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return r.groupName != group
 			})
 		}
 		if len(search) > 1 {
-			rows = slices.DeleteFunc(rows, func(r skillRow) bool {
+			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 
-		slices.SortFunc(rows, func(a, b skillRow) int {
+		slices.SortFunc(rows, func(a, b skillCatalogueRow) int {
 			return strings.Compare(a.name, b.name)
 		})
 
-		groupOptions := xslices.Map(rows, func(r skillRow) string {
+		groupOptions := xslices.Map(rows, func(r skillCatalogueRow) string {
 			return r.groupName
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
@@ -384,9 +384,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		queued[it.SkillID] = max(queued[it.SkillID], it.FinishedLevel)
 	}
 
-	var rows []skillRow
+	var rows []skillCatalogueRow
 	for _, o := range skills {
-		rows = append(rows, skillRow{
+		rows = append(rows, skillCatalogueRow{
 			description:      o.Skill.Type.DescriptionPlain(),
 			groupID:          o.Skill.Type.Group.ID,
 			groupName:        o.Skill.Type.Group.Name,

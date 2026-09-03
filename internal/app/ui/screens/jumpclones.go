@@ -22,17 +22,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type cloneRow struct {
+type jumpCloneRow struct {
 	jc    *app.CharacterJumpClone2
 	route []*app.EveSolarSystem
 	tags  set.Set[string]
 }
 
-func (r cloneRow) compare(other cloneRow) int {
+func (r jumpCloneRow) compare(other jumpCloneRow) int {
 	return cmp.Compare(r.sortValue(), other.sortValue())
 }
 
-func (r cloneRow) sortValue() int {
+func (r jumpCloneRow) sortValue() int {
 	if r.route == nil {
 		return 10_000
 	}
@@ -42,7 +42,7 @@ func (r cloneRow) sortValue() int {
 	return len(r.route) - 1
 }
 
-func (r cloneRow) jumps() string {
+func (r jumpCloneRow) jumps() string {
 	if r.route == nil {
 		return "?"
 	}
@@ -52,71 +52,71 @@ func (r cloneRow) jumps() string {
 	return fmt.Sprint(len(r.route) - 1)
 }
 
-type Clones struct {
+type JumpClones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
 	footer            *widget.Label
 	changeOrigin      *widget.Button
-	columnSorter      *xwidget.ColumnSorter[cloneRow]
+	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
 	origin            *app.EveSolarSystem
 	originLabel       *xwidget.RichText
 	routePref         app.EveRoutePreference
-	rows              []cloneRow
-	rowsFiltered      []cloneRow
+	rows              []jumpCloneRow
+	rowsFiltered      []jumpCloneRow
 	selectCharacter   *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip          *kxwidget.SortChip
 	u                 baseUI
 }
 
 const (
-	clonesColLocation = iota + 1
-	clonesColRegion
-	clonesColImplants
-	clonesColCharacter
-	clonesColJumps
+	jumpClonesColLocation = iota + 1
+	jumpClonesColRegion
+	jumpClonesColImplants
+	jumpClonesColCharacter
+	jumpClonesColJumps
 )
 
-func NewClones(u baseUI) *Clones {
-	columns := xwidget.NewDataColumns([]xwidget.DataColumn[cloneRow]{{
-		ID:    clonesColLocation,
+func NewJumpClones(u baseUI) *JumpClones {
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[jumpCloneRow]{{
+		ID:    jumpClonesColLocation,
 		Label: "Location",
 		Width: ui.ColumnWidthLocation,
-		Sort: func(a, b cloneRow) int {
+		Sort: func(a, b jumpCloneRow) int {
 			return cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
 		},
-		Update: func(r cloneRow, co fyne.CanvasObject) {
+		Update: func(r jumpCloneRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.jc.Location.DisplayRichText())
 		},
 	}, {
-		ID:    clonesColRegion,
+		ID:    jumpClonesColRegion,
 		Label: "Region",
 		Width: ui.ColumnWidthRegion,
-		Sort: func(a, b cloneRow) int {
+		Sort: func(a, b jumpCloneRow) int {
 			return cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
 		},
-		Update: func(r cloneRow, co fyne.CanvasObject) {
+		Update: func(r jumpCloneRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.jc.Location.RegionName())
 		},
 	}, {
-		ID:    clonesColImplants,
+		ID:    jumpClonesColImplants,
 		Label: "Impl.",
 		Width: 100,
-		Sort: func(a, b cloneRow) int {
+		Sort: func(a, b jumpCloneRow) int {
 			return cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
 		},
-		Update: func(r cloneRow, co fyne.CanvasObject) {
+		Update: func(r jumpCloneRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(fmt.Sprint(r.jc.ImplantsCount), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
-	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[cloneRow]{
-		ColumnID: clonesColCharacter,
+	}, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[jumpCloneRow]{
+		ColumnID: jumpClonesColCharacter,
 		EIS:      u.EVEImage(),
-		GetEntity: func(r cloneRow) *app.EveEntity {
+		GetEntity: func(r jumpCloneRow) *app.EveEntity {
 			return &app.EveEntity{
 				ID:       r.jc.Character.ID,
 				Name:     r.jc.Character.Name,
@@ -126,20 +126,20 @@ func NewClones(u baseUI) *Clones {
 		IsAvatar: true,
 		Label:    "Character",
 	}), {
-		ID:    clonesColJumps,
+		ID:    jumpClonesColJumps,
 		Label: "Jumps",
 		Width: 100,
-		Sort: func(a, b cloneRow) int {
+		Sort: func(a, b jumpCloneRow) int {
 			return a.compare(b)
 		},
-		Update: func(r cloneRow, co fyne.CanvasObject) {
+		Update: func(r jumpCloneRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.jumps(), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
 	}})
-	a := &Clones{
-		columnSorter: xwidget.NewColumnSorter(columns, clonesColLocation, xwidget.SortAsc),
+	a := &JumpClones{
+		columnSorter: xwidget.NewColumnSorter(columns, jumpClonesColLocation, xwidget.SortAsc),
 		originLabel:  xwidget.NewRichTextWithText("(not set)"),
 		footer:       ui.NewLabelWithTruncation(""),
 		u:            u,
@@ -160,7 +160,7 @@ func NewClones(u baseUI) *Clones {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(_ int, r cloneRow) {
+			func(_ int, r jumpCloneRow) {
 				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
@@ -168,23 +168,23 @@ func NewClones(u baseUI) *Clones {
 		a.body = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col int, r cloneRow) []widget.RichTextSegment {
+			func(col int, r jumpCloneRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
 				switch col {
-				case clonesColLocation:
+				case jumpClonesColLocation:
 					s = r.jc.Location.DisplayRichText()
-				case clonesColRegion:
+				case jumpClonesColRegion:
 					s = xwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-				case clonesColImplants:
+				case jumpClonesColImplants:
 					s = xwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-				case clonesColCharacter:
+				case jumpClonesColCharacter:
 					s = xwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-				case clonesColJumps:
+				case jumpClonesColJumps:
 					s = xwidget.RichTextSegmentsFromText(r.jumps())
 				}
 				return s
 			},
-			func(r cloneRow) {
+			func(r jumpCloneRow) {
 				showCloneDetailWindow(a.u, r, a.origin, a.routePref)
 			},
 		)
@@ -230,7 +230,7 @@ func NewClones(u baseUI) *Clones {
 	return a
 }
 
-func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
+func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
 	origin := container.NewBorder(
 		nil,
 		nil,
@@ -263,7 +263,7 @@ func (a *Clones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Clones) filterRowsAsync(sortCol int) {
+func (a *JumpClones) filterRowsAsync(sortCol int) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	character := a.selectCharacter.Selected
@@ -275,37 +275,37 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 	go func() {
 		// filter
 		if character != "" {
-			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
 				return r.jc.Character.Name != character
 			})
 		}
 		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
 				return r.jc.Location.RegionName() != region
 			})
 		}
 		if solarSystem != "" {
-			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
 				return r.jc.Location.SolarSystemName() != solarSystem
 			})
 		}
 		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r cloneRow) bool {
+			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
 				return !r.tags.Contains(tag)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
-		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r jumpCloneRow) set.Set[string] {
 			return r.tags
 		})...).All())
-		characterOptions := xslices.Map(rows, func(r cloneRow) string {
+		characterOptions := xslices.Map(rows, func(r jumpCloneRow) string {
 			return r.jc.Character.Name
 		})
-		regionOptions := xslices.Map(rows, func(r cloneRow) string {
+		regionOptions := xslices.Map(rows, func(r jumpCloneRow) string {
 			return r.jc.Location.RegionName()
 		})
-		solarSystemOptions := xslices.Map(rows, func(r cloneRow) string {
+		solarSystemOptions := xslices.Map(rows, func(r jumpCloneRow) string {
 			return r.jc.Location.SolarSystemName()
 		})
 
@@ -325,7 +325,7 @@ func (a *Clones) filterRowsAsync(sortCol int) {
 	}()
 }
 
-func (a *Clones) update(ctx context.Context) {
+func (a *JumpClones) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
@@ -347,7 +347,7 @@ func (a *Clones) update(ctx context.Context) {
 	})
 }
 
-func (a *Clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
+func (a *JumpClones) fetchRows(ctx context.Context) ([]jumpCloneRow, error) {
 	oo, err := a.u.Character().ListAllJumpClones(ctx)
 	if err != nil {
 		return nil, err
@@ -355,9 +355,9 @@ func (a *Clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.Location.SolarSystemName(), b.Location.SolarSystemName())
 	})
-	var rows []cloneRow
+	var rows []jumpCloneRow
 	for _, o := range oo {
-		r := cloneRow{jc: o}
+		r := jumpCloneRow{jc: o}
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.Character.ID)
 		if err != nil {
 			return nil, err
@@ -368,7 +368,7 @@ func (a *Clones) fetchRows(ctx context.Context) ([]cloneRow, error) {
 	return rows, nil
 }
 
-func (a *Clones) updateRoutesAsync() {
+func (a *JumpClones) updateRoutesAsync() {
 	if a.origin == nil {
 		return
 	}
@@ -412,13 +412,13 @@ func (a *Clones) updateRoutesAsync() {
 				}
 				a.rows[i].route = m[solarSystem.ID]
 			}
-			a.columnSorter.Set(clonesColJumps, xwidget.SortAsc)
+			a.columnSorter.Set(jumpClonesColJumps, xwidget.SortAsc)
 			a.filterRowsAsync(-1)
 		})
 	}()
 }
 
-func (a *Clones) setOrigin(w fyne.Window) {
+func (a *JumpClones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		ui.ShowErrorAndLog("Failed to resolve search for "+search, err, a.u.IsDeveloperMode(), w)
 	}

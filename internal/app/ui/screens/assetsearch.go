@@ -379,7 +379,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 				return x
 			},
 			a.columnSorter, a.filterRowsAsync, func(_ int, r assetRow) {
-				ShowDetails(u, r)
+				ShowAssetDetails(u, r)
 			})
 	}
 
@@ -551,7 +551,7 @@ func (a *AssetSearch) makeDataList() *xwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		ShowDetails(a.u, r)
+		ShowAssetDetails(a.u, r)
 	}
 	return l
 }

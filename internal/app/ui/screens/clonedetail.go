@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-func showCloneDetailWindow(u baseUI, r cloneRow, origin *app.EveSolarSystem, routePref app.EveRoutePreference) {
+func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem, routePref app.EveRoutePreference) {
 	if r.jc == nil {
 		return
 	}
@@ -180,7 +180,7 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 	return list
 }
 
-func makeRoute(u baseUI, r cloneRow) *widget.List {
+func makeRoute(u baseUI, r jumpCloneRow) *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(r.route)

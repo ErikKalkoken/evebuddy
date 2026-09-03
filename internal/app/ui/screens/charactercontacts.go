@@ -30,7 +30,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type contactRow struct {
+type characterContactRow struct {
 	blockedSelect    string
 	category         string
 	contact          *app.EveEntity
@@ -50,11 +50,11 @@ type CharacterContacts struct {
 	widget.BaseWidget
 
 	character      atomic.Pointer[app.Character]
-	columnSorter   *xwidget.ColumnSorter[contactRow]
+	columnSorter   *xwidget.ColumnSorter[characterContactRow]
 	footer         *widget.Label
 	list           fyne.CanvasObject
-	rows           []contactRow
-	rowsFiltered   []contactRow
+	rows           []characterContactRow
+	rowsFiltered   []characterContactRow
 	searchEntry    *xwidget.SearchEntry
 	selectBlocked  *kxwidget.FilterChipSelect
 	selectCategory *kxwidget.FilterChipSelect
@@ -62,21 +62,21 @@ type CharacterContacts struct {
 	selectNPC      *kxwidget.FilterChipSelect
 	selectStanding *kxwidget.FilterChipSelect
 	selectWatched  *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip       *kxwidget.SortChip
 	u              baseUI
 }
 
 func NewCharacterContacts(u baseUI) *CharacterContacts {
-	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[contactRow]{{
+	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[characterContactRow]{{
 		ID:    1,
 		Label: "Name",
-		Sort: func(a, b contactRow) int {
+		Sort: func(a, b characterContactRow) int {
 			return strings.Compare(a.contact.Name, b.contact.Name)
 		},
 	}, {
 		ID:    2,
 		Label: "Standing",
-		Sort: func(a, b contactRow) int {
+		Sort: func(a, b characterContactRow) int {
 			return cmp.Compare(a.standing, b.standing)
 		},
 	}}),
@@ -282,56 +282,56 @@ func (a *CharacterContacts) filterRowsAsync() {
 			}
 		}
 		if blocked != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.blockedSelect != blocked
 			})
 		}
 		if category != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.category != category
 			})
 		}
 		if label != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return !r.labels.Contains(label)
 			})
 		}
 		if npc != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.npcSelect != npc
 			})
 		}
 		if standing != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.standingCategory.String() != standing
 			})
 		}
 		if watched != "" {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return r.watchedSelect != watched
 			})
 		}
 		if len(search) > 1 {
-			rows = slices.DeleteFunc(rows, func(r contactRow) bool {
+			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
-		blockedOptions := slices.Collect(xiter.MapSlice(rows, func(r contactRow) string {
+		blockedOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.blockedSelect
 		}))
-		categoryOptions := slices.Collect(xiter.MapSlice(rows, func(r contactRow) string {
+		categoryOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.category
 		}))
-		labelOptions := slices.Collect(xiter.Chain(xslices.Map(rows, func(r contactRow) iter.Seq[string] {
+		labelOptions := slices.Collect(xiter.Chain(xslices.Map(rows, func(r characterContactRow) iter.Seq[string] {
 			return r.labels.All()
 		})...))
-		npcOptions := slices.Collect(xiter.MapSlice(rows, func(r contactRow) string {
+		npcOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.npcSelect
 		}))
-		standingOptions := slices.Collect(xiter.MapSlice(rows, func(r contactRow) string {
+		standingOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.standingCategory.String()
 		}))
-		watchedOptions := slices.Collect(xiter.MapSlice(rows, func(r contactRow) string {
+		watchedOptions := slices.Collect(xiter.MapSlice(rows, func(r characterContactRow) string {
 			return r.watchedSelect
 		}))
 
@@ -422,12 +422,12 @@ func (a *CharacterContacts) update(ctx context.Context) {
 	})
 }
 
-func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([]contactRow, error) {
+func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([]characterContactRow, error) {
 	oo, err := a.u.Character().ListContacts(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	var rows []contactRow
+	var rows []characterContactRow
 	for _, o := range oo {
 		isNPC := o.Contact.IsNPC()
 		labelsDisplay := strings.Join(slices.Sorted(o.Labels.All()), ", ")
@@ -449,7 +449,7 @@ func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([
 			}
 			return "no"
 		})
-		rows = append(rows, contactRow{
+		rows = append(rows, characterContactRow{
 			category:         o.Contact.CategoryDisplay(),
 			contact:          o.Contact,
 			isBlocked:        o.IsBlocked,
@@ -534,7 +534,7 @@ func (w *characterContactItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
-func (w *characterContactItem) set(r contactRow) {
+func (w *characterContactItem) set(r characterContactRow) {
 	w.name.SetText(r.contact.Name)
 	w.labels.SetText(r.labelsDisplay)
 	w.category.SetText(r.category)
