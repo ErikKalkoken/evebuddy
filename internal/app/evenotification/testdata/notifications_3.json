@@ -726,5 +726,21 @@
 		"sender_type": "corporation",
 		"timestamp": "2024-01-05 09:15:00+00:00",
 		"text": "iskValue: 0.87542\nownerID: 98100064\n"
+	},
+	{
+		"notification_id": 1000010123,
+		"type": "AcceptedAlly",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allyID: 99100009\ncharID: 95100064\nenemyID: 99100010\niskValue: 3375000000.0\ntime: 132202249630000000\n"
+	},
+	{
+		"notification_id": 1000010124,
+		"type": "AllyJoinedWarDefenderMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorID: 99100011\nallyID: 99100012\nstartTime: 132202250630000000\n"
 	}
 ]

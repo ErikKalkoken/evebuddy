@@ -216,3 +216,38 @@ func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, _ t
 	body = out
 	return title, body, nil
 }
+
+type allMaintenanceBillMsg struct {
+	baseRenderer
+}
+
+func (n allMaintenanceBillMsg) unmarshal(text string) (goesi.AllMaintenanceBillMsg, set.Set[int64], error) {
+	var data goesi.AllMaintenanceBillMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AllianceID), nil
+}
+
+func (n allMaintenanceBillMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n allMaintenanceBillMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Maintenance bill for %s", entities[data.AllianceID].Name)
+	body := fmt.Sprintf(
+		"A maintenance bill for %s is due on %s.",
+		makeInfoLink(entities[data.AllianceID]),
+		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}

@@ -118,6 +118,26 @@ externalID2: 0`
 		assert.Contains(t, body, office.Name)
 		assert.Contains(t, body, structure.Name)
 	})
+
+	t.Run("AllMaintenanceBillMsg", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		alliance := f.CreateEveEntityAlliance()
+		text, err := yaml.Marshal(map[string]any{
+			"allianceID": alliance.ID,
+			"dueDate":    132202235630000000,
+		})
+		require.NoError(t, err)
+
+		// when
+		title, body, err := en.RenderESI(t.Context(), app.AllMaintenanceBillMsg, optional.New(string(text)), time.Now())
+
+		// then
+		require.NoError(t, err)
+		assert.Contains(t, title, alliance.Name)
+		assert.Contains(t, body, alliance.Name)
+	})
 }
 
 func TestBilling_EntityIDs(t *testing.T) {
