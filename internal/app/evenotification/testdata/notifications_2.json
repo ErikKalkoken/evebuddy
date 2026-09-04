@@ -1,0 +1,250 @@
+[
+	{
+		"notification_id": 1000010001,
+		"type": "AcceptedSurrender",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-10 14:40:00+00:00",
+		"text": "charID: 820000001\nentityID: 99000001\niskValue: 3375000000.0\nofferingID: 98000001\n"
+	},
+	{
+		"notification_id": 1000010002,
+		"type": "AllWarCorpJoinedAllianceMsg",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-09 15:44:00+00:00",
+		"text": "allianceID: 99000002\ncorpID: 98000002\n"
+	},
+	{
+		"notification_id": 1000010003,
+		"type": "AllyJoinedWarAggressorMsg",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-12 20:08:00+00:00",
+		"text": "aggressorID: 99000001\nallyID: 98000003\ndefenderID: 99000003\nstartTime: 133207204770000000\n"
+	},
+	{
+		"notification_id": 1000010004,
+		"type": "AllyJoinedWarAllyMsg",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-22 01:32:00+00:00",
+		"text": "aggressorID: 99000004\nallyID: 99000001\ndefenderID: 98000004\nstartTime: 133215175400000000\n"
+	},
+	{
+		"notification_id": 1000010005,
+		"type": "CloneRevokedMsg2",
+		"sender_id": 98000005,
+		"sender_type": "corporation",
+		"timestamp": "2018-09-04 21:17:00+00:00",
+		"text": "corpID: 98000005\nnewStationID: 60000001\nstationID: 1000000000001\n"
+	},
+	{
+		"notification_id": 1000010006,
+		"type": "CorpAllBillMsg",
+		"sender_id": 1000001,
+		"sender_type": "corporation",
+		"timestamp": "2026-08-19 01:59:00+00:00",
+		"text": "amount: 10000\nbillTypeID: 2\ncreditorID: 1000001\ncurrentDate: 134315783671670161\ndebtorID: 98000006\ndueDate: 134341700150000000\nexternalID: 27\nexternalID2: 60000002\n"
+	},
+	{
+		"notification_id": 1000010007,
+		"type": "CorpAppAcceptMsg",
+		"sender_id": 820000001,
+		"sender_type": "character",
+		"timestamp": "2023-02-03 15:24:00+00:00",
+		"text": "applicationText: 'Hi! This is Bruce Wayne.'\ncharID: 2100000001\ncorpID: 710000001\n"
+	},
+	{
+		"notification_id": 1000010008,
+		"type": "CorpAppInvitedMsg",
+		"sender_id": 2100000003,
+		"sender_type": "character",
+		"timestamp": "2021-04-06 22:25:00+00:00",
+		"text": "applicationText: ''\ncharID: 2100000002\ncorpID: 98000007\ninvokingCharID: 2100000003\n"
+	},
+	{
+		"notification_id": 1000010009,
+		"type": "CorpBecameWarEligible",
+		"sender_id": 1000003,
+		"sender_type": "corporation",
+		"timestamp": "2025-09-09 17:59:00+00:00",
+		"text": "{}\n"
+	},
+	{
+		"notification_id": 1000010010,
+		"type": "CorpKicked",
+		"sender_id": 93000002,
+		"sender_type": "character",
+		"timestamp": "2023-02-22 03:07:00+00:00",
+		"text": "corpID: 710000001\n"
+	},
+	{
+		"notification_id": 1000010011,
+		"type": "CorpNewCEOMsg",
+		"sender_id": 94000001,
+		"sender_type": "character",
+		"timestamp": "2017-06-04 11:31:00+00:00",
+		"text": "corpID: 98000008\nnewCeoID: 2100000004\noldCeoID: 94000001\n"
+	},
+	{
+		"notification_id": 1000010012,
+		"type": "CorpNoLongerWarEligible",
+		"sender_id": 1000003,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-22 01:54:00+00:00",
+		"text": "{}\n"
+	},
+	{
+		"notification_id": 1000010013,
+		"type": "CorpTaxChangeMsg",
+		"sender_id": 93000003,
+		"sender_type": "character",
+		"timestamp": "2013-07-16 14:56:00+00:00",
+		"text": "corpID: 98000008\nnewTaxRate: 1.0\noldTaxRate: 3.0\n"
+	},
+	{
+		"notification_id": 1000010014,
+		"type": "DeclareWar",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-05-28 18:20:00+00:00",
+		"text": "charID: 95000001\ndefenderID: 98000009\nentityID: 99000005\n"
+	},
+	{
+		"notification_id": 1000010015,
+		"type": "JumpCloneDeletedMsg1",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2019-11-07 19:30:00+00:00",
+		"text": "locationID: 1000000000002\nlocationOwnerID: 98000006\nownerID: 2100000005\ntypeIDs: []\n"
+	},
+	{
+		"notification_id": 1000010016,
+		"type": "JumpCloneDeletedMsg2",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2018-10-07 12:56:00+00:00",
+		"text": "destroyerID: 2100000005\nlocationID: 1000000000003\nlocationOwnerID: 98000010\nownerID: 2100000005\ntypeIDs: []\n"
+	},
+	{
+		"notification_id": 1000010017,
+		"type": "KillReportFinalBlow",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2021-06-29 18:38:00+00:00",
+		"text": "killMailHash: 34c54897d68e8a060dcce558096e4b378ea1a560\nkillMailID: 93670303\nvictimID: 2100000006\nvictimShipTypeID: 608\n"
+	},
+	{
+		"notification_id": 1000010018,
+		"type": "KillReportVictim",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2020-06-03 02:51:00+00:00",
+		"text": "killMailHash: 042864c5ed588df79ce6ee2109d9c1c7013e5f08\nkillMailID: 84685597\nvictimShipTypeID: 672\n"
+	},
+	{
+		"notification_id": 1000010019,
+		"type": "MercOfferedNegotiationMsg",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2017-06-04 10:03:00+00:00",
+		"text": "aggressorID: 99000006\ndefenderID: 98000008\niskValue: 80000000.0\nmercID: 98000011\n"
+	},
+	{
+		"notification_id": 1000010020,
+		"type": "MutualWarInviteSent",
+		"sender_id": 98000012,
+		"sender_type": "corporation",
+		"timestamp": "2019-11-07 20:18:00+00:00",
+		"text": "againstID: 99000007\ndeclaredByID: 98000012\nexpireTimeStamp: 132202234630922771\n"
+	},
+	{
+		"notification_id": 1000010021,
+		"type": "OfferedSurrender",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2019-11-28 17:24:00+00:00",
+		"text": "charID: 94000002\nentityID: 99000007\niskValue: 0.0\nofferedID: 98000013\n"
+	},
+	{
+		"notification_id": 1000010022,
+		"type": "OfferedToAlly",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-22 01:32:00+00:00",
+		"text": "aggressorID: 99000004\ncharID: 96000001\ndefenderID: 98000004\nenemyID: 99000004\niskValue: 0.0\nmercID: 99000001\n"
+	},
+	{
+		"notification_id": 1000010023,
+		"type": "OwnershipTransferred",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2019-06-03 19:10:00+00:00",
+		"text": "charID: 93000001\nnewOwnerCorpID: 98000014\noldOwnerCorpID: 98000006\nsolarSystemID: 30003068\nstructureID: 1000000000004\nstructureName: Kourmonen - Eve is Dark and Full of Sweg\nstructureTypeID: 35832\n"
+	},
+	{
+		"notification_id": 1000010024,
+		"type": "StructureItemsDelivered",
+		"sender_id": 1000003,
+		"sender_type": "corporation",
+		"timestamp": "2024-09-05 19:45:00+00:00",
+		"text": "charID: 2100000007\nlistOfTypesAndQty:\n- - 1\n  - 56095\nsolarsystemID: 30002537\nstructureID: &id001 1000000000005\nstructureShowInfoData:\n- showinfo\n- 35834\n- *id001\nstructureTypeID: 35834\n"
+	},
+	{
+		"notification_id": 1000010025,
+		"type": "StructureItemsMovedToSafety",
+		"sender_id": 1000003,
+		"sender_type": "corporation",
+		"timestamp": "2020-05-01 22:10:00+00:00",
+		"text": "assetSafetyDurationFull: 17280000000000\nassetSafetyDurationMinimum: 4320000000000\nassetSafetyFullTimestamp: 132345726049493985\nassetSafetyMinimumTimestamp: 132332766049493985\nisCorpOwned: false\nnewStationID: 60000003\nsolarsystemID: 30002686\nstructureID: &id001 1000000000006\nstructureLink: <a href=\"showinfo:35833//1000000000006\">Olettiers - FPN Waypoint Station</a>\nstructureShowInfoData:\n- showinfo\n- 35833\n- *id001\nstructureTypeID: 35833\n"
+	},
+	{
+		"notification_id": 1000010026,
+		"type": "TowerAlertMsg",
+		"sender_id": 1000003,
+		"sender_type": "corporation",
+		"timestamp": "2025-11-03 01:44:00+00:00",
+		"text": "aggressorAllianceID: 99000008\naggressorCorpID: 98000015\naggressorID: 840000001\narmorValue: 1.0\nhullValue: 1.0\nmoonID: 40000001\nshieldValue: 0.21663298937260342\nsolarSystemID: 30002102\ntypeID: 20060\n"
+	},
+	{
+		"notification_id": 1000010027,
+		"type": "WarDeclared",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2019-06-22 22:44:00+00:00",
+		"text": "againstID: 99000009\ncost: 100000000\ndeclaredByID: 99000010\ndelayHours: 24\nhostileState: false\ntimeStarted: 132058033800000000\nwarHQ: <b>Mahtista - RLCMAK</b>\nwarHQ_IdType:\n- 1000000000007\n- 35832\n"
+	},
+	{
+		"notification_id": 1000010028,
+		"type": "WarInherited",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2019-07-26 19:13:00+00:00",
+		"text": "againstID: 99000009\nallianceID: 99000009\ndeclaredByID: 99000010\nopponentID: 99000010\nquitterID: 98000006\n"
+	},
+	{
+		"notification_id": 1000010029,
+		"type": "WarInvalid",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-06-03 16:59:00+00:00",
+		"text": "againstID: 98000009\ndeclaredByID: 99000005\nendDate: 133303715400000000\n"
+	},
+	{
+		"notification_id": 1000010030,
+		"type": "WarRetractedByConcord",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-08-24 18:40:00+00:00",
+		"text": "againstID: 200000001\ndeclaredByID: 99000005\nendDate: 133374624000000000\n"
+	},
+	{
+		"notification_id": 1000010031,
+		"type": "WarSurrenderOfferMsg",
+		"sender_id": 1000002,
+		"sender_type": "corporation",
+		"timestamp": "2023-02-10 02:35:00+00:00",
+		"text": "iskValue: 3375000000.0\nownerID1: 98000001\nownerID2: 99000001\nwarNegotiationID: 470828\n"
+	}
+]

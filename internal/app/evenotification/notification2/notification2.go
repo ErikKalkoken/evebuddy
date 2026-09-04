@@ -1,6 +1,18 @@
 // Package notification2 defines types for parsing data of Eve notification types.
 package notification2
 
+type CorpBecameWarEligible struct {
+}
+
+type CorpNoLongerWarEligible struct {
+}
+
+type MutualWarInviteSent struct {
+	AgainstID       int64 `yaml:"againstID"`
+	DeclaredByID    int64 `yaml:"declaredByID"`
+	ExpireTimeStamp int64 `yaml:"expireTimeStamp"`
+}
+
 type MercenaryDenAttacked struct {
 	AggressorAllianceName    string  `yaml:"aggressorAllianceName"`
 	AggressorCharacterID     int64   `yaml:"aggressorCharacterID"`
