@@ -40,7 +40,7 @@ type notificationRow struct {
 	notificationGroup        app.EveNotificationGroup
 	notificationGroupDisplay string
 	notificationID           int64
-	notificationTypeDisplay  string
+	notificationType         string
 	recipient                *app.EveEntity
 	searchTarget             string
 	sender                   *app.EveEntity
@@ -248,8 +248,8 @@ func (a *Communications) fetchRows(ctx context.Context, characterID int64) ([]no
 			notificationGroup:        o.Type.Group(),
 			notificationGroupDisplay: o.Type.Group().String(),
 			notificationID:           o.NotificationID,
-			notificationTypeDisplay:  o.Type.Display(),
-			searchTarget:             strings.ToLower(fmt.Sprintf("%s-%s", subject, sender.Name)),
+			notificationType:         o.Type.String(),
+			searchTarget:             strings.ToLower(fmt.Sprintf("%s-%s-%s", subject, sender.Name, o.Type.String())),
 			sender:                   sender,
 			subject:                  subject,
 			timestamp:                o.Timestamp,
@@ -482,7 +482,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 	}, {
 		Label: "Type",
 		Sort: func(a, b notificationRow) int {
-			return strings.Compare(a.notificationTypeDisplay, b.notificationTypeDisplay)
+			return strings.Compare(a.notificationType, b.notificationType)
 		},
 	}}),
 		"Date",
@@ -855,7 +855,11 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 			return
 		}
 		fyne.Do(func() {
-			a.subjectLabel.SetText(cn.TitleDisplay())
+			subject := cn.TitleDisplay()
+			if a.co.u.IsDeveloperMode() {
+				subject += fmt.Sprintf(" (%s)", r.notificationType)
+			}
+			a.subjectLabel.SetText(subject)
 			a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
 			if v, ok := cn.Body.Value(); !ok {
 				a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
@@ -874,12 +878,14 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 					typeID, itemID, err := parseIDs(s2.URL.Opaque)
 					if err != nil {
 						slog.Warn("Failed to parse showinfo link in communication", "error", err)
+						s2.OnTapped = nil
 						continue
 					}
 					s2.OnTapped = func() {
 						a.co.u.InfoViewer().Show2(typeID, itemID, cn.CharacterID)
 					}
 				}
+				a.bodyText.Refresh()
 			}
 			if a.co.u.IsDeveloperMode() {
 				items := a.makeMenuItems(cn)
