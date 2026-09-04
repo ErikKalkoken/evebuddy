@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2/test"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -101,4 +102,36 @@ func TestTraining_Filter(t *testing.T) {
 		want := []string{"Bravo"}
 		assert.ElementsMatch(t, want, got)
 	})
+}
+
+func TestTraining_MakeTrainingCSVString(t *testing.T) {
+	a := &Training{
+		rowsFiltered: []trainingRow{
+			{
+				characterName:              "Alpha",
+				tags:                       set.Of("pilot", "logistics"),
+				skillName:                  "Gunnery V",
+				isActive:                   false,
+				totalRemainingCountDisplay: "3",
+				trainedSPDisplay:           "10000000",
+				unallocatedSPDisplay:       "1000000",
+				totalSPDisplay:             "11000000",
+			},
+			{
+				characterName:              "Bravo",
+				tags:                       set.Of[string](),
+				skillName:                  "N/A",
+				isActive:                   false,
+				totalRemainingCountDisplay: "",
+				trainedSPDisplay:           "5000000",
+				unallocatedSPDisplay:       "0",
+				totalSPDisplay:             "5000000",
+			},
+		},
+	}
+	got := a.makeTrainingCSVString()
+	want := "Character,Tags,Current Skill,Current Remaining,Queued,Queue Time,Trained SP,Unallocated SP,Total SP\n" +
+		"Alpha,logistics;pilot,Gunnery V,N/A,3,N/A,10000000,1000000,11000000\n" +
+		"Bravo,,N/A,N/A,,N/A,5000000,0,5000000\n"
+	assert.Equal(t, want, got)
 }
