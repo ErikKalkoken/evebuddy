@@ -54,6 +54,10 @@ func (f Factory) RandomTime() time.Time {
 	return time.Now().Add(-d).UTC()
 }
 
+func (f Factory) RandomTimeRounded() time.Time {
+	return f.RandomTime().Round(time.Second)
+}
+
 // CreateCharacter creates and returns a new character. Empty optional values are not filled.
 func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
 	var arg storage.CreateCharacterParams
@@ -323,12 +327,11 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		if err != nil {
 			panic(err)
 		}
-		arg2 := storage.CreateEveEntityParams{
+		_, err = f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       c.ID,
 			Name:     c.EveCharacter.Name,
 			Category: app.EveEntityCharacter,
-		}
-		_, err = f.st.GetOrCreateEveEntity(ctx, arg2)
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -843,7 +846,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		arg.TrainedSkillLevel = rand.Int64N(5) + 1
 	}
 	if arg.ActiveSkillLevel == 0 {
-		arg.TrainedSkillLevel = rand.Int64N(arg.TrainedSkillLevel) + 1
+		arg.ActiveSkillLevel = rand.Int64N(arg.TrainedSkillLevel) + 1
 	}
 	if arg.SkillPointsInSkill == 0 {
 		arg.SkillPointsInSkill = rand.Int64N(1_000_000)
@@ -1007,7 +1010,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -1024,12 +1027,14 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		Section:      arg.Section,
 		ErrorMessage: &arg.ErrorMessage,
 		CompletedAt:  &t,
 		ContentHash:  &hash,
+		StartedAt:    &startedAt,
 		UpdatedAt:    &arg.UpdatedAt,
 	})
 	if err != nil {
@@ -1049,7 +1054,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		arg.CharacterID = x.ID
 	}
 	if arg.RefID == 0 {
-		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
+		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "ref_id", arg.CharacterID))
 	}
 	if arg.Amount.IsEmpty() {
 		var f float64
@@ -1140,7 +1145,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		x := f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID: arg.CharacterID,
 		})
-		arg.JournalRefID = x.ID
+		arg.JournalRefID = x.RefID
 	}
 	err := f.st.CreateCharacterWalletTransaction(ctx, arg)
 	if err != nil {
@@ -1223,7 +1228,7 @@ func (f Factory) CreateCharacterMarketOrder(args ...storage.UpdateOrCreateCharac
 		arg.VolumeTotal = rand.Int64N(100_000) + 1
 	}
 	if arg.VolumeRemains == 0 {
-		arg.VolumeTotal = max(rand.Int64N(arg.VolumeTotal), 1)
+		arg.VolumeRemains = max(rand.Int64N(arg.VolumeTotal), 1)
 	}
 	err := f.st.UpdateOrCreateCharacterMarketOrder(ctx, arg)
 	if err != nil {
@@ -1694,7 +1699,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -1708,6 +1713,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
 		Comment:       &arg.Comment,
 		CorporationID: arg.CorporationID,
@@ -1715,6 +1721,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		ErrorMessage:  &arg.ErrorMessage,
 		CompletedAt:   &t,
 		ContentHash:   &hash,
+		StartedAt:     &startedAt,
 	}
 	o, err := f.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {
@@ -1964,6 +1971,40 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 	return x
 }
 
+func (f Factory) CreateEveBloodline(args ...storage.CreateEveBloodlineParams) *app.EveBloodline {
+	var arg storage.CreateEveBloodlineParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int64(f.calcNewID("eve_bloodlines", "id", 1))
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Paragraph()
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	if arg.RaceID == 0 {
+		x := f.CreateEveRace()
+		arg.RaceID = x.ID
+	}
+	err := f.st.CreateEveBloodline(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveBloodline(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams
@@ -1991,11 +2032,15 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		arg.Gender = "male"
 	}
 	if arg.RaceID == 0 {
-		r := f.CreateEveRace()
-		arg.RaceID = r.ID
+		x := f.CreateEveRace()
+		arg.RaceID = x.ID
 	}
-	if arg.Title.IsEmpty() {
-		arg.Title.Set(fake.JobTitle())
+	if arg.BloodlineID == 0 {
+		x := f.CreateEveBloodline()
+		arg.BloodlineID = x.ID
+	}
+	if arg.CorporationTitle.IsEmpty() {
+		arg.CorporationTitle.Set(fake.JobTitle())
 	}
 	err := f.st.UpdateOrCreateEveCharacter(ctx, arg)
 	if err != nil {
@@ -2028,13 +2073,20 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 		arg.CreatorID.Set(c.ID)
 	}
 	if arg.DateFounded.IsEmpty() {
-		arg.DateFounded = optional.New(time.Now().Add(-100 * time.Hour).UTC())
+		arg.DateFounded = optional.New(f.RandomTimeRounded())
 	}
-	if arg.Description.IsEmpty() {
-		arg.Description.Set(fake.Paragraphs())
+	if arg.Description == "" {
+		arg.Description = fake.Paragraphs()
+	}
+	if arg.HomeStationID == 0 {
+		x := f.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		arg.HomeStationID = x.ID
 	}
 	if arg.MemberCount == 0 {
 		arg.MemberCount = rand.Int64N(1000 + 1)
+	}
+	if arg.Shares.IsEmpty() {
+		arg.Shares.Set(rand.Int64N(10_000 + 1))
 	}
 	err := f.st.UpdateOrCreateEveCorporation(context.Background(), arg)
 	if err != nil {
@@ -2064,7 +2116,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.Data == "" {
+	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%s-%s", arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
@@ -2078,11 +2130,13 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	startedAt := optional.New(arg.StartedAt)
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section:     arg.Section,
 		Error:       &arg.ErrorMessage,
 		CompletedAt: &t,
 		ContentHash: &hash,
+		StartedAt:   &startedAt,
 	}
 	o, err := f.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
 	if err != nil {
@@ -2183,6 +2237,49 @@ func (f Factory) CreateEveEntityFaction(args ...app.EveEntity) *app.EveEntity {
 func (f Factory) CreateEveEntityWithCategory(c app.EveEntityCategory, args ...app.EveEntity) *app.EveEntity {
 	args2 := eveEntityWithCategory(args, c)
 	return f.CreateEveEntity(args2...)
+}
+
+func (f Factory) CreateEveFaction(args ...storage.CreateEveFactionParams) *app.EveFaction {
+	var arg storage.CreateEveFactionParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int64(f.calcNewID("eve_factions", "id", 1))
+	}
+	if arg.CorporationID.IsEmpty() {
+		x := f.CreateEveEntityCorporation()
+		arg.CorporationID.Set(x.ID)
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Paragraph()
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	if arg.SizeFactor == 0 {
+		arg.SizeFactor = 5
+	}
+	if arg.StationCount == 0 {
+		arg.StationCount = rand.Int64N(1000) + 1
+	}
+	if arg.StationSystemCount == 0 {
+		arg.StationSystemCount = rand.Int64N(500) + 1
+	}
+	if arg.SolarSystemID.IsEmpty() {
+		x := f.CreateEveSolarSystem()
+		arg.SolarSystemID.Set(x.ID)
+	}
+	err := f.st.CreateEveFaction(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveFaction(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory) []app.EveEntity {
@@ -2537,10 +2634,8 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 	return o
 }
 
-// TODO: Refactor to storage.CreateEveRaceParams
-
-func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
-	var arg app.EveRace
+func (f Factory) CreateEveRace(args ...storage.UpdateOrCreateEveRaceParams) *app.EveRace {
+	var arg storage.UpdateOrCreateEveRaceParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -2554,16 +2649,19 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
 	}
-	arg2 := storage.CreateEveRaceParams{
-		ID:          arg.ID,
-		Description: arg.Description,
-		Name:        arg.Name,
+	if arg.FactionID.IsEmpty() {
+		x := f.CreateEveEntityFaction()
+		arg.FactionID.Set(x.ID)
 	}
-	r, err := f.st.CreateEveRace(ctx, arg2)
+	err := f.st.UpdateOrCreateEveRace(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	o, err := f.st.GetEveRace(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {

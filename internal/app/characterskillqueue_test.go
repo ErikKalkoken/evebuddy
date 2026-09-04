@@ -38,7 +38,7 @@ func TestCharacterSkillqueue(t *testing.T) {
 			xassert.Equal(t, item2, sq.Item(1))
 			assert.InDelta(t, 0.5, sq.CompletionP().ValueOrZero(), 0.01)
 			assert.True(t, sq.IsActive())
-			xassert.Equal(t, 2, sq.RemainingCount().ValueOrZero())
+			xassert.EqualOptional(t, 2, sq.RemainingCount())
 		}
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {
@@ -68,6 +68,30 @@ func TestCharacterSkillqueue(t *testing.T) {
 			assert.True(t, sq.CompletionP().IsEmpty())
 			assert.False(t, sq.IsActive())
 			assert.True(t, sq.RemainingCount().IsEmpty())
+		}
+	})
+	t.Run("should exclude completed skills from remaining count", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item0 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(-6 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(-3 * time.Hour)),
+			QueuePosition: 1,
+		})
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(-3 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(3 * time.Hour)),
+			QueuePosition: 2,
+		})
+		item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     optional.New(time.Now().Add(3 * time.Hour)),
+			FinishDate:    optional.New(time.Now().Add(7 * time.Hour)),
+			QueuePosition: 3,
+		})
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item0, item1, item2}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.True(t, sq.IsActive())
+			xassert.EqualOptional(t, 2, sq.RemainingCount())
 		}
 	})
 	t.Run("can return information about an completed skill queue", func(t *testing.T) {
@@ -254,7 +278,7 @@ func TestCharacterSkillqueueItem_Duration(t *testing.T) {
 			FinishDate: optional.New(now.Add(time.Hour * +3)),
 		}
 		d := q.Duration()
-		xassert.Equal(t, 2*time.Hour, d.MustValue())
+		xassert.EqualOptional(t, 2*time.Hour, d)
 	})
 	t.Run("should return null when duration can not be calculated 1", func(t *testing.T) {
 		now := time.Now()
@@ -284,19 +308,19 @@ func TestCharacterSkillqueueItem_Remaining(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, now.Add(time.Hour*+3))
 		d := q.Remaining()
-		xassert.EqualDuration(t, 3*time.Hour, d.MustValue(), time.Second)
+		xassert.EqualDuration(t, 3*time.Hour, d.ValueOrZero(), time.Second)
 	})
 	t.Run("should return correct value when start and finish in the future", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*+1), now.Add(time.Hour*+3))
 		d := q.Remaining()
-		xassert.EqualDuration(t, 2*time.Hour, d.MustValue(), time.Second)
+		xassert.EqualDuration(t, 2*time.Hour, d.ValueOrZero(), time.Second)
 	})
 	t.Run("should return 0 remaining when completed", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*-3), now.Add(time.Hour*-2))
 		d := q.Remaining()
-		xassert.Equal(t, time.Duration(0), d.MustValue())
+		xassert.EqualOptional(t, time.Duration(0), d)
 	})
 	t.Run("should return null when no finish date", func(t *testing.T) {
 		now := time.Now()

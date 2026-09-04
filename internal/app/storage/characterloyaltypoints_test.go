@@ -44,7 +44,7 @@ func TestCharacterLoyaltyPointEntry(t *testing.T) {
 		xassert.Equal(t, corporation.ID, o.Corporation.ID)
 		xassert.Equal(t, corporation.Name, o.Corporation.Name)
 		xassert.Equal(t, 10, o.LoyaltyPoints)
-		xassert.Equal(t, faction.ID, o.Faction.MustValue().ID)
+		xassert.EqualOptional(t, faction, o.Faction)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given

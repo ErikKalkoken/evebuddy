@@ -4,7 +4,8 @@
 name: CI/CD
 
 env:
-  GOVERSION: "1.26.1"
+  GO_VERSION: "1.26.1"
+  FYNE_TOOL_VERSION: "v1.7.2"
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
   FULLNAME2: "EVE_Buddy" # for AppImage file, e.g. with spaces replaced by underscores
@@ -21,12 +22,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install OS dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install go dependencies
         run: go mod download
@@ -49,15 +50,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@v1.7.0
+        run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
 
       - name: Set version
         run: |
@@ -90,12 +91,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev libfuse2
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@v1.7.0
@@ -139,7 +140,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install Dependencies
         run: >
@@ -147,7 +148,7 @@ jobs:
           pacman --noconfirm -S git zip mingw-w64-x86_64-toolchain
 
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
 
       - name: Set version
         run: |
@@ -184,12 +185,12 @@ jobs:
           xcode-version: latest-stable
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
 
       - name: Set version
         run: |
@@ -226,12 +227,12 @@ jobs:
           xcode-version: latest-stable
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
 
       - name: Set version
         run: |
@@ -265,12 +266,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Download Android NDK
         run: |
@@ -278,7 +279,7 @@ jobs:
           unzip -q android-ndk-r27c-linux.zip
 
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
 
       - name: Set version
         run: |

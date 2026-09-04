@@ -3,7 +3,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
 	"time"
@@ -91,31 +90,35 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int64) (*app.Ch
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	alliance := nullEveEntry{
+	eea := nullAlliance{
 		id:       r.EveCharacter.AllianceID,
 		name:     r.AllianceName,
 		category: r.AllianceCategory,
 	}
-	faction := nullEveEntry{
+	eef := nullFaction{
 		id:       r.EveCharacter.FactionID,
 		name:     r.FactionName,
 		category: r.FactionCategory,
 	}
-	c, err := st.characterFromDBModel(
-		ctx,
+	eb := nullEntity{
+		id:   r.BloodlineID,
+		name: r.BloodlineName,
+	}
+	eer := nullRaceFaction{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.RaceFactionName,
+	}
+	c := characterFromDBModel(
 		r.Character,
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
-		alliance,
-		faction,
-		r.HomeID,
-		r.LocationID,
-		r.ShipID,
+		eea,
+		eef,
+		eb,
+		eer,
 	)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
 	return c, nil
 }
 
@@ -157,31 +160,35 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 	}
 	cc := make([]*app.Character, len(rows))
 	for i, r := range rows {
-		alliance := nullEveEntry{
+		eea := nullAlliance{
 			id:       r.EveCharacter.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		}
-		faction := nullEveEntry{
+		eef := nullFaction{
 			id:       r.EveCharacter.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
 		}
-		c, err := st.characterFromDBModel(
-			ctx,
+		eb := nullEntity{
+			id:   r.BloodlineID,
+			name: r.BloodlineName,
+		}
+		eer := nullRaceFaction{
+			id:       r.EveRace.FactionID,
+			category: NewNullString(eveEntityFaction),
+			name:     r.RaceFactionName,
+		}
+		c := characterFromDBModel(
 			r.Character,
 			r.EveCharacter,
 			r.EveEntity,
 			r.EveRace,
-			alliance,
-			faction,
-			r.HomeID,
-			r.LocationID,
-			r.ShipID,
+			eea,
+			eef,
+			eb,
+			eer,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("list characters: %w", err)
-		}
 		cc[i] = c
 	}
 	return cc, nil
@@ -199,6 +206,45 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort,
 		cc[i] = &app.EntityShort{ID: row.ID, Name: row.Name}
 	}
 	return cc, nil
+}
+
+func (st *Storage) ListCharacterEveCharacters(ctx context.Context) ([]*app.EveCharacter, error) {
+	rows, err := st.qRO.ListCharacterEveCharacters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListCharacterEveCharacters: %w", err)
+	}
+	oo := make([]*app.EveCharacter, len(rows))
+	for i, r := range rows {
+		eea := nullAlliance{
+			id:       r.EveCharacter.AllianceID,
+			name:     r.AllianceName,
+			category: r.AllianceCategory,
+		}
+		eef := nullFaction{
+			id:       r.EveCharacter.FactionID,
+			name:     r.FactionName,
+			category: r.FactionCategory,
+		}
+		eb := nullEntity{
+			id:   r.BloodlineID,
+			name: r.BloodlineName,
+		}
+		eer := nullRaceFaction{
+			id:       r.EveRace.FactionID,
+			category: NewNullString(eveEntityFaction),
+			name:     r.RaceFactionName,
+		}
+		oo[i] = eveCharacterFromDBModel(
+			r.EveCharacter,
+			r.EveEntity,
+			r.EveRace,
+			eea,
+			eef,
+			eb,
+			eer,
+		)
+	}
+	return oo, nil
 }
 
 func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort, error) {
@@ -389,56 +435,42 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 	return nil
 }
 
-// TODO: Optimize so additional queries are not needed
-
-func (st *Storage) characterFromDBModel(
-	ctx context.Context,
+func characterFromDBModel(
 	character queries.Character,
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance nullEveEntry,
-	faction nullEveEntry,
-	homeID sql.NullInt64,
-	locationID sql.NullInt64,
-	shipID sql.NullInt64,
-) (*app.Character, error) {
+	eea nullAlliance,
+	eef nullFaction,
+	eb nullEntity,
+	eer nullRaceFaction,
+) *app.Character {
 	o := app.Character{
 		AssetValue:         optional.FromNullFloat64(character.AssetValue),
 		ContractItemsValue: optional.FromNullFloat64(character.ContractItemsValue),
 		ContractsEscrow:    optional.FromNullFloat64(character.ContractsEscrow),
-		EveCharacter:       eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
-		ID:                 character.ID,
-		IsTrainingWatched:  character.IsTrainingWatched,
-		LastCloneJumpAt:    optional.FromNullTime(character.LastCloneJumpAt),
-		LastLoginAt:        optional.FromNullTime(character.LastLoginAt),
-		OrderItemsValue:    optional.FromNullFloat64(character.OrderItemsValue),
-		OrdersEscrow:       optional.FromNullFloat64(character.OrdersEscrow),
-		SkillPointsValue:   optional.FromNullFloat64(character.SkillPointsValue),
-		TrainedSP:          optional.FromNullInt64(character.TotalSp),
-		UnallocatedSP:      optional.FromNullInt64(character.UnallocatedSp),
-		WalletBalance:      optional.FromNullFloat64(character.WalletBalance),
+		EveCharacter: eveCharacterFromDBModel(
+			eveCharacter,
+			corporation,
+			race,
+			eea,
+			eef,
+			eb,
+			eer,
+		),
+		ID:                character.ID,
+		IsTrainingWatched: character.IsTrainingWatched,
+		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
+		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
+		OrderItemsValue:   optional.FromNullFloat64(character.OrderItemsValue),
+		OrdersEscrow:      optional.FromNullFloat64(character.OrdersEscrow),
+		SkillPointsValue:  optional.FromNullFloat64(character.SkillPointsValue),
+		TrainedSP:         optional.FromNullInt64(character.TotalSp),
+		UnallocatedSP:     optional.FromNullInt64(character.UnallocatedSp),
+		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
+		HomeLocationID:    optional.FromNullInt64(character.HomeID),
+		LocationID:        optional.FromNullInt64(character.LocationID),
+		ShipTypeID:        optional.FromNullInt64(character.ShipID),
 	}
-	if homeID.Valid {
-		x, err := st.GetLocation(ctx, homeID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Home = optional.New(x)
-	}
-	if locationID.Valid {
-		x, err := st.GetLocation(ctx, locationID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Location = optional.New(x)
-	}
-	if shipID.Valid {
-		x, err := st.GetEveType(ctx, shipID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.Ship = optional.New(x)
-	}
-	return &o, nil
+	return &o
 }

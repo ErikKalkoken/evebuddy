@@ -107,7 +107,8 @@ func (cs ContractStatus) IsFinished() bool {
 	case
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer:
+		ContractStatusFinishedIssuer,
+		ContractStatusReversed:
 		return true
 	}
 	return false
@@ -147,7 +148,8 @@ func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 		ContractStatusCancelled,
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer:
+		ContractStatusFinishedIssuer,
+		ContractStatusReversed:
 		return contractConsolidatedHistory
 	case
 		ContractStatusFailed,
@@ -205,7 +207,7 @@ type CharacterContract struct {
 	DateIssued        time.Time
 	DaysToComplete    optional.Optional[int64]
 	EndLocation       optional.Optional[*EveLocationShort]
-	EndSolarSystem    optional.Optional[*EntityShort]
+	EndSolarSystem    optional.Optional[*EntityShort] // TODO: Convert to EveEntity
 	ForCorporation    bool
 	Issuer            *EveEntity
 	IssuerCorporation *EveEntity
@@ -213,7 +215,7 @@ type CharacterContract struct {
 	Price             optional.Optional[float64]
 	Reward            optional.Optional[float64]
 	StartLocation     optional.Optional[*EveLocationShort]
-	StartSolarSystem  optional.Optional[*EntityShort]
+	StartSolarSystem  optional.Optional[*EntityShort] // TODO: Convert to EveEntity
 	Status            ContractStatus
 	StatusNotified    ContractStatus
 	Title             optional.Optional[string]
@@ -355,7 +357,22 @@ func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntitySh
 		return "[Multiple Items]"
 	}
 	if len(items) == 1 {
+		if items[0] == "" {
+			return "[Single Item]"
+		}
 		return items[0]
 	}
-	return "?"
+	return "[Empty]"
+}
+
+// CharacterContractSlots represents counts of contract slots for a character.
+type CharacterContractSlots struct {
+	CharacterID     int64
+	CharacterName   string
+	CorporationID   int64
+	CorporationName string
+	Free            int
+	IsCorporation   bool
+	Total           int
+	Used            int
 }

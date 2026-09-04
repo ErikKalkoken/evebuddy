@@ -1,9 +1,6 @@
 package app
 
 import (
-	"fmt"
-
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -22,10 +19,6 @@ type CharacterSkill2 struct {
 	Skill              *EveSkill
 	SkillPointsInSkill int64
 	TrainedSkillLevel  int64
-}
-
-func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
-	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }
 
 // CharacterActiveSkillLevel represents the active level of a character's skill.

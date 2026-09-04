@@ -27,7 +27,26 @@ func TestPCache(t *testing.T) {
 		// then
 		x, found := c.Get(key)
 		if assert.True(t, found) {
-		xassert.Equal(t, value, x)
+			xassert.Equal(t, value, x)
 		}
 	})
+}
+
+func TestTimeoutFromExpiresAt(t *testing.T) {
+	cases := []struct {
+		name      string
+		expiresAt time.Time
+		wantOK    bool
+	}{
+		{"zero time means no expiry and should be cached", time.Time{}, true},
+		{"a past expiry must not be cached as immortal", time.Now().Add(-time.Hour), false},
+		{"an expiry at this exact instant must not be cached as immortal", time.Now(), false},
+		{"a future expiry should be cached", time.Now().Add(time.Hour), true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, ok := timeoutFromExpiresAt(c.expiresAt)
+			assert.Equal(t, c.wantOK, ok)
+		})
+	}
 }

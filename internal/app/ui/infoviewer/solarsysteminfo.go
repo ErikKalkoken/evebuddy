@@ -92,8 +92,8 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoSolarSystem),
-				a.iw.makeDotlanIcon(a.id, infoSolarSystem),
+				a.iw.makeZKillboardIcon(a.id, SolarSystem),
+				a.iw.makeDotlanIcon(a.id, SolarSystem),
 				layout.NewSpacer(),
 			),
 		),
@@ -130,11 +130,11 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 			a.name.SetText(o.Name)
 			a.region.SetText(o.Constellation.Region.Name)
 			a.region.OnTapped = func() {
-				a.iw.Show(o.Constellation.Region.EveEntity())
+				a.iw.Show(o.Constellation.Region.ToEveEntity())
 			}
 			a.constellation.SetText(o.Constellation.Name)
 			a.constellation.OnTapped = func() {
-				a.iw.Show(o.Constellation.EveEntity())
+				a.iw.Show(o.Constellation.ToEveEntity())
 			}
 			a.security.Text = o.SecurityStatusDisplay()
 			a.security.Importance = o.SecurityType().ToImportance()
@@ -150,7 +150,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 				x.ID,
 				x.Name,
 				"Structure",
-				infoLocation,
+				Location,
 			)
 		})
 		fyne.Do(func() {

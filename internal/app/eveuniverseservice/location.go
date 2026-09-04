@@ -108,12 +108,15 @@ func (s *EVEUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			}
 		case app.EveLocationStructure:
 			if !xgoesi.ContextHasAccessToken(ctx) {
-				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
+				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d: %w", id, app.ErrTokenError)
 			}
 			ctx2 := xgoesi.NewContextWithOperationID(ctx, "GetUniverseStructuresStructureId")
 			structure, r, err := s.esiClient.UniverseAPI.GetUniverseStructuresStructureId(ctx2, id).Execute()
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
+					if existing, err2 := s.st.GetLocation(ctx, id); err2 == nil {
+						return existing, nil
+					}
 					arg = storage.UpdateOrCreateLocationParams{ID: id}
 					break
 				}

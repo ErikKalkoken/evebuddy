@@ -1,18 +1,3 @@
--- name: CountCharacterNotifications :many
-SELECT
-    cn.type_id,
-    nt.name,
-    SUM(NOT cn.is_read) AS unread_count,
-    COUNT(*) AS total_count
-FROM
-    character_notifications cn
-    JOIN notification_types nt ON nt.id = cn.type_id
-WHERE
-    character_id = ?
-GROUP BY
-    cn.type_id,
-    nt.name;
-
 -- name: CreateCharacterNotification :exec
 INSERT INTO
     character_notifications (
@@ -61,7 +46,7 @@ FROM
 WHERE
     character_id = ?;
 
--- name: ListCharacterNotificationsTypes :many
+-- name: ListCharacterNotifications :many
 SELECT
     sqlc.embed(cn),
     sqlc.embed(sender),
@@ -74,12 +59,9 @@ FROM
     JOIN notification_types nt ON nt.id = cn.type_id
     LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
-    character_id = ?
-    AND nt.name IN (sqlc.slice('names'))
-ORDER BY
-    timestamp DESC;
+    character_id = ?;
 
--- name: ListCharacterNotificationsAll :many
+-- name: ListAllCharacterNotifications :many
 SELECT
     sqlc.embed(cn),
     sqlc.embed(sender),
@@ -90,29 +72,7 @@ FROM
     character_notifications cn
     JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
-    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
-WHERE
-    character_id = ?
-ORDER BY
-    timestamp DESC;
-
--- name: ListCharacterNotificationsUnread :many
-SELECT
-    sqlc.embed(cn),
-    sqlc.embed(sender),
-    sqlc.embed(nt),
-    recipient.name as recipient_name,
-    recipient.category as recipient_category
-FROM
-    character_notifications cn
-    JOIN eve_entities sender ON sender.id = cn.sender_id
-    JOIN notification_types nt ON nt.id = cn.type_id
-    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
-WHERE
-    character_id = ?
-    AND cn.is_read IS FALSE
-ORDER BY
-    timestamp DESC;
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id;
 
 -- name: ListCharacterNotificationsUnprocessed :many
 SELECT
@@ -158,7 +118,15 @@ UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    notification_id = ?;
+    character_id = ?
+    AND notification_id = ?;
+
+-- name: UpdateCharacterNotificationsSetIsRead :exec
+UPDATE character_notifications
+SET
+    is_read = ?
+WHERE
+    id IN (sqlc.slice('ids'));
 
 -- name: CreateNotificationType :one
 INSERT INTO

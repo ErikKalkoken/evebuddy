@@ -96,7 +96,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				issued := time.Date(2019, 8, 24, 14, 15, 22, 0, time.UTC)
 				xassert.Equal(t, 3, o.Duration)
 				assert.True(t, o.Escrow.IsEmpty())
-				xassert.Equal(t, true, o.IsBuyOrder.ValueOrZero())
+				xassert.EqualOptional(t, true, o.IsBuyOrder)
 				xassert.Equal(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
 				xassert.Equal(t, location1.ID, o.Location.ID)

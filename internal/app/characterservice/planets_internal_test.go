@@ -209,7 +209,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 							time.Date(2024, 12, 3, 7, 39, 12, 0, time.UTC),
 							pin.LastCycleStart.ValueOrZero(),
 						)
-						xassert.Equal(t, productType, pin.ExtractorProductType.MustValue())
+						xassert.EqualOptional(t, productType, pin.ExtractorProductType)
 						xassert.Equal(t, pinType, pin.Type)
 					}
 				}

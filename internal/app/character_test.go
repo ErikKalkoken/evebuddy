@@ -181,7 +181,7 @@ func TestCharacterPlanet_ExtractionsExpire(t *testing.T) {
 		// when
 		x := cp.ExtractionsEarliestExpiry()
 		// then
-		xassert.Equal(t, et1, x.MustValue())
+		xassert.EqualOptional(t, et1, x)
 	})
 	t.Run("should return empty time when no expiration date", func(t *testing.T) {
 		// given

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/fnt-eve/goesi-openapi/esi"
@@ -26,6 +28,104 @@ func (s *CharacterService) GetCharacterIndustryJob(ctx context.Context, characte
 // ListAllCharacterIndustryJob returns all industry jobs from characters.
 func (s *CharacterService) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
 	return s.st.ListAllCharacterIndustryJob(ctx)
+}
+
+func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, typ app.IndustryJobType) ([]app.CharacterIndustrySlots, error) {
+	total := make(map[int64]int)
+	switch typ {
+	case app.ManufacturingJob:
+		industry1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeIndustry)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry1 {
+			if r.Level > 0 {
+				total[r.CharacterID]++
+			}
+		}
+		industry2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassProduction)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry2 {
+			total[r.CharacterID] += r.Level
+		}
+		industry3, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedMassProduction)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry3 {
+			total[r.CharacterID] += r.Level
+		}
+	case app.ScienceJob:
+		research1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeLaboratoryOperation)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range research1 {
+			total[r.CharacterID] += r.Level + 1 // also adds base slot
+		}
+		research2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedLaboratoryOperation)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range research2 {
+			total[r.CharacterID] += r.Level
+		}
+	case app.ReactionJob:
+		reactions1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassReactions)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range reactions1 {
+			total[r.CharacterID] += r.Level + 1 // also adds base slot
+		}
+		reactions2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedMassReactions)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range reactions2 {
+			total[r.CharacterID] += r.Level
+		}
+	}
+	characters, err := s.st.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results := make(map[int64]app.CharacterIndustrySlots)
+	for _, c := range characters {
+		results[c.ID] = app.CharacterIndustrySlots{
+			CharacterID:   c.ID,
+			CharacterName: c.Name,
+			Type:          typ,
+			Total:         total[c.ID],
+		}
+	}
+	counts, err := s.st.ListAllCharacterIndustryJobActiveCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range counts {
+		if !typ.Activities().Contains(r.Activity) {
+			continue
+		}
+		x := results[r.InstallerID]
+		switch r.Status {
+		case app.JobActive:
+			x.Busy += r.Count
+		case app.JobReady:
+			x.Ready += r.Count
+		}
+		results[r.InstallerID] = x
+	}
+	for id, r := range results {
+		r.Free = r.Total - r.Busy - r.Ready
+		results[id] = r
+	}
+	rows := slices.SortedFunc(maps.Values(results), func(a, b app.CharacterIndustrySlots) int {
+		return strings.Compare(a.CharacterName, b.CharacterName)
+	})
+	return rows, nil
 }
 
 var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
@@ -91,70 +191,72 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 			}
 
 			// Process changed jobs
-			if len(changedJobs) == 0 {
-				return false, nil
-			}
-			var entityIDs set.Set[int64]
-			var typeIDs set.Set[int64]
-			var locationIDs set.Set[int64]
-			for _, j := range jobs {
-				entityIDs.Add(j.InstallerId)
-				if x := j.CompletedCharacterId; x != nil {
-					entityIDs.Add(*x)
+			hasChanges := len(changedJobs) > 0
+			if hasChanges {
+				var entityIDs set.Set[int64]
+				var typeIDs set.Set[int64]
+				var locationIDs set.Set[int64]
+				for _, j := range jobs {
+					entityIDs.Add(j.InstallerId)
+					if x := j.CompletedCharacterId; x != nil {
+						entityIDs.Add(*x)
+					}
+					locationIDs.Add(j.BlueprintLocationId, j.OutputLocationId, j.StationId)
+					typeIDs.Add(j.BlueprintTypeId)
+					if x := j.ProductTypeId; x != nil {
+						typeIDs.Add(*x)
+					}
 				}
-				locationIDs.Add(j.BlueprintLocationId, j.OutputLocationId, j.StationId)
-				typeIDs.Add(j.BlueprintTypeId)
-				if x := j.ProductTypeId; x != nil {
-					typeIDs.Add(*x)
-				}
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
-			for _, j := range jobs {
-				err := s.st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
-					ActivityID:           j.ActivityId,
-					BlueprintID:          j.BlueprintId,
-					BlueprintLocationID:  j.BlueprintLocationId,
-					BlueprintTypeID:      j.BlueprintTypeId,
-					CharacterID:          characterID,
-					CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
-					CompletedDate:        optional.FromPtr(j.CompletedDate),
-					Cost:                 optional.FromPtr(j.Cost),
-					Duration:             j.Duration,
-					EndDate:              j.EndDate,
-					FacilityID:           j.FacilityId,
-					InstallerID:          j.InstallerId,
-					LicensedRuns:         optional.FromPtr(j.LicensedRuns),
-					JobID:                j.JobId,
-					OutputLocationID:     j.OutputLocationId,
-					Runs:                 j.Runs,
-					PauseDate:            optional.FromPtr(j.PauseDate),
-					Probability:          optional.FromPtr(j.Probability),
-					ProductTypeID:        optional.FromPtr(j.ProductTypeId),
-					StartDate:            j.StartDate,
-					Status:               statusFromESIJob(j),
-					StationID:            j.StationId,
-					SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
+				g := new(errgroup.Group)
+				g.Go(func() error {
+					_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+					return err
 				})
-				if err != nil {
+				g.Go(func() error {
+					return s.eus.AddMissingLocations(ctx, locationIDs)
+				})
+				g.Go(func() error {
+					return s.eus.AddMissingTypes(ctx, typeIDs)
+				})
+				if err := g.Wait(); err != nil {
 					return false, err
 				}
+				for _, j := range jobs {
+					err := s.st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
+						ActivityID:           j.ActivityId,
+						BlueprintID:          j.BlueprintId,
+						BlueprintLocationID:  j.BlueprintLocationId,
+						BlueprintTypeID:      j.BlueprintTypeId,
+						CharacterID:          characterID,
+						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+						CompletedDate:        optional.FromPtr(j.CompletedDate),
+						Cost:                 optional.FromPtr(j.Cost),
+						Duration:             j.Duration,
+						EndDate:              j.EndDate,
+						FacilityID:           j.FacilityId,
+						InstallerID:          j.InstallerId,
+						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
+						JobID:                j.JobId,
+						OutputLocationID:     j.OutputLocationId,
+						Runs:                 j.Runs,
+						PauseDate:            optional.FromPtr(j.PauseDate),
+						Probability:          optional.FromPtr(j.Probability),
+						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
+						StartDate:            j.StartDate,
+						Status:               statusFromESIJob(j),
+						StationID:            j.StationId,
+						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
+					})
+					if err != nil {
+						return false, err
+					}
+				}
+				slog.Info("Updated industry jobs", "characterID", characterID, "count", len(jobs))
 			}
-			slog.Info("Updated industry jobs", "characterID", characterID, "count", len(jobs))
 
 			// Mark orphans
+			// The ESI response only returns jobs from the last 90 days, so a long
+			// running job can vanish from it even when nothing else changed this cycle.
 			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.CharactersCharacterIdIndustryJobsGetInner) int64 {
 				return x.JobId
 			}))
@@ -169,14 +271,9 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 			}))
 			orphans := set.Difference(running, incoming)
 			if orphans.Size() == 0 {
-				return true, nil
-
+				return hasChanges, nil
 			}
 
-			// The ESI response only returns jobs from the last 90 days.
-			// It can therefore happen that a long running job vanishes from the response,
-			// without the app having received a final status (e.g. delivered or canceled).
-			// The status of these orphaned job is therefore marked as undefined.
 			err = s.st.UpdateCharacterIndustryJobStatus(ctx, storage.UpdateCharacterIndustryJobStatusParams{
 				CharacterID: characterID,
 				JobIDs:      orphans,

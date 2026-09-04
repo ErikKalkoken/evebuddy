@@ -126,21 +126,20 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			return nil, err
 		}
 
-		ceoID := optionalFromSpecialEntityID(r.CeoId)
-		creatorID := optionalFromSpecialEntityID(r.CreatorId)
+		ceoID := optional.FromPtr(r.CeoId)
+		creatorID := optional.FromPtr(r.CreatorId)
 		var factionID optional.Optional[int64]
 		if app.IsNPCCorporation(corporationID) {
 			if id, ok := evesde.NPCCorporationFactionID(corporationID); ok {
 				factionID = optional.New(id)
 			}
 		} else {
-			factionID = optional.FromPtr(r.FactionId)
+			factionID = optional.FromPtr(r.EnlistedFactionId)
 		}
 		allianceID := optional.FromPtr(r.AllianceId)
-		homeStationID := optional.FromPtr(r.HomeStationId)
 
-		ids := set.Of(corporationID)
-		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID, homeStationID} {
+		ids := set.Of(corporationID, r.HomeStationId)
+		for _, o := range []optional.Optional[int64]{allianceID, ceoID, creatorID, factionID} {
 			if v, ok := o.Value(); ok {
 				ids.Add(v)
 			}
@@ -155,16 +154,16 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			CreatorID:     creatorID,
 			FactionID:     factionID,
 			DateFounded:   optional.FromPtr(r.DateFounded),
-			Description:   optional.FromPtr(r.Description),
-			HomeStationID: homeStationID,
+			Description:   r.Description,
+			HomeStationID: r.HomeStationId,
 			ID:            corporationID,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,
-			Shares:        optional.FromPtr(r.Shares),
-			TaxRate:       r.TaxRate,
+			Shares:        optional.New(r.Shares),
+			TaxRate:       r.TaxRates.Isk,
 			Ticker:        r.Ticker,
 			URL:           optional.FromPtr(r.Url),
-			WarEligible:   optional.FromPtr(r.WarEligible),
+			WarEligible:   r.WarEligible,
 		}); err != nil {
 			return nil, err
 		}
@@ -175,13 +174,6 @@ func (s *EVEUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		return nil, err
 	}
 	return o, nil
-}
-
-func optionalFromSpecialEntityID(v int64) optional.Optional[int64] {
-	if v == 0 || v == 1 {
-		return optional.Optional[int64]{}
-	}
-	return optional.New(v)
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.
@@ -341,4 +333,70 @@ func (s *EVEUniverseService) makeMembershipHistory(ctx context.Context, items []
 		return -cmp.Compare(a.RecordID, b.RecordID)
 	})
 	return oo, nil
+}
+
+func (s *EVEUniverseService) GetOrCreateFactionESI(ctx context.Context, factionID int64) (*app.EveFaction, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateFactionESI-%d", factionID), func() (*app.EveFaction, error) {
+		o, err := s.st.GetEveFaction(ctx, factionID)
+		if err == nil {
+			return o, nil
+		}
+		if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		factions, _, err := s.esiClient.UniverseAPI.GetUniverseFactions(ctx).Execute()
+		if err != nil {
+			return nil, err
+		}
+		for _, ef := range factions {
+			if ef.FactionId != factionID {
+				continue
+			}
+			arg := storage.CreateEveFactionParams{
+				ID:                   ef.FactionId,
+				CorporationID:        optional.FromPtr(ef.CorporationId),
+				Description:          ef.Description,
+				IsUnique:             ef.IsUnique,
+				MilitiaCorporationID: optional.FromPtr(ef.MilitiaCorporationId),
+				Name:                 ef.Name,
+				SizeFactor:           ef.SizeFactor,
+				SolarSystemID:        optional.FromPtr(ef.SolarSystemId),
+				StationCount:         ef.StationCount,
+				StationSystemCount:   ef.StationSystemCount,
+			}
+			var ids set.Set[int64]
+			if id, ok := arg.CorporationID.Value(); ok {
+				ids.Add(id)
+			}
+			if id, ok := arg.MilitiaCorporationID.Value(); ok {
+				ids.Add(id)
+			}
+			if ids.Size() > 0 {
+				_, err := s.AddMissingEntities(ctx, ids)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if id, ok := arg.SolarSystemID.Value(); ok {
+				_, err := s.GetOrCreateSolarSystemESI(ctx, id)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if err := s.st.CreateEveFaction(ctx, arg); err != nil {
+				return nil, err
+			}
+			slog.Info("Created eve faction", "id", factionID)
+			o, err := s.st.GetEveFaction(ctx, factionID)
+			if err != nil {
+				return nil, err
+			}
+			return o, nil
+		}
+		return nil, fmt.Errorf("faction ID %d: %w", factionID, app.ErrNotFound)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }

@@ -28,26 +28,31 @@ func New(client *esi.APIClient) *ESIStatusService {
 
 // Fetch retrieves an update from ESI and returns it.
 func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
-	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
-		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-		status, response, err := s.esiClient.StatusAPI.GetStatus(ctx).Execute()
-		if err != nil {
-			if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
-				msg := swaggerErr.Error()
-				if x, ok := swaggerErr.Model().(esi.Error); ok {
-					msg += ": " + x.Error
-				}
-				return &app.ESIStatus{ErrorMessage: msg, HTTPStatusCode: response.StatusCode}, nil
-			}
-			return nil, err
-		}
-		es := &app.ESIStatus{HTTPStatusCode: response.StatusCode, PlayerCount: int(status.Players)}
-		return es, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
+    o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
+        fetchCtx := xgoesi.NewContextWithOperationID(ctx, "GetStatus")
+        status, response, err := s.esiClient.StatusAPI.GetStatus(fetchCtx).Execute()
+        if err != nil {
+            if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
+                msg := swaggerErr.Error()
+                if x, ok := swaggerErr.Model().(esi.Error); ok {
+                    msg += ": " + x.Error
+                }
+                return &app.ESIStatus{
+                    ErrorMessage:   msg,
+                    HTTPStatusCode: response.StatusCode,
+                }, nil
+            }
+            return nil, err
+        }
+        return &app.ESIStatus{
+            HTTPStatusCode: response.StatusCode,
+            PlayerCount:    int(status.Players),
+        }, nil
+    })
+    if err != nil {
+        return nil, err
+    }
+    return o, nil
 }
 
 // func extractErrorMessage(err esi.GenericOpenAPIError) string {

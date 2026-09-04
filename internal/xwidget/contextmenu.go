@@ -37,7 +37,7 @@ func (w *ContextMenuButton) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (w *ContextMenuButton) Tapped(e *fyne.PointEvent) {
-	widget.ShowPopUpMenuAtPosition(w.menu, fyne.CurrentApp().Driver().CanvasForObject(w), e.AbsolutePosition)
+	ShowPopUpMenuBelowTrailing(w, w.menu)
 }
 
 // SetMenuItems replaces the menu items.
@@ -59,12 +59,4 @@ func (w *ContextMenuButton) MouseOut() {
 func (w *ContextMenuButton) MouseMoved(e *desktop.MouseEvent) {
 	w.ToolTipWidgetExtend.MouseMoved(e)
 	w.Button.MouseMoved(e)
-}
-
-func ShowContextMenu(o fyne.CanvasObject, menu *fyne.Menu) {
-	m := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(o))
-	m.ShowAtRelativePosition(fyne.NewPos(
-		-m.Size().Width+o.Size().Width,
-		o.Size().Height,
-	), o)
 }

@@ -63,7 +63,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, 12345, o.CloneID)
-				xassert.Equal(t, "Alpha", o.Name.ValueOrZero())
+				xassert.EqualOptional(t, "Alpha", o.Name)
 				xassert.Equal(t, 60003463, o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {
 					x := o.Implants[0]
@@ -105,7 +105,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
 				xassert.Equal(t, 12345, o.CloneID)
-				xassert.Equal(t, "Alpha", o.Name.ValueOrZero())
+				xassert.EqualOptional(t, "Alpha", o.Name)
 				xassert.Equal(t, station.ID, o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {
 					x := o.Implants[0]
@@ -131,7 +131,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			TypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:           app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 3,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
@@ -148,7 +148,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.WithinDuration(t, now.Add(18*time.Hour), x.MustValue(), 10*time.Second)
+			assert.WithinDuration(t, now.Add(18*time.Hour), x.ValueOrZero(), 10*time.Second)
 		}
 	})
 	t.Run("should return time of next available jump without skill and never jumped before", func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			xassert.Equal(t, time.Time{}, x.MustValue())
+			xassert.EqualOptional(t, time.Time{}, x)
 		}
 	})
 	t.Run("should return zero time when next jump available now", func(t *testing.T) {
@@ -172,12 +172,12 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			TypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:           app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			xassert.Equal(t, time.Time{}, x.MustValue())
+			xassert.EqualOptional(t, time.Time{}, x)
 		}
 	})
 	t.Run("should return empty time when last jump not found", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
-			TypeID:        app.EveTypeInfomorphSynchronizing,
+			TypeID:           app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)

@@ -7,49 +7,43 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 )
-
-const createEveRace = `-- name: CreateEveRace :one
-INSERT INTO eve_races (
-    id,
-    description,
-    name
-)
-VALUES (
-    ?, ?, ?
-)
-RETURNING id, description, name
-`
-
-type CreateEveRaceParams struct {
-	ID          int64
-	Description string
-	Name        string
-}
-
-func (q *Queries) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (EveRace, error) {
-	row := q.db.QueryRowContext(ctx, createEveRace, arg.ID, arg.Description, arg.Name)
-	var i EveRace
-	err := row.Scan(&i.ID, &i.Description, &i.Name)
-	return i, err
-}
 
 const getEveRace = `-- name: GetEveRace :one
-SELECT id, description, name
-FROM eve_races
-WHERE id = ?
+SELECT
+    er.id, er.description, er.name, er.faction_id,
+    ee.name as alliance_name
+FROM
+    eve_races er
+    LEFT JOIN eve_entities ee ON ee.id = er.faction_id
+WHERE
+    er.id = ?
 `
 
-func (q *Queries) GetEveRace(ctx context.Context, id int64) (EveRace, error) {
+type GetEveRaceRow struct {
+	EveRace      EveRace
+	AllianceName sql.NullString
+}
+
+func (q *Queries) GetEveRace(ctx context.Context, id int64) (GetEveRaceRow, error) {
 	row := q.db.QueryRowContext(ctx, getEveRace, id)
-	var i EveRace
-	err := row.Scan(&i.ID, &i.Description, &i.Name)
+	var i GetEveRaceRow
+	err := row.Scan(
+		&i.EveRace.ID,
+		&i.EveRace.Description,
+		&i.EveRace.Name,
+		&i.EveRace.FactionID,
+		&i.AllianceName,
+	)
 	return i, err
 }
 
 const listEveRaceIDs = `-- name: ListEveRaceIDs :many
-SELECT id
-FROM eve_races
+SELECT
+    id
+FROM
+    eve_races
 `
 
 func (q *Queries) ListEveRaceIDs(ctx context.Context) ([]int64, error) {
@@ -73,4 +67,33 @@ func (q *Queries) ListEveRaceIDs(ctx context.Context) ([]int64, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOrCreateEveRace = `-- name: UpdateOrCreateEveRace :exec
+INSERT INTO
+    eve_races (id, description, faction_id, name)
+VALUES
+    (?1, ?2, ?3, ?4)
+ON CONFLICT (id) DO UPDATE
+SET
+    description = ?2,
+    faction_id = ?3,
+    name = ?4
+`
+
+type UpdateOrCreateEveRaceParams struct {
+	ID          int64
+	Description string
+	FactionID   sql.NullInt64
+	Name        string
+}
+
+func (q *Queries) UpdateOrCreateEveRace(ctx context.Context, arg UpdateOrCreateEveRaceParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveRace,
+		arg.ID,
+		arg.Description,
+		arg.FactionID,
+		arg.Name,
+	)
+	return err
 }

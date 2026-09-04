@@ -179,7 +179,7 @@ type CharacterIndustryJob struct {
 	OutputLocation     *EveLocationShort
 	PauseDate          optional.Optional[time.Time]
 	Probability        optional.Optional[float32]
-	ProductType        optional.Optional[*EntityShort]
+	ProductType        optional.Optional[*EntityShort] // TODO: should be EveEntity
 	Runs               int
 	StartDate          time.Time
 	Station            *EveLocationShort

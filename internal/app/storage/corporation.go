@@ -83,34 +83,34 @@ func (st *Storage) GetAnyCorporation(ctx context.Context) (*app.Corporation, err
 }
 
 func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
-	ec := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
-		corporation: r.EveCorporation,
-		ceo: nullEveEntry{
+	ec := eveCorporationFromDBModel(
+		r.EveCorporation,
+		nullCEO{
 			id:       r.EveCorporation.CeoID,
 			name:     r.CeoName,
 			category: r.CeoCategory,
 		},
-		creator: nullEveEntry{
+		nullCreator{
 			id:       r.EveCorporation.CreatorID,
 			name:     r.CreatorName,
 			category: r.CreatorCategory,
 		},
-		alliance: nullEveEntry{
+		nullAlliance{
 			id:       r.EveCorporation.AllianceID,
 			name:     r.AllianceName,
 			category: r.AllianceCategory,
 		},
-		faction: nullEveEntry{
+		nullFaction{
 			id:       r.EveCorporation.FactionID,
 			name:     r.FactionName,
 			category: r.FactionCategory,
 		},
-		station: nullEveEntry{
+		nullStation{
 			id:       r.EveCorporation.HomeStationID,
 			name:     r.StationName,
 			category: r.StationCategory,
 		},
-	})
+	)
 	o := &app.Corporation{
 		ID:             r.EveCorporation.ID,
 		EveCorporation: ec,

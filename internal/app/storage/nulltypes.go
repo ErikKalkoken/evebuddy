@@ -5,7 +5,26 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
+
+type nullEntity struct {
+	id   sql.NullInt64
+	name sql.NullString
+}
+
+func entityShortFromNullableDBModel(ne nullEntity) optional.Optional[*app.EntityShort] {
+	var o optional.Optional[*app.EntityShort]
+	if ne.id.Valid && ne.name.Valid {
+		o.Set(&app.EntityShort{
+			ID:   ne.id.Int64,
+			Name: ne.name.String,
+		})
+	}
+	return o
+}
 
 // NewNullFloat64 returns a value as null type. Will assume not set when value is zero.
 func NewNullFloat64(v float64) sql.NullFloat64 {
@@ -35,6 +54,7 @@ func NewNullTimeFromTime(v time.Time) sql.NullTime {
 	return sql.NullTime{Time: v, Valid: true}
 }
 
+// NewTimeFromNullTime converts a NullTime into a time value and returns it.
 func NewTimeFromNullTime(v sql.NullTime) time.Time {
 	if !v.Valid {
 		return time.Time{}

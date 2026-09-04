@@ -684,7 +684,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	ctx := context.Background()
 	system := factory.CreateEveSolarSystem()
 	constellation := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityConstellation})
-	factory.CreateEveEntity(*system.EveEntity())
+	factory.CreateEveEntity(*system.ToEveEntity())
 	station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
 	structure := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		SolarSystemID: optional.New(system.ID),
@@ -722,7 +722,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	starID, planets, stargateIDs, stations, structures, err := s.GetSolarSystemInfoESI(ctx, system.ID)
 	// then
 	if assert.NoError(t, err) {
-		xassert.Equal(t, 40000040, starID.ValueOrZero())
+		xassert.EqualOptional(t, 40000040, starID)
 		assert.ElementsMatch(t, []app.EveSolarSystemPlanet{
 			{
 				PlanetID: int64(40000041),

@@ -17,6 +17,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+const tokenTimeout = time.Second * 60
+
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
 func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (bool, error) {
 	missing, err := s.MissingScopes(ctx, characterID, scopes)
@@ -70,12 +72,12 @@ func (s *CharacterService) TokenSourceForCorporation(ctx context.Context, corpor
 	if !ok {
 		return nil, 0, app.ErrNotFound
 	}
-	ts := newTokenSource(token, s.ensureValidToken)
+	ts := newTokenSource(ctx, token, s.ensureValidToken)
 	return ts, token.CharacterID, nil
 }
 
 // TokenSource returns a valid token source for a character.
-// The token source will automatically refresh a token when needed.
+// The token source will automatically refresh when needed.
 func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, scopes set.Set[string]) (oauth2.TokenSource, error) {
 	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
@@ -88,14 +90,13 @@ func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, s
 	if err != nil {
 		return nil, fmt.Errorf("create token source: %w", err)
 	}
-	ts := newTokenSource(token, s.ensureValidToken)
+	ts := newTokenSource(ctx, token, s.ensureValidToken)
 	return ts, nil
 }
 
 // ensureValidToken will try to refresh token if it is about to become invalid
 // and report whether it was refreshed.
 func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.CharacterToken) (bool, error) {
-	const tokenTimeout = time.Second * 60
 	if token.RemainsValid(tokenTimeout) {
 		return false, nil
 	}
@@ -138,11 +139,15 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 type tokenSource struct {
 	refresher func(context.Context, *app.CharacterToken) (bool, error)
 
+	ctx   context.Context
 	sfg   singleflight.Group
 	token *app.CharacterToken
 }
 
-func newTokenSource(token *app.CharacterToken, refresher func(context.Context, *app.CharacterToken) (bool, error)) *tokenSource {
+func newTokenSource(ctx context.Context, token *app.CharacterToken, refresher func(context.Context, *app.CharacterToken) (bool, error)) *tokenSource {
+	if ctx == nil {
+		panic("Missing context")
+	}
 	if token == nil {
 		panic("Missing token")
 	}
@@ -150,19 +155,17 @@ func newTokenSource(token *app.CharacterToken, refresher func(context.Context, *
 		panic("Missing refresher func")
 	}
 	ts := &tokenSource{
-		token:     token,
+		ctx:       ctx,
 		refresher: refresher,
+		token:     token,
 	}
 	return ts
 }
 
 func (ts *tokenSource) Token() (*oauth2.Token, error) {
-	if ts.token == nil {
-		return nil, fmt.Errorf("tokenSource: no token defined")
-	}
-	o, err, _ := xsingleflight.Do(&ts.sfg, "KEY", func() (*oauth2.Token, error) {
-		if time.Now().After(ts.token.ExpiresAt) {
-			_, err := ts.refresher(context.Background(), ts.token)
+	o, err, _ := xsingleflight.Do(&ts.sfg, "refresh-token", func() (*oauth2.Token, error) {
+		if !ts.token.RemainsValid(tokenTimeout) {
+			_, err := ts.refresher(ts.ctx, ts.token)
 			if err != nil {
 				return nil, err
 			}

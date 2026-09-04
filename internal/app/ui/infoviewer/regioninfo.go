@@ -63,8 +63,8 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoRegion),
-				a.iw.makeDotlanIcon(a.id, infoRegion),
+				a.iw.makeZKillboardIcon(a.id, Region),
+				a.iw.makeDotlanIcon(a.id, Region),
 				layout.NewSpacer(),
 			),
 		),

@@ -441,7 +441,7 @@ func (s *EVEUniverseService) GetStarTypeID(ctx context.Context, id int64) (int64
 func (s *EVEUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
-	if ids.Size() == 0 {
+	if ids2.Size() == 0 {
 		return nil
 	}
 	missing, err := s.st.MissingEveRegions(ctx, ids2)
@@ -468,7 +468,7 @@ func (s *EVEUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[
 func (s *EVEUniverseService) AddMissingSolarSystems(ctx context.Context, ids set.Set[int64]) error {
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore invalid ID
-	if ids.Size() == 0 {
+	if ids2.Size() == 0 {
 		return nil
 	}
 	missing, err := s.st.MissingEveSolarSystems(ctx, ids2)

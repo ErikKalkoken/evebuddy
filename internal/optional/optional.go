@@ -34,6 +34,11 @@ func New[T any](v T) Optional[T] {
 
 // FromZeroValue returns an optional from a value
 // where it's zero value is interpreted as empty.
+//
+// TODO: Zero is ambiguous with "no data" for callers whose underlying storage
+// can't distinguish the two (e.g. NOT NULL DB columns backing a genuinely
+// optional upstream field). Affected callers should migrate to nullable
+// storage + FromPtr/FromNullX instead of FromZeroValue.
 func FromZeroValue[T comparable](v T) Optional[T] {
 	var z T
 	if v == z {
@@ -260,7 +265,6 @@ func FlatMap[X, Y any](o Optional[X], mapper func(v X) Optional[Y]) Optional[Y] 
 
 // Sum returns the sum of values v.
 // When any value is empty it returns an empty value.
-// The behavior is models after SQL's SUM of nullable values.
 func Sum[T numeric](v ...Optional[T]) Optional[T] {
 	var s Optional[T]
 	for _, u := range v {
@@ -273,17 +277,15 @@ func Sum[T numeric](v ...Optional[T]) Optional[T] {
 	return s
 }
 
-// SumNonEmpty returns the sum of non-empty values v.
-// Empty values are ignored.
+// SumNonEmpty returns the sum of non-empty values v, ignoring empty ones.
 // When all values are empty it returns an empty value.
+// The behavior is modeled after SQL's SUM of nullable values.
 func SumNonEmpty[T numeric](v ...Optional[T]) Optional[T] {
 	var s Optional[T]
 	for _, u := range v {
-		var v T
 		if u.isPresent {
-			v = u.value
 			s.isPresent = true
-			s.value += v
+			s.value += u.value
 		}
 	}
 	return s

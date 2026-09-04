@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 	"time"
@@ -46,6 +47,7 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 	for _, b := range bids {
 		if top == nil || b.Amount > maximum {
 			top = b
+			maximum = b.Amount
 		}
 	}
 	return top, nil
@@ -117,6 +119,115 @@ func (s *CharacterService) ListContractItems(ctx context.Context, contractID int
 	return s.st.ListCharacterContractItems(ctx, contractID)
 }
 
+func (s *CharacterService) ListAllCharacterContractSlotsPersonal(ctx context.Context) ([]app.CharacterContractSlots, error) {
+	slots := make(map[int64]app.CharacterContractSlots)
+	characters, err := s.st.ListCharacterEveCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	characterCorporations := make(map[int64]int64)
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.CharacterID = c.ID
+		x.CharacterName = c.Name
+		x.CorporationID = c.Corporation.ID
+		x.CorporationName = c.Corporation.Name
+		x.Total = 1 // capacity at level 0
+		slots[c.ID] = x
+		characterCorporations[c.ID] = c.Corporation.ID
+	}
+	counts, err := s.st.CountCharactersOutstandingPersonalContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for characterID, used := range counts {
+		x := slots[characterID]
+		x.Used = used
+		slots[characterID] = x
+	}
+
+	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range contracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 4
+			slots[r.CharacterID] = x
+		}
+	}
+
+	advancedContracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range advancedContracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 4
+			slots[r.CharacterID] = x
+		}
+	}
+
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.Free = x.Total - x.Used
+		slots[c.ID] = x
+	}
+
+	slots2 := slices.Collect(maps.Values(slots))
+	return slots2, nil
+}
+
+func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.Context) ([]app.CharacterContractSlots, error) {
+	slots := make(map[int64]app.CharacterContractSlots)
+	characters, err := s.st.ListCharacterEveCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.CharacterID = c.ID
+		x.CharacterName = c.Name
+		x.CorporationID = c.Corporation.ID
+		x.CorporationName = c.Corporation.Name
+		x.IsCorporation = true
+		x.Total = 10 // capacity at level 0
+		slots[c.ID] = x
+	}
+	counts, err := s.st.CountCharactersOutstandingCorporationContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for characterID, used := range counts {
+		x := slots[characterID]
+		x.Used = used
+		slots[characterID] = x
+	}
+
+	contracting, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeCorporationContracting)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range contracting {
+		if r.Level > 0 {
+			x := slots[r.CharacterID]
+			x.Total += r.Level * 10
+			slots[r.CharacterID] = x
+		}
+	}
+
+	for _, c := range characters {
+		x := slots[c.ID]
+		x.Free = x.Total - x.Used
+		slots[c.ID] = x
+	}
+
+	slots2 := slices.Collect(maps.Values(slots))
+	return slots2, nil
+}
+
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
@@ -179,8 +290,11 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			var locationIDs set.Set[int64]
 			for _, c := range contracts {
 				entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-				if c.StartLocationId != nil && c.EndLocationId != nil {
-					locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+				if c.StartLocationId != nil {
+					locationIDs.Add(*c.StartLocationId)
+				}
+				if c.EndLocationId != nil {
+					locationIDs.Add(*c.EndLocationId)
 				}
 			}
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
@@ -282,8 +396,11 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
 	var locationIDs set.Set[int64]
-	if c.StartLocationId != nil && c.EndLocationId != nil {
-		locationIDs.Add(*c.StartLocationId, *c.EndLocationId)
+	if c.StartLocationId != nil {
+		locationIDs.Add(*c.StartLocationId)
+	}
+	if c.EndLocationId != nil {
+		locationIDs.Add(*c.EndLocationId)
 	}
 	err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 	if err != nil {

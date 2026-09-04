@@ -1,40 +1,96 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveRace(t *testing.T) {
-	db, r, _ := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
+
+	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		const (
+			raceID      = 42
+			description = "description"
+			name        = "name"
+		)
+
 		// when
-		arg := storage.CreateEveRaceParams{
-			ID:          42,
-			Description: "description",
-			Name:        "name",
-		}
-		x1, err := r.CreateEveRace(ctx, arg)
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
+			ID:          raceID,
+			Description: description,
+			Name:        name,
+		})
+
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 42, x1.ID)
-			xassert.Equal(t, "description", x1.Description)
-			xassert.Equal(t, "name", x1.Name)
-			x2, err := r.GetEveRace(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, *x1, *x2)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetEveRace(t.Context(), raceID)
+		require.NoError(t, err)
+		xassert.Equal(t, raceID, x.ID)
+		xassert.Equal(t, description, x.Description)
+		xassert.Equal(t, name, x.Name)
 	})
 
+	t.Run("can create new full", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		const (
+			raceID      = 42
+			description = "description"
+			name        = "name"
+		)
+		faction := f.CreateEveEntityFaction()
+
+		// when
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
+			ID:          raceID,
+			Description: description,
+			Name:        name,
+			FactionID:   optional.New(faction.ID),
+		})
+
+		// then
+		require.NoError(t, err)
+		x, err := st.GetEveRace(t.Context(), raceID)
+		require.NoError(t, err)
+		xassert.Equal(t, raceID, x.ID)
+		xassert.Equal(t, description, x.Description)
+		xassert.Equal(t, name, x.Name)
+		xassert.EqualOptional(t, faction, x.Faction)
+	})
+
+	t.Run("can update existing", func(t *testing.T) {
+		x1 := f.CreateEveRace()
+		const (
+			description = "description"
+			name        = "name"
+		)
+		faction := f.CreateEveEntityFaction()
+
+		// when
+		err := st.UpdateOrCreateEveRace(t.Context(), storage.UpdateOrCreateEveRaceParams{
+			ID:          x1.ID,
+			Description: description,
+			Name:        name,
+			FactionID:   optional.New(faction.ID),
+		})
+
+		// then
+		require.NoError(t, err)
+		x, err := st.GetEveRace(t.Context(), x1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, x1.ID, x.ID)
+		xassert.Equal(t, description, x.Description)
+		xassert.Equal(t, name, x.Name)
+		xassert.EqualOptional(t, faction, x.Faction)
+	})
 }

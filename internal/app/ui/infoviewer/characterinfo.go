@@ -3,6 +3,7 @@ package infoviewer
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -150,8 +151,8 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZKillboardIcon(a.id, infoCharacter),
-				a.iw.makeEveWhoIcon(a.id, infoCharacter),
+				a.iw.makeZKillboardIcon(a.id, Character),
+				a.iw.makeEveWhoIcon(a.id, Character),
 				forums,
 				layout.NewSpacer(),
 			),
@@ -210,8 +211,8 @@ func (a *characterInfo) update(ctx context.Context) error {
 		}
 	})
 	fyne.Do(func() {
-		v, ok := o.Title.Value()
-		if !ok {
+		v := o.CorporationTitlePlain()
+		if v == "" {
 			a.title.Hide()
 			return
 		}
@@ -265,14 +266,17 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 		})),
 		newAttributeItem("Corporation", o.Corporation),
 	}
+	if v, ok := o.Bloodline.Value(); ok {
+		attributes = slices.Insert(attributes, 2, newAttributeItem("Bloodline", (*eveBloodlineShort)(v)))
+	}
 	if v, ok := o.Alliance.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Alliance", v))
 	}
-	if v, ok := o.Alliance.Value(); ok {
+	if v, ok := o.Faction.Value(); ok {
 		attributes = append(attributes, newAttributeItem("Faction", v))
 	}
 	var u any
-	if v, ok := o.EveEntity().IsNPC().Value(); ok {
+	if v, ok := o.ToEveEntity().IsNPC().Value(); ok {
 		u = v
 	} else {
 		u = "?"
@@ -283,10 +287,10 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 		if err != nil {
 			return nil, err
 		}
-		if v, ok := c.Home.Value(); ok {
+		if v, ok := c.HomeLocationID.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Home", v))
 		}
-		if v, ok := c.Location.Value(); ok {
+		if v, ok := c.LocationID.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Location", v))
 		}
 		if v, ok := c.LastLoginAt.Value(); ok {

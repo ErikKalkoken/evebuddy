@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -101,18 +100,42 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	const assetsTitle = "Assets"
-	allAssets := xwidget.NewNavPage(
+	assetSearch := xwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage(assetsTitle, u.assetSearchAll),
+		newContentPage(assetsTitle, u.assetSearchAll, xwidget.NewIconButtonWithMenu(
+			theme.MoreHorizontalIcon(),
+			fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
+		)),
 	)
+
+	unifiedCommunications := xwidget.NewNavPage(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		newContentPage("Communications", u.unifiedCommunications),
+	)
+	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if v, ok := count.Value(); !ok {
+			s = "?"
+		} else if v > 0 {
+			s = formatBadge(count.ValueOrZero(), 999)
+		}
+		homeNav.SetItemBadge(unifiedCommunications, s)
+	}
 
 	contracts := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		newContentPage("Contracts", u.contracts),
+		newContentPage("Contracts", container.NewAppTabs(
+			container.NewTabItem("Contracts", u.contractList),
+			container.NewTabItem("Slots", container.NewAppTabs(
+				container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+				container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+			)),
+		)),
 	)
-	u.contracts.OnUpdate = func(count int) {
+	u.contractList.OnUpdate = func(count int) {
 		var s string
 		if count > 0 {
 			s += ihumanize.Comma(count)
@@ -139,9 +162,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Industry", container.NewAppTabs(
 			container.NewTabItem("Jobs", u.industryJobs),
 			container.NewTabItem("Slots", container.NewAppTabs(
-				container.NewTabItem("Manufacturing", u.slotsManufacturing),
-				container.NewTabItem("Science", u.slotsResearch),
-				container.NewTabItem("Reactions", u.slotsReactions),
+				container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+				container.NewTabItem("Science", u.industrySlotsResearch),
+				container.NewTabItem("Reactions", u.industrySlotsReactions),
 			))),
 		),
 	)
@@ -162,22 +185,30 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
-	training := xwidget.NewNavPage(
-		"Training",
+	trainingMore := xwidget.NewIconButtonWithMenu(
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("", u.training.MoreItems()...),
+	)
+
+	skills := xwidget.NewNavPage(
+		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
-		newContentPage("Training", u.training),
+		newContentPage("Skills", container.NewAppTabs(
+			container.NewTabItem("Training", u.training),
+			container.NewTabItem("Search", u.skillSearch),
+		), trainingMore),
 	)
 	u.training.OnUpdate = func(expired int) {
 		var badge string
 		if expired > 0 {
 			badge = ihumanize.Comma(expired)
 		}
-		homeNav.SetItemBadge(training, badge)
+		homeNav.SetItemBadge(skills, badge)
 	}
 
 	homeNav = xwidget.NewNavDrawer(
 		overview,
-		allAssets,
+		assetSearch,
 		xwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
@@ -186,6 +217,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				container.NewTabItem("Jump Clones", u.clones),
 			)),
 		),
+		unifiedCommunications,
 		contracts,
 		overviewColonies,
 		industry,
@@ -195,11 +227,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			newContentPage("Loyalty Points", u.loyaltyPoints),
 		),
 		marketOrders,
-		training,
+		skills,
 		wealth,
 	)
 	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
-		if it == allAssets {
+		if it == assetSearch {
 			u.assetSearchAll.Focus()
 		}
 	}
@@ -216,9 +248,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.characterMails.OnUpdate = func(unread, _ int) {
 		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 	}
-	u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		characters.ShowSendMailWindow(u, character, mode, mail)
-	}
+	// u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	// 	characters.ShowSendMailWindow(u, character, mode, mail)
+	// }
 
 	characterCommunicationsNav := xwidget.NewNavPage(
 		"Communications",
@@ -297,6 +329,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Assets", container.NewAppTabs(
 			container.NewTabItem("Browse", u.corporationAssetBrowser),
 			container.NewTabItem("Search", u.corporationAssetSearch),
+		), xwidget.NewIconButtonWithMenu(
+			theme.MoreHorizontalIcon(),
+			fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
 		)),
 	)
 
@@ -457,7 +492,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	w := u.MainWindow()
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
 
-	u.snackbar.Bottom = statusBar.MinSize().Height
+	u.snackbar.BottomMargin = statusBar.MinSize().Height
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
@@ -485,7 +520,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.Do(func() {
 			characterHeader.SetTitle(s)
 			characterHeader.SetTitleAction(func() {
-				u.InfoViewer().Show(c.EveCharacter.EveEntity())
+				u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
 			})
 		})
 		go func() {
@@ -557,7 +592,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.Do(func() {
 			corporationHeader.SetTitle(s)
 			corporationHeader.SetTitleAction(func() {
-				u.InfoViewer().Show(c.EveCorporation.EveEntity())
+				u.InfoViewer().Show(c.EveCorporation.ToEveEntity())
 			})
 		})
 		go func() {
@@ -697,7 +732,7 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				u.ShowSnackbar(fmt.Sprintf(
 					"%s. This is a test snack bar at %s",
-					fake.WordsN(10),
+					fake.Paragraph(),
 					time.Now().Format("15:04:05.999999999"),
 				))
 				u.ShowSnackbar(fmt.Sprintf(
@@ -716,7 +751,7 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				u.InfoViewer().Show(c.EveCharacter.EveEntity())
+				u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
 			}},
 		"currentLocation": {
 			&desktop.CustomShortcut{
@@ -729,12 +764,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				el, ok := c.Location.Value()
+				id, ok := c.LocationID.Value()
 				if !ok {
 					u.ShowSnackbar("ERROR: Missing location for current character.")
 					return
 				}
-				u.InfoViewer().ShowLocation(el.ID)
+				u.InfoViewer().ShowLocation(id)
 			}},
 		"currentShip": {
 			&desktop.CustomShortcut{
@@ -747,12 +782,12 @@ func (u *DesktopUI) defineShortcuts() {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
 				}
-				ship, ok := c.Ship.Value()
+				shipTypeID, ok := c.ShipTypeID.Value()
 				if !ok {
 					u.ShowSnackbar("ERROR: Missing ship for current character.")
 					return
 				}
-				u.InfoViewer().ShowType(ship.ID, 0)
+				u.InfoViewer().ShowType(shipTypeID, 0)
 			}},
 		"search": {
 			&desktop.CustomShortcut{
@@ -827,27 +862,39 @@ func (u *DesktopUI) showUserDataDialog() {
 	d.Show()
 }
 
+// contentPage is a widget that is used produce a consistent appearance for each page.
+// It always has a title.
+// It can optionally have trailing items, i.e. icon buttons.
 type contentPage struct {
 	widget.BaseWidget
 
-	content fyne.CanvasObject
-	title   *widget.Label
+	content  fyne.CanvasObject
+	title    *widget.Label
+	trailing []fyne.CanvasObject
 }
 
-func newContentPage(title string, content fyne.CanvasObject) *contentPage {
+func newContentPage(title string, content fyne.CanvasObject, trailing ...fyne.CanvasObject) *contentPage {
 	l := widget.NewLabel(title)
 	l.SizeName = theme.SizeNameSubHeadingText
 	w := &contentPage{
-		content: content,
-		title:   l,
+		content:  content,
+		title:    l,
+		trailing: trailing,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewHBox(w.title)
+	if len(w.trailing) > 0 {
+		top.Add(layout.NewSpacer())
+		for _, x := range w.trailing {
+			top.Add(x)
+		}
+	}
 	c := container.NewBorder(
-		w.title,
+		top,
 		nil,
 		nil,
 		nil,

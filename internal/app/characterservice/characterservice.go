@@ -40,6 +40,7 @@ type EVENotificationService interface {
 }
 
 type Settings interface {
+	ApprovedContactCost() int
 	MarketOrderRetentionDays() int
 	MaxMails() int
 	MaxWalletTransactions() int
@@ -56,6 +57,8 @@ type Settings interface {
 }
 
 type StatusCache interface {
+	DeleteCharacter(characterID int64)
+	DeleteCorporation(corporationID int64)
 	SetCharacterSection(o *app.CharacterSectionStatus)
 	UpdateCharacters(ctx context.Context, st statuscache.Storage) error
 	UpdateCorporations(ctx context.Context, st statuscache.Storage) error

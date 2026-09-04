@@ -44,8 +44,8 @@ func TestCharacterAttributes(t *testing.T) {
 				xassert.Equal(t, 22, x.Memory)
 				xassert.Equal(t, 23, x.Perception)
 				xassert.Equal(t, 24, x.Willpower)
-				xassert.Equal(t, 7, x.BonusRemaps.ValueOrZero())
-				xassert.Equal(t, lastRemapDate, x.LastRemapDate.ValueOrZero())
+				xassert.EqualOptional(t, 7, x.BonusRemaps)
+				xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
 			}
 		}
 	})
@@ -78,8 +78,8 @@ func TestCharacterAttributes(t *testing.T) {
 				xassert.Equal(t, 22, x.Memory)
 				xassert.Equal(t, 23, x.Perception)
 				xassert.Equal(t, 24, x.Willpower)
-				xassert.Equal(t, 7, x.BonusRemaps.ValueOrZero())
-				xassert.Equal(t, lastRemapDate, x.LastRemapDate.ValueOrZero())
+				xassert.EqualOptional(t, 7, x.BonusRemaps)
+				xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
 			}
 		}
 	})

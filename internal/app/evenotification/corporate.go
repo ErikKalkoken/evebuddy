@@ -48,8 +48,8 @@ func (n charAppAcceptMsg) render(ctx context.Context, text string, _ time.Time) 
 	)
 	out := fmt.Sprintf(
 		"%s is now a member of %s.",
-		makeEveEntityProfileLink(entities[data.CorpID]),
-		makeEveEntityProfileLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 	)
 	body = out
 	return title, body, nil
@@ -89,8 +89,8 @@ func (n corpAppNewMsg) render(ctx context.Context, text string, _ time.Time) (st
 	title = fmt.Sprintf("New application from %s", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"New application from %s to join %s:\n\n> %s",
-		makeEveEntityProfileLink(entities[data.CharID]),
-		makeEveEntityProfileLink(entities[data.CorpID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
 	body = out
@@ -131,9 +131,9 @@ func (n corpAppInvitedMsg) render(ctx context.Context, text string, _ time.Time)
 	title = fmt.Sprintf("%s has been invited", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has been invited to join %s by %s:\n\n> %s",
-		makeEveEntityProfileLink(entities[data.CharID]),
-		makeEveEntityProfileLink(entities[data.CorpID]),
-		makeEveEntityProfileLink(entities[data.InvokingCharID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
+		makeInfoLink(entities[data.InvokingCharID]),
 		data.ApplicationText,
 	)
 	body = out
@@ -174,8 +174,8 @@ func (n charAppRejectMsg) render(ctx context.Context, text string, _ time.Time) 
 	title = fmt.Sprintf("%s rejected invitation", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"Application from %s to join %s has been rejected:\n\n> %s",
-		makeEveEntityProfileLink(entities[data.CharID]),
-		makeEveEntityProfileLink(entities[data.CorpID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
 	body = out
@@ -216,8 +216,8 @@ func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, _ time.
 	title = fmt.Sprintf("Application from %s rejected", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has rejected application from %s:\n\n> %s",
-		makeEveEntityProfileLink(entities[data.CorpID]),
-		makeEveEntityProfileLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
+		makeInfoLink(entities[data.CharID]),
 		data.ApplicationText,
 	)
 	if data.CustomMessage != "" {
@@ -261,8 +261,8 @@ func (n charAppWithdrawMsg) render(ctx context.Context, text string, _ time.Time
 	title = fmt.Sprintf("%s withdrew application", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has withdrawn application to join %s:\n\n>%s",
-		makeEveEntityProfileLink(entities[data.CorpID]),
-		makeEveEntityProfileLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
 	body = out
@@ -306,8 +306,8 @@ func (n charLeftCorpMsg) render(ctx context.Context, text string, _ time.Time) (
 	)
 	out := fmt.Sprintf(
 		"%s is no longer a member of %s.",
-		makeEveEntityProfileLink(entities[data.CorpID]),
-		makeEveEntityProfileLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CharID]),
+		makeInfoLink(entities[data.CorpID]),
 	)
 	body = out
 	return title, body, nil

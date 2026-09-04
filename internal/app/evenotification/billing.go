@@ -3,6 +3,7 @@ package evenotification
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -37,7 +38,7 @@ type billOutOfMoneyMsg struct {
 
 func (n billOutOfMoneyMsg) render(_ context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
-	var data goesi.CorpAllBillMsgV2
+	var data goesi.BillOutOfMoneyMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -93,11 +94,11 @@ func (n corpAllBillMsg) unmarshal(text string) (goesi.CorpAllBillMsgV2, set.Set[
 		return data, set.Set[int64]{}, err
 	}
 	ids := set.Of(data.CreditorID, data.DebtorID)
-	if data.ExternalID != 0 && data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
-		ids.Add(data.ExternalID)
+	if id := data.ExternalID; id != 0 && id != -1 && id == int64(int32(id)) {
+		ids.Add(id)
 	}
-	if data.ExternalID2 != 0 && data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
-		ids.Add(data.ExternalID2)
+	if id := data.ExternalID2; id != 0 && id != -1 && id == int64(int32(id)) {
+		ids.Add(id)
 	}
 	return data, ids, nil
 }
@@ -112,39 +113,53 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	if err != nil {
 		return title, body, err
 	}
-	var external1 string
+	external1Link := "?"
+	external1Name := "?"
 	if x, ok := entities[data.ExternalID]; ok && x.Name != "" {
-		external1 = x.Name
-	} else {
-		external1 = "?"
+		external1Link = makeInfoLink(x)
+		external1Name = x.Name
 	}
-	var external2 string
+	external2Link := "?"
+	external2Name := "?"
 	if x, ok := entities[data.ExternalID2]; ok && x.Name != "" {
-		external2 = x.Name
-	} else {
-		external2 = "?"
+		external2Link = makeInfoLink(x)
+		external2Name = x.Name
+	} else if id := data.ExternalID2; id > 0 && int64(int32(id)) != id {
+		// this is most likely a structure ID
+		o, err := n.eus.GetOrCreateLocationESI(ctx, id)
+		if err != nil {
+			slog.Warn("Failed to fetch location when rendering notification", "notificationType", "CorpAllBillMsg", "locationID", id, "error", err)
+		} else if et, ok := o.Type.Value(); ok {
+			link := fmt.Sprintf("showinfo:%d//%d", et.ID, id)
+			external2Link = makeMarkDownLink(o.Name, link)
+			external2Name = o.Name
+		}
 	}
-	var billPurpose string
+	var purposeShort, purposeLong string
 	switch data.BillTypeID {
 	case billTypeLease:
-		billPurpose = fmt.Sprintf("extending the lease of **%s** at **%s**", external1, external2)
+		purposeShort = fmt.Sprintf("extending lease at %s", external2Name)
+		purposeLong = fmt.Sprintf("extending the lease of %s at %s", external1Link, external2Link)
 	case billTypeAlliance:
-		billPurpose = fmt.Sprintf("maintenance of **%s**", external1)
+		purposeShort = fmt.Sprintf("maintenance of %s", external1Name)
+		purposeLong = fmt.Sprintf("maintenance of %s", external1Link)
 	case billTypeInfrastructureHub:
-		billPurpose = fmt.Sprintf("maintenance of infrastructure hub in **%s**", external1)
+		purposeShort = fmt.Sprintf("maintenance of infrastructure hub in %s", external1Name)
+		purposeLong = fmt.Sprintf("maintenance of infrastructure hub in %s", external1Link)
 	default:
-		billPurpose = "?"
+		purposeShort = "?"
+		purposeLong = "?"
 	}
 	body = fmt.Sprintf(
 		"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 		humanize.Commaf(data.Amount),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
-		makeEveEntityProfileLink(entities[data.DebtorID]),
-		makeEveEntityProfileLink(entities[data.CreditorID]),
+		makeInfoLink(entities[data.DebtorID]),
+		makeInfoLink(entities[data.CreditorID]),
 		fromLDAPTime(data.CurrentDate).Format(app.DateTimeFormat),
-		billPurpose,
+		purposeLong,
 	)
-	title = fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID))
+	title = fmt.Sprintf("Bill issued for %s", purposeShort)
 	return title, body, err
 }
 
@@ -165,7 +180,7 @@ func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text str
 	}
 	out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
 		"if not paid in time this Infrastructure Hub will self-destruct.",
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(solarSystem),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
 	)
 	body = out
@@ -192,11 +207,11 @@ func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, _ t
 	}
 	title = fmt.Sprintf(
 		"%s has self-destructed due to unpaid maintenance bills",
-		structureType.Name,
+		makeInfoLink(structureType),
 	)
 	out := fmt.Sprintf("%s in %s has self-destructed, as the standard maintenance bills where not paid.",
-		structureType.Name,
-		makeSolarSystemLink(solarSystem),
+		makeInfoLink(structureType),
+		makeInfoLink(solarSystem),
 	)
 	body = out
 	return title, body, nil

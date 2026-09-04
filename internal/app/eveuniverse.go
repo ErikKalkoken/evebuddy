@@ -27,25 +27,75 @@ type EveAlliance struct {
 	Ticker              string
 }
 
-func (ea EveAlliance) EveEntity() *EveEntity {
+func (ea EveAlliance) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
-// TODO: Add Bloodline (e.g. to show in character description)
+// eveBloodline2IconID maps a bloodline ID to an eveIcon ID.
+// A missing mapping means there is no icon for the bloodline.
+var eveBloodline2IconID = map[int64]int64{
+	1:  1633,
+	2:  1631,
+	3:  1634,
+	4:  1635,
+	5:  1628,
+	6:  1632,
+	7:  1629,
+	8:  1630,
+	11: 3022,
+	12: 3024,
+	13: 3023,
+	14: 3021,
+	19: 21404,
+}
+
+// EveBloodline is a bloodline in EVE Online.
+type EveBloodline struct {
+	Charisma     optional.Optional[int64]
+	Corporation  *EveEntity
+	Description  string
+	ID           int64
+	Intelligence optional.Optional[int64]
+	Memory       optional.Optional[int64]
+	Name         string
+	Perception   optional.Optional[int64]
+	Race         *EveRace
+	ShipTypeID   optional.Optional[int64]
+	Willpower    optional.Optional[int64]
+}
+
+// Logo returns the logo for a bloodline and reports whether one exists.
+func (eb *EveBloodline) Logo() (fyne.Resource, bool) {
+	if eb == nil {
+		return nil, false
+	}
+	iconID, ok := eveBloodline2IconID[eb.ID]
+	if !ok {
+		return nil, false
+	}
+	return eveicon.FromID(iconID)
+}
+
+// TODO: SecurityStatus not really optional. Change the DB field to nullable and remove workaround.
 
 // EveCharacter is a character in EVE Online.
 type EveCharacter struct {
-	Alliance       optional.Optional[*EveEntity]
-	Birthday       time.Time
-	Corporation    *EveEntity
-	Description    optional.Optional[string]
-	Faction        optional.Optional[*EveEntity]
-	Gender         string
-	ID             int64
-	Name           string
-	Race           *EveRace
-	SecurityStatus optional.Optional[float64]
-	Title          optional.Optional[string]
+	Alliance         optional.Optional[*EveEntity]
+	Birthday         time.Time
+	Bloodline        optional.Optional[*EntityShort] // optional, because added later
+	Corporation      *EveEntity
+	CorporationTitle optional.Optional[string]
+	Description      optional.Optional[string]
+	Faction          optional.Optional[*EveEntity]
+	Gender           string
+	ID               int64
+	Name             string
+	Race             *EveRace
+	SecurityStatus   optional.Optional[float64]
+}
+
+func (ec EveCharacter) CorporationTitlePlain() string {
+	return evehtml.ToPlain(ec.CorporationTitle.ValueOrZero())
 }
 
 func (ec EveCharacter) DescriptionPlain() string {
@@ -67,6 +117,9 @@ func (ec EveCharacter) EntityIDs() set.Set[int64] {
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
 func (ec EveCharacter) Equal(other *EveCharacter) bool {
+	if other == nil {
+		return false
+	}
 	return ec.ID == other.ID && ec.Hash() == other.Hash()
 }
 
@@ -79,10 +132,15 @@ func (ec EveCharacter) Hash() string {
 	factionID := optional.Map(ec.Faction, 0, func(x *EveEntity) int64 {
 		return x.ID
 	})
+	bloodlineID := optional.Map(ec.Bloodline, 0, func(x *EntityShort) int64 {
+		return x.ID
+	})
 	xx := []any{
 		allianceID,
+		bloodlineID,
 		ec.Birthday,
 		ec.Corporation.ID,
+		ec.CorporationTitle,
 		ec.Description,
 		factionID,
 		ec.Gender,
@@ -90,7 +148,6 @@ func (ec EveCharacter) Hash() string {
 		ec.Name,
 		ec.Race.ID,
 		math.Round(ec.SecurityStatus.ValueOrZero() * 100),
-		ec.Title,
 	}
 	var s []string
 	for _, x := range xx {
@@ -101,7 +158,7 @@ func (ec EveCharacter) Hash() string {
 	return h2
 }
 
-func (ec EveCharacter) EveEntity() *EveEntity {
+func (ec EveCharacter) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
@@ -129,13 +186,16 @@ func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
 
-func (ec EveCorporation) EveEntity() *EveEntity {
+func (ec EveCorporation) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
 }
 
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
 func (ec EveCorporation) Equal(other *EveCorporation) bool {
+	if other == nil {
+		return false
+	}
 	return ec.ID == other.ID && ec.Hash() == other.Hash()
 }
 
@@ -181,10 +241,23 @@ func (ec EveCorporation) Hash() string {
 	return h2
 }
 
-// TODO: Add race alliance
+// EveFaction is a faction in EVE Online.
+type EveFaction struct {
+	ID                 int64
+	Corporation        optional.Optional[*EveEntity]
+	Description        string
+	IsUnique           bool
+	MilitiaCorporation optional.Optional[*EveEntity]
+	Name               string
+	SizeFactor         float64
+	SolarSystem        optional.Optional[*EveEntity]
+	StationCount       int64
+	StationSystemCount int64
+}
 
 // EveRace is a race in EVE Online.
 type EveRace struct {
+	Faction     optional.Optional[*EveEntity] // optional, because added later
 	Description string
 	Name        string
 	ID          int64

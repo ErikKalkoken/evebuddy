@@ -49,7 +49,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, el, c2.Location.MustValue())
+		xassert.EqualOptional(t, el.ID, c2.LocationID)
 	})
 
 	t.Run("should create new location for a known structure", func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, el, c2.Location.MustValue())
+		xassert.EqualOptional(t, el.ID, c2.LocationID)
 	})
 
 	t.Run("should create new location for an unknown structure", func(t *testing.T) {
@@ -113,7 +113,6 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		assert.True(t, changed)
 		c2, err := s.GetCharacter(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, structureID, c2.Location.MustValue().ID)
-		xassert.Equal(t, es, c2.Location.MustValue().SolarSystem.MustValue())
+		xassert.EqualOptional(t, structureID, c2.LocationID)
 	})
 }

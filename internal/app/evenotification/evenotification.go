@@ -1,13 +1,10 @@
 // Package evenotification contains the business logic for dealing with EVE Online notifications.
 //
-// It defines the notification types and related categories
-// and provides a service for rendering notifications titles and bodies.
+// It provides a service for rendering notifications titles and bodies.
 package evenotification
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -228,89 +225,4 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 	}
 	r.setEveUniverse(s.eus)
 	return r, true
-}
-
-// fromLDAPTime converts an ldap time to golang time
-func fromLDAPTime(ldapTime int64) time.Time {
-	return time.Unix((ldapTime/10000000)-11644473600, 0).UTC()
-}
-
-// fromLDAPDuration converts an ldap duration to golang duration
-func fromLDAPDuration(ldapDuration int64) time.Duration {
-	return time.Duration(ldapDuration/10) * time.Microsecond
-}
-
-type dotlanType = uint
-
-const (
-	dotlanAlliance dotlanType = iota
-	dotlanCorporation
-	dotlanSolarSystem
-	dotlanRegion
-)
-
-func makeDotLanProfileURL(name string, typ dotlanType) string {
-	const baseURL = "https://evemaps.dotlan.net"
-	var path string
-	m := map[dotlanType]string{
-		dotlanAlliance:    "alliance",
-		dotlanCorporation: "corp",
-		dotlanSolarSystem: "system",
-		dotlanRegion:      "region",
-	}
-	path, ok := m[typ]
-	if !ok {
-		return name
-	}
-	name2 := strings.ReplaceAll(name, " ", "_")
-	return fmt.Sprintf("%s/%s/%s", baseURL, path, name2)
-}
-
-func makeSolarSystemLink(ess *app.EveSolarSystem) string {
-	x := fmt.Sprintf(
-		"%s (%s)",
-		makeMarkDownLink(ess.Name, makeDotLanProfileURL(ess.Name, dotlanSolarSystem)),
-		ess.Constellation.Region.Name,
-	)
-	return x
-}
-
-func makeCorporationLink(name string) string {
-	if name == "" {
-		return ""
-	}
-	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanCorporation))
-}
-
-func makeAllianceLink(name string) string {
-	if name == "" {
-		return ""
-	}
-	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanAlliance))
-}
-
-func makeEveWhoCharacterURL(id int64) string {
-	return fmt.Sprintf("https://evewho.com/character/%d", id)
-}
-
-func makeEveEntityProfileLink(o *app.EveEntity) string {
-	if o == nil {
-		return "?"
-	}
-	var url string
-	switch o.Category {
-	case app.EveEntityAlliance:
-		url = makeDotLanProfileURL(o.Name, dotlanAlliance)
-	case app.EveEntityCharacter:
-		url = makeEveWhoCharacterURL(o.ID)
-	case app.EveEntityCorporation:
-		url = makeDotLanProfileURL(o.Name, dotlanCorporation)
-	default:
-		return o.Name
-	}
-	return makeMarkDownLink(o.Name, url)
-}
-
-func makeMarkDownLink(label, url string) string {
-	return fmt.Sprintf("[%s](%s)", label, url)
 }

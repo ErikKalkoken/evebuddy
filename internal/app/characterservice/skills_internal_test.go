@@ -135,7 +135,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			c2, err := st.GetCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, 90000, c2.TrainedSP.ValueOrZero())
+				xassert.EqualOptional(t, 90000, c2.TrainedSP)
 			}
 			o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
 			if assert.NoError(t, err) {
@@ -311,6 +311,6 @@ func TestUpdateSkllPointsValue(t *testing.T) {
 		require.NoError(t, err)
 		c2, err := st.GetCharacter(t.Context(), c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, 1_000_000, c2.SkillPointsValue.ValueOrZero())
+		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
 	})
 }

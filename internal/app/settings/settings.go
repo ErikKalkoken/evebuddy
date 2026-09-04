@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"log/slog"
 	"slices"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -32,6 +33,8 @@ const (
 	settingLastCorporationID                  = "settingLastCorporationID"
 	settingLogLevel                           = "logLevel"
 	settingLogLevelDefault                    = "info"
+	settingApprovedContactCost                = "settingApprovedContactCost"
+	settingApprovedContactCostMax             = 1_000_000
 	settingMaxMails                           = "settingMaxMails"
 	settingMaxMailsDefault                    = 250
 	settingMaxMailsMax                        = 10_000
@@ -89,16 +92,26 @@ func New(p fyne.Preferences) *Settings {
 	return x
 }
 
-func (s Settings) DeveloperMode() bool {
+func (s *Settings) DeveloperMode() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.Bool(settingDeveloperMode)
 }
 
-func (s Settings) SetDeveloperMode(v bool) {
+func (s *Settings) SetDeveloperMode(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingDeveloperMode, v)
 }
 
 // LogLevelNames returns the names of all log levels in ascending order of severity.
-func (s Settings) LogLevelNames() []string {
+func (s *Settings) LogLevelNames() []string {
+	if s == nil {
+		return nil
+	}
+
 	type t struct {
 		name  string
 		level slog.Level
@@ -116,7 +129,10 @@ func (s Settings) LogLevelNames() []string {
 	return names
 }
 
-func (s Settings) LogLevelSlog() slog.Level {
+func (s *Settings) LogLevelSlog() slog.Level {
+	if s == nil {
+		return slog.Level(0)
+	}
 	x := s.LogLevel()
 	l, ok := logLevelName2Level[x]
 	if !ok {
@@ -132,65 +148,119 @@ var logLevelName2Level = map[string]slog.Level{
 	"warning": slog.LevelWarn,
 }
 
-func (s Settings) LogLevel() string {
+func (s *Settings) LogLevel() string {
+	if s == nil {
+		return ""
+	}
 	return s.p.StringWithFallback(settingLogLevel, settingLogLevelDefault)
 }
 
-func (s Settings) LogLevelDefault() string {
+func (s *Settings) LogLevelDefault() string {
+	if s == nil {
+		return ""
+	}
 	return settingLogLevelDefault
 }
 
-func (s Settings) ResetLogLevel() {
+func (s *Settings) ResetLogLevel() {
+	if s == nil {
+		return
+	}
 	s.SetLogLevel(settingLogLevelDefault)
 }
 
-func (s Settings) SetLogLevel(l string) {
+func (s *Settings) SetLogLevel(l string) {
+	if s == nil {
+		return
+	}
 	s.p.SetString(settingLogLevel, l)
 }
 
-func (s Settings) MaxMails() int {
+func (s *Settings) ApprovedContactCost() int {
+	if s == nil {
+		return 0
+	}
+	return s.p.IntWithFallback(settingApprovedContactCost, 0)
+}
+
+func (s *Settings) ApprovedContactCostPresets() (minimum int, maximum int, def int) {
+	minimum = 0
+	maximum = settingApprovedContactCostMax
+	def = 0
+	return
+}
+
+func (s *Settings) SetApprovedContactCost(v int) {
+	if s == nil {
+		return
+	}
+	s.p.SetInt(settingApprovedContactCost, v)
+}
+
+func (s *Settings) MaxMails() int {
+	if s == nil {
+		return 0
+	}
 	return s.p.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 }
 
-func (s Settings) MaxMailsPresets() (minimum int, maximum int, def int) {
+func (s *Settings) MaxMailsPresets() (minimum int, maximum int, def int) {
 	minimum = 0
 	maximum = settingMaxMailsMax
 	def = settingMaxMailsDefault
 	return
 }
 
-func (s Settings) SetMaxMails(v int) {
+func (s *Settings) SetMaxMails(v int) {
+	if s == nil {
+		return
+	}
 	s.p.SetInt(settingMaxMails, v)
 }
 
-func (s Settings) MarketOrderRetentionDays() int {
+func (s *Settings) MarketOrderRetentionDays() int {
+	if s == nil {
+		return 0
+	}
 	return s.p.IntWithFallback(settingMarketOrdersRetentionDays, settingMarketOrderRetentionDaysDefault)
 }
 
-func (s Settings) MarketOrderRetentionDaysPresets() (minimum int, maximum int, def int) {
+func (s *Settings) MarketOrderRetentionDaysPresets() (minimum int, maximum int, def int) {
 	minimum = settingMarketOrderRetentionDaysMin
 	maximum = settingMarketOrderRetentionDaysMax
 	def = settingMarketOrderRetentionDaysDefault
 	return
 }
 
-func (s Settings) SetMarketOrdersRetentionDay(v int) {
+func (s *Settings) SetMarketOrdersRetentionDay(v int) {
+	if s == nil {
+		return
+	}
 	s.p.SetInt(settingMarketOrdersRetentionDays, v)
 }
 
-func (s Settings) SysTrayEnabled() bool {
+func (s *Settings) SysTrayEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
 }
 
-func (s Settings) SysTrayEnabledDefault() bool {
+func (s *Settings) SysTrayEnabledDefault() bool {
 	return settingSysTrayEnabledDefault
 }
 
-func (s Settings) SetSysTrayEnabled(v bool) {
+func (s *Settings) SetSysTrayEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingSysTrayEnabled, v)
 }
 
-func (s Settings) WindowSize() fyne.Size {
+func (s *Settings) WindowSize() fyne.Size {
+	if s == nil {
+		return fyne.Size{}
+	}
 	x := s.p.FloatList(settingWindowsSize)
 	if len(x) < 2 {
 		return fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault)
@@ -198,152 +268,246 @@ func (s Settings) WindowSize() fyne.Size {
 	return fyne.NewSize(float32(x[0]), float32(x[1]))
 }
 
-func (s Settings) ResetWindowSize() {
+func (s *Settings) ResetWindowSize() {
+	if s == nil {
+		return
+	}
 	s.SetWindowSize(fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault))
 }
 
-func (s Settings) SetWindowSize(v fyne.Size) {
+func (s *Settings) SetWindowSize(v fyne.Size) {
+	if s == nil {
+		return
+	}
 	s.p.SetFloatList(settingWindowsSize, []float64{float64(v.Width), float64(v.Height)})
 }
 
-func (s Settings) ResetTabsMainID() {
+func (s *Settings) ResetTabsMainID() {
+	if s == nil {
+		return
+	}
 	s.SetTabsMainID(settingTabsMainIDDefault)
 }
 
-func (s Settings) SetTabsMainID(v int) {
+func (s *Settings) SetTabsMainID(v int) {
+	if s == nil {
+		return
+	}
 	s.p.SetInt(settingTabsMainID, v)
 }
 
-func (s Settings) LastCharacterID() int64 {
-	return int64(s.p.Int(settingLastCharacterID))
+func (s *Settings) LastCharacterID() int64 {
+	if s == nil {
+		return 0
+	}
+	// Stored as a string rather than via Preferences' int API: that API is backed by the
+	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE character IDs above math.MaxInt32.
+	v, err := strconv.ParseInt(s.p.String(settingLastCharacterID), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
-func (s Settings) ResetLastCharacterID() {
+func (s *Settings) ResetLastCharacterID() {
+	if s == nil {
+		return
+	}
 	s.SetLastCharacterID(0)
 }
 
-func (s Settings) SetLastCharacterID(id int64) {
-	s.p.SetInt(settingLastCharacterID, int(id))
+func (s *Settings) SetLastCharacterID(id int64) {
+	if s == nil {
+		return
+	}
+	// Stored as a string; see LastCharacterID for why.
+	s.p.SetString(settingLastCharacterID, strconv.FormatInt(id, 10))
 }
 
-func (s Settings) LastCorporationID() int64 {
-	return int64(s.p.Int(settingLastCorporationID))
+func (s *Settings) LastCorporationID() int64 {
+	if s == nil {
+		return 0
+	}
+	// Stored as a string rather than via Preferences' int API: that API is backed by the
+	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE corporation IDs above math.MaxInt32.
+	v, err := strconv.ParseInt(s.p.String(settingLastCorporationID), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
-func (s Settings) ResetLastCorporationID() {
+func (s *Settings) ResetLastCorporationID() {
+	if s == nil {
+		return
+	}
 	s.SetLastCorporationID(0)
 }
 
-func (s Settings) SetLastCorporationID(id int64) {
-	s.p.SetInt(settingLastCorporationID, int(id))
+func (s *Settings) SetLastCorporationID(id int64) {
+	if s == nil {
+		return
+	}
+	// Stored as a string; see LastCorporationID for why.
+	s.p.SetString(settingLastCorporationID, strconv.FormatInt(id, 10))
 }
 
-func (s Settings) MaxWalletTransactions() int {
+func (s *Settings) MaxWalletTransactions() int {
+	if s == nil {
+		return 0
+	}
 	return s.p.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 }
 
-func (s Settings) MaxWalletTransactionsPresets() (minimum int, maximum int, def int) {
+func (s *Settings) MaxWalletTransactionsPresets() (minimum int, maximum int, def int) {
 	minimum = 0
 	maximum = settingMaxWalletTransactionsMax
 	def = settingMaxWalletTransactionsDefault
 	return
 }
 
-func (s Settings) ResetMaxWalletTransactions() {
+func (s *Settings) ResetMaxWalletTransactions() {
+	if s == nil {
+		return
+	}
 	s.SetMaxWalletTransactions(settingMaxWalletTransactionsDefault)
 }
 
-func (s Settings) SetMaxWalletTransactions(v int) {
+func (s *Settings) SetMaxWalletTransactions(v int) {
+	if s == nil {
+		return
+	}
 	s.p.SetInt(settingMaxWalletTransactions, v)
 }
 
-func (s Settings) NotifyTimeoutHours() int {
+func (s *Settings) NotifyTimeoutHours() int {
+	if s == nil {
+		return 0
+	}
 	return s.p.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 }
 
-func (s Settings) NotifyTimeoutHoursPresets() (minimum int, maximum int, def int) {
+func (s *Settings) NotifyTimeoutHoursPresets() (minimum int, maximum int, def int) {
 	minimum = settingNotifyTimeoutHoursMin
 	maximum = settingNotifyTimeoutHoursMax
 	def = settingNotifyTimeoutHoursDefault
 	return
 }
 
-func (s Settings) ResetNotifyTimeoutHours() {
+func (s *Settings) ResetNotifyTimeoutHours() {
+	if s == nil {
+		return
+	}
 	s.SetNotifyTimeoutHours(settingNotifyTimeoutHoursDefault)
 }
 
-func (s Settings) SetNotifyTimeoutHours(v int) {
+func (s *Settings) SetNotifyTimeoutHours(v int) {
+	if s == nil {
+		return
+	}
 	s.p.SetInt(settingNotifyTimeoutHours, v)
 }
 
-func (s Settings) NotificationTypesEnabled() set.Set[string] {
+func (s *Settings) NotificationTypesEnabled() set.Set[string] {
+	if s == nil {
+		return set.Set[string]{}
+	}
 	return set.Of(s.p.StringList(settingNotificationTypesEnabled)...)
 }
 
-func (s Settings) ResetNotificationTypesEnabled() {
+func (s *Settings) ResetNotificationTypesEnabled() {
+	if s == nil {
+		return
+	}
 	s.SetNotificationTypesEnabled(set.Of[string]())
 }
 
-func (s Settings) SetNotificationTypesEnabled(v set.Set[string]) {
+func (s *Settings) SetNotificationTypesEnabled(v set.Set[string]) {
+	if s == nil {
+		return
+	}
 	s.p.SetStringList(settingNotificationTypesEnabled, slices.Collect(v.All()))
 }
 
-func (s Settings) NotifyCommunicationsEarliest() time.Time {
+func (s *Settings) NotifyCommunicationsEarliest() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
 	return s.calcNotifyEarliest(settingNotifyCommunicationsEarliest)
 }
 
-func (s Settings) SetNotifyCommunicationsEarliest(t time.Time) {
+func (s *Settings) SetNotifyCommunicationsEarliest(t time.Time) {
+	if s == nil {
+		return
+	}
 	s.setEarliest(settingNotifyCommunicationsEarliest, t)
 }
 
-func (s Settings) NotifyContractsEarliest() time.Time {
+func (s *Settings) NotifyContractsEarliest() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
 	return s.calcNotifyEarliest(settingNotifyContractsEarliest)
 }
 
-func (s Settings) SetNotifyContractsEarliest(t time.Time) {
+func (s *Settings) SetNotifyContractsEarliest(t time.Time) {
+	if s == nil {
+		return
+	}
 	s.setEarliest(settingNotifyContractsEarliest, t)
 }
 
-func (s Settings) NotifyMailsEarliest() time.Time {
+func (s *Settings) NotifyMailsEarliest() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
 	return s.calcNotifyEarliest(settingNotifyMailsEarliest)
 }
-func (s Settings) SetNotifyMailsEarliest(t time.Time) {
+
+func (s *Settings) SetNotifyMailsEarliest(t time.Time) {
+	if s == nil {
+		return
+	}
 	s.setEarliest(settingNotifyMailsEarliest, t)
 }
 
-func (s Settings) NotifyPIEarliest() time.Time {
+func (s *Settings) NotifyPIEarliest() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
 	return s.calcNotifyEarliest(settingNotifyPIEarliest)
 }
-func (s Settings) SetNotifyPIEarliest(t time.Time) {
+
+func (s *Settings) SetNotifyPIEarliest(t time.Time) {
+	if s == nil {
+		return
+	}
 	s.setEarliest(settingNotifyPIEarliest, t)
 }
 
-func (s Settings) NotifyTrainingEarliest() time.Time {
+func (s *Settings) NotifyTrainingEarliest() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
 	return s.calcNotifyEarliest(settingNotifyTrainingEarliest)
 }
-func (s Settings) SetNotifyTrainingEarliest(t time.Time) {
+
+func (s *Settings) SetNotifyTrainingEarliest(t time.Time) {
+	if s == nil {
+		return
+	}
 	s.setEarliest(settingNotifyTrainingEarliest, t)
 }
 
-// func (s AppSettings) getEarliest(key string) time.Time {
-// 	x := s.p.String(key)
-// 	t, ok := string2time(x)
-// 	if !ok {
-// 		// Recording the earliest when enabling a switch was added later for mails and communications
-// 		// This workaround avoids a potential notification spam from older items.
-// 		t = time.Now().UTC().Add(-notifyEarliestFallback)
-// 		s.setEarliest(key, t)
-// 	}
-// 	return t
-// }
-
-func (s Settings) setEarliest(key string, t time.Time) {
+func (s *Settings) setEarliest(key string, t time.Time) {
 	s.p.SetString(key, timeToString(t))
 }
 
 // calcNotifyEarliest returns the earliest time for a class of notifications.
 // Might return a zero time in some circumstances.
-func (s Settings) calcNotifyEarliest(key string) time.Time {
+func (s *Settings) calcNotifyEarliest(key string) time.Time {
 	earliest, ok := string2time(s.p.String(key))
 	if !ok {
 		// Recording the earliest when enabling a switch was added later for mails and communications
@@ -375,150 +539,272 @@ func string2time(s string) (time.Time, bool) {
 	return t, true
 }
 
-func (s Settings) NotifyCommunicationsEnabled() bool {
+func (s *Settings) NotifyCommunicationsEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 }
 
-func (s Settings) NotifyCommunicationsEnabledDefault() bool {
+func (s *Settings) NotifyCommunicationsEnabledDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingNotifyCommunicationsEnabledDefault
 }
 
-func (s Settings) SetNotifyCommunicationsEnabled(v bool) {
+func (s *Settings) SetNotifyCommunicationsEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingNotifyCommunicationsEnabled, v)
 }
 
-func (s Settings) NotifyContractsEnabled() bool {
+func (s *Settings) NotifyContractsEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault)
 }
 
-func (s Settings) NotifyContractsEnabledDefault() bool {
+func (s *Settings) NotifyContractsEnabledDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingNotifyContractsEnabledDefault
 }
 
-func (s Settings) SetNotifyContractsEnabled(v bool) {
+func (s *Settings) SetNotifyContractsEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingNotifyContractsEnabled, v)
 }
 
-func (s Settings) NotifyMailsEnabled() bool {
+func (s *Settings) NotifyMailsEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 }
 
-func (s Settings) NotifyMailsEnabledDefault() bool {
+func (s *Settings) NotifyMailsEnabledDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingNotifyMailsEnabledDefault
 }
 
-func (s Settings) SetNotifyMailsEnabled(v bool) {
+func (s *Settings) SetNotifyMailsEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingNotifyMailsEnabled, v)
 }
 
-func (s Settings) NotifyPIEnabled() bool {
+func (s *Settings) NotifyPIEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault)
 }
 
-func (s Settings) NotifyPIEnabledDefault() bool {
+func (s *Settings) NotifyPIEnabledDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingNotifyPIEnabledDefault
 }
 
-func (s Settings) SetNotifyPIEnabled(v bool) {
+func (s *Settings) SetNotifyPIEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingNotifyPIEnabled, v)
 }
 
-func (s Settings) NotifyTrainingEnabled() bool {
+func (s *Settings) NotifyTrainingEnabled() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
 }
 
-func (s Settings) NotifyTrainingEnabledDefault() bool {
+func (s *Settings) NotifyTrainingEnabledDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingNotifyTrainingEnabledDefault
 }
 
-func (s Settings) SetNotifyTrainingEnabled(v bool) {
+func (s *Settings) SetNotifyTrainingEnabled(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingNotifyTrainingEnabled, v)
 }
 
-func (s Settings) TabsMainID() int {
+func (s *Settings) TabsMainID() int {
+	if s == nil {
+		return 0
+	}
 	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
 }
 
-func (s Settings) RecentSearches() []int64 {
-	return xslices.Map(s.p.IntList(settingRecentSearches), func(x int) int64 {
-		return int64(x)
-	})
+func (s *Settings) RecentSearches() []int64 {
+	if s == nil {
+		return nil
+	}
+	// Stored as strings rather than via Preferences' IntList API: that API is backed by
+	// the platform's int type, which is 32-bit on some platforms (e.g. Android) and would
+	// truncate EVE IDs above math.MaxInt32.
+	raw := s.p.StringList(settingRecentSearches)
+	out := make([]int64, 0, len(raw))
+	for _, x := range raw {
+		v, err := strconv.ParseInt(x, 10, 64)
+		if err != nil {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }
-func (s Settings) SetRecentSearches(v []int64) {
-	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int64) int {
-		return int(x)
+
+func (s *Settings) SetRecentSearches(v []int64) {
+	if s == nil {
+		return
+	}
+	// Stored as strings; see RecentSearches for why.
+	s.p.SetStringList(settingRecentSearches, xslices.Map(v, func(x int64) string {
+		return strconv.FormatInt(x, 10)
 	}))
 }
 
-func (s Settings) PreferMarketTab() bool {
+func (s *Settings) PreferMarketTab() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.Bool(settingPreferMarketTab)
 }
-func (s Settings) ResetPreferMarketTab() {
+
+func (s *Settings) ResetPreferMarketTab() {
+	if s == nil {
+		return
+	}
 	s.SetPreferMarketTab(false)
 }
 
-func (s Settings) SetPreferMarketTab(v bool) {
+func (s *Settings) SetPreferMarketTab(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingPreferMarketTab, v)
 }
 
-func (s Settings) HideLimitedCorporations() bool {
+func (s *Settings) HideLimitedCorporations() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.Bool(settingHideLimitedCorporations)
 }
-func (s Settings) HideLimitedCorporationsDefault() bool {
+
+func (s *Settings) HideLimitedCorporationsDefault() bool {
+	if s == nil {
+		return false
+	}
 	return settingHideLimitedCorporationsDefault
 }
 
-func (s Settings) SetHideLimitedCorporations(v bool) {
+func (s *Settings) SetHideLimitedCorporations(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingHideLimitedCorporations, v)
 }
 
-func (s Settings) ColorTheme() ColorTheme {
+func (s *Settings) ColorTheme() ColorTheme {
+	if s == nil {
+		return ColorTheme("")
+	}
 	x := s.p.StringWithFallback(settingColorTheme, string(settingColorThemeDefault))
 	return ColorTheme(x)
 }
 
-func (s Settings) ColorThemeDefault() ColorTheme {
+func (s *Settings) ColorThemeDefault() ColorTheme {
+	if s == nil {
+		return ColorTheme("")
+	}
 	return settingColorThemeDefault
 }
 
-func (s Settings) ResetColorTheme() {
+func (s *Settings) ResetColorTheme() {
+	if s == nil {
+		return
+	}
 	s.SetColorTheme(settingColorThemeDefault)
 }
 
-func (s Settings) SetColorTheme(v ColorTheme) {
+func (s *Settings) SetColorTheme(v ColorTheme) {
+	if s == nil {
+		return
+	}
 	s.p.SetString(settingColorTheme, string(v))
 }
 
-func (s Settings) FyneScale() float64 {
+func (s *Settings) FyneScale() float64 {
+	if s == nil {
+		return 0
+	}
 	return s.p.FloatWithFallback(settingFyneScale, settingFyneScaleDefault)
 }
 
-func (s Settings) FyneScaleDefault() float64 {
+func (s *Settings) FyneScaleDefault() float64 {
+	if s == nil {
+		return 0
+	}
 	return settingFyneScaleDefault
 }
 
-func (s Settings) ResetFyneScale() {
+func (s *Settings) ResetFyneScale() {
+	if s == nil {
+		return
+	}
 	s.SetFyneScale(settingFyneScaleDefault)
 }
 
-func (s Settings) SetFyneScale(v float64) {
+func (s *Settings) SetFyneScale(v float64) {
+	if s == nil {
+		return
+	}
 	s.p.SetFloat(settingFyneScale, v)
 }
 
-func (s Settings) DisableDPIDetection() bool {
+func (s *Settings) DisableDPIDetection() bool {
+	if s == nil {
+		return false
+	}
 	return s.p.Bool(settingDisableDPIDetection)
 }
 
-func (s Settings) ResetDisableDPIDetection() {
+func (s *Settings) ResetDisableDPIDetection() {
+	if s == nil {
+		return
+	}
 	s.SetDisableDPIDetection(false)
 }
 
-func (s Settings) SetDisableDPIDetection(v bool) {
+func (s *Settings) SetDisableDPIDetection(v bool) {
+	if s == nil {
+		return
+	}
 	s.p.SetBool(settingDisableDPIDetection, v)
 }
 
 // ResetUI resets all UI related settings to default.
-func (s Settings) ResetUI() {
+func (s *Settings) ResetUI() {
+	if s == nil {
+		return
+	}
 	s.ResetTabsMainID()
 	s.ResetWindowSize()
 	s.ResetColorTheme()
@@ -529,8 +815,16 @@ func (s Settings) ResetUI() {
 // Keys returns all setting keys. Mostly to know what to delete.
 func Keys() []string {
 	return []string{
+		settingApprovedContactCost,
+		settingColorTheme,
 		settingDeveloperMode,
+		settingDisableDPIDetection,
+		settingFyneScale,
+		settingHideLimitedCorporations,
 		settingLastCharacterID,
+		settingLastCorporationID,
+		settingLogLevel,
+		settingMarketOrdersRetentionDays,
 		settingMaxMails,
 		settingMaxWalletTransactions,
 		settingNotificationTypesEnabled,
@@ -545,6 +839,7 @@ func Keys() []string {
 		settingNotifyTimeoutHours,
 		settingNotifyTrainingEarliest,
 		settingNotifyTrainingEnabled,
+		settingPreferMarketTab,
 		settingRecentSearches,
 		settingSysTrayEnabled,
 		settingTabsMainID,

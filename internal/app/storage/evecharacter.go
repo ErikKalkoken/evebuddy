@@ -14,38 +14,40 @@ import (
 )
 
 type CreateEveCharacterParams struct {
-	ID             int64
-	AllianceID     optional.Optional[int64]
-	Birthday       time.Time
-	CorporationID  int64
-	Description    optional.Optional[string]
-	FactionID      optional.Optional[int64]
-	Gender         string
-	Name           string
-	RaceID         int64
-	SecurityStatus optional.Optional[float64]
-	Title          optional.Optional[string]
+	AllianceID       optional.Optional[int64]
+	Birthday         time.Time
+	BloodlineID      int64
+	CorporationID    int64
+	CorporationTitle optional.Optional[string]
+	Description      optional.Optional[string]
+	FactionID        optional.Optional[int64]
+	Gender           string
+	ID               int64
+	Name             string
+	RaceID           int64
+	SecurityStatus   optional.Optional[float64]
 }
 
 func (st *Storage) UpdateOrCreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateEveCharacter: %+v: %w", arg, err)
 	}
-	if arg.ID == 0 || arg.CorporationID == 0 || arg.RaceID == 0 {
+	if arg.ID == 0 || arg.CorporationID == 0 || arg.RaceID == 0 || arg.BloodlineID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateEveCharacter(ctx, queries.UpdateOrCreateEveCharacterParams{
-		ID:             arg.ID,
+		AllianceID:     optional.ToNullInt64(arg.AllianceID),
 		Birthday:       arg.Birthday,
+		BloodlineID:    NewNullInt64(arg.BloodlineID),
 		CorporationID:  arg.CorporationID,
 		Description:    arg.Description.ValueOrZero(),
+		FactionID:      optional.ToNullInt64(arg.FactionID),
 		Gender:         arg.Gender,
+		ID:             arg.ID,
 		Name:           arg.Name,
 		RaceID:         arg.RaceID,
 		SecurityStatus: arg.SecurityStatus.ValueOrZero(),
-		Title:          arg.Title.ValueOrZero(),
-		AllianceID:     optional.ToNullInt64(arg.AllianceID),
-		FactionID:      optional.ToNullInt64(arg.FactionID),
+		Title:          arg.CorporationTitle.ValueOrZero(),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -64,26 +66,37 @@ func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int64) er
 func (st *Storage) GetEveCharacter(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
 	r, err := st.qRO.GetEveCharacter(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("get EveCharacter %d: %w", characterID, convertGetError(err))
+		return nil, fmt.Errorf("GetEveCharacter %d: %w", characterID, convertGetError(err))
 	}
-	alliance := nullEveEntry{
+	eea := nullAlliance{
 		id:       r.EveCharacter.AllianceID,
 		name:     r.AllianceName,
 		category: r.AllianceCategory,
 	}
-	faction := nullEveEntry{
+	eef := nullFaction{
 		id:       r.EveCharacter.FactionID,
 		name:     r.FactionName,
 		category: r.FactionCategory,
 	}
-	c := eveCharacterFromDBModel(
+	eb := nullEntity{
+		id:   r.BloodlineID,
+		name: r.BloodlineName,
+	}
+	eer := nullRaceFaction{
+		id:       r.EveRace.FactionID,
+		category: NewNullString(eveEntityFaction),
+		name:     r.RaceFactionName,
+	}
+	o := eveCharacterFromDBModel(
 		r.EveCharacter,
 		r.EveEntity,
 		r.EveRace,
-		alliance,
-		faction,
+		eea,
+		eef,
+		eb,
+		eer,
 	)
-	return c, nil
+	return o, nil
 }
 
 func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int64], error) {
@@ -93,35 +106,6 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int64], err
 	}
 	ids2 := set.Collect(slices.Values(ids))
 	return ids2, nil
-}
-
-func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateEveCharacter: %+v: %w", c, err)
-	}
-	if c.ID == 0 || c.Corporation == nil {
-		return wrapErr(app.ErrInvalid)
-	}
-	allianceID := optional.Map(c.Alliance, 0, func(x *app.EveEntity) int64 {
-		return x.ID
-	})
-	factionID := optional.Map(c.Faction, 0, func(x *app.EveEntity) int64 {
-		return x.ID
-	})
-	err := st.qRW.UpdateEveCharacter(ctx, queries.UpdateEveCharacterParams{
-		ID:             c.ID,
-		CorporationID:  c.Corporation.ID,
-		Description:    c.Description.ValueOrZero(),
-		Name:           c.Name,
-		SecurityStatus: c.SecurityStatus.ValueOrZero(),
-		Title:          c.Title.ValueOrZero(),
-		AllianceID:     NewNullInt64(allianceID),
-		FactionID:      NewNullInt64(factionID),
-	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	return nil
 }
 
 func (st *Storage) UpdateEveCharacterName(ctx context.Context, characterID int64, name string) error {
@@ -139,23 +123,27 @@ func (st *Storage) UpdateEveCharacterName(ctx context.Context, characterID int64
 
 func eveCharacterFromDBModel(
 	character queries.EveCharacter,
-	corporation queries.EveEntity,
-	race queries.EveRace,
-	alliance nullEveEntry,
-	faction nullEveEntry,
+	eec queries.EveEntity,
+	er queries.EveRace,
+	eea nullAlliance,
+	eef nullFaction,
+	eb nullEntity,
+	eer nullRaceFaction,
+
 ) *app.EveCharacter {
 	o := app.EveCharacter{
-		Alliance:       eveEntityFromNullableDBModel(alliance),
-		Birthday:       character.Birthday,
-		Corporation:    eveEntityFromDBModel(corporation),
-		Description:    optional.FromZeroValue(character.Description),
-		Gender:         character.Gender,
-		Faction:        eveEntityFromNullableDBModel(faction),
-		ID:             character.ID,
-		Name:           character.Name,
-		Race:           eveRaceFromDBModel(race),
-		SecurityStatus: optional.FromZeroValue(character.SecurityStatus),
-		Title:          optional.FromZeroValue(character.Title),
+		Alliance:         eveEntityFromNullableDBModel(nullEveEntity(eea)),
+		Birthday:         character.Birthday,
+		Corporation:      eveEntityFromDBModel(eec),
+		Description:      optional.FromZeroValue(character.Description),
+		Gender:           character.Gender,
+		Faction:          eveEntityFromNullableDBModel(nullEveEntity(eef)),
+		ID:               character.ID,
+		Name:             character.Name,
+		Race:             eveRaceFromDBModel(er, nullEveEntity(eer)),
+		SecurityStatus:   optional.New(character.SecurityStatus),
+		CorporationTitle: optional.FromZeroValue(character.Title),
+		Bloodline:        entityShortFromNullableDBModel(eb),
 	}
 	return &o
 }

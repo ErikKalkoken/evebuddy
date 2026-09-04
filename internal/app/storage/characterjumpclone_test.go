@@ -1,10 +1,10 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -17,7 +17,7 @@ import (
 func TestCharacterJumpClone(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new empty clone", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -30,19 +30,16 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        optional.New("dummy"),
 		}
 		// when
-		err := st.CreateCharacterJumpClone(ctx, arg)
+		err := st.CreateCharacterJumpClone(t.Context(), arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 5, x.CloneID)
-				xassert.Equal(t, "dummy", x.Name.ValueOrZero())
-				xassert.Equal(t, location.ToShort(), x.Location)
-				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.ID, x.Region.ID)
-				xassert.Equal(t, location.SolarSystem.ValueOrZero().Constellation.Region.Name, x.Region.Name)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterJumpClone(t.Context(), c.ID, 5)
+		require.NoError(t, err)
+		xassert.Equal(t, 5, x.CloneID)
+		xassert.EqualOptional(t, "dummy", x.Name)
+		xassert.Equal(t, location.ToEveLocationShort(), x.Location)
 	})
+
 	t.Run("can create new clone with implants", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -57,19 +54,18 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        optional.New("dummy"),
 		}
 		// when
-		err := st.CreateCharacterJumpClone(ctx, arg)
+		err := st.CreateCharacterJumpClone(t.Context(), arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, location.ID, x.Location.ID)
-				if assert.NotEmpty(t, x.Implants) {
-					y := x.Implants[0]
-					xassert.Equal(t, eveType, y.EveType)
-				}
-			}
+		require.NoError(t, err)
+		x, err := st.GetCharacterJumpClone(t.Context(), c.ID, 5)
+		require.NoError(t, err)
+		xassert.Equal(t, location.ID, x.Location.ID)
+		if assert.NotEmpty(t, x.Implants) {
+			y := x.Implants[0]
+			xassert.Equal(t, eveType, y.EveType)
 		}
 	})
+
 	t.Run("can replace existing clone", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -87,20 +83,19 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        optional.New("dummy"),
 		}
 		// when
-		err := st.ReplaceCharacterJumpClones(ctx, c.ID, []storage.CreateCharacterJumpCloneParams{arg})
+		err := st.ReplaceCharacterJumpClones(t.Context(), c.ID, []storage.CreateCharacterJumpCloneParams{arg})
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, location.ID, x.Location.ID)
-				xassert.Equal(t, "dummy", x.Name.ValueOrZero())
-				if assert.NotEmpty(t, x.Implants) {
-					y := x.Implants[0]
-					xassert.Equal(t, eveType, y.EveType)
-				}
-			}
+		require.NoError(t, err)
+		x, err := st.GetCharacterJumpClone(t.Context(), c.ID, 5)
+		require.NoError(t, err)
+		xassert.Equal(t, location.ID, x.Location.ID)
+		xassert.EqualOptional(t, "dummy", x.Name)
+		if assert.NotEmpty(t, x.Implants) {
+			y := x.Implants[0]
+			xassert.Equal(t, eveType, y.EveType)
 		}
 	})
+
 	t.Run("can list clones for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -112,15 +107,15 @@ func TestCharacterJumpClone(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		oo, err := st.ListCharacterJumpClones(ctx, c.ID)
+		oo, err := st.ListCharacterJumpClones(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) {
-			ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int64 {
-				return a.CloneID
-			})
-			assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
-		}
+		require.NoError(t, err)
+		ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int64 {
+			return a.CloneID
+		})
+		assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
 	})
+
 	t.Run("can list clones for all characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -130,13 +125,12 @@ func TestCharacterJumpClone(t *testing.T) {
 			Implants: []int64{eveType.ID},
 		})
 		// when
-		oo, err := st.ListAllCharacterJumpClones(ctx)
+		oo, err := st.ListAllCharacterJumpClones(t.Context())
 		// then
-		if assert.NoError(t, err) {
-			ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int64 {
-				return a.CloneID
-			})
-			assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
-		}
+		require.NoError(t, err)
+		ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int64 {
+			return a.CloneID
+		})
+		assert.ElementsMatch(t, []int64{x1.CloneID, x2.CloneID}, ids)
 	})
 }

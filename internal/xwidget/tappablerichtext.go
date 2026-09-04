@@ -50,7 +50,9 @@ func (w *TappableRichText) Cursor() desktop.Cursor {
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *TappableRichText) MouseIn(_ *desktop.MouseEvent) {
-	w.hovered = true
+	if w.OnTapped != nil {
+		w.hovered = true
+	}
 }
 
 func (w *TappableRichText) MouseMoved(*desktop.MouseEvent) {

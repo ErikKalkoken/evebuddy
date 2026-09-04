@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/xwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestStrippedList_Create(t *testing.T) {
@@ -15,7 +15,7 @@ func TestStrippedList_Create(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 
 	data := []string{"alpha", "bravo", "charlie"}
-	list := iwidget.NewStripedList(
+	list := xwidget.NewStripedList(
 		func() int {
 			return len(data)
 		},

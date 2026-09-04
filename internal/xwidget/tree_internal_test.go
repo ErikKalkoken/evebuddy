@@ -6,10 +6,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 type MyNode2 struct {
 	Text string
+}
+
+func (n MyNode2) UID() widget.TreeNodeID {
+	return n.Text
 }
 
 func TestTreeData_CanCreateFullTree(t *testing.T) {
@@ -81,7 +87,7 @@ func TestTreeData_Node(t *testing.T) {
 func TestTreeData_Clone(t *testing.T) {
 	t.Run("can clone a td object", func(t *testing.T) {
 		// given
-		var td TreeData[MyNode2]
+		td := NewTreeData[MyNode2]()
 		top := &MyNode2{"Top"}
 		td.Add(nil, top, true)
 		alpha := &MyNode2{"Alpha"}
@@ -95,7 +101,7 @@ func TestTreeData_Clone(t *testing.T) {
 	})
 	t.Run("can clone a empty td object", func(t *testing.T) {
 		// given
-		td := newTreeData[MyNode2]()
+		td := NewTreeData[MyNode2]()
 		// when
 		got := td.Clone()
 		// then
@@ -103,12 +109,26 @@ func TestTreeData_Clone(t *testing.T) {
 	})
 }
 
-func equalTreeData[T any](t *testing.T, want, got TreeData[T]) {
+func equalTreeData[T TreeNode](t *testing.T, want, got *TreeData[T]) {
 	t.Helper()
 	assert.Equal(t, want.children, got.children)
 	assert.Equal(t, want.isBranch, got.isBranch)
-	assert.Equal(t, want.lastID, got.lastID)
 	assert.Equal(t, want.nodes, got.nodes)
 	assert.Equal(t, want.parents, got.parents)
-	assert.Equal(t, want.uidLookup, got.uidLookup)
+}
+
+type node2 struct {
+	uid string
+}
+
+func (n node2) UID() string {
+	return n.uid
+}
+
+func TestTreeData_UID(t *testing.T) {
+	t.Run("should return uid when node note has UID method", func(t *testing.T) {
+		a := node2{uid: "uid"}
+		uid := treeNodeUID(&a)
+		xassert.Equal(t, "uid", uid)
+	})
 }

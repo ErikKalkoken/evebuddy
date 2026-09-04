@@ -10,7 +10,7 @@ import (
 
 func TestEveConstellationEveEntity(t *testing.T) {
 	x1 := &app.EveConstellation{ID: 42, Name: "name"}
-	x2 := x1.EveEntity()
+	x2 := x1.ToEveEntity()
 	xassert.Equal(t, 42, x2.ID)
 	xassert.Equal(t, "name", x2.Name)
 	xassert.Equal(t, app.EveEntityConstellation, x2.Category)

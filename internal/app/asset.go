@@ -165,6 +165,21 @@ const (
 	VariantSKIN
 )
 
+func (v InventoryTypeVariant) String() string {
+	switch v {
+	case VariantRegular:
+		return "Regular"
+	case VariantBPO:
+		return "BPO"
+	case VariantBPC:
+		return "BPC"
+	case VariantSKIN:
+		return "SKIN"
+	default:
+		return ""
+	}
+}
+
 // Asset represents a generic asset in EVE Online.
 type Asset struct {
 	IsBlueprintCopy optional.Optional[bool]
@@ -190,6 +205,9 @@ func (ca Asset) Unwrap() Asset {
 
 func (ca Asset) CanHaveName() bool {
 	if !ca.IsSingleton {
+		return false
+	}
+	if ca.Type == nil {
 		return false
 	}
 	switch ca.Type.Group.Category.ID {
@@ -247,10 +265,16 @@ func (ca Asset) DisplayName3() string {
 }
 
 func (ca Asset) IsBPO() bool {
+	if ca.Type == nil {
+		return false
+	}
 	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy.ValueOrZero()
 }
 
 func (ca Asset) IsSKIN() bool {
+	if ca.Type == nil {
+		return false
+	}
 	return ca.Type.Group.Category.ID == EveCategorySKINs
 }
 

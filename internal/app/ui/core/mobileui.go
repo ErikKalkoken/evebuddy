@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -71,44 +70,29 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
-	communicationsMenu := fyne.NewMenu("")
+	characterCommunicationsMenu := fyne.NewMenu("")
 	navItemCommunications := xwidget.NewNavListItem(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		func() {
-			u.characterCommunications.OnSelected = func() {
+			u.characterCommunications.MessagePane.OnSelected = func() {
 				characterNav.PushAndHideNavBar(
-					newCharacterAppBar("Communications", u.characterCommunications.Detail),
+					newCharacterAppBar("Communications", u.characterCommunications.ReadingPane),
 				)
 			}
 			characterNav.Push(
 				newCharacterAppBar(
 					"Communications",
-					u.characterCommunications.Notifications,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
+					u.characterCommunications.MessagePane,
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), characterCommunicationsMenu),
 				),
 			)
 		},
 	)
 
 	mailMenu := fyne.NewMenu("")
-	u.characterMails.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characters.NewSendMail(u, c, mode, mail)
-		if mode != app.SendMailNew {
-			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
-		}
-		characterNav.PushAndHideNavBar(
-			xwidget.NewAppBar(
-				"Send Mail",
-				page,
-				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
-					if page.SendAction() {
-						characterNav.Pop()
-					}
-				}),
-			),
-		)
-	}
+
+	var mailPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -122,18 +106,20 @@ func NewMobileUI(params UIParams) *MobileUI {
 						kxwidget.NewIconButton(u.characterMails.MakeReplyAllAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeForwardAction()),
 						kxwidget.NewIconButton(u.characterMails.MakeDeleteAction(func() {
-							characterNav.Pop()
+							fyne.Do(func() {
+								characterNav.Pop()
+							})
 						})),
 					),
 				)
 			}
-			characterNav.Push(
-				newCharacterAppBar(
-					"Mail",
-					u.characterMails.Headers,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
-				))
+			mailPage = newCharacterAppBar(
+				"Mail",
+				u.characterMails.Headers,
+				kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+				kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
+			)
+			characterNav.Push(mailPage)
 		},
 	)
 
@@ -206,6 +192,13 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemMail.Supporting = strings.Join(s, " • ")
 		navItemMail.Refresh()
+
+		mailMenu.Items = u.characterMails.MakeFolderMenu()
+		mailMenu.Refresh()
+
+		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
+			characterNav.Pop()
+		}
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -217,6 +210,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		navItemCommunications.Supporting = s
 		navItemCommunications.Refresh()
+
+		characterCommunicationsMenu.Items = u.characterCommunications.NavigationPane.MakeFolderMenu()
+		characterCommunicationsMenu.Refresh()
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
@@ -259,7 +255,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
+			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch,
+				kxwidget.NewIconButtonWithMenu(
+					theme.MoreHorizontalIcon(),
+					fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
+				),
+			))
 			u.corporationAssetSearch.Focus()
 		},
 	)
@@ -468,7 +469,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	corpNav.NavBar = navBar
 	searchNav.NavBar = navBar
 
-	u.snackbar.Bottom = 90
+	u.snackbar.BottomMargin = theme.Padding() * 17
 
 	w := u.MainWindow()
 	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
@@ -570,10 +571,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		fyne.Do(func() {
-			mailMenu.Items = u.characterMails.MakeFolderMenu()
-			mailMenu.Refresh()
-			communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
-			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
 				navBar.Disable(1)
@@ -602,7 +599,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})
 		ctx := context.Background()
 		go u.characterMails.ResetCurrentFolder(ctx)
-		go u.characterCommunications.ResetCurrentFolder(ctx)
+		go func() {
+			fyne.Do(func() {
+				u.characterCommunications.MessagePane.ResetHeaders()
+			})
+		}()
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {
@@ -813,9 +814,9 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				container.NewAppTabs(
 					container.NewTabItem("Jobs", u.industryJobs),
 					container.NewTabItem("Slots", container.NewAppTabs(
-						container.NewTabItem("Manufacturing", u.slotsManufacturing),
-						container.NewTabItem("Science", u.slotsResearch),
-						container.NewTabItem("Reactions", u.slotsReactions),
+						container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+						container.NewTabItem("Science", u.industrySlotsResearch),
+						container.NewTabItem("Reactions", u.industrySlotsReactions),
 					)),
 				),
 			))
@@ -834,10 +835,18 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Contracts", u.contracts))
+			homeNav.Push(xwidget.NewAppBar("Contracts",
+				container.NewAppTabs(
+					container.NewTabItem("Contracts", u.contractList),
+					container.NewTabItem("Slots", container.NewAppTabs(
+						container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+						container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+					)),
+				),
+			))
 		},
 	)
-	u.contracts.OnUpdate = func(count int) {
+	u.contractList.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
 			badge = fmt.Sprintf("%d contracts active", count)
@@ -858,11 +867,16 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemWealth.Refresh()
 	}
 
-	navItemAssets := xwidget.NewNavListItem(
+	navItemAssetSearch := xwidget.NewNavListItem(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll))
+			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll,
+				kxwidget.NewIconButtonWithMenu(
+					theme.MoreHorizontalIcon(),
+					fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
+				),
+			))
 			u.assetSearchAll.Focus()
 		},
 	)
@@ -879,21 +893,60 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemCharacters.Refresh()
 	}
 
-	navItemTraining := xwidget.NewNavListItem(
-		"Training",
+	unifiedCommunicationsMenu := fyne.NewMenu("")
+	navItemUnifiedCommunications := xwidget.NewNavListItem(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		func() {
+			u.unifiedCommunications.MessagePane.OnSelected = func() {
+				homeNav.PushAndHideNavBar(
+					xwidget.NewAppBar("Communications", u.unifiedCommunications.ReadingPane),
+				)
+			}
+			homeNav.Push(
+				xwidget.NewAppBar(
+					"Communications",
+					u.unifiedCommunications.MessagePane,
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedCommunicationsMenu),
+				),
+			)
+		},
+	)
+	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if v, ok := count.Value(); ok {
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		} else if count.ValueOrZero() > 0 {
+			s = "?"
+		}
+		navItemUnifiedCommunications.Supporting = s
+		navItemUnifiedCommunications.Refresh()
+
+		unifiedCommunicationsMenu.Items = u.unifiedCommunications.NavigationPane.MakeFolderMenu()
+		unifiedCommunicationsMenu.Refresh()
+	}
+
+	navItemSkills := xwidget.NewNavListItem(
+		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Training", u.training))
+			homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
+				container.NewTabItem("Training", u.training),
+				container.NewTabItem("Search", u.skillSearch),
+			), kxwidget.NewIconButtonWithMenu(
+				theme.MoreHorizontalIcon(),
+				fyne.NewMenu("", u.training.MoreItems()...),
+			)))
 		},
 	)
 	u.training.OnUpdate = func(expired int) {
-		navItemTraining.Supporting = fmt.Sprintf("%d expired", expired)
-		navItemTraining.Refresh()
+		navItemSkills.Supporting = fmt.Sprintf("%d expired", expired)
+		navItemSkills.Refresh()
 	}
 
 	homeList = xwidget.NewNavList(
 		navItemCharacters,
-		navItemAssets,
+		navItemAssetSearch,
 		xwidget.NewNavListItem(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
@@ -904,6 +957,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				)))
 			},
 		),
+		navItemUnifiedCommunications,
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
@@ -926,7 +980,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				))
 			},
 		),
-		navItemTraining,
+		navItemSkills,
 		navItemWealth,
 	)
 	status := NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
@@ -941,9 +995,5 @@ func formatISKValueLong(value optional.Optional[float64], format string) string 
 	if !ok {
 		return "? ISK"
 	}
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(format, v))
-	if v > 1000 {
-		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 1))
-	}
-	return s
+	return ui.FormatISKAmountLong(v, format)
 }

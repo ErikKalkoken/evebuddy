@@ -45,15 +45,15 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 				RefID:       4,
 			})
 			if assert.NoError(t, err) {
-				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
-				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
-				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
-				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
+				xassert.EqualOptional(t, 123.45, i.Amount)
+				xassert.EqualOptional(t, 234.56, i.Balance)
+				xassert.EqualOptional(t, 42, i.ContextID)
+				xassert.EqualOptional(t, "character", i.ContextIDType)
 				xassert.Equal(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
-				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
+				xassert.EqualOptional(t, "my reason", i.Reason)
+				xassert.EqualOptional(t, 0.12, i.Tax)
 			}
 		}
 	})
@@ -90,18 +90,18 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 				RefID:       4,
 			})
 			if assert.NoError(t, err) {
-				xassert.Equal(t, 123.45, i.Amount.ValueOrZero())
-				xassert.Equal(t, 234.56, i.Balance.ValueOrZero())
-				xassert.Equal(t, 42, i.ContextID.ValueOrZero())
-				xassert.Equal(t, "character", i.ContextIDType.ValueOrZero())
-				xassert.Equal(t, e1, i.FirstParty.ValueOrZero())
+				xassert.EqualOptional(t, 123.45, i.Amount)
+				xassert.EqualOptional(t, 234.56, i.Balance)
+				xassert.EqualOptional(t, 42, i.ContextID)
+				xassert.EqualOptional(t, "character", i.ContextIDType)
+				xassert.EqualOptional(t, e1, i.FirstParty)
 				xassert.Equal(t, date, i.Date)
 				xassert.Equal(t, "bla bla", i.Description)
 				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.Equal(t, "my reason", i.Reason.ValueOrZero())
-				xassert.Equal(t, e2, i.SecondParty.ValueOrZero())
-				xassert.Equal(t, e3, i.TaxReceiver.ValueOrZero())
-				xassert.Equal(t, 0.12, i.Tax.ValueOrZero())
+				xassert.EqualOptional(t, "my reason", i.Reason)
+				xassert.EqualOptional(t, e2, i.SecondParty)
+				xassert.EqualOptional(t, e3, i.TaxReceiver)
+				xassert.EqualOptional(t, 0.12, i.Tax)
 			}
 		}
 	})

@@ -72,41 +72,6 @@ func New(arg Params) *EVEUniverseService {
 	}
 	return s
 }
-func (s *EVEUniverseService) GetOrCreateRaceESI(ctx context.Context, id int64) (*app.EveRace, error) {
-	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (*app.EveRace, error) {
-		o, err := s.st.GetEveRace(ctx, id)
-		if err == nil {
-			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
-			return nil, err
-		}
-		races, _, err := s.esiClient.UniverseAPI.GetUniverseRaces(ctx).Execute()
-		if err != nil {
-			return nil, err
-		}
-		for _, race := range races {
-			if race.RaceId == id {
-				arg := storage.CreateEveRaceParams{
-					ID:          race.RaceId,
-					Description: race.Description,
-					Name:        race.Name,
-				}
-				o, err := s.st.CreateEveRace(ctx, arg)
-				if err != nil {
-					return nil, err
-				}
-				slog.Info("Created eve race", "id", id)
-				return o, nil
-			}
-		}
-		return nil, fmt.Errorf("race with ID %d not found: %w", id, app.ErrNotFound)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
-}
-
 func (s *EVEUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int64) (*app.EveSchematic, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (*app.EveSchematic, error) {
 		o, err := s.st.GetEveSchematic(ctx, id)

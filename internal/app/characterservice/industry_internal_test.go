@@ -70,13 +70,13 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 				xassert.Equal(t, app.Manufacturing, x.Activity)
 				xassert.Equal(t, 1015116533326, x.BlueprintID)
 				xassert.Equal(t, 60006382, x.BlueprintLocation.ID)
-				xassert.Equal(t, 118.01, x.Cost.MustValue())
+				xassert.EqualOptional(t, 118.01, x.Cost)
 				xassert.Equal(t, 548, x.Duration)
 				xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
 				xassert.Equal(t, 60006382, x.Facility.ID)
 				xassert.Equal(t, 498338451, x.Installer.ID)
 				xassert.Equal(t, 229136101, x.JobID)
-				xassert.Equal(t, 200, x.LicensedRuns.MustValue())
+				xassert.EqualOptional(t, 200, x.LicensedRuns)
 				xassert.Equal(t, 60006382, x.OutputLocation.ID)
 				xassert.Equal(t, 1, x.Runs)
 				xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
@@ -139,10 +139,10 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 				j2 := xx[0]
 				xassert.Equal(t, c.ID, j2.CharacterID)
 				xassert.Equal(t, app.JobDelivered, j2.Status)
-				xassert.Equal(t, 42, j2.SuccessfulRuns.MustValue())
+				xassert.EqualOptional(t, 42, j2.SuccessfulRuns)
 				assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
 				assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
-				xassert.Equal(t, completer, j2.CompletedCharacter.MustValue())
+				xassert.EqualOptional(t, completer, j2.CompletedCharacter)
 			}
 		}
 	})

@@ -19,7 +19,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
@@ -85,7 +84,7 @@ type settings struct {
 
 func newSettings(u baseUI, w fyne.Window) *settings {
 	a := &settings{
-		sb: xwidget.NewSnackbar(w),
+		sb: xwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}
@@ -134,20 +133,9 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		window:   a.w,
 	})
 
-	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
-		label:  "Developer Mode",
-		hint:   "App shows additional technical information like Character IDs",
-		getter: a.u.Settings().DeveloperMode,
-		onChanged: func(b bool) {
-			a.u.Settings().SetDeveloperMode(b)
-			a.u.SetDeveloperMode(b)
-		},
-	})
-
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
-		developerMode,
 	}
 
 	sysTray := NewSettingItemSwitch(SettingItemSwitchParams{
@@ -178,12 +166,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		},
 	})
 
-	items = slices.Concat(items, []SettingItem{
-		NewSettingItemHeading("UI"),
-		preferMarketTab,
-		hideLimitedCorporations,
-	})
-
 	colorTheme := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
@@ -199,6 +181,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		},
 		isMobile: a.u.IsMobile(),
 		window:   a.w,
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("UI"),
+		preferMarketTab,
+		hideLimitedCorporations,
+		colorTheme,
 	})
 
 	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
@@ -230,7 +218,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 
 	if !a.u.IsMobile() {
 		items = slices.Concat(items, []SettingItem{
-			colorTheme,
 			fyneScale,
 			disableDPIDetection,
 		})
@@ -290,11 +277,44 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 		window:   a.w,
 	})
 
+	vMin, vMax, vDef = a.u.Settings().ApprovedContactCostPresets()
+	approvedContactCost := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Approved contact cost",
+		hint:         "Maximum approved cost per contact in ISK",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         10,
+		getter: func() float64 {
+			return float64(a.u.Settings().ApprovedContactCost())
+		},
+		setter: func(v float64) {
+			a.u.Settings().SetApprovedContactCost(int(v))
+		},
+		isMobile: a.u.IsMobile(),
+		window:   a.w,
+	})
+
 	items = slices.Concat(items, []SettingItem{
-		NewSettingItemHeading("Section updates"),
+		NewSettingItemHeading("EVE Online API"),
+		approvedContactCost,
 		maxMail,
 		maxWallet,
 		marketOrdersRetention,
+	})
+
+	developerMode := NewSettingItemSwitch(SettingItemSwitchParams{
+		label:  "Developer mode",
+		hint:   "Show debug information, e.g. EVE IDs and technical error messages",
+		getter: a.u.Settings().DeveloperMode,
+		onChanged: func(b bool) {
+			a.u.Settings().SetDeveloperMode(b)
+			a.u.SetDeveloperMode(b)
+		},
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("Advanced settings"),
+		developerMode,
 	})
 
 	list := newSettingList(items)
@@ -302,34 +322,15 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	clearCache := settingAction{
 		Label: "Clear cache",
 		Action: func() {
-			w := a.w
-			ui.ShowConfirm(
-				"Clear Cache",
-				"Are you sure you want to clear the cache?",
+			ui.ShowProgressConfirm(
+				"Clear Cache?",
+				"This will clear the cache",
 				"Clear",
-				func(confirmed bool) {
-					if !confirmed {
-						return
-					}
-					m := kxmodal.NewProgressInfinite(
-						"Clearing cache...",
-						"",
-						func() error {
-							a.u.ClearAllCaches()
-							return nil
-						},
-						w,
-					)
-					m.OnSuccess = func() {
-						slog.Info("Cleared cache")
-						a.sb.Show("Cache cleared")
-					}
-					m.OnError = func(err error) {
-						slog.Error("Failed to clear cache", "error", err)
-						a.sb.Show(fmt.Sprintf("Failed to clear cache: %s", a.u.ErrorDisplay(err)))
-					}
-					m.Start()
-				}, w,
+				widget.DangerImportance,
+				func() {
+					a.u.ClearAllCaches()
+					a.sb.Show("Cache cleared")
+				}, a.w,
 			)
 		},
 	}
@@ -385,12 +386,6 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	}
 	if a.u.IsDeveloperMode() {
 		actions = append(actions, settingAction{
-			Label: "Show snackbar (debug)",
-			Action: func() {
-				a.sb.Show("This is a test")
-			},
-		})
-		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
 				go a.u.ResetCharacter(context.Background())
@@ -407,14 +402,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 }
 
 func (a *settings) showDeleteFileDialog(name, path string) {
-	ui.ShowConfirm(
-		"Delete File",
-		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
+	ui.ShowProgressConfirm(
+		"Delete File?",
+		fmt.Sprintf("This will permanently delete the %s", name),
 		"Delete",
-		func(confirmed bool) {
-			if !confirmed {
-				return
-			}
+		widget.DangerImportance,
+		func() {
 			err := func() error {
 				files, err := filepath.Glob(path)
 				if err != nil {
@@ -1077,6 +1070,12 @@ func (w *settingListItem) CreateRenderer() fyne.WidgetRenderer {
 		w.thief,
 	)
 	return widget.NewSimpleRenderer(c2)
+}
+
+func (w *settingListItem) Refresh() {
+	w.BaseWidget.Refresh()
+	w.background.FillColor = theme.Color(theme.ColorNameInputBackground)
+	w.background.Refresh()
 }
 
 func (w *settingListItem) set(r SettingItem) {

@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/eveauth"
-	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	"github.com/ErikKalkoken/go-set"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -106,7 +105,7 @@ func (a *admin) update(ctx context.Context) {
 
 func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
 	var rows []adminRow
-	cc, err := a.cw.u.Character().ListCharacters(ctx)
+	cc, err := a.cw.u.Character().ListEveCharacters(ctx)
 	if err != nil {
 		return rows, err
 	}
@@ -117,12 +116,15 @@ func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
 		}
 		r := adminRow{
 			characterID:   c.ID,
-			corporationID: c.EveCharacter.Corporation.ID,
-			characterName: c.EveCharacter.Name,
+			corporationID: c.Corporation.ID,
+			characterName: c.Name,
 			missingScopes: missing,
 		}
 		rows = append(rows, r)
 	}
+	slices.SortFunc(rows, func(a, b adminRow) int {
+		return strings.Compare(a.characterName, b.characterName)
+	})
 	return rows, nil
 }
 
@@ -148,10 +150,8 @@ func (a *admin) showAddCharacterDialog() {
 		a.cw.w,
 	)
 	xdesktop.DisableShortcutsForDialog(d1, a.cw.w)
-	done := make(chan struct{})
 	d1.SetOnClosed(func() {
 		cancel()
-		<-done
 	})
 	d1.Show()
 	go func() {
@@ -203,85 +203,65 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			return nil
 		}()
+		fyne.Do(func() {
+			d1.Hide()
+		})
 		if err != nil {
 			fyne.Do(func() {
-				d1.Hide()
 				ui.ShowErrorAndLog("Failed to add a new character", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
-		} else {
-			fyne.Do(func() {
-				d1.Hide()
-			})
-
 		}
-		close(done)
 	}()
 }
 
 func (a *admin) showDeleteDialog(r adminRow) {
-	ui.ShowConfirm(
-		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
+	ui.ShowProgressConfirm(
+		"Delete Character?",
+		fmt.Sprintf("%s will be permanently removed from this app", r.characterName),
 		"Delete",
-		func(confirmed bool) {
-			if !confirmed {
+		widget.DangerImportance,
+		func() {
+			ctx := context.Background()
+			wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
+			if err != nil {
+				a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
 				return
 			}
-			m := kmodal.NewProgressInfinite(
-				"Deleting character",
-				fmt.Sprintf("Deleting %s...", r.characterName),
-				func() error {
-					ctx := context.Background()
-					wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
-					if err != nil {
-						return err
-					}
-					a.update(ctx)
-					if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
-						err := a.cw.u.SetAnyCharacter(ctx)
-						if err != nil {
-							slog.Error("delete character", "error", err)
-							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))
-						}
-					}
-					if wasCorpDeleted {
-						err := a.cw.u.SetAnyCorporation(ctx)
-						if err != nil {
-							slog.Error("delete corporation", "error", err)
-							a.cw.sb.Show("Error: " + a.cw.u.ErrorDisplay(err))
-						}
+			a.update(ctx)
+			a.cw.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
 
-					} else {
-						ok, err := a.cw.u.Corporation().HasCorporation(ctx, r.corporationID)
-						if err != nil {
-							slog.Error("Failed to determine if corp exists", "err", err)
-						}
-						if ok {
-							err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
-							if err != nil {
-								slog.Error(
-									"Failed to remove corp data after character was deleted",
-									slog.Int64("characterID", r.characterID),
-									slog.Any("error", err))
-							}
-							go a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
-						}
+			if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
+				err := a.cw.u.SetAnyCharacter(ctx)
+				if err != nil {
+					slog.Warn("Failed to set current character after deletion", "error", err)
+				}
+			}
+			if wasCorpDeleted {
+				err := a.cw.u.SetAnyCorporation(ctx)
+				if err != nil {
+					slog.Warn("Failed to set current corporation after deletion", "error", err)
+				}
+
+			} else {
+				ok, err := a.cw.u.Corporation().HasCorporation(ctx, r.corporationID)
+				if err != nil {
+					slog.Error("Failed to determine if corp exists", "err", err)
+				}
+				if ok {
+					err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+					if err != nil {
+						slog.Error(
+							"Failed to remove corp data after character was deleted",
+							slog.Int64("characterID", r.characterID),
+							slog.Any("error", err))
 					}
-					go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
-						ID:   r.characterID,
-						Name: r.characterName,
-					})
-					return nil
-				},
-				a.cw.w,
-			)
-			m.OnSuccess = func() {
-				a.cw.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
+					go a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+				}
 			}
-			m.OnError = func(err error) {
-				a.cw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
-			}
-			m.Start()
+			go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
+				ID:   r.characterID,
+				Name: r.characterName,
+			})
 		},
 		a.cw.w,
 	)

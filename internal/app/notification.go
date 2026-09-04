@@ -2,13 +2,16 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/goccy/go-yaml"
 	"github.com/yuin/goldmark"
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
@@ -258,6 +261,10 @@ const (
 	WarRetractedByConcord
 	WarSurrenderDeclinedMsg
 	WarSurrenderOfferMsg
+
+	// numEveNotificationType must always remain at the end of the iota block.
+	// It represents the total count of valid status enums.
+	numEveNotificationType
 )
 
 // notificationCategories maps types to their recipient category.
@@ -513,11 +520,16 @@ func NotificationTypesSupported() set.Set[EveNotificationType] {
 	return set.Collect(slices.Values(supportedTypes))
 }
 
+// EveNotificationTypes returns all known types.
+func EveNotificationTypes() []EveNotificationType {
+	return slices.Collect(maps.Keys(notificationGroups))
+}
+
 // notificationGroups maps all known types to their group.
 var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	AcceptedAlly:                              GroupWar,
 	AcceptedSurrender:                         GroupWar,
-	AgentRetiredTrigravian:                    GroupUnknown,
+	AgentRetiredTrigravian:                    GroupAgents,
 	AllAnchoringMsg:                           GroupSovereignty,
 	AllMaintenanceBillMsg:                     GroupBills,
 	AllStructureInvulnerableMsg:               GroupStructure,
@@ -533,33 +545,33 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	AllyJoinedWarAggressorMsg:                 GroupWar,
 	AllyJoinedWarAllyMsg:                      GroupWar,
 	AllyJoinedWarDefenderMsg:                  GroupWar,
-	BattlePunishFriendlyFire:                  GroupUnknown,
+	BattlePunishFriendlyFire:                  GroupOther,
 	BillOutOfMoneyMsg:                         GroupBills,
 	BillPaidCorpAllMsg:                        GroupBills,
-	BountyClaimMsg:                            GroupUnknown,
-	BountyESSShared:                           GroupUnknown,
-	BountyESSTaken:                            GroupUnknown,
-	BountyPlacedAlliance:                      GroupUnknown,
-	BountyPlacedChar:                          GroupUnknown,
-	BountyPlacedCorp:                          GroupUnknown,
-	BountyYourBountyClaimed:                   GroupUnknown,
-	BuddyConnectContactAdd:                    GroupUnknown,
+	BountyClaimMsg:                            GroupOther,
+	BountyESSShared:                           GroupOther,
+	BountyESSTaken:                            GroupOther,
+	BountyPlacedAlliance:                      GroupOther,
+	BountyPlacedChar:                          GroupOther,
+	BountyPlacedCorp:                          GroupOther,
+	BountyYourBountyClaimed:                   GroupOther,
+	BuddyConnectContactAdd:                    GroupOther,
 	CharAppAcceptMsg:                          GroupCorporate,
 	CharAppRejectMsg:                          GroupCorporate,
 	CharAppWithdrawMsg:                        GroupCorporate,
 	CharLeftCorpMsg:                           GroupCorporate,
 	CharMedalMsg:                              GroupCorporate,
 	CharTerminationMsg:                        GroupCorporate,
-	CloneActivationMsg:                        GroupUnknown,
-	CloneActivationMsg2:                       GroupUnknown,
-	CloneMovedMsg:                             GroupUnknown,
-	CloneRevokedMsg1:                          GroupUnknown,
-	CloneRevokedMsg2:                          GroupUnknown,
-	CombatOperationFinished:                   GroupUnknown,
+	CloneActivationMsg:                        GroupMiscellaneous,
+	CloneActivationMsg2:                       GroupMiscellaneous,
+	CloneMovedMsg:                             GroupMiscellaneous,
+	CloneRevokedMsg1:                          GroupMiscellaneous,
+	CloneRevokedMsg2:                          GroupMiscellaneous,
+	CombatOperationFinished:                   GroupOther,
 	ContactAdd:                                GroupContacts,
 	ContactEdit:                               GroupContacts,
-	ContainerPasswordMsg:                      GroupUnknown,
-	ContractRegionChangedToPochven:            GroupUnknown,
+	ContainerPasswordMsg:                      GroupOther,
+	ContractRegionChangedToPochven:            GroupOther,
 	CorpAllBillMsg:                            GroupBills,
 	CorpAppAcceptMsg:                          GroupCorporate,
 	CorpAppInvitedMsg:                         GroupCorporate,
@@ -597,7 +609,7 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	DeclareWar:                                GroupWar,
 	DistrictAttacked:                          GroupWar,
 	DustAppAcceptedMsg:                        GroupMiscellaneous,
-	ESSMainBankLink:                           GroupUnknown,
+	ESSMainBankLink:                           GroupOther,
 	EntosisCaptureStarted:                     GroupSovereignty,
 	ExpertSystemExpired:                       GroupMiscellaneous,
 	ExpertSystemExpiryImminent:                GroupMiscellaneous,
@@ -619,44 +631,44 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	FacWarLPDisqualifiedKill:                  GroupFactionWarfare,
 	FacWarLPPayoutEvent:                       GroupFactionWarfare,
 	FacWarLPPayoutKill:                        GroupFactionWarfare,
-	GameTimeAdded:                             GroupUnknown,
-	GameTimeReceived:                          GroupUnknown,
-	GameTimeSent:                              GroupUnknown,
-	GiftReceived:                              GroupUnknown,
+	GameTimeAdded:                             GroupOther,
+	GameTimeReceived:                          GroupOther,
+	GameTimeSent:                              GroupOther,
+	GiftReceived:                              GroupOther,
 	IHubDestroyedByBillFailure:                GroupSovereignty,
-	IncursionCompletedMsg:                     GroupUnknown,
-	IndustryOperationFinished:                 GroupUnknown,
-	IndustryTeamAuctionLost:                   GroupUnknown,
-	IndustryTeamAuctionWon:                    GroupUnknown,
+	IncursionCompletedMsg:                     GroupOther,
+	IndustryOperationFinished:                 GroupOther,
+	IndustryTeamAuctionLost:                   GroupOther,
+	IndustryTeamAuctionWon:                    GroupOther,
 	InfrastructureHubBillAboutToExpire:        GroupSovereignty,
-	InsuranceExpirationMsg:                    GroupUnknown,
-	InsuranceFirstShipMsg:                     GroupUnknown,
-	InsuranceInvalidatedMsg:                   GroupUnknown,
-	InsuranceIssuedMsg:                        GroupUnknown,
-	InsurancePayoutMsg:                        GroupUnknown,
-	InvasionCompletedMsg:                      GroupUnknown,
-	InvasionSystemLogin:                       GroupUnknown,
-	InvasionSystemStart:                       GroupUnknown,
-	JumpCloneDeletedMsg1:                      GroupUnknown,
-	JumpCloneDeletedMsg2:                      GroupUnknown,
-	KillReportFinalBlow:                       GroupUnknown,
-	KillReportVictim:                          GroupUnknown,
-	KillRightAvailable:                        GroupUnknown,
-	KillRightAvailableOpen:                    GroupUnknown,
-	KillRightEarned:                           GroupUnknown,
-	KillRightUnavailable:                      GroupUnknown,
-	KillRightUnavailableOpen:                  GroupUnknown,
-	KillRightUsed:                             GroupUnknown,
-	LPAutoRedeemed:                            GroupUnknown,
-	LocateCharMsg:                             GroupUnknown,
-	MadeWarMutual:                             GroupUnknown,
+	InsuranceExpirationMsg:                    GroupOther,
+	InsuranceFirstShipMsg:                     GroupOther,
+	InsuranceInvalidatedMsg:                   GroupOther,
+	InsuranceIssuedMsg:                        GroupOther,
+	InsurancePayoutMsg:                        GroupOther,
+	InvasionCompletedMsg:                      GroupOther,
+	InvasionSystemLogin:                       GroupOther,
+	InvasionSystemStart:                       GroupOther,
+	JumpCloneDeletedMsg1:                      GroupMiscellaneous,
+	JumpCloneDeletedMsg2:                      GroupMiscellaneous,
+	KillReportFinalBlow:                       GroupOther,
+	KillReportVictim:                          GroupOther,
+	KillRightAvailable:                        GroupOther,
+	KillRightAvailableOpen:                    GroupOther,
+	KillRightEarned:                           GroupOther,
+	KillRightUnavailable:                      GroupOther,
+	KillRightUnavailableOpen:                  GroupOther,
+	KillRightUsed:                             GroupOther,
+	LPAutoRedeemed:                            GroupOther,
+	LocateCharMsg:                             GroupOther,
+	MadeWarMutual:                             GroupOther,
 	MercenaryDenAttacked:                      GroupStructure,
 	MercenaryDenReinforced:                    GroupStructure,
 	MercOfferRetractedMsg:                     GroupWar,
 	MercOfferedNegotiationMsg:                 GroupWar,
-	MissionCanceledTriglavian:                 GroupUnknown,
-	MissionOfferExpirationMsg:                 GroupUnknown,
-	MissionTimeoutMsg:                         GroupUnknown,
+	MissionCanceledTriglavian:                 GroupAgents,
+	MissionOfferExpirationMsg:                 GroupAgents,
+	MissionTimeoutMsg:                         GroupAgents,
 	MoonminingAutomaticFracture:               GroupMoonMining,
 	MoonminingExtractionCancelled:             GroupMoonMining,
 	MoonminingExtractionFinished:              GroupMoonMining,
@@ -666,26 +678,26 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	MutualWarInviteAccepted:                   GroupWar,
 	MutualWarInviteRejected:                   GroupWar,
 	MutualWarInviteSent:                       GroupWar,
-	NPCStandingsGained:                        GroupUnknown,
-	NPCStandingsLost:                          GroupUnknown,
+	NPCStandingsGained:                        GroupOther,
+	NPCStandingsLost:                          GroupOther,
 	OfferToAllyRetracted:                      GroupWar,
 	OfferedSurrender:                          GroupWar,
 	OfferedToAlly:                             GroupWar,
 	OfficeLeaseCanceledInsufficientStandings:  GroupCorporate,
-	OldLscMessages:                            GroupUnknown,
-	OperationFinished:                         GroupUnknown,
+	OldLscMessages:                            GroupOther,
+	OperationFinished:                         GroupOther,
 	OrbitalAttacked:                           GroupStructure,
 	OrbitalReinforced:                         GroupStructure,
 	OwnershipTransferred:                      GroupStructure,
-	RaffleCreated:                             GroupUnknown,
-	RaffleExpired:                             GroupUnknown,
-	RaffleFinished:                            GroupUnknown,
-	ReimbursementMsg:                          GroupUnknown,
-	ResearchMissionAvailableMsg:               GroupUnknown,
+	RaffleCreated:                             GroupOther,
+	RaffleExpired:                             GroupOther,
+	RaffleFinished:                            GroupOther,
+	ReimbursementMsg:                          GroupOther,
+	ResearchMissionAvailableMsg:               GroupAgents,
 	RetractsWar:                               GroupWar,
-	SPAutoRedeemed:                            GroupUnknown,
-	SeasonalChallengeCompleted:                GroupUnknown,
-	SkinSequencingCompleted:                   GroupUnknown,
+	SPAutoRedeemed:                            GroupOther,
+	SeasonalChallengeCompleted:                GroupOther,
+	SkinSequencingCompleted:                   GroupOther,
 	SkyhookDeployed:                           GroupStructure,
 	SkyhookDestroyed:                          GroupStructure,
 	SkyhookLostShields:                        GroupStructure,
@@ -706,13 +718,13 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	SovereigntyIHDamageMsg:                    GroupSovereignty,
 	SovereigntySBUDamageMsg:                   GroupSovereignty,
 	SovereigntyTCUDamageMsg:                   GroupSovereignty,
-	StationAggressionMsg1:                     GroupUnknown,
-	StationAggressionMsg2:                     GroupUnknown,
-	StationConquerMsg:                         GroupUnknown,
-	StationServiceDisabled:                    GroupUnknown,
-	StationServiceEnabled:                     GroupUnknown,
-	StationStateChangeMsg:                     GroupUnknown,
-	StoryLineMissionAvailableMsg:              GroupUnknown,
+	StationAggressionMsg1:                     GroupOther,
+	StationAggressionMsg2:                     GroupOther,
+	StationConquerMsg:                         GroupOther,
+	StationServiceDisabled:                    GroupOther,
+	StationServiceEnabled:                     GroupOther,
+	StationStateChangeMsg:                     GroupOther,
+	StoryLineMissionAvailableMsg:              GroupAgents,
 	StructureAnchoring:                        GroupStructure,
 	StructureCourierContractChanged:           GroupStructure,
 	StructureDestroyed:                        GroupStructure,
@@ -736,8 +748,8 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	StructuresReinforcementChanged:            GroupStructure,
 	TowerAlertMsg:                             GroupStructure,
 	TowerResourceAlertMsg:                     GroupStructure,
-	TransactionReversalMsg:                    GroupUnknown,
-	TutorialMsg:                               GroupUnknown,
+	TransactionReversalMsg:                    GroupOther,
+	TutorialMsg:                               GroupOther,
 	WarAdopted:                                GroupWar,
 	WarAllyInherited:                          GroupWar,
 	WarAllyOfferDeclinedMsg:                   GroupWar,
@@ -760,7 +772,7 @@ func NotificationGroupTypes(g EveNotificationGroup) set.Set[EveNotificationType]
 	if groupTypes == nil {
 		groupTypes = make(map[EveNotificationGroup]set.Set[EveNotificationType])
 		for t, g := range notificationGroups {
-			if g == GroupUnknown {
+			if g == GroupOther {
 				g = GroupMiscellaneous
 			}
 			x := groupTypes[g]
@@ -775,26 +787,38 @@ func NotificationGroupTypes(g EveNotificationGroup) set.Set[EveNotificationType]
 type EveNotificationGroup uint
 
 const (
-	GroupBills EveNotificationGroup = iota + 1
-	GroupFactionWarfare
+	GroupUndefined EveNotificationGroup = iota
+	GroupAgents
+	GroupBills
 	GroupContacts
 	GroupCorporate
+	GroupFactionWarfare
 	GroupInsurance
 	GroupInsurgencies
-	GroupMoonMining
 	GroupMiscellaneous
+	GroupMoonMining
 	GroupOld
+	GroupOther
 	GroupSovereignty
 	GroupStructure
 	GroupWar
 
-	GroupUnknown
 	GroupUnread
 	GroupAll
 )
 
+// IsContainer reports whether a group can contain multiple other groups.
+func (ng EveNotificationGroup) IsContainer() bool {
+	switch ng {
+	case GroupUndefined, GroupAll, GroupUnread:
+		return true
+	}
+	return false
+}
+
 var group2Name = map[EveNotificationGroup]string{
 	GroupAll:            "All",
+	GroupAgents:         "Agents",
 	GroupBills:          "Bills",
 	GroupContacts:       "Contacts",
 	GroupCorporate:      "Corporate",
@@ -806,27 +830,29 @@ var group2Name = map[EveNotificationGroup]string{
 	GroupOld:            "Old",
 	GroupSovereignty:    "Sovereignty",
 	GroupStructure:      "Structure",
-	GroupUnknown:        "Unknown",
+	GroupOther:          "Other",
 	GroupUnread:         "Unread",
 	GroupWar:            "War",
 }
 
-func (c EveNotificationGroup) String() string {
-	return group2Name[c]
+func (ng EveNotificationGroup) String() string {
+	return group2Name[ng]
 }
 
 // NotificationGroups returns a slice of all regular groups in alphabetical order.
 func NotificationGroups() []EveNotificationGroup {
 	return []EveNotificationGroup{
+		GroupAgents,
 		GroupBills,
-		GroupFactionWarfare,
 		GroupContacts,
 		GroupCorporate,
+		GroupFactionWarfare,
 		GroupInsurance,
 		GroupInsurgencies,
-		GroupMoonMining,
 		GroupMiscellaneous,
+		GroupMoonMining,
 		GroupOld,
+		GroupOther,
 		GroupSovereignty,
 		GroupStructure,
 		GroupWar,
@@ -851,12 +877,14 @@ func EveNotificationTypeFromString(s string) (EveNotificationType, bool) {
 	return nt, true
 }
 
+// TODO: Set recipient from parsed data, e.g. for corp messages
+
 type CharacterNotification struct {
 	ID             int64
 	Body           optional.Optional[string] // generated body text in markdown
 	CharacterID    int64
 	IsProcessed    bool
-	IsRead         optional.Optional[bool]
+	IsRead         bool
 	NotificationID int64
 	Recipient      optional.Optional[*EveEntity]
 	Sender         *EveEntity
@@ -877,29 +905,53 @@ func (cn *CharacterNotification) TitleDisplay() string {
 
 // TitleFake returns a title for output made from the name of the type.
 func (cn *CharacterNotification) TitleFake() string {
-	var b strings.Builder
-	var last rune
-	for _, r := range cn.Type.String() {
-		if unicode.IsUpper(r) && unicode.IsLower(last) {
-			b.WriteRune(' ')
-		}
-		b.WriteRune(r)
-		last = r
-	}
-	return b.String()
+	return cn.Type.Display()
 }
 
 // BodyPlain returns the body of a notification as plain text.
 func (cn *CharacterNotification) BodyPlain() (optional.Optional[string], error) {
-	var b optional.Optional[string]
+	var z optional.Optional[string]
 	v, ok := cn.Body.Value()
 	if !ok {
-		return b, nil
+		return z, nil
 	}
 	var buf bytes.Buffer
 	if err := goldmark.Convert([]byte(v), &buf); err != nil {
-		return b, fmt.Errorf("convert notification body: %w", err)
+		return z, fmt.Errorf("convert notification body: %w", err)
 	}
-	b.Set(evehtml.Strip(buf.String()))
+	z.Set(evehtml.Strip(buf.String()))
+	return z, nil
+}
+
+func (cn *CharacterNotification) ToJSON() ([]byte, error) {
+	if cn == nil {
+		return nil, nil
+	}
+
+	var data any
+	if v, ok := cn.Text.Value(); ok {
+		if err := yaml.Unmarshal([]byte(v), &data); err != nil {
+			return nil, err
+		}
+	}
+	notif := struct {
+		NotificationID int64     `json:"notification_id"`
+		SenderID       int64     `json:"sender_id"`
+		SenderType     string    `json:"sender_type"`
+		Text           any       `json:"text"`
+		Timestamp      time.Time `json:"timestamp"`
+		Type           string    `json:"type"`
+	}{
+		NotificationID: cn.NotificationID,
+		SenderID:       cn.Sender.ID,
+		SenderType:     cn.Sender.Category.String(),
+		Text:           data,
+		Timestamp:      cn.Timestamp,
+		Type:           cn.Type.String(),
+	}
+	b, err := json.MarshalIndent(notif, "", "    ")
+	if err != nil {
+		return nil, err
+	}
 	return b, nil
 }

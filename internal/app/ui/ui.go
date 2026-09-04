@@ -1,13 +1,23 @@
-// Package ui provides globals for UI packages.
+// Package ui contains the UI components.
+//
+// This root package provides globals for all sub packages.
+//
+// # Each window has it's own package
+//
+// Two special packages:
+//   - core: core components for constructing the UI on desktop and mobile
+//   - screens: various feature screens or characters & corporations
 package ui
 
 import (
+	"fmt"
 	"log/slog"
 	"net/url"
 
 	"fyne.io/fyne/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // Width of common columns in data tables
@@ -60,6 +70,8 @@ type EVEImageService interface {
 // InfoViewer defines which methods from the info viewer is used in the UI.
 type InfoViewer interface {
 	Show(o *app.EveEntity)
+	Show2(typeID, itemID, characterID int64)
+	ShowBloodline(id int64)
 	ShowLocation(id int64)
 	ShowRace(id int64)
 	ShowType(typeID, characterID int64)
@@ -87,4 +99,8 @@ func WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
+}
+
+func SkillDisplayName[N int | int64 | uint | uint32 | uint64](name string, level N) string {
+	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }

@@ -137,6 +137,11 @@ func TestMigrate(t *testing.T) {
 	})
 }
 
+func recordMigration(db *sql.DB, name string) error {
+	_, err := db.Exec(`INSERT INTO migrations(name) VALUES(?);`, name)
+	return err
+}
+
 func CreateTestDB() *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {

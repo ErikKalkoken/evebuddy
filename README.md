@@ -19,7 +19,7 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 - [Features](#features)
 - [Installing](#installing)
   - [Windows](#windows)
-  - [macOS](#mac-os)
+  - [macOS](#macos)
   - [Linux](#linux)
   - [Android](#android)
 - [Updating](#updating)
@@ -33,7 +33,7 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 
 EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
-- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets.
+- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets. Export trained skills to clipboard in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible format or to a CSV file (Windows and macOS).
 - **Corporation monitor**: Check current information about each of your corporations: e.g. check wallets and assets.
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across of your characters or see which character has manufacturing slots available.
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates, e.g. a structure was attacked or a training queue became empty.
@@ -45,18 +45,24 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
-> [!Note]
-> We are proud to have been mentioned twice in Eve Online's official Community Beat newsletter:
+> [!NOTE]
+>**Featured in EVE Online's Official Community Beat!**<br>
+> We're proud to have been featured in EVE Online's official Community Beat newsletter:
 >
-> - [EVE Community Beat newsletter 16 August 2025](https://www.eveonline.com/news/view/community-beat-for-16-august-2025).
-> - [EVE Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
+> - [16 August 2025 Edition](https://www.eveonline.com/news/view/community-beat-for-16-august-2025).
+> - [22 November 2024 Edition](https://www.eveonline.com/news/view/community-beat-for-22-november).
 
-> [!IMPORTANT]
-> We would very much appreciate your feedback. If you encounter any problems or have a question please feel free to open an issue or come chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
-> EVE Buddy is in-development and we are constantly adding new features and improving the app further. If you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.
+> [!NOTE]
+> **Feedback & Support**
+>
+> We’d love to hear from you! If you run into bugs or have questions, feel free to open an issue or drop by the **#evebuddy** channel on our [Discord](https://discord.gg/tVSCQEVJnJ).
+>
+> Missing a feature? Open a feature request—we're actively building and improving EVE Buddy every day!
 
 > [!TIP]
-> Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
+> **Contribute & Get Involved**
+>
+> We welcome all contributions! Whether you want to fix a bug, add a feature, or improve documentation, feel free to open a Pull Request. Have questions or want to discuss an idea first? Join our community on [Discord](https://discord.gg/tVSCQEVJnJ).
 
 ## Screenshots
 
@@ -81,7 +87,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Contracts: Browse contracts of all characters
   - Industry: Browse industry jobs for all characters and related corporations
   - Location: Browse the location of all characters and their current ships
-  - Training: Keep track of the training status for all characters
+  - Skills: Keep track of the training status for all characters and search for skills across of characters.
   - Wealth: Charts showing wealth distribution across all characters
 
 - **Character monitor**: Check current information about each of your characters:
@@ -89,7 +95,9 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Communications: Browse through all communications
   - Mails: Browser through all mails
-  - Skills: Training queue, catalogue of all trained skills and what ships can be flown
+  - Skills: Training queue, catalogue of all trained skills and what ships can be flown, and export trained skills to clipboard or CSV (desktop only)
+    - **Copy to clipboard**: Copies all trained skills in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible plain-text format (`Skill Name Level`, one per line) so they can be pasted directly into PyFA's character skill import.
+    - **Export to CSV**: Saves all trained skills to a `.csv` file with `Name` and `Level` columns for use in spreadsheets or other tools.
   - Wallet: Wallet and market Transactions
 
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
@@ -146,7 +154,7 @@ You find the latest packages for download on the [releases page](https://github.
 > [!TIP]
 > Windows defender (and similar programs) may report EVE Buddy incorrectly as containing a trojan. This is usually a false positive and caused by a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Each EVE Buddy release is build from scratch on a fresh Windows container provided by Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender (and similar programs) to proceed.
 
-### Mac OS
+### macOS
 
 1. Download the darwin zip file from the latest release on Github for your respective platform (arm or intel).
 1. Unzip the file into a directory of your choice.
@@ -174,7 +182,7 @@ We are providing two variants for installing on Linux desktop:
 1. Execute the AppImage file to start the app
 
 > [!TIP]
-> Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. Thi s is a library required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
+> Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. This library is required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
 
 #### Tarball
 
@@ -192,7 +200,7 @@ To uninstall the app again run either: `make user-uninstall` or `sudo make unins
 > Please note that the app can currently be only installed from the release page and is currently not available in any of the Android app stores.
 
 > [!IMPORTANT]
-> EVE Buddy needs unrestricted background usage in order to function probably. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
+> EVE Buddy needs unrestricted background usage in order to function properly. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
 Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
 
 Here is how to install EVE Buddy on your Android phone:
@@ -205,7 +213,7 @@ Here is how to install EVE Buddy on your Android phone:
    1. Select "More details"
    1. Select "Install anyway"
 1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. Please see [How to enable unrestricted background usage](#how-to-enable-unrestricted-background-usage) for a step-by-step guide.
-1. Optional: Enable notifications for EVE BUddy. Please see [How to enable notifications](#how-to-enable-notifications) for a step-by-step guide.
+1. Optional: Enable notifications for EVE Buddy. Please see [How to enable notifications](#how-to-enable-notifications) for a step-by-step guide.
 
 #### How to enable notifications
 

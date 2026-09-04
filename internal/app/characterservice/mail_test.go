@@ -1,12 +1,13 @@
 package characterservice_test
 
 import (
-	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -15,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func TestUpdateMailBodies(t *testing.T) {
@@ -23,7 +25,7 @@ func TestUpdateMailBodies(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	ctx := context.Background()
+
 	makeMailData := func(m *app.CharacterMail) map[string]any {
 		recipients := make([]map[string]any, 0)
 		for _, r := range m.Recipients {
@@ -49,6 +51,7 @@ func TestUpdateMailBodies(t *testing.T) {
 		}
 		return data
 	}
+
 	t.Run("Can update mail body", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -61,14 +64,40 @@ func TestUpdateMailBodies(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail)),
 		)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
+
 		// when
-		body, err := s.UpdateMailBodyESI(ctx, mail.CharacterID, mail.MailID)
+		body, err := s.UpdateMailBodyESI(t.Context(), mail.CharacterID, mail.MailID)
+
+		// then
 		require.NoError(t, err)
 		xassert.Equal(t, "body", body)
-		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
+		mail2, err := s.GetMail(t.Context(), mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body", mail2.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body", mail2.Body)
 	})
+
+	t.Run("should delete local mail when it no longer exists on the server", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		mail := factory.CreateCharacterMail()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", mail.CharacterID, mail.MailID),
+			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{"error": "some error"}),
+		)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
+
+		// when
+		_, err := s.UpdateMailBodyESI(t.Context(), mail.CharacterID, mail.MailID)
+
+		// then
+		assert.Error(t, err)
+		_, err2 := s.GetMail(t.Context(), mail.CharacterID, mail.MailID)
+		assert.ErrorIs(t, err2, app.ErrNotFound)
+
+	})
+
 	t.Run("Can download missing mail bodies", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -90,16 +119,19 @@ func TestUpdateMailBodies(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, mail2a.MailID),
 			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail2a)),
 		)
+
 		// when
-		aborted, err := s.DownloadMissingMailBodies(ctx, c.ID)
+		aborted, err := s.DownloadMissingMailBodies(t.Context(), c.ID)
+
+		// then
 		require.NoError(t, err)
 		require.False(t, aborted)
-		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
+		mail1b, err := s.GetMail(t.Context(), c.ID, mail1a.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body1", mail1b.Body.ValueOrZero())
-		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
+		xassert.EqualOptional(t, "body1", mail1b.Body)
+		mail2b, err := s.GetMail(t.Context(), c.ID, mail2a.MailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body2", mail2b.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body2", mail2b.Body)
 	})
 }
 
@@ -107,7 +139,7 @@ func TestNotifyMails(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	ctx := context.Background()
+
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
 	cases := []struct {
@@ -130,7 +162,7 @@ func TestNotifyMails(t *testing.T) {
 			})
 			var sendCount int
 			// when
-			err := cs.NotifyMails(ctx, n.CharacterID, earliest, func(title string, content string) {
+			err := cs.NotifyMails(t.Context(), n.CharacterID, earliest, func(title string, content string) {
 				sendCount++
 			})
 			// then
@@ -143,10 +175,10 @@ func TestNotifyMails(t *testing.T) {
 func TestSendMail(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -161,11 +193,40 @@ func TestSendMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(201, 123))
 
 		// when
-		mailID, err := s.SendMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
+		mailID, err := s.SendMail(t.Context(), c.ID, "subject", []*app.EveEntity{r}, "body")
+
 		// then
 		require.NoError(t, err)
-		m, err := s.GetMail(ctx, c.ID, mailID)
+		m, err := s.GetMail(t.Context(), c.ID, mailID)
 		require.NoError(t, err)
-		xassert.Equal(t, "body", m.Body.ValueOrZero())
+		xassert.EqualOptional(t, "body", m.Body)
+	})
+
+	t.Run("should handle 520 error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
+			httpmock.NewJsonResponderOrPanic(xgoesi.StatusTooManyErrors, map[string]any{
+				"error": "ContactCostNotApproved",
+				"details": map[string]any{
+					"totalCost":       1,
+					"totalCostISK":    []int{20, 1},
+					"approvedCost":    0,
+					"approvedCostISK": []int{20, 0},
+				},
+			}))
+
+		// when
+		_, err := s.SendMail(t.Context(), c.ID, "subject", []*app.EveEntity{r}, "body")
+
+		// then
+		require.Error(t, err)
 	})
 }

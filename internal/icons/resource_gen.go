@@ -5,6 +5,7 @@ package icons
 
 import (
 	_ "embed"
+
 	"fyne.io/fyne/v2"
 )
 
@@ -272,6 +273,13 @@ var ExpandAllSvgData []byte
 var ExpandAllSvg = &fyne.StaticResource{
 	StaticName:    "expand-all.svg",
 	StaticContent: ExpandAllSvgData,
+}
+
+//go:embed export-variant.svg
+var ExportVariantSvgData []byte
+var ExportVariantSvg = &fyne.StaticResource{
+	StaticName:    "export-variant.svg",
+	StaticContent: ExportVariantSvgData,
 }
 
 //go:embed eye.svg

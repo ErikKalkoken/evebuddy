@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"time"
 
@@ -118,13 +119,13 @@ func (s *CharacterService) ListMailLabelsOrdered(ctx context.Context, characterI
 // SendMail creates a new mail on ESI and stores it locally.
 func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subject string, recipients []*app.EveEntity, body string) (int64, error) {
 	if subject == "" {
-		return 0, fmt.Errorf("missing subject")
+		return 0, fmt.Errorf("missing subject: %w", app.ErrInvalid)
 	}
 	if body == "" {
-		return 0, fmt.Errorf("missing body")
+		return 0, fmt.Errorf("missing body: %w", app.ErrInvalid)
 	}
 	if len(recipients) == 0 {
-		return 0, fmt.Errorf("missing recipients")
+		return 0, fmt.Errorf("missing recipients: %w", app.ErrInvalid)
 	}
 	rr, err := eveEntitiesToESIMailRecipients(recipients)
 	if err != nil {
@@ -137,9 +138,10 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdMail")
 	request := esi.PostCharactersCharacterIdMailRequest{
-		Body:       body,
-		Subject:    subject,
-		Recipients: rr,
+		ApprovedCost: new(int64(s.settings.ApprovedContactCost())),
+		Body:         body,
+		Subject:      subject,
+		Recipients:   rr,
 	}
 	mailID, _, err := s.esiClient.MailAPI.PostCharactersCharacterIdMail(ctx, characterID).PostCharactersCharacterIdMailRequest(request).Execute()
 	if err != nil {
@@ -232,8 +234,14 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 		}
 		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
-		mail, _, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
+		mail, r, err := s.esiClient.MailAPI.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID).Execute()
 		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				err2 := s.st.DeleteCharacterMail(ctx, characterID, mailID)
+				if err2 != nil {
+					slog.Error("Failed to delete mail that no longer exists on the server", "characterID", characterID, "mailID", mail, "error", err2)
+				}
+			}
 			return "", err
 		}
 		body := optional.FromPtr(mail.Body)
@@ -446,7 +454,7 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg charact
 			// if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 			// 	return err
 			// }
-			return false, nil
+			return true, nil
 		})
 }
 

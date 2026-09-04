@@ -114,7 +114,7 @@ func LocationVariantFromID(id int64) EveLocationVariant {
 	}
 }
 
-func (el EveLocation) EveEntity() *EveEntity {
+func (el EveLocation) ToEveEntity() *EveEntity {
 	switch el.Variant() {
 	case EveLocationSolarSystem:
 		return &EveEntity{ID: el.ID, Name: el.SolarSystemName(), Category: EveEntitySolarSystem}
@@ -124,7 +124,7 @@ func (el EveLocation) EveEntity() *EveEntity {
 	return nil
 }
 
-func (el EveLocation) ToShort() *EveLocationShort {
+func (el EveLocation) ToEveLocationShort() *EveLocationShort {
 	o := &EveLocationShort{
 		ID:   el.ID,
 		Name: optional.New(el.Name),

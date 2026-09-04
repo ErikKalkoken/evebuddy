@@ -30,7 +30,7 @@ func TestSettings(t *testing.T) {
 	t.Run("RecentSearches", func(t *testing.T) {
 		p := settings.NewMyPref()
 		s := settings.New(p)
-		x := []int64{1, 2, 3}
+		x := []int64{1, 2, 3, 2_200_000_000} // last one beyond int32 range, e.g. a valid EVE ID
 		s.SetRecentSearches(x)
 	xassert.Equal(t, x, s.RecentSearches())
 	})
@@ -41,6 +41,20 @@ func TestSettings(t *testing.T) {
 		s.SetNotificationTypesEnabled(got)
 		want := s.NotificationTypesEnabled()
 		xassert.Equal(t, want, got)
+	})
+	t.Run("LastCharacterID", func(t *testing.T) {
+		p := settings.NewMyPref()
+		s := settings.New(p)
+		x := int64(2_200_000_000) // beyond int32 range, e.g. a valid EVE character ID
+		s.SetLastCharacterID(x)
+	xassert.Equal(t, x, s.LastCharacterID())
+	})
+	t.Run("LastCorporationID", func(t *testing.T) {
+		p := settings.NewMyPref()
+		s := settings.New(p)
+		x := int64(2_200_000_000) // beyond int32 range, e.g. a valid EVE corporation ID
+		s.SetLastCorporationID(x)
+	xassert.Equal(t, x, s.LastCorporationID())
 	})
 }
 

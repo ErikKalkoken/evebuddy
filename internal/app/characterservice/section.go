@@ -98,7 +98,7 @@ func (s *CharacterService) notifyNewCommunications(ctx context.Context, characte
 		}
 		typesEnabled.Add(nt)
 	}
-	err := s.NotifyCommunications(ctx, characterID, earliest, typesEnabled)
+	err := s.NotifyNotifications(ctx, characterID, earliest, typesEnabled)
 	if err != nil {
 		slog.Error("Notify communications", "characterID", characterID, "error", err)
 	}
@@ -115,7 +115,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
+	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d-%s", characterID, s.signals.PseudoUniqueID())
 	s.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 		if c != nil && c.ID == characterID {
 			cancel() // abort updates when the character is removed
@@ -206,6 +206,11 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 	})
 	if err != nil {
 		logErr(err)
+		s.signals.CharacterSectionUpdated.Emit(ctx, app.CharacterSectionUpdated{
+			CharacterID:  characterID,
+			Section:      section,
+			NeedsRefresh: false,
+		})
 		return
 	}
 
@@ -214,7 +219,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 		go func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
+			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d-%s", characterID, s.signals.PseudoUniqueID())
 			s.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
 				if c != nil && c.ID == characterID {
 					cancel() // abort updates when the character is removed
@@ -306,7 +311,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg charac
 			if !status.HasError() && !status.IsExpired() {
 				return false, nil
 			}
-			if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
+			if status.HasError() && status.WasUpdatedWithinErrorTimedOut() {
 				return false, nil
 			}
 		}

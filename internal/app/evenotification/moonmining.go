@@ -31,7 +31,7 @@ func makeMoonMiningBaseText(ctx context.Context, moonID int64, structureName str
 		"for **%s** at %s in %s",
 		structureName,
 		moon.Name,
-		makeSolarSystemLink(moon.SolarSystem),
+		makeInfoLink(moon.SolarSystem),
 	)
 	x := moonMiningInfo{
 		moon: moon,
@@ -252,7 +252,7 @@ func (n moonminingExtractionCancelled) render(ctx context.Context, text string, 
 		if err != nil {
 			return title, body, err
 		}
-		cancelledBy = fmt.Sprintf(" by %s", makeEveEntityProfileLink(x))
+		cancelledBy = fmt.Sprintf(" by %s", makeInfoLink(x))
 	}
 	out := fmt.Sprintf(
 		"An ongoing extraction for %s has been cancelled%s.",
@@ -303,7 +303,7 @@ func (n moonminingLaserFired) render(ctx context.Context, text string, _ time.Ti
 		if err != nil {
 			return title, body, err
 		}
-		firedBy = fmt.Sprintf("by %s ", makeEveEntityProfileLink(x))
+		firedBy = fmt.Sprintf("by %s ", makeInfoLink(x))
 	}
 	ores, err := makeOreText(ctx, data.OreVolumeByType, n.eus)
 	if err != nil {

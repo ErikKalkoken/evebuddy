@@ -18,7 +18,7 @@ import (
 func TestOptional_New(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
-		xassert.Equal(t, 55, x.MustValue())
+		xassert.EqualOptional(t, 55, x)
 		assert.False(t, x.IsEmpty())
 	})
 	t.Run("can create an empty optional", func(t *testing.T) {
@@ -44,12 +44,12 @@ func TestOptional_Set(t *testing.T) {
 	t.Run("can update an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		x.Set(45)
-		xassert.Equal(t, 45, x.MustValue())
+		xassert.EqualOptional(t, 45, x)
 	})
 	t.Run("can update a non none", func(t *testing.T) {
 		x := optional.New(12)
 		x.Set(45)
-		xassert.Equal(t, 45, x.MustValue())
+		xassert.EqualOptional(t, 45, x)
 	})
 }
 
@@ -57,12 +57,12 @@ func TestOptional_SetWhenEmpty(t *testing.T) {
 	t.Run("sets an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		x.SetWhenEmpty(45)
-		xassert.Equal(t, 45, x.ValueOrZero())
+		xassert.EqualOptional(t, 45, x)
 	})
 	t.Run("does not set a non-empty optional", func(t *testing.T) {
 		x := optional.New(12)
 		x.SetWhenEmpty(45)
-		xassert.Equal(t, 12, x.ValueOrZero())
+		xassert.EqualOptional(t, 12, x)
 	})
 }
 
@@ -251,7 +251,7 @@ func TestSumNonEmpty(t *testing.T) {
 		xassert.Equal(t, tc.want, got)
 	}
 
-	xassert.Equal(t, optional.Optional[int]{}, optional.Sum[int]())
+	xassert.Equal(t, optional.Optional[int]{}, optional.SumNonEmpty[int]())
 }
 
 func TestFromPointerOptional(t *testing.T) {

@@ -20,3 +20,6 @@ playground/
 test.db
 ratelimits.md
 **/temp.*/
+.gitconfig
+internal/app/ui/characters/communications.go
+.claude/

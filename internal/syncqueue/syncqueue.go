@@ -4,7 +4,6 @@ package syncqueue
 import (
 	"context"
 	"errors"
-	"slices"
 	"sync"
 )
 
@@ -12,31 +11,23 @@ var ErrEmpty = errors.New("empty queue")
 
 // SyncQueue represents an unlimited FIFO queue which can be used to synchronize goroutines.
 type SyncQueue[T any] struct {
-	cmu  sync.Mutex
+	mu   sync.Mutex
 	cond *sync.Cond
-
-	smu sync.RWMutex
-	s   []T // new items are inserted at the beginning of the slice
+	s    []T
 }
 
 // New returns a new [SyncQueue].
 func New[T any]() *SyncQueue[T] {
-	q := new(SyncQueue[T])
-	q.cond = sync.NewCond(&q.cmu)
+	q := &SyncQueue[T]{}
+	q.cond = sync.NewCond(&q.mu)
 	return q
 }
 
 // GetNoWait returns the item from the top of the queue or an error when the queue is empty.
 func (q *SyncQueue[T]) GetNoWait() (T, error) {
-	var v T
-	q.smu.Lock()
-	defer q.smu.Unlock()
-	if len(q.s) == 0 {
-		return v, ErrEmpty
-	}
-	v = q.s[len(q.s)-1]
-	q.s = q.s[:len(q.s)-1]
-	return v, nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return q.popLocked()
 }
 
 // Get returns an item from the queue or waits until an item is available.
@@ -44,44 +35,62 @@ func (q *SyncQueue[T]) GetNoWait() (T, error) {
 //
 // If there are multiple goroutines waiting it is undefined which one retrieves a new item.
 func (q *SyncQueue[T]) Get(ctx context.Context) (T, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	stop := context.AfterFunc(ctx, func() {
-		q.cond.L.Lock()
-		defer q.cond.L.Unlock()
+		q.mu.Lock()
+		defer q.mu.Unlock()
 		q.cond.Broadcast()
 	})
 	defer stop()
 
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	for {
-		v, err := q.GetNoWait()
-		if err == nil {
-			return v, nil
+	for len(q.s) == 0 {
+		if err := ctx.Err(); err != nil {
+			var zero T
+			return zero, err
 		}
 		q.cond.Wait()
-		if ctx.Err() != nil {
-			var x T
-			return x, ctx.Err()
-		}
 	}
+
+	return q.popLocked()
+}
+
+func (q *SyncQueue[T]) popLocked() (T, error) {
+	if len(q.s) == 0 {
+		var zero T
+		return zero, ErrEmpty
+	}
+	v := q.s[0]
+	var zero T
+	q.s[0] = zero // avoid memory leak / retain reference
+	q.s = q.s[1:]
+
+	if len(q.s) == 0 {
+		q.s = nil // reset backing array allocation to prevent memory leak in slice
+	}
+	return v, nil
 }
 
 // IsEmpty reports whether the queue is empty.
 func (q *SyncQueue[T]) IsEmpty() bool {
-	return q.Size() == 0
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return len(q.s) == 0
 }
 
 // Put adds an item in the queue.
 func (q *SyncQueue[T]) Put(v T) {
-	q.smu.Lock()
-	defer q.smu.Unlock()
-	q.s = slices.Insert(q.s, 0, v)
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.s = append(q.s, v)
 	q.cond.Signal()
 }
 
 // Size returns the number of items in the queue.
 func (q *SyncQueue[T]) Size() int {
-	q.smu.RLock()
-	defer q.smu.RUnlock()
+	q.mu.Lock()
+	defer q.mu.Unlock()
 	return len(q.s)
 }

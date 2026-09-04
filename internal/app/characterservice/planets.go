@@ -43,7 +43,12 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 		if err != nil {
 			return nil, err
 		}
-		var expired []string
+		type expiredPlanet struct {
+			evePlanetID int64
+			name        string
+			expiration  time.Time
+		}
+		var expired []expiredPlanet
 		for _, p := range planets {
 			expiration, ok := p.ExtractionsEarliestExpiry().Value()
 			if !ok || expiration.After(time.Now()) || expiration.Before(earliest) {
@@ -52,22 +57,32 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 			if p.LastNotified.ValueOrZero().Equal(expiration) {
 				continue
 			}
-			expired = append(expired, p.EvePlanet.Name)
-			err := s.st.UpdateCharacterPlanetLastNotified(ctx, storage.UpdateCharacterPlanetLastNotifiedParams{
-				CharacterID:  characterID,
-				EvePlanetID:  p.EvePlanet.ID,
-				LastNotified: expiration,
+			expired = append(expired, expiredPlanet{
+				evePlanetID: p.EvePlanet.ID,
+				name:        p.EvePlanet.Name,
+				expiration:  expiration,
 			})
-			if err != nil {
-				return nil, err
-			}
 		}
 		if len(expired) > 0 {
-			slices.Sort(expired)
+			names := make([]string, len(expired))
+			for i, p := range expired {
+				names[i] = p.name
+			}
+			slices.Sort(names)
 			title := fmt.Sprintf("%s: PI extraction expired at %d planet(s)", characterName, len(expired))
-			content := fmt.Sprintf("Extraction expired at %s", strings.Join(expired, ", "))
+			content := fmt.Sprintf("Extraction expired at %s", strings.Join(names, ", "))
 			notify(title, content)
-			slog.Info("Notified expired planets", "characterID", characterID, "planets", expired)
+			slog.Info("Notified expired planets", "characterID", characterID, "planets", names)
+			for _, p := range expired {
+				err := s.st.UpdateCharacterPlanetLastNotified(ctx, storage.UpdateCharacterPlanetLastNotifiedParams{
+					CharacterID:  characterID,
+					EvePlanetID:  p.evePlanetID,
+					LastNotified: p.expiration,
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
 		return nil, nil
 	})

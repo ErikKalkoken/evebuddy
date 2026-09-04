@@ -41,15 +41,15 @@ func (st *Storage) GetCharacterLoyaltyPointEntry(ctx context.Context, characterI
 	if err != nil {
 		return nil, fmt.Errorf("GetCharacterLoyaltyPointEntry for character %d: %w", characterID, convertGetError(err))
 	}
-	o := characterLoyaltyPointEntryFromDBModel(characterLoyaltyPointEntryFromDBModelParams{
-		entry:           r.CharacterLoyaltyPointEntry,
-		corporationName: r.CorporationName,
-		faction: nullEveEntry{
+	o := characterLoyaltyPointEntryFromDBModel(
+		r.CharacterLoyaltyPointEntry,
+		r.CorporationName,
+		nullEveEntity{
 			id:       r.FactionID,
 			category: r.FactionCategory,
 			name:     r.FactionName,
 		},
-	})
+	)
 
 	return o, err
 }
@@ -61,15 +61,15 @@ func (st *Storage) ListAllCharacterLoyaltyPointEntries(ctx context.Context) ([]*
 	}
 	var oo []*app.CharacterLoyaltyPointEntry
 	for _, r := range rows {
-		oo = append(oo, characterLoyaltyPointEntryFromDBModel(characterLoyaltyPointEntryFromDBModelParams{
-			entry:           r.CharacterLoyaltyPointEntry,
-			corporationName: r.CorporationName,
-			faction: nullEveEntry{
+		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
+			r.CharacterLoyaltyPointEntry,
+			r.CorporationName,
+			nullEveEntity{
 				id:       r.FactionID,
 				category: r.FactionCategory,
 				name:     r.FactionName,
 			},
-		}))
+		))
 	}
 	return oo, nil
 }
@@ -89,34 +89,33 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 	}
 	var oo []*app.CharacterLoyaltyPointEntry
 	for _, r := range rows {
-		oo = append(oo, characterLoyaltyPointEntryFromDBModel(characterLoyaltyPointEntryFromDBModelParams{
-			entry:           r.CharacterLoyaltyPointEntry,
-			corporationName: r.CorporationName,
-			faction: nullEveEntry{
+		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
+			r.CharacterLoyaltyPointEntry,
+			r.CorporationName,
+			nullEveEntity{
 				id:       r.FactionID,
 				category: r.FactionCategory,
 				name:     r.FactionName,
 			},
-		}))
+		))
 	}
 	return oo, nil
 }
 
-type characterLoyaltyPointEntryFromDBModelParams struct {
-	entry           queries.CharacterLoyaltyPointEntry
-	corporationName string
-	faction         nullEveEntry
-}
+func characterLoyaltyPointEntryFromDBModel(
+	entry queries.CharacterLoyaltyPointEntry,
+	corporationName string,
+	faction nullEveEntity,
 
-func characterLoyaltyPointEntryFromDBModel(arg characterLoyaltyPointEntryFromDBModelParams) *app.CharacterLoyaltyPointEntry {
+) *app.CharacterLoyaltyPointEntry {
 	o2 := &app.CharacterLoyaltyPointEntry{
-		CharacterID: arg.entry.CharacterID,
+		CharacterID: entry.CharacterID,
 		Corporation: &app.EntityShort{
-			ID:   arg.entry.CorporationID,
-			Name: arg.corporationName,
+			ID:   entry.CorporationID,
+			Name: corporationName,
 		},
-		Faction:       eveEntityFromNullableDBModel(arg.faction),
-		LoyaltyPoints: arg.entry.LoyaltyPoints,
+		Faction:       eveEntityFromNullableDBModel(faction),
+		LoyaltyPoints: entry.LoyaltyPoints,
 		ID:            0,
 	}
 	return o2

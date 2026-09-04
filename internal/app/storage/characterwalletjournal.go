@@ -42,7 +42,7 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, queries.CreateCharacterWalletJournalEntryParams{
 		Amount:        arg.Amount.ValueOrZero(),
 		Balance:       arg.Balance.ValueOrZero(),
-		CharacterID:  arg.CharacterID,
+		CharacterID:   arg.CharacterID,
 		ContextID:     arg.ContextID.ValueOrZero(),
 		ContextIDType: arg.ContextIDType.ValueOrZero(),
 		Date:          arg.Date,
@@ -74,16 +74,16 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, queries.GetCharacterWalletJournalEntryParams{
-		CharacterID:arg.CharacterID,
+		CharacterID: arg.CharacterID,
 		RefID:       arg.RefID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
 	o := r.CharacterWalletJournalEntry
-	firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
-	secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
-	taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
+	firstParty := nullEveEntity{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+	secondParty := nullEveEntity{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+	taxReceiver := nullEveEntity{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
@@ -94,7 +94,7 @@ func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, chara
 	if characterID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx,characterID)
+	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, characterID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
@@ -108,16 +108,16 @@ func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charac
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx,characterID)
+	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
 	for i, r := range rows {
 		o := r.CharacterWalletJournalEntry
-		firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
-		secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
-		taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
+		firstParty := nullEveEntity{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+		secondParty := nullEveEntity{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+		taxReceiver := nullEveEntity{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 		ee[i] = characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
 	}
 	return ee, nil
@@ -125,20 +125,19 @@ func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charac
 
 func characterWalletJournalEntryFromDBModel(
 	o queries.CharacterWalletJournalEntry,
-	firstParty, secondParty, taxReceiver nullEveEntry,
+	firstParty, secondParty, taxReceiver nullEveEntity,
 ) *app.CharacterWalletJournalEntry {
 	o2 := &app.CharacterWalletJournalEntry{
 		Amount:        optional.FromZeroValue(o.Amount),
 		Balance:       optional.FromZeroValue(o.Balance),
+		CharacterID:   o.CharacterID,
 		ContextID:     optional.FromZeroValue(o.ContextID),
 		ContextIDType: optional.FromZeroValue(o.ContextIDType),
 		Date:          o.Date,
 		Description:   o.Description,
 		FirstParty:    eveEntityFromNullableDBModel(firstParty),
-		ID:            o.ID,
-		RefID:         o.RefID,
-		CharacterID:  o.CharacterID,
 		Reason:        optional.FromZeroValue(o.Reason),
+		RefID:         o.RefID,
 		RefType:       o.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(secondParty),
 		Tax:           optional.FromZeroValue(o.Tax),

@@ -9,14 +9,14 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestTappableImage_CanCreate(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	image := widget.NewTappableImage(theme.HomeIcon(), nil)
+	image := xwidget.NewTappableImage(theme.HomeIcon(), nil)
 	image.SetFillMode(canvas.ImageFillContain)
 	image.SetMinSize(fyne.NewSquareSize(50))
 	w := test.NewWindow(image)
@@ -28,7 +28,7 @@ func TestTappableImage_CanCreate(t *testing.T) {
 func TestTappableImage_CanSetResource(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	image := widget.NewTappableImage(theme.HomeIcon(), nil)
+	image := xwidget.NewTappableImage(theme.HomeIcon(), nil)
 	image.SetFillMode(canvas.ImageFillContain)
 	image.SetMinSize(fyne.NewSquareSize(50))
 	w := test.NewWindow(image)
@@ -43,7 +43,7 @@ func TestTappableImage_CanTap(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	var tapped bool
-	image := widget.NewTappableImage(theme.HomeIcon(), func() {
+	image := xwidget.NewTappableImage(theme.HomeIcon(), func() {
 		tapped = true
 	})
 	image.SetFillMode(canvas.ImageFillContain)
@@ -58,7 +58,7 @@ func TestTappableImage_CanTap(t *testing.T) {
 func TestTappableImage_IgnoreTapWhenNoCallback(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	image := widget.NewTappableImage(theme.HomeIcon(), nil)
+	image := xwidget.NewTappableImage(theme.HomeIcon(), nil)
 	image.SetFillMode(canvas.ImageFillContain)
 	image.SetMinSize(fyne.NewSquareSize(50))
 	w := test.NewWindow(image)

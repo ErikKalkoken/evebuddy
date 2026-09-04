@@ -85,12 +85,12 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := skillqueueItemFromDBModel(skillqueueItemFromDBModelParams{
-		description: r.SkillDescription,
-		groupName:   r.GroupName,
-		it:          r.CharacterSkillqueueItem,
-		skillName:   r.SkillName,
-	})
+	o := skillqueueItemFromDBModel(
+		description(r.SkillDescription),
+		groupName(r.GroupName),
+		r.CharacterSkillqueueItem,
+		skillName(r.SkillName),
+	)
 	return o, nil
 }
 
@@ -108,12 +108,12 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 	}
 	var oo []*app.CharacterSkillqueueItem
 	for _, r := range rows {
-		oo = append(oo, skillqueueItemFromDBModel(skillqueueItemFromDBModelParams{
-			description: r.SkillDescription,
-			groupName:   r.GroupName,
-			it:          r.CharacterSkillqueueItem,
-			skillName:   r.SkillName,
-		}))
+		oo = append(oo, skillqueueItemFromDBModel(
+			description(r.SkillDescription),
+			groupName(r.GroupName),
+			r.CharacterSkillqueueItem,
+			skillName(r.SkillName),
+		))
 	}
 	return oo, nil
 }
@@ -143,28 +143,27 @@ func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characte
 	return nil
 }
 
-type skillqueueItemFromDBModelParams struct {
-	description string
-	groupName   string
-	it          queries.CharacterSkillqueueItem
-	skillName   string
-}
+func skillqueueItemFromDBModel(
+	description description,
+	groupName groupName,
+	it queries.CharacterSkillqueueItem,
+	skillName skillName,
 
-func skillqueueItemFromDBModel(arg skillqueueItemFromDBModelParams) *app.CharacterSkillqueueItem {
+) *app.CharacterSkillqueueItem {
 	o := &app.CharacterSkillqueueItem{
-		CharacterID:      arg.it.CharacterID,
-		FinishDate:       optional.FromNullTime(arg.it.FinishDate),
-		FinishedLevel:    arg.it.FinishedLevel,
-		GroupName:        arg.groupName,
-		ID:               arg.it.ID,
-		LevelEndSP:       optional.FromNullInt64(arg.it.LevelEndSp),
-		LevelStartSP:     optional.FromNullInt64(arg.it.LevelStartSp),
-		QueuePosition:    arg.it.QueuePosition,
-		SkillDescription: arg.description,
-		SkillID:          arg.it.EveTypeID,
-		SkillName:        arg.skillName,
-		StartDate:        optional.FromNullTime(arg.it.StartDate),
-		TrainingStartSP:  optional.FromNullInt64(arg.it.TrainingStartSp),
+		CharacterID:      it.CharacterID,
+		FinishDate:       optional.FromNullTime(it.FinishDate),
+		FinishedLevel:    it.FinishedLevel,
+		GroupName:        string(groupName),
+		ID:               it.ID,
+		LevelEndSP:       optional.FromNullInt64(it.LevelEndSp),
+		LevelStartSP:     optional.FromNullInt64(it.LevelStartSp),
+		QueuePosition:    it.QueuePosition,
+		SkillDescription: string(description),
+		SkillID:          it.EveTypeID,
+		SkillName:        string(skillName),
+		StartDate:        optional.FromNullTime(it.StartDate),
+		TrainingStartSP:  optional.FromNullInt64(it.TrainingStartSp),
 	}
 	return o
 }

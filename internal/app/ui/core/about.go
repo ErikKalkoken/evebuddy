@@ -12,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/icrowley/fake"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
@@ -39,8 +41,12 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	techInfos := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
 	)
+	showSnackbar := widget.NewButton("Show Snackbar (debug)", func() {
+		u.ShowSnackbar(fake.Paragraph())
+	})
 	if !u.IsDeveloperMode() {
 		techInfos.Hide()
+		showSnackbar.Hide()
 	}
 	discordURL, _ := url.Parse(discordServerURL)
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
@@ -74,6 +80,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		container.NewHBox(currentVersion, releaseNotes),
 		updateAvailableRow,
 		techInfos,
+		showSnackbar,
 		support,
 		container.NewHBox(
 			widget.NewHyperlink("Website", rootURL),

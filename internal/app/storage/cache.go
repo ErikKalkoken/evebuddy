@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -26,30 +25,19 @@ func (st *Storage) CacheCleanUp(ctx context.Context) (int, error) {
 	return int(n), nil
 }
 
-func (st *Storage) CacheExists(ctx context.Context, key string) (bool, error) {
-	_, err := st.CacheGet(ctx, key)
-	if errors.Is(err, app.ErrNotFound) {
-		return false, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("cache exists: %w", err)
-	}
-	return true, nil
-}
-
-func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
+func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, time.Time, error) {
 	if key == "" {
-		return nil, fmt.Errorf("CacheGet: key can not be empty: %w", app.ErrInvalid)
+		return nil, time.Time{}, fmt.Errorf("CacheGet: key can not be empty: %w", app.ErrInvalid)
 	}
-	arg := queries.CacheGetParams{
+	x, err := st.qRO.CacheGet(ctx, queries.CacheGetParams{
 		Key: key,
 		Now: NewNullTimeFromTime(time.Now().UTC()),
-	}
-	x, err := st.qRO.CacheGet(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("cache get: %w", convertGetError(err))
+		return nil, time.Time{}, fmt.Errorf("cache get: %w", convertGetError(err))
 	}
-	return x.Value, nil
+	expiresAt := NewTimeFromNullTime(x.ExpiresAt)
+	return x.Value, expiresAt, nil
 }
 
 func (st *Storage) CacheDelete(ctx context.Context, key string) error {
@@ -77,12 +65,11 @@ func (st *Storage) CacheSet(ctx context.Context, arg CacheSetParams) error {
 	if !arg.ExpiresAt.IsZero() {
 		expiresAt = arg.ExpiresAt.UTC()
 	}
-	arg2 := queries.CacheSetParams{
+	err := st.qRW.CacheSet(ctx, queries.CacheSetParams{
 		ExpiresAt: NewNullTimeFromTime(expiresAt),
 		Key:       arg.Key,
 		Value:     arg.Value,
-	}
-	err := st.qRW.CacheSet(ctx, arg2)
+	})
 	if err != nil {
 		return fmt.Errorf("cache set %s: %w", arg.Key, err)
 	}

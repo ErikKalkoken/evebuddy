@@ -71,7 +71,7 @@ func TestPlanet(t *testing.T) {
 				xassert.Equal(t, c.ID, i.CharacterID)
 				xassert.Equal(t, evePlanet, i.EvePlanet)
 				xassert.Equal(t, lastUpdate, i.LastUpdate)
-				xassert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
+				xassert.EqualOptional(t, lastNotified, i.LastNotified)
 				xassert.Equal(t, 3, i.UpgradeLevel)
 			}
 		}
@@ -130,7 +130,7 @@ func TestPlanet(t *testing.T) {
 		if assert.NoError(t, err) {
 			i, err := st.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
 			if assert.NoError(t, err) {
-				xassert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
+				xassert.EqualOptional(t, lastNotified, i.LastNotified)
 			}
 		}
 	})

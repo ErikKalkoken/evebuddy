@@ -53,7 +53,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			a.name,
-			widget.NewLabel("Region"),
+			widget.NewLabel("Constellation"),
 		),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			container.New(columns, widget.NewLabel("Region"), a.region),
@@ -72,7 +72,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Region.Name)
 		a.region.OnTapped = func() {
-			a.iw.Show(o.Region.EveEntity())
+			a.iw.Show(o.Region.ToEveEntity())
 		}
 
 		if a.iw.u.IsDeveloperMode() {

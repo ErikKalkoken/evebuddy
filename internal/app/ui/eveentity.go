@@ -26,22 +26,23 @@ type EveEntityListItem struct {
 	IsAvatar      bool                // can be set always
 	Truncation    fyne.TextTruncation // can be set before first render
 
-	icon     *canvas.Image
-	loadIcon EveEntityIconLoader
-	name     *widget.Label
+	iconImage  *canvas.Image
+	iconLoader EveEntityIconLoader
+	nameLabel  *widget.Label
 }
 
 // NewEveEntityListItem returns a new EveEntityListItem widget.
-func NewEveEntityListItem(loadIcon EveEntityIconLoader) *EveEntityListItem {
+func NewEveEntityListItem(iconLoader EveEntityIconLoader) *EveEntityListItem {
+	iconImage := xwidget.NewImageFromResource(
+		icons.BlankSvg,
+		fyne.NewSquareSize(IconUnitSize),
+	)
 	w := &EveEntityListItem{
-		icon: xwidget.NewImageFromResource(
-			icons.BlankSvg,
-			fyne.NewSquareSize(IconUnitSize),
-		),
+		iconImage:     iconImage,
 		IconPixelSize: IconPixelSize,
 		IconUnitSize:  IconUnitSize,
-		loadIcon:      loadIcon,
-		name:          widget.NewLabel(""),
+		iconLoader:    iconLoader,
+		nameLabel:     widget.NewLabel(""),
 		Truncation:    fyne.TextTruncateClip,
 	}
 	w.ExtendBaseWidget(w)
@@ -49,10 +50,10 @@ func NewEveEntityListItem(loadIcon EveEntityIconLoader) *EveEntityListItem {
 }
 
 func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
-	w.name.Truncation = w.Truncation
-	w.icon.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
+	w.nameLabel.Truncation = w.Truncation
+	w.iconImage.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
 	if w.IsAvatar {
-		w.icon.CornerRadius = w.IconUnitSize / 2
+		w.iconImage.CornerRadius = w.IconUnitSize / 2
 	}
 	p := theme.Padding()
 	c := container.NewBorder(
@@ -60,13 +61,13 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.NewVBox(
 			layout.NewSpacer(),
-			container.New(layout.NewCustomPaddedLayout(p, p, 2*p, -p), w.icon),
+			container.New(layout.NewCustomPaddedLayout(p, p, 2*p, -p), w.iconImage),
 			layout.NewSpacer(),
 		),
 		nil,
 		container.NewVBox(
 			layout.NewSpacer(),
-			w.name,
+			w.nameLabel,
 			layout.NewSpacer(),
 		),
 	)
@@ -79,23 +80,28 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 // This can be used to show totals in tables.
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
 	if w.IsAvatar {
-		w.icon.CornerRadius = w.IconUnitSize / 2
+		w.iconImage.CornerRadius = w.IconUnitSize / 2
 	}
-	if o.ID == 0 {
-		w.icon.Resource = icons.BlankSvg
-		w.icon.Refresh()
-		w.name.Text = o.Name
-		w.name.TextStyle.Bold = true
-		w.name.Refresh()
+	if o == nil {
+		w.iconImage.Resource = icons.BlankSvg
+		w.iconImage.Refresh()
+		w.nameLabel.Text = "?"
+		w.nameLabel.Refresh()
 		return
 	}
-	w.loadIcon(o, w.IconPixelSize, func(r fyne.Resource) {
-		w.icon.Resource = r
-		w.icon.Refresh()
-	})
-	w.name.Text = o.Name
-	w.name.TextStyle.Bold = false
-	w.name.Refresh()
+	if o.ID == 0 {
+		w.nameLabel.TextStyle.Bold = true
+		w.iconImage.Resource = icons.BlankSvg
+		w.iconImage.Refresh()
+	} else {
+		w.nameLabel.TextStyle.Bold = false
+		w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
+			w.iconImage.Resource = r
+			w.iconImage.Refresh()
+		})
+	}
+	w.nameLabel.Text = o.NameOrZero()
+	w.nameLabel.Refresh()
 }
 
 // Set2 updates the widget.
@@ -112,7 +118,6 @@ func (w *EveEntityListItem) Set2(id int64, name string, category app.EveEntityCa
 
 // MakeEveEntityColumnParams represents the parameters for MakeEveEntityColumn()
 type MakeEveEntityColumnParams[T any] struct {
-	ColumnID  int
 	EIS       EVEImageService
 	GetEntity func(r T) *app.EveEntity
 	IsAvatar  bool
@@ -133,7 +138,6 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 		panic("must define eis")
 	}
 	c := xwidget.DataColumn[T]{
-		ID:    arg.ColumnID,
 		Label: arg.Label,
 		Width: float32(arg.Width),
 		Create: func() fyne.CanvasObject {

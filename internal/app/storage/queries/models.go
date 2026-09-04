@@ -564,6 +564,20 @@ type CorporationWalletTransaction struct {
 	UnitPrice     float64
 }
 
+type EveBloodline struct {
+	ID            int64
+	Charisma      sql.NullInt64
+	CorporationID int64
+	Description   string
+	Intelligence  sql.NullInt64
+	Memory        sql.NullInt64
+	Name          string
+	Perception    sql.NullInt64
+	RaceID        int64
+	ShipTypeID    sql.NullInt64
+	Willpower     sql.NullInt64
+}
+
 type EveCategory struct {
 	ID          int64
 	Name        string
@@ -582,6 +596,7 @@ type EveCharacter struct {
 	RaceID         int64
 	SecurityStatus float64
 	Title          string
+	BloodlineID    sql.NullInt64
 }
 
 type EveConstellation struct {
@@ -627,6 +642,19 @@ type EveEntity struct {
 	Name     string
 }
 
+type EveFaction struct {
+	ID                   int64
+	CorporationID        sql.NullInt64
+	Description          string
+	IsUnique             bool
+	MilitiaCorporationID sql.NullInt64
+	Name                 string
+	SizeFactor           float64
+	SolarSystemID        sql.NullInt64
+	StationCount         int64
+	StationSystemCount   int64
+}
+
 type EveGroup struct {
 	ID            int64
 	EveCategoryID int64
@@ -666,6 +694,7 @@ type EveRace struct {
 	ID          int64
 	Description string
 	Name        string
+	FactionID   sql.NullInt64
 }
 
 type EveRegion struct {

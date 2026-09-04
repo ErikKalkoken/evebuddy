@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,14 +16,14 @@ import (
 )
 
 func TestCharacterSkill(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		eveType := factory.CreateEveType()
+		c := f.CreateCharacter()
+		eveType := f.CreateEveType()
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			ActiveSkillLevel:   3,
 			TypeID:             eveType.ID,
@@ -33,10 +32,10 @@ func TestCharacterSkill(t *testing.T) {
 			TrainedSkillLevel:  5,
 		}
 		// when
-		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
+		err := st.UpdateOrCreateCharacterSkill(t.Context(), arg)
 		// then
 		require.NoError(t, err)
-		x, err := st.GetCharacterSkill(ctx, c.ID, arg.TypeID)
+		x, err := st.GetCharacterSkill(t.Context(), c.ID, arg.TypeID)
 		require.NoError(t, err)
 		xassert.Equal(t, 3, x.ActiveSkillLevel)
 		xassert.Equal(t, eveType, x.Type)
@@ -46,8 +45,8 @@ func TestCharacterSkill(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		c := f.CreateCharacter()
+		o1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:        c.ID,
 			ActiveSkillLevel:   3,
 			TrainedSkillLevel:  5,
@@ -61,10 +60,10 @@ func TestCharacterSkill(t *testing.T) {
 			SkillPointsInSkill: 99,
 		}
 		// when
-		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
+		err := st.UpdateOrCreateCharacterSkill(t.Context(), arg)
 		// then
 		require.NoError(t, err)
-		o2, err := st.GetCharacterSkill(ctx, c.ID, o1.Type.ID)
+		o2, err := st.GetCharacterSkill(t.Context(), c.ID, o1.Type.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 4, o2.ActiveSkillLevel)
 		xassert.Equal(t, 4, o2.TrainedSkillLevel)
@@ -73,52 +72,53 @@ func TestCharacterSkill(t *testing.T) {
 	t.Run("can delete excluded skills", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
-		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		c := f.CreateCharacter()
+		x1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		x2 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		// when
-		err := st.DeleteCharacterSkills(ctx, c.ID, set.Of(x2.Type.ID))
+		err := st.DeleteCharacterSkills(t.Context(), c.ID, set.Of(x2.Type.ID))
 		// then
 		require.NoError(t, err)
-		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
+		ids, err := st.ListCharacterSkillIDs(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(x1.Type.ID), ids)
 	})
 }
 
 func TestCharacterSkillLists(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
-	t.Run("can list skill IDs", func(t *testing.T) {
+
+	t.Run("can list skill IDs of a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		c := f.CreateCharacter()
+		o1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
 		})
-		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		o2 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
 		})
+
 		// when
-		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
+		ids, err := st.ListCharacterSkillIDs(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(o1.Type.ID, o2.Type.ID), ids)
 	})
-	t.Run("can list skills", func(t *testing.T) {
+
+	t.Run("can list skills of a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
-		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
-		skill1 := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
-		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		c := f.CreateCharacter()
+		o1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
-			TypeID:      skill1.ID,
 		})
+
 		// when
 		oo, err := st.ListCharacterSkills(t.Context(), c.ID)
+
 		// then
 		require.NoError(t, err)
 		want := set.Of(o1.Type.ID)
@@ -127,40 +127,58 @@ func TestCharacterSkillLists(t *testing.T) {
 		}))
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("can list all skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o1 := f.CreateCharacterSkill()
+		o2 := f.CreateCharacterSkill()
+
+		// when
+		oo, err := st.ListAllCharacterSkills(t.Context())
+
+		// then
+		require.NoError(t, err)
+		want := set.Of(o1.Type.ID, o2.Type.ID)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterSkill) int64 {
+			return x.Type.ID
+		}))
+		xassert.Equal(t, want, got)
+	})
 }
 
 func TestListCharactersActiveSkillLevels(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("returns skill level", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c1 := factory.CreateCharacterFull()
-		c2 := factory.CreateCharacterFull()
-		c3 := factory.CreateCharacterFull()
-		skill1 := factory.CreateEveType()
-		skill2 := factory.CreateEveType()
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		c1 := f.CreateCharacter()
+		c2 := f.CreateCharacter()
+		c3 := f.CreateCharacter()
+		skill1 := f.CreateEveType()
+		skill2 := f.CreateEveType()
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
 			TypeID:            skill1.ID,
 			ActiveSkillLevel:  3,
 			TrainedSkillLevel: 5,
 		})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c2.ID,
 			TypeID:            skill1.ID,
 			ActiveSkillLevel:  4,
 			TrainedSkillLevel: 5,
 		})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:       c1.ID,
 			TypeID:            skill2.ID,
 			ActiveSkillLevel:  5,
 			TrainedSkillLevel: 5,
 		})
 		// when
-		got, err := st.ListAllCharactersActiveSkillLevels(ctx, skill1.ID)
+		got, err := st.ListAllCharactersActiveSkillLevels(t.Context(), skill1.ID)
 		// then
 		require.NoError(t, err)
 		want := []app.CharacterActiveSkillLevel{{

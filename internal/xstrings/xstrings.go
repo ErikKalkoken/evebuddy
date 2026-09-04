@@ -2,15 +2,55 @@
 package xstrings
 
 import (
+	"regexp"
 	"strings"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
+var folder = cases.Fold(cases.NoLower)
+
+// invalidFilenameChars are characters illegal on Windows / unsafe on Android FAT storage.
+var invalidFilenameChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1F]`)
+
+// reservedFilenames are Windows device names, reserved with or without an extension.
+var reservedFilenames = map[string]bool{
+	"CON": true, "PRN": true, "AUX": true, "NUL": true,
+	"COM1": true, "COM2": true, "COM3": true, "COM4": true, "COM5": true,
+	"COM6": true, "COM7": true, "COM8": true, "COM9": true,
+	"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true, "LPT5": true,
+	"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+}
+
+// maxFilenameLength keeps the result within the 255 byte limit most filesystems enforce.
+const maxFilenameLength = 255
+
+// SanitizeFilename returns a copy of s usable as a file name on Windows, Unix,
+// macOS and Android. Returns "_" if nothing usable remains.
+func SanitizeFilename(s string) string {
+	s = invalidFilenameChars.ReplaceAllString(s, "_")
+	s = strings.TrimRight(s, " .")
+	if runes := []rune(s); len(runes) > maxFilenameLength {
+		s = strings.TrimRight(string(runes[:maxFilenameLength]), " .")
+	}
+	if s == "" {
+		return "_"
+	}
+	name, ext, hasExt := strings.Cut(s, ".")
+	if reservedFilenames[strings.ToUpper(name)] {
+		if hasExt {
+			s = name + "_." + ext
+		} else {
+			s = name + "_"
+		}
+	}
+	return s
+}
+
 // CompareIgnoreCase works like [strings.Compare], but is case insensitive.
 func CompareIgnoreCase(a, b string) int {
-	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+	return strings.Compare(folder.String(a), folder.String(b))
 }
 
 // JoinsOrEmpty joins strings together like [strings.Join],
@@ -22,16 +62,51 @@ func JoinsOrEmpty(elems []string, sep, empty string) string {
 	return strings.Join(elems, sep)
 }
 
-// Title returns the a string with it's first letter upper cased.
+// Obfuscate returns a new string of the same length as s with all characters replaced
+// with a placeholder, except for the last n characters.
+func Obfuscate(s string, n int, placeholder rune) string {
+	if placeholder > 127 {
+		placeholder = 'X'
+	}
+	s2 := RemoveMultiByte(s)
+	if n > len(s2) || n < 0 {
+		return strings.Repeat(string(placeholder), len(s2))
+	}
+	return strings.Repeat(string(placeholder), len(s2)-n) + s2[len(s2)-n:]
+}
+
+// RemoveMultiByte returns a new string where all multi-byte UTF-8 characters have been removed.
+func RemoveMultiByte(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] <= 127 {
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
+}
+
+// Title returns a string with the first letter of every word upper cased.
 func Title(s string) string {
 	return cases.Title(language.English).String(s)
 }
 
-// Obfuscate returns a new string of the same length as s with all characters replaced
-// with a placeholder, except for the last n characters.
-func Obfuscate(s string, n int, placeholder string) string {
-	if n > len(s) || n < 0 {
-		return strings.Repeat(placeholder, len(s))
+// TruncateWithSuffix shortens the length of s to limit amount of characters
+// and adds an ellipsis when the string was shortened.
+// It can optionally keep suffixLen characters at the end.
+func TruncateWithSuffix(s string, limit int, suffixLen int) string {
+	if limit < 3 {
+		return ""
 	}
-	return strings.Repeat(placeholder, len(s)-n) + s[len(s)-n:]
+	runes := []rune(strings.TrimRight(s, " "))
+	if len(runes) <= limit {
+		return string(runes)
+	}
+	suffixLen2 := min(limit-3, suffixLen)
+	prefixLen := max(limit-3-suffixLen2, 0) // ellipsis counts as 3
+	prefix := runes[:prefixLen]
+	suffix := runes[len(runes)-suffixLen2:]
+	strSuffix := strings.TrimRight(string(suffix), " ")
+	return string(prefix) + "..." + strSuffix
 }

@@ -19,7 +19,7 @@ func NumberF[T constraints.Float](value T, decimals uint) string {
 
 // Number returns a humanized int number, e.g. 1234 becomes 1.23K
 func Number[T constraints.Integer](value T, decimals uint) string {
-	if v := int(value); v > -1000 && v < 1000 {
+	if v := float64(value); v > -1000 && v < 1000 {
 		return fmt.Sprint(value)
 	}
 	return number(float64(value), decimals)
@@ -86,7 +86,12 @@ func duration(d time.Duration, roundUp bool) string {
 	minutes -= hours * 60
 	if days > 0 {
 		if minutes > 30 || (roundUp && minutes > 0) {
-			hours++
+			if hours < 23 {
+				hours++
+			} else {
+				days++
+				hours = 0
+			}
 		}
 		return fmt.Sprintf("%dd %dh", days, hours)
 	}
@@ -161,10 +166,13 @@ func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals 
 	return NumberF(float64(v), decimals)
 }
 
-// RomanLetter returns a number as roman letters.
+// RomanLetter returns a number as roman letters
+//
+// Zero is returned as dash.
 // Returns an empty string if v can not be resolved.
 func RomanLetter[T constraints.Integer](v T) string {
 	m := map[int]string{
+		0: "-",
 		1: "I",
 		2: "II",
 		3: "III",

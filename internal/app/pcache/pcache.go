@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"golang.org/x/sync/singleflight"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -20,7 +18,6 @@ import (
 type PCache struct {
 	closeC chan struct{}
 	mc     *memcache.Cache
-	sfg    singleflight.Group
 	st     *storage.Storage
 }
 
@@ -39,14 +36,15 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	}
 	if cleanUpTimeout > 0 {
 		go func() {
+			ticker := time.NewTicker(cleanUpTimeout)
 			for {
-				c.CleanUp()
 				select {
 				case <-c.closeC:
 					slog.Debug("cache closed")
 					return
-				case <-time.After(cleanUpTimeout):
+				case <-ticker.C:
 				}
+				c.CleanUp()
 			}
 		}()
 	}
@@ -68,9 +66,9 @@ func (c *PCache) CleanUp() int {
 
 // Clear removes all items.
 func (c *PCache) Clear() {
-	err := c.st.CacheClear(context.Background())
-	if err != nil {
+	if err := c.st.CacheClear(context.Background()); err != nil {
 		slog.Error("cache failure", "error", err)
+		return
 	}
 	c.mc.Clear()
 }
@@ -83,9 +81,9 @@ func (c *PCache) Close() {
 
 // Delete deletes an item.
 func (c *PCache) Delete(key string) {
-	err := c.st.CacheDelete(context.Background(), key)
-	if err != nil {
+	if err := c.st.CacheDelete(context.Background(), key); err != nil {
 		slog.Error("cache failure", "error", err)
+		return
 	}
 	c.mc.Delete(key)
 }
@@ -95,29 +93,48 @@ func (c *PCache) Exists(key string) bool {
 	if c.mc.Exists(key) {
 		return true
 	}
-	found, err := c.st.CacheExists(context.Background(), key)
+	v, expiresAt, err := c.st.CacheGet(context.Background(), key)
+	if errors.Is(err, app.ErrNotFound) {
+		return false
+	}
 	if err != nil {
 		slog.Error("cache failure", "error", err)
+		return false
 	}
-	return found
+	if d, ok := timeoutFromExpiresAt(expiresAt); ok {
+		c.mc.Set(key, v, d)
+	}
+	return true
 }
 
 // Get returns an item that exists and is not expired.
 // It also reports whether the item was found.
 func (c *PCache) Get(key string) ([]byte, bool) {
-	x, found := c.mc.Get(key)
-	if found {
+	if x, found := c.mc.Get(key); found {
 		return x.([]byte), true
 	}
-	v, err := c.st.CacheGet(context.Background(), key)
+	v, expiresAt, err := c.st.CacheGet(context.Background(), key)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil, false
 	}
 	if err != nil {
-		slog.Error("cache failure", "error", err)
+		slog.Error("Failed to fetch from pcache", "key", key, "error", err)
 		return nil, false
 	}
+	if d, ok := timeoutFromExpiresAt(expiresAt); ok {
+		c.mc.Set(key, v, d)
+	}
 	return v, true
+}
+
+// timeoutFromExpiresAt returns the memcache timeout for expiresAt
+// and reports whether the item should be cached at all.
+func timeoutFromExpiresAt(expiresAt time.Time) (time.Duration, bool) {
+	if expiresAt.IsZero() {
+		return 0, true
+	}
+	d := time.Until(expiresAt)
+	return d, d > 0
 }
 
 // Set stores an item in the cache.
@@ -129,20 +146,14 @@ func (c *PCache) Set(key string, value []byte, timeout time.Duration) {
 	if timeout > 0 {
 		expiresAt = time.Now().Add(timeout)
 	}
-	c.mc.Set(key, value, timeout)
-	_, err, _ := c.sfg.Do(key, func() (any, error) {
-		arg := storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		}
-		err := c.st.CacheSet(context.Background(), arg)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+	err := c.st.CacheSet(context.Background(), storage.CacheSetParams{
+		Key:       key,
+		Value:     value,
+		ExpiresAt: expiresAt,
 	})
 	if err != nil {
-		slog.Error("store cache item", "error", err)
+		slog.Error("Failed to store cache item", "error", err)
+		return
 	}
+	c.mc.Set(key, value, timeout)
 }

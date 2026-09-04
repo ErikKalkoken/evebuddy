@@ -31,7 +31,7 @@ func TestNode_AllPaths(t *testing.T) {
 	assert.ElementsMatch(t, want, got)
 }
 
-func TestNode_AnchestorCount(t *testing.T) {
+func TestNode_AncestorCount(t *testing.T) {
 	top := newCustomNode(NodeItemHangar)
 	a := newCustomNode(NodeCargoBay)
 	top.addChild(a)
@@ -61,6 +61,23 @@ func TestNode_Path(t *testing.T) {
 	xassert.Equal(t, want, got)
 }
 
+func TestNode_Parent(t *testing.T) {
+	t.Run("should return nil for nil node", func(t *testing.T) {
+		var n *Node
+		xassert.Equal(t, (*Node)(nil), n.Parent())
+	})
+	t.Run("should return nil for root node", func(t *testing.T) {
+		top := newCustomNode(NodeItemHangar)
+		xassert.Equal(t, (*Node)(nil), top.Parent())
+	})
+	t.Run("should return parent for non-root node", func(t *testing.T) {
+		top := newCustomNode(NodeItemHangar)
+		a := newCustomNode(NodeCargoBay)
+		top.addChild(a)
+		xassert.Equal(t, top, a.Parent())
+	})
+}
+
 func TestNode_ID(t *testing.T) {
 	t.Run("should return item ID of assets", func(t *testing.T) {
 		n := newAssetNode(&app.CharacterAsset{
@@ -76,9 +93,9 @@ func TestNode_ID(t *testing.T) {
 		})
 		xassert.Equal(t, 123, n.ID())
 	})
-	t.Run("should return 0 of other nodes", func(t *testing.T) {
+	t.Run("should return non-zero ID for custom nodes", func(t *testing.T) {
 		n := newCustomNode(NodeItemHangar)
-		xassert.Equal(t, 0, n.ID())
+		assert.Greater(t, n.ID(), int64(0))
 	})
 }
 
@@ -121,8 +138,8 @@ func TestNode_CharacterAsset(t *testing.T) {
 
 			got, ok := n.CharacterAsset()
 
-		xassert.Equal(t, tt.wantOk, ok)
-		xassert.Equal(t, tt.wantAsset, got)
+			xassert.Equal(t, tt.wantOk, ok)
+			xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }
@@ -166,8 +183,8 @@ func TestNode_CorporationAsset(t *testing.T) {
 
 			got, ok := n.CorporationAsset()
 
-		xassert.Equal(t, tt.wantOk, ok)
-		xassert.Equal(t, tt.wantAsset, got)
+			xassert.Equal(t, tt.wantOk, ok)
+			xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
 }

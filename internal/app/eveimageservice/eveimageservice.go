@@ -98,6 +98,11 @@ func (s *EVEImageService) AllianceLogoAsync(id int64, size int, setter func(r fy
 
 func (s *EVEImageService) AssetIconAsync(id int64, variant app.InventoryTypeVariant, size int, setter func(r fyne.Resource)) {
 	if variant == app.VariantSKIN {
+		if size != 64 {
+			slog.Error("eveimageservice: url", "error", app.ErrInvalid)
+			setter(resourceBrokenimage64Png)
+			return
+		}
 		setter(resourceSkinicon64pxPng)
 		return
 	}
@@ -166,7 +171,7 @@ func (s *EVEImageService) EveEntityLogo(o *app.EveEntity, size int) (fyne.Resour
 	}
 	makeURL, timeout, ok := eveEntityLoadParams(o.Category)
 	if !ok {
-		slog.Warn("EveEntityLogoAsync called for unsupported category", "entity", o)
+		slog.Warn("EveEntityLogo called for unsupported category", "entity", o)
 		return theme.BrokenImageIcon(), nil
 
 	}
@@ -405,7 +410,7 @@ func (s *EVEImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	dat, found := s.cache.Get(key)
 	if !found {
 		if s.isOffline {
-			return resourceQuestionmark32Png, nil
+			return resourceBrokenimage64Png, nil
 		}
 		v, err, _ := xsingleflight.Do(&s.sfg, key, func() ([]byte, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
@@ -434,6 +439,7 @@ func loadDataFromURL(url string, client *http.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
 	if r.StatusCode >= 400 {
 		err := HTTPError{StatusCode: r.StatusCode, Status: r.Status}
 		return nil, err
