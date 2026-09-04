@@ -278,7 +278,7 @@ func main() {
 	}
 
 	// HTTP client for ESI with automatic retries, HTTP caching, rate limit support,
-	// error limit support, blocking during daily downtime period and response logging.
+	// error limit support, and response logging.
 	rhc1 := retryablehttp.NewClient()
 	rhc1.RetryWaitMax = 30 * time.Second // overruled by retry-after and error-reset header
 	rhc1.RetryMax = 3
@@ -287,9 +287,7 @@ func main() {
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
-		Transport: &xgoesi.RateLimiter{
-			Transport: &xgoesi.DowntimeBlocker{},
-		},
+		Transport:           &xgoesi.RateLimiter{},
 	}
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse

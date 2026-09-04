@@ -3,7 +3,6 @@ package esistatusservice
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/singleflight"
@@ -31,18 +30,18 @@ func New(client *esi.APIClient) *ESIStatusService {
 func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-		status, _, err := s.esiClient.StatusAPI.GetStatus(ctx).Execute()
+		status, response, err := s.esiClient.StatusAPI.GetStatus(ctx).Execute()
 		if err != nil {
 			if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
 				msg := swaggerErr.Error()
 				if x, ok := swaggerErr.Model().(esi.Error); ok {
 					msg += ": " + x.Error
 				}
-				return &app.ESIStatus{ErrorMessage: msg}, nil
+				return &app.ESIStatus{ErrorMessage: msg, HTTPStatusCode: response.StatusCode}, nil
 			}
 			return nil, err
 		}
-		es := &app.ESIStatus{PlayerCount: int(status.Players)}
+		es := &app.ESIStatus{HTTPStatusCode: response.StatusCode, PlayerCount: int(status.Players)}
 		return es, nil
 	})
 	if err != nil {
@@ -69,13 +68,6 @@ func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 // 	}
 // 	return fmt.Sprintf("%s: %s", err.Error(), detail)
 // }
-
-// DailyDowntime returns the daily downtime as string.
-func (s *ESIStatusService) DailyDowntime() string {
-	const timeOnly = "15:04"
-	start, finish := xgoesi.DailyDowntime()
-	return fmt.Sprintf("%s - %s", start.Format(timeOnly), finish.Format(timeOnly))
-}
 
 // IsDailyDowntime reports whether the daily downtime is currently planned to happen.
 func (s *ESIStatusService) IsDailyDowntime() bool {
