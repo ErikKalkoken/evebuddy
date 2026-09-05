@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log/slog"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -12,8 +11,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
-	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
@@ -86,7 +83,7 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 	)
 	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Export tags", a.exportTags),
-		fyne.NewMenuItem("Replace tags from file", a.importTags),
+		fyne.NewMenuItem("Import tags", a.importTags),
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
 	ab := xwidget.NewAppBar("Tags", main, actions)
@@ -133,43 +130,23 @@ func (a *manageTags) exportTags() {
 }
 
 func (a *manageTags) importTags() {
-	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-		m := kmodal.NewProgressInfinite(
-			"Replacing tags from file",
-			"Replacing...",
-			func() error {
-				if reader == nil {
-					return nil
-				}
-				defer reader.Close()
-				if err != nil {
-					return err
-				}
-				ctx := context.Background()
-				err = a.cw.u.Character().ReadAndReplaceTags(ctx, reader, fyne.CurrentApp().Metadata().Version)
-				if err != nil {
-					return err
-				}
-				a.update(ctx)
-				go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-				slog.Info("Tags imported from file", "uri", reader.URI())
-				return nil
-			},
-			a.cw.w,
-		)
-		m.OnError = func(err error) {
-			fyne.Do(func() {
-				ui.ShowErrorAndLog("Failed to import tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
-			})
-		}
-		m.Start()
-	},
-		a.cw.w,
-	)
-	kxdialog.AddDialogKeyHandler(d, a.cw.w)
-	d.SetTitleText("Replace tags from file")
-	d.SetConfirmText("Replace")
-	d.Show()
+	filedialog.ShowOpen(a.cw.u, filedialog.ShowFileOpenWindowParams{
+		CompletionText: "Tags imported",
+		ShowSnackbar:   a.cw.sb.Show,
+		Title:          "Import tags",
+		WindowID:       "tags-import",
+		ReadFunc: func(ctx context.Context, r io.Reader) error {
+			err := a.cw.u.Character().ReadAndReplaceTags(ctx, r, fyne.CurrentApp().Metadata().Version)
+			if err != nil {
+				return err
+			}
+			a.update(ctx)
+			go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
+			return nil
+		},
+		Window: a.cw.w,
+	})
+
 }
 
 func (a *manageTags) makeManageCharacters() *xwidget.AppBar {
