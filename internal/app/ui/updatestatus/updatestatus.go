@@ -192,6 +192,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					Title:          "Export notification fixtures",
 					WriteFunc:      a.u.Character().WriteNotificationTypeFixtures,
 					Window:         w,
+					WindowID:       "export-notification-fixtures",
 				})
 			}),
 		)

@@ -1,15 +1,15 @@
 package screens
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 )
 
 // copyRowsToClipboard copies rows from a data table to clipboard.
@@ -36,38 +36,17 @@ func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func
 // The function can be called in the main thread.
 func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, writeRows func(io.Writer, []T) error) {
 	w := u.MainWindow()
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if writer == nil {
-			return
-		}
-		showError := func(err error) {
-			ui.ShowErrorAndLog("Failed to export "+topic, err, u.IsDeveloperMode(), w)
-		}
-		if err != nil {
-			writer.Close()
-			showError(err)
-			return
-		}
-		rows2 := slices.Clone(rows)
-		go func() {
-			defer writer.Close()
-			err := writeRows(writer, rows2)
-			if err != nil {
-				fyne.Do(func() {
-					showError(err)
-				})
-				return
-			}
-			u.ShowSnackbar("Exported " + topic + " to CSV")
-		}()
-	}, w)
-
-	d.SetFileName(filename)
-	d.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-	d.SetTitleText("Export " + topic + " as CSV")
-	d.Show()
-
-	_, s := w.Canvas().InteractiveArea()
-	winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-	d.Resize(winSize)
+	rows2 := slices.Clone(rows)
+	filedialog.ShowSave(u, filedialog.ShowFileSaveWindowParams{
+		CompletionText: "Exported " + topic + " to CSV",
+		Extensions:     []string{".csv"},
+		Filename:       filename,
+		ShowSnackbar:   u.ShowSnackbar,
+		Title:          "Export " + topic + " as CSV",
+		WindowID:       fmt.Sprintf("export-%s-%s", topic, filename),
+		WriteFunc: func(_ context.Context, w io.Writer) error {
+			return writeRows(w, rows2)
+		},
+		Window: w,
+	})
 }
