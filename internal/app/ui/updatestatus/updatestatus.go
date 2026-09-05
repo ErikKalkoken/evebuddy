@@ -10,9 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -24,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -36,6 +35,7 @@ type baseUI interface {
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
+	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsDeveloperMode() bool
 	IsMobile() bool
@@ -184,37 +184,16 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		items = append(items,
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Export notification fixtures...", func() {
-				w2, _, _ := a.u.GetOrCreateWindowWithOnClosed("", "Export notification fixtures")
-				d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-					defer w2.Close()
-					if writer == nil {
-						return
-					}
-					if err != nil {
-						a.sb.Show("Error: " + a.u.ErrorDisplay(err))
-						return
-					}
-					go func() {
-						defer writer.Close()
-						err := a.u.Character().WriteNotificationTypeFixtures(context.Background(), writer)
-						if err != nil {
-							slog.Error("update status", "error", err)
-							fyne.Do(func() { a.sb.Show("Error: " + a.u.ErrorDisplay(err)) })
-							return
-						}
-						fyne.Do(func() { a.sb.Show("Notification fixtures exported") })
-					}()
-				}, w2)
-				d.SetFileName("notification_fixtures.json")
-				d.SetFilter(storage.NewExtensionFileFilter([]string{".json"}))
-
-				_, s := u.MainWindow().Canvas().InteractiveArea()
-				winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
-				w2.Resize(winSize)
-				d.Show()
-				d.Resize(winSize)
-				w2.SetFixedSize(true)
-				w2.Show()
+				filedialog.ShowSave(u, filedialog.ShowFileSaveWindowParams{
+					CompletionText: "Notification fixtures exported",
+					Extensions:     []string{".json"},
+					Filename:       "notification_fixtures.json",
+					ShowSnackbar:   a.sb.Show,
+					Title:          "Export notification fixtures",
+					WriteFunc:      a.u.Character().WriteNotificationTypeFixtures,
+					Window:         w,
+					WindowID:       "export-notification-fixtures",
+				})
 			}),
 		)
 	}
