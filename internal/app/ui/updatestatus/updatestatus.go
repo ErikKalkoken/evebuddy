@@ -40,6 +40,7 @@ type baseUI interface {
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool
+	MainWindow() fyne.Window
 	Signals() *app.Signals
 	StatusCache() *statuscache.StatusCache
 }
@@ -182,8 +183,10 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	if a.u.IsDeveloperMode() {
 		items = append(items,
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Export notification type fixtures", func() {
+			fyne.NewMenuItem("Export notification fixtures...", func() {
+				w2, _, _ := a.u.GetOrCreateWindowWithOnClosed("", "Export notification fixtures")
 				d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+					defer w2.Close()
 					if writer == nil {
 						return
 					}
@@ -199,13 +202,19 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 							fyne.Do(func() { a.sb.Show("Error: " + a.u.ErrorDisplay(err)) })
 							return
 						}
-						fyne.Do(func() { a.sb.Show("Notification type fixtures exported") })
+						fyne.Do(func() { a.sb.Show("Notification fixtures exported") })
 					}()
-				}, w)
+				}, w2)
 				d.SetFileName("notification_fixtures.json")
 				d.SetFilter(storage.NewExtensionFileFilter([]string{".json"}))
-				d.SetTitleText("Export notification type fixtures")
+
+				_, s := u.MainWindow().Canvas().InteractiveArea()
+				winSize := fyne.NewSize(s.Width*0.8, s.Height*0.8)
+				w2.Resize(winSize)
 				d.Show()
+				d.Resize(winSize)
+				w2.SetFixedSize(true)
+				w2.Show()
 			}),
 		)
 	}
