@@ -104,7 +104,132 @@ func (s *EVENotificationService) RenderESI(ctx context.Context, nt app.EveNotifi
 func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notificationRenderer, bool) {
 	var r notificationRenderer
 	switch nt {
+	// bounty
+	case app.BountyClaimMsg:
+		r = new(bountyClaimMsg)
+	case app.BountyESSShared:
+		r = new(bountyESSShared)
+	case app.BountyESSTaken:
+		r = new(bountyESSTaken)
+	case app.BountyPlacedAlliance:
+		r = new(bountyPlacedAlliance)
+	case app.BountyPlacedChar:
+		r = new(bountyPlacedChar)
+	case app.BountyPlacedCorp:
+		r = new(bountyPlacedCorp)
+	case app.BountyYourBountyClaimed:
+		r = new(bountyYourBountyClaimed)
+	// clone
+	case app.CloneActivationMsg:
+		r = new(cloneActivationMsg)
+	case app.CloneActivationMsg2:
+		r = new(cloneActivationMsg2)
+	case app.CloneMovedMsg:
+		r = new(cloneMovedMsg)
+	case app.CloneRevokedMsg2:
+		r = new(cloneRevokedMsg2)
+	case app.JumpCloneDeletedMsg1:
+		r = new(jumpCloneDeletedMsg1)
+	case app.JumpCloneDeletedMsg2:
+		r = new(jumpCloneDeletedMsg2)
+	// contact
+	case app.ContactAdd:
+		r = new(contactAdd)
+	case app.ContactEdit:
+		r = new(contactEdit)
+	// customs
+	case app.ContainerPasswordMsg:
+		r = new(containerPasswordMsg)
+	case app.CustomsMsg:
+		r = new(customsMsg)
+	// game time
+	case app.GameTimeAdded:
+		r = new(gameTimeAdded)
+	case app.GameTimeReceived:
+		r = new(gameTimeReceived)
+	case app.GameTimeSent:
+		r = new(gameTimeSent)
+	// insurance
+	case app.InsuranceExpirationMsg:
+		r = new(insuranceExpirationMsg)
+	case app.InsuranceFirstShipMsg:
+		r = new(insuranceFirstShipMsg)
+	case app.InsuranceInvalidatedMsg:
+		r = new(insuranceInvalidatedMsg)
+	case app.InsuranceIssuedMsg:
+		r = new(insuranceIssuedMsg)
+	case app.InsurancePayoutMsg:
+		r = new(insurancePayoutMsg)
+	// kill right
+	case app.KillReportFinalBlow:
+		r = new(killReportFinalBlow)
+	case app.KillReportVictim:
+		r = new(killReportVictim)
+	case app.KillRightAvailable:
+		r = new(killRightAvailable)
+	case app.KillRightAvailableOpen:
+		r = new(killRightAvailableOpen)
+	case app.KillRightEarned:
+		r = new(killRightEarned)
+	case app.KillRightUnavailable:
+		r = new(killRightUnavailable)
+	case app.KillRightUnavailableOpen:
+		r = new(killRightUnavailableOpen)
+	case app.KillRightUsed:
+		r = new(killRightUsed)
+	// faction warfare
+	case app.FacWarCorpJoinRequestMsg:
+		r = new(facWarCorpJoinRequestMsg)
+	case app.FacWarCorpJoinWithdrawMsg:
+		r = new(facWarCorpJoinWithdrawMsg)
+	case app.FacWarCorpLeaveRequestMsg:
+		r = new(facWarCorpLeaveRequestMsg)
+	case app.FacWarCorpLeaveWithdrawMsg:
+		r = new(facWarCorpLeaveWithdrawMsg)
+	case app.FacWarLPDisqualifiedEvent:
+		r = new(facWarLPDisqualifiedEvent)
+	case app.FacWarLPDisqualifiedKill:
+		r = new(facWarLPDisqualifiedKill)
+	case app.FacWarLPPayoutEvent:
+		r = new(facWarLPPayoutEvent)
+	case app.FacWarLPPayoutKill:
+		r = new(facWarLPPayoutKill)
+	case app.FWAllianceWarningMsg:
+		r = new(fwAllianceWarningMsg)
+	case app.FWCharRankGainMsg:
+		r = new(fwCharRankGainMsg)
+	case app.FWCharRankLossMsg:
+		r = new(fwCharRankLossMsg)
+	case app.FWCorpJoinMsg:
+		r = new(fwCorpJoinMsg)
+	case app.FWCorpKickMsg:
+		r = new(fwCorpKickMsg)
+	case app.FWCorpLeaveMsg:
+		r = new(fwCorpLeaveMsg)
+	case app.FWCorpWarningMsg:
+		r = new(fwCorpWarningMsg)
+	// miscellaneous
+	case app.IncursionCompletedMsg:
+		r = new(incursionCompletedMsg)
+	case app.IndustryTeamAuctionLost:
+		r = new(industryTeamAuctionLost)
+	case app.LocateCharMsg:
+		r = new(locateCharMsg)
+	case app.MissionOfferExpirationMsg:
+		r = new(missionOfferExpirationMsg)
+	case app.OldLscMessages:
+		r = new(oldLscMessages)
+	case app.OperationFinished:
+		r = new(operationFinished)
+	case app.ReimbursementMsg:
+		r = new(reimbursementMsg)
+	case app.ResearchMissionAvailableMsg:
+		r = new(researchMissionAvailableMsg)
+	case app.SeasonalChallengeCompleted:
+		r = new(seasonalChallengeCompleted)
 	// billing
+	case app.AllMaintenanceBillMsg:
+		r = new(allMaintenanceBillMsg)
 	case app.BillOutOfMoneyMsg:
 		r = new(billOutOfMoneyMsg)
 	case app.BillPaidCorpAllMsg:
@@ -130,6 +255,52 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(corpAppNewMsg)
 	case app.CorpAppRejectCustomMsg:
 		r = new(corpAppRejectCustomMsg)
+	case app.BuddyConnectContactAdd:
+		r = new(buddyConnectContactAdd)
+	case app.CharMedalMsg:
+		r = new(charMedalMsg)
+	case app.CharTerminationMsg:
+		r = new(charTerminationMsg)
+	case app.CorpAppAcceptMsg:
+		r = new(corpAppAcceptMsg)
+	case app.CorpAppRejectMsg:
+		r = new(corpAppRejectMsg)
+	case app.CorpKicked:
+		r = new(corpKicked)
+	case app.CorpNewCEOMsg:
+		r = new(corpNewCEOMsg)
+	case app.CorpVoteMsg:
+		r = new(corpVoteMsg)
+	case app.CorpVoteCEORevokedMsg:
+		r = new(corpVoteCEORevokedMsg)
+	case app.CorpDividendMsg:
+		r = new(corpDividendMsg)
+	case app.CorpLiquidationMsg:
+		r = new(corpLiquidationMsg)
+	case app.CorpNewsMsg:
+		r = new(corpNewsMsg)
+	case app.CorpTaxChangeMsg:
+		r = new(corpTaxChangeMsg)
+	case app.CorpFriendlyFireDisableTimerCompleted:
+		r = new(corpFriendlyFireDisableTimerCompleted)
+	case app.CorpFriendlyFireDisableTimerStarted:
+		r = new(corpFriendlyFireDisableTimerStarted)
+	case app.CorpFriendlyFireEnableTimerCompleted:
+		r = new(corpFriendlyFireEnableTimerCompleted)
+	case app.CorpFriendlyFireEnableTimerStarted:
+		r = new(corpFriendlyFireEnableTimerStarted)
+	case app.GiftReceived:
+		r = new(giftReceived)
+	case app.CorpBecameWarEligible:
+		r = new(corpBecameWarEligible)
+	case app.CorpNoLongerWarEligible:
+		r = new(corpNoLongerWarEligible)
+	case app.CorporationGoalCreated:
+		r = new(corporationGoalCreated)
+	case app.CorporationGoalCompleted:
+		r = new(corporationGoalCompleted)
+	case app.CorporationGoalClosed:
+		r = new(corporationGoalClosed)
 	// moonmining
 	case app.MoonminingAutomaticFracture:
 		r = new(moonminingAutomaticFracture)
@@ -183,9 +354,31 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(structureWentHighPower)
 	case app.StructureWentLowPower:
 		r = new(structureWentLowPower)
+	case app.SkyhookLostShields:
+		r = new(skyhookLostShields)
+	case app.SkyhookUnderAttack:
+		r = new(skyhookUnderAttack)
+	case app.SkyhookDeployed:
+		r = new(skyhookDeployed)
+	case app.SkyhookDestroyed:
+		r = new(skyhookDestroyed)
+	case app.SkyhookOnline:
+		r = new(skyhookOnline)
+	case app.StructureLowReagentsAlert:
+		r = new(structureLowReagentsAlert)
+	case app.StructureNoReagentsAlert:
+		r = new(structureNoReagentsAlert)
+	case app.StructuresJobsPaused:
+		r = new(structuresJobsPaused)
+	case app.StationServiceDisabled:
+		r = new(stationServiceDisabled)
+	case app.StationServiceEnabled:
+		r = new(stationServiceEnabled)
 	// sov
 	case app.EntosisCaptureStarted:
 		r = new(entosisCaptureStarted)
+	case app.AllAnchoringMsg:
+		r = new(allAnchoringMsg)
 	case app.SovAllClaimAcquiredMsg:
 		r = new(sovAllClaimAcquiredMsg)
 	case app.SovAllClaimLostMsg:
@@ -196,6 +389,20 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(sovStructureDestroyed)
 	case app.SovStructureReinforced:
 		r = new(sovStructureReinforced)
+	case app.SovereigntyIHDamageMsg:
+		r = new(sovereigntyIHDamageMsg)
+	case app.SovereigntySBUDamageMsg:
+		r = new(sovereigntySBUDamageMsg)
+	case app.SovereigntyTCUDamageMsg:
+		r = new(sovereigntyTCUDamageMsg)
+	case app.SovStationEnteredFreeport:
+		r = new(sovStationEnteredFreeport)
+	case app.SovStructureSelfDestructCancel:
+		r = new(sovStructureSelfDestructCancel)
+	case app.SovStructureSelfDestructFinished:
+		r = new(sovStructureSelfDestructFinished)
+	case app.SovStructureSelfDestructRequested:
+		r = new(sovStructureSelfDestructRequested)
 	// tower
 	case app.TowerAlertMsg:
 		r = new(towerAlertMsg)
@@ -204,6 +411,8 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 	// war
 	case app.AllWarSurrenderMsg:
 		r = new(allWarSurrenderMsg)
+	case app.MutualWarInviteSent:
+		r = new(mutualWarInviteSent)
 	case app.CorpWarSurrenderMsg:
 		r = new(corpWarSurrenderMsg)
 	case app.DeclareWar:
@@ -220,6 +429,62 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(warInvalid)
 	case app.WarRetractedByConcord:
 		r = new(warRetractedByConcord)
+	case app.WarConcordInvalidates:
+		r = new(warConcordInvalidates)
+	case app.WarRetracted:
+		r = new(warRetracted)
+	case app.AllianceWarDeclaredV2:
+		r = new(allianceWarDeclaredV2)
+	case app.CorpWarDeclaredV2:
+		r = new(corpWarDeclaredV2)
+	case app.AcceptedAlly:
+		r = new(acceptedAlly)
+	case app.AcceptedSurrender:
+		r = new(acceptedSurrender)
+	case app.AllianceCapitalChanged:
+		r = new(allianceCapitalChanged)
+	case app.AllWarCorpJoinedAllianceMsg:
+		r = new(allWarCorpJoinedAllianceMsg)
+	case app.AllWarDeclaredMsg:
+		r = new(allWarDeclaredMsg)
+	case app.AllWarInvalidatedMsg:
+		r = new(allWarInvalidatedMsg)
+	case app.AllWarRetractedMsg:
+		r = new(allWarRetractedMsg)
+	case app.AllyContractCancelled:
+		r = new(allyContractCancelled)
+	case app.AllyJoinedWarAggressorMsg:
+		r = new(allyJoinedWarAggressorMsg)
+	case app.AllyJoinedWarAllyMsg:
+		r = new(allyJoinedWarAllyMsg)
+	case app.AllyJoinedWarDefenderMsg:
+		r = new(allyJoinedWarDefenderMsg)
+	case app.MadeWarMutual:
+		r = new(madeWarMutual)
+	case app.OfferedSurrender:
+		r = new(offeredSurrender)
+	case app.OfferedToAlly:
+		r = new(offeredToAlly)
+	case app.RetractsWar:
+		r = new(retractsWar)
+	case app.WarAllyOfferDeclinedMsg:
+		r = new(warAllyOfferDeclinedMsg)
+	case app.WarSurrenderDeclinedMsg:
+		r = new(warSurrenderDeclinedMsg)
+	case app.WarSurrenderOfferMsg:
+		r = new(warSurrenderOfferMsg)
+	case app.CorpWarDeclaredMsg:
+		r = new(corpWarDeclaredMsg)
+	case app.CorpWarFightingLegalMsg:
+		r = new(corpWarFightingLegalMsg)
+	case app.CorpWarInvalidatedMsg:
+		r = new(corpWarInvalidatedMsg)
+	case app.CorpWarRetractedMsg:
+		r = new(corpWarRetractedMsg)
+	case app.MercOfferedNegotiationMsg:
+		r = new(mercOfferedNegotiationMsg)
+	case app.MercOfferRetractedMsg:
+		r = new(mercOfferRetractedMsg)
 	default:
 		return nil, false
 	}

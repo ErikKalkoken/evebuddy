@@ -1,0 +1,746 @@
+[
+	{
+		"notification_id": 1000010032,
+		"type": "AllMaintenanceBillMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allianceID: 99100001\ndueDate: 132202235630000000\n"
+	},
+	{
+		"notification_id": 1000010033,
+		"type": "AllWarDeclaredMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100001\ncost: 15000000.0\ndeclaredByID: 98100002\ndelayHours: 24\nhostileState: 0\n"
+	},
+	{
+		"notification_id": 1000010034,
+		"type": "AllWarInvalidatedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100003\ncost: 15000000.0\ndeclaredByID: 98100004\ndelayHours: 24\nhostileState: 0\n"
+	},
+	{
+		"notification_id": 1000010035,
+		"type": "AllWarRetractedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100005\ncost: 15000000.0\ndeclaredByID: 98100006\ndelayHours: 24\nhostileState: 0\n"
+	},
+	{
+		"notification_id": 1000010036,
+		"type": "AllianceCapitalChanged",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allianceID: 99100002\nsolarSystemID: 30100001\n"
+	},
+	{
+		"notification_id": 1000010037,
+		"type": "AllyContractCancelled",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorID: 98100007\ndefenderID: 98100008\ntimeFinished: 132202236630000000\n"
+	},
+	{
+		"notification_id": 1000010038,
+		"type": "BountyClaimMsg",
+		"sender_id": 95100001,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 15000000.0\ncharID: 95100002\n"
+	},
+	{
+		"notification_id": 1000010039,
+		"type": "BountyESSShared",
+		"sender_id": 95100003,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100004\nmyIsk: 15000000.0\ntotalIsk: 15000000.0\n"
+	},
+	{
+		"notification_id": 1000010040,
+		"type": "BountyESSTaken",
+		"sender_id": 95100005,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100006\nmyIsk: 15000000.0\ntotalIsk: 15000000.0\n"
+	},
+	{
+		"notification_id": 1000010041,
+		"type": "BountyPlacedAlliance",
+		"sender_id": 95100007,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "bounty: 15000000.0\nbountyPlacerID: 98100009\n"
+	},
+	{
+		"notification_id": 1000010042,
+		"type": "BountyPlacedChar",
+		"sender_id": 95100008,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "bounty: 15000000.0\nbountyPlacerID: 98100010\n"
+	},
+	{
+		"notification_id": 1000010043,
+		"type": "BountyPlacedCorp",
+		"sender_id": 95100009,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "bounty: 15000000.0\nbountyPlacerID: 98100011\n"
+	},
+	{
+		"notification_id": 1000010044,
+		"type": "BountyYourBountyClaimed",
+		"sender_id": 95100010,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "bounty: 15000000.0\nvictimID: 98100012\n"
+	},
+	{
+		"notification_id": 1000010045,
+		"type": "BuddyConnectContactAdd",
+		"sender_id": 95100011,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "level: 3\nmessage: 'Congratulations on your promotion!'\n"
+	},
+	{
+		"notification_id": 1000010046,
+		"type": "CharMedalMsg",
+		"sender_id": 95100012,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100013\nmedalID: 501\nreason: 'For outstanding service to the corporation.'\n"
+	},
+	{
+		"notification_id": 1000010047,
+		"type": "CharTerminationMsg",
+		"sender_id": 95100013,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100014\ncorpID: 98100014\nroleName: Director\nroleNameIDs: \n- 3\n- 4\nsecurity: 0.5\n"
+	},
+	{
+		"notification_id": 1000010048,
+		"type": "CloneActivationMsg",
+		"sender_id": 95100015,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "cloneBought: 0\ncloneStationID: 60100001\ncloneTypeID: 34\ncorpStationID: 60100002\nlastCloned: 132202237630000000\npodKillerID: 98100015\nskillID: 90000001\nskillPointsLost: 12000\n"
+	},
+	{
+		"notification_id": 1000010049,
+		"type": "CloneActivationMsg2",
+		"sender_id": 95100016,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "cloneStationID: 60100003\ncorpStationID: 60100004\nlastCloned: 132202238630000000\npodKillerID: 98100016\n"
+	},
+	{
+		"notification_id": 1000010050,
+		"type": "CloneMovedMsg",
+		"sender_id": 95100017,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charsInCorpID: 98100017\ncorpID: 98100018\nnewStationID: 60100005\nstationID: 60100006\n"
+	},
+	{
+		"notification_id": 1000010051,
+		"type": "ContactAdd",
+		"sender_id": 95100018,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "level: 3\nmessage: 'Congratulations on your promotion!'\n"
+	},
+	{
+		"notification_id": 1000010052,
+		"type": "ContactEdit",
+		"sender_id": 95100019,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "level: 15000000.0\nmessage: 'Congratulations on your promotion!'\n"
+	},
+	{
+		"notification_id": 1000010053,
+		"type": "ContainerPasswordMsg",
+		"sender_id": 95100020,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100021\npassword: hunter2\npasswordType: Cargo\nsolarSystemID: 30100002\nstationID: 60100007\ntypeID: 35\n"
+	},
+	{
+		"notification_id": 1000010054,
+		"type": "CorpAppRejectMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "applicationText: 'This is my application text.'\ncharID: 95100022\ncorpID: 98100019\n"
+	},
+	{
+		"notification_id": 1000010055,
+		"type": "CorpDividendMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 15000000.0\ncorpID: 98100020\nisMembers: false\npayout: 15000000.0\n"
+	},
+	{
+		"notification_id": 1000010056,
+		"type": "CorpFriendlyFireDisableTimerCompleted",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100021\n"
+	},
+	{
+		"notification_id": 1000010057,
+		"type": "CorpFriendlyFireDisableTimerStarted",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100023\ncorpID: 98100022\ntimeFinished: 132202239630000000\n"
+	},
+	{
+		"notification_id": 1000010058,
+		"type": "CorpFriendlyFireEnableTimerCompleted",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100023\n"
+	},
+	{
+		"notification_id": 1000010059,
+		"type": "CorpFriendlyFireEnableTimerStarted",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100024\ncorpID: 98100024\ntimeFinished: 132202240630000000\n"
+	},
+	{
+		"notification_id": 1000010060,
+		"type": "CorpLiquidationMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 15000000.0\ncorpID: 98100025\npayout: 15000000.0\n"
+	},
+	{
+		"notification_id": 1000010061,
+		"type": "CorpNewsMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "body: 'Please read this important corp update.'\ncorpID: 98100026\ninEffect: 1\nparameter: 1\nvoteType: 1\n"
+	},
+	{
+		"notification_id": 1000010062,
+		"type": "CorpVoteMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "body: 'Please read this important corp update.'\nsubject: 'Corp Announcement'\n"
+	},
+	{
+		"notification_id": 1000010063,
+		"type": "CorpWarDeclaredMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100027\ncost: 15000000.0\ndeclaredByID: 98100028\n"
+	},
+	{
+		"notification_id": 1000010064,
+		"type": "CorpWarFightingLegalMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100029\ncost: 15000000.0\ndeclaredByID: 98100030\n"
+	},
+	{
+		"notification_id": 1000010065,
+		"type": "CorpWarInvalidatedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100031\ncost: 15000000.0\ndeclaredByID: 98100032\n"
+	},
+	{
+		"notification_id": 1000010066,
+		"type": "CorpWarRetractedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100033\ncost: 15000000.0\ndeclaredByID: 98100034\n"
+	},
+	{
+		"notification_id": 1000010067,
+		"type": "CustomsMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "factionID: 500001\nlostList: \n- fine: 1050000.0\n  penalty: 500000.0\n  quantity: 12\n  typeID: 34\n\nsecurityLevel: 0.8\nshouldAttack: 0\nshouldConfiscate: 0\nsolarSystemID: 30100003\nstandingDivision: 1.0\n"
+	},
+	{
+		"notification_id": 1000010068,
+		"type": "FWAllianceWarningMsg",
+		"sender_id": 500002,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allianceID: 99100003\ncorpList: 'Aideron Robotics, Ivy League'\nfactionID: 500003\nrequiredStanding: 5.0\n"
+	},
+	{
+		"notification_id": 1000010069,
+		"type": "FWCharRankGainMsg",
+		"sender_id": 500004,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "factionID: 500005\nnewRank: 3\n"
+	},
+	{
+		"notification_id": 1000010070,
+		"type": "FWCharRankLossMsg",
+		"sender_id": 500006,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "factionID: 500007\nnewRank: 3\n"
+	},
+	{
+		"notification_id": 1000010071,
+		"type": "FWCorpJoinMsg",
+		"sender_id": 500008,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100035\nfactionID: 500009\n"
+	},
+	{
+		"notification_id": 1000010072,
+		"type": "FWCorpKickMsg",
+		"sender_id": 500010,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100036\ncurrentStanding: 5.0\nfactionID: 500011\nrequiredStanding: 5.0\n"
+	},
+	{
+		"notification_id": 1000010073,
+		"type": "FWCorpLeaveMsg",
+		"sender_id": 500012,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100037\nfactionID: 500013\n"
+	},
+	{
+		"notification_id": 1000010074,
+		"type": "FWCorpWarningMsg",
+		"sender_id": 500014,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100038\ncurrentStanding: 5.0\nfactionID: 500015\nrequiredStanding: 5.0\n"
+	},
+	{
+		"notification_id": 1000010075,
+		"type": "FacWarCorpJoinRequestMsg",
+		"sender_id": 500016,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100039\nfactionID: 500017\n"
+	},
+	{
+		"notification_id": 1000010076,
+		"type": "FacWarCorpJoinWithdrawMsg",
+		"sender_id": 500018,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100040\nfactionID: 500019\n"
+	},
+	{
+		"notification_id": 1000010077,
+		"type": "FacWarCorpLeaveRequestMsg",
+		"sender_id": 500020,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100041\nfactionID: 500021\n"
+	},
+	{
+		"notification_id": 1000010078,
+		"type": "FacWarCorpLeaveWithdrawMsg",
+		"sender_id": 500022,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "corpID: 98100042\nfactionID: 500023\n"
+	},
+	{
+		"notification_id": 1000010079,
+		"type": "FacWarLPDisqualifiedEvent",
+		"sender_id": 500024,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 4\ncharRefID: 90000002\ncorpID: 98100043\ndisqualificationType: 1\nevent: 1\nitemRefID: 90000003\nlocationID: 1040000000001\n"
+	},
+	{
+		"notification_id": 1000010080,
+		"type": "FacWarLPDisqualifiedKill",
+		"sender_id": 500025,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 4\ncharRefID: 90000004\ncorpID: 98100044\ndisqualificationType: 1\nevent: 1\nitemRefID: 90000005\nlocationID: 1040000000002\n"
+	},
+	{
+		"notification_id": 1000010081,
+		"type": "FacWarLPPayoutEvent",
+		"sender_id": 500026,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 4\ncharRefID: 90000006\ncorpID: 98100045\nevent: 1\nitemRefID: 90000007\nlocationID: 1040000000003\n"
+	},
+	{
+		"notification_id": 1000010082,
+		"type": "FacWarLPPayoutKill",
+		"sender_id": 500027,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 4\ncharRefID: 90000008\ncorpID: 98100046\nevent: 1\nitemRefID: 90000009\nlocationID: 1040000000004\n"
+	},
+	{
+		"notification_id": 1000010083,
+		"type": "GameTimeAdded",
+		"sender_id": 95100025,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "{}\n"
+	},
+	{
+		"notification_id": 1000010084,
+		"type": "GameTimeReceived",
+		"sender_id": 95100026,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "message: 'Congratulations on your promotion!'\nofferID: 701\nquantity: 5\nsenderCharID: 95100027\n"
+	},
+	{
+		"notification_id": 1000010085,
+		"type": "GameTimeSent",
+		"sender_id": 95100028,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "receiverCharID: 95100029\nsenderCharID: 95100030\n"
+	},
+	{
+		"notification_id": 1000010086,
+		"type": "GiftReceived",
+		"sender_id": 95100031,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "message: 'Congratulations on your promotion!'\nofferID: 702\nquantity: 5\nsenderCharID: 95100032\n"
+	},
+	{
+		"notification_id": 1000010087,
+		"type": "IncursionCompletedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "emailMessageId: 1.0\nsolarSystemID: 30100004\ntaleID: 90000010\ntopTen: \n- - 95100033\n  - 1500000000.0\n- - 95100034\n  - 900000000.0\n- - 95100035\n  - 400000000.0\n"
+	},
+	{
+		"notification_id": 1000010088,
+		"type": "IndustryTeamAuctionLost",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "solarSystemID: 30100005\nsystemBids: \n  30100006: 550000000.0\nteamNameInfo: []\ntotalIsk: 1250000000.0\nyourAmount: 50000000.0\n"
+	},
+	{
+		"notification_id": 1000010089,
+		"type": "InsuranceExpirationMsg",
+		"sender_id": 95100036,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "endDate: 132202241630000000\nshipID: 587\nshipName: My Precious\nstartDate: 132202242630000000\n"
+	},
+	{
+		"notification_id": 1000010090,
+		"type": "InsuranceFirstShipMsg",
+		"sender_id": 95100037,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "isHouseWarmingGift: 0\nshipTypeID: 608\n"
+	},
+	{
+		"notification_id": 1000010091,
+		"type": "InsuranceInvalidatedMsg",
+		"sender_id": 95100038,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "endDate: 132202243630000000\nownerID: 98100047\nreason: 1\nshipID: 670\nstartDate: 132202244630000000\ntypeID: 672\n"
+	},
+	{
+		"notification_id": 1000010092,
+		"type": "InsuranceIssuedMsg",
+		"sender_id": 95100039,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "endDate: 132202245630000000\nitemID: 1040000000005\nlevel: 15000000.0\nnumWeeks: 1\nshipName: My Precious\nstartDate: 132202246630000000\ntypeID: 2454\n"
+	},
+	{
+		"notification_id": 1000010093,
+		"type": "InsurancePayoutMsg",
+		"sender_id": 95100040,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "amount: 15000000.0\nitemID: 1040000000006\npayout: 1\n"
+	},
+	{
+		"notification_id": 1000010094,
+		"type": "KillRightAvailable",
+		"sender_id": 95100041,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100042\nprice: 15000000.0\ntoEntityID: 98100048\n"
+	},
+	{
+		"notification_id": 1000010095,
+		"type": "KillRightAvailableOpen",
+		"sender_id": 95100043,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100044\nprice: 15000000.0\n"
+	},
+	{
+		"notification_id": 1000010096,
+		"type": "KillRightEarned",
+		"sender_id": 95100045,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100046\n"
+	},
+	{
+		"notification_id": 1000010097,
+		"type": "KillRightUnavailable",
+		"sender_id": 95100047,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100048\ntoEntityID: 98100049\n"
+	},
+	{
+		"notification_id": 1000010098,
+		"type": "KillRightUnavailableOpen",
+		"sender_id": 95100049,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100050\n"
+	},
+	{
+		"notification_id": 1000010099,
+		"type": "KillRightUsed",
+		"sender_id": 95100051,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100052\n"
+	},
+	{
+		"notification_id": 1000010100,
+		"type": "LocateCharMsg",
+		"sender_id": 95100053,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "agentLocation: \n  '3': 10000031\n  '4': 20000321\n  '5': 30100007\n  '15': 60100008\ncharacterID: 95100054\nmessageIndex: 1\ntargetLocation: \n  '3': 10000032\n  '4': 20000322\n  '5': 30100008\n  '15': 60100009\n"
+	},
+	{
+		"notification_id": 1000010101,
+		"type": "MadeWarMutual",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100055\nenemyID: 98100050\n"
+	},
+	{
+		"notification_id": 1000010102,
+		"type": "MissionOfferExpirationMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "body: \n- 'This mission offer is about to expire.'\nheader: \n- 'Mission Offer Expiring'\nmissionKeywords: \n  objectiveDestinationID: 1040000000007\n  objectiveDestinationSystemID: 30100009\n  objectiveLocationID: 1040000000008\n  objectiveLocationSystemID: 30100010\n  objectiveQuantity: 1\n  objectiveTypeID: 12235\n  rewardQuantity: 1\n  rewardTypeID: 16159\n"
+	},
+	{
+		"notification_id": 1000010103,
+		"type": "OldLscMessages",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "body: 'Please read this important corp update.'\nsubject: 'Corp Announcement'\n"
+	},
+	{
+		"notification_id": 1000010104,
+		"type": "OperationFinished",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "operationID: 4000001\nrewards: \n  isk: 5000000\n"
+	},
+	{
+		"notification_id": 1000010105,
+		"type": "ReimbursementMsg",
+		"sender_id": 95100056,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "addCloneInfo: 1\nshipTypeID: 34\nsolarSystemID: 30100011\nstationID: 60100010\n"
+	},
+	{
+		"notification_id": 1000010106,
+		"type": "ResearchMissionAvailableMsg",
+		"sender_id": 95100057,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "{}\n"
+	},
+	{
+		"notification_id": 1000010107,
+		"type": "RetractsWar",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100058\nenemyID: 98100051\n"
+	},
+	{
+		"notification_id": 1000010108,
+		"type": "SeasonalChallengeCompleted",
+		"sender_id": 95100059,
+		"sender_type": "character",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "challenge_name_id: 90000011\nmax_progress: 100\npoints_awarded: 50\nprogress_text: 100\n"
+	},
+	{
+		"notification_id": 1000010109,
+		"type": "SkyhookLostShields",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "itemID: 1040000000009\nplanetID: 40200001\nplanetShowInfoData: \n- showinfo\n- 2016\n- 40200001\nskyhookShowInfoData: []\nsolarsystemID: 30100012\ntimeLeft: 3600000000\ntimestamp: 133215175400000000\ntypeID: 81826\nvulnerableTime: 7200000000\n"
+	},
+	{
+		"notification_id": 1000010110,
+		"type": "SkyhookUnderAttack",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allianceID: 99100004\nallianceLinkData: \n- showinfo\n- 16159\n- 99100004\nallianceName: C C P Alliance\narmorPercentage: 0.65\ncharID: 95100060\ncorpLinkData: \n- showinfo\n- 2\n- 98100052\ncorpName: Aideron Robotics\nhullPercentage: 1.0\nisActive: true\nitemID: '1040000000010'\nplanetID: 40200002\nplanetShowInfoData: \n- showinfo\n- 2016\n- 40200002\nshieldPercentage: 0.0\nskyhookShowInfoData: \n- showinfo\n- 81826\n- 1040000000010\nsolarsystemID: 30100013\nstructureID: 1040000000010\nstructureShowInfoData: \n- showinfo\n- 81826\n- 1040000000010\ntypeID: 81826\n"
+	},
+	{
+		"notification_id": 1000010111,
+		"type": "SovStationEnteredFreeport",
+		"sender_id": 500028,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "freeportexittime: 132202247630000000\nsolarSystemID: 30100014\nstructureTypeID: 35\n"
+	},
+	{
+		"notification_id": 1000010112,
+		"type": "SovStructureSelfDestructCancel",
+		"sender_id": 500029,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100061\nsolarSystemID: 30100015\nstructureTypeID: 587\n"
+	},
+	{
+		"notification_id": 1000010113,
+		"type": "SovStructureSelfDestructFinished",
+		"sender_id": 500030,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "solarSystemID: 30100016\nstructureTypeID: 608\n"
+	},
+	{
+		"notification_id": 1000010114,
+		"type": "SovStructureSelfDestructRequested",
+		"sender_id": 500031,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "charID: 95100062\ncorpName: Aideron Robotics\ndestructTime: 132202248630000000\nsolarSystemID: 30100017\nstructureTypeID: 670\n"
+	},
+	{
+		"notification_id": 1000010115,
+		"type": "SovereigntyIHDamageMsg",
+		"sender_id": 500032,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorAllianceID: 99100005\naggressorCorpID: 98100053\naggressorID: 98100054\narmorValue: 0.87542\nhullValue: 0.87542\nshieldValue: 0.87542\nsolarSystemID: 30100018\n"
+	},
+	{
+		"notification_id": 1000010116,
+		"type": "SovereigntySBUDamageMsg",
+		"sender_id": 500033,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorAllianceID: 99100006\naggressorCorpID: 98100055\naggressorID: 98100056\narmorValue: 0.87542\nhullValue: 0.87542\nshieldValue: 0.87542\nsolarSystemID: 30100019\n"
+	},
+	{
+		"notification_id": 1000010117,
+		"type": "SovereigntyTCUDamageMsg",
+		"sender_id": 500034,
+		"sender_type": "faction",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorAllianceID: 99100007\naggressorCorpID: 98100057\naggressorID: 98100058\narmorValue: 0.87542\nhullValue: 0.87542\nshieldValue: 0.87542\nsolarSystemID: 30100020\n"
+	},
+	{
+		"notification_id": 1000010118,
+		"type": "StationServiceDisabled",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "solarSystemID: 30100021\nstructureTypeID: 672\n"
+	},
+	{
+		"notification_id": 1000010119,
+		"type": "StationServiceEnabled",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "solarSystemID: 30100022\nstructureTypeID: 2454\n"
+	},
+	{
+		"notification_id": 1000010120,
+		"type": "WarAdopted",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "againstID: 98100059\nallianceID: 99100008\ndeclaredByID: 98100060\n"
+	},
+	{
+		"notification_id": 1000010121,
+		"type": "WarAllyOfferDeclinedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorID: 98100061\nallyID: 98100062\ncharID: 95100063\ndefenderID: 98100063\n"
+	},
+	{
+		"notification_id": 1000010122,
+		"type": "WarSurrenderDeclinedMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "iskValue: 0.87542\nownerID: 98100064\n"
+	},
+	{
+		"notification_id": 1000010123,
+		"type": "AcceptedAlly",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "allyID: 99100009\ncharID: 95100064\nenemyID: 99100010\niskValue: 3375000000.0\ntime: 132202249630000000\n"
+	},
+	{
+		"notification_id": 1000010124,
+		"type": "AllyJoinedWarDefenderMsg",
+		"sender_id": 1000125,
+		"sender_type": "corporation",
+		"timestamp": "2024-01-05 09:15:00+00:00",
+		"text": "aggressorID: 99100011\nallyID: 99100012\nstartTime: 132202250630000000\n"
+	}
+]

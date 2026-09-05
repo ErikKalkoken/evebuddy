@@ -1,0 +1,111 @@
+[
+    {
+        "notification_id": 1000000803,
+        "type": "SovAllClaimAquiredMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2018-09-11 23:37:00+00:00",
+        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000919,
+        "type": "AllAnchoringMsg",
+        "sender_id": 3001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "allianceID: 3001\ncorpID: 2001\ncorpsPresent:\n- allianceID: 3001\n  corpID: 2002\nmoonID: 40161466\nsolarSystemID: 30002537\ntowers:\n- moonID: 40161465\n  typeID: 16213\ntypeID: 16213\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001123,
+        "type": "MercOfferRetractedMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "aggressorID: 3011\ndefenderID: 3001\nmercID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001203,
+        "type": "SkyhookDestroyed",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "itemID: &id001 1000000010001\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 2016\n- 40161469\nskyhookShowInfoData:\n- showinfo\n- 81080\n- *id001\nsolarsystemID: 30002537\ntypeID: 81080",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001204,
+        "type": "SkyhookDeployed",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "itemID: &id002 1000000010001\nownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Good Company\nplanetID: &id001 40161469\nplanetShowInfoData:\n- showinfo\n- 2016\n- *id001\nskyhookShowInfoData:\n- showinfo\n- 81080\n- *id002\nsolarsystemID: 30002537\ntimeLeft: 18000000000\ntypeID: 81080",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001205,
+        "type": "SkyhookOnline",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "itemID: &id002 1000000010001\nplanetID: &id001 40161469\nplanetShowInfoData:\n- showinfo\n- 2016\n- *id001\nskyhookShowInfoData:\n- showinfo\n- 81080\n- *id002\nsolarsystemID: 30002537\ntypeID: 81080",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001301,
+        "type": "StructureLowReagentsAlert",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 81826\n- *id001\nstructureTypeID: 81826",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001302,
+        "type": "StructureNoReagentsAlert",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 81826\n- *id001\nstructureTypeID: 81826",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001401,
+        "type": "CorporationGoalClosed",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "closer_id: 1011\ncorporation_id: 2001\ncreator_id: 1001\ngoal_id: 287804106856621566338600488094573709306\ngoal_name: Strawberry Jam",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001402,
+        "type": "CorporationGoalCompleted",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: 287804106856621566338600488094573709306\ngoal_name: Strawberry Jam",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001403,
+        "type": "CorporationGoalCreated",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18 20:00:00+00:00",
+        "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: 287804106856621566338600488094573709306\ngoal_name: Strawberry Jam",
+        "is_read": false,
+        "is_sent": false
+    }
+]
