@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	asettings "github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -35,6 +37,7 @@ type baseUI interface {
 	ClearAllCaches()
 	DataPaths() xmaps.OrderedMap[string, string]
 	ErrorDisplay(err error) string
+	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	IsDeveloperMode() bool
 	IsMobile() bool
@@ -353,13 +356,13 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	exportAppLog := settingAction{
 		Label: "Export application log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths()["log"])
+			a.showExportFileDialog("application log", a.u.DataPaths()["log"])
 		},
 	}
 	exportCrashLog := settingAction{
 		Label: "Export crash log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths()["crashfile"])
+			a.showExportFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
 	}
 	deleteAppLog := settingAction{
@@ -429,7 +432,7 @@ func (a *settings) showDeleteFileDialog(name, path string) {
 		}, a.w)
 }
 
-func (a *settings) showExportFileDialog(path string) {
+func (a *settings) showExportFileDialog(topic, path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -439,35 +442,20 @@ func (a *settings) showExportFileDialog(path string) {
 		ui.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
 		return
 	}
-	d := dialog.NewFileSave(
-		func(writer fyne.URIWriteCloser, err error) {
-			err2 := func() error {
-				if err != nil {
-					return err
-				}
-				if writer == nil {
-					return nil
-				}
-				defer func() {
-					err := writer.Close()
-					if err != nil {
-						slog.Error("Tag export", "error", err)
-					}
-				}()
-				if _, err := writer.Write(data); err != nil {
-					return err
-				}
-				a.sb.Show("File " + filename + " exported")
-				return nil
-			}()
-			if err2 != nil {
-				ui.ShowErrorAndLog("Failed to export "+filename, err, a.u.IsDeveloperMode(), a.w)
-			}
-		}, a.w,
-	)
-	d.SetFileName(filename)
-	xdesktop.DisableShortcutsForDialog(d, a.w)
-	d.Show()
+
+	filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
+		CompletionText: xstrings.Title(topic) + " exported",
+		Filename:       filename,
+		ShowSnackbar:   a.sb.Show,
+		Title:          "Export " + topic,
+		WindowID:       "export-log",
+		WriteFunc: func(_ context.Context, w io.Writer) error {
+			_, err := w.Write(data)
+			return err
+
+		},
+		Window: a.w,
+	})
 }
 
 func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {

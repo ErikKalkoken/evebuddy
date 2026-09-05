@@ -79,25 +79,7 @@ func showDialogInWindow(u baseUI, w fyne.Window, d *dialog.FileDialog) {
 
 func createFileSaveDialog(u baseUI, arg ShowFileSaveWindowParams, w fyne.Window) *dialog.FileDialog {
 	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if err != nil {
-			arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
-			return
-		}
-		if writer == nil {
-			return
-		}
-		go func() {
-			defer writer.Close()
-			err := arg.WriteFunc(context.Background(), writer)
-			if err != nil {
-				slog.Error(arg.Title, "error", err)
-				fyne.Do(func() {
-					arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
-				})
-				return
-			}
-			fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
-		}()
+		handleSaveResult(u, arg, writer, err)
 	}, w)
 	if arg.Filename != "" {
 		d.SetFileName(arg.Filename)
@@ -108,30 +90,56 @@ func createFileSaveDialog(u baseUI, arg ShowFileSaveWindowParams, w fyne.Window)
 	return d
 }
 
+func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWriteCloser, err error) {
+	if err != nil {
+		arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+		return
+	}
+	if writer == nil {
+		return
+	}
+	go func() {
+		defer writer.Close()
+		err := arg.WriteFunc(context.Background(), writer)
+		if err != nil {
+			slog.Error(arg.Title, "error", err)
+			fyne.Do(func() {
+				arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+			})
+			return
+		}
+		fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
+	}()
+}
+
 func createFileOpenDialog(u baseUI, arg ShowFileOpenWindowParams, w fyne.Window) *dialog.FileDialog {
 	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-		if err != nil {
-			arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
-			return
-		}
-		if reader == nil {
-			return
-		}
-		go func() {
-			defer reader.Close()
-			err := arg.ReadFunc(context.Background(), reader)
-			if err != nil {
-				slog.Error(arg.Title, "error", err)
-				fyne.Do(func() {
-					arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
-				})
-				return
-			}
-			fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
-		}()
+		handleOpenResult(u, arg, reader, err)
 	}, w)
 	if len(arg.Extensions) > 0 {
 		d.SetFilter(storage.NewExtensionFileFilter(arg.Extensions))
 	}
 	return d
+}
+
+func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIReadCloser, err error) {
+	if err != nil {
+		arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+		return
+	}
+	if reader == nil {
+		return
+	}
+	go func() {
+		defer reader.Close()
+		err := arg.ReadFunc(context.Background(), reader)
+		if err != nil {
+			slog.Error(arg.Title, "error", err)
+			fyne.Do(func() {
+				arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+			})
+			return
+		}
+		fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
+	}()
 }
