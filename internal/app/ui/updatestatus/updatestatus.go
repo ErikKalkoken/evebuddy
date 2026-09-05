@@ -10,7 +10,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -35,6 +37,7 @@ type baseUI interface {
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool
 	Signals() *app.Signals
@@ -126,7 +129,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
 	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
 
-	menu := fyne.NewMenu("",
+	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("Reload all characters", func() {
 			go func() {
 				err := a.u.Character().UpdateCharactersIfNeeded(context.Background(), true)
@@ -175,7 +178,38 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			}()
 			a.sb.Show("Started reloading notifications")
 		}),
-	)
+	}
+	if a.u.IsDeveloperMode() {
+		items = append(items,
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem("Export notification type fixtures", func() {
+				d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+					if writer == nil {
+						return
+					}
+					if err != nil {
+						a.sb.Show("Error: " + a.u.ErrorDisplay(err))
+						return
+					}
+					go func() {
+						defer writer.Close()
+						err := a.u.Character().WriteNotificationTypeFixtures(context.Background(), writer)
+						if err != nil {
+							slog.Error("update status", "error", err)
+							fyne.Do(func() { a.sb.Show("Error: " + a.u.ErrorDisplay(err)) })
+							return
+						}
+						fyne.Do(func() { a.sb.Show("Notification type fixtures exported") })
+					}()
+				}, w)
+				d.SetFileName("notification_fixtures.json")
+				d.SetFilter(storage.NewExtensionFileFilter([]string{".json"}))
+				d.SetTitleText("Export notification type fixtures")
+				d.Show()
+			}),
+		)
+	}
+	menu := fyne.NewMenu("", items...)
 	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
 	if a.u.IsOffline() {
 		moreButton.Disable()
