@@ -133,3 +133,60 @@ type CorporationGoalClosed struct {
 	GoalID        string `yaml:"goal_id"`
 	GoalName      string `yaml:"goal_name"`
 }
+
+// AllianceWarDeclaredV2 was extracted from project panthernet/ThunderED.
+// Confidence is high, because it is handled via the same code path as
+// AllWarDeclaredMsg and confirmed by a captured sample text.
+type AllianceWarDeclaredV2 struct {
+	AgainstID    int64   `yaml:"againstID"`
+	Cost         float64 `yaml:"cost"`
+	DeclaredByID int64   `yaml:"declaredByID"`
+	DelayHours   int64   `yaml:"delayHours"`
+	HostileState int64   `yaml:"hostileState"`
+}
+
+// CorpWarDeclaredV2 was extracted from project panthernet/ThunderED.
+// Confidence is high, because it is handled via the same code path as
+// AllWarDeclaredMsg and confirmed by a captured sample text.
+type CorpWarDeclaredV2 struct {
+	AgainstID    int64   `yaml:"againstID"`
+	Cost         float64 `yaml:"cost"`
+	DeclaredByID int64   `yaml:"declaredByID"`
+	DelayHours   int64   `yaml:"delayHours"`
+	HostileState int64   `yaml:"hostileState"`
+}
+
+// StructuresJobsPaused was extracted from project Wilm0rien/omip.
+// Confidence is high, because it comes from a real captured ESI response fixture.
+type StructuresJobsPaused struct {
+	IsCorpOwned           bool   `yaml:"isCorpOwned"`
+	SolarsystemID         int64  `yaml:"solarsystemID"`
+	StructureID           int64  `yaml:"structureID"`
+	StructureLink         string `yaml:"structureLink"`
+	StructureShowInfoData []any  `yaml:"structureShowInfoData"`
+	StructureTypeID       int64  `yaml:"structureTypeID"`
+}
+
+// CorpVoteCEORevokedMsg was extracted from project 1adog1/eve-watchman.
+// Confidence is medium, because the fields were inferred from code,
+// not a captured sample.
+type CorpVoteCEORevokedMsg struct {
+	CharID int64 `yaml:"charID"`
+	CorpID int64 `yaml:"corpID"`
+}
+
+// WarConcordInvalidates was extracted from project panthernet/ThunderED.
+// Confidence is medium, because the fields were inferred from code,
+// not a captured sample.
+type WarConcordInvalidates struct {
+	AgainstID    int64 `yaml:"againstID"`
+	DeclaredByID int64 `yaml:"declaredByID"`
+}
+
+// WarRetracted was extracted from project panthernet/ThunderED.
+// Confidence is medium, because the fields were inferred from code,
+// not a captured sample.
+type WarRetracted struct {
+	AgainstID    int64 `yaml:"againstID"`
+	DeclaredByID int64 `yaml:"declaredByID"`
+}

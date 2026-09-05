@@ -352,4 +352,21 @@ func TestCorporate2_RenderESI(t *testing.T) {
 		assert.Contains(t, body, closer.Name)
 		assert.Contains(t, body, creator.Name)
 	})
+
+	t.Run("CorpVoteCEORevokedMsg", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		char := f.CreateEveEntityCharacter()
+		corp := f.CreateEveEntityCorporation()
+		text, err := yaml.Marshal(map[string]any{
+			"charID": char.ID,
+			"corpID": corp.ID,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.CorpVoteCEORevokedMsg, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.NotEmpty(t, title)
+		assert.Contains(t, body, char.Name)
+	})
 }

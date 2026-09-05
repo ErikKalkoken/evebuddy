@@ -271,6 +271,8 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(corpNewCEOMsg)
 	case app.CorpVoteMsg:
 		r = new(corpVoteMsg)
+	case app.CorpVoteCEORevokedMsg:
+		r = new(corpVoteCEORevokedMsg)
 	case app.CorpDividendMsg:
 		r = new(corpDividendMsg)
 	case app.CorpLiquidationMsg:
@@ -366,6 +368,8 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(structureLowReagentsAlert)
 	case app.StructureNoReagentsAlert:
 		r = new(structureNoReagentsAlert)
+	case app.StructuresJobsPaused:
+		r = new(structuresJobsPaused)
 	case app.StationServiceDisabled:
 		r = new(stationServiceDisabled)
 	case app.StationServiceEnabled:
@@ -425,6 +429,14 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(warInvalid)
 	case app.WarRetractedByConcord:
 		r = new(warRetractedByConcord)
+	case app.WarConcordInvalidates:
+		r = new(warConcordInvalidates)
+	case app.WarRetracted:
+		r = new(warRetracted)
+	case app.AllianceWarDeclaredV2:
+		r = new(allianceWarDeclaredV2)
+	case app.CorpWarDeclaredV2:
+		r = new(corpWarDeclaredV2)
 	case app.AcceptedAlly:
 		r = new(acceptedAlly)
 	case app.AcceptedSurrender:

@@ -423,4 +423,70 @@ func TestWar2_RenderESI(t *testing.T) {
 		assert.Contains(t, body, defender.Name)
 		assert.Contains(t, body, aggressor.Name)
 	})
+
+	warDeclaredV2Cases := []struct {
+		name  string
+		notif app.EveNotificationType
+	}{
+		{"AllianceWarDeclaredV2", app.AllianceWarDeclaredV2},
+		{"CorpWarDeclaredV2", app.CorpWarDeclaredV2},
+	}
+	for _, tc := range warDeclaredV2Cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			httpmock.Reset()
+			against := f.CreateEveEntityCorporation()
+			declaredBy := f.CreateEveEntityAlliance()
+			text, err := yaml.Marshal(map[string]any{
+				"againstID":    against.ID,
+				"cost":         50_000_000.0,
+				"declaredByID": declaredBy.ID,
+				"delayHours":   24,
+				"hostileState": 0,
+			})
+			require.NoError(t, err)
+
+			title, body, err := en.RenderESI(t.Context(), tc.notif, optional.New(string(text)), time.Now())
+			require.NoError(t, err)
+			assert.Contains(t, title, declaredBy.Name)
+			assert.Contains(t, title, against.Name)
+			assert.Contains(t, body, "50,000,000")
+		})
+	}
+
+	t.Run("WarConcordInvalidates", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		against := f.CreateEveEntityCorporation()
+		declaredBy := f.CreateEveEntityCorporation()
+		text, err := yaml.Marshal(map[string]any{
+			"againstID":    against.ID,
+			"declaredByID": declaredBy.ID,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.WarConcordInvalidates, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.NotEmpty(t, title)
+		assert.Contains(t, body, against.Name)
+		assert.Contains(t, body, declaredBy.Name)
+	})
+
+	t.Run("WarRetracted", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		against := f.CreateEveEntityCorporation()
+		declaredBy := f.CreateEveEntityCorporation()
+		text, err := yaml.Marshal(map[string]any{
+			"againstID":    against.ID,
+			"declaredByID": declaredBy.ID,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.WarRetracted, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, against.Name)
+		assert.Contains(t, body, declaredBy.Name)
+		assert.Contains(t, body, against.Name)
+	})
 }

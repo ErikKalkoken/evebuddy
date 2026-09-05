@@ -1034,6 +1034,29 @@ func (n structureNoReagentsAlert) render(ctx context.Context, text string, _ tim
 	return title, body, nil
 }
 
+type structuresJobsPaused struct {
+	baseRenderer
+}
+
+func (n structuresJobsPaused) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructuresJobsPaused
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := evehtml.Strip(data.StructureLink)
+	title := fmt.Sprintf("Industry jobs paused at %s", name)
+	body := fmt.Sprintf(
+		"Industry jobs running at %s in %s have been paused.",
+		makeInfoLink2(name, data.StructureShowInfoData),
+		makeInfoLink(solarSystem),
+	)
+	return title, body, nil
+}
+
 type stationServiceDisabled struct {
 	baseRenderer
 }

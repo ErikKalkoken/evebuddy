@@ -1,0 +1,50 @@
+[
+    {
+        "notification_id": 1000020001,
+        "type": "AllianceWarDeclaredV2",
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "againstID: 98464487\ncost: 50000000.0\ndeclaredByID: 99005333\ndelayHours: 24\nhostileState: 0\n"
+    },
+    {
+        "notification_id": 1000020002,
+        "type": "CorpWarDeclaredV2",
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "againstID: 98464487\ncost: 50000000.0\ndeclaredByID: 99005333\ndelayHours: 24\nhostileState: 0\n"
+    },
+    {
+        "notification_id": 1000020003,
+        "type": "StructuresJobsPaused",
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "isCorpOwned: true\nsolarsystemID: 30001725\nstructureID: &id001 1024664748454\nstructureLink: <a href=\"showinfo:35825//1024664748454\">Nosodnis - Nara</a>\nstructureShowInfoData:\n- showinfo\n- 35825\n- *id001\nstructureTypeID: 35825\n"
+    },
+    {
+        "notification_id": 1000020004,
+        "type": "CorpVoteCEORevokedMsg",
+        "sender_id": 98100002,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "charID: 95281762\ncorpID: 98100002\n"
+    },
+    {
+        "notification_id": 1000020005,
+        "type": "WarConcordInvalidates",
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "againstID: 98100001\ndeclaredByID: 98100002\n"
+    },
+    {
+        "notification_id": 1000020006,
+        "type": "WarRetracted",
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "timestamp": "2024-02-10 09:15:00+00:00",
+        "text": "againstID: 98100001\ndeclaredByID: 98100002\n"
+    }
+]

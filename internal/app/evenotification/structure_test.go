@@ -199,4 +199,24 @@ func TestStructure_RenderESI(t *testing.T) {
 			assert.Contains(t, body, "Structure")
 		})
 	}
+
+	t.Run("StructuresJobsPaused", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		solarSystem := f.CreateEveSolarSystem()
+		text, err := yaml.Marshal(map[string]any{
+			"isCorpOwned":           true,
+			"solarsystemID":         solarSystem.ID,
+			"structureID":           1024664748454,
+			"structureLink":         `<a href="showinfo:35825//1024664748454">Nosodnis - Nara</a>`,
+			"structureShowInfoData": []any{"showinfo", 35825, 1024664748454},
+			"structureTypeID":       35825,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.StructuresJobsPaused, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "Nosodnis - Nara")
+		assert.Contains(t, body, solarSystem.Name)
+	})
 }

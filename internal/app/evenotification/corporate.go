@@ -991,3 +991,37 @@ func (n corporationGoalClosed) render(ctx context.Context, text string, _ time.T
 	)
 	return title, body, nil
 }
+
+type corpVoteCEORevokedMsg struct {
+	baseRenderer
+}
+
+func (n corpVoteCEORevokedMsg) unmarshal(text string) (notification2.CorpVoteCEORevokedMsg, set.Set[int64], error) {
+	var data notification2.CorpVoteCEORevokedMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.CharID), nil
+}
+
+func (n corpVoteCEORevokedMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n corpVoteCEORevokedMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := "CEO revoked by corporation vote"
+	body := fmt.Sprintf(
+		"%s has been removed as CEO by a corporation vote.",
+		makeInfoLink(entities[data.CharID]),
+	)
+	return title, body, nil
+}

@@ -1298,3 +1298,142 @@ func (n mercOfferRetractedMsg) render(ctx context.Context, text string, _ time.T
 	)
 	return title, body, nil
 }
+
+func warDeclaredV2Render(ctx context.Context, verb string, againstID, declaredByID, delayHours int64, cost float64, eus EVEUniverse) (string, string, error) {
+	entities, err := eus.ToEntities(ctx, set.Of(againstID, declaredByID))
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("%s %s war against %s", entities[declaredByID].Name, verb, entities[againstID].Name)
+	body := fmt.Sprintf(
+		"%s has %s war against %s for **%s** ISK.\n\n"+
+			"Within **%d** hours fighting can legally occur between those involved.",
+		makeInfoLink(entities[declaredByID]),
+		verb,
+		makeInfoLink(entities[againstID]),
+		humanize.Commaf(cost),
+		delayHours,
+	)
+	return title, body, nil
+}
+
+type allianceWarDeclaredV2 struct {
+	baseRenderer
+}
+
+func (n allianceWarDeclaredV2) unmarshal(text string) (notification2.AllianceWarDeclaredV2, set.Set[int64], error) {
+	var data notification2.AllianceWarDeclaredV2
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AgainstID, data.DeclaredByID), nil
+}
+
+func (n allianceWarDeclaredV2) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n allianceWarDeclaredV2) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, _, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	return warDeclaredV2Render(ctx, "declared", data.AgainstID, data.DeclaredByID, data.DelayHours, data.Cost, n.eus)
+}
+
+type corpWarDeclaredV2 struct {
+	baseRenderer
+}
+
+func (n corpWarDeclaredV2) unmarshal(text string) (notification2.CorpWarDeclaredV2, set.Set[int64], error) {
+	var data notification2.CorpWarDeclaredV2
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AgainstID, data.DeclaredByID), nil
+}
+
+func (n corpWarDeclaredV2) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n corpWarDeclaredV2) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, _, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	return warDeclaredV2Render(ctx, "declared", data.AgainstID, data.DeclaredByID, data.DelayHours, data.Cost, n.eus)
+}
+
+type warConcordInvalidates struct {
+	baseRenderer
+}
+
+func (n warConcordInvalidates) unmarshal(text string) (notification2.WarConcordInvalidates, set.Set[int64], error) {
+	var data notification2.WarConcordInvalidates
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AgainstID, data.DeclaredByID), nil
+}
+
+func (n warConcordInvalidates) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n warConcordInvalidates) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := "CONCORD invalidates war"
+	body := fmt.Sprintf(
+		"The war between %s and %s has been invalidated by CONCORD, "+
+			"because at least one of the involved parties has become ineligible for war declarations.",
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
+	)
+	return title, body, nil
+}
+
+type warRetracted struct {
+	baseRenderer
+}
+
+func (n warRetracted) unmarshal(text string) (notification2.WarRetracted, set.Set[int64], error) {
+	var data notification2.WarRetracted
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AgainstID, data.DeclaredByID), nil
+}
+
+func (n warRetracted) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n warRetracted) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("War against %s retracted", entities[data.AgainstID].Name)
+	body := fmt.Sprintf(
+		"%s has retracted the war against %s.",
+		makeInfoLink(entities[data.DeclaredByID]),
+		makeInfoLink(entities[data.AgainstID]),
+	)
+	return title, body, nil
+}
