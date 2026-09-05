@@ -293,6 +293,12 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(corpBecameWarEligible)
 	case app.CorpNoLongerWarEligible:
 		r = new(corpNoLongerWarEligible)
+	case app.CorporationGoalCreated:
+		r = new(corporationGoalCreated)
+	case app.CorporationGoalCompleted:
+		r = new(corporationGoalCompleted)
+	case app.CorporationGoalClosed:
+		r = new(corporationGoalClosed)
 	// moonmining
 	case app.MoonminingAutomaticFracture:
 		r = new(moonminingAutomaticFracture)
@@ -350,6 +356,16 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(skyhookLostShields)
 	case app.SkyhookUnderAttack:
 		r = new(skyhookUnderAttack)
+	case app.SkyhookDeployed:
+		r = new(skyhookDeployed)
+	case app.SkyhookDestroyed:
+		r = new(skyhookDestroyed)
+	case app.SkyhookOnline:
+		r = new(skyhookOnline)
+	case app.StructureLowReagentsAlert:
+		r = new(structureLowReagentsAlert)
+	case app.StructureNoReagentsAlert:
+		r = new(structureNoReagentsAlert)
 	case app.StationServiceDisabled:
 		r = new(stationServiceDisabled)
 	case app.StationServiceEnabled:
@@ -357,6 +373,8 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 	// sov
 	case app.EntosisCaptureStarted:
 		r = new(entosisCaptureStarted)
+	case app.AllAnchoringMsg:
+		r = new(allAnchoringMsg)
 	case app.SovAllClaimAcquiredMsg:
 		r = new(sovAllClaimAcquiredMsg)
 	case app.SovAllClaimLostMsg:
@@ -453,6 +471,8 @@ func (s *EVENotificationService) makeRenderer(nt app.EveNotificationType) (notif
 		r = new(corpWarRetractedMsg)
 	case app.MercOfferedNegotiationMsg:
 		r = new(mercOfferedNegotiationMsg)
+	case app.MercOfferRetractedMsg:
+		r = new(mercOfferRetractedMsg)
 	default:
 		return nil, false
 	}

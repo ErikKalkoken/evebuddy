@@ -11,6 +11,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 )
 
 type charAppAcceptMsg struct {
@@ -882,5 +883,111 @@ type corpNoLongerWarEligible struct {
 func (n corpNoLongerWarEligible) render(_ context.Context, _ string, _ time.Time) (string, string, error) {
 	title := "Corporation is no longer war eligible"
 	body := "Your corporation is no longer eligible for war declarations."
+	return title, body, nil
+}
+
+type corporationGoalCreated struct {
+	baseRenderer
+}
+
+func (n corporationGoalCreated) unmarshal(text string) (notification2.CorporationGoalCreated, set.Set[int64], error) {
+	var data notification2.CorporationGoalCreated
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.CreatorID), nil
+}
+
+func (n corporationGoalCreated) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n corporationGoalCreated) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("New corporation goal: %s", data.GoalName)
+	body := fmt.Sprintf(
+		"%s has created a new corporation goal: **%s**.",
+		makeInfoLink(entities[data.CreatorID]),
+		data.GoalName,
+	)
+	return title, body, nil
+}
+
+type corporationGoalCompleted struct {
+	baseRenderer
+}
+
+func (n corporationGoalCompleted) unmarshal(text string) (notification2.CorporationGoalCompleted, set.Set[int64], error) {
+	var data notification2.CorporationGoalCompleted
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.CreatorID), nil
+}
+
+func (n corporationGoalCompleted) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n corporationGoalCompleted) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Corporation goal completed: %s", data.GoalName)
+	body := fmt.Sprintf(
+		"The corporation goal **%s** created by %s has been completed.",
+		data.GoalName,
+		makeInfoLink(entities[data.CreatorID]),
+	)
+	return title, body, nil
+}
+
+type corporationGoalClosed struct {
+	baseRenderer
+}
+
+func (n corporationGoalClosed) unmarshal(text string) (notification2.CorporationGoalClosed, set.Set[int64], error) {
+	var data notification2.CorporationGoalClosed
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.CloserID, data.CreatorID), nil
+}
+
+func (n corporationGoalClosed) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n corporationGoalClosed) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Corporation goal closed: %s", data.GoalName)
+	body := fmt.Sprintf(
+		"%s has closed the corporation goal **%s** created by %s.",
+		makeInfoLink(entities[data.CloserID]),
+		data.GoalName,
+		makeInfoLink(entities[data.CreatorID]),
+	)
 	return title, body, nil
 }

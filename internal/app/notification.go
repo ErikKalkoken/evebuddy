@@ -459,9 +459,19 @@ func (nt EveNotificationType) Group() EveNotificationGroup {
 }
 
 var supportedTypes = []EveNotificationType{
+	AllAnchoringMsg,
 	AllMaintenanceBillMsg,
 	AllWarSurrenderMsg,
 	MutualWarInviteSent,
+	MercOfferRetractedMsg,
+	SkyhookDeployed,
+	SkyhookDestroyed,
+	SkyhookOnline,
+	StructureLowReagentsAlert,
+	StructureNoReagentsAlert,
+	CorporationGoalCreated,
+	CorporationGoalCompleted,
+	CorporationGoalClosed,
 	BillOutOfMoneyMsg,
 	BillPaidCorpAllMsg,
 	BountyClaimMsg,

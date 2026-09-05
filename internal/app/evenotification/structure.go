@@ -916,6 +916,124 @@ func (n skyhookUnderAttack) render(ctx context.Context, text string, _ time.Time
 	return title, body, nil
 }
 
+type skyhookDeployed struct {
+	baseRenderer
+}
+
+func (n skyhookDeployed) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var data notification2.SkyhookDeployed
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := makeInfoLink2("Orbital Skyhook", data.SkyhookShowInfoData)
+	dueAt := timestamp.Add(fromLDAPDuration(data.TimeLeft))
+	title := fmt.Sprintf("Skyhook deployed in %s", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s owned by %s has been deployed in %s and will come online at **%s**.",
+		name,
+		makeInfoLink2(data.OwnerCorpName, data.OwnerCorpLinkData),
+		makeInfoLink(solarSystem),
+		dueAt.Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}
+
+type skyhookDestroyed struct {
+	baseRenderer
+}
+
+func (n skyhookDestroyed) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.SkyhookDestroyed
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := makeInfoLink2("Orbital Skyhook", data.SkyhookShowInfoData)
+	title := fmt.Sprintf("Skyhook in %s has been destroyed", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s in %s has been destroyed.",
+		name,
+		makeInfoLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type skyhookOnline struct {
+	baseRenderer
+}
+
+func (n skyhookOnline) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.SkyhookOnline
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := makeInfoLink2("Orbital Skyhook", data.SkyhookShowInfoData)
+	title := fmt.Sprintf("Skyhook in %s is now online", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s in %s is now online.",
+		name,
+		makeInfoLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type structureLowReagentsAlert struct {
+	baseRenderer
+}
+
+func (n structureLowReagentsAlert) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructureLowReagentsAlert
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := makeInfoLink2("Structure", data.StructureShowInfoData)
+	title := fmt.Sprintf("Structure in %s is low on reagents", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s in %s is running low on reagents.",
+		name,
+		makeInfoLink(solarSystem),
+	)
+	return title, body, nil
+}
+
+type structureNoReagentsAlert struct {
+	baseRenderer
+}
+
+func (n structureNoReagentsAlert) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	var data notification2.StructureNoReagentsAlert
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
+	if err != nil {
+		return "", "", err
+	}
+	name := makeInfoLink2("Structure", data.StructureShowInfoData)
+	title := fmt.Sprintf("Structure in %s has run out of reagents", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s in %s has run out of reagents and will stop reinforcing its status.",
+		name,
+		makeInfoLink(solarSystem),
+	)
+	return title, body, nil
+}
+
 type stationServiceDisabled struct {
 	baseRenderer
 }

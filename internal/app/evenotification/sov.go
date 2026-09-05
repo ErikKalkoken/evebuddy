@@ -10,6 +10,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 )
 
 var eventToStructureTypeID = map[int32]int64{
@@ -517,6 +518,51 @@ func (n sovStructureSelfDestructRequested) render(ctx context.Context, text stri
 		makeInfoLink(structureType),
 		makeInfoLink(solarSystem),
 		fromLDAPTime(data.DestructTime).Format(app.DateTimeFormat),
+	)
+	return title, body, nil
+}
+
+type allAnchoringMsg struct {
+	baseRenderer
+}
+
+func (n allAnchoringMsg) unmarshal(text string) (notification2.AllAnchoringMsg, set.Set[int64], error) {
+	var data notification2.AllAnchoringMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AllianceID, data.CorpID), nil
+}
+
+func (n allAnchoringMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n allAnchoringMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	moon, err := n.eus.GetOrCreateMoonESI(ctx, data.MoonID)
+	if err != nil {
+		return "", "", err
+	}
+	solarSystem, err := n.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("Towers anchoring in %s", solarSystem.Name)
+	body := fmt.Sprintf(
+		"%s is anchoring **%d** tower(s) at %s in %s.",
+		makeInfoLink(entities[data.CorpID]),
+		len(data.Towers),
+		moon.Name,
+		makeInfoLink(solarSystem),
 	)
 	return title, body, nil
 }

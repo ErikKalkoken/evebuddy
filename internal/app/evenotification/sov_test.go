@@ -12,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -134,5 +135,35 @@ func TestSov_RenderESI(t *testing.T) {
 		assert.Contains(t, title, solarSystem.Name)
 		assert.Contains(t, body, char.Name)
 		assert.Contains(t, body, "Aideron Robotics")
+	})
+
+	t.Run("AllAnchoringMsg", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		alliance := f.CreateEveEntityAlliance()
+		corp := f.CreateEveEntityCorporation()
+		solarSystem := f.CreateEveSolarSystem()
+		moon := f.CreateEveMoon(storage.CreateEveMoonParams{SolarSystemID: solarSystem.ID})
+		typ := f.CreateEveType()
+		text, err := yaml.Marshal(map[string]any{
+			"allianceID": alliance.ID,
+			"corpID":     corp.ID,
+			"corpsPresent": []map[string]any{
+				{"allianceID": alliance.ID, "corpID": corp.ID},
+			},
+			"moonID":        moon.ID,
+			"solarSystemID": solarSystem.ID,
+			"towers": []map[string]any{
+				{"moonID": moon.ID, "typeID": typ.ID},
+			},
+			"typeID": typ.ID,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.AllAnchoringMsg, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, solarSystem.Name)
+		assert.Contains(t, body, corp.Name)
+		assert.Contains(t, body, moon.Name)
 	})
 }

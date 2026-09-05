@@ -108,4 +108,95 @@ func TestStructure_RenderESI(t *testing.T) {
 			assert.Contains(t, body, structureType.Name)
 		})
 	}
+
+	t.Run("SkyhookDeployed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		solarSystem := f.CreateEveSolarSystem()
+		text, err := yaml.Marshal(map[string]any{
+			"itemID":              1040000000009,
+			"ownerCorpLinkData":   []any{"showinfo", 2, 98100052},
+			"ownerCorpName":       "Aideron Robotics",
+			"planetID":            40200001,
+			"planetShowInfoData":  []any{"showinfo", 2016, 40200001},
+			"skyhookShowInfoData": []any{"showinfo", 81080, 1040000000009},
+			"solarsystemID":       solarSystem.ID,
+			"timeLeft":            18000000000,
+			"typeID":              81080,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.SkyhookDeployed, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, solarSystem.Name)
+		assert.Contains(t, body, "Aideron Robotics")
+		assert.Contains(t, body, "Orbital Skyhook")
+	})
+
+	t.Run("SkyhookDestroyed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		solarSystem := f.CreateEveSolarSystem()
+		text, err := yaml.Marshal(map[string]any{
+			"itemID":              1040000000009,
+			"planetID":            40200001,
+			"planetShowInfoData":  []any{"showinfo", 2016, 40200001},
+			"skyhookShowInfoData": []any{"showinfo", 81080, 1040000000009},
+			"solarsystemID":       solarSystem.ID,
+			"typeID":              81080,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.SkyhookDestroyed, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, solarSystem.Name)
+		assert.Contains(t, body, "Orbital Skyhook")
+	})
+
+	t.Run("SkyhookOnline", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		solarSystem := f.CreateEveSolarSystem()
+		text, err := yaml.Marshal(map[string]any{
+			"itemID":              1040000000009,
+			"planetID":            40200001,
+			"planetShowInfoData":  []any{"showinfo", 2016, 40200001},
+			"skyhookShowInfoData": []any{"showinfo", 81080, 1040000000009},
+			"solarsystemID":       solarSystem.ID,
+			"typeID":              81080,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.SkyhookOnline, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, solarSystem.Name)
+		assert.Contains(t, body, "Orbital Skyhook")
+	})
+
+	reagentsAlertCases := []struct {
+		name  string
+		notif app.EveNotificationType
+	}{
+		{"StructureLowReagentsAlert", app.StructureLowReagentsAlert},
+		{"StructureNoReagentsAlert", app.StructureNoReagentsAlert},
+	}
+	for _, tc := range reagentsAlertCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			httpmock.Reset()
+			solarSystem := f.CreateEveSolarSystem()
+			text, err := yaml.Marshal(map[string]any{
+				"solarsystemID":         solarSystem.ID,
+				"structureID":           1000000000001,
+				"structureShowInfoData": []any{"showinfo", 81826, 1000000000001},
+				"structureTypeID":       81826,
+			})
+			require.NoError(t, err)
+
+			title, body, err := en.RenderESI(t.Context(), tc.notif, optional.New(string(text)), time.Now())
+			require.NoError(t, err)
+			assert.Contains(t, title, solarSystem.Name)
+			assert.Contains(t, body, "Structure")
+		})
+	}
 }

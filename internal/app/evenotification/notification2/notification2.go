@@ -41,3 +41,95 @@ type MercenaryDenReinforced struct {
 	TimestampExited          int64  `yaml:"timestampExited"`
 	TypeID                   int64  `yaml:"typeID"`
 }
+
+type AllAnchoringCorp struct {
+	AllianceID int64 `yaml:"allianceID"`
+	CorpID     int64 `yaml:"corpID"`
+}
+
+type AllAnchoringTower struct {
+	MoonID int64 `yaml:"moonID"`
+	TypeID int64 `yaml:"typeID"`
+}
+
+type AllAnchoringMsg struct {
+	AllianceID    int64               `yaml:"allianceID"`
+	CorpID        int64               `yaml:"corpID"`
+	CorpsPresent  []AllAnchoringCorp  `yaml:"corpsPresent"`
+	MoonID        int64               `yaml:"moonID"`
+	SolarSystemID int64               `yaml:"solarSystemID"`
+	Towers        []AllAnchoringTower `yaml:"towers"`
+	TypeID        int64               `yaml:"typeID"`
+}
+
+type MercOfferRetractedMsg struct {
+	AggressorID int64 `yaml:"aggressorID"`
+	DefenderID  int64 `yaml:"defenderID"`
+	MercID      int64 `yaml:"mercID"`
+}
+
+type SkyhookDestroyed struct {
+	ItemID              int64 `yaml:"itemID"`
+	PlanetID            int64 `yaml:"planetID"`
+	PlanetShowInfoData  []any `yaml:"planetShowInfoData"`
+	SkyhookShowInfoData []any `yaml:"skyhookShowInfoData"`
+	SolarsystemID       int64 `yaml:"solarsystemID"`
+	TypeID              int64 `yaml:"typeID"`
+}
+
+type SkyhookDeployed struct {
+	ItemID              int64  `yaml:"itemID"`
+	OwnerCorpLinkData   []any  `yaml:"ownerCorpLinkData"`
+	OwnerCorpName       string `yaml:"ownerCorpName"`
+	PlanetID            int64  `yaml:"planetID"`
+	PlanetShowInfoData  []any  `yaml:"planetShowInfoData"`
+	SkyhookShowInfoData []any  `yaml:"skyhookShowInfoData"`
+	SolarsystemID       int64  `yaml:"solarsystemID"`
+	TimeLeft            int64  `yaml:"timeLeft"`
+	TypeID              int64  `yaml:"typeID"`
+}
+
+type SkyhookOnline struct {
+	ItemID              int64 `yaml:"itemID"`
+	PlanetID            int64 `yaml:"planetID"`
+	PlanetShowInfoData  []any `yaml:"planetShowInfoData"`
+	SkyhookShowInfoData []any `yaml:"skyhookShowInfoData"`
+	SolarsystemID       int64 `yaml:"solarsystemID"`
+	TypeID              int64 `yaml:"typeID"`
+}
+
+type StructureLowReagentsAlert struct {
+	SolarsystemID         int64 `yaml:"solarsystemID"`
+	StructureID           int64 `yaml:"structureID"`
+	StructureShowInfoData []any `yaml:"structureShowInfoData"`
+	StructureTypeID       int64 `yaml:"structureTypeID"`
+}
+
+type StructureNoReagentsAlert struct {
+	SolarsystemID         int64 `yaml:"solarsystemID"`
+	StructureID           int64 `yaml:"structureID"`
+	StructureShowInfoData []any `yaml:"structureShowInfoData"`
+	StructureTypeID       int64 `yaml:"structureTypeID"`
+}
+
+type CorporationGoalCreated struct {
+	CorporationID int64  `yaml:"corporation_id"`
+	CreatorID     int64  `yaml:"creator_id"`
+	GoalID        string `yaml:"goal_id"`
+	GoalName      string `yaml:"goal_name"`
+}
+
+type CorporationGoalCompleted struct {
+	CorporationID int64  `yaml:"corporation_id"`
+	CreatorID     int64  `yaml:"creator_id"`
+	GoalID        string `yaml:"goal_id"`
+	GoalName      string `yaml:"goal_name"`
+}
+
+type CorporationGoalClosed struct {
+	CloserID      int64  `yaml:"closer_id"`
+	CorporationID int64  `yaml:"corporation_id"`
+	CreatorID     int64  `yaml:"creator_id"`
+	GoalID        string `yaml:"goal_id"`
+	GoalName      string `yaml:"goal_name"`
+}

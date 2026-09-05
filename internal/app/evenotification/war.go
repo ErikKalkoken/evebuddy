@@ -1262,3 +1262,39 @@ func (n mercOfferedNegotiationMsg) render(ctx context.Context, text string, _ ti
 	)
 	return title, body, nil
 }
+
+type mercOfferRetractedMsg struct {
+	baseRenderer
+}
+
+func (n mercOfferRetractedMsg) unmarshal(text string) (notification2.MercOfferRetractedMsg, set.Set[int64], error) {
+	var data notification2.MercOfferRetractedMsg
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, set.Set[int64]{}, err
+	}
+	return data, set.Of(data.AggressorID, data.DefenderID, data.MercID), nil
+}
+
+func (n mercOfferRetractedMsg) entityIDs(text string) (set.Set[int64], error) {
+	_, ids, err := n.unmarshal(text)
+	return ids, err
+}
+
+func (n mercOfferRetractedMsg) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return "", "", err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return "", "", err
+	}
+	title := fmt.Sprintf("%s has retracted their mercenary offer", entities[data.MercID].Name)
+	body := fmt.Sprintf(
+		"%s has retracted their offer to %s for negotiation services in the war against %s.",
+		makeInfoLink(entities[data.MercID]),
+		makeInfoLink(entities[data.DefenderID]),
+		makeInfoLink(entities[data.AggressorID]),
+	)
+	return title, body, nil
+}

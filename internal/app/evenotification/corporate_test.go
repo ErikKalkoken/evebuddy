@@ -295,4 +295,61 @@ func TestCorporate2_RenderESI(t *testing.T) {
 		assert.NotEmpty(t, title)
 		assert.NotEmpty(t, body)
 	})
+
+	t.Run("CorporationGoalCreated", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		creator := f.CreateEveEntityCharacter()
+		text, err := yaml.Marshal(map[string]any{
+			"corporation_id": 2001,
+			"creator_id":     creator.ID,
+			"goal_id":        "287804106856621566338600488094573709306",
+			"goal_name":      "Strawberry Jam",
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.CorporationGoalCreated, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "Strawberry Jam")
+		assert.Contains(t, body, creator.Name)
+	})
+
+	t.Run("CorporationGoalCompleted", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		creator := f.CreateEveEntityCharacter()
+		text, err := yaml.Marshal(map[string]any{
+			"corporation_id": 2001,
+			"creator_id":     creator.ID,
+			"goal_id":        "287804106856621566338600488094573709306",
+			"goal_name":      "Strawberry Jam",
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.CorporationGoalCompleted, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "Strawberry Jam")
+		assert.Contains(t, body, creator.Name)
+	})
+
+	t.Run("CorporationGoalClosed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		closer := f.CreateEveEntityCharacter()
+		creator := f.CreateEveEntityCharacter()
+		text, err := yaml.Marshal(map[string]any{
+			"closer_id":      closer.ID,
+			"corporation_id": 2001,
+			"creator_id":     creator.ID,
+			"goal_id":        "287804106856621566338600488094573709306",
+			"goal_name":      "Strawberry Jam",
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.CorporationGoalClosed, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "Strawberry Jam")
+		assert.Contains(t, body, closer.Name)
+		assert.Contains(t, body, creator.Name)
+	})
 }

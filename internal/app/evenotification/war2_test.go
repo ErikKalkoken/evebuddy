@@ -403,4 +403,24 @@ func TestWar2_RenderESI(t *testing.T) {
 		assert.Contains(t, body, declaredBy.Name)
 		assert.Contains(t, body, against.Name)
 	})
+
+	t.Run("MercOfferRetractedMsg", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		aggressor := f.CreateEveEntityCorporation()
+		defender := f.CreateEveEntityCorporation()
+		merc := f.CreateEveEntityCorporation()
+		text, err := yaml.Marshal(map[string]any{
+			"aggressorID": aggressor.ID,
+			"defenderID":  defender.ID,
+			"mercID":      merc.ID,
+		})
+		require.NoError(t, err)
+
+		title, body, err := en.RenderESI(t.Context(), app.MercOfferRetractedMsg, optional.New(string(text)), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, merc.Name)
+		assert.Contains(t, body, defender.Name)
+		assert.Contains(t, body, aggressor.Name)
+	})
 }
