@@ -75,7 +75,9 @@ func createFileSaveDialog(u baseUI, arg ShowFileSaveWindowParams, w fyne.Window)
 			fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
 		}()
 	}, w)
-	d.SetFileName(arg.Filename)
+	if arg.Filename != "" {
+		d.SetFileName(arg.Filename)
+	}
 	if len(arg.Extensions) > 0 {
 		d.SetFilter(storage.NewExtensionFileFilter(arg.Extensions))
 	}

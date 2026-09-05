@@ -3,6 +3,7 @@ package charactermanager
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"strings"
 
@@ -19,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -83,7 +85,7 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 		a.tagList,
 	)
 	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
-		fyne.NewMenuItem("Save tags to file", a.exportTags),
+		fyne.NewMenuItem("Export tags", a.exportTags),
 		fyne.NewMenuItem("Replace tags from file", a.importTags),
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),
 	))
@@ -118,40 +120,16 @@ func (a *manageTags) deleteTags() {
 }
 
 func (a *manageTags) exportTags() {
-	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-		if writer == nil {
-			return
-		}
-		m := kmodal.NewProgressInfinite(
-			"Saving tags to file",
-			"Saving...",
-			func() error {
-				defer writer.Close()
-				if err != nil {
-					return err
-				}
-				err := a.cw.u.Character().WriteTags(context.Background(), writer, fyne.CurrentApp().Metadata().Version)
-				if err != nil {
-					return err
-				}
-				slog.Info("Tags exported to file", "uri", writer.URI())
-				a.cw.sb.Show("Tags exported")
-				return nil
-			},
-			a.cw.w,
-		)
-		m.OnError = func(err error) {
-			fyne.Do(func() {
-				ui.ShowErrorAndLog("Failed to export tags", err, a.cw.u.IsDeveloperMode(), a.cw.w)
-			})
-		}
-		m.Start()
-	},
-		a.cw.w,
-	)
-	kxdialog.AddDialogKeyHandler(d, a.cw.w)
-	d.SetTitleText("Save tags to file")
-	d.Show()
+	filedialog.ShowSave(a.cw.u, filedialog.ShowFileSaveWindowParams{
+		CompletionText: "Tags exported",
+		ShowSnackbar:   a.cw.sb.Show,
+		Title:          "Export tags",
+		WindowID:       "tags-export",
+		WriteFunc: func(ctx context.Context, w io.Writer) error {
+			return a.cw.u.Character().WriteTags(ctx, w, fyne.CurrentApp().Metadata().Version)
+		},
+		Window: a.cw.w,
+	})
 }
 
 func (a *manageTags) importTags() {

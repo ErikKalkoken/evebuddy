@@ -31,13 +31,15 @@ type baseUI interface {
 	CurrentCorporation() *app.Corporation
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
+	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
-	IsMobile() bool
 	IsDeveloperMode() bool
+	IsMobile() bool
 	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
 	LoadCorporation(ctx context.Context, id int64) error
+	MainWindow() fyne.Window
 	SetAnyCharacter(ctx context.Context) error
 	SetAnyCorporation(ctx context.Context) error
 	Signals() *app.Signals
