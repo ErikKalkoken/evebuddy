@@ -3,7 +3,6 @@ package esistatusservice
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/singleflight"
@@ -29,34 +28,51 @@ func New(client *esi.APIClient) *ESIStatusService {
 
 // Fetch retrieves an update from ESI and returns it.
 func (s *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
-	o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
-		fetchCtx := xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-		status, _, err := s.esiClient.StatusAPI.GetStatus(fetchCtx).Execute()
-		if err != nil {
-			if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
-				msg := swaggerErr.Error()
-				if x, ok := swaggerErr.Model().(esi.Error); ok {
-					msg += ": " + x.Error
-				}
-				return &app.ESIStatus{ErrorMessage: msg}, nil
-			}
-			return nil, err
-		}
-		es := &app.ESIStatus{PlayerCount: int(status.Players)}
-		return es, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
+    o, err, _ := xsingleflight.Do(&s.sfg, "Fetch", func() (*app.ESIStatus, error) {
+        fetchCtx := xgoesi.NewContextWithOperationID(ctx, "GetStatus")
+        status, response, err := s.esiClient.StatusAPI.GetStatus(fetchCtx).Execute()
+        if err != nil {
+            if swaggerErr, ok := err.(*esi.GenericOpenAPIError); ok {
+                msg := swaggerErr.Error()
+                if x, ok := swaggerErr.Model().(esi.Error); ok {
+                    msg += ": " + x.Error
+                }
+                return &app.ESIStatus{
+                    ErrorMessage:   msg,
+                    HTTPStatusCode: response.StatusCode,
+                }, nil
+            }
+            return nil, err
+        }
+        return &app.ESIStatus{
+            HTTPStatusCode: response.StatusCode,
+            PlayerCount:    int(status.Players),
+        }, nil
+    })
+    if err != nil {
+        return nil, err
+    }
+    return o, nil
 }
 
-// DailyDowntime returns the daily downtime as string.
-func (s *ESIStatusService) DailyDowntime() string {
-	const timeOnly = "15:04"
-	start, finish := xgoesi.DailyDowntime()
-	return fmt.Sprintf("%s - %s", start.Format(timeOnly), finish.Format(timeOnly))
-}
+// func extractErrorMessage(err esi.GenericOpenAPIError) string {
+// 	var detail string
+// 	switch t2 := err.Model().(type) {
+// 	case esi.model:
+// 		detail = t2.Error_
+// 	case esi.ErrorLimited:
+// 		detail = t2.Error_
+// 	case esi.GatewayTimeout:
+// 		detail = t2.Error_
+// 	case esi.InternalServerError:
+// 		detail = t2.Error_
+// 	case esi.ServiceUnavailable:
+// 		detail = t2.Error_
+// 	default:
+// 		detail = "general swagger error"
+// 	}
+// 	return fmt.Sprintf("%s: %s", err.Error(), detail)
+// }
 
 // IsDailyDowntime reports whether the daily downtime is currently planned to happen.
 func (s *ESIStatusService) IsDailyDowntime() bool {

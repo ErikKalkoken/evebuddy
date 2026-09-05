@@ -195,7 +195,7 @@ func (a *statusBar) start() {
 		}
 	}()
 
-	if a.u.IsOffline() {
+	if a.u.isOfflineMode {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
@@ -206,7 +206,7 @@ func (a *statusBar) start() {
 		a.updateEveStatus(ctx)
 	})
 
-	if !a.u.IsOffline() {
+	if !a.u.isOfflineMode {
 		tickerNewVersion := time.NewTicker(versionTicker)
 		go func() {
 			for {
@@ -237,17 +237,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 		})
 	}
 
-	if a.u.IsOffline() {
-		return
-	}
-
-	if a.u.ess.IsDailyDowntime() {
-		s := fmt.Sprintf(
-			"Offline during planned daily downtime:\n%s",
-			a.u.ess.DailyDowntime(),
-		)
-		set(eveStatusOffline, "OFFLINE", s)
-		a.u.isOffline.Store(true)
+	if a.u.isOfflineMode {
 		return
 	}
 
@@ -257,15 +247,20 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
 		return
 	}
-	if !status.IsOK() {
+
+	if status.IsOK() {
+		p := message.NewPrinter(language.English)
+		set(eveStatusOnline, p.Sprintf("%d players", status.PlayerCount), "")
+		a.u.isOffline.Store(false)
+		return
+	}
+
+	if status.HTTPStatusCode >= 500 {
 		set(eveStatusOffline, "OFFLINE", status.ErrorMessage)
 		a.u.isOffline.Store(true)
 		return
 	}
-
-	p := message.NewPrinter(language.English)
-	set(eveStatusOnline, p.Sprintf("%d players", status.PlayerCount), "")
-	a.u.isOffline.Store(false)
+	set(eveStatusError, "ERROR", status.ErrorMessage)
 }
 
 func (a *statusBar) updateCharacterCount(ctx context.Context) {

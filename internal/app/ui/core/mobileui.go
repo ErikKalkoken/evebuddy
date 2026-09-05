@@ -671,17 +671,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 			})
 		}
 
-		if u.ess.IsDailyDowntime() {
-			u.isOffline.Store(true)
-			set(
-				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
-				"OFF",
-				widget.MediumImportance,
-				theme.NewWarningThemedResource(theme.WarningIcon()),
-			)
-			return
-		}
-		u.isOffline.Store(false)
 		status := u.scs.Summary()
 		var icon fyne.Resource
 		if status.Errors > 0 {
@@ -691,6 +680,25 @@ func NewMobileUI(params UIParams) *MobileUI {
 			hasUpdateError.Store(false)
 		}
 		set(status.Display(), status.DisplayShort(), status.Status().ToImportance(), icon)
+	}
+
+	updateEveStatus := func(ctx context.Context) {
+		if u.isOfflineMode {
+			return
+		}
+		status, err := u.ess.Fetch(ctx)
+		if err != nil {
+			slog.Error("Failed to fetch ESI status", "err", err)
+			return
+		}
+		if status.IsOK() {
+			u.isOffline.Store(false)
+		} else if status.HTTPStatusCode >= 500 {
+			u.isOffline.Store(true)
+		} else {
+			return
+		}
+		fyne.Do(refreshMoreBadge)
 	}
 
 	u.onAppFirstStarted = func() {
@@ -716,6 +724,10 @@ func NewMobileUI(params UIParams) *MobileUI {
 		ctx := context.Background()
 		updateCharacterCount(ctx)
 		updateUpdateStatus(ctx)
+		updateEveStatus(ctx)
+		u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+			updateEveStatus(ctx)
+		})
 
 		if !u.IsOffline() {
 			tickerNewVersion := time.NewTicker(3600 * time.Second)
