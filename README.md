@@ -1,6 +1,6 @@
 # EVE Buddy
 
-A multi-platform companion app for Eve Online players available on Windows, Linux, macOS and Android.
+A multi-platform companion app for EVE Online players available on Windows, Linux, macOS and Android.
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
@@ -31,11 +31,11 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 
 ## Description
 
-EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
+EVE Buddy is a multi-platform companion app for [EVE Online](https://www.eveonline.com/) players. It provides the following key features:
 
-- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets. Export trained skills to clipboard in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible format or to a CSV file (Windows and macOS).
+- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse its assets. Export trained skills to clipboard in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible format or to a CSV file.
 - **Corporation monitor**: Check current information about each of your corporations: e.g. check wallets and assets.
-- **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across of your characters or see which character has manufacturing slots available.
+- **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across all of your characters or see which character has manufacturing slots available.
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates, e.g. a structure was attacked or a training queue became empty.
 - **New Eden search**: Search live on the game server, similar to in-game search bar, e.g. search for characters, corporations solar systems.
 - **Information windows**: Show additional information for most objects on screen, similar to in-game information windows, e.g. sender of a mail:
@@ -81,27 +81,25 @@ Below are example screenshots for both the desktop and mobile version (EVE Buddy
 The following is a detailed list of EVE Buddy's features. Most features are available for both desktop and mobile:
 
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views:
-  - Assets: Search assets across all characters
+  - Assets: Search assets across all characters, and export items to clipboard (e.g. for Janice) or CSV
   - Clones: Overview of all current clones and search nearest available jump clones across all characters
   - Colonies: Browse PI colonies across all characters
   - Contracts: Browse contracts of all characters
   - Industry: Browse industry jobs for all characters and related corporations
   - Location: Browse the location of all characters and their current ships
-  - Skills: Keep track of the training status for all characters and search for skills across of characters.
+  - Skills: Keep track of the training status for all characters, search for skills across all characters and export training status to clipboard or file
   - Wealth: Charts showing wealth distribution across all characters
 
 - **Character monitor**: Check current information about each of your characters:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Communications: Browse through all communications
-  - Mails: Browser through all mails
-  - Skills: Training queue, catalogue of all trained skills and what ships can be flown, and export trained skills to clipboard or CSV (desktop only)
-    - **Copy to clipboard**: Copies all trained skills in [PyFA](https://github.com/pyfa-org/Pyfa)-compatible plain-text format (`Skill Name Level`, one per line) so they can be pasted directly into PyFA's character skill import.
-    - **Export to CSV**: Saves all trained skills to a `.csv` file with `Name` and `Level` columns for use in spreadsheets or other tools.
+  - Mails: Browse through all mails
+  - Skills: Training queue, catalogue of all trained skills and what ships can be flown, and export trained skills to clipboard ([PyFA](https://github.com/pyfa-org/Pyfa)-compatible format) or CSV
   - Wallet: Wallet and market Transactions
 
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
-  - Assets: Browse and search corporation assets
+  - Assets: Browse and search corporation assets, and export items to clipboard or CSV
   - Industry: See running and historic indy jobs
   - Members: List of current corporation members
   - Structures: List of all corporation structures with current fuel status, state and potential timers
@@ -130,7 +128,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Systems
   - Types
 
-- **Mail client**: Full mail client for receiving and sending Eve mails
+- **Mail client**: Full mail client for receiving and sending EVE mails
 
 - **Run in Background**: The app can run in the background and continue to notify you while you are doing something else (e.g. play Eve Online)
   - Desktop: Can minimize to system tray and show an indicator for new EVE mail
@@ -142,7 +140,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 
 ## Installing
 
-To install EVE buddy just download the latest release from the releases page to your computer or mobile. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
+To install EVE Buddy just download the latest release from the releases page to your computer or mobile. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
 You find the latest packages for download on the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
@@ -152,7 +150,7 @@ You find the latest packages for download on the [releases page](https://github.
 1. Unzip the file into a directory of your choice and run the .exe file to start the app.
 
 > [!TIP]
-> Windows defender (and similar programs) may report EVE Buddy incorrectly as containing a trojan. This is usually a false positive and caused by a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Each EVE Buddy release is build from scratch on a fresh Windows container provided by Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender (and similar programs) to proceed.
+> Windows defender (and similar programs) may report EVE Buddy incorrectly as containing a trojan. This is usually a false positive and caused by a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Each EVE Buddy release is built from scratch on a fresh Windows container provided by Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender (and similar programs) to proceed.
 
 ### macOS
 
@@ -200,8 +198,9 @@ To uninstall the app again run either: `make user-uninstall` or `sudo make unins
 > Please note that the app can currently be only installed from the release page and is currently not available in any of the Android app stores.
 
 > [!IMPORTANT]
-> EVE Buddy needs unrestricted background usage in order to function properly. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
-Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
+> EVE Buddy needs unrestricted background usage in order to function properly. The reason is that Android otherwise automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
+>
+> Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
 
 Here is how to install EVE Buddy on your Android phone:
 
@@ -252,7 +251,7 @@ If you no longer want to use the app you can uninstall it.
 
 ### Windows, Linux and macOS
 
-The desktop versions has an special app for removing our data:
+The desktop versions have a special app for removing our data:
 
 First start the delete app for removing your user data:
 
@@ -300,7 +299,7 @@ Platform | Path
 -- | --
 Android | Export only
 Linux | `/home/{username}/.local/share/evebuddy/log`
-macOS | `/Users/{username}/Library/Application Support/evebuddy/log'`
+macOS | `/Users/{username}/Library/Application Support/evebuddy/log`
 Windows | `C:\Users\{username}\AppData\Local\evebuddy\evebuddy\log`
 
 On desktop you can view the location of your log files on the User Data dialog, which you find in the main menu.
@@ -332,7 +331,7 @@ Some of your data from the game server might not be visible in EVE Buddy due to 
 
 ### When I try to add a character the app redirect to localhost. Should it not redirect to an CCP server?
 
-No, the redirect to locahost is correct. This connects to EVE Buddy's own web server, which is needed for implementing CCP's authorization process called SSO. For more information please see the [EVE Developer Documentation / SSO](https://developers.eveonline.com/docs/services/sso/).
+No, the redirect to localhost is correct. This connects to EVE Buddy's own web server, which is needed for implementing CCP's authorization process called SSO. For more information please see the [EVE Developer Documentation / SSO](https://developers.eveonline.com/docs/services/sso/).
 
 #### Server limitations
 
@@ -343,7 +342,7 @@ Here is an overview of some limitations:
 - Wallet journal: 30 days, 2.500 entries
 - Wallet transaction: 2.500 entries
 
- However, EVE Buddy will keep all historic data once retrieved. For example: If you allow EVE Buddy to update on a regular basis, it will be able to keep a record of your wallet transactions over many months and years.
+However, EVE Buddy will keep all historic data once retrieved. For example: If you allow EVE Buddy to update on a regular basis, it will be able to keep a record of your wallet transactions over many months and years.
 
 #### Permissions
 
