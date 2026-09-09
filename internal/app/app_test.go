@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
@@ -31,6 +32,27 @@ func TestEntityShort_NameOrZero(t *testing.T) {
 	xassert.Equal(t, "Alpha", x1.NameOrZero())
 	var x2 *app.EntityShort
 	xassert.Equal(t, "", x2.NameOrZero())
+}
+
+func TestVariableDateFormat(t *testing.T) {
+	now := time.Now().UTC()
+	t.Run("should return time layout for today", func(t *testing.T) {
+		got := app.VariableDateFormat(now)
+		xassert.Equal(t, "15:04", got)
+	})
+	t.Run("should return short date layout for this year but not today", func(t *testing.T) {
+		other := time.Date(now.Year(), 1, 1, 12, 0, 0, 0, time.UTC)
+		if other.Day() == now.Day() && other.Month() == now.Month() {
+			other = other.AddDate(0, 0, 1)
+		}
+		got := app.VariableDateFormat(other)
+		xassert.Equal(t, "Jan 2", got)
+	})
+	t.Run("should return full date layout for another year", func(t *testing.T) {
+		other := time.Date(2000, 1, 1, 12, 0, 0, 0, time.UTC)
+		got := app.VariableDateFormat(other)
+		xassert.Equal(t, "2006.01.02", got)
+	})
 }
 
 // fakeNetError is a minimal net.Error implementation for testing.
