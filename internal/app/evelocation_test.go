@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -48,6 +49,17 @@ func TestEveLocation_DisplayName2(t *testing.T) {
 			xassert.Equal(t, tc.out, x.DisplayName2())
 		})
 	}
+	t.Run("can return name unchanged for non-structure", func(t *testing.T) {
+		x := app.EveLocation{
+			ID:   60000001,
+			Name: "Alpha - Bravo",
+		}
+		xassert.Equal(t, "Alpha - Bravo", x.DisplayName2())
+	})
+	t.Run("falls back to alternative name when name is empty", func(t *testing.T) {
+		x := app.EveLocation{ID: 888}
+		xassert.Equal(t, "Unknown", x.DisplayName2())
+	})
 }
 
 func TestEveLocation_DisplayName(t *testing.T) {
@@ -102,6 +114,16 @@ func TestEveLocation_DisplayRichText(t *testing.T) {
 		want := []widget.RichTextSegment{
 			&widget.TextSegment{
 				Text: "location_name",
+			},
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("falls back to alternative name when name is empty", func(t *testing.T) {
+		l := &app.EveLocation{ID: 888}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "Unknown",
 			},
 		}
 		xassert.Equal(t, want, got)
@@ -239,4 +261,69 @@ func TestEveLocation_ToShort(t *testing.T) {
 			xassert.Equal(t, tc.want, tc.in.ToEveLocationShort())
 		})
 	}
+}
+
+func TestEveLocationShort_DisplayName(t *testing.T) {
+	t.Run("has name", func(t *testing.T) {
+		l := app.EveLocationShort{Name: optional.New("location_name")}
+		xassert.Equal(t, "location_name", l.DisplayName())
+	})
+	t.Run("no name", func(t *testing.T) {
+		l := app.EveLocationShort{}
+		xassert.Equal(t, "?", l.DisplayName())
+	})
+}
+
+func TestEveLocationShort_DisplayRichText(t *testing.T) {
+	t.Run("has security status and name", func(t *testing.T) {
+		l := app.EveLocationShort{
+			Name:           optional.New("location_name"),
+			SecurityStatus: optional.New[float32](0.5),
+		}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "0.5",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameSuccess,
+					Inline:    true,
+				},
+			},
+			&widget.TextSegment{
+				Text: "   location_name",
+			},
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("no security status", func(t *testing.T) {
+		l := app.EveLocationShort{Name: optional.New("location_name")}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "location_name",
+			},
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("no name", func(t *testing.T) {
+		l := app.EveLocationShort{}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "?",
+			},
+		}
+		xassert.Equal(t, want, got)
+	})
+}
+
+func TestEveLocationShort_SecurityType(t *testing.T) {
+	t.Run("has security status", func(t *testing.T) {
+		l := app.EveLocationShort{SecurityStatus: optional.New[float32](0.5)}
+		xassert.EqualOptional(t, app.HighSec, l.SecurityType())
+	})
+	t.Run("no security status", func(t *testing.T) {
+		l := app.EveLocationShort{}
+		assert.True(t, l.SecurityType().IsEmpty())
+	})
 }
