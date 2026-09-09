@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
@@ -32,6 +33,7 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 		{app.ContractStatusFinished, "Finished", theme.ColorNameSuccess},
 		{app.ContractStatusFailed, "Failed", theme.ColorNameError},
 		{app.ContractStatusReversed, "Reversed", theme.ColorNameSuccess},
+		{app.ContractStatusUndefined, "?", theme.ColorNameForeground},
 	}
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
@@ -78,8 +80,82 @@ func TestContractType(t *testing.T) {
 	xassert.Equal(t, "auction", app.ContractTypeAuction.String())
 }
 
+func TestContractTypeUnknown(t *testing.T) {
+	xassert.Equal(t, "?", app.ContractType(99).String())
+}
+
+func TestContractTypeDisplay(t *testing.T) {
+	xassert.Equal(t, "Auction", app.ContractTypeAuction.Display())
+}
+
 func TestContractAvailabilityDisplay(t *testing.T) {
 	xassert.Equal(t, "Private", app.ContractAvailabilityPrivate.Display())
+}
+
+func TestContractAvailabilityStringUnknown(t *testing.T) {
+	xassert.Equal(t, "?", app.ContractAvailability(99).String())
+}
+
+func TestCharacterContractHasIssue(t *testing.T) {
+	cases := []struct {
+		name    string
+		status  app.ContractStatus
+		expired time.Time
+		want    bool
+	}{
+		{"status has issue", app.ContractStatusFailed, time.Now().Add(time.Hour), true},
+		{"expired while active", app.ContractStatusOutstanding, time.Now().Add(-time.Hour), true},
+		{"not expired and no issue", app.ContractStatusOutstanding, time.Now().Add(time.Hour), false},
+		{"expired but inactive", app.ContractStatusFinished, time.Now().Add(-time.Hour), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cc := app.CharacterContract{Status: tc.status, DateExpired: tc.expired}
+			xassert.Equal(t, tc.want, cc.HasIssue())
+			corp := app.CorporationContract{Status: tc.status, DateExpired: tc.expired}
+			xassert.Equal(t, tc.want, corp.HasIssue())
+		})
+	}
+}
+
+func TestCharacterContractIsExpired(t *testing.T) {
+	t.Run("expired", func(t *testing.T) {
+		cc := app.CharacterContract{DateExpired: time.Now().Add(-time.Hour)}
+		xassert.Equal(t, true, cc.IsExpired())
+		corp := app.CorporationContract{DateExpired: time.Now().Add(-time.Hour)}
+		xassert.Equal(t, true, corp.IsExpired())
+	})
+	t.Run("not expired", func(t *testing.T) {
+		cc := app.CharacterContract{DateExpired: time.Now().Add(time.Hour)}
+		xassert.Equal(t, false, cc.IsExpired())
+		corp := app.CorporationContract{DateExpired: time.Now().Add(time.Hour)}
+		xassert.Equal(t, false, corp.IsExpired())
+	})
+}
+
+func TestCharacterContractIssuerEffective(t *testing.T) {
+	issuer := &app.EveEntity{ID: 1, Name: "Issuer"}
+	issuerCorp := &app.EveEntity{ID: 2, Name: "Issuer Corp"}
+	t.Run("for corporation", func(t *testing.T) {
+		cc := app.CharacterContract{ForCorporation: true, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuerCorp, cc.IssuerEffective())
+		corp := app.CorporationContract{ForCorporation: true, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuerCorp, corp.IssuerEffective())
+	})
+	t.Run("for character", func(t *testing.T) {
+		cc := app.CharacterContract{ForCorporation: false, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuer, cc.IssuerEffective())
+		corp := app.CorporationContract{ForCorporation: false, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuer, corp.IssuerEffective())
+	})
+}
+
+func TestCorporationContractNameDisplay(t *testing.T) {
+	cc := app.CorporationContract{
+		Type:  app.ContractTypeItemExchange,
+		Items: []string{"Jupiter"},
+	}
+	xassert.Equal(t, "Jupiter", cc.NameDisplay())
 }
 
 func TestContractNameDisplay(t *testing.T) {
@@ -141,6 +217,21 @@ func TestContractNameDisplay(t *testing.T) {
 				Items: []string{"Jupiter", "Mars"},
 			},
 			"[Multiple Items]",
+		},
+		{
+			"single item with empty name",
+			&app.CharacterContract{
+				Type:  app.ContractTypeItemExchange,
+				Items: []string{""},
+			},
+			"[Single Item]",
+		},
+		{
+			"no items",
+			&app.CharacterContract{
+				Type: app.ContractTypeItemExchange,
+			},
+			"[Empty]",
 		},
 	}
 	for _, tc := range cases {
