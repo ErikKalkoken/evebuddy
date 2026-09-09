@@ -1,6 +1,7 @@
 package evenotification_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -218,5 +219,172 @@ func TestStructure_RenderESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, title, "Nosodnis - Nara")
 		assert.Contains(t, body, solarSystem.Name)
+	})
+
+	t.Run("OwnershipTransferredLegacyFormat", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		char := f.CreateEveEntityCharacter()
+		oldCorp := f.CreateEveEntityCorporation()
+		newCorp := f.CreateEveEntityCorporation()
+		solarSystem := f.CreateEveSolarSystem()
+		structureType := f.CreateEveType()
+		text := fmt.Sprintf(`
+characterLinkData:
+- showinfo
+- 1380
+- %d
+characterName: %s
+fromCorporationLinkData:
+- showinfo
+- 2
+- %d
+fromCorporationName: Old Corporation
+solarSystemLinkData:
+- showinfo
+- 5
+- %d
+solarSystemName: Amamake
+structureLinkData:
+- showinfo
+- %d
+- 1000000000001
+structureName: Amamake - Alpha
+toCorporationLinkData:
+- showinfo
+- 2
+- %d
+toCorporationName: New Corporation
+`, char.ID, char.Name, oldCorp.ID, solarSystem.ID, structureType.ID, newCorp.ID)
+
+		title, body, err := en.RenderESI(t.Context(), app.OwnershipTransferred, optional.New(text), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "ownership")
+		assert.Contains(t, body, char.Name)
+	})
+
+	t.Run("OwnershipTransferredLegacyFormatWithShortLinkDataReturnsError", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// structureLinkData is too short; this used to panic instead of returning an error.
+		text := `
+characterLinkData:
+- showinfo
+- 1380
+- 1001
+characterName: John Doe
+fromCorporationLinkData:
+- showinfo
+- 2
+- 2001
+fromCorporationName: Old Corporation
+solarSystemLinkData:
+- showinfo
+- 5
+- 30002537
+solarSystemName: Amamake
+structureLinkData:
+- showinfo
+structureName: Amamake - Alpha
+toCorporationLinkData:
+- showinfo
+- 2
+- 2002
+toCorporationName: New Corporation
+`
+		_, _, err := en.RenderESI(t.Context(), app.OwnershipTransferred, optional.New(text), time.Now())
+		assert.Error(t, err)
+	})
+
+	t.Run("OwnershipTransferredLegacyFormatWithWrongLinkDataTypeReturnsError", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// structureLinkData's ID is a string; this used to panic instead of returning an error.
+		text := `
+characterLinkData:
+- showinfo
+- 1380
+- 1001
+characterName: John Doe
+fromCorporationLinkData:
+- showinfo
+- 2
+- 2001
+fromCorporationName: Old Corporation
+solarSystemLinkData:
+- showinfo
+- 5
+- 30002537
+solarSystemName: Amamake
+structureLinkData:
+- showinfo
+- 35835
+- not-a-number
+structureName: Amamake - Alpha
+toCorporationLinkData:
+- showinfo
+- 2
+- 2002
+toCorporationName: New Corporation
+`
+		_, _, err := en.RenderESI(t.Context(), app.OwnershipTransferred, optional.New(text), time.Now())
+		assert.Error(t, err)
+	})
+
+	t.Run("StructuresReinforcementChanged", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		structureType := f.CreateEveEntityWithCategory(app.EveEntityInventoryType)
+		text := fmt.Sprintf(`
+allStructureInfo:
+- - 1000000000001
+  - Test Structure
+  - %d
+hour: 19
+numStructures: 1
+timestamp: 132141703753688216
+weekday: 255
+`, structureType.ID)
+
+		title, body, err := en.RenderESI(t.Context(), app.StructuresReinforcementChanged, optional.New(text), time.Now())
+		require.NoError(t, err)
+		assert.Contains(t, title, "reinforcement")
+		assert.Contains(t, body, "Test Structure")
+		assert.Contains(t, body, structureType.Name)
+	})
+
+	t.Run("StructuresReinforcementChangedWithShortRowReturnsError", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// The row is missing its type ID; this used to panic instead of returning an error.
+		text := `
+allStructureInfo:
+- - 1000000000001
+  - Test Structure
+hour: 19
+numStructures: 1
+timestamp: 132141703753688216
+weekday: 255
+`
+		_, _, err := en.RenderESI(t.Context(), app.StructuresReinforcementChanged, optional.New(text), time.Now())
+		assert.Error(t, err)
+	})
+
+	t.Run("StructuresReinforcementChangedWithWrongRowTypeReturnsError", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		// The row's type ID is a string; this used to panic instead of returning an error.
+		text := `
+allStructureInfo:
+- - 1000000000001
+  - Test Structure
+  - not-a-number
+hour: 19
+numStructures: 1
+timestamp: 132141703753688216
+weekday: 255
+`
+		_, _, err := en.RenderESI(t.Context(), app.StructuresReinforcementChanged, optional.New(text), time.Now())
+		assert.Error(t, err)
 	})
 }

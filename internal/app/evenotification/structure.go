@@ -129,12 +129,36 @@ func (n ownershipTransferred) unmarshal(text string) (goesi.OwnershipTransferred
 		if err := yaml.Unmarshal([]byte(text), &data2); err != nil {
 			return data, set.Set[int64]{}, err
 		}
-		data.CharID = int64(data2.CharacterLinkData[2].(uint64))
-		data.NewOwnerCorpID = int64(data2.ToCorporationLinkData[2].(uint64))
-		data.OldOwnerCorpID = int64(data2.FromCorporationLinkData[2].(uint64))
-		data.SolarSystemID = int64(data2.SolarSystemLinkData[2].(uint64))
-		data.StructureID = int64(data2.StructureLinkData[2].(uint64))
-		data.StructureTypeID = int64(data2.StructureLinkData[1].(uint64))
+		charID, err := linkDataUint64("ownershipTransferred.characterLinkData", data2.CharacterLinkData, 2)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		newOwnerCorpID, err := linkDataUint64("ownershipTransferred.toCorporationLinkData", data2.ToCorporationLinkData, 2)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		oldOwnerCorpID, err := linkDataUint64("ownershipTransferred.fromCorporationLinkData", data2.FromCorporationLinkData, 2)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		solarSystemID, err := linkDataUint64("ownershipTransferred.solarSystemLinkData", data2.SolarSystemLinkData, 2)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		structureID, err := linkDataUint64("ownershipTransferred.structureLinkData", data2.StructureLinkData, 2)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		structureTypeID, err := linkDataUint64("ownershipTransferred.structureLinkData", data2.StructureLinkData, 1)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		data.CharID = int64(charID)
+		data.NewOwnerCorpID = int64(newOwnerCorpID)
+		data.OldOwnerCorpID = int64(oldOwnerCorpID)
+		data.SolarSystemID = int64(solarSystemID)
+		data.StructureID = int64(structureID)
+		data.StructureTypeID = int64(structureTypeID)
 		data.StructureName = data2.StructureName
 	}
 	ids := set.Of(data.OldOwnerCorpID, data.NewOwnerCorpID, data.CharID)
@@ -478,8 +502,12 @@ func (n structuresReinforcementChanged) unmarshal(text string) (goesi.Structures
 		return data, set.Set[int64]{}, err
 	}
 	var ids set.Set[int64]
-	for _, r := range data.AllStructureInfo {
-		ids.Add(int64(r[2].(uint64)))
+	for i, r := range data.AllStructureInfo {
+		s, err := parseStructureReinforcementRow(i, r)
+		if err != nil {
+			return data, set.Set[int64]{}, err
+		}
+		ids.Add(s.typeID)
 	}
 	return data, ids, nil
 }
@@ -490,6 +518,28 @@ type structureReinforcementInfo struct {
 	typeID      int64
 }
 
+// parseStructureReinforcementRow converts one allStructureInfo row, or returns an error if it's malformed.
+func parseStructureReinforcementRow(idx int, r []any) (structureReinforcementInfo, error) {
+	context := fmt.Sprintf("structuresReinforcementChanged.allStructureInfo[%d]", idx)
+	structureID, err := linkDataUint64(context, r, 0)
+	if err != nil {
+		return structureReinforcementInfo{}, err
+	}
+	name, err := linkDataString(context, r, 1)
+	if err != nil {
+		return structureReinforcementInfo{}, err
+	}
+	typeID, err := linkDataUint64(context, r, 2)
+	if err != nil {
+		return structureReinforcementInfo{}, err
+	}
+	return structureReinforcementInfo{
+		structureID: int64(structureID),
+		name:        name,
+		typeID:      int64(typeID),
+	}, nil
+}
+
 func (n structuresReinforcementChanged) render(ctx context.Context, text string, _ time.Time) (string, string, error) {
 	var title, body string
 	data, typeIDs, err := n.unmarshal(text)
@@ -497,12 +547,10 @@ func (n structuresReinforcementChanged) render(ctx context.Context, text string,
 		return title, body, err
 	}
 	var structures []structureReinforcementInfo
-	for _, r := range data.AllStructureInfo {
-		typeID := int64(r[2].(uint64))
-		s := structureReinforcementInfo{
-			structureID: int64(r[0].(uint64)),
-			name:        r[1].(string),
-			typeID:      typeID,
+	for i, r := range data.AllStructureInfo {
+		s, err := parseStructureReinforcementRow(i, r)
+		if err != nil {
+			return title, body, err
 		}
 		structures = append(structures, s)
 	}

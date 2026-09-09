@@ -68,3 +68,27 @@ func makeMarkDownLink(label, url string) string {
 	}
 	return fmt.Sprintf("[%s](%s)", label, url)
 }
+
+// linkDataUint64 returns the uint64 element at idx, or an error if it's missing or the wrong type.
+func linkDataUint64(context string, data []any, idx int) (uint64, error) {
+	if idx < 0 || idx >= len(data) {
+		return 0, fmt.Errorf("evenotification: %s: index %d out of range (len %d)", context, idx, len(data))
+	}
+	v, ok := data[idx].(uint64)
+	if !ok {
+		return 0, fmt.Errorf("evenotification: %s: element %d has type %T, want uint64", context, idx, data[idx])
+	}
+	return v, nil
+}
+
+// linkDataString returns the string element at idx, or an error if it's missing or the wrong type.
+func linkDataString(context string, data []any, idx int) (string, error) {
+	if idx < 0 || idx >= len(data) {
+		return "", fmt.Errorf("evenotification: %s: index %d out of range (len %d)", context, idx, len(data))
+	}
+	v, ok := data[idx].(string)
+	if !ok {
+		return "", fmt.Errorf("evenotification: %s: element %d has type %T, want string", context, idx, data[idx])
+	}
+	return v, nil
+}

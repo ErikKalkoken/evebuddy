@@ -74,33 +74,35 @@ func (st *Storage) DumpData(tables ...string) string {
 	slices.Sort(tables)
 	world := make(map[string]any)
 	for _, table := range tables {
-		sql := fmt.Sprintf("SELECT * FROM %s;", table)
-		rows, err := st.dbRO.Query(sql)
-		if err != nil {
-			panic(err)
-		}
-		defer rows.Close()
-		cols, err := rows.Columns()
-		if err != nil {
-			panic(err)
-		}
-		var data []any
-		for rows.Next() {
-			items := make([]any, len(cols))
-			for i := range items {
-				items[i] = new(any)
-			}
-			if err := rows.Scan(items...); err != nil {
+		world[table] = func() []any {
+			sql := fmt.Sprintf("SELECT * FROM %s;", table)
+			rows, err := st.dbRO.Query(sql)
+			if err != nil {
 				panic(err)
 			}
-			row := make(map[string]any)
-			for i, v := range items {
-				vv := v.(*any)
-				row[cols[i]] = *vv
+			defer rows.Close()
+			cols, err := rows.Columns()
+			if err != nil {
+				panic(err)
 			}
-			data = append(data, row)
-		}
-		world[table] = data
+			var data []any
+			for rows.Next() {
+				items := make([]any, len(cols))
+				for i := range items {
+					items[i] = new(any)
+				}
+				if err := rows.Scan(items...); err != nil {
+					panic(err)
+				}
+				row := make(map[string]any)
+				for i, v := range items {
+					vv := v.(*any)
+					row[cols[i]] = *vv
+				}
+				data = append(data, row)
+			}
+			return data
+		}()
 	}
 	b, err := json.MarshalIndent(world, "", "    ")
 	if err != nil {
