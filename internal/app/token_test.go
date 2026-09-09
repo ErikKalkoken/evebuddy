@@ -22,6 +22,50 @@ func TestCharacterToken_RemainsValid(t *testing.T) {
 	})
 }
 
+func TestCharacterToken_IsValid(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		x := app.CharacterToken{ExpiresAt: time.Now().Add(time.Hour)}
+		assert.True(t, x.IsValid())
+	})
+	t.Run("expired", func(t *testing.T) {
+		x := app.CharacterToken{ExpiresAt: time.Now().Add(-time.Hour)}
+		assert.False(t, x.IsValid())
+	})
+}
+
+func TestCharacterToken_AuthToken(t *testing.T) {
+	expiresAt := time.Now().Add(time.Hour)
+	x := app.CharacterToken{
+		AccessToken:  "access",
+		CharacterID:  42,
+		ExpiresAt:    expiresAt,
+		RefreshToken: "refresh",
+		Scopes:       set.Of("alpha", "bravo"),
+		TokenType:    "Bearer",
+	}
+	got := x.AuthToken()
+	xassert.Equal(t, "access", got.AccessToken)
+	xassert.Equal(t, int32(42), got.CharacterID)
+	xassert.Equal(t, expiresAt, got.ExpiresAt)
+	xassert.Equal(t, "refresh", got.RefreshToken)
+	xassert.Equal(t, "Bearer", got.TokenType)
+	assert.ElementsMatch(t, []string{"alpha", "bravo"}, got.Scopes)
+}
+
+func TestCharacterToken_OauthToken(t *testing.T) {
+	expiresAt := time.Now().Add(time.Hour)
+	x := app.CharacterToken{
+		AccessToken:  "access",
+		ExpiresAt:    expiresAt,
+		RefreshToken: "refresh",
+	}
+	got := x.OauthToken()
+	xassert.Equal(t, "access", got.AccessToken)
+	xassert.Equal(t, "refresh", got.RefreshToken)
+	xassert.Equal(t, expiresAt, got.Expiry)
+	assert.InDelta(t, 3600, got.ExpiresIn, 2)
+}
+
 func TestCharacterToken_HasScopes(t *testing.T) {
 	cases := []struct {
 		name            string
@@ -39,7 +83,7 @@ func TestCharacterToken_HasScopes(t *testing.T) {
 				Scopes: tc.currentScopes,
 			}
 			got := o.HasScopes(tc.requestedScopes)
-		xassert.Equal(t, tc.want, got)
+			xassert.Equal(t, tc.want, got)
 		})
 	}
 }
