@@ -8,6 +8,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestSectionStatus_HasContent(t *testing.T) {
+	t.Run("has content", func(t *testing.T) {
+		o := app.SectionStatus{ContentHash: "abc"}
+		xassert.Equal(t, true, o.HasContent())
+	})
+	t.Run("no content", func(t *testing.T) {
+		o := app.SectionStatus{}
+		xassert.Equal(t, false, o.HasContent())
+	})
+}
+
 func TestCharacterUpdateStatusIsExpired(t *testing.T) {
 	now := time.Now()
 	cases := []struct {
@@ -28,7 +39,7 @@ func TestCharacterUpdateStatusIsExpired(t *testing.T) {
 				},
 			}
 			// when/then
-		xassert.Equal(t, tc.want, o.IsExpired())
+			xassert.Equal(t, tc.want, o.IsExpired())
 		})
 	}
 }
@@ -51,7 +62,7 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 				},
 			}
 			// when/then
-		xassert.Equal(t, tc.want, o.HasError())
+			xassert.Equal(t, tc.want, o.HasError())
 		})
 	}
 }
@@ -93,7 +104,7 @@ func TestCharacterUpdateStatusIsMissing(t *testing.T) {
 				},
 			}
 			// when/then
-		xassert.Equal(t, tc.want, o.IsMissing())
+			xassert.Equal(t, tc.want, o.IsMissing())
 		})
 	}
 }
