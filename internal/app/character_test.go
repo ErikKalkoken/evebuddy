@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -11,9 +13,86 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestCharacterCombinedAssetsValue(t *testing.T) {
+	t.Run("should sum values when all present", func(t *testing.T) {
+		c := &app.Character{
+			AssetValue:         optional.New(1.0),
+			ContractItemsValue: optional.New(2.0),
+			OrderItemsValue:    optional.New(3.0),
+		}
+		xassert.EqualOptional(t, 6.0, c.CombinedAssetsValue())
+	})
+	t.Run("should return empty when a value is missing", func(t *testing.T) {
+		c := &app.Character{
+			AssetValue: optional.New(1.0),
+		}
+		assert.True(t, c.CombinedAssetsValue().IsEmpty())
+	})
+}
+
+func TestRoleString(t *testing.T) {
+	t.Run("known role", func(t *testing.T) {
+		xassert.Equal(t, "director", app.RoleDirector.String())
+	})
+	t.Run("unknown role", func(t *testing.T) {
+		xassert.Equal(t, "", app.RoleUndefined.String())
+	})
+}
+
+func TestRoleDisplay(t *testing.T) {
+	xassert.Equal(t, "Director", app.RoleDirector.Display())
+}
+
+func TestRolesAll(t *testing.T) {
+	got := make([]app.Role, 0)
+	for r := range app.RolesAll() {
+		got = append(got, r)
+	}
+	assert.Contains(t, got, app.RoleDirector)
+	assert.NotEmpty(t, got)
+}
+
+func TestCharacterPlanetNameRichText(t *testing.T) {
+	cp := app.CharacterPlanet{
+		EvePlanet: &app.EvePlanet{
+			Name:        "Planet I",
+			SolarSystem: &app.EveSolarSystem{SecurityStatus: 0.5},
+		},
+	}
+	got := cp.NameRichText()
+	want := []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text: "0.5",
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameSuccess,
+				Inline:    true,
+			},
+		},
+		&widget.TextSegment{
+			Text: "  Planet I",
+		},
+	}
+	xassert.Equal(t, want, got)
+}
+
+func TestCharacterWalletJournalEntryRefTypeDisplay(t *testing.T) {
+	we := app.CharacterWalletJournalEntry{RefType: "market_transaction"}
+	xassert.Equal(t, "Market Transaction", we.RefTypeDisplay())
+}
+
+func TestSearchCategoryString(t *testing.T) {
+	xassert.Equal(t, "Solar System", app.SearchSolarSystem.String())
+}
+
+func TestSearchCategories(t *testing.T) {
+	got := app.SearchCategories()
+	assert.Contains(t, got, app.SearchCharacter)
+	assert.Len(t, got, 10)
+}
+
 func TestCharacter_IDorZero(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		c := new(app.Character)
+		var c *app.Character
 		xassert.Equal(t, 0, c.IDOrZero())
 	})
 	t.Run("not nil", func(t *testing.T) {
