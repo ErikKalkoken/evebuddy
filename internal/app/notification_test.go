@@ -40,6 +40,61 @@ func TestGroupTypes(t *testing.T) {
 	assert.True(t, x.Contains(app.StructureDestroyed))
 }
 
+func TestNotificationTypesSupported(t *testing.T) {
+	x := app.NotificationTypesSupported()
+	assert.True(t, x.Contains(app.AllAnchoringMsg))
+	assert.False(t, x.Contains(app.AgentRetiredTrigravian))
+}
+
+func TestEveNotificationTypes(t *testing.T) {
+	got := app.EveNotificationTypes()
+	assert.Contains(t, got, app.StructureDestroyed)
+	assert.NotEmpty(t, got)
+}
+
+func TestEveNotificationGroupIsContainer(t *testing.T) {
+	cases := []struct {
+		g    app.EveNotificationGroup
+		want bool
+	}{
+		{app.GroupUndefined, true},
+		{app.GroupAll, true},
+		{app.GroupUnread, true},
+		{app.GroupStructure, false},
+		{app.GroupWar, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.g.String(), func(t *testing.T) {
+			xassert.Equal(t, tc.want, tc.g.IsContainer())
+		})
+	}
+}
+
+func TestEveNotificationGroupString(t *testing.T) {
+	xassert.Equal(t, "War", app.GroupWar.String())
+}
+
+func TestNotificationGroups(t *testing.T) {
+	got := app.NotificationGroups()
+	assert.Contains(t, got, app.GroupWar)
+	assert.NotContains(t, got, app.GroupAll)
+	assert.NotContains(t, got, app.GroupUnread)
+	assert.NotContains(t, got, app.GroupUndefined)
+}
+
+func TestEveNotificationTypeFromString(t *testing.T) {
+	t.Run("known type", func(t *testing.T) {
+		got, ok := app.EveNotificationTypeFromString("StructureDestroyed")
+		assert.True(t, ok)
+		xassert.Equal(t, app.StructureDestroyed, got)
+	})
+	t.Run("unknown type", func(t *testing.T) {
+		got, ok := app.EveNotificationTypeFromString("DoesNotExist")
+		assert.False(t, ok)
+		xassert.Equal(t, app.UnknownNotification, got)
+	})
+}
+
 func TestCharacterNotification(t *testing.T) {
 	t.Run("can convert type to fake title", func(t *testing.T) {
 		x := &app.CharacterNotification{
@@ -47,6 +102,22 @@ func TestCharacterNotification(t *testing.T) {
 		}
 		y := x.TitleFake()
 		xassert.Equal(t, "Structure Fuel Alert", y)
+	})
+}
+
+func TestCharacterNotification_TitleDisplay(t *testing.T) {
+	t.Run("has title", func(t *testing.T) {
+		x := &app.CharacterNotification{
+			Type:  app.StructureFuelAlert,
+			Title: optional.New("Custom Title"),
+		}
+		xassert.Equal(t, "Custom Title", x.TitleDisplay())
+	})
+	t.Run("falls back to fake title", func(t *testing.T) {
+		x := &app.CharacterNotification{
+			Type: app.StructureFuelAlert,
+		}
+		xassert.Equal(t, "Structure Fuel Alert", x.TitleDisplay())
 	})
 }
 
@@ -106,5 +177,13 @@ func TestCharacterNotification_ToJSON(t *testing.T) {
 		got2 := string(got)
 		assert.JSONEq(t, want, got2)
 	})
-
+	t.Run("should return error for invalid text", func(t *testing.T) {
+		n := &app.CharacterNotification{
+			Type:   app.CorpAppNewMsg,
+			Sender: &app.EveEntity{Category: app.EveEntityCorporation},
+			Text:   optional.New("key: [invalid"),
+		}
+		_, err := n.ToJSON()
+		assert.Error(t, err)
+	})
 }
