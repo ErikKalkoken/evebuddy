@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"errors"
 	"math/rand/v2"
 	"testing"
 	"time"
@@ -115,6 +116,22 @@ func TestCharacterSkillqueue(t *testing.T) {
 	})
 }
 
+func TestCharacterSkillqueue_All(t *testing.T) {
+	const characterID = 42
+	ctx := context.Background()
+	sq := app.NewCharacterSkillqueue()
+	item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{QueuePosition: 1})
+	item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{QueuePosition: 2})
+	cs := MyCS{items: []*app.CharacterSkillqueueItem{item1, item2}}
+	err := sq.Update(ctx, cs, characterID)
+	require.NoError(t, err)
+	got := make([]*app.CharacterSkillqueueItem, 0)
+	for item := range sq.All() {
+		got = append(got, item)
+	}
+	assert.Equal(t, []*app.CharacterSkillqueueItem{item1, item2}, got)
+}
+
 func TestCharacterSkillqueue_Update(t *testing.T) {
 	const characterID = 42
 	ctx := context.Background()
@@ -137,6 +154,13 @@ func TestCharacterSkillqueue_Update(t *testing.T) {
 		if assert.NoError(t, err) {
 			xassert.Equal(t, 0, sq.Size())
 		}
+	})
+	t.Run("should return error when fetching items fails", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		myErr := errors.New("boom")
+		cs := MyCS{err: myErr}
+		err := sq.Update(ctx, cs, characterID)
+		assert.ErrorIs(t, err, myErr)
 	})
 }
 
@@ -301,6 +325,16 @@ func TestCharacterSkillqueueItem_Duration(t *testing.T) {
 		d := q.Duration()
 		assert.True(t, d.IsEmpty())
 	})
+}
+
+func TestCharacterSkillqueueItem_String(t *testing.T) {
+	q := app.CharacterSkillqueueItem{SkillName: "Gunnery", FinishedLevel: 3}
+	xassert.Equal(t, "Gunnery III", q.String())
+}
+
+func TestCharacterSkillqueueItem_StringShortened(t *testing.T) {
+	q := app.CharacterSkillqueueItem{SkillName: "Amarr Battleship Specialization", FinishedLevel: 4}
+	xassert.Equal(t, "Amarr Battleship Spec. IV", q.StringShortened())
 }
 
 func TestCharacterSkillqueueItem_Remaining(t *testing.T) {
