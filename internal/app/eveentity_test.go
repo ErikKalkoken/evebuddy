@@ -15,16 +15,87 @@ func TestEveCorporation_DescriptionPlain(t *testing.T) {
 	xassert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
 }
 
+func TestEveEntity_ToEveEntity(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var ee *app.EveEntity
+		assert.Nil(t, ee.ToEveEntity())
+	})
+	t.Run("returns a clone", func(t *testing.T) {
+		ee := &app.EveEntity{ID: 42, Name: "Alpha", Category: app.EveEntityCharacter}
+		got := ee.ToEveEntity()
+		xassert.Equal(t, ee, got)
+		assert.NotSame(t, ee, got)
+	})
+}
+
+func TestEveEntity_IDOrZero(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		var ee *app.EveEntity
+		xassert.Equal(t, 0, ee.IDOrZero())
+	})
+	t.Run("not nil", func(t *testing.T) {
+		ee := &app.EveEntity{ID: 42}
+		xassert.Equal(t, 42, ee.IDOrZero())
+	})
+}
+
+func TestEveEntity_NameOrZero(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		var ee *app.EveEntity
+		xassert.Equal(t, "", ee.NameOrZero())
+	})
+	t.Run("not nil", func(t *testing.T) {
+		ee := &app.EveEntity{Name: "Alpha"}
+		xassert.Equal(t, "Alpha", ee.NameOrZero())
+	})
+}
+
 func TestEveEntity_Category(t *testing.T) {
-	x := &app.EveEntity{Category: app.EveEntityAlliance}
-	xassert.Equal(t, "Alliance", x.CategoryDisplay())
+	t.Run("nil receiver", func(t *testing.T) {
+		var x *app.EveEntity
+		xassert.Equal(t, "?", x.CategoryDisplay())
+	})
+	t.Run("not nil", func(t *testing.T) {
+		x := &app.EveEntity{Category: app.EveEntityAlliance}
+		xassert.Equal(t, "Alliance", x.CategoryDisplay())
+	})
+}
+
+func TestEveEntity_IsValid(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var x *app.EveEntity
+		assert.False(t, x.IsValid())
+	})
+	t.Run("known category", func(t *testing.T) {
+		x := &app.EveEntity{Category: app.EveEntityCharacter}
+		assert.True(t, x.IsValid())
+	})
+	t.Run("unknown category", func(t *testing.T) {
+		x := &app.EveEntity{Category: app.EveEntityUnknown}
+		assert.False(t, x.IsValid())
+	})
 }
 
 func TestEveEntity_IsCharacter(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var x *app.EveEntity
+		assert.False(t, x.IsCharacter())
+	})
 	x1 := &app.EveEntity{Category: app.EveEntityCharacter}
 	assert.True(t, x1.IsCharacter())
 	x2 := &app.EveEntity{Category: app.EveEntityAlliance}
 	assert.False(t, x2.IsCharacter())
+}
+
+func TestEveEntityCategory_IsKnown(t *testing.T) {
+	assert.True(t, app.EveEntityCharacter.IsKnown())
+	assert.False(t, app.EveEntityUndefined.IsKnown())
+	assert.False(t, app.EveEntityUnknown.IsKnown())
+}
+
+func TestEveEntityCategory_String(t *testing.T) {
+	xassert.Equal(t, "character", app.EveEntityCharacter.String())
+	xassert.Equal(t, "?", app.EveEntityCategory(99).String())
 }
 
 func TestEveEntity_Compare(t *testing.T) {
@@ -51,6 +122,10 @@ func TestEveEntity_Compare(t *testing.T) {
 }
 
 func TestEveEntity_IsNPC(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var x *app.EveEntity
+		assert.True(t, x.IsNPC().IsEmpty())
+	})
 	cases := []struct {
 		name     string
 		id       int64
@@ -74,6 +149,11 @@ func TestEveEntity_IsNPC(t *testing.T) {
 }
 
 func TestEveEntity_InfoLink(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var ee *app.EveEntity
+		_, err := ee.InfoLink()
+		assert.Error(t, err)
+	})
 	cases := []struct {
 		category app.EveEntityCategory
 		wantLink string
