@@ -74,6 +74,18 @@ func TestCorporation(t *testing.T) {
 			xassert.Equal(t, c2, c1)
 		}
 	})
+	t.Run("can delete", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		err := st.DeleteCorporation(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err := st.GetCorporation(ctx, c.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+		}
+	})
 }
 
 func TestListCorporations(t *testing.T) {

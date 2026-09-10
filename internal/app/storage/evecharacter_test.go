@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -254,6 +255,27 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := st.GetEveCharacter(t.Context(), c1.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, "Erik", c2.Name)
+	})
+	t.Run("can list character IDs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := f.CreateEveCharacter()
+		c2 := f.CreateEveCharacter()
+		// when
+		got, err := st.ListEveCharacterIDs(t.Context())
+		// then
+		require.NoError(t, err)
+		want := set.Of(c1.ID, c2.ID)
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should return empty set when no characters exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		got, err := st.ListEveCharacterIDs(t.Context())
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
 	})
 }
 
