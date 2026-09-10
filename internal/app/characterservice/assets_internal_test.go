@@ -291,3 +291,62 @@ func TestUpdateAssetValue(t *testing.T) {
 	})
 
 }
+
+func TestAssetTotalValue(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can return asset total value for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter(storage.CreateCharacterParams{AssetValue: optional.New(123.45)})
+
+		// when
+		got, err := s.AssetTotalValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, optional.New(123.45), got)
+	})
+}
+
+func TestListAssets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can list assets for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		factory.CreateCharacterAsset() // asset for another character
+
+		// when
+		got, err := s.ListAssets(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, ca.ItemID, got[0].ItemID)
+		}
+	})
+}
+
+func TestListAllAssets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can list assets across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterAsset()
+		factory.CreateCharacterAsset()
+
+		// when
+		got, err := s.ListAllAssets(t.Context())
+
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+}

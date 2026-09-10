@@ -171,6 +171,45 @@ func TestEveEntity(t *testing.T) {
 	})
 }
 
+func TestListEveEntityByNameAndCategory(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return objs with matching name and category", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Erik"})
+		factory.CreateEveEntityAlliance(app.EveEntity{Name: "Erik"})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Other"})
+		// when
+		ee, err := st.ListEveEntityByNameAndCategory(ctx, "Erik", app.EveEntityCharacter)
+		// then
+		if assert.NoError(t, err) {
+			got := xslices.Map(ee, func(e *app.EveEntity) string {
+				return e.Name
+			})
+			want := []string{"Erik"}
+			xassert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return error for empty name", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.ListEveEntityByNameAndCategory(ctx, "", app.EveEntityCharacter)
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("should return error for undefined category", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.ListEveEntityByNameAndCategory(ctx, "Erik", app.EveEntityUndefined)
+		// then
+		assert.Error(t, err)
+	})
+}
+
 func TestListEveEntitiesForIDs(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

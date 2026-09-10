@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -186,5 +187,48 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			}
 			assert.ElementsMatch(t, want, got)
 		}
+	})
+}
+
+func TestGetCharacterIndustryJob(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return an industry job", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterIndustryJob()
+		// when
+		got, err := cs.GetCharacterIndustryJob(ctx, o.CharacterID, o.JobID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, o.JobID, got.JobID)
+	})
+	t.Run("should return own error when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := cs.GetCharacterIndustryJob(ctx, 1, 1)
+		// then
+		assert.Error(t, err)
+	})
+}
+
+func TestListAllCharacterIndustryJob(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list industry jobs across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterIndustryJob()
+		factory.CreateCharacterIndustryJob()
+		// when
+		got, err := cs.ListAllCharacterIndustryJob(ctx)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
 	})
 }

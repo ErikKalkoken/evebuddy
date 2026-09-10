@@ -7,6 +7,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -55,5 +56,43 @@ func TestSearchESI(t *testing.T) {
 		}
 		xassert.Equal(t, 1, n)
 		xassert.Equal(t, map[app.SearchCategory][]*app.EveEntity{app.SearchCharacter: {x1}}, got)
+	})
+}
+
+func TestAddEveEntitiesFromSearchESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should add missing entities found via search", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		const characterID2 = 3007
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/search?categories=corporation&categories=character&categories=alliance&search=abc", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string][]int{
+				"character": {characterID2},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/universe/names",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"id":       characterID2,
+				"name":     "Bruce Wayne",
+				"category": "character",
+			}}),
+		)
+		// when
+		got, err := s.AddEveEntitiesFromSearchESI(ctx, c.ID, "abc")
+		// then
+		require.NoError(t, err)
+		assert.True(t, got.Contains(characterID2))
 	})
 }

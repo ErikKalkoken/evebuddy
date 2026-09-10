@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestUpdateCorporationAssetsESI(t *testing.T) {
@@ -260,6 +261,44 @@ func TestUpdateCorporationAssetsESI(t *testing.T) {
 		x, err = st.GetCorporationAsset(ctx, c.ID, 1000000016836)
 		require.NoError(t, err)
 		xassert.Equal(t, "", x.Name)
+	})
+}
+
+func TestListAssets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list assets and filter out alliance assets", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		et := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAlliance})
+		a1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID, EveTypeID: et.ID})
+		got, err := s.ListAssets(ctx, c.ID)
+		if assert.NoError(t, err) {
+			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
+			xassert.Equal(t, set.Of(a1.ItemID), ids)
+		}
+	})
+}
+
+func TestListAllAssets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list assets from all corporations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		a1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c1.ID})
+		a2 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c2.ID})
+		got, err := s.ListAllAssets(ctx)
+		if assert.NoError(t, err) {
+			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
+			xassert.Equal(t, set.Of(a1.ItemID, a2.ItemID), ids)
+		}
 	})
 }
 

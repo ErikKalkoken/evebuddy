@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
@@ -228,5 +229,239 @@ func TestSendMail(t *testing.T) {
 
 		// then
 		require.Error(t, err)
+	})
+}
+
+func TestDeleteMail(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+
+	t.Run("can delete a mail", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"DELETE",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, m.MailID),
+			httpmock.NewStringResponder(204, ""))
+		// when
+		err := s.DeleteMail(t.Context(), c.ID, m.MailID)
+		// then
+		require.NoError(t, err)
+		_, err = s.GetMail(t.Context(), c.ID, m.MailID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestUpdateMailRead(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+
+	t.Run("can mark a mail as read", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		httpmock.RegisterResponder(
+			"PUT",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, m.MailID),
+			httpmock.NewStringResponder(204, ""))
+		// when
+		err := s.UpdateMailRead(t.Context(), c.ID, m.MailID, true)
+		// then
+		require.NoError(t, err)
+		m2, err := s.GetMail(t.Context(), c.ID, m.MailID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, m2.IsRead)
+	})
+}
+
+func TestGetAllMailUnreadCount(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return unread mail count across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(true)})
+		// when
+		got, err := s.GetAllMailUnreadCount(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got)
+	})
+}
+
+func TestGetMailCounts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return total and unread mail counts for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(true)})
+		// when
+		total, unread, err := s.GetMailCounts(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 2, total)
+		assert.Equal(t, 1, unread)
+	})
+}
+
+func TestGetMailLabelUnreadCounts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return unread mail counts by label", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{label.LabelID},
+		})
+		// when
+		got, err := s.GetMailLabelUnreadCounts(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got[label.LabelID])
+	})
+}
+
+func TestGetMailListUnreadCounts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return unread mail counts by list", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		list := factory.CreateCharacterMailList(c.ID)
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			IsRead:       optional.New(false),
+			RecipientIDs: []int64{list.ID},
+		})
+		// when
+		got, err := s.GetMailListUnreadCounts(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got[list.ID])
+	})
+}
+
+func TestListMailLists(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list mail lists for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		list := factory.CreateCharacterMailList(c.ID)
+		// when
+		got, err := s.ListMailLists(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, list.ID, got[0].ID)
+		}
+	})
+}
+
+func TestListMailLabelsOrdered(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list mail labels for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		// when
+		got, err := s.ListMailLabelsOrdered(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, label.LabelID, got[0].LabelID)
+		}
+	})
+}
+
+func TestListMailHeadersForLabelOrdered(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list mail headers for a label", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		// when
+		got, err := s.ListMailHeadersForLabelOrdered(t.Context(), c.ID, app.MailLabelAll)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, m.MailID, got[0].MailID)
+		}
+	})
+}
+
+func TestListMailHeadersForListOrdered(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list mail headers for a mail list", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		list := factory.CreateCharacterMailList(c.ID)
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int64{list.ID},
+		})
+		// when
+		got, err := s.ListMailHeadersForListOrdered(t.Context(), c.ID, list.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, m.MailID, got[0].MailID)
+		}
+	})
+}
+
+func TestDownloadedBodiesPercentage(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can report total and missing mail body counts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID}) // no body
+		// when
+		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, total)
+		assert.Equal(t, 1, missing)
 	})
 }

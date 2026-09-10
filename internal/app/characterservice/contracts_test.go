@@ -329,3 +329,108 @@ func TestListAllCharacterContractSlotsCorporation(t *testing.T) {
 		})
 	}
 }
+
+func TestGetContract(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return a contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract()
+		// when
+		got, err := s.GetContract(t.Context(), o.CharacterID, o.ContractID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, o.ID, got.ID)
+	})
+	t.Run("should return own error when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := s.GetContract(t.Context(), 1, 1)
+		// then
+		assert.Error(t, err)
+	})
+}
+
+func TestCountContractBids(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can count bids for a contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract()
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
+		// when
+		got, err := s.CountContractBids(t.Context(), o.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
+	})
+}
+
+func TestGetContractTopBid(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return top bid for a contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract()
+		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 100})
+		top := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 500})
+		// when
+		got, err := s.GetContractTopBid(t.Context(), o.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, top.BidID, got.BidID)
+	})
+	t.Run("should return own error when contract has no bids", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract()
+		// when
+		_, err := s.GetContractTopBid(t.Context(), o.ID)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListAllContracts(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list contracts across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterContract()
+		factory.CreateCharacterContract()
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+}
+
+func TestListContractItems(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can list items for a contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract()
+		item := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: o.ID})
+		// when
+		got, err := s.ListContractItems(t.Context(), o.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, item.RecordID, got[0].RecordID)
+		}
+	})
+}

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -17,6 +18,49 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
+
+func TestAddMissingRegions(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("do nothing when all regions already exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		r := factory.CreateEveRegion()
+		// when
+		err := s.AddMissingRegions(ctx, set.Of(r.ID, 0))
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+	t.Run("can fetch missing regions from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/regions/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellations": []int{20000302, 20000303},
+				"description":    "It has long been an established fact of civilization...",
+				"name":           "Metropolis",
+				"region_id":      10000042,
+			}),
+		)
+		// when
+		err := s.AddMissingRegions(ctx, set.Of[int64](10000042))
+		// then
+		if assert.NoError(t, err) {
+			_, err := st.GetEveRegion(ctx, 10000042)
+			assert.NoError(t, err)
+		}
+	})
+}
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
@@ -115,6 +159,57 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				xassert.Equal(t, x1, x2)
 			}
+		}
+	})
+}
+
+func TestAddMissingSolarSystems(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("do nothing when all solar systems already exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		x := factory.CreateEveSolarSystem()
+		// when
+		err := s.AddMissingSolarSystems(ctx, set.Of(x.ID, 0))
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+	t.Run("can fetch missing solar systems from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/systems/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": 20000001,
+				"name":             "Akpivem",
+				"position": map[string]any{
+					"x": -91174141133075340,
+					"y": 43938227486247170,
+					"z": -56482824383339900,
+				},
+				"security_class":  "B",
+				"security_status": 0.8462923765182495,
+				"star_id":         40000040,
+				"system_id":       30000003,
+			}),
+		)
+		// when
+		err := s.AddMissingSolarSystems(ctx, set.Of[int64](30000003))
+		// then
+		if assert.NoError(t, err) {
+			_, err := st.GetEveSolarSystem(ctx, 30000003)
+			assert.NoError(t, err)
 		}
 	})
 }

@@ -92,6 +92,21 @@ func TestTag(t *testing.T) {
 			assert.Error(t, err, app.ErrNotFound)
 		}
 	})
+	t.Run("can delete all tags", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterTag()
+		factory.CreateCharacterTag()
+		// when
+		err := st.DeleteAllTags(ctx)
+		// then
+		if assert.NoError(t, err) {
+			tags, err := st.ListTagsByName(ctx)
+			if assert.NoError(t, err) {
+				assert.Empty(t, tags)
+			}
+		}
+	})
 }
 
 func TestReplaceTags(t *testing.T) {

@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestIsTrainingActive(t *testing.T) {
@@ -243,5 +244,173 @@ func TestCharacterService_ListSkills(t *testing.T) {
 
 		o1 := m[es1.ID]
 		assert.False(t, o1.HasPrerequisites)
+	})
+}
+
+func TestListShipsAbilities(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list ship abilities for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		s1 := factory.CreateEveShipSkill()
+		factory.CreateEveShipSkill()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel: 1,
+			CharacterID:      c.ID,
+			TypeID:           s1.SkillTypeID,
+		})
+		// when
+		got, err := cs.ListShipsAbilities(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, got, 2)
+		}
+	})
+}
+
+func TestListAllSkills(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list skills across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		et := factory.CreateEveType()
+		c1 := factory.CreateCharacter()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c1.ID,
+			TypeID:      et.ID,
+		})
+		c2 := factory.CreateCharacter()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c2.ID,
+			TypeID:      et.ID,
+		})
+		// when
+		got, err := cs.ListAllSkills(ctx)
+		// then
+		if assert.NoError(t, err) {
+			ids := xslices.Map(got, func(x *app.CharacterSkill) int64 { return x.CharacterID })
+			assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, ids)
+		}
+	})
+}
+
+func TestTotalTrainingTime(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should return a duration when section status is valid and up to date", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkillqueue,
+		})
+		now := time.Now()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   optional.New(now),
+			FinishDate:  optional.New(now.Add(2 * time.Hour)),
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			v, ok := got.Value()
+			if assert.True(t, ok) {
+				assert.Greater(t, v, time.Duration(0))
+			}
+		}
+	})
+	t.Run("should return empty when no section status exists yet", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got, err := cs.TotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, ok := got.Value()
+			assert.False(t, ok)
+		}
+	})
+	t.Run("should return empty when section status is stale", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkillqueue,
+			CompletedAt: time.Now().Add(-24 * time.Hour),
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, ok := got.Value()
+			assert.False(t, ok)
+		}
+	})
+	t.Run("should return empty when section status has an error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID:  c.ID,
+			Section:      app.SectionCharacterSkillqueue,
+			ErrorMessage: "error",
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, ok := got.Value()
+			assert.False(t, ok)
+		}
+	})
+}
+
+func TestUpdateIsTrainingWatched(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can update the watched flag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		err := cs.UpdateIsTrainingWatched(ctx, c.ID, true)
+		// then
+		if assert.NoError(t, err) {
+			got, err := st.GetCharacter(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, got.IsTrainingWatched)
+			}
+		}
+	})
+	t.Run("clears the training-notified cache so a new notification can be sent", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
+		var sendCount int
+		notify := func(title, content string) { sendCount++ }
+		require.NoError(t, cs.NotifyExpiredTrainingForWatched(ctx, c.ID, notify))
+		require.NoError(t, cs.NotifyExpiredTrainingForWatched(ctx, c.ID, notify))
+		require.Equal(t, 1, sendCount) // second call suppressed by cache
+		// when
+		err := cs.UpdateIsTrainingWatched(ctx, c.ID, true)
+		// then
+		require.NoError(t, err)
+		require.NoError(t, cs.NotifyExpiredTrainingForWatched(ctx, c.ID, notify))
+		assert.Equal(t, 2, sendCount) // cache was cleared, so notification is sent again
 	})
 }

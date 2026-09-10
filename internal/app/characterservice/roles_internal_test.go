@@ -114,3 +114,45 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestListRoles(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should return only director role when character is director", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.SetCharacterRoles(c.ID, set.Of(app.RoleDirector, app.RoleAccountant))
+		// when
+		got, err := s.ListRoles(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		want := []app.CharacterRole{
+			{CharacterID: c.ID, Role: app.RoleDirector, Granted: true},
+		}
+		assert.Equal(t, want, got)
+	})
+	t.Run("should return all roles with granted status when not a director", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.SetCharacterRoles(c.ID, set.Of(app.RoleAccountant))
+		// when
+		got, err := s.ListRoles(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		assert.NotEmpty(t, got)
+		var found bool
+		for _, r := range got {
+			if r.Role == app.RoleAccountant {
+				found = true
+				assert.True(t, r.Granted)
+			} else {
+				assert.False(t, r.Granted)
+			}
+		}
+		assert.True(t, found)
+	})
+}

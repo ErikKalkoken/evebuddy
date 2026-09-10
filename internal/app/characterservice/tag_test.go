@@ -131,3 +131,194 @@ func TestImportTags(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestCreateTag(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can create a new tag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		got, err := s.CreateTag(ctx, "Alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "Alpha", got.Name)
+			tags, err := st.ListTagsByName(ctx)
+			if assert.NoError(t, err) && assert.Len(t, tags, 1) {
+				assert.Equal(t, "Alpha", tags[0].Name)
+			}
+		}
+	})
+}
+
+func TestDeleteTag(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can delete a tag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		tag := factory.CreateCharacterTag()
+		// when
+		err := s.DeleteTag(ctx, tag.ID)
+		// then
+		if assert.NoError(t, err) {
+			tags, err := st.ListTagsByName(ctx)
+			if assert.NoError(t, err) {
+				assert.Empty(t, tags)
+			}
+		}
+	})
+}
+
+func TestDeleteAllTags(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can delete all tags", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterTag()
+		factory.CreateCharacterTag()
+		// when
+		err := s.DeleteAllTags(ctx)
+		// then
+		if assert.NoError(t, err) {
+			tags, err := st.ListTagsByName(ctx)
+			if assert.NoError(t, err) {
+				assert.Empty(t, tags)
+			}
+		}
+	})
+}
+
+func TestListTagsByName(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list tags sorted by name", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterTag("Zulu")
+		factory.CreateCharacterTag("Alpha")
+		// when
+		got, err := s.ListTagsByName(ctx)
+		// then
+		if assert.NoError(t, err) && assert.Len(t, got, 2) {
+			assert.Equal(t, "Alpha", got[0].Name)
+			assert.Equal(t, "Zulu", got[1].Name)
+		}
+	})
+}
+
+func TestRenameTag(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can rename a tag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		tag := factory.CreateCharacterTag("Old")
+		// when
+		err := s.RenameTag(ctx, tag.ID, "New")
+		// then
+		if assert.NoError(t, err) {
+			tags, err := st.ListTagsByName(ctx)
+			if assert.NoError(t, err) && assert.Len(t, tags, 1) {
+				assert.Equal(t, "New", tags[0].Name)
+			}
+		}
+	})
+}
+
+func TestAddAndRemoveTagFromCharacter(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can add and remove a tag from a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		tag := factory.CreateCharacterTag()
+		c := factory.CreateCharacter()
+		// when
+		err := s.AddTagToCharacter(ctx, c.ID, tag.ID)
+		// then
+		if assert.NoError(t, err) {
+			cc, err := st.ListCharacterTagsForCharacter(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, cc, 1)
+			}
+		}
+		// when
+		err = s.RemoveTagFromCharacter(ctx, c.ID, tag.ID)
+		// then
+		if assert.NoError(t, err) {
+			cc, err := st.ListCharacterTagsForCharacter(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Empty(t, cc)
+			}
+		}
+	})
+}
+
+func TestListCharactersForTag(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can split characters into tagged and others", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		tag := factory.CreateCharacterTag()
+		c1 := factory.CreateCharacter()
+		factory.AddCharacterToTag(tag, c1)
+		c2 := factory.CreateCharacter()
+		// when
+		tagged, others, err := s.ListCharactersForTag(ctx, tag.ID)
+		// then
+		if assert.NoError(t, err) {
+			taggedIDs := xslices.Map(tagged, func(x *app.EntityShort) int64 { return x.ID })
+			otherIDs := xslices.Map(others, func(x *app.EntityShort) int64 { return x.ID })
+			assert.ElementsMatch(t, []int64{c1.ID}, taggedIDs)
+			assert.ElementsMatch(t, []int64{c2.ID}, otherIDs)
+		}
+	})
+}
+
+func TestListTagsForCharacter(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list tag names for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		tag := factory.CreateCharacterTag("Alpha")
+		c := factory.CreateCharacter()
+		factory.AddCharacterToTag(tag, c)
+		// when
+		got, err := s.ListTagsForCharacter(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, got.Contains("Alpha"))
+		}
+	})
+	t.Run("returns empty set when character has no tags", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got, err := s.ListTagsForCharacter(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, got.Size())
+		}
+	})
+}

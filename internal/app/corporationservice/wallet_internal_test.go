@@ -21,6 +21,139 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+func TestGetWalletName(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return existing wallet name", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		w := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{CorporationID: c.ID, DivisionID: 1})
+		got, err := s.GetWalletName(ctx, c.ID, app.Division1)
+		if assert.NoError(t, err) {
+			assert.Equal(t, w.Name, got)
+		}
+	})
+	t.Run("should return error when not found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetWalletName(ctx, c.ID, app.Division1)
+		assert.Error(t, err)
+	})
+}
+
+func TestListWalletNames(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("returns stored names merged with defaults", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Name:          "Awesome Wallet",
+		})
+		got := s.ListWalletNames(ctx, c.ID)
+		assert.Equal(t, "Awesome Wallet", got[app.Division1])
+		assert.Equal(t, "2nd Wallet Division", got[app.Division2])
+	})
+	t.Run("returns defaults when corporation unknown", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		got := s.ListWalletNames(ctx, 42)
+		assert.Equal(t, "Master Wallet", got[app.Division1])
+	})
+}
+
+func TestListWalletBalances(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	ctx := context.Background()
+	t.Run("can list balances with names", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Balance:       123.45,
+		})
+		got, err := s.ListWalletBalances(ctx, c.ID)
+		if assert.NoError(t, err) {
+			m := make(map[int64]app.CorporationWalletBalanceWithName)
+			for _, x := range got {
+				m[x.DivisionID] = x
+			}
+			require.Contains(t, m, int64(1))
+			assert.Equal(t, 123.45, m[1].Balance)
+			assert.Equal(t, "Master Wallet", m[1].Name)
+		}
+	})
+	t.Run("returns empty when section not enabled", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		got, err := s.ListWalletBalances(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Empty(t, got)
+		}
+	})
+}
+
+func TestGetWalletJournalEntry(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	ctx := context.Background()
+	t.Run("can return existing entry", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletJournal(app.Division1))
+		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		got, err := s.GetWalletJournalEntry(ctx, c.ID, app.Division1, e.RefID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, e.RefID, got.RefID)
+		}
+	})
+	t.Run("should return error when section not enabled", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetWalletJournalEntry(ctx, c.ID, app.Division1, 42)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestGetWalletTransaction(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+	ctx := context.Background()
+	t.Run("can return existing transaction", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletTransactions(app.Division1))
+		x := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		got, err := s.GetWalletTransaction(ctx, c.ID, app.Division1, x.TransactionID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, x.TransactionID, got.TransactionID)
+		}
+	})
+	t.Run("should return error when section not enabled", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetWalletTransaction(ctx, c.ID, app.Division1, 42)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
 func TestUpdateWalletBalancesESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

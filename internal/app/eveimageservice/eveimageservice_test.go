@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveimageservice"
@@ -25,9 +26,7 @@ func TestImageFetchingAsync(t *testing.T) {
 		test.NewTempApp(t)
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -50,9 +49,7 @@ func TestImageFetchingAsync(t *testing.T) {
 		test.NewTempApp(t)
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -74,6 +71,187 @@ func TestImageFetchingAsync(t *testing.T) {
 		})
 		assert.Equal(t, dat, result2.Content())
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+	t.Run("can fetch an alliance logo async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/alliance.png")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/alliances/99/logo?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.AllianceLogoAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a corporation logo async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/corporation.png")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/corporations/99/logo?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.CorporationLogoAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a faction logo async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/faction.png")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/corporations/99/logo?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.FactionLogoAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a type render async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/type.jpeg")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/render?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.InventoryTypeRenderAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a type icon async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/type.jpeg")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/icon?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.InventoryTypeIconAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a type BPO async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/type.jpeg")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/bp?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.InventoryTypeBPOAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+	t.Run("can fetch a type BPC async from the image server", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		c := testutil.NewCacheFake()
+		dat, err := os.ReadFile("testdata/type.jpeg")
+		require.NoError(t, err)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/bpc?size=64",
+			httpmock.NewBytesResponder(200, dat),
+		)
+		//when
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		result := make(chan fyne.Resource, 2)
+		s.InventoryTypeBPCAsync(99, 64, func(r fyne.Resource) {
+			result <- r
+		})
+		<-result
+		second := <-result
+		assert.Equal(t, dat, second.Content())
+	})
+}
+
+func TestInventoryTypeSKINAsync(t *testing.T) {
+	t.Run("returns the SKIN icon for the expected size", func(t *testing.T) {
+		// given
+		c := testutil.NewCacheFake()
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		// when
+		var result fyne.Resource
+		s.InventoryTypeSKINAsync(99, 64, func(r fyne.Resource) {
+			result = r
+		})
+		// then
+		assert.Equal(t, "skin_icon_64px.png", result.Name())
+	})
+	t.Run("returns a broken image placeholder for an unsupported size", func(t *testing.T) {
+		// given
+		c := testutil.NewCacheFake()
+		s := eveimageservice.New(c, http.DefaultClient, false)
+		// when
+		var result fyne.Resource
+		s.InventoryTypeSKINAsync(99, 32, func(r fyne.Resource) {
+			result = r
+		})
+		// then
+		assert.Contains(t, result.Name(), "broken")
 	})
 }
 
@@ -117,9 +295,7 @@ func TestImageFetching(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/alliance.png")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -129,17 +305,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.AllianceLogo(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a character portrait from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -150,17 +323,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.CharacterPortrait(93330670, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a corporation logo from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/corporation.png")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -171,17 +341,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.CorporationLogo(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a faction logo from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/faction.png")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -192,17 +359,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.FactionLogo(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a type icon from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -213,17 +377,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeIcon(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a type render from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -234,17 +395,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeRender(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a type BPO from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -255,17 +413,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeBPO(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("can fetch a type BPC from the image server", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -276,17 +431,14 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeBPC(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("should convert images size errors", func(t *testing.T) {
 		// given
 		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -311,10 +463,9 @@ func TestImageFetching(t *testing.T) {
 		m := eveimageservice.New(c, http.DefaultClient, true)
 		r, err := m.AllianceLogo(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Contains(t, r.Name(), "broken")
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		assert.Contains(t, r.Name(), "broken")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 }
 
@@ -328,9 +479,8 @@ func TestOffline(t *testing.T) {
 	c := testutil.NewCacheFake()
 	s := eveimageservice.New(c, http.DefaultClient, true)
 	x, err := s.CharacterPortrait(123, 64)
-	if assert.NoError(t, err) {
-		assert.NotEmpty(t, x.Content())
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, x.Content())
 }
 
 func TestEveEntityLogo(t *testing.T) {
@@ -358,10 +508,9 @@ func TestEveEntityLogo(t *testing.T) {
 				// when
 				got, err := m.EveEntityLogo(o, 64)
 				// then
-				if assert.NoError(t, err) {
-					assert.Equal(t, tc.want, got)
-					assert.Equal(t, 0, httpmock.GetTotalCallCount())
-				}
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+				assert.Equal(t, 0, httpmock.GetTotalCallCount())
 			})
 		}
 	})
@@ -393,9 +542,8 @@ func TestEveEntityLogo(t *testing.T) {
 				// when
 				got, err := m.EveEntityLogo(o, 64)
 				// then
-				if assert.NoError(t, err) {
-					assert.Equal(t, dat, got.Content())
-				}
+				require.NoError(t, err)
+				assert.Equal(t, dat, got.Content())
 			})
 		}
 	})
@@ -408,10 +556,9 @@ func TestEveEntityLogo(t *testing.T) {
 		// when
 		got, err := m.EveEntityLogo(o, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, theme.BrokenImageIcon(), got)
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, theme.BrokenImageIcon(), got)
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 }
 

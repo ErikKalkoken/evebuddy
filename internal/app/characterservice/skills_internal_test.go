@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
@@ -313,4 +314,30 @@ func TestUpdateSkllPointsValue(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
 	})
+}
+
+func TestIsValidSkillQueueStatus(t *testing.T) {
+	cases := []struct {
+		name        string
+		completedAt time.Time
+		errMsg      string
+		want        bool
+	}{
+		{"valid and recent", time.Now(), "", true},
+		{"never completed", time.Time{}, "", false},
+		{"has error", time.Now(), "boom", false},
+		{"stale", time.Now().Add(-13 * time.Hour), "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v := &app.CharacterSectionStatus{
+				SectionStatus: app.SectionStatus{
+					CompletedAt:  tc.completedAt,
+					ErrorMessage: tc.errMsg,
+				},
+			}
+			got := isValidSkillQueueStatus(v)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

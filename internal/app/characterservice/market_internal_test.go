@@ -408,3 +408,22 @@ func TestUpdateOrdersEscrow(t *testing.T) {
 	got := c2.OrdersEscrow
 	assert.Equal(t, optional.New(15.2), got)
 }
+
+func TestListAllMarketOrder(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can list buy orders across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		buy := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{IsBuyOrder: optional.New(true)})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{IsBuyOrder: optional.New(false)})
+		// when
+		got, err := s.ListAllMarketOrder(t.Context(), true)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, buy.OrderID, got[0].OrderID)
+		}
+	})
+}

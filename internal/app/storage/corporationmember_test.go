@@ -92,14 +92,52 @@ func TestCorporationMember(t *testing.T) {
 			CorporationID: c.ID,
 		})
 		// when
-		oo, err := st.ListCorporationMembers(ctx, c.ID)
+		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID, e2.Character.ID))
 		// then
 		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int64 {
-				return x.Character.ID
-			})...)
-			want := set.Of(e1.Character.ID, e2.Character.ID)
-			xassert.Equal(t, want, got)
+			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Empty(t, got)
+			}
+		}
+	})
+	t.Run("can delete specific members", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		e2 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		// when
+		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID))
+		// then
+		if assert.NoError(t, err) {
+			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				want := set.Of(e2.Character.ID)
+				xassert.Equal(t, want, got)
+			}
+		}
+	})
+	t.Run("does nothing when no member IDs given", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		// when
+		err := st.DeleteCorporationMembers(ctx, c.ID, set.Set[int64]{})
+		// then
+		if assert.NoError(t, err) {
+			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				want := set.Of(e1.Character.ID)
+				xassert.Equal(t, want, got)
+			}
 		}
 	})
 }

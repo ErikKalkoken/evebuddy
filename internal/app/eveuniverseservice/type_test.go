@@ -18,6 +18,166 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestGetType(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return existing type", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		et := factory.CreateEveType()
+		// when
+		got, err := s.GetType(context.Background(), et.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, et, got)
+	})
+	t.Run("should return error when type does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := s.GetType(context.Background(), 666)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListGroupsForCategory(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return groups for a category", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		category := factory.CreateEveCategory()
+		g1 := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID})
+		factory.CreateEveGroup() // other category
+		// when
+		oo, err := s.ListGroupsForCategory(context.Background(), category.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, oo, 1) {
+			xassert.Equal(t, g1.ID, oo[0].ID)
+		}
+	})
+}
+
+func TestGetDogmaAttribute(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return existing dogma attribute", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		da := factory.CreateEveDogmaAttribute()
+		// when
+		got, err := s.GetDogmaAttribute(context.Background(), da.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, da, got)
+	})
+	t.Run("should return error when dogma attribute does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := s.GetDogmaAttribute(context.Background(), 666)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestFormatDogmaValueWrapper(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should format a simple dogma value", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		text, iconID := s.FormatDogmaValue(context.Background(), 0.04, app.EveUnitAbsolutePercent)
+		// then
+		xassert.Equal(t, "4%", text)
+		xassert.Equal(t, int64(0), iconID)
+	})
+}
+
+func TestListTypeDogmaAttributesForType(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return dogma attributes for a type", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		et := factory.CreateEveType()
+		da := factory.CreateEveDogmaAttribute()
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        et.ID,
+			DogmaAttributeID: da.ID,
+			Value:            42,
+		})
+		// when
+		oo, err := s.ListTypeDogmaAttributesForType(context.Background(), et.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, oo, 1) {
+			xassert.Equal(t, da.ID, oo[0].DogmaAttribute.ID)
+			xassert.Equal(t, 42.0, oo[0].Value)
+		}
+	})
+}
+
+func TestUpdateCategoryWithChildrenESI(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should fetch category with its groups and types from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/categories/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"groups":      []int{25},
+				"name":        "Ship",
+				"published":   true,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/groups/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"group_id":    25,
+				"name":        "Frigate",
+				"published":   true,
+				"types":       []int{587},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/types/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "The Rifter is a...",
+				"group_id":    25,
+				"name":        "Rifter",
+				"published":   true,
+				"type_id":     587,
+			}),
+		)
+		// when
+		err := s.UpdateCategoryWithChildrenESI(ctx, 6)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetEveType(ctx, 587)
+		assert.NoError(t, err)
+	})
+}
+
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

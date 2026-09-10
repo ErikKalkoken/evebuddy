@@ -8,6 +8,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -193,6 +194,70 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.True(t, x.IsEmpty())
+		}
+	})
+}
+
+func TestGetJumpClone(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return a jump clone", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		jc := factory.CreateCharacterJumpClone()
+		// when
+		got, err := cs.GetJumpClone(ctx, jc.CharacterID, jc.CloneID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, jc.CloneID, got.CloneID)
+	})
+	t.Run("should return own error when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := cs.GetJumpClone(ctx, 1, 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListAllJumpClones(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list jump clones across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterJumpClone()
+		factory.CreateCharacterJumpClone()
+		// when
+		got, err := cs.ListAllJumpClones(ctx)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+}
+
+func TestListJumpClones(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list jump clones for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		jc := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: c.ID})
+		factory.CreateCharacterJumpClone() // clone for another character
+		// when
+		got, err := cs.ListJumpClones(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, jc.CloneID, got[0].CloneID)
 		}
 	})
 }

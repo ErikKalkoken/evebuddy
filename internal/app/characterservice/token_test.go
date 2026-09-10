@@ -68,6 +68,48 @@ func TestHasTokenWithScopes(t *testing.T) {
 	})
 }
 
+func TestCharactersWithMissingScopes(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should list characters missing scopes and exclude complete ones", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		complete := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: complete.ID,
+			Scopes:      app.Scopes(),
+		})
+		incomplete := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: incomplete.ID,
+			Scopes:      set.Of("alpha"),
+		})
+		noToken := factory.CreateCharacter()
+		// when
+		got, err := s.CharactersWithMissingScopes(ctx)
+		// then
+		if assert.NoError(t, err) {
+			ids := make([]int64, len(got))
+			for i, c := range got {
+				ids[i] = c.ID
+			}
+			assert.ElementsMatch(t, []int64{incomplete.ID, noToken.ID}, ids)
+		}
+	})
+	t.Run("should return empty when no characters exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		got, err := s.CharactersWithMissingScopes(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Empty(t, got)
+		}
+	})
+}
+
 func TestMissingScopes(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

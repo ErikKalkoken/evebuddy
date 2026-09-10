@@ -61,3 +61,68 @@ func TestNotifyCommunications(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNotification(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := characterservice.NewFake(characterservice.Params{Storage: st})
+	t.Run("can return a notification", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n := factory.CreateCharacterNotification()
+		// when
+		got, err := cs.GetNotification(t.Context(), n.CharacterID, n.NotificationID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, n.NotificationID, got.NotificationID)
+		}
+	})
+	t.Run("should return own error when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := cs.GetNotification(t.Context(), 1, 1)
+		// then
+		assert.Error(t, err)
+	})
+}
+
+func TestSetNotificationsAsRead(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := characterservice.NewFake(characterservice.Params{Storage: st})
+	t.Run("can mark notifications as read", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n1 := factory.CreateCharacterNotification()
+		n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: n1.CharacterID})
+		// when
+		err := cs.SetNotificationsAsRead(t.Context(), set.Of(n1.ID, n2.ID))
+		// then
+		if assert.NoError(t, err) {
+			got, err := st.GetCharacterNotification(t.Context(), n1.CharacterID, n1.NotificationID)
+			if assert.NoError(t, err) {
+				assert.True(t, got.IsRead)
+			}
+		}
+	})
+}
+
+func TestListNotifications(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	cs := characterservice.NewFake(characterservice.Params{Storage: st})
+	t.Run("can list notifications for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		factory.CreateCharacterNotification() // notification for another character
+		// when
+		got, err := cs.ListNotifications(t.Context(), c.ID)
+		// then
+		if assert.NoError(t, err) && assert.Len(t, got, 1) {
+			assert.Equal(t, n.NotificationID, got[0].NotificationID)
+		}
+	})
+}
