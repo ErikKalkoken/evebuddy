@@ -2,12 +2,15 @@ package characterservice
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -103,4 +106,22 @@ func NewFake(args ...Params) *CharacterService {
 	}
 	s := New(arg)
 	return s
+}
+
+func TestDumpData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("can dump requested table as JSON", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got := s.DumpData("characters")
+		// then
+		var world map[string][]map[string]any
+		if assert.NoError(t, json.Unmarshal([]byte(got), &world)) && assert.Len(t, world["characters"], 1) {
+			assert.EqualValues(t, c.ID, world["characters"][0]["id"])
+		}
+	})
 }

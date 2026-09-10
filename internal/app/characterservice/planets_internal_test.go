@@ -321,3 +321,48 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		}
 	})
 }
+
+func TestGetPlanet(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return a planet", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		p := factory.CreateCharacterPlanet()
+		// when
+		got, err := s.GetPlanet(ctx, p.CharacterID, p.EvePlanet.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, p.EvePlanet.ID, got.EvePlanet.ID)
+		}
+	})
+	t.Run("should return own error when not found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := s.GetPlanet(ctx, 1, 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListAllPlanets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list planets across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterPlanet()
+		factory.CreateCharacterPlanet()
+		// when
+		got, err := s.ListAllPlanets(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, got, 2)
+		}
+	})
+}

@@ -105,3 +105,42 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 
 	})
 }
+
+func TestListImplants(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list implants for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ci := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		factory.CreateCharacterImplant() // implant for another character
+		// when
+		got, err := s.ListImplants(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, ci.EveType.ID, got[0].EveType.ID)
+		}
+	})
+}
+
+func TestListAllImplants(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list implants across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterImplant()
+		factory.CreateCharacterImplant()
+		// when
+		got, err := s.ListAllImplants(ctx)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+}

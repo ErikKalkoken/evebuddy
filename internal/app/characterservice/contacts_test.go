@@ -264,3 +264,24 @@ func TestUpdateCharacterContactLabelsESI(t *testing.T) {
 		xassert.Equal(t, set.Of[int64](42), ids)
 	})
 }
+
+func TestListContacts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list contacts for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		contact := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{CharacterID: c.ID})
+		factory.CreateCharacterContact() // contact for another character
+		// when
+		got, err := s.ListContacts(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, contact.Contact.ID, got[0].Contact.ID)
+		}
+	})
+}

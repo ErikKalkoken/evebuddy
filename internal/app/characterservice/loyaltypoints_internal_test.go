@@ -116,3 +116,42 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		xassert.Equal(t, set.Of(corporation.ID), ids)
 	})
 }
+
+func TestListLoyaltyPointEntries(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list loyalty point entries for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		e := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterLoyaltyPointEntry() // entry for another character
+		// when
+		got, err := s.ListLoyaltyPointEntries(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, e.Corporation.ID, got[0].Corporation.ID)
+		}
+	})
+}
+
+func TestListAllLoyaltyPointEntries(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list loyalty point entries across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterLoyaltyPointEntry()
+		factory.CreateCharacterLoyaltyPointEntry()
+		// when
+		got, err := s.ListAllLoyaltyPointEntries(ctx)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+}

@@ -116,3 +116,77 @@ func TestCharacterService_UpdateLocationESI(t *testing.T) {
 		xassert.EqualOptional(t, structureID, c2.LocationID)
 	})
 }
+
+func TestCharacterService_UpdateOnlineESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+
+	t.Run("should update last login from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/online", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"online":     true,
+				"last_login": "2021-01-01T12:00:00Z",
+			}),
+		)
+		// when
+		changed, err := s.updateOnlineESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterOnline,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := s.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		assert.False(t, c2.LastLoginAt.IsEmpty())
+	})
+}
+
+func TestCharacterService_UpdateShipESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+
+	t.Run("should update current ship from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		ship := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/ship", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"ship_item_id": 1000000000001,
+				"ship_name":    "My ship",
+				"ship_type_id": ship.ID,
+			}),
+		)
+		// when
+		changed, err := s.updateShipESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterShip,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := s.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, ship.ID, c2.ShipTypeID)
+	})
+}

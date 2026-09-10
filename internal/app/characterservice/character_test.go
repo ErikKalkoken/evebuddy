@@ -465,3 +465,139 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.False(t, got)
 	})
 }
+
+func TestListCharacters(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		// when
+		got, err := cs.ListCharacters(ctx)
+		// then
+		require.NoError(t, err)
+		gotIDs := make([]int64, 0)
+		for _, c := range got {
+			gotIDs = append(gotIDs, c.ID)
+		}
+		assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, gotIDs)
+	})
+}
+
+func TestListCharacterIDs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list character IDs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		// when
+		got, err := cs.ListCharacterIDs(ctx)
+		// then
+		require.NoError(t, err)
+		assert.True(t, got.Contains(c1.ID))
+		assert.True(t, got.Contains(c2.ID))
+	})
+}
+
+func TestListEveCharacters(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list eve characters for existing characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		got, err := cs.ListEveCharacters(ctx)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, c.EveCharacter.ID, got[0].ID)
+		}
+	})
+}
+
+func TestCharacterNames(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return a map of character ID to name", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		got, err := cs.CharacterNames(ctx)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, c.EveCharacter.Name, got[c.ID])
+	})
+}
+
+func TestListCharacterCorporationIDs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return corporation IDs of characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		// when
+		got, err := cs.ListCharacterCorporationIDs(ctx)
+		// then
+		require.NoError(t, err)
+		assert.True(t, got.Contains(ec.ID))
+	})
+}
+
+func TestListCharacterCorporations(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return corporations of characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		// when
+		got, err := cs.ListCharacterCorporations(ctx)
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, got, 1) {
+			assert.Equal(t, ec.ID, got[0].ID)
+		}
+	})
+}
+
+func TestUpdateAllCalculatedValues(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can update calculated values for all characters without error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterFull()
+		factory.CreateCharacterFull()
+		// when
+		err := cs.UpdateAllCalculatedValues(ctx)
+		// then
+		require.NoError(t, err)
+	})
+}
