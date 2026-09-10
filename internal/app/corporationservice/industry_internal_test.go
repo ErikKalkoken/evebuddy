@@ -20,6 +20,66 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+func TestGetCorporationIndustryJob(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return existing job", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		j := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c.ID})
+		got, err := s.GetCorporationIndustryJob(ctx, c.ID, j.JobID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, j.JobID, got.JobID)
+		}
+	})
+	t.Run("should return error when job not found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetCorporationIndustryJob(ctx, c.ID, 42)
+		assert.Error(t, err)
+	})
+}
+
+func TestListAllCorporationIndustryJobs(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list jobs from all corporations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c1.ID})
+		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c2.ID})
+		got, err := s.ListAllCorporationIndustryJobs(ctx)
+		if assert.NoError(t, err) {
+			ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
+			xassert.Equal(t, set.Of(j1.JobID, j2.JobID), ids)
+		}
+	})
+}
+
+func TestListCorporationIndustryJobs(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list jobs for a corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c1.ID})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c2.ID})
+		got, err := s.ListCorporationIndustryJobs(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
+			xassert.Equal(t, set.Of(j1.JobID), ids)
+		}
+	})
+}
+
 func TestUpdateIndustryJobsESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

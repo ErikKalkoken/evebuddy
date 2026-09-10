@@ -9,12 +9,54 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
+
+func TestGetStructure(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return existing structure", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
+		got, err := s.GetStructure(ctx, c.ID, o.StructureID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, o.StructureID, got.StructureID)
+		}
+	})
+	t.Run("should return error when structure not found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetStructure(ctx, c.ID, 42)
+		assert.Error(t, err)
+	})
+}
+
+func TestListStructures(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list structures for a corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID})
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c2.ID})
+		got, err := s.ListStructures(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			require.Len(t, got, 1)
+			xassert.Equal(t, o1.StructureID, got[0].StructureID)
+		}
+	})
+}
 
 func TestUpdateCorporationStructuresESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)

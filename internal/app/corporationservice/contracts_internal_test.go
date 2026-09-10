@@ -16,7 +16,116 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
+
+func TestGetContract(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can return existing contract", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		got, err := s.GetContract(ctx, c.ID, o.ContractID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, o.ID, got.ID)
+		}
+	})
+	t.Run("should return error when contract not found", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		_, err := s.GetContract(ctx, c.ID, 42)
+		assert.Error(t, err)
+	})
+}
+
+func TestCountContractBids(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can count bids for a contract", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract()
+		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
+		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
+		got, err := s.CountContractBids(ctx, o.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, got)
+		}
+	})
+	t.Run("returns zero when contract has no bids", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract()
+		got, err := s.CountContractBids(ctx, o.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, got)
+		}
+	})
+}
+
+func TestGetContractTopBid(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("returns the bid with the highest amount", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract()
+		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 100})
+		top := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 500})
+		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 200})
+		got, err := s.GetContractTopBid(ctx, o.ID)
+		if assert.NoError(t, err) {
+			xassert.Equal(t, top.BidID, got.BidID)
+		}
+	})
+	t.Run("should return error when contract has no bids", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract()
+		_, err := s.GetContractTopBid(ctx, o.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListCorporationContracts(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list contracts for a corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		factory.CreateCorporationContract()
+		got, err := s.ListCorporationContracts(ctx, c.ID)
+		if assert.NoError(t, err) {
+			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContract) int64 { return x.ID }))
+			xassert.Equal(t, set.Of(o1.ID, o2.ID), ids)
+		}
+	})
+}
+
+func TestListContractItems(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list items for a contract", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract()
+		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
+		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
+		got, err := s.ListContractItems(ctx, o.ID)
+		if assert.NoError(t, err) {
+			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContractItem) int64 { return x.RecordID }))
+			xassert.Equal(t, set.Of(i1.RecordID, i2.RecordID), ids)
+		}
+	})
+}
 
 func TestUpdateContractESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)

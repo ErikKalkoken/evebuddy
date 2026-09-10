@@ -16,6 +16,25 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestListMembers(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list members of a corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		m1 := factory.CreateCorporationMember(storage.CorporationMemberParams{CorporationID: c1.ID})
+		factory.CreateCorporationMember(storage.CorporationMemberParams{CorporationID: c2.ID})
+		got, err := s.ListMembers(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			require.Len(t, got, 1)
+			xassert.Equal(t, m1.Character.ID, got[0].Character.ID)
+		}
+	})
+}
+
 func TestUpdateCorporationMembersESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
