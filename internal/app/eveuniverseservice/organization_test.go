@@ -20,6 +20,58 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+func TestRandomizeAllAllianceNames(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should randomize names of all alliances only", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		alliance := factory.CreateEveEntityAlliance(app.EveEntity{Name: "Original Alliance"})
+		corporation := factory.CreateEveEntityCorporation(app.EveEntity{Name: "Original Corp"})
+		// when
+		err := s.RandomizeAllAllianceNames(t.Context())
+		// then
+		require.NoError(t, err)
+		o1, err := st.GetEveEntity(t.Context(), alliance.ID)
+		require.NoError(t, err)
+		assert.NotEqual(t, "Original Alliance", o1.Name)
+		o2, err := st.GetEveEntity(t.Context(), corporation.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "Original Corp", o2.Name)
+	})
+}
+
+func TestRandomizeAllCorporationNames(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should randomize names of all corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Original Corp"})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: corporation.ID, Name: "Original Corp"})
+		// when
+		err := s.RandomizeAllCorporationNames(t.Context())
+		// then
+		require.NoError(t, err)
+		o1, err := st.GetEveCorporation(t.Context(), corporation.ID)
+		require.NoError(t, err)
+		assert.NotEqual(t, "Original Corp", o1.Name)
+		o2, err := st.GetEveEntity(t.Context(), corporation.ID)
+		require.NoError(t, err)
+		assert.NotEqual(t, "Original Corp", o2.Name)
+	})
+	t.Run("should do nothing when there are no corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := s.RandomizeAllCorporationNames(t.Context())
+		// then
+		require.NoError(t, err)
+	})
+}
+
 func TestFetchAlliance(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

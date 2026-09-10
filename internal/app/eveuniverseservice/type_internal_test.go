@@ -2,12 +2,104 @@ package eveuniverseservice
 
 import (
 	"context"
+	"net/http"
+	"regexp"
+	"strconv"
 	"testing"
 
+	"github.com/fnt-eve/goesi-openapi"
+	"github.com/jarcoal/httpmock"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
+
+func TestUpdateTypes(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
+		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
+	})
+	s := &EVEUniverseService{st: st, esiClient: esiClient, concurrencyLimit: -1}
+	ctx := context.Background()
+
+	categoryIDRx := regexp.MustCompile(`/categories/(\d+)`)
+	groups := map[int64][]int{
+		25: {587},
+		26: {588},
+	}
+	categoryGroups := map[int64][]int{
+		app.EveCategoryShip:  {25},
+		app.EveCategorySkill: {26},
+	}
+	httpmock.RegisterResponder(
+		"GET",
+		`=~^https://esi.evetech.net/universe/categories/\d+`,
+		func(req *http.Request) (*http.Response, error) {
+			m := categoryIDRx.FindStringSubmatch(req.URL.Path)
+			id, _ := strconv.ParseInt(m[1], 10, 64)
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"category_id": id,
+				"groups":      categoryGroups[id],
+				"name":        "Category",
+				"published":   true,
+			})
+		},
+	)
+	groupIDRx := regexp.MustCompile(`/groups/(\d+)`)
+	httpmock.RegisterResponder(
+		"GET",
+		`=~^https://esi.evetech.net/universe/groups/\d+`,
+		func(req *http.Request) (*http.Response, error) {
+			m := groupIDRx.FindStringSubmatch(req.URL.Path)
+			id, _ := strconv.ParseInt(m[1], 10, 64)
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"category_id": 6,
+				"group_id":    id,
+				"name":        "Group",
+				"published":   true,
+				"types":       groups[id],
+			})
+		},
+	)
+	typeIDRx := regexp.MustCompile(`/types/(\d+)`)
+	httpmock.RegisterResponder(
+		"GET",
+		`=~^https://esi.evetech.net/universe/types/\d+`,
+		func(req *http.Request) (*http.Response, error) {
+			m := typeIDRx.FindStringSubmatch(req.URL.Path)
+			id, _ := strconv.ParseInt(m[1], 10, 64)
+			groupID := int64(25)
+			if id == 588 {
+				groupID = 26
+			}
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"description": "A type",
+				"group_id":    groupID,
+				"name":        "Type",
+				"published":   true,
+				"type_id":     id,
+			})
+		},
+	)
+
+	t.Run("should update ship and skill types and report added ones", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		added, err := s.updateTypes(ctx)
+		// then
+		if err != nil {
+			t.Fatal(err)
+		}
+		xassert.Equal(t, true, added.Contains(587))
+		xassert.Equal(t, true, added.Contains(588))
+	})
+}
 
 func TestFormatDogmaValue(t *testing.T) {
 	cases := []struct {

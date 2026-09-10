@@ -13,6 +13,68 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
+func TestListSkillGroups(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return skill groups only", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		skillCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill, IsPublished: true})
+		skillGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: skillCategory.ID, IsPublished: true})
+		factory.CreateEveType(storage.CreateEveTypeParams{GroupID: skillGroup.ID, IsPublished: true})
+		otherGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{IsPublished: true})
+		factory.CreateEveType(storage.CreateEveTypeParams{GroupID: otherGroup.ID, IsPublished: true})
+		// when
+		oo, err := s.ListSkillGroups(t.Context())
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, oo, 1) {
+			assert.Equal(t, skillGroup.ID, oo[0].ID)
+		}
+	})
+}
+
+func TestUpdateShipSkills(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should update ship skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID})
+		ship := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		skill := factory.CreateEveType()
+		primarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillID,
+		})
+		primarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: app.EveDogmaAttributePrimarySkillLevel,
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        ship.ID,
+			DogmaAttributeID: primarySkillID.ID,
+			Value:            float64(skill.ID),
+		})
+		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID:        ship.ID,
+			DogmaAttributeID: primarySkillLevel.ID,
+			Value:            float64(3),
+		})
+		// when
+		err := s.UpdateShipSkills(t.Context())
+		// then
+		require.NoError(t, err)
+		xx, err := st.ListEveShipSkills(t.Context(), ship.ID)
+		require.NoError(t, err)
+		if assert.Len(t, xx, 1) {
+			assert.Equal(t, skill.ID, xx[0].SkillTypeID)
+			assert.Equal(t, uint(3), xx[0].SkillLevel)
+		}
+	})
+}
+
 func TestEveUniverseService_ListSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

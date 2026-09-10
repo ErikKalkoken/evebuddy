@@ -18,12 +18,55 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 const (
 	stationID   = 60000277
 	structureID = 1_000_000_000_009
 )
+
+func TestGetLocation(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return existing location", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		loc := factory.CreateEveLocationStation()
+		// when
+		got, err := s.GetLocation(context.Background(), loc.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, loc.ID, got.ID)
+	})
+	t.Run("should return error when location does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := s.GetLocation(context.Background(), 666)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListLocations(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return all locations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		l1 := factory.CreateEveLocationStation()
+		l2 := factory.CreateEveLocationStructure()
+		// when
+		oo, err := s.ListLocations(context.Background())
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(oo, func(x *app.EveLocation) int64 { return x.ID })
+		assert.ElementsMatch(t, []int64{l1.ID, l2.ID}, got)
+	})
+}
 
 func TestGetOrCreateLocationESI_AnyExceptStrutures(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
