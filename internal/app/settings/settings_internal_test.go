@@ -68,6 +68,18 @@ func (p myPreferences) SetStringList(k string, v []string) {
 	setAny(p, k, v)
 }
 
+func (p myPreferences) Float(key string) float64 {
+	return getAny[float64](p, key)
+}
+
+func (p myPreferences) FloatWithFallback(key string, fallback float64) float64 {
+	return getAnyWithFallback(p, key, fallback)
+}
+
+func (p myPreferences) SetFloat(k string, v float64) {
+	setAny(p, k, v)
+}
+
 func (p myPreferences) FloatList(key string) []float64 {
 	return getAny[[]float64](p, key)
 }
