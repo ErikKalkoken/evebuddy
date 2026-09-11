@@ -104,6 +104,34 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	return o, nil
 }
 
+func (st *Storage) ListAllCorporationStructures(ctx context.Context) ([]*app.CorporationStructure, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListAllCorporationStructures: %w", err)
+	}
+	rows, err := st.qRO.ListAllCorporationStructures(ctx)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]*app.CorporationStructure, len(rows))
+	for i, r := range rows {
+		services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID) // TODO: Optimize query
+		if err != nil {
+			return nil, wrapErr(convertGetError(err))
+		}
+		oo[i] = corporationStructureFromDBModel(
+			r.CorporationStructure,
+			r.EveSolarSystem,
+			r.EveConstellation,
+			r.EveRegion,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			services,
+		)
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID int64) ([]*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationStructures for id %d: %w", corporationID, err)

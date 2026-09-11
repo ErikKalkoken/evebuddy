@@ -17,22 +17,24 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 const (
-	corporationID   = 98267621 // RABIS
-	systemAbune     = 30004984
-	systemEnaluri   = 30045339
-	systemJita      = 30000142
-	typeAstrahus    = 35832
-	typeKeepstar    = 35834
-	typeRaitaru     = 35825
-	typeTatara      = 35836
-	typeAthanor     = 35835
-	typeMetanox     = 81826
-	structuresCount = 10
+	corporationRABIS = 98267621 // RABIS
+	corporationVREGS = 98394960
+	systemAbune      = 30004984
+	systemEnaluri    = 30045339
+	systemJita       = 30000142
+	typeAstrahus     = 35832
+	typeKeepstar     = 35834
+	typeRaitaru      = 35825
+	typeTatara       = 35836
+	typeAthanor      = 35835
+	typeMetanox      = 81826
+	structuresCount  = 10
 )
 
 func main() {
@@ -53,14 +55,22 @@ func main() {
 	st := storage.New(dbRW, dbRO)
 
 	rhc1 := retryablehttp.NewClient()
+	sc := new(statuscache.StatusCache)
+
+	ctx := context.Background()
+	if err := sc.Init(ctx, st); err != nil {
+		log.Fatal(err)
+	}
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		Storage: st,
 		ESIClient: goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
 			UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 		}),
+		Signals:            app.NewSignals(),
+		StatusCacheService: sc,
 	})
 
-	ctx := context.Background()
+	corporationIDs := []int64{corporationRABIS, corporationVREGS}
 	typeIDs := []int64{typeAstrahus, typeKeepstar, typeRaitaru, typeTatara, typeAthanor, typeMetanox}
 	systemIDs := []int64{systemAbune, systemEnaluri, systemJita}
 
@@ -77,12 +87,6 @@ func main() {
 		}
 		systems[id] = es
 	}
-	corporation, err := st.GetCorporation(ctx, corporationID)
-	if errors.Is(err, app.ErrNotFound) {
-		log.Fatal("RABIS not found")
-	} else if err != nil {
-		log.Fatal(err)
-	}
 
 	ids, err := st.ListEveLocationIDs(ctx)
 	if err != nil {
@@ -90,20 +94,44 @@ func main() {
 	}
 	maxID := set.Max(ids)
 
-	for i := range int64(structuresCount) {
-		id := maxID + i + 1
-		systemID := systemIDs[rand.IntN(len(systemIDs))]
-		typeID := typeIDs[rand.IntN(len(typeIDs))]
-		st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
-			CorporationID: corporationID,
-			Name:          optional.New(fmt.Sprintf("%s - %s", systems[systemID].Name, fake.City())),
-			State:         app.StructureStateShieldVulnerable,
-			StructureID:   id,
-			SystemID:      systemID,
-			TypeID:        typeID,
-			FuelExpires:   optional.New(time.Now().Add(time.Duration(rand.IntN(100)+3) * time.Hour)),
-		})
-	}
+	for _, corporationID := range corporationIDs {
+		corporation, err := st.GetCorporation(ctx, corporationID)
+		if errors.Is(err, app.ErrNotFound) {
+			log.Printf("corporation %d not found\n", corporationID)
+			continue
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	fmt.Printf("Added %d structures to %s\n", structuresCount, corporation.EveCorporation.Name)
+		for i := range int64(structuresCount) {
+			id := maxID + i + 1
+			systemID := systemIDs[rand.IntN(len(systemIDs))]
+			typeID := typeIDs[rand.IntN(len(typeIDs))]
+
+			var services []storage.StructureServiceParams
+			for i := range rand.IntN(4) {
+				services = append(services, storage.StructureServiceParams{
+					Name:  fmt.Sprintf("Service%d", i+1),
+					State: app.StructureServiceStateOnline,
+				})
+			}
+
+			err := st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
+				CorporationID: corporationID,
+				FuelExpires:   optional.New(time.Now().Add(time.Duration(rand.IntN(100)+3) * time.Hour)),
+				Name:          optional.New(fmt.Sprintf("%s - %s", systems[systemID].Name, fake.City())),
+				Services:      services,
+				State:         app.StructureStateShieldVulnerable,
+				StructureID:   id,
+				SystemID:      systemID,
+				TypeID:        typeID,
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		fmt.Printf("Added %d structures to %s\n", structuresCount, corporation.EveCorporation.Name)
+	}
 }

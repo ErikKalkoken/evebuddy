@@ -1,11 +1,11 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -18,7 +18,7 @@ import (
 func TestCorporationStructure(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can create minimal from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -35,23 +35,21 @@ func TestCorporationStructure(t *testing.T) {
 			SystemID:      system.ID,
 			TypeID:        typ.ID,
 		}
-		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(t.Context(), arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.CorporationID)
-			xassert.Equal(t, arg.Name, got.Name)
-			xassert.Equal(t, arg.ProfileID, got.ProfileID)
-			xassert.Equal(t, arg.State, got.State)
-			xassert.Equal(t, arg.StructureID, got.StructureID)
-			xassert.Equal(t, arg.SystemID, got.System.ID)
-			xassert.Equal(t, arg.TypeID, got.Type.ID)
-			assert.Empty(t, got.Services)
-		}
+		require.NoError(t, err)
+		got, err := st.GetCorporationStructure(t.Context(), arg.CorporationID, arg.StructureID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.CorporationID)
+		xassert.Equal(t, arg.Name, got.Name)
+		xassert.Equal(t, arg.ProfileID, got.ProfileID)
+		xassert.Equal(t, arg.State, got.State)
+		xassert.Equal(t, arg.StructureID, got.StructureID)
+		xassert.Equal(t, arg.SystemID, got.System.ID)
+		xassert.Equal(t, arg.TypeID, got.Type.ID)
+		assert.Empty(t, got.Services)
 	})
+
 	t.Run("can create full from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -81,31 +79,29 @@ func TestCorporationStructure(t *testing.T) {
 				},
 			},
 		}
-		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(t.Context(), arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.CorporationID)
-			xassert.EqualOptional(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires)
-			xassert.Equal(t, arg.Name, got.Name)
-			xassert.EqualOptional(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply)
-			xassert.EqualOptional(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour)
-			xassert.Equal(t, arg.ProfileID, got.ProfileID)
-			xassert.EqualOptional(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour)
-			xassert.Equal(t, arg.State, got.State)
-			xassert.EqualOptional(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd)
-			xassert.EqualOptional(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart)
-			xassert.Equal(t, arg.StructureID, got.StructureID)
-			xassert.Equal(t, arg.SystemID, got.System.ID)
-			xassert.Equal(t, arg.TypeID, got.Type.ID)
-			xassert.EqualOptional(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt)
-			xassert.Equal(t, "Jupiter", got.Services[0].Name)
-			assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
-		}
+		require.NoError(t, err)
+		got, err := st.GetCorporationStructure(t.Context(), arg.CorporationID, arg.StructureID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.CorporationID)
+		xassert.EqualOptional(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires)
+		xassert.Equal(t, arg.Name, got.Name)
+		xassert.EqualOptional(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply)
+		xassert.EqualOptional(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour)
+		xassert.Equal(t, arg.ProfileID, got.ProfileID)
+		xassert.EqualOptional(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour)
+		xassert.Equal(t, arg.State, got.State)
+		xassert.EqualOptional(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd)
+		xassert.EqualOptional(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart)
+		xassert.Equal(t, arg.StructureID, got.StructureID)
+		xassert.Equal(t, arg.SystemID, got.System.ID)
+		xassert.Equal(t, arg.TypeID, got.Type.ID)
+		xassert.EqualOptional(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt)
+		xassert.Equal(t, "Jupiter", got.Services[0].Name)
+		assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
 	})
+
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -143,27 +139,25 @@ func TestCorporationStructure(t *testing.T) {
 				},
 			},
 		}
-		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(t.Context(), arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		got, err := st.GetCorporationStructure(ctx, x1.CorporationID, x1.StructureID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.CorporationID)
-			xassert.EqualOptional(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires)
-			xassert.Equal(t, arg.Name, got.Name)
-			xassert.EqualOptional(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply)
-			xassert.EqualOptional(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour)
-			xassert.EqualOptional(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour)
-			xassert.Equal(t, arg.State, got.State)
-			xassert.EqualOptional(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd)
-			xassert.EqualOptional(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart)
-			xassert.EqualOptional(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt)
-			xassert.Equal(t, "Jupiter", got.Services[0].Name)
-			assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
-		}
+		require.NoError(t, err)
+		got, err := st.GetCorporationStructure(t.Context(), x1.CorporationID, x1.StructureID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.CorporationID)
+		xassert.EqualOptional(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires)
+		xassert.Equal(t, arg.Name, got.Name)
+		xassert.EqualOptional(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply)
+		xassert.EqualOptional(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour)
+		xassert.EqualOptional(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour)
+		xassert.Equal(t, arg.State, got.State)
+		xassert.EqualOptional(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd)
+		xassert.EqualOptional(t, arg.StateTimerStart.ValueOrZero(), got.StateTimerStart)
+		xassert.EqualOptional(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt)
+		xassert.Equal(t, "Jupiter", got.Services[0].Name)
+		assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
 	})
+
 	t.Run("can list structure IDs for corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -176,13 +170,30 @@ func TestCorporationStructure(t *testing.T) {
 		})
 		factory.CreateCorporationStructure()
 		// when
-		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
+		got, err := st.ListCorporationStructureIDs(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(o1.StructureID, o2.StructureID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(o1.StructureID, o2.StructureID)
+		xassert.Equal(t, want, got)
 	})
+
+	t.Run("can list all structures", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		o1 := factory.CreateCorporationStructure()
+		o2 := factory.CreateCorporationStructure()
+		factory.CreateCorporationStructure()
+		// when
+		xx, err := st.ListAllCorporationStructures(t.Context())
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.CorporationStructure) int64 {
+			return x.StructureID
+		}))
+		want := set.Of(o1.StructureID, o2.StructureID)
+		xassert.Equal(t, want, got)
+	})
+
 	t.Run("can list structures for corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -195,16 +206,16 @@ func TestCorporationStructure(t *testing.T) {
 		})
 		factory.CreateCorporationStructure()
 		// when
-		xx, err := st.ListCorporationStructures(ctx, c.ID)
+		xx, err := st.ListCorporationStructures(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.CorporationStructure) int64 {
-				return x.StructureID
-			}))
-			want := set.Of(o1.StructureID, o2.StructureID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.CorporationStructure) int64 {
+			return x.StructureID
+		}))
+		want := set.Of(o1.StructureID, o2.StructureID)
+		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can delete structures for a corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -216,15 +227,11 @@ func TestCorporationStructure(t *testing.T) {
 			CorporationID: c.ID,
 		})
 		// when
-		err := st.DeleteCorporationStructures(ctx, c.ID, set.Of(o1.StructureID))
+		err := st.DeleteCorporationStructures(t.Context(), c.ID, set.Of(o1.StructureID))
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
+		got, err := st.ListCorporationStructureIDs(t.Context(), c.ID)
+		require.NoError(t, err)
 		want := set.Of(o2.StructureID)
 		xassert.Equal(t, want, got)
 	})
@@ -233,7 +240,7 @@ func TestCorporationStructure(t *testing.T) {
 func TestStructureService(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+
 	t.Run("can get and create minimal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -244,18 +251,15 @@ func TestStructureService(t *testing.T) {
 			State:                  app.StructureServiceStateOnline,
 		}
 		// when
-		err := st.CreateStructureService(ctx, arg)
+		err := st.CreateStructureService(t.Context(), arg)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		got, err := st.GetStructureService(ctx, structure.ID, "Alpha")
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
+		got, err := st.GetStructureService(t.Context(), structure.ID, "Alpha")
+		require.NoError(t, err)
 		xassert.Equal(t, "Alpha", got.Name)
 		xassert.Equal(t, app.StructureServiceStateOnline, got.State)
 	})
+
 	t.Run("can list services", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -263,17 +267,16 @@ func TestStructureService(t *testing.T) {
 		x1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: s.ID})
 		x2 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: s.ID})
 		// when
-		oo, err := st.ListStructureServices(ctx, s.ID)
+		oo, err := st.ListStructureServices(t.Context(), s.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(oo, func(x *app.StructureService) string {
 			return x.Name
 		}))
 		want := set.Of(x1.Name, x2.Name)
 		xassert.Equal(t, want, got)
 	})
+
 	t.Run("can delete services", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -282,17 +285,13 @@ func TestStructureService(t *testing.T) {
 		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: structure.ID})
 		x := factory.CreateStructureService()
 		// when
-		err := st.DeleteStructureServices(ctx, structure.ID)
+		err := st.DeleteStructureServices(t.Context(), structure.ID)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
-		oo1, err := st.ListStructureServices(ctx, structure.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
+		oo1, err := st.ListStructureServices(t.Context(), structure.ID)
+		require.NoError(t, err)
 		assert.Empty(t, oo1)
-		_, err2 := st.GetStructureService(ctx, x.CorporationStructureID, x.Name)
+		_, err2 := st.GetStructureService(t.Context(), x.CorporationStructureID, x.Name)
 		if !assert.NoError(t, err2) {
 			t.Fatal()
 		}

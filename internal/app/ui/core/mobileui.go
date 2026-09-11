@@ -914,6 +914,22 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		unifiedCommunicationsMenu.Refresh()
 	}
 
+	navItemUnifiedStructures := xwidget.NewNavListItem(
+		"Structures",
+		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		func() {
+			homeNav.Push(xwidget.NewAppBar("Structures", u.unifiedStructures))
+		},
+	)
+	u.unifiedStructures.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s structures reinforced", ihumanize.Comma(count))
+		}
+		navItemUnifiedStructures.Supporting = badge
+		navItemUnifiedStructures.Refresh()
+	}
+
 	navItemSkills := xwidget.NewNavListItem(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
@@ -969,6 +985,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			},
 		),
 		navItemSkills,
+		navItemUnifiedStructures,
 		navItemWealth,
 	)
 	status := NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
